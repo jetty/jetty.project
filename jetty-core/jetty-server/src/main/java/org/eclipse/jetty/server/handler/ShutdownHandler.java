@@ -13,46 +13,52 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.SocketException;
-import java.net.URL;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java.
- * If _exitJvm is set to true a hard System.exit() call is being made.
- * If _sendShutdownAtStart is set to true, starting the server will try to shut down an existing server at the same port.
- * If _sendShutdownAtStart is set to true, make an http call to
- * "http://localhost:" + port + "/shutdown?token=" + shutdownCookie
- * in order to shut down the server.
+ * <p>
+ * A {@link Handler} that initiates a Shutdown of the Jetty Server it belongs to.
+ * </p>
  *
- * This handler is a contribution from Johannes Brodwall: https://bugs.eclipse.org/bugs/show_bug.cgi?id=357687
+ * <p>
+ * Used to do "soft" restarts from Java.
+ * <ul>
+ *    <li>If {@code exitJvm} is set to true a hard {@link System#exit(int)} call will be performed.</li>
+ *    <li>If {@code sendShutdownAtStart} is set to true, starting the Jetty Server will try to shut down an
+ *    existing server at the same port.</li>
+ *    <li>If _sendShutdownAtStart is set to true, make an http call to
+ *    {@code "http://localhost:" + port + "/shutdown?token=" + shutdownCookie} in order to shut down the server.</li>
+ * </ul>
  *
  * Usage:
  *
- * <pre>
+ * <pre>{@code
  * Server server = new Server(8080);
- * HandlerList handlers = new HandlerList();
- * handlers.setHandlers(new Handler[]
- * { someOtherHandler, new ShutdownHandler(&quot;secret password&quot;, false, true) });
+ * Handler.Collection handlers = new Handler.Collection();
+ * handlers.addHandler(someOtherHandler);
+ * handlers.addHandler(new ShutdownHandler("secret password", false));
  * server.setHandler(handlers);
  * server.start();
- * </pre>
+ * }</pre>
  *
- * <pre>
+ * <pre>{@code
  * public static void attemptShutdown(int port, String shutdownCookie) {
- * try {
- * URL url = new URL("http://localhost:" + port + "/shutdown?token=" + shutdownCookie);
- * HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+ *   try {
+ *     URI uri = URI.create("http://localhost:%d/shutdown?token=%s".formatted(port, shutdownCookie));
+ *     HttpURLConnection connection = (HttpURLConnection)url.openConnection();
  * connection.setRequestMethod("POST");
  * connection.getResponseCode();
  * logger.info("Shutting down " + url + ": " + connection.getResponseMessage());
@@ -63,14 +69,14 @@ import org.slf4j.LoggerFactory;
  * throw new RuntimeException(e);
  * }
  * }
- * </pre>
+ * }</pre>
  */
 public class ShutdownHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownHandler.class);
 
+    private final String _shutdownPath;
     private final String _shutdownToken;
-    private boolean _sendShutdownAtStart;
     private boolean _exitJvm = false;
 
     /**
@@ -80,164 +86,113 @@ public class ShutdownHandler extends Handler.Wrapper
      */
     public ShutdownHandler(String shutdownToken)
     {
-        this(shutdownToken, false, false);
+        this("/shutdown", shutdownToken, false);
     }
 
     /**
      * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
      * @param exitJVM If true, when the shutdown is executed, the handler class System.exit()
-     * @param sendShutdownAtStart If true, a shutdown is sent as an HTTP post
-     * during startup, which will shutdown any previously running instances of
-     * this server with an identically configured ShutdownHandler
      */
-    public ShutdownHandler(String shutdownToken, boolean exitJVM, boolean sendShutdownAtStart)
+    public ShutdownHandler(String shutdownToken, boolean exitJVM)
     {
+        this("/shutdown", shutdownToken, exitJVM);
+    }
+
+    public ShutdownHandler(String shutdownPath, String shutdownToken, boolean exitJvm)
+    {
+        this._shutdownPath = shutdownPath;
         this._shutdownToken = shutdownToken;
-        /* TODO
-        setExitJvm(exitJVM);
-        setSendShutdownAtStart(sendShutdownAtStart);
-
-         */
-    }
-
-    public void sendShutdown() throws IOException
-    {
-        URL url = new URL(getServerUrl() + "/shutdown?token=" + _shutdownToken);
-        try
-        {
-            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.getResponseCode();
-            LOG.info("Shutting down {}: {} {}", url, connection.getResponseCode(), connection.getResponseMessage());
-        }
-        catch (SocketException e)
-        {
-            LOG.debug("Not running");
-            // Okay - the server is not running
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @SuppressWarnings("resource")
-    private String getServerUrl()
-    {
-        NetworkConnector connector = null;
-        for (Connector c : getServer().getConnectors())
-        {
-            if (c instanceof NetworkConnector)
-            {
-                connector = (NetworkConnector)c;
-                break;
-            }
-        }
-
-        if (connector == null)
-            return "http://localhost";
-
-        return "http://localhost:" + connector.getPort();
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        if (_sendShutdownAtStart)
-            sendShutdown();
+        this._exitJvm = exitJvm;
     }
 
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        return false;
-        /* TODO
-        if (!target.equals("/shutdown"))
+        String fullPath = request.getHttpURI().getCanonicalPath();
+        ContextHandler contextHandler = ContextHandler.getContextHandler(request);
+        if (contextHandler != null)
         {
-            super.handle(target, baseRequest, request, response);
-            return;
+            // We are operating in a context, so use it
+            String pathInContext = contextHandler.getContext().getPathInContext(fullPath);
+            if (!pathInContext.startsWith(this._shutdownPath))
+            {
+                return super.process(request, response, callback);
+            }
+        }
+        else
+        {
+            // We are standalone
+            if (!fullPath.startsWith(this._shutdownPath))
+            {
+                return super.process(request, response, callback);
+            }
         }
 
         if (!request.getMethod().equals("POST"))
         {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-            return;
+            Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400);
+            return true;
         }
+
         if (!hasCorrectSecurityToken(request))
         {
-            LOG.warn("Unauthorized tokenless shutdown attempt from {}", request.getRemoteAddr());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
+            LOG.warn("Unauthorized tokenless shutdown attempt from {}", request.getConnectionMetaData().getRemoteSocketAddress());
+            Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401);
+            return true;
         }
-        if (!requestFromLocalhost(baseRequest))
+        if (!requestFromLocalhost(request))
         {
-            LOG.warn("Unauthorized non-loopback shutdown attempt from {}", request.getRemoteAddr());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
-
-        LOG.info("Shutting down by request from {}", request.getRemoteAddr());
-        doShutdown(baseRequest, response);
-
-         */
-    }
-
-    /* TODO
-    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException
-    {
-        for (Connector connector : getServer().getConnectors())
-        {
-            connector.shutdown();
+            LOG.warn("Unauthorized non-loopback shutdown attempt from {}", request.getConnectionMetaData().getRemoteSocketAddress());
+            Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401);
+            return true;
         }
 
-        baseRequest.setHandled(true);
-        response.setStatus(200);
-        response.flushBuffer();
-
-        final Server server = getServer();
-        new Thread()
+        LOG.info("Shutting down by request from {}", request.getConnectionMetaData().getRemoteSocketAddress());
+        // Establish callback to trigger server shutdown when write of response is complete
+        Callback triggerShutdownCallback = Callback.from(() ->
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    shutdownServer(server);
-                }
-                catch (InterruptedException e)
-                {
-                    LOG.trace("IGNORED", e);
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException("Shutting down server", e);
-                }
-            }
-        }.start();
+            CompletableFuture.runAsync(this::shutdownServer);
+        });
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain, charset=utf-8");
+        String message = "Shutdown triggered";
+        Content.Sink.write(response, true, message, triggerShutdownCallback);
+        return true;
     }
 
     private boolean requestFromLocalhost(Request request)
     {
-        InetSocketAddress addr = request.getRemoteInetSocketAddress();
-        if (addr == null)
-        {
+        SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
+        if (socketAddress == null)
             return false;
-        }
-        return addr.getAddress().isLoopbackAddress();
+
+        if (socketAddress instanceof InetSocketAddress addr)
+            return addr.getAddress().isLoopbackAddress();
+
+        return false;
     }
 
-    private boolean hasCorrectSecurityToken(HttpServletRequest request)
+    private boolean hasCorrectSecurityToken(Request request)
     {
-        String tok = request.getParameter("token");
+        Fields fields = Request.extractQueryParameters(request);
+        String tok = fields.getValue("token");
         if (LOG.isDebugEnabled())
             LOG.debug("Token: {}", tok);
         return _shutdownToken.equals(tok);
     }
 
-    private void shutdownServer(Server server) throws Exception
+    private void shutdownServer()
     {
-        server.stop();
+        try
+        {
+            // Let server stop normally.
+            // Order of stop is controlled by server.
+            // Graceful stop can even be configured at the Server level
+            getServer().stop();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to stop server", e);
+        }
 
         if (_exitJvm)
         {
@@ -250,25 +205,8 @@ public class ShutdownHandler extends Handler.Wrapper
         this._exitJvm = exitJvm;
     }
 
-    public boolean isSendShutdownAtStart()
-    {
-        return _sendShutdownAtStart;
-    }
-
-    public void setSendShutdownAtStart(boolean sendShutdownAtStart)
-    {
-        _sendShutdownAtStart = sendShutdownAtStart;
-    }
-
-    public String getShutdownToken()
-    {
-        return _shutdownToken;
-    }
-
     public boolean isExitJvm()
     {
         return _exitJvm;
     }
-
-     */
 }
