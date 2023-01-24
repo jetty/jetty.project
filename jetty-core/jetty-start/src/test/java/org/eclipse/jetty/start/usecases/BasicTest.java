@@ -50,7 +50,7 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(homeDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
     }
@@ -62,7 +62,7 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
@@ -120,8 +120,8 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             List.of(
-                "--module=main",
-                "--module=does-not-exist"
+                "--modules=main",
+                "--modules=does-not-exist"
             ),
             StandardCharsets.UTF_8);
 
@@ -146,9 +146,9 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             List.of(
-                "--module=main",
-                "--module=does-not-exist",
-                "--module=also-not-present"
+                "--modules=main",
+                "--modules=does-not-exist",
+                "--modules=also-not-present"
             ),
             StandardCharsets.UTF_8);
 
@@ -173,7 +173,7 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=server"
+                "--modules=server"
             ),
             StandardCharsets.UTF_8);
 
@@ -209,7 +209,7 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=server"
+                "--modules=server"
             ),
             StandardCharsets.UTF_8);
 
@@ -217,7 +217,7 @@ public class BasicTest extends AbstractUseCase
         List<String> runArgs = new ArrayList<>();
         runArgs.add("jetty.home=" + homePath);
         runArgs.add("--create-files");
-        runArgs.add("--module=logging-b");
+        runArgs.add("--modules=logging-b");
         ExecResults results = exec(runArgs, true);
 
         // === Validate Resulting XMLs
@@ -246,7 +246,7 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
@@ -266,7 +266,7 @@ public class BasicTest extends AbstractUseCase
         assertThat("Extra Jar exists: " + extraJar, Files.exists(extraJar), is(true));
         assertThat("Extra Dir exists: " + extraDir, Files.exists(extraDir), is(true));
 
-        String lib = "--lib=" + extraJar + File.pathSeparator + extraDir;
+        String lib = "--libs=" + extraJar + File.pathSeparator + extraDir;
         runArgs.add(lib);
 
         // Arbitrary XMLs
@@ -323,7 +323,7 @@ public class BasicTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
@@ -333,7 +333,7 @@ public class BasicTest extends AbstractUseCase
         runArgs.add("java.version=1.8.0_31");
 
         // Modules
-        runArgs.add("--module=optional,extra");
+        runArgs.add("--modules=optional,extra");
 
         ExecResults results = exec(runArgs, true);
 
@@ -381,7 +381,7 @@ public class BasicTest extends AbstractUseCase
 
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
-        runArgs.add("--module=main");
+        runArgs.add("--modules=main");
         ExecResults results = exec(runArgs, true);
 
         // === Validate Resulting XMLs

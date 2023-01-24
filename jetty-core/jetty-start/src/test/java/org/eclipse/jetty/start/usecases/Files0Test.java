@@ -47,7 +47,7 @@ public class Files0Test extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=demo"
+            "--add-modules=demo"
         );
         ExecResults prepareResults = exec(prepareArgs, true);
 

@@ -59,14 +59,14 @@ public class TransientIniTemplateTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
-            "--add-module=direct"
+            "--add-modules=direct"
         );
         exec(prepareArgs, true);
 
@@ -134,14 +134,14 @@ public class TransientIniTemplateTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
-            "--add-module=direct"
+            "--add-modules=direct"
         );
         exec(prepareArgs, true);
 

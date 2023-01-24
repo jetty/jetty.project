@@ -32,7 +32,7 @@ For SSL, parameters are now properties in the `start.ini` or `start.d\ssl.ini`, 
 
 Instead of explicitly listing all the libraries, properties, and XML files for a feature, Jetty 9.1 introduced a new module system.
 A module is defined in a `modules/*.mod` file, including the libraries, dependencies, XML, and template INI files for a Jetty feature.
-Thus you can use a single `--module=name` command line option as the equivalent of specifying many `--lib=location, feature.xml, name=value` arguments for a feature and all its dependencies.
+Thus you can use a single `--modules=name` command line option as the equivalent of specifying many `--libs=location, feature.xml, name=value` arguments for a feature and all its dependencies.
 Modules use their dependencies to control the ordering of libraries and XML files.
 For more information, see xref:startup-modules[].
 
@@ -205,7 +205,7 @@ Jetty Server Classpath:
 -----------------------
 Version Information on 11 entries in the classpath.
 : order presented here is how they would appear on the classpath.
-      changes to the --module=name command line options will be reflected here.
+      changes to the --modules=name command line options will be reflected here.
  0:                    4.0.2 | ${jetty.home}/lib/jetty-jakarta-servlet-api-4.0.2.jar
  2:                {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
  3:                {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
@@ -251,7 +251,7 @@ First notice the separation of `${jetty.base}` and `${jetty.home}`.
 [[modules]]
 ===== Modules
 
-Notice that you have `--module=<name>` here and there; you have wrapped up the goal of a module (libs, configuration XMLs, and properties) into a single unit, with dependencies on other modules.
+Notice that you have `--modules=<name>` here and there; you have wrapped up the goal of a module (libs, configuration XMLs, and properties) into a single unit, with dependencies on other modules.
 
 You can see the list of modules:
 
@@ -446,7 +446,7 @@ If you want to start using a new module:
 [my-base] $ java -jar ../jetty-home-{VERSION}/start.jar --add-to-start=https
 ....
 
-This adds the `--module=` lines and associated properties (the parameterized values mentioned above), to your `start.ini`.
+This adds the `--modules=` lines and associated properties (the parameterized values mentioned above), to your `start.ini`.
 
 ____
 [IMPORTANT]
@@ -494,7 +494,7 @@ For SSL they include `modules/http.mod`, `modules/https.mod`, `modules/ssl.mod`,
 +
 Ideally, this level of detail is not important to you.
 What is important is that you want to use HTTPS and want to configure it.
-You accomplish that by adding the `--module=https` to your `start.ini`.
+You accomplish that by adding the `--modules=https` to your `start.ini`.
 By default, the module system keeps things sane, and transitively includes all dependent modules as well.
 
 You can see what the configuration looks like, after all of the modules are resolved, without starting Jetty via:
