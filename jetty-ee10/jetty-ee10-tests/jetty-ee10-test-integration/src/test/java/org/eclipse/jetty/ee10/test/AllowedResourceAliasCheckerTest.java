@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -50,13 +51,6 @@ public class AllowedResourceAliasCheckerTest
     private static ServletContextHandler _context;
     private static Path _baseDir;
 
-    private static Path getResourceDir() throws Exception
-    {
-        URL url = AllowedResourceAliasCheckerTest.class.getClassLoader().getResource(".");
-        assertNotNull(url);
-        return new File(url.toURI()).toPath();
-    }
-
     public void start() throws Exception
     {
         _server.start();
@@ -76,8 +70,7 @@ public class AllowedResourceAliasCheckerTest
         _context.addServlet(DefaultServlet.class, "/");
         _server.setHandler(_context);
 
-        _baseDir = getResourceDir().resolve("baseDir");
-        FS.ensureDeleted(_baseDir); //start fresh
+        _baseDir = MavenTestingUtils.getTargetTestingPath(AllowedResourceAliasCheckerTest.class.getName());
         FS.ensureDirExists(_baseDir);
         assertTrue(Files.exists(_baseDir));
         _context.setBaseResourceAsPath(_baseDir);

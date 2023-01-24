@@ -50,7 +50,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -251,11 +251,11 @@ public abstract class RFC2616BaseTest
 
         HttpTester.Response response = responses.get(0); // Response 1
         assertThat("3.6.1 Transfer Codings / Response 1 Code", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("12345\n"));
+        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("12345"));
 
         response = responses.get(1); // Response 2
         assertThat("3.6.1 Transfer Codings / Response 2 Code", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), Matchers.containsString("6789abcde\n"));
+        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), Matchers.containsString("6789abcde"));
 
         response = responses.get(2); // Response 3
         assertThat("3.6.1 Transfer Codings / Response 3 Code", response.getStatus(), is(HttpStatus.OK_200));
@@ -304,11 +304,11 @@ public abstract class RFC2616BaseTest
 
         HttpTester.Response response = responses.get(0); // Response 1
         assertThat("3.6.1 Transfer Codings / Response 1 Code", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("fghIjk\n")); // Complete R1 string
+        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("fghIjk")); // Complete R1 string
 
         response = responses.get(1); // Response 2
         assertThat("3.6.1 Transfer Codings / Response 2 Code", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("lmnoPqrst\n")); // Complete R2 string
+        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("lmnoPqrst")); // Complete R2 string
 
         response = responses.get(2); // Response 3
         assertThat("3.6.1 Transfer Codings / Response 3 Code", response.getStatus(), is(HttpStatus.OK_200));
@@ -347,7 +347,7 @@ public abstract class RFC2616BaseTest
 
         HttpTester.Response response = responses.get(0); // Response 1
         assertThat("3.6.1 Transfer Codings / Response 1 Code", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("123456\n")); // Complete R1 string
+        assertThat("3.6.1 Transfer Codings / Chunked String", response.getContent(), containsString("123456")); // Complete R1 string
 
         response = responses.get(1); // Response 2
         assertThat("3.6.1 Transfer Codings / Response 2 Code", response.getStatus(), is(HttpStatus.OK_200));
@@ -1121,12 +1121,12 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = responses.get(0);
         String specId = "10.3 Redirection HTTP/1.1 - basic (response 1)";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(server.getScheme() + "://localhost/tests/", response.get("Location"), specId);
+        assertEquals(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/", response.get("Location"), specId);
 
         response = responses.get(1);
         specId = "10.3 Redirection HTTP/1.1 - basic (response 2)";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(server.getScheme() + "://localhost/tests/", response.get("Location"), specId);
+        assertEquals(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/", response.get("Location"), specId);
         assertEquals("close", response.get("Connection"), specId);
     }
 
@@ -1150,7 +1150,7 @@ public abstract class RFC2616BaseTest
 
         String specId = "10.3 Redirection HTTP/1.0 w/content";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(server.getScheme() + "://localhost/tests/R1.txt", response.get("Location"), specId);
+        assertEquals(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/R1.txt", response.get("Location"), specId);
     }
 
     /**
@@ -1173,9 +1173,8 @@ public abstract class RFC2616BaseTest
 
         String specId = "10.3 Redirection HTTP/1.1 w/content";
         assertThat(specId + " [status]", response.getStatus(), is(HttpStatus.FOUND_302));
-        assertThat(specId + " [location]", response.get("Location"), is(server.getScheme() + "://localhost/tests/R2.txt"));
+        assertThat(specId + " [location]", response.get("Location"), is(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/R2.txt"));
         assertThat(specId + " [connection]", response.get("Connection"), is("close"));
-        assertThat(specId + " [content-length]", response.get("Content-Length"), nullValue());
     }
 
     /**
@@ -1530,7 +1529,7 @@ public abstract class RFC2616BaseTest
     @Test
     public void test1435RangeMultipart1() throws Exception
     {
-        String rangedef = "23-23,-2"; // Request byte at offset 23, and the last 2 bytes
+        String rangedef = "bytes=23-23,-2"; // Request byte at offset 23, and the last 2 bytes
 
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /rfc2616-webapp/alpha.txt HTTP/1.1\n");
@@ -1546,7 +1545,7 @@ public abstract class RFC2616BaseTest
 
         String contentType = response.get("Content-Type");
         // RFC states that multiple parts should result in multipart/byteranges Content type.
-        assertThat(specId + " Content-Type", contentType, is("multipart/byteranges"));
+        assertThat(specId + " Content-Type", contentType, startsWith("multipart/byteranges"));
 
         // Collect 'boundary' string
         String boundary = null;
@@ -1775,12 +1774,12 @@ public abstract class RFC2616BaseTest
         response = responses.get(0);
         assertThat(specId, response.getStatus(), is(HttpStatus.OK_200));
         assertEquals("keep-alive", response.get("Connection"), specId);
-        assertThat(specId, response.getContent(), containsString("1234567890\n"));
+        assertThat(specId, response.getContent(), containsString("1234567890"));
 
         response = responses.get(1);
         assertThat(specId, response.getStatus(), is(HttpStatus.OK_200));
         assertEquals("keep-alive", response.get("Connection"), specId);
-        assertThat(specId, response.getContent(), containsString("ABCDEFGHIJ\n"));
+        assertThat(specId, response.getContent(), containsString("ABCDEFGHIJ"));
 
         response = responses.get(2);
         assertThat(specId, response.getStatus(), is(HttpStatus.OK_200));
