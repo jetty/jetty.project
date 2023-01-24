@@ -20,8 +20,6 @@ import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.FrameEcho;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -61,7 +59,7 @@ public class CoreServer extends ContainerLifeCycle
         // Add Handler
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler();
         upgradeHandler.addMapping("/*", negotiator);
-        server.setHandler(new HandlerList(upgradeHandler, new DefaultHandler()));
+        server.setHandler(upgradeHandler);
 
         // Start Server
         addBean(server);

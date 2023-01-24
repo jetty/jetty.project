@@ -400,7 +400,7 @@ public class NcsaRequestLogTest
         setup(logType);
         RequestLogHandler handler = new RequestLogHandler();
         handler.setRequestLog(_log);
-        HandlerList handlers = new HandlerList(handler, testHandler);
+        Handler.Collection handlers = new Handler.Collection(handler, testHandler);
         _server.setHandler(handlers);
         startServer();
         makeRequest(requestPath);
