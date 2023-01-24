@@ -228,7 +228,10 @@ public class JettyStopMojo extends AbstractWebAppMojo
                 }
                 catch (Exception e)
                 {
-                    getLog().info("Error after sending command: " + command + ". Check the server state.", e);
+                    if (getLog().isDebugEnabled())
+                        getLog().error("Error after sending command: " + command + ". Check the server state.", e);
+                    else
+                        getLog().info("Error after sending command: " + command + ". Check the server state.");
                 }
             }
             
