@@ -42,7 +42,7 @@ public class PingGenerator extends FrameGenerator
         if (payload.length != PingFrame.PING_LENGTH)
             throw new IllegalArgumentException("Invalid payload length: " + payload.length);
 
-        RetainableByteBuffer header = generateHeader(accumulator, FrameType.PING, PingFrame.PING_LENGTH, reply ? Flags.ACK : Flags.NONE, 0);
+        RetainableByteBuffer header = generateHeader(FrameType.PING, PingFrame.PING_LENGTH, reply ? Flags.ACK : Flags.NONE, 0);
         ByteBuffer byteBuffer = header.getByteBuffer();
 
         byteBuffer.put(payload);

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http2.internal.generator;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -20,6 +22,7 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public abstract class FrameGenerator
 {
@@ -32,9 +35,9 @@ public abstract class FrameGenerator
 
     public abstract int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException;
 
-    protected RetainableByteBuffer generateHeader(RetainableByteBufferPool.Accumulator accumulator, FrameType frameType, int length, int flags, int streamId)
+    protected RetainableByteBuffer generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
-        return headerGenerator.generate(accumulator, frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        return headerGenerator.generate(frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
 
     public int getMaxFrameSize()
@@ -47,12 +50,14 @@ public abstract class FrameGenerator
         return headerGenerator.isUseDirectByteBuffers();
     }
 
-    protected RetainableByteBuffer encode(HpackEncoder encoder, RetainableByteBufferPool.Accumulator accumulator, MetaData metaData, int maxFrameSize) throws HpackException
+    protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData, int maxFrameSize) throws HpackException
     {
-        RetainableByteBuffer hpacked = accumulator.acquire(maxFrameSize, isUseDirectByteBuffers());
+        RetainableByteBuffer hpacked = headerGenerator.getRetainableByteBufferPool().acquire(maxFrameSize, isUseDirectByteBuffers());
         try
         {
-            encoder.encode(hpacked.getByteBuffer(), metaData);
+            ByteBuffer byteBuffer = hpacked.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
+            encoder.encode(byteBuffer, metaData);
             return hpacked;
         }
         catch (HpackException x)

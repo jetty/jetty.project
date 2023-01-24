@@ -102,22 +102,22 @@ public class ServerGenerator extends Generator
         if (aborted)
         {
             if (lastContent)
-                accumulator.append(generateEndRequest(accumulator, request, true));
+                accumulator.append(generateEndRequest(request, true));
             else
-                accumulator.append(RetainableByteBuffer.asNonRetainable(BufferUtil.EMPTY_BUFFER));
+                accumulator.append(RetainableByteBuffer.wrap(BufferUtil.EMPTY_BUFFER));
         }
         else
         {
             generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDOUT);
             if (lastContent)
-                accumulator.append(generateEndRequest(accumulator, request, false));
+                accumulator.append(generateEndRequest(request, false));
         }
     }
 
-    private RetainableByteBuffer generateEndRequest(RetainableByteBufferPool.Accumulator accumulator, int request, boolean aborted)
+    private RetainableByteBuffer generateEndRequest(int request, boolean aborted)
     {
         request &= 0xFF_FF;
-        RetainableByteBuffer endRequestBuffer = accumulator.acquire(16, isUseDirectByteBuffers());
+        RetainableByteBuffer endRequestBuffer = getRetainableByteBufferPool().acquire(16, isUseDirectByteBuffers());
         ByteBuffer byteBuffer = endRequestBuffer.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
         byteBuffer.putInt(0x01_03_00_00 + request);

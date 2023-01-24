@@ -20,5 +20,17 @@ import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public abstract class FrameGenerator
 {
+    private final RetainableByteBufferPool bufferPool;
+
+    public FrameGenerator(RetainableByteBufferPool bufferPool)
+    {
+        this.bufferPool = bufferPool;
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return bufferPool;
+    }
+
     public abstract int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail);
 }

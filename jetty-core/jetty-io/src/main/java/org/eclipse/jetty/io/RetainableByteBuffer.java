@@ -44,11 +44,15 @@ public interface RetainableByteBuffer extends Retainable
      * like {@code RetainableByteBuffer}s.</p>
      * <p>The returned {@code RetainableByteBuffer} {@link #canRetain()}
      * method always returns {@code false}.</p>
+     * <p>{@code RetainableByteBuffer}s returned by this method are not
+     * suitable to be wrapped in other {@link Retainable} implementations
+     * that may delegate calls to {@link #retain()}.</p>
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @return a non-retainable {@code RetainableByteBuffer}
+     * @see RetainableByteBufferPool.NonPooling
      */
-    public static RetainableByteBuffer asNonRetainable(ByteBuffer byteBuffer)
+    public static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {
         return new NonRetainableByteBuffer(byteBuffer);
     }
@@ -60,7 +64,7 @@ public interface RetainableByteBuffer extends Retainable
     public boolean isRetained();
 
     /**
-     * @return the wrapped {@code ByteBuffer}
+     * @return the wrapped, not {@code null}, {@code ByteBuffer}
      */
     public ByteBuffer getByteBuffer();
 

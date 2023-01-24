@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -28,7 +29,7 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
 
     public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
     {
-        this.byteBuffer = byteBuffer;
+        this.byteBuffer = Objects.requireNonNull(byteBuffer);
     }
 
     /**

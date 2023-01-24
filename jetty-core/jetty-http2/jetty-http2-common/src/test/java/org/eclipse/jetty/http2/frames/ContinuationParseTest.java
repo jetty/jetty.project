@@ -43,7 +43,7 @@ public class ContinuationParseTest
     public void testParseOneByteAtATime() throws Exception
     {
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -71,7 +71,7 @@ public class ContinuationParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
             List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();

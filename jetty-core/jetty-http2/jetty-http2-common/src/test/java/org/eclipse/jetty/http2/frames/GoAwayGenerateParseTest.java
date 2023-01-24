@@ -37,7 +37,7 @@ public class GoAwayGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
+        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator(bufferPool));
 
         final List<GoAwayFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -56,7 +56,7 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, null);
 
             frames.clear();
@@ -79,7 +79,7 @@ public class GoAwayGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
+        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator(bufferPool));
 
         final List<GoAwayFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -100,7 +100,7 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, payload);
 
             frames.clear();

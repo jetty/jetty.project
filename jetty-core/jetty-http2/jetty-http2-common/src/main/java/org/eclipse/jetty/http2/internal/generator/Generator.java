@@ -42,7 +42,7 @@ public class Generator
     {
         this.bufferPool = bufferPool;
 
-        headerGenerator = new HeaderGenerator(useDirectByteBuffers);
+        headerGenerator = new HeaderGenerator(bufferPool, useDirectByteBuffers);
         hpackEncoder = new HpackEncoder(maxDynamicTableSize);
 
         this.generators = new FrameGenerator[FrameType.values().length];

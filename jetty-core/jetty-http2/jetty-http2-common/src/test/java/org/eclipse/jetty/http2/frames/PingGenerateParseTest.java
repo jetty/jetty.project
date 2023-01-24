@@ -38,7 +38,7 @@ public class PingGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        PingGenerator generator = new PingGenerator(new HeaderGenerator());
+        PingGenerator generator = new PingGenerator(new HeaderGenerator(bufferPool));
 
         final List<PingFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -57,7 +57,7 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
@@ -79,7 +79,7 @@ public class PingGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        PingGenerator generator = new PingGenerator(new HeaderGenerator());
+        PingGenerator generator = new PingGenerator(new HeaderGenerator(bufferPool));
 
         final List<PingFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -98,7 +98,7 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
@@ -120,7 +120,7 @@ public class PingGenerateParseTest
     @Test
     public void testPayloadAsLong() throws Exception
     {
-        PingGenerator generator = new PingGenerator(new HeaderGenerator());
+        PingGenerator generator = new PingGenerator(new HeaderGenerator(bufferPool));
 
         final List<PingFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -133,7 +133,7 @@ public class PingGenerateParseTest
         }, 4096, 8192);
         parser.init(UnaryOperator.identity());
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         PingFrame ping = new PingFrame(NanoTime.now(), true);
         generator.generate(accumulator, ping);
 

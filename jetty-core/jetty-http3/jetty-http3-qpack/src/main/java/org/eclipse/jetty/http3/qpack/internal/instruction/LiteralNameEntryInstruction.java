@@ -16,27 +16,27 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class LiteralNameEntryInstruction implements Instruction
+public class LiteralNameEntryInstruction extends AbstractInstruction
 {
     private final boolean _huffmanName;
     private final boolean _huffmanValue;
     private final String _name;
     private final String _value;
 
-    public LiteralNameEntryInstruction(HttpField httpField, boolean huffman)
+    public LiteralNameEntryInstruction(RetainableByteBufferPool bufferPool, HttpField httpField, boolean huffman)
     {
-        this(httpField, huffman, huffman);
+        this(bufferPool, httpField, huffman, huffman);
     }
 
-    public LiteralNameEntryInstruction(HttpField httpField, boolean huffmanName, boolean huffmanValue)
+    public LiteralNameEntryInstruction(RetainableByteBufferPool bufferPool, HttpField httpField, boolean huffmanName, boolean huffmanValue)
     {
+        super(bufferPool);
         _huffmanName = huffmanName;
         _huffmanValue = huffmanValue;
         _name = httpField.getName();
@@ -58,8 +58,9 @@ public class LiteralNameEntryInstruction implements Instruction
     {
         int size = (_huffmanName ? HuffmanEncoder.octetsNeeded(_name) : _name.length()) +
             (_huffmanValue ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
 
         if (_huffmanName)
         {

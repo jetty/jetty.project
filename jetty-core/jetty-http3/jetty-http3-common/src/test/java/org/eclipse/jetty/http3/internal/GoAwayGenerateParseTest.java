@@ -34,8 +34,9 @@ public class GoAwayGenerateParseTest
     {
         GoAwayFrame input = GoAwayFrame.CLIENT_GRACEFUL;
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(new RetainableByteBufferPool.NonPooling());
-        new ControlGenerator(true).generate(accumulator, 0, input, null);
+        RetainableByteBufferPool.NonPooling bufferPool = new RetainableByteBufferPool.NonPooling();
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<GoAwayFrame> frames = new ArrayList<>();
         ControlParser parser = new ControlParser(new ParserListener()

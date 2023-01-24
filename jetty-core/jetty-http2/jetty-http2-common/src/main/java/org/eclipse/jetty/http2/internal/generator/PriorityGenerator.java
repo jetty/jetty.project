@@ -39,7 +39,7 @@ public class PriorityGenerator extends FrameGenerator
 
     public int generatePriority(RetainableByteBufferPool.Accumulator accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
-        RetainableByteBuffer header = generateHeader(accumulator, FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
+        RetainableByteBuffer header = generateHeader(FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
         ByteBuffer byteBuffer = header.getByteBuffer();
         generatePriorityBody(byteBuffer, streamId, parentStreamId, weight, exclusive);
         BufferUtil.flipToFlush(byteBuffer, 0);

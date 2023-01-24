@@ -15,22 +15,22 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class IndexedNameEntryInstruction implements Instruction
+public class IndexedNameEntryInstruction extends AbstractInstruction
 {
     private final boolean _dynamic;
     private final int _index;
     private final boolean _huffman;
     private final String _value;
 
-    public IndexedNameEntryInstruction(boolean dynamic, int index, boolean huffman, String value)
+    public IndexedNameEntryInstruction(RetainableByteBufferPool bufferPool, boolean dynamic, int index, boolean huffman, String value)
     {
+        super(bufferPool);
         _dynamic = dynamic;
         _index = index;
         _huffman = huffman;
@@ -56,8 +56,9 @@ public class IndexedNameEntryInstruction implements Instruction
     public void encode(RetainableByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
 
         // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
         byteBuffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));

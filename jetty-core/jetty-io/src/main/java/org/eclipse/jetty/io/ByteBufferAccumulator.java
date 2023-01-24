@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
  * @see #ensureBuffer(int, int)
  */
+// TODO: rename to *Aggregator to avoid confusion with RBBP.Accumulator?
 public class ByteBufferAccumulator implements AutoCloseable
 {
     private final List<RetainableByteBuffer> _buffers = new ArrayList<>();

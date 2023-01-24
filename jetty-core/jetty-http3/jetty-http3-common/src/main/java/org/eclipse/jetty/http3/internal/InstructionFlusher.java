@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ public class InstructionFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
+    private final RetainableByteBufferPool bufferPool;
     private final RetainableByteBufferPool.Accumulator accumulator;
     private final QuicStreamEndPoint endPoint;
     private final long streamType;
@@ -47,7 +49,8 @@ public class InstructionFlusher extends IteratingCallback
 
     public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, long streamType)
     {
-        this.accumulator = new RetainableByteBufferPool.Accumulator(session.getRetainableByteBufferPool());
+        this.bufferPool = session.getRetainableByteBufferPool();
+        this.accumulator = new RetainableByteBufferPool.Accumulator();
         this.endPoint = endPoint;
         this.streamType = streamType;
     }
@@ -84,8 +87,9 @@ public class InstructionFlusher extends IteratingCallback
         if (!initialized)
         {
             initialized = true;
-            RetainableByteBuffer buffer = accumulator.acquire(VarLenInt.length(streamType), false);
+            RetainableByteBuffer buffer = bufferPool.acquire(VarLenInt.length(streamType), false);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
             VarLenInt.encode(byteBuffer, streamType);
             byteBuffer.flip();
             accumulator.insert(0, buffer);

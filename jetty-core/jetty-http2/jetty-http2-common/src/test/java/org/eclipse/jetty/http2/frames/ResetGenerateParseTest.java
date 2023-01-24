@@ -34,7 +34,7 @@ public class ResetGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
+        ResetGenerator generator = new ResetGenerator(new HeaderGenerator(bufferPool));
 
         final List<ResetFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -53,7 +53,7 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generateReset(accumulator, streamId, error);
 
             frames.clear();
@@ -75,7 +75,7 @@ public class ResetGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
+        ResetGenerator generator = new ResetGenerator(new HeaderGenerator(bufferPool));
 
         final List<ResetFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -94,7 +94,7 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generateReset(accumulator, streamId, error);
 
             frames.clear();

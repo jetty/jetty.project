@@ -15,18 +15,18 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class DuplicateInstruction implements Instruction
+public class DuplicateInstruction extends AbstractInstruction
 {
     private final int _index;
 
-    public DuplicateInstruction(int index)
+    public DuplicateInstruction(RetainableByteBufferPool bufferPool, int index)
     {
+        super(bufferPool);
         _index = index;
     }
 
@@ -39,8 +39,9 @@ public class DuplicateInstruction implements Instruction
     public void encode(RetainableByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(5, _index) + 1;
-        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
         byteBuffer.put((byte)0x00);
         NBitIntegerEncoder.encode(byteBuffer, 5, _index);
         BufferUtil.flipToFlush(byteBuffer, 0);

@@ -69,7 +69,7 @@ public class SettingsGenerateParseTest
 
     private List<SettingsFrame> testGenerateParse(Map<Integer, Integer> settings)
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         List<SettingsFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -85,7 +85,7 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generateSettings(accumulator, settings, true);
 
             frames.clear();
@@ -104,7 +104,7 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseInvalidSettings()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -119,7 +119,7 @@ public class SettingsGenerateParseTest
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         generator.generateSettings(accumulator, settings1, true);
         // Modify the length of the frame to make it invalid
         ByteBuffer bytes = accumulator.getByteBuffers().get(0);
@@ -139,7 +139,7 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         List<SettingsFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -160,7 +160,7 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generateSettings(accumulator, settings1, true);
 
             frames.clear();
@@ -184,7 +184,7 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseTooManyDifferentSettingsInOneFrame()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -205,7 +205,7 @@ public class SettingsGenerateParseTest
             settings.put(i + 10, i);
         }
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         generator.generateSettings(accumulator, settings, false);
 
         for (ByteBuffer buffer : accumulator.getByteBuffers())
@@ -265,7 +265,7 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseTooManySettingsInMultipleFrames()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -283,7 +283,7 @@ public class SettingsGenerateParseTest
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(13, 17);
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
         {
             generator.generateSettings(accumulator, settings, false);

@@ -28,8 +28,9 @@ public class SettingsGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public SettingsGenerator(boolean useDirectByteBuffers)
+    public SettingsGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
+        super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
@@ -49,8 +50,9 @@ public class SettingsGenerator extends FrameGenerator
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
-        RetainableByteBuffer buffer = accumulator.acquire(capacity, useDirectByteBuffers);
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(capacity, useDirectByteBuffers);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
         VarLenInt.encode(byteBuffer, frame.getFrameType().type());
         VarLenInt.encode(byteBuffer, length);
         for (Map.Entry<Long, Long> e : settings.entrySet())

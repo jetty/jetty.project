@@ -79,7 +79,7 @@ public class ClientGenerator extends Generator
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
 
-        RetainableByteBuffer beginBuffer = accumulator.acquire(16, isUseDirectByteBuffers());
+        RetainableByteBuffer beginBuffer = getRetainableByteBufferPool().acquire(16, isUseDirectByteBuffers());
         accumulator.append(beginBuffer);
         ByteBuffer beginByteBuffer = beginBuffer.getByteBuffer();
         BufferUtil.clearToFill(beginByteBuffer);
@@ -95,7 +95,7 @@ public class ClientGenerator extends Generator
         while (fieldsLength > 0)
         {
             int capacity = 8 + Math.min(maxCapacity, fieldsLength);
-            RetainableByteBuffer buffer = accumulator.acquire(capacity, isUseDirectByteBuffers());
+            RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
             accumulator.append(buffer);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
@@ -133,7 +133,7 @@ public class ClientGenerator extends Generator
             BufferUtil.flipToFlush(byteBuffer, 0);
         }
 
-        RetainableByteBuffer lastBuffer = accumulator.acquire(8, isUseDirectByteBuffers());
+        RetainableByteBuffer lastBuffer = getRetainableByteBufferPool().acquire(8, isUseDirectByteBuffers());
         accumulator.append(lastBuffer);
         ByteBuffer lastByteBuffer = lastBuffer.getByteBuffer();
         BufferUtil.clearToFill(lastByteBuffer);

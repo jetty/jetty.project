@@ -46,7 +46,7 @@ public class SettingsGenerator extends FrameGenerator
         if (length > getMaxFrameSize())
             throw new IllegalArgumentException("Invalid settings, too big");
 
-        RetainableByteBuffer header = generateHeader(accumulator, FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
+        RetainableByteBuffer header = generateHeader(FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
         ByteBuffer byteBuffer = header.getByteBuffer();
 
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())

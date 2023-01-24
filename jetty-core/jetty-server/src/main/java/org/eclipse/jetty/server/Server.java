@@ -128,12 +128,12 @@ public class Server extends Handler.Wrapper implements Attributes
         addConnector(connector);
     }
 
-    public Server(@Name("threadpool") ThreadPool pool)
+    public Server(@Name("threadPool") ThreadPool pool)
     {
         this(pool, null, null);
     }
 
-    public Server(ThreadPool threadPool, Scheduler scheduler, RetainableByteBufferPool bufferPool)
+    public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") RetainableByteBufferPool bufferPool)
     {
         _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
         addBean(_threadPool);

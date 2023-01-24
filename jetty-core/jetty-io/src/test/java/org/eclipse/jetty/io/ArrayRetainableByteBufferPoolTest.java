@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -321,9 +320,19 @@ public class ArrayRetainableByteBufferPoolTest
     }
 
     @Test
-    public void testQuadraticPool() throws IOException
+    public void testQuadraticPool()
     {
         ArrayRetainableByteBufferPool pool = new ArrayRetainableByteBufferPool.Quadratic();
+
+        RetainableByteBuffer retain5 = pool.acquire(5, false);
+        retain5.release();
+        RetainableByteBuffer retain6 = pool.acquire(6, false);
+        assertThat(retain6, sameInstance(retain5));
+        retain6.release();
+        RetainableByteBuffer retain9 = pool.acquire(9, false);
+        assertThat(retain9, not(sameInstance(retain5)));
+        retain9.release();
+
         assertThat(pool.acquire(1, false).capacity(), is(1));
         assertThat(pool.acquire(2, false).capacity(), is(2));
         RetainableByteBuffer b3 = pool.acquire(3, false);
@@ -362,19 +371,5 @@ public class ArrayRetainableByteBufferPoolTest
         buffer.getByteBuffer().order(ByteOrder.LITTLE_ENDIAN);
         assertThat(buffer.release(), is(true));
         assertThat(buffer.getByteBuffer().order(), Matchers.is(ByteOrder.BIG_ENDIAN));
-    }
-
-    @Test
-    public void testLogarithmic()
-    {
-        ArrayRetainableByteBufferPool.Quadratic pool = new ArrayRetainableByteBufferPool.Quadratic();
-        RetainableByteBuffer retain5 = pool.acquire(5, false);
-        retain5.release();
-        RetainableByteBuffer retain6 = pool.acquire(6, false);
-        assertThat(retain6, sameInstance(retain5));
-        retain6.release();
-        RetainableByteBuffer retain9 = pool.acquire(9, false);
-        assertThat(retain9, not(sameInstance(retain5)));
-        retain9.release();
     }
 }

@@ -46,7 +46,7 @@ public class ClientParserTest
 
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, statusCode, statusMessage, fields);
 
         // Use the fundamental theorem of arithmetic to test the results.
@@ -110,7 +110,7 @@ public class ClientParserTest
 
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, 200, "OK", fields);
         generator.generateResponseContent(accumulator, id, null, true, false);
 
@@ -160,7 +160,7 @@ public class ClientParserTest
 
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -211,7 +211,7 @@ public class ClientParserTest
 
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 

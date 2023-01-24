@@ -43,7 +43,7 @@ public class HeadersGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         int streamId = 13;
         HttpFields fields = HttpFields.build()
@@ -65,7 +65,7 @@ public class HeadersGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
             generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
@@ -102,7 +102,7 @@ public class HeadersGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -124,7 +124,7 @@ public class HeadersGenerateParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
             generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 

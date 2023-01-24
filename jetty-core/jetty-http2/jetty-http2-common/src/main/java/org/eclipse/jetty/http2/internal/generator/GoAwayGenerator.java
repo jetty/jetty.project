@@ -52,7 +52,7 @@ public class GoAwayGenerator extends FrameGenerator
             payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
 
         int length = fixedLength + (payload != null ? payload.length : 0);
-        RetainableByteBuffer header = generateHeader(accumulator, FrameType.GO_AWAY, length, Flags.NONE, 0);
+        RetainableByteBuffer header = generateHeader(FrameType.GO_AWAY, length, Flags.NONE, 0);
         ByteBuffer byteBuffer = header.getByteBuffer();
 
         byteBuffer.putInt(lastStreamId);

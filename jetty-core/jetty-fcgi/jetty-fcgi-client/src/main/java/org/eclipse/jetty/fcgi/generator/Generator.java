@@ -51,7 +51,7 @@ public class Generator
 
         while (contentLength > 0 || lastContent)
         {
-            RetainableByteBuffer buffer = accumulator.acquire(8, isUseDirectByteBuffers());
+            RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(8, isUseDirectByteBuffers());
             accumulator.append(buffer);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
@@ -73,7 +73,7 @@ public class Generator
             content.limit(content.position() + length);
             ByteBuffer slice = content.slice();
             // Don't recycle the slice.
-            accumulator.append(RetainableByteBuffer.asNonRetainable(slice));
+            accumulator.append(RetainableByteBuffer.wrap(slice));
             content.position(content.limit());
             content.limit(limit);
             contentLength -= length;

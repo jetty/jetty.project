@@ -367,7 +367,7 @@ public class DataDemandTest extends AbstractTest
         // which will test that it won't throw StackOverflowError.
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         Generator generator = new Generator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         for (int i = 512; i >= 0; --i)
             generator.data(accumulator, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
 

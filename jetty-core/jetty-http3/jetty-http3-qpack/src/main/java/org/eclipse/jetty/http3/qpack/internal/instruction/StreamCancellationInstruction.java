@@ -15,18 +15,18 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class StreamCancellationInstruction implements Instruction
+public class StreamCancellationInstruction extends AbstractInstruction
 {
     private final long _streamId;
 
-    public StreamCancellationInstruction(long streamId)
+    public StreamCancellationInstruction(RetainableByteBufferPool bufferPool, long streamId)
     {
+        super(bufferPool);
         _streamId = streamId;
     }
 
@@ -34,8 +34,9 @@ public class StreamCancellationInstruction implements Instruction
     public void encode(RetainableByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _streamId) + 1;
-        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
         byteBuffer.put((byte)0x40);
         NBitIntegerEncoder.encode(byteBuffer, 6, _streamId);
         BufferUtil.flipToFlush(byteBuffer, 0);

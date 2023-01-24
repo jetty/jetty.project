@@ -24,6 +24,7 @@ import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersGenerator extends FrameGenerator
 {
@@ -31,8 +32,9 @@ public class HeadersGenerator extends FrameGenerator
     private final int maxLength;
     private final boolean useDirectByteBuffers;
 
-    public HeadersGenerator(QpackEncoder encoder, int maxLength, boolean useDirectByteBuffers)
+    public HeadersGenerator(RetainableByteBufferPool bufferPool, QpackEncoder encoder, int maxLength, boolean useDirectByteBuffers)
     {
+        super(bufferPool);
         this.encoder = encoder;
         this.maxLength = maxLength;
         this.useDirectByteBuffers = useDirectByteBuffers;
@@ -53,8 +55,9 @@ public class HeadersGenerator extends FrameGenerator
             int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
             int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
             // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
-            RetainableByteBuffer buffer = accumulator.acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+            RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
             byteBuffer.position(maxHeaderLength);
             byteBuffer.limit(byteBuffer.position() + maxLength);
             // Encode after the maxHeaderLength.

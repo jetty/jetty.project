@@ -70,11 +70,11 @@ public class DataGenerator
         if (last)
             flags |= Flags.END_STREAM;
 
-        RetainableByteBuffer header = headerGenerator.generate(accumulator, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        RetainableByteBuffer header = headerGenerator.generate(FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
         BufferUtil.flipToFlush(header.getByteBuffer(), 0);
         accumulator.append(header);
         // Skip empty data buffers.
         if (data.remaining() > 0)
-            accumulator.append(RetainableByteBuffer.asNonRetainable(data));
+            accumulator.append(RetainableByteBuffer.wrap(data));
     }
 }

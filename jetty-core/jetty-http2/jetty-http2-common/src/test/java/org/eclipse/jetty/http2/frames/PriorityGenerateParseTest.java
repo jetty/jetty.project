@@ -34,7 +34,7 @@ public class PriorityGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator());
+        PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator(bufferPool));
 
         final List<PriorityFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -55,7 +55,7 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
@@ -79,7 +79,7 @@ public class PriorityGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator());
+        PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator(bufferPool));
 
         final List<PriorityFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -100,7 +100,7 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();

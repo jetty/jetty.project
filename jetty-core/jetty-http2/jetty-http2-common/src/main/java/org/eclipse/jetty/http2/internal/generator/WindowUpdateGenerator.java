@@ -42,7 +42,7 @@ public class WindowUpdateGenerator extends FrameGenerator
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
-        RetainableByteBuffer header = generateHeader(accumulator, FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
+        RetainableByteBuffer header = generateHeader(FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
         ByteBuffer byteBuffer = header.getByteBuffer();
         byteBuffer.putInt(windowUpdate);
         BufferUtil.flipToFlush(byteBuffer, 0);

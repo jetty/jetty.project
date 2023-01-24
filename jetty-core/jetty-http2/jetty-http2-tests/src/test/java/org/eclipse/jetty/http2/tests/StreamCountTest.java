@@ -201,7 +201,7 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame3 = new HeadersFrame(streamId3, metaData, null, false);
         DataFrame data3 = new DataFrame(streamId3, BufferUtil.EMPTY_BUFFER, true);
         Generator generator = ((HTTP2Session)session).getGenerator();
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(generator.getRetainableByteBufferPool());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         generator.control(accumulator, frame3);
         generator.data(accumulator, data3, data3.remaining());
         ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));

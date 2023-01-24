@@ -38,9 +38,9 @@ public class ControlFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
-    private final RetainableByteBufferPool.Accumulator accumulator;
-    private final ControlGenerator generator;
     private final QuicStreamEndPoint endPoint;
+    private final ControlGenerator generator;
+    private final RetainableByteBufferPool.Accumulator accumulator;
     private boolean initialized;
     private Throwable terminated;
     private List<Entry> entries;
@@ -48,9 +48,10 @@ public class ControlFlusher extends IteratingCallback
 
     public ControlFlusher(QuicSession session, QuicStreamEndPoint endPoint, boolean useDirectByteBuffers)
     {
-        this.accumulator = new RetainableByteBufferPool.Accumulator(session.getRetainableByteBufferPool());
         this.endPoint = endPoint;
-        this.generator = new ControlGenerator(useDirectByteBuffers);
+        RetainableByteBufferPool bufferPool = session.getRetainableByteBufferPool();
+        this.generator = new ControlGenerator(bufferPool, useDirectByteBuffers);
+        this.accumulator = new RetainableByteBufferPool.Accumulator();
     }
 
     public boolean offer(Frame frame, Callback callback)
@@ -94,7 +95,7 @@ public class ControlFlusher extends IteratingCallback
             ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(ControlStreamConnection.STREAM_TYPE));
             VarLenInt.encode(buffer, ControlStreamConnection.STREAM_TYPE);
             buffer.flip();
-            accumulator.insert(0, RetainableByteBuffer.asNonRetainable(buffer));
+            accumulator.insert(0, RetainableByteBuffer.wrap(buffer));
         }
 
         List<ByteBuffer> buffers = accumulator.getByteBuffers();

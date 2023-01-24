@@ -360,7 +360,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             }
             else
             {
-                buffer = RetainableByteBuffer.asNonRetainable(byteBuffer);
+                buffer = RetainableByteBuffer.wrap(byteBuffer);
             }
 
             _buffer = buffer;

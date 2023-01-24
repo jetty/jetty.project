@@ -85,7 +85,7 @@ public class DataGenerateParseTest
 
     private List<DataFrame> testGenerateParse(ByteBuffer data)
     {
-        DataGenerator generator = new DataGenerator(new HeaderGenerator());
+        DataGenerator generator = new DataGenerator(new HeaderGenerator(bufferPool));
 
         final List<DataFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -101,7 +101,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             ByteBuffer slice = data.slice();
             int generated = 0;
             while (true)
@@ -125,7 +125,7 @@ public class DataGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime()
     {
-        DataGenerator generator = new DataGenerator(new HeaderGenerator());
+        DataGenerator generator = new DataGenerator(new HeaderGenerator(bufferPool));
 
         final List<DataFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -141,7 +141,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             ByteBuffer data = ByteBuffer.wrap(largeContent);
             ByteBuffer slice = data.slice();
             int generated = 0;

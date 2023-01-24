@@ -11,23 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.internal.generator;
+package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-import java.util.function.Consumer;
-
-import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 
-public class PushPromiseGenerator extends FrameGenerator
+public abstract class AbstractInstruction implements Instruction
 {
-    public PushPromiseGenerator(RetainableByteBufferPool bufferPool)
+    private final RetainableByteBufferPool bufferPool;
+
+    protected AbstractInstruction(RetainableByteBufferPool bufferPool)
     {
-        super(bufferPool);
+        this.bufferPool = bufferPool;
     }
 
-    @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
-        return 0;
+        return bufferPool;
     }
 }

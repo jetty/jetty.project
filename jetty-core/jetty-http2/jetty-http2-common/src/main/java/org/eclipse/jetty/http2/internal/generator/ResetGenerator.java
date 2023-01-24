@@ -42,7 +42,7 @@ public class ResetGenerator extends FrameGenerator
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        RetainableByteBuffer header = generateHeader(accumulator, FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
+        RetainableByteBuffer header = generateHeader(FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
         ByteBuffer byteBuffer = header.getByteBuffer();
         byteBuffer.putInt(error);
         BufferUtil.flipToFlush(byteBuffer, 0);

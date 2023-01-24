@@ -64,7 +64,7 @@ public class HeadersTooLargeParseTest
 
     private void assertProtocolError(int maxHeaderSize, MetaData.Request metaData) throws HpackException
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         AtomicInteger failure = new AtomicInteger();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -78,7 +78,7 @@ public class HeadersTooLargeParseTest
         parser.init(UnaryOperator.identity());
 
         int streamId = 48;
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 

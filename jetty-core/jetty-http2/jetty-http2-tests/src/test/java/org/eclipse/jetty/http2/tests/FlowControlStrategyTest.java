@@ -844,7 +844,7 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(connector.getRetainableByteBufferPool());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
@@ -949,7 +949,7 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(connector.getRetainableByteBufferPool());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = accumulator.getByteBuffers();

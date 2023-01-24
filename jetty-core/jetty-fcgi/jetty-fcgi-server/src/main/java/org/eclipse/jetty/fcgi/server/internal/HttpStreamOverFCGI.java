@@ -229,7 +229,7 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 if (last)
                 {
-                    RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(_generator.getRetainableByteBufferPool());
+                    RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
                     generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
                     flusher.flush(accumulator, callback);
                 }
@@ -241,7 +241,7 @@ public class HttpStreamOverFCGI implements HttpStream
             }
             else
             {
-                RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(_generator.getRetainableByteBufferPool());
+                RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
                 generateResponseContent(accumulator, last, content);
                 flusher.flush(accumulator, callback);
             }
@@ -261,7 +261,7 @@ public class HttpStreamOverFCGI implements HttpStream
         boolean shutdown = _shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         RetainableByteBufferPool bufferPool = _generator.getRetainableByteBufferPool();
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
         if (head)
         {

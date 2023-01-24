@@ -42,7 +42,7 @@ public class PushPromiseGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
+        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -65,7 +65,7 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
 
             frames.clear();
@@ -95,7 +95,7 @@ public class PushPromiseGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
+        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
@@ -118,7 +118,7 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
 
             frames.clear();
@@ -134,7 +134,7 @@ public class PushPromiseGenerateParseTest
             PushPromiseFrame frame = frames.get(0);
             assertEquals(streamId, frame.getStreamId());
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
+            MetaData.Request request = frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
             assertEquals(metaData.getURI(), request.getURI());
             for (int j = 0; j < fields.size(); ++j)

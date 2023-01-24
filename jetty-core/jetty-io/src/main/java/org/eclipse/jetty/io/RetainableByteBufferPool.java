@@ -95,6 +95,12 @@ public interface RetainableByteBufferPool
      * {@link RetainableByteBuffer}s.</p>
      * <p>The returned {@code RetainableByteBuffer}s are reference
      * counted.</p>
+     * <p>{@code RetainableByteBuffer}s returned by this class
+     * are suitable to be wrapped in other {@link Retainable}
+     * implementations that may delegate calls to
+     * {@link Retainable#retain()}.</p>
+     *
+     * @see RetainableByteBuffer#wrap(ByteBuffer)
      */
     class NonPooling implements RetainableByteBufferPool
     {
@@ -130,23 +136,8 @@ public interface RetainableByteBufferPool
      */
     class Accumulator
     {
-        private final RetainableByteBufferPool bufferPool;
-        private final List<RetainableByteBuffer> buffers;
-        private final List<ByteBuffer> byteBuffers;
-
-        public Accumulator(RetainableByteBufferPool bufferPool)
-        {
-            this.bufferPool = bufferPool;
-            this.buffers = new ArrayList<>();
-            this.byteBuffers = new ArrayList<>();
-        }
-
-        public RetainableByteBuffer acquire(int capacity, boolean direct)
-        {
-            RetainableByteBuffer buffer = bufferPool.acquire(capacity, direct);
-            BufferUtil.clearToFill(buffer.getByteBuffer());
-            return buffer;
-        }
+        private final List<RetainableByteBuffer> buffers = new ArrayList<>();
+        private final List<ByteBuffer> byteBuffers = new ArrayList<>();
 
         public void append(RetainableByteBuffer buffer)
         {

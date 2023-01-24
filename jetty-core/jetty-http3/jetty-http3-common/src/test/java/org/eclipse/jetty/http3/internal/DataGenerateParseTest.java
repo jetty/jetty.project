@@ -53,8 +53,9 @@ public class DataGenerateParseTest
         byteBuffer.get(inputBytes);
         DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes), true);
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(new RetainableByteBufferPool.NonPooling());
-        new MessageGenerator(null, 8192, true).generate(accumulator, 0, input, null);
+        RetainableByteBufferPool.NonPooling bufferPool = new RetainableByteBufferPool.NonPooling();
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        new MessageGenerator(bufferPool, null, 8192, true).generate(accumulator, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()

@@ -542,7 +542,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 });
 
             RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())

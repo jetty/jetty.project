@@ -30,7 +30,7 @@ public class InstructionGeneratorTest
 
     private String toHexString(Instruction instruction)
     {
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(_bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         instruction.encode(accumulator);
         assertThat(accumulator.getSize(), is(1));
         return BufferUtil.toHexString(accumulator.getByteBuffers().get(0));
@@ -41,10 +41,10 @@ public class InstructionGeneratorTest
     {
         Instruction instruction;
 
-        instruction = new SectionAcknowledgmentInstruction(4);
+        instruction = new SectionAcknowledgmentInstruction(_bufferPool, 4);
         assertThat(toHexString(instruction), equalToIgnoringCase("84"));
 
-        instruction = new SectionAcknowledgmentInstruction(1337);
+        instruction = new SectionAcknowledgmentInstruction(_bufferPool, 1337);
         assertThat(toHexString(instruction), equalToIgnoringCase("FFBA09"));
     }
 
@@ -53,10 +53,10 @@ public class InstructionGeneratorTest
     {
         Instruction instruction;
 
-        instruction = new IndexedNameEntryInstruction(false, 0, false, "www.example.com");
+        instruction = new IndexedNameEntryInstruction(_bufferPool, false, 0, false, "www.example.com");
         assertThat(toHexString(instruction), equalToIgnoringCase("c00f7777772e6578616d706c652e636f6d"));
 
-        instruction = new IndexedNameEntryInstruction(false, 1, false, "/sample/path");
+        instruction = new IndexedNameEntryInstruction(_bufferPool, false, 1, false, "/sample/path");
         assertThat(toHexString(instruction), equalToIgnoringCase("c10c2f73616d706c652f70617468"));
     }
 }

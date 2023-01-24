@@ -59,7 +59,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public HTTP2Flusher(HTTP2Session session)
     {
         this.session = session;
-        this.accumulator = new RetainableByteBufferPool.Accumulator(session.getGenerator().getRetainableByteBufferPool());
+        this.accumulator = new RetainableByteBufferPool.Accumulator();
     }
 
     @Override

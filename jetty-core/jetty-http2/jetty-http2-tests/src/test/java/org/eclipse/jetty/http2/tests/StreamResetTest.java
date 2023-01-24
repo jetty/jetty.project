@@ -895,7 +895,7 @@ public class StreamResetTest extends AbstractTest
             socket.connect(new InetSocketAddress(host, port));
 
             Generator generator = new Generator(bufferPool);
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -986,7 +986,7 @@ public class StreamResetTest extends AbstractTest
             socket.connect(new InetSocketAddress(host, port));
 
             Generator generator = new Generator(bufferPool);
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.

@@ -55,7 +55,7 @@ public class PushPromiseGenerator extends FrameGenerator
         int extraSpace = 4;
         maxFrameSize -= extraSpace;
 
-        RetainableByteBuffer hpack = encode(encoder, accumulator, metaData, maxFrameSize);
+        RetainableByteBuffer hpack = encode(encoder, metaData, maxFrameSize);
         ByteBuffer hpackByteBuffer = hpack.getByteBuffer();
         int hpackLength = hpackByteBuffer.position();
         BufferUtil.flipToFlush(hpackByteBuffer, 0);
@@ -63,7 +63,7 @@ public class PushPromiseGenerator extends FrameGenerator
         int length = hpackLength + extraSpace;
         int flags = Flags.END_HEADERS;
 
-        RetainableByteBuffer header = generateHeader(accumulator, FrameType.PUSH_PROMISE, length, flags, streamId);
+        RetainableByteBuffer header = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
         ByteBuffer headerByteBuffer = header.getByteBuffer();
         headerByteBuffer.putInt(promisedStreamId);
         BufferUtil.flipToFlush(headerByteBuffer, 0);

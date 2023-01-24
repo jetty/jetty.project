@@ -22,13 +22,15 @@ import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class DataGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public DataGenerator(boolean useDirectByteBuffers)
+    public DataGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
+        super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
@@ -44,13 +46,14 @@ public class DataGenerator extends FrameGenerator
         ByteBuffer data = frame.getByteBuffer();
         int dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
-        RetainableByteBuffer header = accumulator.acquire(headerLength, useDirectByteBuffers);
+        RetainableByteBuffer header = getRetainableByteBufferPool().acquire(headerLength, useDirectByteBuffers);
         ByteBuffer byteBuffer = header.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
         VarLenInt.encode(byteBuffer, FrameType.DATA.type());
         VarLenInt.encode(byteBuffer, dataLength);
         byteBuffer.flip();
         accumulator.append(header);
-        accumulator.append(RetainableByteBuffer.asNonRetainable(data));
+        accumulator.append(RetainableByteBuffer.wrap(data));
         return headerLength + dataLength;
     }
 }

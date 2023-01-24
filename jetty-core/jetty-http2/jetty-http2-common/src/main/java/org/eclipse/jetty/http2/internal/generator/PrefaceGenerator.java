@@ -30,7 +30,7 @@ public class PrefaceGenerator extends FrameGenerator
     @Override
     public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
     {
-        accumulator.append(RetainableByteBuffer.asNonRetainable(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES)));
+        accumulator.append(RetainableByteBuffer.wrap(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES)));
         return PrefaceFrame.PREFACE_BYTES.length;
     }
 }

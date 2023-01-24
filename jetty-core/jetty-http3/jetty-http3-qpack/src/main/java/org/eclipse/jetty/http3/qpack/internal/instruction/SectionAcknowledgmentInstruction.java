@@ -15,18 +15,18 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class SectionAcknowledgmentInstruction implements Instruction
+public class SectionAcknowledgmentInstruction extends AbstractInstruction
 {
     private final long _streamId;
 
-    public SectionAcknowledgmentInstruction(long streamId)
+    public SectionAcknowledgmentInstruction(RetainableByteBufferPool bufferPool, long streamId)
     {
+        super(bufferPool);
         _streamId = streamId;
     }
 
@@ -39,8 +39,9 @@ public class SectionAcknowledgmentInstruction implements Instruction
     public void encode(RetainableByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(7, _streamId) + 1;
-        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
         byteBuffer.put((byte)0x80);
         NBitIntegerEncoder.encode(byteBuffer, 7, _streamId);
         BufferUtil.flipToFlush(byteBuffer, 0);

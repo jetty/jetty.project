@@ -61,7 +61,7 @@ public class ClientGeneratorTest
 
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         int id = 13;
         generator.generateRequestHeaders(accumulator, id, fields);
 
@@ -159,7 +159,7 @@ public class ClientGeneratorTest
 
         RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         int id = 13;
         generator.generateRequestContent(accumulator, id, content, true);
 

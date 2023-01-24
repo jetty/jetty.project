@@ -32,7 +32,7 @@ public class QpackTestUtil
 {
     public static ByteBuffer toBuffer(Instruction... instructions)
     {
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(new RetainableByteBufferPool.NonPooling());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         for (Instruction instruction : instructions)
         {
             instruction.encode(accumulator);
@@ -55,7 +55,7 @@ public class QpackTestUtil
 
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(new RetainableByteBufferPool.NonPooling());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         instructions.forEach(i -> i.encode(accumulator));
         assertThat(accumulator.getSize(), is(instructions.size()));
         ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()), false);

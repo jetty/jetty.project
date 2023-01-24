@@ -22,13 +22,15 @@ import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public GoAwayGenerator(boolean useDirectByteBuffers)
+    public GoAwayGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
+        super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
@@ -44,8 +46,9 @@ public class GoAwayGenerator extends FrameGenerator
         long lastId = frame.getLastId();
         int lastIdLength = VarLenInt.length(lastId);
         int length = VarLenInt.length(FrameType.GOAWAY.type()) + VarLenInt.length(lastIdLength) + lastIdLength;
-        RetainableByteBuffer buffer = accumulator.acquire(length, useDirectByteBuffers);
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(length, useDirectByteBuffers);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
         VarLenInt.encode(byteBuffer, FrameType.GOAWAY.type());
         VarLenInt.encode(byteBuffer, lastIdLength);
         VarLenInt.encode(byteBuffer, lastId);
