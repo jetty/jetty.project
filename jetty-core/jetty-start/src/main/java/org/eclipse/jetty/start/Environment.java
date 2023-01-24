@@ -217,7 +217,7 @@ public class Environment
     }
 
     /**
-     * Expand any command line added {@code --lib} lib references.
+     * Expand any command line added {@code --libs} lib references.
      *
      * @throws IOException if unable to expand the libraries
      */

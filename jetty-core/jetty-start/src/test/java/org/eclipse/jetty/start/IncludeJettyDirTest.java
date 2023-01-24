@@ -430,7 +430,7 @@ public class IncludeJettyDirTest
         Path devops = testdir.getPathFile("devops");
         FS.ensureEmpty(devops);
         TestEnv.makeFile(devops, "start.ini",
-            "--module=optional",
+            "--modules=optional",
             "jetty.http.port=2222");
 
         // Create corp

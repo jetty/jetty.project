@@ -44,12 +44,11 @@ import org.slf4j.LoggerFactory;
  *
  * <pre>{@code
  * Server server = new Server(8080);
- * Handler.Collection handlers = new Handler.Collection();
- * handlers.addHandler(someOtherHandler);
  * String shutdownToken = "secret password";
  * boolean exitJvm = false;
- * handlers.addHandler(new ShutdownHandler(shutdownToken, exitJvm));
- * server.setHandler(handlers);
+ * ShutdownHandler shutdown = new ShutdownHandler(shutdownToken, exitJvm));
+ * shutdown.setHandler(someOtherHandler);
+ * server.setHandler(someOtherHandlers);
  * server.start();
  * }</pre>
  *

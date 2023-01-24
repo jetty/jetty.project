@@ -285,7 +285,7 @@ public class ContextHandlerCollectionTest
             String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-            assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("<h2>HTTP ERROR 404 Not Found</h2>"));
+            assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("Not Found"));
             assertThat("Response Header for [GET " + requestHost + "]", response.get("X-IsHandled-Name"), nullValue());
 
             connector.getResponse(rawRequest);

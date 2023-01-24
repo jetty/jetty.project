@@ -52,9 +52,9 @@ public class VersionedModulesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Arrays.asList(
-                "--module=main",
-                "--module=old",
-                "--module=new"
+                "--modules=main",
+                "--modules=old",
+                "--modules=new"
             ),
             StandardCharsets.UTF_8);
 

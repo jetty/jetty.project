@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,11 +60,19 @@ public class DefaultHandler extends Handler.Abstract
     private final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
     private final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
     private ByteBuffer _favicon;
-    private boolean _serveIcon = true;
+    private boolean _serveFavIcon = true;
     private boolean _showContexts = true;
 
     public DefaultHandler()
     {
+        this(true, true);
+    }
+
+    public DefaultHandler(@Name("serveFavIcon") boolean serveFavIcon, @Name("showContexts")boolean showContexts)
+    {
+        super(InvocationType.NON_BLOCKING);
+        _serveFavIcon = serveFavIcon;
+        _showContexts = showContexts;
     }
 
     @Override
@@ -109,7 +118,7 @@ public class DefaultHandler extends Handler.Abstract
         String method = request.getMethod();
 
         // little cheat for common request
-        if (isServeIcon() && _favicon != null && HttpMethod.GET.is(method) && Request.getPathInContext(request).equals("/favicon.ico"))
+        if (isServeFavIcon() && _favicon != null && HttpMethod.GET.is(method) && Request.getPathInContext(request).equals("/favicon.ico"))
         {
             ByteBuffer content = BufferUtil.EMPTY_BUFFER;
             if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
@@ -218,18 +227,18 @@ public class DefaultHandler extends Handler.Abstract
     /**
      * @return Returns true if the handle can server the jetty favicon.ico
      */
-    @ManagedAttribute("True if the favicon.ico should be served")
-    public boolean isServeIcon()
+    @ManagedAttribute("True if the favicon.ico is served")
+    public boolean isServeFavIcon()
     {
-        return _serveIcon;
+        return _serveFavIcon;
     }
 
     /**
-     * @param serveIcon true if the handle can server the jetty favicon.ico
+     * @param serveFavIcon true if the handle can server the jetty favicon.ico
      */
-    public void setServeIcon(boolean serveIcon)
+    public void setServeFavIcon(boolean serveFavIcon)
     {
-        _serveIcon = serveIcon;
+        _serveFavIcon = serveFavIcon;
     }
 
     @ManagedAttribute("True if the contexts should be shown in the default 404 page")
