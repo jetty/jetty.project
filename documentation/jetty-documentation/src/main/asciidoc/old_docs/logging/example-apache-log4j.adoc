@@ -49,7 +49,7 @@ The replacement `logging.mod` performs a number of tasks.
 . The jetty-home is unpacked (and untouched) into `/opt/jetty-home/` and becomes the `${jetty.home}` directory for this demonstration.
 . The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by mybase only.
 . The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}` configuration.
-.. The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.
+.. The `--modules=logging` command is added to the `${jetty.base}/start.ini` configuration.
 .. Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`
 .. Required libraries are downloaded (if not present already): slf4j-api, slf4j-log4j, and log4j itself.
 * The libraries are put in the `${jetty.base}/lib/logging/` directory.

@@ -33,7 +33,7 @@ public class BarebonesAddUnknownTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
@@ -41,7 +41,7 @@ public class BarebonesAddUnknownTest extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=unknown"
+            "--add-modules=unknown"
         );
         ExecResults prepareResults = exec(prepareArgs, true);
 

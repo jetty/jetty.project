@@ -80,13 +80,13 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=noDftOptionA"
+            "--modules=noDftOptionA"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -164,13 +164,13 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=noDftOptionB"
+            "--modules=noDftOptionB"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -251,13 +251,13 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=alternate,noDftOptionB"
+            "--modules=alternate,noDftOptionB"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -337,13 +337,13 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=alternate,default"
+            "--modules=alternate,default"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -401,20 +401,20 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
-            "--add-module=noDftOptionB"
+            "--add-modules=noDftOptionB"
         );
         exec(prepareArgs, true);
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=alternate"
+            "--modules=alternate"
         );
         ExecResults results = exec(runArgs, false);
 

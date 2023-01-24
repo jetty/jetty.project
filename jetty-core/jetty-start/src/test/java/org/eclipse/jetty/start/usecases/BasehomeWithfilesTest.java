@@ -60,7 +60,7 @@ public class BasehomeWithfilesTest extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=withfiles"
+            "--add-modules=withfiles"
         );
         exec(prepareArgs, true);
 

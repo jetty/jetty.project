@@ -320,7 +320,7 @@ public class BaseBuilder
                 {
                     if (module.hasIniTemplate())
                     {
-                        StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
+                        StartLog.info("%-15s transitively enabled, ini template available with --add-modules=%s",
                             module.getName(),
                             module.getName());
                     }

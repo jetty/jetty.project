@@ -238,7 +238,7 @@ public class Modules implements Iterable<Module>
                 name = "";
             }
             if (module.isTransitive() && module.hasIniTemplate())
-                out.printf(" ".repeat(31) + "ini template available with --add-module=%s%n", module.getName());
+                out.printf(" ".repeat(31) + "ini template available with --add-modules=%s%n", module.getName());
         }
     }
 
