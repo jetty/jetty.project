@@ -79,7 +79,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.platform.commons.util.StringUtils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1896,7 +1895,7 @@ public class GzipHandlerTest
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            if (StringUtils.isNotBlank(etag))
+            if (StringUtil.isNotBlank(etag))
             {
                 response.getHeaders().put("ETag", etag);
                 String ifnm = request.getHeaders().get("If-None-Match");
@@ -1944,7 +1943,7 @@ public class GzipHandlerTest
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            if (StringUtils.isNotBlank(etag))
+            if (StringUtil.isNotBlank(etag))
             {
                 response.getHeaders().put("ETag", etag);
                 String ifnm = request.getHeaders().get("If-None-Match");
