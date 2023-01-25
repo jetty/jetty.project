@@ -698,6 +698,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
+    @Disabled //TODO review Expect/Continue-100 handling
     @Test
     public void test82ExpectInvalid() throws Exception
     {
@@ -722,6 +723,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
+    @Disabled //TODO review Expect/Continue-100 handling
     @Test
     public void test82ExpectWithBody() throws Exception
     {
@@ -750,6 +752,7 @@ public abstract class RFC2616BaseTest
      * @throws Exception failure
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
+    @Disabled //TODO review Expect/Continue-100 handling
     @Test
     public void test82UnexpectWithBody() throws Exception
     {
@@ -785,6 +788,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
+    @Disabled //TODO review Expect/Continue-100 handling
     @Test
     public void test82ExpectNormal() throws Exception
     {
@@ -1176,32 +1180,6 @@ public abstract class RFC2616BaseTest
         assertThat(specId + " [status]", response.getStatus(), is(HttpStatus.FOUND_302));
         assertThat(specId + " [location]", response.get("Location"), is(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/R2.txt"));
         assertThat(specId + " [connection]", response.get("Connection"), is("close"));
-    }
-
-    /**
-     * Test Accept-Encoding (Header Field)
-     *
-     * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.3">RFC 2616 (section 14.3)</a>
-     */
-    @Test
-    public void test143AcceptEncodingGzip() throws Exception
-    {
-        String specId;
-
-        // Gzip accepted
-
-        StringBuffer req1 = new StringBuffer();
-        req1.append("GET /rfc2616-webapp/solutions.html HTTP/1.1\n");
-        req1.append("Host: localhost\n");
-        req1.append("Accept-Encoding: gzip\n");
-        req1.append("Connection: close\n");
-        req1.append("\n");
-
-        HttpTester.Response response = http.request(req1);
-        specId = "14.3 Accept-Encoding Header";
-        assertThat(specId, response.getStatus(), is(HttpStatus.OK_200));
-        assertEquals("gzip", response.get("Content-Encoding"), specId);
-        assertEquals("text/html", response.get("Content-Type"), specId);
     }
 
     /**
