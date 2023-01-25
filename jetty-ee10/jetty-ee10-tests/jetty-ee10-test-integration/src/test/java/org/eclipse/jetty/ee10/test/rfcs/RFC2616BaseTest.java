@@ -629,6 +629,7 @@ public abstract class RFC2616BaseTest
     {
         // Virtual Host as Absolute URI (with Host header)
 
+        //TODO this test is testing RFC9112 behaviour, an rfc2616 compatibility mode is not offered due to security concerns. Split this out to new RFC9112Test class.
         StringBuffer req7 = new StringBuffer();
         req7.append("GET http://VirtualHost/tests/ HTTP/1.1\n");
         req7.append("Host: localhost\n"); // is ignored (would normally trigger default context)
@@ -637,8 +638,8 @@ public abstract class RFC2616BaseTest
 
         HttpTester.Response response = http.request(req7);
 
-        assertEquals(HttpStatus.OK_200, response.getStatus(), "5.2 Virtual Host as AbsoluteURI (and Host header)");
-        assertThat("5.2 Virtual Host as AbsoluteURI (and Host header)", response.getContent(), Matchers.containsString("VirtualHost DOCRoot"));
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), "5.2 Virtual Host as AbsoluteURI (and Host header)");
+        //assertThat("5.2 Virtual Host as AbsoluteURI (and Host header)", response.getContent(), Matchers.containsString("VirtualHost DOCRoot"));
     }
 
     /**
@@ -1454,6 +1455,7 @@ public abstract class RFC2616BaseTest
     @Test
     public void test1423IncompleteHostHeader() throws Exception
     {
+        //TODO this test is testing RFC9112 behaviour, an rfc2616 compatibility mode is not offered due to security concerns. Split this out to new RFC9112Test class.
         // HTTP/1.1 - Incomplete (empty) Host header
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
@@ -1464,7 +1466,8 @@ public abstract class RFC2616BaseTest
             req4.append("\n");
 
             HttpTester.Response response = http.request(req4);
-            assertThat("14.23 HTTP/1.1 - Empty Host", response.getStatus(), is(HttpStatus.OK_200));
+
+            assertThat("14.23 HTTP/1.1 - Empty Host", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         }
     }
 
