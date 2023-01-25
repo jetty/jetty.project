@@ -13,19 +13,15 @@
 
 package org.eclipse.jetty.session;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * SimpleSessionHandler example
@@ -115,7 +111,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             {
                 newSession(this, _requestedSessionId, this::setCoreSession);
                 session = _session.get();
-                HttpCookie cookie = getSessionCookie(session, getContext().getContextPath(), getConnectionMetaData().isSecure());
+                HttpCookie cookie = getSessionCookie(session, getConnectionMetaData().isSecure());
                 if (cookie != null)
                     Response.replaceCookie(_response, cookie);
             }
@@ -189,44 +185,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             SessionManager sessionManager = _coreSession.getSessionManager();
 
             if (sessionManager.isUsingCookies())
-                Response.replaceCookie(response, sessionManager.getSessionCookie(getCoreSession(), request.getContext().getContextPath(), request.isSecure()));
+                Response.replaceCookie(response, sessionManager.getSessionCookie(getCoreSession(), request.isSecure()));
         }
-    }
-
-    @Override
-    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
-    {
-        if (isUsingCookies())
-        {
-            String sessionPath = getSessionPath();
-            sessionPath = (sessionPath == null) ? contextPath : sessionPath;
-            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
-            SameSite sameSite = HttpCookie.getSameSiteFromComment(getSessionComment());
-            Map<String, String> attributes = Collections.emptyMap();
-            if (sameSite != null)
-                attributes = Collections.singletonMap("SameSite", sameSite.getAttributeValue());
-            return session.generateSetCookie((getSessionCookie() == null ? __DefaultSessionCookie : getSessionCookie()),
-                getSessionDomain(),
-                sessionPath,
-                getMaxCookieAge(),
-                isHttpOnly(),
-                isSecureCookies() || (isSecureRequestOnly() && requestIsSecure),
-                HttpCookie.getCommentWithoutAttributes(getSessionComment()),
-                0,
-                attributes);
-        }
-        return null;
-    }
-
-    @Override
-    public SameSite getSameSite()
-    {
-        return HttpCookie.getSameSiteFromComment(getSessionComment());
-    }
-
-    @Override
-    public void setSameSite(SameSite sameSite)
-    {
-        setSessionComment(HttpCookie.getCommentWithAttributes(getSessionComment(), false, sameSite));
     }
 }

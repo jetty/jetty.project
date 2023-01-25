@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
@@ -86,12 +87,7 @@ public class ServletApiResponse implements HttpServletResponse
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
-        // new style cookie, everything is an attribute
-        addCookie(new HttpCookie(
-            cookie.getName(),
-            cookie.getValue(),
-            cookie.getVersion(),
-            cookie.getAttributes()));
+        addCookie(new HttpCookieFacade(cookie));
     }
 
     public void addCookie(HttpCookie cookie)
@@ -570,7 +566,7 @@ public class ServletApiResponse implements HttpServletResponse
             SessionManager sessionManager = servletApiRequest.getSessionManager();
             if (sessionManager != null)
             {
-                HttpCookie cookie = sessionManager.getSessionCookie(session, servletApiRequest.getContextPath(), servletApiRequest.getServletConnection().isSecure());
+                HttpCookie cookie = sessionManager.getSessionCookie(session, servletApiRequest.getServletConnection().isSecure());
                 if (cookie != null)
                     addCookie(cookie);
             }
@@ -645,5 +641,93 @@ public class ServletApiResponse implements HttpServletResponse
             }
             return fields;
         });
+    }
+
+    static class HttpCookieFacade implements HttpCookie
+    {
+        private final Cookie _cookie;
+
+        public HttpCookieFacade(Cookie cookie)
+        {
+            _cookie = cookie;
+        }
+
+        @Override
+        public String getComment()
+        {
+            return _cookie.getComment();
+        }
+
+        @Override
+        public String getDomain()
+        {
+            return _cookie.getDomain();
+        }
+
+        @Override
+        public long getMaxAge()
+        {
+            return _cookie.getMaxAge();
+        }
+
+        @Override
+        public String getPath()
+        {
+            return _cookie.getPath();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return _cookie.getSecure();
+        }
+
+        @Override
+        public String getName()
+        {
+            return _cookie.getName();
+        }
+
+        @Override
+        public String getValue()
+        {
+            return _cookie.getValue();
+        }
+
+        @Override
+        public int getVersion()
+        {
+            return _cookie.getVersion();
+        }
+
+        @Override
+        public SameSite getSameSite()
+        {
+            return SameSite.from(getAttributes().get("SameSite"));
+        }
+
+        @Override
+        public boolean isHttpOnly()
+        {
+            return _cookie.isHttpOnly();
+        }
+
+        @Override
+        public Map<String, String> getAttributes()
+        {
+            return Collections.emptyMap();
+        }
+
+        @Override
+        public String asString()
+        {
+            return HttpCookie.asString(this);
+        }
+
+        @Override
+        public String toString()
+        {
+            return HttpCookie.toString(this);
+        }
     }
 }

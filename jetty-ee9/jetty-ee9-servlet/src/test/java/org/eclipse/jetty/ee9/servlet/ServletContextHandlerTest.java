@@ -891,6 +891,7 @@ public class ServletContextHandlerTest
         _server.setHandler(contexts);
 
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.getSessionHandler().setSessionPath("/");
         ListenerHolder initialListener = new ListenerHolder();
         initialListener.setListener(new InitialListener());
         root.getServletHandler().addListener(initialListener);
