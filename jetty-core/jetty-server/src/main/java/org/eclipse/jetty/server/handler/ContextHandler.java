@@ -289,9 +289,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * matching virtual host name.
      *
      * @param vhosts List of virtual hosts that this context responds to. A null/empty list means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()}for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.
+     * representation of IP addresses. Host names may start with {@code "*."} to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     * {@code "@connectorname"} (eg: {@code "*.example.org@connectorname"}), in which case they will match only if the {@link Connector#getName()}
+     * for the request also matches. If an entry is just {@code "@connectorname"} it will match any host if that connector was used.
      */
     public void setVirtualHosts(List<String> vhosts)
     {
