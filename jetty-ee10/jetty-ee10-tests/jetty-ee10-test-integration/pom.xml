@@ -57,10 +57,6 @@
           <!--<forkMode>always</forkMode>-->
           <useSystemClassLoader>true</useSystemClassLoader>
           <useManifestOnlyJar>false</useManifestOnlyJar>
-          <!-- TODO temporary -->
-          <excludes>
-              <exclude>**/HttpInput*.*</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>
