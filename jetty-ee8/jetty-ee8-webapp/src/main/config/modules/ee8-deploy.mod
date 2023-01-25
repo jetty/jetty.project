@@ -1,5 +1,7 @@
 [description]
-Enables web application deployment from the $JETTY_BASE/webapps/ directory.
+# tag::description[]
+This module enables webapp deployment from the `$JETTY_BASE/webapps` directory.
+# end::description[]
 
 [environment]
 ee8
@@ -8,15 +10,11 @@ ee8
 deploy
 ee8-webapp
 
-[lib]
-
-[files]
-webapps/
-
 [xml]
 etc/jetty-ee8-deploy.xml
 
 [ini-template]
+# tag::ini-template[]
 ## Monitored directory name (relative to $jetty.base)
 # jetty.deploy.monitoredDir=webapps
 ## - OR -
@@ -49,3 +47,4 @@ etc/jetty-ee8-deploy.xml
 
 ## Order of discovered ServletContainerInitializers
 # jetty.deploy.servletContainerInitializerOrder=
+# end::ini-template[]

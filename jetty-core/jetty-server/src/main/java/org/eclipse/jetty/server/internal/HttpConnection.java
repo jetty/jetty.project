@@ -831,7 +831,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                             BufferUtil.clear(_content);
                         }
 
-                        byte gatherWrite = 0;
+                        int gatherWrite = 0;
                         long bytes = 0;
                         if (BufferUtil.hasContent(_header))
                         {

@@ -455,7 +455,7 @@ public class ConfigSourcesTest
         Path devops = testdir.getPathFile("devops");
         FS.ensureEmpty(devops);
         TestEnv.makeFile(devops, "start.ini",
-            "--module=logging",
+            "--modules=logging",
             "jetty.http.port=2222");
 
         // Create corp

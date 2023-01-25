@@ -20,8 +20,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Callback;
 
@@ -59,9 +57,7 @@ public class FastFileServer
     {
         Server server = new Server(port);
 
-        server.setHandler(new HandlerList(
-            new FastFileHandler(resourceBase),
-            new DefaultHandler()));
+        server.setHandler(new FastFileHandler(resourceBase));
         return server;
     }
 

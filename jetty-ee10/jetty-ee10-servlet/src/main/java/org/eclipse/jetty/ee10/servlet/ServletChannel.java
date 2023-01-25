@@ -805,7 +805,7 @@ public class ServletChannel
      */
     public void onCompleted()
     {
-        ServletContextRequest.ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
+        ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
 

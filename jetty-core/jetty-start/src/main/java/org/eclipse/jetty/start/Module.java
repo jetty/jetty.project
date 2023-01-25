@@ -654,7 +654,7 @@ public class Module implements Comparable<Module>
             out.append("# ").println(line);
         }
         out.println("# --------------------------------------- ");
-        out.println("--module=" + getName());
+        out.println("--modules=" + getName());
         out.println();
         for (String line : getIniTemplate())
         {

@@ -39,6 +39,16 @@ public class PathMappingsHandler extends Handler.AbstractContainer
 
     private final PathMappings<Handler> mappings = new PathMappings<>();
 
+    public PathMappingsHandler()
+    {
+        this(true);
+    }
+
+    public PathMappingsHandler(boolean dynamic)
+    {
+        super(dynamic);
+    }
+
     @Override
     public void addHandler(Handler handler)
     {

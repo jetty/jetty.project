@@ -64,7 +64,7 @@ public class PropertyOverrideTest extends AbstractUseCase
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
         Files.write(baseDir.resolve("start.d/main.ini"),
             List.of(
-                "--module=ssl-ini"
+                "--modules=ssl-ini"
             ),
             StandardCharsets.UTF_8);
 
@@ -139,7 +139,7 @@ public class PropertyOverrideTest extends AbstractUseCase
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
         Files.write(baseDir.resolve("start.d/main.ini"),
             List.of(
-                "--module=ssl-ini",
+                "--modules=ssl-ini",
                 // this should override mod default
                 "jetty.sslContext.keyStorePassword=storepwd"
             ),

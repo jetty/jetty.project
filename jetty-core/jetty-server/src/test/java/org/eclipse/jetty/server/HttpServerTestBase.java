@@ -43,7 +43,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.server.internal.HttpConnection;
@@ -406,7 +405,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             LOG.info("Expecting Exception: TEST handler exception...");
             os.write(request.toString().getBytes());
@@ -435,7 +434,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             LOG.info("Expecting Exception: TEST handler exception...");
             os.write(request.toString().getBytes());

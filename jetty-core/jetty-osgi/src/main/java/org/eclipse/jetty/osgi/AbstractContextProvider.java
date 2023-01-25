@@ -33,8 +33,10 @@ import org.slf4j.LoggerFactory;
 /**
  * AbstractContextProvider
  *
+ * <p>
  * Base class for DeploymentManager Providers that can deploy ContextHandlers into
  * Jetty that have been discovered via OSGI either as bundles or services.
+ * </p>
  */
 public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
 {

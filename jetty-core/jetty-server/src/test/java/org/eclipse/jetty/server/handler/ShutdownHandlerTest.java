@@ -40,7 +40,7 @@ public class ShutdownHandlerTest
     private ServerConnector connector;
     private String shutdownToken = "asdlnsldgnklns";
 
-    public void start(HandlerWrapper wrapper) throws Exception
+    public void start(Handler.Wrapper wrapper) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
@@ -94,7 +94,7 @@ public class ShutdownHandlerTest
     public void testShutdownRequestNotFromLocalhost() throws Exception
     {
         /* TODO
-        start(new HandlerWrapper()
+        start(new Handler.Wrapper()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

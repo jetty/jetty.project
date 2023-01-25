@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet.security.authentication;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
@@ -221,7 +222,7 @@ public class FormAuthenticator extends LoginAuthenticator
     public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
     {
         ServletContextRequest servletContextRequest = Request.as(req, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
 
         String pathInContext = servletContextRequest.getPathInContext();
         boolean jSecurityCheck = isJSecurityCheck(pathInContext);

@@ -36,7 +36,7 @@ public class BasicPropertiesTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Arrays.asList(
-                "--module=main",
+                "--modules=main",
                 "jetty.http.port=${port}"
             ),
             StandardCharsets.UTF_8);

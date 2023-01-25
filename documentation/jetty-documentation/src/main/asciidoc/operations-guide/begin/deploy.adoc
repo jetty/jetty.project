@@ -46,46 +46,47 @@ mywebapp.war
 <5> `WEB-INF/web.xml` is the web application deployment descriptor, which defines the components and the configuration of your web application.
 ====
 
-To deploy a standard web application, you need to enable the xref:og-module-deploy[`deploy` module]:
+To deploy a standard web application, you need to enable the xref:og-module-eeN-deploy[`{ee-current}-deploy` module].
 
+NOTE: The following examples assume you're deploying a Jakarta {ee-current-caps} application; for other versions of Jakarta EE, make sure to activate the corresponding `{ee-all}-deploy` module.
+
+[subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=deploy
+$ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-deploy
 ----
 
 [source,options=nowrap]
 ----
-include::jetty[setupArgs="--add-module=http",args="--add-module=deploy"]
+include::jetty[setupArgs="--add-module=http",args="--add-module={ee-current}-deploy"]
 ----
 
-The `deploy` module creates `$JETTY_BASE/webapps`, which is the directory where Jetty looks for any `+*.war+` files or web application directories to deploy.
+The `{ee-current}-deploy` module creates `$JETTY_BASE/webapps`, which is the directory where Jetty looks for any `+*.war+` files or web application directories to deploy.
 
-[NOTE]
-====
-Activating Jetty's `deploy` module enables web application deployment.
+Activating one of Jetty's `{ee-all}-deploy` modules enables web application deployment.
 Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on if the correspondent Jetty modules have been enabled.
-
 Refer to the xref:og-protocols[section about protocols] for further information.
-====
 
 Now you're ready to copy a web application to the `$JETTY_BASE/webapps` directory.
 You can use one of the demos shipped with Jetty:
 
+[subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=ee10-demo-simple
+$ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-demo-simple
 ----
 
 The `$JETTY_BASE` directory is now:
 
+[subs=attributes]
 ----
 $JETTY_BASE
 ├── resources
 │   └── jetty-logging.properties
 ├── start.d
 │   ├── deploy.ini
-│   ├── ee10-demo-simple.ini
+│   ├── {ee-current}-demo-simple.ini
 │   └── http.ini
 └── webapps
-    └── ee10-demo-simple.war
+    └── {ee-current}-demo-simple.war
 ----
 
 Now start Jetty:
@@ -96,12 +97,12 @@ $ java -jar $JETTY_HOME/start.jar
 
 [source,subs=quotes,options=nowrap]
 ----
-include::jetty[setupArgs="--add-modules=http,deploy,ee10-demo-simple",highlight="WebAppContext"]
+include::jetty[setupArgs="--add-modules=http,deploy,{ee-current}-demo-simple",highlight="WebAppContext"]
 ----
 
-Note the highlighted line that logs the deployment of `ee10-demo-simple.war`.
+Note the highlighted line that logs the deployment of `{ee-current}-demo-simple.war`.
 
-Now you can access the web application by pointing your browser to `+http://localhost:8080/ee10-demo-simple+`.
+Now you can access the web application by pointing your browser to `pass:a[http://localhost:8080/{ee-current}-demo-simple]`.
 
 [[og-begin-deploy-war-advanced]]
 ===== Advanced Deployment

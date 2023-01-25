@@ -372,7 +372,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
      * matching virtual host name.
      *
-     * @return Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     * @return list of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
      * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
      * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
      * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed

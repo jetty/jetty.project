@@ -217,7 +217,6 @@ public class InputStreamResponseListener extends Listener.Adapter
     /**
      * Waits for the given timeout for the whole request/response cycle to be finished,
      * then returns the corresponding result.
-     * <p>
      *
      * @param timeout the time to wait
      * @param unit the timeout unit

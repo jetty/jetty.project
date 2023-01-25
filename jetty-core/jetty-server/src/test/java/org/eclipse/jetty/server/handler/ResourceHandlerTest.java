@@ -355,7 +355,7 @@ public class ResourceHandlerTest
                 (response) ->
                 {
                     String body = response.getContent();
-                    assertThat(body, containsString("/../../"));
+                    assertThat(body, containsString("Not Found"));
                     assertThat(body, not(containsString("Directory: ")));
                 }
             );

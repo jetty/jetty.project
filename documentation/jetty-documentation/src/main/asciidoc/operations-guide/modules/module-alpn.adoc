@@ -21,5 +21,5 @@ You can configure the list of application protocols negotiated by the ALPN mecha
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/alpn.mod[tags=documentation]
+include::{jetty-home}/modules/alpn.mod[tags=documentation]
 ----
