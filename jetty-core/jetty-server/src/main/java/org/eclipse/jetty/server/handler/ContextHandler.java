@@ -313,7 +313,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                     vhost = vhost.substring(0, at);
                 }
 
-                if (vhost.startsWith("*."))
+                if (StringUtil.isBlank(vhost))
+                {
+                    vhost = null;
+                }
+                else if (vhost.startsWith("*."))
                 {
                     vhost = vhost.substring(1);
                     wild = true;
