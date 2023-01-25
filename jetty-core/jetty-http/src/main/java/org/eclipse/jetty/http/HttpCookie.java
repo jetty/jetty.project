@@ -24,7 +24,6 @@ import java.util.TreeMap;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,17 +77,18 @@ public interface HttpCookie
             return this.attributeValue;
         }
 
+        private static Index<SameSite> CACHE = new Index.Builder<SameSite>()
+            .caseSensitive(false)
+            .with(NONE.attributeValue, NONE)
+            .with(STRICT.attributeValue, STRICT)
+            .with(LAX.attributeValue, LAX)
+            .build();
+
         public static SameSite from(String sameSite)
         {
             if (sameSite == null)
                 return null;
-            return switch (StringUtil.asciiToLowerCase(sameSite))
-            {
-                case "lax" -> SameSite.LAX;
-                case "strict" -> SameSite.STRICT;
-                case "none" -> SameSite.NONE;
-                default -> null;
-            };
+            return CACHE.get(sameSite);
         }
     }
 

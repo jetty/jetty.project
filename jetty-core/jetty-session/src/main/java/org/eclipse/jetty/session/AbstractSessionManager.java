@@ -239,7 +239,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _context = ContextHandler.getCurrentContext();
         _loader = Thread.currentThread().getContextClassLoader();
 
-        // ensure a sessiun path is set for non root contexts
+        // ensure a session path is set for non root contexts
         String contextPath = _context == null ? "/" : _context.getContextPath();
         if (!"/".equals(contextPath) && getSessionPath() == null)
             setSessionPath(contextPath);

@@ -703,7 +703,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public SameSite getSameSite()
         {
-            return SameSite.from(getAttributes().get("SameSite"));
+            return SameSite.from(getAttributes().get(HttpCookie.SAME_SITE_ATTRIBUTE));
         }
 
         @Override
