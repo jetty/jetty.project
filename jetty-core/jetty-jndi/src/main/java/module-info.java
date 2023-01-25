@@ -20,7 +20,6 @@ module org.eclipse.jetty.jndi
 
     // Only required if using DataSourceCloser.
     requires static java.sql;
-    // requires static org.eclipse.jetty.security;
 
     exports org.eclipse.jetty.jndi;
     exports org.eclipse.jetty.jndi.java;
