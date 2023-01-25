@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.URIUtil;
  * {@link SecuredRedirectHandler} will send a Redirect HTTP Response (default to {@code 302: Moved Temporarily})
  * with the information present in the {@link HttpConfiguration} for the connector that the response is being processed on.
  * The {@code Location} response header will be built from {@link HttpConfiguration#getSecureScheme()} and
- * {@link HttpConfiguration#getSecurePort()
+ * {@link HttpConfiguration#getSecurePort()}
  * </p>
  */
 public class SecuredRedirectHandler extends Handler.Wrapper
