@@ -8,7 +8,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">
     <Arg>
-      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.GracefulHandler" />
+      <New id="GracefulHandler" class="org.eclipse.jetty.server.handler.GracefulHandler" />
     </Arg>
   </Call>
 </Configure>
