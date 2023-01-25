@@ -35,14 +35,16 @@ import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.ee10.servlet.HttpInput;
+import org.eclipse.jetty.ee10.servlet.ServletChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
@@ -179,20 +181,20 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        //TODO
-        /*        connector.addBean(new HttpChannelState.Listener()
+        connector.addBean(new ServletChannel.Listener()
         {
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request baseRequest)
             {
-                HttpConnection connection = (HttpConnection)request.getHttpChannel().getConnection();
+                ServletContextRequest request = Request.as(baseRequest, ServletContextRequest.class);
+                HttpConnection connection = (HttpConnection)request.getConnectionMetaData().getConnection();
                 HttpInput httpInput = request.getHttpInput();
                 inputContentConsumed.set(httpInput.getContentConsumed());
                 inputContentReceived.set(httpInput.getContentReceived());
                 inputBytesIn.set(connection.getBytesIn());
                 serverRequestCompleteLatch.countDown();
             }
-        });*/
+        });
 
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the
@@ -286,20 +288,20 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        //TODO
-        /*        connector.addBean(new HttpChannelState.Listener()
+        connector.addBean(new ServletChannel.Listener()
         {
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request baseRequest)
             {
-                HttpConnection connection = (HttpConnection)request.getHttpChannel().getConnection();
+                ServletContextRequest request = Request.as(baseRequest, ServletContextRequest.class);
+                HttpConnection connection = (HttpConnection)request.getConnectionMetaData().getConnection();
                 HttpInput httpInput = request.getHttpInput();
                 inputContentConsumed.set(httpInput.getContentConsumed());
                 inputContentReceived.set(httpInput.getContentReceived());
                 inputBytesIn.set(connection.getBytesIn());
                 serverRequestCompleteLatch.countDown();
             }
-        });*/
+        });
 
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the

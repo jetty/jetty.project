@@ -60,11 +60,9 @@ class AsyncContentProducer implements ContentProducer
 
         // Make sure that asking this instance for chunks between
         // recycle() and reopen() will only produce error chunks.
-        if (_chunk == null)
-            _chunk = RECYCLED_ERROR_CHUNK;
-        // The chunk must be fully consumed.
-        else if (!_chunk.isLast() || _chunk.hasRemaining())
-            throw new IllegalStateException("ContentProducer with unconsumed chunk cannot be recycled");
+        if (_chunk != null)
+            _chunk.release();
+        _chunk = RECYCLED_ERROR_CHUNK;
     }
 
     @Override
