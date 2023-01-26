@@ -73,4 +73,30 @@ public class ModulesTest
             assertThat(run.awaitFor(5, TimeUnit.SECONDS), is(true));
         }
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ee8-websocket-javax", "ee9-websocket-jakarta", "ee10-websocket-jakarta"})
+    public void testWebsocketModules(String module) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        // Add module.
+        try (JettyHomeTester.Run run = distribution.start("--add-modules=" + module))
+        {
+            run.awaitFor(5, TimeUnit.SECONDS);
+            assertThat(run.getExitValue(), is(0));
+        }
+
+        // Verify that Jetty starts.
+        try (JettyHomeTester.Run run = distribution.start())
+        {
+            assertThat(run.awaitConsoleLogsFor("Started oejs.Server", 5, TimeUnit.SECONDS), is(true));
+            run.stop();
+            assertThat(run.awaitFor(5, TimeUnit.SECONDS), is(true));
+        }
+    }
 }

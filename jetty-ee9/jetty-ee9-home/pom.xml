@@ -40,15 +40,40 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-core-websocket-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-ee9-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee9.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee9.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee9-websocket</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-core-websocket-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -58,7 +83,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee9.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee9.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee9-websocket</outputDirectory>
