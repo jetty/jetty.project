@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -154,13 +153,13 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @ManagedAttribute(value = "The number of active connections", readonly = true)
     public int getActiveConnectionCount()
     {
-        return (int)pool.stream().filter(Pool.Entry::isInUse).count();
+        return pool.getInUseCount();
     }
 
     @ManagedAttribute(value = "The number of idle connections", readonly = true)
     public int getIdleConnectionCount()
     {
-        return (int)pool.stream().filter(Pool.Entry::isIdle).count();
+        return pool.getIdleCount();
     }
 
     @ManagedAttribute(value = "The max number of connections", readonly = true)
@@ -455,7 +454,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     {
     }
 
-    Queue<Connection> getIdleConnections()
+    Collection<Connection> getIdleConnections()
     {
         return pool.stream()
             .filter(Pool.Entry::isIdle)

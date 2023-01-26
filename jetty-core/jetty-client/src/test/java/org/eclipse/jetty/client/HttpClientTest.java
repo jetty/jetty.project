@@ -116,7 +116,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         HttpConnectionOverHTTP connection = null;
         while (connection == null && NanoTime.secondsSince(start) < 5)
         {
-            connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
+            connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().iterator().next();
             TimeUnit.MILLISECONDS.sleep(10);
         }
         assertNotNull(connection);

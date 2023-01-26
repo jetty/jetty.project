@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -87,7 +88,9 @@ public class LockedPool<P> implements Pool<P>
         {
             Collection<Entry<P>> result = pool.terminate();
             tracker.terminated();
-            return result;
+            return result.stream()
+                .map(LockedEntry::new)
+                .collect(Collectors.toList());
         }
     }
 
@@ -114,7 +117,7 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            return pool.stream();
+            return pool.stream().map(LockedEntry::new);
         }
     }
 

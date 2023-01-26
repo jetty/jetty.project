@@ -266,7 +266,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     private long getAvailableByteBufferCount(boolean direct)
     {
         RetainedBucket[] buckets = direct ? _direct : _indirect;
-        return Arrays.stream(buckets).mapToLong(bucket -> bucket.getPool().stream().filter(Pool.Entry::isIdle).count()).sum();
+        return Arrays.stream(buckets).mapToLong(bucket -> bucket.getPool().getIdleCount()).sum();
     }
 
     @ManagedAttribute("The bytes retained by direct ByteBuffers")
@@ -307,8 +307,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         long total = 0L;
         for (RetainedBucket bucket : buckets)
         {
-            int capacity = bucket._capacity;
-            total += bucket.getPool().stream().filter(Pool.Entry::isIdle).count() * capacity;
+            long capacity = bucket._capacity;
+            total += bucket.getPool().getIdleCount() * capacity;
         }
         return total;
     }

@@ -17,6 +17,9 @@ import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+
 /**
  * <p>A pool of objects, with support for multiplexing and several
  * optimized strategies plus an optional {@link ThreadLocal} cache
@@ -26,6 +29,7 @@ import java.util.stream.Stream;
  *
  * @param <P> the type of the pooled objects
  */
+@ManagedObject
 public interface Pool<P>
 {
     /**
@@ -114,17 +118,55 @@ public interface Pool<P>
     /**
      * @return the current number of entries in this {@code Pool}
      */
+    @ManagedAttribute("The number of entries")
     public int size();
 
     /**
      * @return the maximum number of entries in this {@code Pool}
      */
+    @ManagedAttribute("The maximum number of entries")
     public int getMaxSize();
 
     /**
      * @return a {@link Stream} over the entries
      */
     public Stream<Entry<P>> stream();
+
+    /**
+     * @return the number of reserved entries
+     */
+    @ManagedAttribute("The number of reserved entries")
+    public default int getReservedCount()
+    {
+        return (int)stream().filter(Entry::isReserved).count();
+    }
+
+    /**
+     * @return the number of idle entries
+     */
+    @ManagedAttribute("The number of idle entries")
+    public default int getIdleCount()
+    {
+        return (int)stream().filter(Entry::isIdle).count();
+    }
+
+    /**
+     * @return the number of in-use entries
+     */
+    @ManagedAttribute("The number of in-use entries")
+    public default int getInUseCount()
+    {
+        return (int)stream().filter(Entry::isInUse).count();
+    }
+
+    /**
+     * @return the number of terminated entries
+     */
+    @ManagedAttribute("The number of terminated entries")
+    public default int getTerminatedCount()
+    {
+        return (int)stream().filter(Entry::isTerminated).count();
+    }
 
     /**
      * <p>A wrapper for {@code Pool} instances.</p>
@@ -191,6 +233,30 @@ public interface Pool<P>
         public Stream<Entry<W>> stream()
         {
             return getWrapped().stream();
+        }
+
+        @Override
+        public int getReservedCount()
+        {
+            return getWrapped().getReservedCount();
+        }
+
+        @Override
+        public int getIdleCount()
+        {
+            return getWrapped().getIdleCount();
+        }
+
+        @Override
+        public int getInUseCount()
+        {
+            return getWrapped().getInUseCount();
+        }
+
+        @Override
+        public int getTerminatedCount()
+        {
+            return getWrapped().getTerminatedCount();
         }
     }
 

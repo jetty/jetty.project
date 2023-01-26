@@ -260,7 +260,7 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
 
                 TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
 
-                connection1 = connectionPool.getIdleConnections().peek();
+                connection1 = connectionPool.getIdleConnections().iterator().next();
                 assertNull(connection1);
             }
         }
@@ -373,7 +373,7 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
 
     private Connection peekIdleConnection(DuplexConnectionPool connectionPool, long time, TimeUnit unit) throws InterruptedException
     {
-        return await(() -> connectionPool.getIdleConnections().peek(), time, unit);
+        return await(() -> connectionPool.getIdleConnections().iterator().next(), time, unit);
     }
 
     private Connection await(Supplier<Connection> supplier, long time, TimeUnit unit) throws InterruptedException

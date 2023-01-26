@@ -24,7 +24,6 @@ import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -100,49 +99,9 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
     }
 
-    /**
-     * @return the number of reserved entries
-     */
-    @ManagedAttribute("The number of reserved entries")
-    public int getReservedCount()
-    {
-        return (int)entries.stream().filter(Entry::isReserved).count();
-    }
-
-    /**
-     * @return the number of idle entries
-     */
-    @ManagedAttribute("The number of idle entries")
-    public int getIdleCount()
-    {
-        return (int)entries.stream().filter(Entry::isIdle).count();
-    }
-
-    /**
-     * @return the number of in-use entries
-     */
-    @ManagedAttribute("The number of in-use entries")
-    public int getInUseCount()
-    {
-        return (int)entries.stream().filter(Entry::isInUse).count();
-    }
-
-    /**
-     * @return the number of terminated entries
-     */
-    @ManagedAttribute("The number of terminated entries")
     public int getTerminatedCount()
     {
         return (int)entries.stream().filter(Entry::isTerminated).count();
-    }
-
-    /**
-     * @return the maximum number of entries
-     */
-    @ManagedAttribute("The maximum number of entries")
-    public int getMaxEntries()
-    {
-        return maxEntries;
     }
 
     /**
@@ -294,6 +253,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private boolean remove(Entry<P> entry)
     {
         boolean removed = ((ConcurrentEntry<P>)entry).tryRemove();
+        if (cache != null)
+            cache.set(null);
         if (LOG.isDebugEnabled())
             LOG.debug("removed {} {} for {}", removed, entry, this);
         if (!removed)
@@ -338,6 +299,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private boolean terminate(Entry<P> entry)
     {
         boolean terminated = ((ConcurrentEntry<P>)entry).tryTerminate();
+        if (cache != null)
+            cache.set(null);
         if (!terminated)
         {
             if (LOG.isDebugEnabled())
@@ -347,17 +310,15 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     }
 
     @Override
-    @ManagedAttribute("The number of entries")
     public int size()
     {
         return entries.size();
     }
 
     @Override
-    @ManagedAttribute("The maximum number of entries")
     public int getMaxSize()
     {
-        return getMaxEntries();
+        return maxEntries;
     }
 
     @Override
@@ -381,7 +342,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             hashCode(),
             getInUseCount(),
             size(),
-            getMaxEntries(),
+            getMaxSize(),
             isTerminated());
     }
 
@@ -454,7 +415,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             return pool.remove(this);
         }
 
-        public boolean terminate()
+        private boolean terminate()
         {
             return pool.terminate(this);
         }

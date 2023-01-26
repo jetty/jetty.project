@@ -444,9 +444,9 @@ public class MultiplexedConnectionPoolTest
         // wait until 1st request finished
         assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isInUse).count(), is(1L));
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isIdle).count(), is(0L));
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isTerminated).count(), is(0L));
+        assertThat(poolRef.get().getInUseCount(), is(1));
+        assertThat(poolRef.get().getIdleCount(), is(0));
+        assertThat(poolRef.get().getTerminatedCount(), is(0));
         assertThat(poolRef.get().size(), is(1));
 
         // wait for the connection to expire
@@ -459,9 +459,9 @@ public class MultiplexedConnectionPoolTest
             .send();
         assertThat(response.getStatus(), is(200));
 
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isInUse).count(), is(1L));
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isIdle).count(), is(1L));
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isTerminated).count(), is(1L));
+        assertThat(poolRef.get().getInUseCount(), is(1));
+        assertThat(poolRef.get().getIdleCount(), is(1));
+        assertThat(poolRef.get().getTerminatedCount(), is(1));
         assertThat(poolRef.get().size(), is(2));
 
         // unblock 2nd request
@@ -469,16 +469,16 @@ public class MultiplexedConnectionPoolTest
         //wait until 2nd request finished
         assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isInUse).count(), is(0L));
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isIdle).count(), is(1L));
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isTerminated).count(), is(0L));
+        assertThat(poolRef.get().getInUseCount(), is(0));
+        assertThat(poolRef.get().getIdleCount(), is(1));
+        assertThat(poolRef.get().getTerminatedCount(), is(0));
         assertThat(poolRef.get().size(), is(1));
         assertThat(poolCreateCounter.get(), is(2));
 
         // wait for idle connections to be closed
         Thread.sleep(maxIdle + 500);
 
-        assertThat(poolRef.get().stream().filter(Pool.Entry::isIdle).count(), is(0L));
+        assertThat(poolRef.get().getIdleCount(), is(0));
         assertThat(poolRef.get().size(), is(0));
         assertThat(poolRemoveCounter.get(), is(2));
     }

@@ -28,6 +28,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.eclipse.jetty.util.Pool.StrategyType.FIRST;
 import static org.eclipse.jetty.util.Pool.StrategyType.RANDOM;
 import static org.eclipse.jetty.util.Pool.StrategyType.ROUND_ROBIN;
+import static org.eclipse.jetty.util.Pool.StrategyType.THREAD_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -58,6 +59,7 @@ public class ConcurrentPoolTest
             (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, false, maxMultiplex),
             (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, true, maxMultiplex),
             (maxEntries, maxMultiplex) -> new ConcurrentPool<>(RANDOM, maxEntries, false, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(THREAD_ID, maxEntries, false, maxMultiplex),
             (maxEntries, maxMultiplex) -> new ConcurrentPool<>(ROUND_ROBIN, maxEntries, false, maxMultiplex)
         );
     }
