@@ -27,6 +27,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.authentication.DeferredAuthentication;
@@ -457,7 +458,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         if (servletContextRequest == null)
             return false;
-        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
         Authenticator authenticator = _authenticator;
         
         if (!checkSecurity(servletApiRequest))

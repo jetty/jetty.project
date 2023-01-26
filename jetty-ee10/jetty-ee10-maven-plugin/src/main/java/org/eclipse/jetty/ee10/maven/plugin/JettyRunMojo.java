@@ -111,7 +111,12 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         {
             forker = newJettyForker();
             forker.setWaitForChild(true); //we run at the command line, echo child output and wait for it
-            forker.setScan(true); //have the forked child notice changes to the webapp
+            //if we can do hot redeploy, tell the forked process to watch for changes to the generated webapp file
+            if (scan >= 0)
+            {
+                forker.setScan(true);
+                forker.setScanInterval((scan == 0 ? 1 : scan)); //if redeploying on ENTER key, the forked process still needs to watch the generated webapp file
+            }
             //TODO is it ok to start the scanner before we start jetty?
             startScanner();
             forker.start(); //forks jetty instance 

@@ -141,7 +141,7 @@ public interface Graceful
         gracefuls.addAll(component.getContainedBeans(Graceful.class));
 
         if (log.isDebugEnabled())
-            gracefuls.forEach(g -> log.debug("graceful {}", g));
+            gracefuls.forEach(g -> log.debug("Graceful {}", g));
 
         return CompletableFuture.allOf(gracefuls.stream().map(Graceful::shutdown).toArray(CompletableFuture[]::new));
     }

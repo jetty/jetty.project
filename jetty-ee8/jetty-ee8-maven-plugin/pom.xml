@@ -61,6 +61,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
+        <configuration>
+          <goalPrefix>jetty</goalPrefix>
+        </configuration>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
@@ -235,16 +238,16 @@
       <artifactId>jetty-ee8-annotations</artifactId>
       <optional>true</optional>
     </dependency>
-    <!-- dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-websocket-jakarta-server</artifactId>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+      <artifactId>jetty-ee8-websocket-javax-server</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
       <artifactId>jetty-ee8-websocket-jetty-server</artifactId>
       <optional>true</optional>
-    </dependency -->
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-apache-jsp</artifactId>

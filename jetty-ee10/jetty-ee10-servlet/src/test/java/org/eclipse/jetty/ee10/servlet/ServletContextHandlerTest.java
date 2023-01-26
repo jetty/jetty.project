@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +53,7 @@ import jakarta.servlet.ServletRequestEvent;
 import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -64,7 +67,10 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.RoleInfo;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -2367,5 +2373,112 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("/three"));
+    }
+
+    static class CookieTweakResponseApi extends ServletApiResponse
+    {
+        CookieTweakResponseApi(ServletApiResponse response)
+        {
+            super(response.getResponse());
+        }
+
+        @Override
+        public void addCookie(Cookie cookie)
+        {
+            // Let's set SameSite to STRICT
+            // But we cannot use Servlet jakarta.servlet.http.Cookie.setComment(String) technique of old
+            // as the Comment field is always null and is slated for removal.
+
+            // We'll use the Jetty HttpCookie to work around this.
+            boolean httpOnly = false;
+            String comment = null;
+            HttpCookie.SameSite sameSite = HttpCookie.SameSite.STRICT;
+
+            addCookie(new HttpCookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                httpOnly,
+                cookie.getSecure(),
+                comment,
+                cookie.getVersion(),
+                HttpCookie.SameSite.STRICT));
+        }
+
+        @Override
+        public void addCookie(HttpCookie cookie)
+        {
+            // Let's force SameSite to STRICT
+            Map<String, String> attrs = new HashMap<>(cookie.getAttributes());
+            attrs.put("SameSite", "Strict");
+            super.addCookie(new HttpCookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                cookie.isHttpOnly(),
+                cookie.isSecure(),
+                cookie.getComment(),
+                cookie.getVersion(),
+                attrs
+            ));
+        }
+    }
+
+    @Test
+    public void testCustomServletResponseWrapping() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler()
+        {
+            @Override
+            protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel, Request request, Response response, String pathInContext, MatchedResource<ServletHandler.MappedServlet> matchedResource)
+            {
+                return new ServletContextRequest(getContext().getServletContext(), servletChannel, request, response, pathInContext, matchedResource)
+                {
+                    @Override
+                    protected ServletContextResponse newServletContextResponse(Response response)
+                    {
+                        return new ServletContextResponse(servletChannel, this, response)
+                        {
+                            @Override
+                            protected ServletApiResponse newServletApiResponse()
+                            {
+                                ServletApiResponse servletApiResponse = super.newServletApiResponse();
+                                return new CookieTweakResponseApi(super.newServletApiResponse());
+                            }
+                        };
+                    }
+                };
+            }
+        };
+
+        ServletHolder holder = new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                Cookie cookie = new Cookie("example", "bogus");
+                resp.addCookie(cookie);
+                super.doGet(req, resp);
+            }
+        });
+        context.addServlet(holder, "/cookies/*");
+        _server.setHandler(context);
+        _server.start();
+
+        String rawRequest = """
+            GET /cookies/ HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        String setCookieValue = response.get(HttpHeader.SET_COOKIE);
+        assertThat(setCookieValue, containsString("example=bogus; SameSite=Strict"));
     }
 }

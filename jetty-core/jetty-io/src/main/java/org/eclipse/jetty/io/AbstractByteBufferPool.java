@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 
 /**
  * The {@code maxHeapMemory} and {@code maxDirectMemory} default heuristic is to use {@link Runtime#maxMemory()}
- * divided by 4.</p>
+ * divided by 4.
  */
 @ManagedObject
 abstract class AbstractByteBufferPool implements ByteBufferPool

@@ -37,14 +37,14 @@ public class BarebonesAlreadyEnabledTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
-            "--add-module=main"
+            "--add-modules=main"
         );
         ExecResults prepareResults = exec(prepareArgs, true);
 

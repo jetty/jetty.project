@@ -95,7 +95,7 @@ public class OrderedTest extends AbstractUseCase
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=alternateA,dependent"
+            "--modules=alternateA,dependent"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -172,7 +172,7 @@ public class OrderedTest extends AbstractUseCase
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=dependent,alternateA"
+            "--modules=dependent,alternateA"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -249,7 +249,7 @@ public class OrderedTest extends AbstractUseCase
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=dependent"
+            "--modules=dependent"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -321,7 +321,7 @@ public class OrderedTest extends AbstractUseCase
 
         // === Execute Main
         List<String> runArgs = Collections.singletonList(
-            "--module=main,convenience"
+            "--modules=main,convenience"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -401,7 +401,7 @@ public class OrderedTest extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=abstractB,abstractA"
+            "--add-modules=abstractB,abstractA"
         );
         exec(prepareArgs, true);
 

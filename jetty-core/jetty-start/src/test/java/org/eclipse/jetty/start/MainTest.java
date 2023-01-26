@@ -108,7 +108,7 @@ public class MainTest
         cmdLineArgs.add("jetty.home=" + testJettyHome);
         cmdLineArgs.add("jetty.base=" + testJettyBase);
         cmdLineArgs.add("main.class=" + PropertyDump.class.getName());
-        cmdLineArgs.add("--module=base");
+        cmdLineArgs.add("--modules=base");
         cmdLineArgs.add("--foople");
         cmdLineArgs.add("-Dzed.key=0.value");
 

@@ -30,8 +30,6 @@ import org.eclipse.jetty.ee9.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +74,7 @@ public class SlowClientTest
         });
         context.addServlet(websocket, "/ws");
 
-        server.setHandler(new HandlerList(context.getCoreContextHandler(), new DefaultHandler()));
+        server.setHandler(context.getCoreContextHandler());
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();

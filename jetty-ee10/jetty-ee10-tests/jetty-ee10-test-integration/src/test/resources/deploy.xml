@@ -16,7 +16,7 @@
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
-          <Ref refid="WebappContexts" />
+          <Ref refid="contexts" />
         </Set>
         
         <Call name="addAppProvider">

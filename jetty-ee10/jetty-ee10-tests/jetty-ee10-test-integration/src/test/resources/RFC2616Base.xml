@@ -33,42 +33,39 @@
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
-        <Set name="handlers">
-         <Array type="org.eclipse.jetty.server.Handler">
-           <Item>
-             <New id="WebappContexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
-           </Item>
-           <Item>
-             <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
-               <Set name="contextPath">/tests</Set>
-               <Set name="VirtualHosts">
-                 <Array type="java.lang.String">
-                   <Item>VirtualHost</Item>
-                 </Array>
-               </Set>
-               <Set name="BaseResourceAsString"><Property name="test.docroot.base"/>/virtualhost</Set>
-               <Set name="Handler"><New id="reshandler1" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
-               <Set name="DisplayName">virtual</Set>
-             </New>
-           </Item>
-           <Item>
-             <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
-               <Set name="contextPath">/tests</Set>
-               <Set name="BaseResourceAsString"><Property name="test.docroot.base"/>/default</Set>
-               <Set name="Handler"><New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
-               <Set name="DisplayName">default</Set>
-             </New>
-           </Item>
-           <Item>
-             <New id="echocontext" class="org.eclipse.jetty.server.handler.ContextHandler">
-               <Set name="contextPath">/echo</Set>
-               <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.ee10.test.rfcs.RFC2616BaseTest$EchoHandler"/></Set>
-               <Set name="DisplayName">echo</Set>
-             </New>
-           </Item>
-         </Array>
-        </Set>
+      <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+        <Arg>
+          <Array type="org.eclipse.jetty.server.handler.ContextHandler">
+            <Item>
+              <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
+                <Set name="contextPath">/tests</Set>
+                <Set name="VirtualHosts">
+                  <Array type="java.lang.String">
+                    <Item>VirtualHost</Item>
+                  </Array>
+                </Set>
+                <Set name="BaseResourceAsString"><Property name="test.docroot.base"/>/virtualhost</Set>
+                <Set name="Handler"><New id="reshandler1" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+                <Set name="DisplayName">virtual</Set>
+              </New>
+            </Item>
+            <Item>
+              <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
+                <Set name="contextPath">/tests</Set>
+                <Set name="BaseResourceAsString"><Property name="test.docroot.base"/>/default</Set>
+                <Set name="Handler"><New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+                <Set name="DisplayName">default</Set>
+              </New>
+            </Item>
+            <Item>
+              <New id="echocontext" class="org.eclipse.jetty.server.handler.ContextHandler">
+                <Set name="contextPath">/echo</Set>
+                <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.ee10.test.rfcs.RFC2616BaseTest$EchoHandler"/></Set>
+                <Set name="DisplayName">echo</Set>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
       </New>
     </Set>
 
@@ -86,7 +83,7 @@
       <Arg>
         <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
           <Set name="contexts">
-            <Ref refid="WebappContexts" />
+            <Ref refid="contexts" />
           </Set>
         
           <Call name="addAppProvider">

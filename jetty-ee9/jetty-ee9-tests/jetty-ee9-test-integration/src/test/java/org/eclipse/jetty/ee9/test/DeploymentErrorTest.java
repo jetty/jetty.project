@@ -46,7 +46,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -107,7 +106,7 @@ public class DeploymentErrorTest
         server.addBean(deploymentManager);
 
         // Server handlers
-        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+        server.setHandler(contexts);
 
         // Setup Configurations
         Configurations.setServerDefault(server)

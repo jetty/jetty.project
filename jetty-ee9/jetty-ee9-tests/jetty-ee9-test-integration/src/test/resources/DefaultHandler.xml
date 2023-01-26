@@ -20,25 +20,18 @@
   <!-- Set handler Collection Structure                            -->
   <!-- =========================================================== -->
   <Set name="handler">
-    <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
-      <Set name="handlers">
-        <Array type="org.eclipse.jetty.server.Handler">
-          <Item>
-            <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection" />
-          </Item>
-          <Item>
-            <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
-              <Set name="contextPath">/tests</Set>
-              <Set name="baseResourceAsString"><Property name="test.docroot.base"/>/default
-              </Set>
-              <Set name="Handler">
-                <New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/>
-              </Set>
-              <Set name="DisplayName">default</Set>
-            </New>
-          </Item>
-        </Array>
-      </Set>
+    <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+      <Call name="addHandler">
+        <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
+          <Set name="contextPath">/tests</Set>
+          <Set name="baseResourceAsString"><Property name="test.docroot.base"/>/default
+          </Set>
+          <Set name="Handler">
+            <New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/>
+          </Set>
+          <Set name="DisplayName">default</Set>
+        </New>
+      </Call>
     </New>
   </Set>
 

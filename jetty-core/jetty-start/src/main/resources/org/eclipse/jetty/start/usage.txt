@@ -134,7 +134,7 @@ Configure Commands:
 Options:
 --------
 
-  --module=<moduleName>(,<moduleName>)*
+  --modules=<moduleName>(,<moduleName>)*
                    Enables a module for this execution.
                    To enable a module for all future executions, use the
                    --add-modules command.
@@ -142,7 +142,7 @@ Options:
                    file or in ${jetty.base}/start.d/*.ini files created by
                    the --add-modules command.
 
-  --lib=<classpath>
+  --libs=<classpath>
                    Adds the specified class-path entries to the the server
                    class-path (or module-path).
 

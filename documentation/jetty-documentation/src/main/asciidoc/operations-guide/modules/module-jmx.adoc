@@ -11,16 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+[[og-module-jmx]]
+===== Module `jmx`
 
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.util.annotation.ManagedObject;
+include::{jetty-home}/modules/{ee-current}-webapp.mod[tags=description]
 
-/**
- * @deprecated Use {@link Handler.Wrapper}
- */
-@ManagedObject("Handler wrapping another Handler")
-@Deprecated
-public class HandlerWrapper extends Handler.Wrapper
-{
-}
+This configuration is useful for xref:og-jmx-local[local development and testing].
+If you need to xref:og-jmx-remote[enable remote access], use the xref:og-jmx-remote[`jmx-remote` module].

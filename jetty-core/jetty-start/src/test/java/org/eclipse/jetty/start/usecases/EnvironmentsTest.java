@@ -82,7 +82,7 @@ public class EnvironmentsTest extends AbstractUseCase
 
         // === Execute Main
         List<String> runArgs = List.of(
-            "--module=feature-envA,feature-envB"
+            "--modules=feature-envA,feature-envB"
         );
         ExecResults results = exec(runArgs, false);
 

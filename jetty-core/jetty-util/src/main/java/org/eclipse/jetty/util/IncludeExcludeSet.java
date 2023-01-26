@@ -20,13 +20,12 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Utility class to maintain a set of inclusions and exclusions.
+ * <p>Utility class to maintain a set of inclusions and exclusions.</p>
  * <p>Maintains a set of included and excluded elements.  The method {@link #test(Object)}
  * will return true IFF the passed object is not in the excluded set AND ( either the
- * included set is empty OR the object is in the included set)
+ * included set is empty OR the object is in the included set)</p>
  * <p>The type of the underlying {@link Set} used may be passed into the
- * constructor, so special sets like Servlet PathMap may be used.
- * <p>
+ * constructor, so special sets like Servlet PathMap may be used.</p>
  *
  * @param <T> The type of element of the set (often a pattern)
  * @param <P> The type of the instance passed to the predicate

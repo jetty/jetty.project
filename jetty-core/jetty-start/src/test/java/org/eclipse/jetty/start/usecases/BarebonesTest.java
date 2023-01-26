@@ -36,7 +36,7 @@ public class BarebonesTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Arrays.asList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 

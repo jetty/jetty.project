@@ -38,7 +38,7 @@ import org.xml.sax.SAXException;
  * <dd>minimum requirement (type defaults to <code>jar</code>, with no classifier)</dd>
  * <dt>{@code maven://<groupId>/<artifactId>/<version>/<type>}</dt>
  * <dd>optional type requirement</dd>
- * <dt><code>{@code maven://<groupId>/<artifactId>/<version>/<type>/<classifier>}</code></dt>
+ * <dt>{@code maven://<groupId>/<artifactId>/<version>/<type>/<classifier>}</dt>
  * <dd>optional type and classifier requirement</dd>
  * </dl>
  */

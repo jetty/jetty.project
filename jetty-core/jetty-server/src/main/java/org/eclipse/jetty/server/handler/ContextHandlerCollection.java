@@ -50,6 +50,19 @@ public class ContextHandlerCollection extends Handler.Collection
 
     public ContextHandlerCollection(ContextHandler... contexts)
     {
+        this(true, contexts);
+    }
+
+    /**
+     * @param dynamic If true, then contexts may be added dynamically once started,
+     *                so the InvocationType is assumed to be BLOCKING, otherwise
+     *                the InvocationType is fixed once started and handlers cannot be
+     *                subsequently added.
+     * @param contexts The contexts to add.
+     */
+    public ContextHandlerCollection(boolean dynamic, ContextHandler... contexts)
+    {
+        super(dynamic);
         if (contexts.length > 0)
             setHandlers(contexts);
     }

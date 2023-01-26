@@ -51,7 +51,7 @@ public class AgentPropertiesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main,agent"
+                "--modules=main,agent"
             ),
             StandardCharsets.UTF_8);
 

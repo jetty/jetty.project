@@ -41,8 +41,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -131,7 +129,7 @@ public class ClientCloseTest
         });
         context.addServlet(holder, "/ws");
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(context);
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();

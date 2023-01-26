@@ -232,11 +232,11 @@ public class ConnectHandler extends Handler.Wrapper
                 sendConnectResponse(request, response, callback, HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                 return;
             }
-        
+
             HostPort hostPort = new HostPort(serverAddress);
             String host = hostPort.getHost();
             int port = hostPort.getPort(80);
-        
+
             if (!validateDestination(host, port))
             {
                 if (LOG.isDebugEnabled())
@@ -247,7 +247,7 @@ public class ConnectHandler extends Handler.Wrapper
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Connecting to {}:{}", host, port);
-        
+
             connectToServer(request, host, port, new Promise<>()
             {
                 @Override
@@ -259,7 +259,7 @@ public class ConnectHandler extends Handler.Wrapper
                     else
                         selector.connect(channel, connectContext);
                 }
-        
+
                 @Override
                 public void failed(Throwable x)
                 {

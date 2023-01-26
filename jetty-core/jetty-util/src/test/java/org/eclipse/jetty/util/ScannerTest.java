@@ -53,8 +53,8 @@ public class ScannerTest
     public WorkDir workDir;
     private Path _directory;
     private Scanner _scanner;
-    private BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
-    private BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
 
     @BeforeEach
     public void setupScanner() throws Exception
@@ -85,7 +85,7 @@ public class ScannerTest
                 _queue.add(new Event(filename, Notification.ADDED));
             }
         });
-        _scanner.addListener((Scanner.BulkListener)filenames -> _bulk.add(filenames));
+        _scanner.addListener((Scanner.BulkListener)_bulk::add);
 
         _scanner.start();
         _scanner.scan();
