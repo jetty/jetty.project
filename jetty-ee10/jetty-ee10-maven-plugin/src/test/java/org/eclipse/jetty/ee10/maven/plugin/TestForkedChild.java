@@ -22,6 +22,7 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class TestForkedChild
 {
-    File testDir;
-    File baseDir;
+    Path testDir;
+    Path baseDir;
     File tmpDir;
     File tokenFile;
     File webappPropsFile;
@@ -80,7 +81,7 @@ public class TestForkedChild
                 MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
-                webapp.setBaseResourceAsPath(baseDir.toPath());
+                webapp.setBaseResourceAsPath(baseDir);
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[0]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing
@@ -96,11 +97,11 @@ public class TestForkedChild
     @BeforeEach
     public void setUp()
     {
-        baseDir = MavenTestingUtils.getTestResourceDir("root");
-        testDir = MavenTestingUtils.getTargetTestingDir("forkedChild");
+        baseDir = MavenTestingUtils.getTestResourcePathDir("root");
+        testDir = MavenTestingUtils.getTargetTestingPath("forkedChild");
         FS.ensureEmpty(testDir);
-        tmpDir = new File(testDir, "tmp");
-        webappPropsFile = new File(testDir, "webapp.props");
+        tmpDir = new File(testDir.toFile(), "tmp");
+        webappPropsFile = new File(testDir.toFile(), "webapp.props");
 
         String stopPortString = System.getProperty("stop.port");
         assertNotNull(stopPortString, "stop.port System property");
@@ -111,7 +112,7 @@ public class TestForkedChild
 
         Random random = new Random();
         token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
-        tokenFile = testDir.toPath().resolve(token + ".txt").toFile();
+        tokenFile = testDir.resolve(token + ".txt").toFile();
     }
     
     @AfterEach

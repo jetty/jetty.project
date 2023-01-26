@@ -47,8 +47,12 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.jetty.ee9.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.PluginLog;
+import org.eclipse.jetty.maven.ScanTargetPattern;
+import org.eclipse.jetty.maven.WarPluginInfo;
+import org.eclipse.jetty.maven.utils.MavenProjectHelper;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -240,10 +244,11 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     /**
      * List of security realms to set up. Consider using instead
-     * the &lt;jettyXml&gt; element to specify external jetty xml config file. 
+     * @deprecated Consider using instead the &lt;jettyXml&gt; element to specify external jetty xml config file.
      * Optional.
      */
     @Parameter
+    @Deprecated
     protected List<LoginService> loginServices;
 
     /**
@@ -339,7 +344,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * Helper for interacting with the maven project space
      */
-    protected MavenProjectHelper mavenProjectHelper;
+    protected MavenProjectHelper<MavenWebAppContext> mavenProjectHelper;
     
     /**
      * This plugin
@@ -410,7 +415,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
             
             getLog().info("Configuring Jetty for project: " + getProjectName());
-            mavenProjectHelper = new MavenProjectHelper(project, repositorySystem, remoteRepositories, session);
+            OverlayManager overlayManager = new OverlayManager(new WarPluginInfo(project));
+            mavenProjectHelper = new MavenProjectHelper<>(project, repositorySystem, remoteRepositories, session, overlayManager);
             mergedSystemProperties = mergeSystemProperties();
             configureSystemProperties();
             augmentPluginClasspath();
@@ -528,6 +534,18 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
         List<File> libExtJars = new ArrayList<>();
 
+        // we need jetty-maven-core here
+        List<File> coreArtifacts =
+                plugin.getArtifacts().stream().filter(artifact -> "org.eclipse.jetty.maven".equals(artifact.getGroupId()) &&
+                                "jetty-maven-core".equals(artifact.getArtifactId()))
+                        .map(Artifact::getFile)
+                        .filter(File::isFile)
+                        .toList();
+        if (!coreArtifacts.isEmpty())
+        {
+            libExtJars.addAll(coreArtifacts);
+        }
+
         List<Dependency> pdeps = plugin.getPlugin().getDependencies();
         if (pdeps != null && !pdeps.isEmpty())
         {
@@ -547,6 +565,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                     libExtJars.add(mavenProjectHelper.resolveArtifact(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getType()));
                 }
             }
+        }
+
+        if (!libExtJars.isEmpty())
+        {
             jetty.setLibExtJarFiles(libExtJars);
         }
 

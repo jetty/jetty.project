@@ -33,8 +33,8 @@
     <plugins>
 
       <plugin>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>start-jetty</id>
@@ -44,10 +44,8 @@
             </goals>
             <configuration>
               <systemProperties>
-                <systemProperty>
-                  <name>jetty.port.file</name>
-                  <value>${jetty.port.file}</value>
-                </systemProperty>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
+                <jetty.http.port>0</jetty.http.port>
               </systemProperties>
               <nonBlocking>true</nonBlocking>
               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>

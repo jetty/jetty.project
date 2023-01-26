@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestWebAppPropertyConverter
 {
-    static File testDir;
+    static Path testDir;
     static String contextXml;
     static File tmpDir;
     static File classesDir;
@@ -55,26 +57,26 @@ public class TestWebAppPropertyConverter
     @BeforeAll
     public static void setUp() throws Exception
     {
-        testDir = MavenTestingUtils.getTargetTestingDir("TestWebApPropertyConverter");
-        testDir.mkdirs();
-        contextXml = MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath();
-        tmpDir = new File(testDir, "testToProperties");
+        testDir = MavenTestingUtils.getTargetTestingPath("TestWebApPropertyConverter");
+        Files.createDirectories(testDir);
+        contextXml = MavenTestingUtils.getTestResourcePathFile("embedder-context.xml").toFile().getAbsolutePath();
+        tmpDir = new File(testDir.toFile(), "testToProperties");
         tmpDir.mkdirs();
-        classesDir = new File(testDir, "imaginaryClasses");
+        classesDir = new File(testDir.toFile(), "imaginaryClasses");
         classesDir.mkdirs();
-        testClassesDir = new File(testDir, "imaginaryTestClasses");
+        testClassesDir = new File(testDir.toFile(), "imaginaryTestClasses");
         testClassesDir.mkdirs();
-        jar1 = new File(testDir, "imaginary1.jar");
+        jar1 = new File(testDir.toFile(), "imaginary1.jar");
         jar1.createNewFile();
-        jar2 = new File(testDir, "imaginary2.jar");
+        jar2 = new File(testDir.toFile(), "imaginary2.jar");
         jar2.createNewFile();
-        war = new File(testDir, "imaginary.war");
+        war = new File(testDir.toFile(), "imaginary.war");
         war.createNewFile();
-        override1 = new File(testDir, "override-web1.xml");
+        override1 = new File(testDir.toFile(), "override-web1.xml");
         override1.createNewFile();
-        override2 = new File(testDir, "override-web2.xml");
+        override2 = new File(testDir.toFile(), "override-web2.xml");
         override2.createNewFile();
-        webXml = new File(testDir, "web.xml");
+        webXml = new File(testDir.toFile(), "web.xml");
         webXml.createNewFile();
     }
 
@@ -87,7 +89,7 @@ public class TestWebAppPropertyConverter
     @Test
     public void testToProperties() throws Exception
     {
-        File propsFile = new File(testDir, "webapp.props");
+        File propsFile = new File(testDir.toFile(), "webapp.props");
         if (propsFile.exists())
             propsFile.delete();
         propsFile.createNewFile();
@@ -123,9 +125,9 @@ public class TestWebAppPropertyConverter
     @Test
     public void testFromProperties() throws Exception
     {
-        File base1 = new File(testDir, "base1");
+        File base1 = new File(testDir.toFile(), "base1");
         base1.mkdirs();
-        File base2 = new File(testDir, "base2");
+        File base2 = new File(testDir.toFile(), "base2");
         base2.mkdirs();
         MavenWebAppContext webApp = new MavenWebAppContext();
         Properties props = new Properties();

@@ -78,8 +78,8 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>start-jetty</id>
@@ -92,7 +92,7 @@
                 <supportedPackaging>pom</supportedPackaging>
               </supportedPackagings>
               <webApp>
-                  <war>${project.build.directory}/bean-validation-webapp-2.25.1.war</war>
+                <war>${project.build.directory}/bean-validation-webapp-2.25.1.war</war>
               </webApp>
               <systemProperties>
                 <jetty.port.file>${jetty.port.file}</jetty.port.file>

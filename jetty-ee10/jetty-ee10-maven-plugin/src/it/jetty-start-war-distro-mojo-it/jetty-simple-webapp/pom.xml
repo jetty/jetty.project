@@ -107,8 +107,8 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
         <dependencies>
           <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -127,7 +127,7 @@
               <stopPort>@jetty.stopPort@</stopPort>
               <stopKey>@jetty.stopKey@</stopKey>
               <webApp>
-                  <!-- starts the assembled webapp by default -->
+              <!-- starts the assembled webapp by default -->
               </webApp>
               <jettyBase>${basedir}/src/base</jettyBase>
               <javaPath>${java.home}/bin/java</javaPath>
@@ -136,6 +136,10 @@
                 <jetty.port.file>${jetty.port.file}</jetty.port.file>
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
+              <systemProperties>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
+                <jetty.http.port>0</jetty.http.port>
+              </systemProperties>
               <modules>ee10-apache-jsp,ee10-glassfish-jstl,ee10-testmod,resources</modules>
             </configuration>
           </execution>

@@ -33,6 +33,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.maven.AbstractForker;
+import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;

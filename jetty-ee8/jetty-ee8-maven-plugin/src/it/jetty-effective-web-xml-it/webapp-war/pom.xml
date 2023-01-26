@@ -28,8 +28,8 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>gen-effective-web-xml</id>
@@ -39,10 +39,10 @@
             </goals>
             <configuration>
               <webApp>
-                  <war>src/main/webapp</war>
+                <war>src/main/webapp</war>
               </webApp>
               <systemProperties>
-                  <jetty.port.file>${jetty.port.file}</jetty.port.file>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
               <jettyXmls>
                 <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>

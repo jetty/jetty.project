@@ -91,8 +91,8 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
         <dependencies>
           <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -119,6 +119,10 @@
                 <jetty.port.file>${jetty.port.file}</jetty.port.file>
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
+              <systemProperties>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
+                <jetty.http.port>0</jetty.http.port>
+              </systemProperties>
               <modules>ee9-apache-jsp,ee9-glassfish-jstl,ee9-testmod,resources</modules>
               <jettyOptions>--debug</jettyOptions>
             </configuration>

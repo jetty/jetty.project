@@ -55,9 +55,9 @@ public class WebAppPropertyConverter
     public static String LIB_JARS = "lib.jars";
     public static String DEFAULTS_DESCRIPTOR = "web.default.xml";
     public static String OVERRIDE_DESCRIPTORS = "web.overrides.xml";
-    
+
     //TODO :Support defaults descriptor!
-    
+
     /**
      * Convert a webapp to properties stored in a file.
      *
@@ -67,7 +67,7 @@ public class WebAppPropertyConverter
      * @throws IOException if any I/O exception occurs
      */
     public static void toProperties(MavenWebAppContext webApp, File propsFile, String contextXml)
-        throws IOException
+            throws IOException
     {
         if (webApp == null)
             throw new IllegalArgumentException("No webapp");
@@ -110,7 +110,7 @@ public class WebAppPropertyConverter
             props.put(BASE_DIRS, toCSV(((CombinedResource)webApp.getBaseResource()).getResources()));
         else if (baseResource instanceof Resource)
             props.put(BASE_DIRS, webApp.getBaseResource().toString());
-        
+
         //if there is a war file, use that
         if (webApp.getWar() != null)
             props.put(WAR_FILE, webApp.getWar());
@@ -144,10 +144,10 @@ public class WebAppPropertyConverter
         //context xml to apply
         if (contextXml != null)
             props.put(CONTEXT_XML, contextXml);
-        
+
         if (webApp.getDefaultsDescriptor() != null)
             props.put(DEFAULTS_DESCRIPTOR, webApp.getDefaultsDescriptor());
-        
+
         if (webApp.getOverrideDescriptors() != null)
         {
             props.put(OVERRIDE_DESCRIPTORS, String.join(",", webApp.getOverrideDescriptors()));
@@ -169,7 +169,7 @@ public class WebAppPropertyConverter
      * @throws Exception
      */
     public static void fromProperties(MavenWebAppContext webApp, String resource, Server server, Map<String, String> jettyProperties)
-        throws Exception
+            throws Exception
     {
         if (resource == null)
             throw new IllegalStateException("No resource");
@@ -179,20 +179,20 @@ public class WebAppPropertyConverter
 
     /**
      * Configure a webapp from properties.
-     * 
+     *
      * @param webApp the webapp to configure
      * @param webAppProperties properties that describe the configuration of the webapp
      * @param server the jetty Server instance
      * @param jettyProperties jetty properties
-     * 
+     *
      * @throws Exception
      */
     public static void fromProperties(MavenWebAppContext webApp, Properties webAppProperties, Server server, Map<String, String> jettyProperties)
-        throws Exception
+            throws Exception
     {
         if (webApp == null)
             throw new IllegalArgumentException("No webapp");
-        
+
         if (webAppProperties == null)
             return;
 
@@ -236,7 +236,7 @@ public class WebAppPropertyConverter
         {
             webApp.setWar(str);
         }
-        
+
         // - the equivalent of web-inf classes
         str = webAppProperties.getProperty(CLASSES_DIR);
         if (!StringUtil.isBlank(str))
@@ -254,7 +254,7 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(LIB_JARS);
         if (!StringUtil.isBlank(str))
         {
-            List<File> jars = new ArrayList<File>();
+            List<File> jars = new ArrayList<>();
             String[] names = StringUtil.csvSplit(str);
             for (int j = 0; names != null && j < names.length; j++)
             {
@@ -269,7 +269,7 @@ public class WebAppPropertyConverter
         {
             webApp.setDefaultsDescriptor(str);
         }
-        
+
         //any override descriptors
         str = (String)webAppProperties.getProperty(OVERRIDE_DESCRIPTORS);
         if (!StringUtil.isBlank(str))
@@ -280,12 +280,12 @@ public class WebAppPropertyConverter
                 webApp.addOverrideDescriptor(names[j]);
             }
         }
-        
+
         //set up the webapp from the context xml file provided
         //NOTE: just like jetty:run mojo this means that the context file can
         //potentially override settings made in the pom. Ideally, we'd like
         //the pom to override the context xml file, but as the other mojos all
-        //configure a WebAppContext in the pom (the <webApp> element), it is 
+        //configure a WebAppContext in the pom (the <webApp> element), it is
         //already configured by the time the context xml file is applied.
         str = (String)webAppProperties.getProperty(CONTEXT_XML);
         if (!StringUtil.isBlank(str))
@@ -303,7 +303,7 @@ public class WebAppPropertyConverter
             xmlConfiguration.configure(webApp);
         }
     }
-    
+
     /**
      * Configure a webapp from a properties file
      * @param webApp the webapp to configure
@@ -313,7 +313,7 @@ public class WebAppPropertyConverter
      * @throws Exception
      */
     public static void fromProperties(MavenWebAppContext webApp, Path propsFile, Server server, Map<String, String> jettyProperties)
-        throws Exception
+            throws Exception
     {
 
         if (propsFile == null)
@@ -327,7 +327,7 @@ public class WebAppPropertyConverter
         {
             props.load(in);
         }
-       
+
         fromProperties(webApp, props, server, jettyProperties);
     }
 

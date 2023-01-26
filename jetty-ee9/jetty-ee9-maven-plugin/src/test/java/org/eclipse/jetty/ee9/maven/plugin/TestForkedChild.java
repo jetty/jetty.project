@@ -97,10 +97,10 @@ public class TestForkedChild
     @BeforeEach
     public void setUp()
     {
-        baseDir = MavenTestingUtils.getTargetFile("test-classes/root");
+        baseDir = MavenTestingUtils.getTargetPath("test-classes/root").toFile();
         assertTrue(baseDir.exists());
-        testDir = MavenTestingUtils.getTargetTestingDir("forkedChild");
-        FS.ensureEmpty(testDir);
+        testDir = MavenTestingUtils.getTargetTestingPath("forkedChild").toFile();
+        FS.ensureEmpty(testDir.toPath());
         tmpDir = new File(testDir, "tmp");
         webappPropsFile = new File(testDir, "webapp.props");
 

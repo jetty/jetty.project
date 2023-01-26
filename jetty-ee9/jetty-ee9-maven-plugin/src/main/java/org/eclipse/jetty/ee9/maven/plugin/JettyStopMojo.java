@@ -48,21 +48,18 @@ public class JettyStopMojo extends AbstractWebAppMojo
     protected void startJettyEmbedded() throws MojoExecutionException
     {
         //Does not start jetty
-        return;
     }
 
     @Override
     protected void startJettyForked() throws MojoExecutionException
     {
         //Does not start jetty
-        return;
     }
 
     @Override
     protected void startJettyHome() throws MojoExecutionException
     {
         //Does not start jetty
-        return;
     }
 
     @Override
@@ -203,7 +200,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
         throws Exception
     {
         String response = null;
-        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort); OutputStream out = s.getOutputStream();)
+        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort); OutputStream out = s.getOutputStream())
         {
             out.write(command.getBytes());
             out.flush();
@@ -213,7 +210,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
                 //Wait for a response
                 s.setSoTimeout(wait * 1000);
 
-                try (LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));)
+                try (LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream())))
                 {
                     response = lin.readLine();
                 }

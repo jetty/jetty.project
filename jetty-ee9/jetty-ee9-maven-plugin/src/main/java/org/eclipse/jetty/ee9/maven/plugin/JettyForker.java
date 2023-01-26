@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.maven.AbstractForker;
+import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.server.Server;
 
 /**

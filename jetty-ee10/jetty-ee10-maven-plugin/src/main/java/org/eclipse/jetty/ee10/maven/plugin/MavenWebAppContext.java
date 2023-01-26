@@ -36,6 +36,7 @@ import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.maven.Overlay;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -71,7 +72,7 @@ public class MavenWebAppContext extends WebAppContext
 
     private final List<File> _webInfJars = new ArrayList<>();
 
-    private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
+    private final Map<String, File> _webInfJarMap = new HashMap<>();
 
     private List<URI> _classpathUris; // webInfClasses+testClasses+webInfJars
 
@@ -433,8 +434,7 @@ public class MavenWebAppContext extends WebAppContext
 
         if (path != null)
         {
-            TreeSet<String> allPaths = new TreeSet<>();
-            allPaths.addAll(paths);
+            TreeSet<String> allPaths = new TreeSet<>(paths);
 
             // add in the dependency jars as a virtual WEB-INF/lib entry
             if (path.startsWith(WEB_INF_LIB_PREFIX))
@@ -484,8 +484,8 @@ public class MavenWebAppContext extends WebAppContext
         try
         {
             cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.ee10.cdi.servlet.JettyWeldInitializer");
-            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", new Class[]{WebAppContext.class});
-            initWebAppMethod.invoke(null, new Object[]{this});
+            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", WebAppContext.class);
+            initWebAppMethod.invoke(null, this);
         }
         catch (ClassNotFoundException e)
         {

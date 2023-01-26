@@ -61,9 +61,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
-        <configuration>
-          <goalPrefix>jetty</goalPrefix>
-        </configuration>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
@@ -173,6 +170,14 @@
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.maven</groupId>
+      <artifactId>jetty-maven-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-maven-plugin</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

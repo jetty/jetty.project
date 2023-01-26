@@ -75,8 +75,8 @@
     </pluginManagement>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
         <dependencies>
           <dependency>
               <groupId>org.eclipse.jetty</groupId>

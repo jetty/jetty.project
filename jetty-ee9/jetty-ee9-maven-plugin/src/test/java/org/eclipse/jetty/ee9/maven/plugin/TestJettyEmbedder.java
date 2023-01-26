@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -100,10 +101,10 @@ public class TestJettyEmbedder
         jetty.setServer(server);
         jetty.setContextHandlers(List.of(otherHandler));
         jetty.setRequestLog(null);
-        jetty.setJettyXmlFiles(Collections.singletonList(MavenTestingUtils.getTargetFile("test-classes/embedder-jetty.xml")));
+        jetty.setJettyXmlFiles(Collections.singletonList(MavenTestingUtils.getTargetPath("test-classes/embedder-jetty.xml").toFile()));
         jetty.setJettyProperties(jettyProperties);
         jetty.setLoginServices(null);
-        jetty.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath());
+        jetty.setContextXml(MavenTestingUtils.getTargetPath("test-classes/embedder-context.xml").toFile().getAbsolutePath());
         jetty.setWebApp(webApp);
 
         try

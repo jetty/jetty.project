@@ -14,8 +14,6 @@
 package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.LineNumberReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -263,10 +261,10 @@ public class TestJettyStopMojo
         cmd.add(ShutdownMonitorMain.class.getName());
 
         ProcessBuilder command = new ProcessBuilder(cmd);
-        File file = MavenTestingUtils.getTargetFile("tester.out");
+        File file = MavenTestingUtils.getTargetPath("tester.out").toFile();
         command.redirectOutput(file);
         command.redirectErrorStream(true);
-        command.directory(MavenTestingUtils.getTargetDir());
+        command.directory(MavenTestingUtils.getTargetPath().toFile());
         Process fork = command.start();
 
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(file::exists);

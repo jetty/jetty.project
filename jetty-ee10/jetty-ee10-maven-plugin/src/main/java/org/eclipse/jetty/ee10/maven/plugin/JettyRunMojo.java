@@ -17,7 +17,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.Date;
-import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -28,6 +27,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.maven.ConsoleReader;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -160,18 +160,15 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.setScanInterval(scan);
             scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
             scanner.setReportExistingFilesOnStartup(false);
-            scanner.addListener(new Scanner.BulkListener()
-            {   
-                public void filesChanged(Set<String> changes)
+            scanner.addListener((Scanner.BulkListener)changes ->
+            {
+                try
                 {
-                    try
-                    {
-                        restartWebApp(changes.contains(project.getFile().getCanonicalPath()));
-                    }
-                    catch (Exception e)
-                    {
-                        getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
-                    }
+                    restartWebApp(changes.contains(project.getFile().getCanonicalPath()));
+                }
+                catch (Exception e)
+                {
+                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                 }
             });
             configureScanner();
@@ -186,19 +183,15 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         else
         {
             ConsoleReader creader = new ConsoleReader();
-            creader.addListener(new ConsoleReader.Listener()
+            creader.addListener(line ->
             {
-                @Override
-                public void consoleEvent(String line)
+                try
                 {
-                    try
-                    {
-                        restartWebApp(false);
-                    }
-                    catch (Exception e)
-                    {
-                        getLog().debug(e);
-                    }
+                    restartWebApp(false);
+                }
+                catch (Exception e)
+                {
+                    getLog().debug(e);
                 }
             });
             Thread cthread = new Thread(creader, "ConsoleReader");

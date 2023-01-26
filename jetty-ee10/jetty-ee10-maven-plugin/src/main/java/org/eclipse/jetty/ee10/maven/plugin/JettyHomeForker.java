@@ -33,6 +33,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.maven.AbstractForker;
+import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -186,7 +188,7 @@ public class JettyHomeForker extends AbstractForker
         //add any args to the jvm
         if (StringUtil.isNotBlank(jvmArgs))
         {
-            Arrays.stream(jvmArgs.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jvmArgs.split(" ")).filter(StringUtil::isNotBlank).forEach((a) -> cmd.add(a.trim()));
         }
 
         cmd.add("-jar");
@@ -221,11 +223,11 @@ public class JettyHomeForker extends AbstractForker
             tmp.append(",ext");
         tmp.append(",ee10-maven");
         cmd.add(tmp.toString());
- 
+
         //put any other jetty options onto the command line
         if (StringUtil.isNotBlank(jettyOptions))
         {
-            Arrays.stream(jettyOptions.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jettyOptions.split(" ")).filter(StringUtil::isNotBlank).forEach((a) -> cmd.add(a.trim()));
         }
 
         //put any jetty properties onto the command line
@@ -278,14 +280,14 @@ public class JettyHomeForker extends AbstractForker
     }
 
     protected void redeployWebApp()
-        throws Exception
+            throws Exception
     {
         generateWebAppPropertiesFile();
         webappPath.resolve("maven.xml").toFile().setLastModified(System.currentTimeMillis());
     }
 
     private void generateWebAppPropertiesFile()
-        throws Exception
+            throws Exception
     {
         WebAppPropertyConverter.toProperties(webApp, etcPath.resolve("maven.props").toFile(), contextXml);
     }
@@ -317,33 +319,33 @@ public class JettyHomeForker extends AbstractForker
 
             //copy the existing jetty base
             Files.walkFileTree(jettyBasePath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
-                new SimpleFileVisitor<Path>()
-                {
-                    @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+                    new SimpleFileVisitor<Path>()
                     {
-                        Path targetDir = targetBasePath.resolve(jettyBasePath.relativize(dir));
-                        try
+                        @Override
+                        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
                         {
-                            Files.copy(dir, targetDir);
+                            Path targetDir = targetBasePath.resolve(jettyBasePath.relativize(dir));
+                            try
+                            {
+                                Files.copy(dir, targetDir);
+                            }
+                            catch (FileAlreadyExistsException e)
+                            {
+                                if (!Files.isDirectory(targetDir)) //ignore attempt to recreate dir
+                                    throw e;
+                            }
+                            return FileVisitResult.CONTINUE;
                         }
-                        catch (FileAlreadyExistsException e)
-                        {
-                            if (!Files.isDirectory(targetDir)) //ignore attempt to recreate dir
-                                throw e;
-                        }
-                        return FileVisitResult.CONTINUE;
-                    }
 
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-                    {
-                        if (contextXmlFile != null && Files.isSameFile(contextXmlFile.toPath(), file))
-                            return FileVisitResult.CONTINUE; //skip copying the context xml file
-                        Files.copy(file, targetBasePath.resolve(jettyBasePath.relativize(file)));
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+                        {
+                            if (contextXmlFile != null && Files.isSameFile(contextXmlFile.toPath(), file))
+                                return FileVisitResult.CONTINUE; //skip copying the context xml file
+                            Files.copy(file, targetBasePath.resolve(jettyBasePath.relativize(file)));
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
         }
 
         //make the jetty base structure
@@ -403,7 +405,7 @@ public class JettyHomeForker extends AbstractForker
     }
 
     private void configureJettyHome()
-        throws Exception
+            throws Exception
     {
         if (jettyHome == null && jettyHomeZip == null)
             throw new IllegalStateException("No jettyHome");

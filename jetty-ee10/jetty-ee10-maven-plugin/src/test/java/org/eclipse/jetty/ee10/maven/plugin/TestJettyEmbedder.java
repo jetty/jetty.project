@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -54,7 +55,7 @@ public class TestJettyEmbedder
         jetty.setJettyXmlFiles(null);
         jetty.setJettyProperties(null);
         jetty.setLoginServices(null);
-        jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());
+        jetty.setContextXml(MavenTestingUtils.getTestResourcePathFile("embedder-context.xml").toFile().getAbsolutePath());
         jetty.setWebApp(webApp);
 
         try
@@ -97,10 +98,10 @@ public class TestJettyEmbedder
         jetty.setServer(server);
         jetty.setContextHandlers(List.of(otherHandler));
         jetty.setRequestLog(null);
-        jetty.setJettyXmlFiles(List.of(MavenTestingUtils.getTestResourceFile("embedder-jetty.xml")));
+        jetty.setJettyXmlFiles(List.of(MavenTestingUtils.getTestResourcePathFile("embedder-jetty.xml").toFile()));
         jetty.setJettyProperties(jettyProperties);
         jetty.setLoginServices(null);
-        jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());
+        jetty.setContextXml(MavenTestingUtils.getTestResourcePathFile("embedder-context.xml").toFile().getAbsolutePath());
         jetty.setWebApp(webApp);
 
         try

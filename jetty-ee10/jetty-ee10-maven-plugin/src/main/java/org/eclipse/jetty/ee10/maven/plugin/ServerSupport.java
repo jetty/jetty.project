@@ -22,6 +22,8 @@ import java.util.Map;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;

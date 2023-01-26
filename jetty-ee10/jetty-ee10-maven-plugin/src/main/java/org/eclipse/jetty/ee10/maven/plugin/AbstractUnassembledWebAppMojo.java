@@ -24,6 +24,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.jetty.maven.ScanPattern;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 
@@ -246,9 +247,6 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             return false;
 
         //Test dependencies not added by default
-        if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
-            return false;
-
-        return true;
+        return !Artifact.SCOPE_TEST.equals(artifact.getScope()) || useTestScope;
     }
 }

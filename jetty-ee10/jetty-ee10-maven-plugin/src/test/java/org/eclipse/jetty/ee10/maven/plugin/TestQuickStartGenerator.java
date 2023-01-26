@@ -48,7 +48,7 @@ public class TestQuickStartGenerator
 
         Path quickstartFile = tmpDir.resolve("quickstart-web.xml");
         QuickStartGenerator generator = new QuickStartGenerator(quickstartFile, webApp);
-        generator.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath());
+        generator.setContextXml(MavenTestingUtils.getTargetPath("test-classes/embedder-context.xml").toFile().getAbsolutePath());
         generator.setServer(new Server());
 
         Path propsFile = tmpDir.resolve("webapp.props");

@@ -24,6 +24,7 @@ import java.util.Properties;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
@@ -41,7 +42,9 @@ public class JettyEmbedder extends AbstractLifeCycle
     protected List<LoginService> loginServices;
     protected RequestLog requestLog;
     protected MavenServerConnector httpConnector;
+
     protected Server server;
+
     protected MavenWebAppContext webApp;
     protected boolean exitVm;
     protected boolean stopAtShutdown;

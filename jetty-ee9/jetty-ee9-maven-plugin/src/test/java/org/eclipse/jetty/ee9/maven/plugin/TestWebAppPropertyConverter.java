@@ -55,9 +55,9 @@ public class TestWebAppPropertyConverter
     @BeforeAll
     public static void setUp() throws Exception
     {
-        testDir = MavenTestingUtils.getTargetTestingDir("TestWebApPropertyConverter");
+        testDir = MavenTestingUtils.getTargetTestingPath("TestWebApPropertyConverter").toFile();
         testDir.mkdirs();
-        contextXml = MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath();
+        contextXml = MavenTestingUtils.getTargetPath("test-classes/embedder-context.xml").toFile().getAbsolutePath();
         tmpDir = new File(testDir, "testToProperties");
         tmpDir.mkdirs();
         classesDir = new File(testDir, "imaginaryClasses");

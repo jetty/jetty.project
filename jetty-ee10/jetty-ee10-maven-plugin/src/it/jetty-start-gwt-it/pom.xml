@@ -44,9 +44,8 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.jetty.ee10</groupId>
-          <artifactId>jetty-ee10-maven-plugin</artifactId>
-          <configuration></configuration>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
         </plugin>
         <plugin>
           <groupId>net.ltgt.gwt.maven</groupId>

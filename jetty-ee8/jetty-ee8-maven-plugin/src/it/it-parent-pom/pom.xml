@@ -126,10 +126,11 @@
           <version>@maven.source.plugin.version@</version>
         </plugin>
         <plugin>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
           <version>${jetty.version}</version>
           <configuration>
+            <environment>ee8</environment>
             <mavenServerConnector>
               <reusePort>true</reusePort>
             </mavenServerConnector>

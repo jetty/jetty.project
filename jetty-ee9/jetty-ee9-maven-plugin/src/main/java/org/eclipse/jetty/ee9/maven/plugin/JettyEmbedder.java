@@ -24,6 +24,7 @@ import java.util.Properties;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;

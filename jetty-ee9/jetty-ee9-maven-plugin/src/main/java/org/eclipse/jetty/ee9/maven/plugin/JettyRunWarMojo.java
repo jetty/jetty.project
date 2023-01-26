@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
-import java.util.Set;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Execute;
@@ -25,6 +24,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.eclipse.jetty.maven.ConsoleReader;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -160,19 +160,15 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
         else
         {
             ConsoleReader creader = new ConsoleReader();
-            creader.addListener(new ConsoleReader.Listener()
+            creader.addListener(line ->
             {
-                @Override
-                public void consoleEvent(String line)
+                try
                 {
-                    try
-                    {
-                        restartWebApp(false);
-                    }
-                    catch (Exception e)
-                    {
-                        getLog().debug(e);
-                    }
+                    restartWebApp(false);
+                }
+                catch (Exception e)
+                {
+                    getLog().debug(e);
                 }
             });
             Thread cthread = new Thread(creader, "ConsoleReader");
@@ -190,19 +186,16 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
 
             //set up any extra files or dirs to watch
             configureScanTargetPatterns(scanner);
-            scanner.addListener(new Scanner.BulkListener()
+            scanner.addListener((Scanner.BulkListener)changes ->
             {
-                public void filesChanged(Set<String> changes)
+                try
                 {
-                    try
-                    {
-                        boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
-                        restartWebApp(reconfigure);
-                    }
-                    catch (Exception e)
-                    {
-                        getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
-                    }
+                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
+                    restartWebApp(reconfigure);
+                }
+                catch (Exception e)
+                {
+                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                 }
             });
         }

@@ -68,13 +68,13 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
         <dependencies>
           <dependency>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>jetty-slf4j-impl</artifactId>
-              <version>${jetty.version}</version>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-slf4j-impl</artifactId>
+            <version>${jetty.version}</version>
           </dependency>
         </dependencies>
         <executions>
@@ -85,6 +85,7 @@
               <goal>start</goal>
             </goals>
             <configuration>
+              <environment>ee10</environment>
               <!-- Set up configuration for Weld. -->
               <contextXml>${basedir}/src/main/jetty/jetty-context.xml</contextXml>
               <jettyXmls>
