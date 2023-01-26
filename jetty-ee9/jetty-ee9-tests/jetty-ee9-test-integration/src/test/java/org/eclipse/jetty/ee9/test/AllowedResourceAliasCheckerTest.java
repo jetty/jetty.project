@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.ee9.test;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -28,34 +29,34 @@ import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AllowedResourceAliasCheckerTest
 {
-    private Server _server;
-    private ServerConnector _connector;
-    private HttpClient _client;
-    private ServletContextHandler _context;
-    private Path _baseDir;
+    private static Server _server;
+    private static ServerConnector _connector;
+    private static HttpClient _client;
+    private static ServletContextHandler _context;
+    private static Path _baseDir;
 
     public void start() throws Exception
     {
         _server.start();
         _client.start();
     }
-
-    @BeforeEach
-    public void prepare(WorkDir workDir)
+  
+    @BeforeAll
+    public static void beforeAll() throws Exception
     {
         _client = new HttpClient();
         _server = new Server();
@@ -67,47 +68,53 @@ public class AllowedResourceAliasCheckerTest
         _context.addServlet(DefaultServlet.class, "/");
         _server.setHandler(_context);
 
-        _baseDir = workDir.getEmptyPathDir().resolve("baseDir");
-        _context.setBaseResource(new PathResource(_baseDir));
+        _baseDir = MavenTestingUtils.getTargetTestingPath(AllowedResourceAliasCheckerTest.class.getName());
+        FS.ensureDirExists(_baseDir);
+        assertTrue(Files.exists(_baseDir));
+        _context.setBaseResourceAsPath(_baseDir);
+    }
+
+    @AfterAll
+    public static void afterAll() throws Exception
+    {
+        _client.stop();
+        _server.stop();
     }
 
     @AfterEach
-    public void dispose()
+    public void afterEach()
     {
-        LifeCycle.stop(_client);
-        LifeCycle.stop(_server);
-    }
-
-    public void createBaseDir() throws IOException
-    {
+        IO.delete(_baseDir);
         FS.ensureDirExists(_baseDir);
+    }
+    
+    public void createBaseDirFile() throws IOException
+    {
+        assertTrue(Files.exists(_baseDir));
 
         // Create a file in the baseDir.
-        Path file = Files.writeString(_baseDir.resolve("file.txt"), "this is a file in the baseDir");
-
-        boolean symlinkSupported;
-        try
+        File file = _baseDir.resolve("file.txt").toFile();
+        file.deleteOnExit();
+        assertTrue(file.createNewFile());
+        try (FileWriter fileWriter = new FileWriter(file))
         {
-            // Create a symlink to that file.
-            // Symlink to a directory inside the webroot.
-            Path symlink = _baseDir.resolve("symlink");
-            Files.createSymbolicLink(symlink, file);
-            symlinkSupported = true;
-        }
-        catch (UnsupportedOperationException | FileSystemException e)
-        {
-            symlinkSupported = false;
+            fileWriter.write("this is a file in the baseDir");
         }
 
-        assumeTrue(symlinkSupported, "Symlink not supported");
+        // Create a symlink to that file.
+        // Symlink to a directory inside of the webroot.
+        File symlink = _baseDir.resolve("symlink").toFile();
+        symlink.deleteOnExit();
+        Files.createSymbolicLink(symlink.toPath(), file.toPath());
+        assertTrue(symlink.exists());
     }
-
+    
     @Test
-    public void testCreateBaseDirBeforeStart() throws Exception
+    public void testCreateBaseDirFileBeforeStart() throws Exception
     {
         _context.clearAliasChecks();
-        _context.addAliasCheck(new AllowedResourceAliasChecker(_context));
-        createBaseDir();
+        _context.addAliasCheck(new AllowedResourceAliasChecker(_context.getCoreContextHandler()));
+        createBaseDirFile();
         start();
         assertThat(_context.getAliasChecks().size(), equalTo(1));
 
@@ -121,9 +128,9 @@ public class AllowedResourceAliasCheckerTest
     public void testCreateBaseDirAfterStart() throws Exception
     {
         _context.clearAliasChecks();
-        _context.addAliasCheck(new AllowedResourceAliasChecker(_context));
+        _context.addAliasCheck(new AllowedResourceAliasChecker(_context.getCoreContextHandler()));
         start();
-        createBaseDir();
+        createBaseDirFile();
         assertThat(_context.getAliasChecks().size(), equalTo(1));
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/symlink");
