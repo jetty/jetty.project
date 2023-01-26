@@ -1025,55 +1025,62 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             encoder.reset();
         }
 
-        CharBuffer in = CharBuffer.wrap(s);
-        CharBuffer crlf = eoln ? CharBuffer.wrap("\r\n") : null;
         RetainableByteBuffer out = _bufferPool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
-        ByteBuffer byteBuffer = out.getByteBuffer();
-        BufferUtil.flipToFill(byteBuffer);
-
-        while (true)
+        try
         {
-            CoderResult result;
-            if (in.hasRemaining())
+            CharBuffer in = CharBuffer.wrap(s);
+            CharBuffer crlf = eoln ? CharBuffer.wrap("\r\n") : null;
+            ByteBuffer byteBuffer = out.getByteBuffer();
+            BufferUtil.flipToFill(byteBuffer);
+
+            while (true)
             {
-                result = encoder.encode(in, byteBuffer, crlf == null);
-                if (result.isUnderflow())
-                    if (crlf == null)
-                        break;
-                    else
-                        continue;
-            }
-            else if (crlf != null && crlf.hasRemaining())
-            {
-                result = encoder.encode(crlf, byteBuffer, true);
-                if (result.isUnderflow())
+                CoderResult result;
+                if (in.hasRemaining())
                 {
-                    if (!encoder.flush(byteBuffer).isUnderflow())
-                        result.throwException();
-                    break;
+                    result = encoder.encode(in, byteBuffer, crlf == null);
+                    if (result.isUnderflow())
+                        if (crlf == null)
+                            break;
+                        else
+                            continue;
                 }
-            }
-            else
-                break;
+                else if (crlf != null && crlf.hasRemaining())
+                {
+                    result = encoder.encode(crlf, byteBuffer, true);
+                    if (result.isUnderflow())
+                    {
+                        if (!encoder.flush(byteBuffer).isUnderflow())
+                            result.throwException();
+                        break;
+                    }
+                }
+                else
+                    break;
 
-            if (result.isOverflow())
-            {
-                BufferUtil.flipToFlush(byteBuffer, 0);
-                RetainableByteBuffer bigger = _bufferPool.acquire(out.capacity() + s.length() + 2, out.isDirect());
-                BufferUtil.flipToFill(bigger.getByteBuffer());
-                bigger.getByteBuffer().put(byteBuffer);
-                out.release();
-                BufferUtil.flipToFill(bigger.getByteBuffer());
-                out = bigger;
-                byteBuffer = bigger.getByteBuffer();
-                continue;
+                if (result.isOverflow())
+                {
+                    BufferUtil.flipToFlush(byteBuffer, 0);
+                    RetainableByteBuffer bigger = _bufferPool.acquire(out.capacity() + s.length() + 2, out.isDirect());
+                    BufferUtil.flipToFill(bigger.getByteBuffer());
+                    bigger.getByteBuffer().put(byteBuffer);
+                    out.release();
+                    BufferUtil.flipToFill(bigger.getByteBuffer());
+                    out = bigger;
+                    byteBuffer = bigger.getByteBuffer();
+                    continue;
+                }
+
+                result.throwException();
             }
 
-            result.throwException();
+            BufferUtil.flipToFlush(byteBuffer, 0);
+            write(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
         }
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        write(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
-        out.release();
+        finally
+        {
+            out.release();
+        }
     }
 
     /**
@@ -1633,10 +1640,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (!_closed)
                 {
                     _closed = true;
-                    _buffer.release();
                     IO.close(_in);
                 }
-
                 return Action.SUCCEEDED;
             }
 
@@ -1659,6 +1664,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _written += len;
             channelWrite(byteBuffer, _eof, this);
             return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            _buffer.release();
         }
 
         @Override

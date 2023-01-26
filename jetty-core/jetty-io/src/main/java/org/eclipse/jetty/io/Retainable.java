@@ -23,6 +23,28 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>The resource is typically implicitly retained when it is first created.
  * It may be retained more times (thus incrementing its reference count) and released
  * (thus decrementing its reference count), until the reference count goes to zero.</p>
+ * <h2><a id="idiom">Idiomatic usage</a></h2>
+ * <p>The general rules to use {@code Retainable} objects are the following:</p>
+ * <ol>
+ * <li>If the {@code Retainable} has been obtained by calling a method, and the
+ * caller code consumes it, then the caller code must call {@link #release()}.</li>
+ * <li>If the {@code Retainable} has been obtained by {@code caller2} by calling a
+ * method, and {@code caller2} returns it without consuming it to {@code caller1},
+ * then {@code caller2} must not call {@link #release()}, since {@code caller1} will.</li>
+ * <li>If the {@code Retainable} has been obtained as a method argument, the
+ * receiver code must either:
+ * <ol type="A">
+ * <li>Consume the {@code Retainable} synchronously within the method, in which case
+ * {@link #release()} must not be called.</li>
+ * <li>Pass the {@code Retainable} to some other method, in which case {@link #release()}
+ * must not be called.</li>
+ * <li>Store away the {@code Retainable} for later or asynchronous processing, for
+ * example storing it in containers such as {@link java.util.Collection}s, or capturing
+ * it in a lambda that is passed to another thread, etc., in which case {@link #retain()}
+ * must be called and a mechanism to call {@link #release()} later or asynchronously
+ * for this additional {@link #retain()} must be arranged.</li>
+ * </ol>
+ * </ol>
  */
 public interface Retainable
 {
