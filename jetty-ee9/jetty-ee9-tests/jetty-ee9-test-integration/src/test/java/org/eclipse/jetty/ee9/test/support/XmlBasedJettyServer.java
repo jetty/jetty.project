@@ -176,6 +176,7 @@ public class XmlBasedJettyServer
     {
         assertNotNull(_server, "Server should not be null (failed load?)");
 
+        _server.setDumpAfterStart(false);
         _server.start();
 
         // Find the active server port.

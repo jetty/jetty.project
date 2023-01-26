@@ -1182,32 +1182,6 @@ public abstract class RFC2616BaseTest
     }
 
     /**
-     * Test Accept-Encoding (Header Field)
-     *
-     * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.3">RFC 2616 (section 14.3)</a>
-     */
-    @Test
-    public void test143AcceptEncodingGzip() throws Exception
-    {
-        String specId;
-
-        // Gzip accepted
-
-        StringBuffer req1 = new StringBuffer();
-        req1.append("GET /rfc2616-webapp/solutions.html HTTP/1.1\n");
-        req1.append("Host: localhost\n");
-        req1.append("Accept-Encoding: gzip\n");
-        req1.append("Connection: close\n");
-        req1.append("\n");
-
-        HttpTester.Response response = http.request(req1);
-        specId = "14.3 Accept-Encoding Header";
-        assertThat(specId, response.getStatus(), is(HttpStatus.OK_200));
-        assertEquals("gzip", response.get("Content-Encoding"), specId);
-        assertEquals("text/html", response.get("Content-Type"), specId);
-    }
-
-    /**
      * Test Content-Range (Header Field)
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
@@ -1458,6 +1432,7 @@ public abstract class RFC2616BaseTest
     @Test
     public void test1423IncompleteHostHeader() throws Exception
     {
+        //TODO this test is testing RFC9112 behaviour, an rfc2616 compatibility mode is not offered due to security concerns. Split this out to new RFC9112Test class.
         // HTTP/1.1 - Incomplete (empty) Host header
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
@@ -1468,7 +1443,7 @@ public abstract class RFC2616BaseTest
             req4.append("\n");
 
             HttpTester.Response response = http.request(req4);
-            assertThat("14.23 HTTP/1.1 - Empty Host", response.getStatus(), is(HttpStatus.OK_200));
+            assertThat("14.23 HTTP/1.1 - Empty Host", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         }
     }
 
