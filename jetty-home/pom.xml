@@ -303,6 +303,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
+              <!-- useful for troubleshooting the source archive of a particular file: <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact> -->
               <includeGroupIds>
                 org.eclipse.jetty, org.eclipse.jetty.websocket
               </includeGroupIds>
