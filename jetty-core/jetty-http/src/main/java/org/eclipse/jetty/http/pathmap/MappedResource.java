@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.Map;
+
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("Mapped Resource")
-public class MappedResource<E> implements Comparable<MappedResource<E>>
+public class MappedResource<E> implements Comparable<MappedResource<E>>, Map.Entry<PathSpec, E>
 {
     private final PathSpec pathSpec;
     private final E resource;
@@ -88,6 +90,24 @@ public class MappedResource<E> implements Comparable<MappedResource<E>>
             return false;
         }
         return true;
+    }
+
+    @Override
+    public PathSpec getKey()
+    {
+        return getPathSpec();
+    }
+
+    @Override
+    public E getValue()
+    {
+        return getResource();
+    }
+
+    @Override
+    public E setValue(E value)
+    {
+        throw new UnsupportedOperationException();
     }
 
     @ManagedAttribute(value = "path spec", readonly = true)

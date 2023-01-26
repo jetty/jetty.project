@@ -14,9 +14,9 @@
 package org.eclipse.jetty.http.pathmap;
 
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,10 +41,12 @@ import org.slf4j.LoggerFactory;
  * @param <E> the type of mapping endpoint
  */
 @ManagedObject("Path Mappings")
-public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
+public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterable<MappedResource<E>>, Dumpable
 {
+    // TODO this class should be an AbstractMap
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
-    private final Set<MappedResource<E>> _mappings = new TreeSet<>(Comparator.comparing(MappedResource::getPathSpec));
+
+    private final Set<MappedResource<E>> _mappings = new TreeSet<>(Map.Entry.comparingByKey());
 
     /**
      * When _orderIsSignificant is true, the order of the MappedResources is significant and a match needs to be iteratively
@@ -66,6 +68,14 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
     private MappedResource<E> _servletRoot;
     private MappedResource<E> _servletDefault;
+
+    @Override
+    public Set<Entry<PathSpec, E>> entrySet()
+    {
+        @SuppressWarnings("unchecked")
+        Set<Map.Entry<PathSpec, E>> entries = (Set<Map.Entry<PathSpec, E>>)(Set<? extends Map.Entry<PathSpec, E>>)_mappings;
+        return entries;
+    }
 
     @Override
     public String dump()
@@ -108,9 +118,9 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         return _mappings.stream();
     }
 
-    public void removeIf(Predicate<MappedResource<E>> predicate)
+    public boolean removeIf(Predicate<MappedResource<E>> predicate)
     {
-        _mappings.removeIf(predicate);
+        return _mappings.removeIf(predicate);
     }
 
     /**
@@ -352,130 +362,145 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         return _mappings.iterator();
     }
 
-    public E get(PathSpec spec)
+    @Override
+    public E get(Object key)
     {
-        return _mappings.stream()
-            .filter(mappedResource -> mappedResource.getPathSpec().equals(spec))
-            .map(MappedResource::getResource)
-            .findFirst()
-            .orElse(null);
+        return key instanceof PathSpec pathSpec ? get(pathSpec) : null;
     }
 
-    public boolean put(String pathSpecString, E resource)
+    public E get(PathSpec pathSpec)
+    {
+        if (pathSpec == null)
+            return null;
+
+        for (MappedResource<E> mr : _mappings)
+        {
+            if (pathSpec.equals(mr.getKey()))
+                return mr.getValue();
+        }
+        return null;
+    }
+
+    public E put(String pathSpecString, E resource)
     {
         return put(PathSpec.from(pathSpecString), resource);
     }
 
-    public boolean put(PathSpec pathSpec, E resource)
+    @Override
+    public E put(PathSpec pathSpec, E resource)
     {
+        E old = remove(pathSpec);
         MappedResource<E> entry = new MappedResource<>(pathSpec, resource);
-        boolean added = _mappings.add(entry);
+        _mappings.add(entry);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} to {}", added ? "Added" : "Ignored", entry, this);
+            LOG.debug("Added {} replacing {} to {}", entry, old, this);
 
-        if (added)
+        switch (pathSpec.getGroup())
         {
-            switch (pathSpec.getGroup())
-            {
-                case EXACT:
-                    if (pathSpec instanceof ServletPathSpec)
-                    {
-                        String exact = pathSpec.getDeclaration();
-                        if (exact != null)
-                            _exactMap.put(exact, entry);
-                    }
-                    else
-                    {
-                        // This is not a Servlet mapping, turn off optimization on Exact
-                        // TODO: see if we can optimize all Regex / UriTemplate versions here too.
-                        // Note: Example exact in Regex that can cause problems `^/a\Q/b\E/` (which is only ever matching `/a/b/`)
-                        // Note: UriTemplate can handle exact easily enough
-                        _optimizedExact = false;
-                        _orderIsSignificant = true;
-                    }
-                    break;
-                case PREFIX_GLOB:
-                    if (pathSpec instanceof ServletPathSpec)
-                    {
-                        String prefix = pathSpec.getPrefix();
-                        if (prefix != null)
-                            _prefixMap.put(prefix, entry);
-                    }
-                    else
-                    {
-                        // This is not a Servlet mapping, turn off optimization on Prefix
-                        // TODO: see if we can optimize all Regex / UriTemplate versions here too.
-                        // Note: Example Prefix in Regex that can cause problems `^/a/b+` or `^/a/bb*` ('b' one or more times)
-                        // Note: Example Prefix in UriTemplate that might cause problems `/a/{b}/{c}`
-                        _optimizedPrefix = false;
-                        _orderIsSignificant = true;
-                    }
-                    break;
-                case SUFFIX_GLOB:
-                    if (pathSpec instanceof ServletPathSpec)
-                    {
-                        String suffix = pathSpec.getSuffix();
-                        if (suffix != null)
-                            _suffixMap.put(suffix, entry);
-                    }
-                    else
-                    {
-                        // This is not a Servlet mapping, turn off optimization on Suffix
-                        // TODO: see if we can optimize all Regex / UriTemplate versions here too.
-                        // Note: Example suffix in Regex that can cause problems `^.*/path/name.ext` or `^/a/.*(ending)`
-                        // Note: Example suffix in UriTemplate that can cause problems `/{a}/name.ext`
-                        _optimizedSuffix = false;
-                        _orderIsSignificant = true;
-                    }
-                    break;
-                case ROOT:
-                    if (pathSpec instanceof ServletPathSpec)
-                    {
-                        if (_servletRoot == null)
-                            _servletRoot = entry;
-                    }
-                    else
-                    {
-                        _orderIsSignificant = true;
-                    }
-                    break;
-                case DEFAULT:
-                    if (pathSpec instanceof ServletPathSpec)
-                    {
-                        if (_servletDefault == null)
-                            _servletDefault = entry;
-                    }
-                    else
-                    {
-                        _orderIsSignificant = true;
-                    }
-                    break;
-                default:
-            }
+            case EXACT:
+                if (pathSpec instanceof ServletPathSpec)
+                {
+                    String exact = pathSpec.getDeclaration();
+                    if (exact != null)
+                        _exactMap.put(exact, entry);
+                }
+                else
+                {
+                    // This is not a Servlet mapping, turn off optimization on Exact
+                    // TODO: see if we can optimize all Regex / UriTemplate versions here too.
+                    // Note: Example exact in Regex that can cause problems `^/a\Q/b\E/` (which is only ever matching `/a/b/`)
+                    // Note: UriTemplate can handle exact easily enough
+                    _optimizedExact = false;
+                    _orderIsSignificant = true;
+                }
+                break;
+            case PREFIX_GLOB:
+                if (pathSpec instanceof ServletPathSpec)
+                {
+                    String prefix = pathSpec.getPrefix();
+                    if (prefix != null)
+                        _prefixMap.put(prefix, entry);
+                }
+                else
+                {
+                    // This is not a Servlet mapping, turn off optimization on Prefix
+                    // TODO: see if we can optimize all Regex / UriTemplate versions here too.
+                    // Note: Example Prefix in Regex that can cause problems `^/a/b+` or `^/a/bb*` ('b' one or more times)
+                    // Note: Example Prefix in UriTemplate that might cause problems `/a/{b}/{c}`
+                    _optimizedPrefix = false;
+                    _orderIsSignificant = true;
+                }
+                break;
+            case SUFFIX_GLOB:
+                if (pathSpec instanceof ServletPathSpec)
+                {
+                    String suffix = pathSpec.getSuffix();
+                    if (suffix != null)
+                        _suffixMap.put(suffix, entry);
+                }
+                else
+                {
+                    // This is not a Servlet mapping, turn off optimization on Suffix
+                    // TODO: see if we can optimize all Regex / UriTemplate versions here too.
+                    // Note: Example suffix in Regex that can cause problems `^.*/path/name.ext` or `^/a/.*(ending)`
+                    // Note: Example suffix in UriTemplate that can cause problems `/{a}/name.ext`
+                    _optimizedSuffix = false;
+                    _orderIsSignificant = true;
+                }
+                break;
+            case ROOT:
+                if (pathSpec instanceof ServletPathSpec)
+                {
+                    if (_servletRoot == null)
+                        _servletRoot = entry;
+                }
+                else
+                {
+                    _orderIsSignificant = true;
+                }
+                break;
+            case DEFAULT:
+                if (pathSpec instanceof ServletPathSpec)
+                {
+                    if (_servletDefault == null)
+                        _servletDefault = entry;
+                }
+                else
+                {
+                    _orderIsSignificant = true;
+                }
+                break;
+            default:
         }
 
-        return added;
+        return old;
     }
 
-    @SuppressWarnings("incomplete-switch")
-    public boolean remove(PathSpec pathSpec)
+    @Override
+    public E remove(Object key)
+    {
+        return key instanceof PathSpec pathSpec ? remove(pathSpec) : null;
+    }
+
+    public E remove(PathSpec pathSpec)
     {
         Iterator<MappedResource<E>> iter = _mappings.iterator();
-        boolean removed = false;
+        E removed = null;
         while (iter.hasNext())
         {
-            if (iter.next().getPathSpec().equals(pathSpec))
+            MappedResource<E> entry = iter.next();
+            if (entry.getPathSpec().equals(pathSpec))
             {
-                removed = true;
+                removed = entry.getResource();
                 iter.remove();
                 break;
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} to {}", removed ? "Removed" : "Ignored", pathSpec, this);
+            LOG.debug("Removed {} at {} from {}", removed, pathSpec, this);
 
-        if (removed)
+        if (removed != null)
         {
             switch (pathSpec.getGroup())
             {
