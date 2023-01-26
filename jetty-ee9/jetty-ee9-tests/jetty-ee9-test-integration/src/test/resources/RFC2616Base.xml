@@ -34,7 +34,7 @@
   <Set name="handler">
     <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
       <Arg>
-        <Array type="org.eclipse.jetty.server.Handler">
+        <Array type="org.eclipse.jetty.server.handler.ContextHandler">
           <Item>
             <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
               <Set name="contextPath">/tests</Set>
@@ -68,58 +68,58 @@
     </New>
   </Set>
 
-      <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
-      <Arg>ee9</Arg>
+   <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
+    <Arg>ee9</Arg>
+   </Call>
+   <Ref refid="Environment">
+    <Call name="setAttribute">
+      <Arg>contextHandlerClass</Arg>
+      <Arg>org.eclipse.jetty.ee9.webapp.WebAppContext</Arg>
     </Call>
-    <Ref refid="Environment">
-      <Call name="setAttribute">
-        <Arg>contextHandlerClass</Arg>
-        <Arg>org.eclipse.jetty.ee9.webapp.WebAppContext</Arg>
+   </Ref>
+
+   <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref refid="contexts" />
+        </Set>
+
+        <Call name="addAppProvider">
+         <Arg>
+          <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
+            <Set name="environmentName">ee9</Set>
+            <Set name="monitoredDirName">
+              <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                <Arg>src/test/resources/</Arg>
+                <Arg>webapp-contexts/RFC2616/</Arg>
+              </Call>
+            </Set>
+
+            <Set name="scanInterval">1</Set>
+            <Set name="extractWars">true</Set>
+            <Get name="properties">
+              <Put name="jetty.deploy.containerScanJarPattern">
+                <Property name="jetty.deploy.containerScanJarPattern">
+                  <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
+                </Property>
+              </Put>
+              <Put name="jetty.deploy.webInfScanJarPattern">
+                <Property name="jetty.deploy.webInfScanJarPattern"/>
+              </Put>
+              <Put name="jetty.deploy.servletContainerInitializerExclusionPattern">
+                <Property name="jetty.deploy.servletContainerInitializerExclusionPattern"/>
+              </Put>
+              <Put name="jetty.deploy.servletContainerInitializerOrder">
+                <Property name="jetty.deploy.servletContainerInitializerOrder"/>
+              </Put>
+            </Get>
+          </New>
+        </Arg>
       </Call>
-    </Ref>
-
-    <Call name="addBean">
-      <Arg>
-        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-          <Set name="contexts">
-            <Ref refid="contexts" />
-          </Set>
-
-          <Call name="addAppProvider">
-           <Arg>
-            <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
-              <Set name="environmentName">ee9</Set>
-              <Set name="monitoredDirName">
-                <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
-                  <Arg>src/test/resources/</Arg>
-                  <Arg>webapp-contexts/RFC2616/</Arg>
-                </Call>
-              </Set>
-
-              <Set name="scanInterval">1</Set>
-              <Set name="extractWars">true</Set>
-              <Get name="properties">
-                <Put name="jetty.deploy.containerScanJarPattern">
-                  <Property name="jetty.deploy.containerScanJarPattern">
-                    <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
-                  </Property>
-                </Put>
-                <Put name="jetty.deploy.webInfScanJarPattern">
-                  <Property name="jetty.deploy.webInfScanJarPattern"/>
-                </Put>
-                <Put name="jetty.deploy.servletContainerInitializerExclusionPattern">
-                  <Property name="jetty.deploy.servletContainerInitializerExclusionPattern"/>
-                </Put>
-                <Put name="jetty.deploy.servletContainerInitializerOrder">
-                  <Property name="jetty.deploy.servletContainerInitializerOrder"/>
-                </Put>
-              </Get>
-            </New>
-          </Arg>
-        </Call>
-       </New>
-      </Arg>
-    </Call>
+     </New>
+    </Arg>
+   </Call>
 
   <!-- =========================================================== -->
   <!-- extra options                                               -->
