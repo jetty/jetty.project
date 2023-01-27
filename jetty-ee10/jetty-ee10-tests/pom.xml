@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-tests</artifactId>
-  <name>EE10 :: Tests :: Parent</name>
+  <name>EE10 :: Tests</name>
   <packaging>pom</packaging>
 
   <properties>

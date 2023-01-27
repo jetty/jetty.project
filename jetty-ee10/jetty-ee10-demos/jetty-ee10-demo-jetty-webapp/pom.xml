@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-demo-jetty-webapp</artifactId>
-  <name>EE10 :: Jetty Demo :: Jetty :: WebApp</name>
+  <name>EE10 :: Demo :: Jetty WebApp</name>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>

@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee9-memcached-sessions</artifactId>
-  <name>Jetty EE9 Tests :: Sessions :: Memcached</name>
+  <name>EE9 :: Session Tests :: Memcached</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.memcached</bundle-symbolic-name>
   </properties>

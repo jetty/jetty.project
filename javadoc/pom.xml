@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>javadoc</artifactId>
-  <name>Jetty :: Javadoc Build</name>
+  <name>Javadocs</name>
   <packaging>jar</packaging>
 
   <properties>

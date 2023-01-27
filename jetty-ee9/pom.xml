@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee9</groupId>
   <artifactId>jetty-ee9</artifactId>
-  <name>EE9 :: Parent</name>
+  <name>EE9</name>
   <packaging>pom</packaging>
 
   <properties>

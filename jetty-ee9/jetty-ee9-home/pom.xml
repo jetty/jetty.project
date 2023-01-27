@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-home</artifactId>
-  <name>EE9 :: Jetty :: Home Assembly</name>
+  <name>EE9 :: Home Assembly</name>
   <packaging>pom</packaging>
 
   <properties>

@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home-tester</artifactId>
-  <name>Jetty Tests :: jetty-home Tester</name>
+  <name>Tests :: Home Tester</name>
   <packaging>jar</packaging>
 
   <properties>

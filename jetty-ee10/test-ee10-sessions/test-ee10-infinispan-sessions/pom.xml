@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee10-infinispan-sessions</artifactId>
-  <name>Jetty EE10 Tests :: Sessions :: Infinispan</name>
+  <name>EE10 :: Session Tests :: Infinispan</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
     <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->

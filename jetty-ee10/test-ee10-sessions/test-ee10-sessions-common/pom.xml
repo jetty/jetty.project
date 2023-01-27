@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee10-sessions-common</artifactId>
-  <name>Jetty EE10 Tests :: Sessions :: Common</name>
+  <name>EE10 :: Session Tests :: Common</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.common</bundle-symbolic-name>
   </properties>

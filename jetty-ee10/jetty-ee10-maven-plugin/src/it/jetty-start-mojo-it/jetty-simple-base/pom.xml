@@ -11,7 +11,7 @@
   <artifactId>jetty-simple-base</artifactId>
   <packaging>jar</packaging>
 
-  <name>EE10 :: Jetty :: Simple :: Base</name>
+  <name>EE10 :: Simple :: Base</name>
 
   <dependencies>
     <dependency>

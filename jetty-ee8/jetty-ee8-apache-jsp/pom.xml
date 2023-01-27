@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-apache-jsp</artifactId>
-  <name>EE8 :: Jetty :: Apache JSP Implementation</name>
+  <name>EE8 :: Apache JSP</name>
 
   <properties>
     <ee9.module>jetty-ee9-apache-jsp</ee9.module>

@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-test-jmx</artifactId>
   <packaging>pom</packaging>
-  <name>EE10 :: Jetty Test :: JMX Parent</name>
+  <name>EE10 :: Tests :: JMX</name>
   <modules>
     <module>jetty-ee10-jmx-webapp</module>
     <module>jetty-ee10-jmx-webapp-it</module>

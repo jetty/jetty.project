@@ -7,8 +7,8 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-examples</artifactId>
-  <name>Jetty Examples</name>
+  <artifactId>jetty-ee10-examples</artifactId>
+  <name>EE10 :: Examples</name>
 
   <dependencies>
     <dependency>

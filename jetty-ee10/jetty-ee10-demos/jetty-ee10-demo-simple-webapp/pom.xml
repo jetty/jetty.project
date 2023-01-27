@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-demo-simple-webapp</artifactId>
-  <name>EE10 :: Jetty Demo :: Simple :: Webapp</name>
+  <name>EE10 :: Demo :: Simple WebApp</name>
   <packaging>war</packaging>
 
   <properties>

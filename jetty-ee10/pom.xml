@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee10</groupId>
   <artifactId>jetty-ee10</artifactId>
-  <name>EE10 :: Parent</name>
+  <name>EE10</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -67,7 +67,7 @@
     <module>jetty-ee10-webapp</module>
     <module>jetty-ee10-websocket</module>
     <module>jetty-ee10-tests</module>
-    <module>jetty-examples</module>
+    <module>jetty-ee10-examples</module>
     <module>jetty-ee10-bom</module>
     <module>test-ee10-sessions</module>
     <module>jetty-ee10-home</module>

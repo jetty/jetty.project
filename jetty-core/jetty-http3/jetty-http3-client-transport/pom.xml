@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http3-client-transport</artifactId>
-  <name>Jetty Core :: HTTP3 :: HTTP Client Transport</name>
+  <name>Core :: HTTP3 :: HTTP Client Transport</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client.http</bundle-symbolic-name>

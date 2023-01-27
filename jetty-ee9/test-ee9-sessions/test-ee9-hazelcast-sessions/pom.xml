@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee9-hazelcast-sessions</artifactId>
-  <name>Jetty EE9 Tests :: Sessions :: Hazelcast</name>
+  <name>EE9 :: Session Tests :: Hazelcast</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
   </properties>

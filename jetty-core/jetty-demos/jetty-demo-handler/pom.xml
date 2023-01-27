@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-demo-handler</artifactId>
-  <name>Jetty Core :: Demo Handler</name>
+  <name>Core :: Demo Handler</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.demos</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.demos.*</spotbugs.onlyAnalyze>

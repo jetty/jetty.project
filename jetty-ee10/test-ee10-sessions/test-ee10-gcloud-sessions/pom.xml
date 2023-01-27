@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee10-gcloud-sessions</artifactId>
-  <name>Jetty EE10 Tests :: Sessions :: GCloud</name>
+  <name>EE10 :: Session Tests :: GCloud</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.gcloud</bundle-symbolic-name>
   </properties>

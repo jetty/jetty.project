@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-quic-quiche-common</artifactId>
-  <name>Jetty Core :: QUIC :: Quiche :: Common</name>
+  <name>Core :: QUIC :: Quiche :: Common</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quic-quiche-common</bundle-symbolic-name>

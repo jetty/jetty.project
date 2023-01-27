@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee9-file-sessions</artifactId>
-  <name>Jetty EE9 Tests :: Sessions :: File</name>
+  <name>EE9 :: Session Tests :: File</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.file</bundle-symbolic-name>
   </properties>

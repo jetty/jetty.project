@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-glassfish-jstl</artifactId>
-  <name>EE8 :: Glassfish :: JSTL module</name>
+  <name>EE8 :: Glassfish JSTL</name>
   <url>https://projects.eclipse.org/projects/ee4j.glassfish</url>
   <packaging>jar</packaging>
   <properties>

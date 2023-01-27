@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee10-mongodb-sessions</artifactId>
-  <name>Jetty EE10 Tests :: Sessions :: Mongo</name>
+  <name>EE10 :: Session Tests :: Mongo</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
     <embedmongo.host>localhost</embedmongo.host>

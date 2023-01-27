@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http3-client</artifactId>
-  <name>Jetty Core :: HTTP3 :: Client</name>
+  <name>Core :: HTTP3 :: Client</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>

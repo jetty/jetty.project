@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-util-ajax</artifactId>
-  <name>Jetty Core :: Utilities :: Ajax(JSON)</name>
+  <name>Core :: Utilities :: JSON</name>
   <description>JSON/Ajax Utility classes for Jetty</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util.ajax</bundle-symbolic-name>

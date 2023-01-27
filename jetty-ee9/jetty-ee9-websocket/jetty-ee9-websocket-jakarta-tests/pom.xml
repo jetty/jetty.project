@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-websocket-jakarta-tests</artifactId>
-  <name>EE9 :: Jetty :: Websocket :: jakarta.websocket :: Tests</name>
+  <name>EE9 :: Websocket :: Jakarta Tests</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jakarta.tests</bundle-symbolic-name>

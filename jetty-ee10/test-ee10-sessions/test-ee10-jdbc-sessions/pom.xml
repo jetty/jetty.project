@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee10-jdbc-sessions</artifactId>
-  <name>Jetty EE10 Tests :: Sessions :: JDBC</name>
+  <name>EE10 :: Session Tests :: JDBC</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.jdbc</bundle-symbolic-name>
   </properties>

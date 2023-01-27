@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee10-sessions</artifactId>
-  <name>Jetty EE10 Tests :: Sessions :: Parent</name>
+  <name>EE10 :: Session Tests</name>
   <packaging>pom</packaging>
   <properties>
     <maven.javadoc.skip>true</maven.javadoc.skip>

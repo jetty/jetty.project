@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.memcached</groupId>
   <artifactId>jetty-memcached</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: Memcached</name>
+  <name>Integrations :: Memcached</name>
 
   <modules>
     <module>jetty-memcached-sessions</module>

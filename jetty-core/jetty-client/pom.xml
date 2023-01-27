@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-client</artifactId>
-  <name>Jetty Core :: Asynchronous HTTP Client</name>
+  <name>Core :: HTTP Client</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>

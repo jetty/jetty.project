@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee10-hazelcast-sessions</artifactId>
-  <name>Jetty EE10 Tests :: Sessions :: Hazelcast</name>
+  <name>EE10 :: Session Tests :: Hazelcast</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
     <skipTests>true</skipTests> <!-- disabled, see Issue #8877 -->

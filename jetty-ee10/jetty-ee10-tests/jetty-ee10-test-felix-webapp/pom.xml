@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-test-felix-webapp</artifactId>
-  <name>Test :: Jetty EE10 Felix Webapp</name>
+  <name>EE10 :: Tests :: Felix WebApp</name>
   <packaging>war</packaging>
 
   <properties>

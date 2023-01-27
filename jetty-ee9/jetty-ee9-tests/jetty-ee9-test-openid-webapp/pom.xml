@@ -10,7 +10,7 @@
   <artifactId>jetty-ee9-test-openid-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>Test :: Jetty EE9 OpenId Webapp</name>
+  <name>EE9 :: Tests :: OpenId WebApp</name>
 
   <dependencies>
     <dependency>
