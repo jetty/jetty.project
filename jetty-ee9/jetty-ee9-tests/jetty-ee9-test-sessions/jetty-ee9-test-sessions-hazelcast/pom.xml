@@ -3,27 +3,16 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>test-ee9-sessions</artifactId>
+    <artifactId>jetty-ee9-test-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test-ee9-mongodb-sessions</artifactId>
-  <name>EE9 :: Session Tests :: Mongo</name>
+  <artifactId>jetty-ee9-test-sessions-hazelcast</artifactId>
+  <name>EE9 :: Tests :: Sessions :: Hazelcast</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
-    <embedmongo.host>localhost</embedmongo.host>
+    <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <mongo.docker.version>${mongo.docker.version}</mongo.docker.version>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -49,6 +38,16 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+           <argLine>--add-modules java.se --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.management/sun.management=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED</argLine>
+          <useSystemClassLoader>true</useSystemClassLoader>
+          <forkedProcessExitTimeoutInSeconds>45</forkedProcessExitTimeoutInSeconds>
+          <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -76,13 +75,25 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>test-ee9-sessions-common</artifactId>
+      <artifactId>jetty-ee9-test-sessions-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-nosql</artifactId>
+      <artifactId>jetty-hazelcast</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.hazelcast</groupId>
+          <artifactId>hazelcast</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+       <groupId>com.hazelcast</groupId>
+       <artifactId>hazelcast-all</artifactId>
+       <version>${hazelcast.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -91,8 +102,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -100,30 +121,6 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>mongodb</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
+
 </project>

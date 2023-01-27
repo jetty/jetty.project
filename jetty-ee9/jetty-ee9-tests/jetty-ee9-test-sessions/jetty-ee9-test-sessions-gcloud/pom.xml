@@ -3,20 +3,25 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>test-ee9-sessions</artifactId>
+    <artifactId>jetty-ee9-test-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test-ee9-memcached-sessions</artifactId>
-  <name>EE9 :: Session Tests :: Memcached</name>
+  <artifactId>jetty-ee9-test-sessions-gcloud</artifactId>
+  <name>EE9 :: Tests :: Sessions :: GCloud</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.sessions.memcached</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.sessions.gcloud</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-session</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-session</artifactId>
+      <scope>test</scope>
+      <type>test-jar</type>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
@@ -30,22 +35,18 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>test-ee9-sessions-common</artifactId>
+      <artifactId>jetty-ee9-test-sessions-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.memcached</groupId>
-      <artifactId>jetty-memcached-sessions</artifactId>
+      <groupId>org.eclipse.jetty.gcloud</groupId>
+      <artifactId>jetty-gcloud-session-manager</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -56,6 +57,16 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>gcloud</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

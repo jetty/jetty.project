@@ -15,7 +15,6 @@ package org.eclipse.jetty.session;
 
 import org.eclipse.jetty.ee9.session.AbstractWebAppObjectInSessionTest;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 

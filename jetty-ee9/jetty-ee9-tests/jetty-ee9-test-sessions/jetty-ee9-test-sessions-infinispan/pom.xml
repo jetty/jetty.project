@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>test-ee9-sessions</artifactId>
+    <artifactId>jetty-ee9-test-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test-ee9-infinispan-sessions</artifactId>
-  <name>EE9 :: Session Tests :: Infinispan</name>
+  <artifactId>jetty-ee9-test-sessions-infinispan</artifactId>
+  <name>EE9 :: Tests :: Sessions :: Infinispan</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
     <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
@@ -84,7 +84,8 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>test-ee9-sessions-common</artifactId>
+      <artifactId>jetty-ee9-test-sessions-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
