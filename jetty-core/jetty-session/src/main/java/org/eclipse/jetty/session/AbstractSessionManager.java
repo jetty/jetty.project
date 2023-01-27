@@ -289,7 +289,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 addBean(_sessionIdManager, false);
             }
 
-            _scheduler = server.getBean(Scheduler.class);
+            _scheduler = server.getScheduler();
             if (_scheduler == null)
             {
                 _scheduler = new ScheduledExecutorScheduler(String.format("Session-Scheduler-%x", hashCode()), false);

@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -77,7 +78,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     private final boolean _syncFlush;
 
     private DeflaterPool.Entry _deflaterEntry;
-    private ByteBuffer _buffer;
+    private RetainableByteBuffer _buffer;
 
     public GzipResponseAndCallback(GzipHandler handler, Request request, Response response, Callback callback)
     {
@@ -323,7 +324,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         protected Action process() throws Exception
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("GzipBufferCB.process(): _last={}, _buffer={}, _content={}", _last, BufferUtil.toDetailString(_buffer), BufferUtil.toDetailString(_content));
+                LOG.debug("GzipBufferCB.process(): _last={}, _buffer={}, _content={}", _last, _buffer, BufferUtil.toDetailString(_content));
 
             GZState gzstate = _state.get();
 
@@ -340,25 +341,26 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             // If we have no buffer
             if (_buffer == null)
             {
-                _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
+                _buffer = getRequest().getComponents().getRetainableByteBufferPool().acquire(_bufferSize, false);
+                ByteBuffer byteBuffer = _buffer.getByteBuffer();
                 // Per RFC-1952, GZIP is LITTLE_ENDIAN
-                _buffer.order(ByteOrder.LITTLE_ENDIAN);
-                BufferUtil.flipToFill(_buffer);
+                byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+                BufferUtil.flipToFill(byteBuffer);
                 // Add GZIP Header
-                _buffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
+                byteBuffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
             }
             else
             {
                 // otherwise clear the buffer as previous writes will always fully consume.
-                BufferUtil.clearToFill(_buffer);
+                BufferUtil.clearToFill(_buffer.getByteBuffer());
             }
 
             Deflater deflater = _deflaterEntry.get();
 
             return switch (gzstate)
             {
-                case COMPRESSING -> compressing(deflater, _buffer);
-                case FINISHING -> finishing(deflater, _buffer);
+                case COMPRESSING -> compressing(deflater, _buffer.getByteBuffer());
+                case FINISHING -> finishing(deflater, _buffer.getByteBuffer());
                 default -> throw new IllegalStateException("Unexpected state [" + _state.get() + "]");
             };
         }
@@ -373,7 +375,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
             if (_buffer != null)
             {
-                getRequest().getComponents().getByteBufferPool().release(_buffer);
+                _buffer.release();
                 _buffer = null;
             }
         }
@@ -483,7 +485,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 super.toString(),
                 BufferUtil.toDetailString(_content),
                 _last,
-                BufferUtil.toDetailString(_buffer),
+                _buffer,
                 _deflaterEntry,
                 _state.get());
         }

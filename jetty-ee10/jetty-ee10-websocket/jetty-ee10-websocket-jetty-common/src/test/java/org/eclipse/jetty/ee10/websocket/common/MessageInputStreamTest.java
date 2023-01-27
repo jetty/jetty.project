@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageInputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,14 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class MessageInputStreamTest
 {
-    public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");
-
-    @AfterEach
-    public void afterEach()
-    {
-        bufferPool.assertNoLeaks();
-    }
-
     @Test
     public void testBasicAppendRead() throws IOException
     {

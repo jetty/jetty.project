@@ -21,12 +21,13 @@ import org.eclipse.jetty.client.internal.HttpExchange;
 import org.eclipse.jetty.client.internal.HttpReceiver;
 import org.eclipse.jetty.client.internal.HttpSender;
 import org.eclipse.jetty.fcgi.generator.Flusher;
-import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IdleTimeout;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,9 +162,9 @@ public class HttpChannelOverFCGI extends HttpChannel
             release();
     }
 
-    protected void flush(Generator.Result... results)
+    protected void flush(RetainableByteBufferPool.Accumulator accumulator, Callback callback)
     {
-        flusher.flush(results);
+        flusher.flush(accumulator, callback);
     }
 
     void receive()

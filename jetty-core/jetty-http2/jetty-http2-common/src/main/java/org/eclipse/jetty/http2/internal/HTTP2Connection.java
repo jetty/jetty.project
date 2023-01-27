@@ -455,7 +455,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         public ByteBuffer getBuffer()
         {
-            return delegate.getBuffer();
+            return delegate.getByteBuffer();
         }
 
         public boolean isRetained()
@@ -494,7 +494,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void put(ByteBuffer source)
         {
-            BufferUtil.append(delegate.getBuffer(), source);
+            BufferUtil.append(delegate.getByteBuffer(), source);
         }
     }
 }

@@ -375,10 +375,6 @@ public class DetectorConnectionTest
             {
                 if (!detectionSuccessful.compareAndSet(true, false))
                     throw new AssertionError("DetectionUnsuccessful callback should only have been called once");
-
-                // omitting this will leak the buffer
-                connector.getByteBufferPool().release(buffer);
-
                 Callback.Completable.with(c -> endPoint.write(c, ByteBuffer.wrap("No upgrade for you".getBytes(StandardCharsets.US_ASCII))))
                     .whenComplete((r, x) -> endPoint.close());
             }

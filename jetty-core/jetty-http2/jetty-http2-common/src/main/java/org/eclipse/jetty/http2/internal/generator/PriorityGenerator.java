@@ -19,7 +19,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class PriorityGenerator extends FrameGenerator
@@ -30,18 +31,19 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
-        return generatePriority(lease, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
+        return generatePriority(accumulator, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
     }
 
-    public int generatePriority(ByteBufferPool.Lease lease, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public int generatePriority(RetainableByteBufferPool.Accumulator accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
-        ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
-        generatePriorityBody(header, streamId, parentStreamId, weight, exclusive);
-        BufferUtil.flipToFlush(header, 0);
-        lease.append(header, true);
+        RetainableByteBuffer header = generateHeader(FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
+        ByteBuffer byteBuffer = header.getByteBuffer();
+        generatePriorityBody(byteBuffer, streamId, parentStreamId, weight, exclusive);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(header);
         return Frame.HEADER_LENGTH + PriorityFrame.PRIORITY_LENGTH;
     }
 

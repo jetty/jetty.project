@@ -30,6 +30,7 @@ import org.eclipse.jetty.http3.internal.MessageFlusher;
 import org.eclipse.jetty.http3.internal.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
@@ -62,7 +63,8 @@ public class ServerHTTP3Session extends ServerProtocolSession
         long encoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
-        this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
+        RetainableByteBufferPool bufferPool = quicSession.getRetainableByteBufferPool();
+        this.encoder = new QpackEncoder(bufferPool, new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
         addBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
@@ -70,7 +72,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         long decoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
         InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
-        this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), configuration.getMaxRequestHeadersSize());
+        this.decoder = new QpackDecoder(bufferPool, new InstructionHandler(decoderInstructionFlusher), configuration.getMaxRequestHeadersSize());
         addBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
@@ -82,7 +84,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
-        this.messageFlusher = new MessageFlusher(quicSession.getByteBufferPool(), encoder, configuration.getMaxResponseHeadersSize(), configuration.isUseOutputDirectByteBuffers());
+        this.messageFlusher = new MessageFlusher(quicSession.getRetainableByteBufferPool(), encoder, configuration.getMaxResponseHeadersSize(), configuration.isUseOutputDirectByteBuffers());
         addBean(messageFlusher);
     }
 
@@ -189,7 +191,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     private void openUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
     {
-        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, session);
+        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getRetainableByteBufferPool(), encoder, decoder, session);
         endPoint.setConnection(connection);
         endPoint.opened();
     }

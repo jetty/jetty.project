@@ -1,7 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Configures the ByteBufferPool used by ServerConnectors whose bucket sizes increase exponentially instead of linearly.
+Configures the RetainableByteBufferPool used by ServerConnectors.
+The bucket sizes increase quadratically instead of linearly.
 
 [tags]
 bytebufferpool
@@ -10,7 +11,7 @@ bytebufferpool
 bytebufferpool
 
 [xml]
-etc/jetty-bytebufferpool-logarithmic.xml
+etc/jetty-bytebufferpool-quadratic.xml
 
 [ini-template]
 ### Server ByteBufferPool Configuration

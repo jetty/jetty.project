@@ -23,7 +23,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
@@ -51,12 +50,7 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path)
     {
-        this(path, (ByteBufferPool)null);
-    }
-
-    public PathContentSource(Path path, ByteBufferPool byteBufferPool)
-    {
-        this(path, (byteBufferPool == null ? ByteBufferPool.NOOP : byteBufferPool).asRetainableByteBufferPool());
+        this(path, null);
     }
 
     public PathContentSource(Path path, RetainableByteBufferPool byteBufferPool)
@@ -69,7 +63,7 @@ public class PathContentSource implements Content.Source
                 throw new AccessDeniedException(path.toString());
             this.path = path;
             this.length = Files.size(path);
-            this.byteBufferPool = byteBufferPool == null ? ByteBufferPool.NOOP.asRetainableByteBufferPool() : byteBufferPool;
+            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : new RetainableByteBufferPool.NonPooling();
         }
         catch (IOException x)
         {
@@ -135,7 +129,7 @@ public class PathContentSource implements Content.Source
             return Content.Chunk.EOF;
 
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
-        ByteBuffer byteBuffer = retainableByteBuffer.getBuffer();
+        ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
 
         int read;
         try

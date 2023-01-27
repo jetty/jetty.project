@@ -19,15 +19,15 @@ import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MaxFrameSizeParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testMaxFrameSize()
@@ -35,7 +35,7 @@ public class MaxFrameSizeParseTest
         int maxFrameLength = Frame.DEFAULT_MAX_LENGTH + 16;
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)

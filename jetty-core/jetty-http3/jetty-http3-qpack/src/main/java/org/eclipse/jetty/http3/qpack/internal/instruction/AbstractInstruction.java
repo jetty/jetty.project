@@ -11,21 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.internal.generator;
+package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 
-public class NoOpGenerator extends FrameGenerator
+public abstract class AbstractInstruction implements Instruction
 {
-    public NoOpGenerator()
+    private final RetainableByteBufferPool bufferPool;
+
+    protected AbstractInstruction(RetainableByteBufferPool bufferPool)
     {
-        super(null);
+        this.bufferPool = bufferPool;
     }
 
-    @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
-        return 0;
+        return bufferPool;
     }
 }

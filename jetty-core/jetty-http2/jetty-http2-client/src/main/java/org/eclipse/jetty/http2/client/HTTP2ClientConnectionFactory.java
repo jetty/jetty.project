@@ -28,7 +28,6 @@ import org.eclipse.jetty.http2.internal.HTTP2Connection;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -49,14 +48,14 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
-        ByteBufferPool byteBufferPool = client.getByteBufferPool();
+        RetainableByteBufferPool bufferPool = client.getRetainableByteBufferPool();
         Executor executor = client.getExecutor();
         Scheduler scheduler = client.getScheduler();
         Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
-        Generator generator = new Generator(byteBufferPool, client.getMaxDynamicTableSize(), client.getMaxHeaderBlockFragment());
+        Generator generator = new Generator(bufferPool, client.getMaxDynamicTableSize(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
@@ -64,13 +63,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         if (streamIdleTimeout > 0)
             session.setStreamIdleTimeout(streamIdleTimeout);
 
-        Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
+        Parser parser = new Parser(bufferPool, session, 4096, 8192);
         parser.setMaxFrameLength(client.getMaxFrameLength());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
-        RetainableByteBufferPool retainableByteBufferPool = byteBufferPool.asRetainableByteBufferPool();
-
-        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, retainableByteBufferPool, executor, endPoint,
+        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, bufferPool, executor, endPoint,
             parser, session, client.getInputBufferSize(), promise, listener);
         connection.setUseInputDirectByteBuffers(client.isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(client.isUseOutputDirectByteBuffers());

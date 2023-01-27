@@ -16,9 +16,7 @@ package org.eclipse.jetty.io.content;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.IO;
@@ -29,9 +27,9 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
  * <p>
  * A {@link Content.Source} that is backed by an {@link InputStream}.
  * Data is read from the {@link InputStream} into a buffer that is optionally acquired
- * from a {@link ByteBufferPool}, and converted to a {@link Content.Chunk} that is
- * returned from {@link #read()}.   If no {@link ByteBufferPool} is provided, then
- * a {@link NoopByteBufferPool} is used.
+ * from a {@link RetainableByteBufferPool}, and converted to a {@link Content.Chunk} that is
+ * returned from {@link #read()}. If no {@link RetainableByteBufferPool} is provided, then
+ * a {@link RetainableByteBufferPool.NonPooling} is used.
  * </p>
  */
 public class InputStreamContentSource implements Content.Source
@@ -47,18 +45,13 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream)
     {
-        this(inputStream, (ByteBufferPool)null);
-    }
-
-    public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
-    {
-        this(inputStream, (bufferPool == null ? ByteBufferPool.NOOP : bufferPool).asRetainableByteBufferPool());
+        this(inputStream, null);
     }
 
     public InputStreamContentSource(InputStream inputStream, RetainableByteBufferPool bufferPool)
     {
         this.inputStream = inputStream;
-        this.bufferPool = bufferPool == null ? ByteBufferPool.NOOP.asRetainableByteBufferPool() : bufferPool;
+        this.bufferPool = bufferPool != null ? bufferPool : new RetainableByteBufferPool.NonPooling();
     }
 
     public int getBufferSize()
@@ -85,7 +78,7 @@ public class InputStreamContentSource implements Content.Source
         RetainableByteBuffer streamBuffer = bufferPool.acquire(getBufferSize(), false);
         try
         {
-            ByteBuffer buffer = streamBuffer.getBuffer();
+            ByteBuffer buffer = streamBuffer.getByteBuffer();
             int read = inputStream.read(buffer.array(), buffer.arrayOffset(), buffer.capacity());
             if (read < 0)
             {

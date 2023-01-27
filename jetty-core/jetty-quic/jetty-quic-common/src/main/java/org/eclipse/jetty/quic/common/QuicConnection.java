@@ -27,10 +27,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
@@ -59,7 +60,7 @@ public abstract class QuicConnection extends AbstractConnection
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Scheduler scheduler;
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private final AdaptiveExecutionStrategy strategy;
     private final Flusher flusher = new Flusher();
     private final Callback fillableCallback = new FillableCallback();
@@ -67,13 +68,13 @@ public abstract class QuicConnection extends AbstractConnection
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
 
-    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
+    protected QuicConnection(Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
         if (!(endPoint instanceof DatagramChannelEndPoint))
             throw new IllegalArgumentException("EndPoint must be a " + DatagramChannelEndPoint.class.getSimpleName());
         this.scheduler = scheduler;
-        this.byteBufferPool = byteBufferPool;
+        this.bufferPool = bufferPool;
         this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
     }
 
@@ -88,9 +89,9 @@ public abstract class QuicConnection extends AbstractConnection
         return scheduler;
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
-        return byteBufferPool;
+        return bufferPool;
     }
 
     public int getOutputBufferSize()
@@ -223,7 +224,8 @@ public abstract class QuicConnection extends AbstractConnection
         if (interested)
             return null;
 
-        ByteBuffer cipherBuffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        RetainableByteBuffer buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        ByteBuffer cipherBuffer = buffer.getByteBuffer();
         try
         {
             while (true)
@@ -236,13 +238,13 @@ public abstract class QuicConnection extends AbstractConnection
                 // DatagramChannelEndPoint will only return -1 if input is shut down.
                 if (fill < 0)
                 {
-                    byteBufferPool.release(cipherBuffer);
+                    buffer.release();
                     getEndPoint().shutdownOutput();
                     return null;
                 }
                 if (fill == 0)
                 {
-                    byteBufferPool.release(cipherBuffer);
+                    buffer.release();
                     fillInterested();
                     return null;
                 }
@@ -282,7 +284,7 @@ public abstract class QuicConnection extends AbstractConnection
                             LOG.debug("processing creation task {} on {}", task, session);
                         if (task != null)
                         {
-                            byteBufferPool.release(cipherBuffer);
+                            buffer.release();
                             return task;
                         }
                     }
@@ -297,7 +299,7 @@ public abstract class QuicConnection extends AbstractConnection
                 Runnable task = process(session, remoteAddress, cipherBuffer);
                 if (task != null)
                 {
-                    byteBufferPool.release(cipherBuffer);
+                    buffer.release();
                     return task;
                 }
             }
@@ -306,7 +308,7 @@ public abstract class QuicConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("receiveAndProcess() failure", x);
-            byteBufferPool.release(cipherBuffer);
+            buffer.release();
             onFailure(x);
             return null;
         }
@@ -327,7 +329,6 @@ public abstract class QuicConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("process failure for {}", session, x);
-            byteBufferPool.release(cipherBuffer);
             session.onFailure(x);
             return null;
         }

@@ -19,9 +19,10 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -45,7 +46,7 @@ public class ServerQuicConnection extends QuicConnection
 
     protected ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getRetainableByteBufferPool(), endPoint);
         this.connector = connector;
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
     }
@@ -60,31 +61,32 @@ public class ServerQuicConnection extends QuicConnection
     @Override
     protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
-        ByteBufferPool byteBufferPool = getByteBufferPool();
+        RetainableByteBufferPool bufferPool = getRetainableByteBufferPool();
         // TODO make the token validator configurable
         QuicheConnection quicheConnection = QuicheConnection.tryAccept(connector.newQuicheConfig(), new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, getEndPoint().getLocalAddress(), remoteAddress);
         if (quicheConnection == null)
         {
-            ByteBuffer negotiationBuffer = byteBufferPool.acquire(getOutputBufferSize(), true);
-            int pos = BufferUtil.flipToFill(negotiationBuffer);
+            RetainableByteBuffer negotiationBuffer = bufferPool.acquire(getOutputBufferSize(), true);
+            ByteBuffer byteBuffer = negotiationBuffer.getByteBuffer();
+            int pos = BufferUtil.flipToFill(byteBuffer);
             // TODO make the token minter configurable
-            if (!QuicheConnection.negotiate(new SimpleTokenMinter((InetSocketAddress)remoteAddress), cipherBuffer, negotiationBuffer))
+            if (!QuicheConnection.negotiate(new SimpleTokenMinter((InetSocketAddress)remoteAddress), cipherBuffer, byteBuffer))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("QUIC connection negotiation failed, dropping packet");
-                byteBufferPool.release(negotiationBuffer);
+                negotiationBuffer.release();
                 return null;
             }
-            BufferUtil.flipToFlush(negotiationBuffer, pos);
+            BufferUtil.flipToFlush(byteBuffer, pos);
 
-            write(Callback.from(() -> byteBufferPool.release(negotiationBuffer)), remoteAddress, negotiationBuffer);
+            write(Callback.from(negotiationBuffer::release), remoteAddress, byteBuffer);
             if (LOG.isDebugEnabled())
                 LOG.debug("QUIC connection negotiation packet sent");
             return null;
         }
         else
         {
-            QuicSession session = new ServerQuicSession(getExecutor(), getScheduler(), byteBufferPool, quicheConnection, this, remoteAddress, connector);
+            QuicSession session = new ServerQuicSession(getExecutor(), getScheduler(), bufferPool, quicheConnection, this, remoteAddress, connector);
             // Send the response packet(s) that tryAccept() generated.
             session.flush();
             return session;

@@ -25,8 +25,7 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -58,7 +57,7 @@ public class ResourceHandler extends Handler.Wrapper
 {
     private final ResourceService _resourceService;
 
-    private ByteBufferPool _byteBufferPool;
+    private RetainableByteBufferPool _bufferPool;
     private Resource _resourceBase;
     private Resource _styleSheet;
     private MimeTypes _mimeTypes;
@@ -81,22 +80,21 @@ public class ResourceHandler extends Handler.Wrapper
 
         _mimeTypes = context == null ? MimeTypes.DEFAULTS : context.getMimeTypes();
 
-        _byteBufferPool = getByteBufferPool(context);
+        _bufferPool = getRetainableByteBufferPool(context);
         _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
 
         super.doStart();
     }
 
-    private ByteBufferPool getByteBufferPool(Context context)
+    private RetainableByteBufferPool getRetainableByteBufferPool(Context context)
     {
         if (context == null)
-            return new NoopByteBufferPool();
+            return new RetainableByteBufferPool.NonPooling();
         Server server = getServer();
         if (server == null)
-            return new NoopByteBufferPool();
-        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
-        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+            return new RetainableByteBufferPool.NonPooling();
+        return server.getRetainableByteBufferPool();
     }
 
     public HttpContent.Factory getHttpContentFactory()
@@ -110,7 +108,7 @@ public class ResourceHandler extends Handler.Wrapper
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getRetainableByteBufferPool());
         return contentFactory;
     }
 
@@ -161,9 +159,9 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceBase;
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
-        return _byteBufferPool;
+        return _bufferPool;
     }
 
     /**

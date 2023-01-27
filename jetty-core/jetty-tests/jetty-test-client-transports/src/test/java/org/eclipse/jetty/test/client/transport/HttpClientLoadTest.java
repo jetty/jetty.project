@@ -34,11 +34,8 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.util.BufferUtil;
@@ -67,11 +64,11 @@ public class HttpClientLoadTest extends AbstractTest
     public void testIterative(Transport transport) throws Exception
     {
         server = newServer();
-        server.addBean(new LeakTrackingByteBufferPool(new LogarithmicArrayByteBufferPool()));
         start(transport, new LoadHandler());
         setStreamIdleTimeout(120000);
         client.stop();
-        client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+        // TODO: restore leak tracking.
+        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setIdleTimeout(120000);
@@ -120,7 +117,8 @@ public class HttpClientLoadTest extends AbstractTest
 
         start(transport, new LoadHandler());
         client.stop();
-        client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+        // TODO: restore leak tracking.
+        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.start();
@@ -137,24 +135,6 @@ public class HttpClientLoadTest extends AbstractTest
     private void assertLeaks()
     {
         System.gc();
-
-        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        if (byteBufferPool instanceof LeakTrackingByteBufferPool serverBufferPool)
-        {
-            assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
-            assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
-            assertThat("Server BufferPool - leaked removes", serverBufferPool.getLeakedRemoves(), Matchers.is(0L));
-            assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
-        }
-
-        byteBufferPool = client.getByteBufferPool();
-        if (byteBufferPool instanceof LeakTrackingByteBufferPool clientBufferPool)
-        {
-            assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), Matchers.is(0L));
-            assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), Matchers.is(0L));
-            assertThat("Client BufferPool - leaked removes", clientBufferPool.getLeakedRemoves(), Matchers.is(0L));
-            assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), Matchers.is(0L));
-        }
 
         assertThat("Connection Leaks", connectionLeaks.get(), Matchers.is(0L));
     }

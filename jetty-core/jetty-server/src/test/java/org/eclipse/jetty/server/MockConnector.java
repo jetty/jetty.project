@@ -15,37 +15,18 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class MockConnector extends AbstractConnector
 {
-    private final Server _server;
-
     public MockConnector(Server server)
     {
-        super(server, server.getThreadPool(), server.getBean(Scheduler.class), ByteBufferPool.NOOP, 0);
-        _server = server;
+        super(server, server.getThreadPool(), server.getScheduler(), new RetainableByteBufferPool.NonPooling(), 0);
     }
 
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-    }
-
-    @Override
-    public Scheduler getScheduler()
-    {
-        return _server.getBean(Scheduler.class);
-    }
-
-    @Override
-    public ByteBufferPool getByteBufferPool()
-    {
-        ByteBufferPool pool = _server.getBean(ByteBufferPool.class);
-        if (pool != null)
-            return pool;
-        return super.getByteBufferPool();
     }
 
     @Override

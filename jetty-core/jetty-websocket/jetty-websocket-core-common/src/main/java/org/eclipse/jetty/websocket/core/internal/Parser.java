@@ -16,9 +16,10 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -46,7 +47,8 @@ public class Parser
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
-    private final ByteBufferPool bufferPool;
+
+    private final RetainableByteBufferPool bufferPool;
     private final Configuration configuration;
 
     // State specific
@@ -55,14 +57,14 @@ public class Parser
     private int cursor;
     private byte[] mask;
     private int payloadLength;
-    private ByteBuffer aggregate;
+    private RetainableByteBuffer aggregate;
 
-    public Parser(ByteBufferPool bufferPool)
+    public Parser(RetainableByteBufferPool bufferPool)
     {
         this(bufferPool, new Configuration.ConfigurationCustomizer());
     }
 
-    public Parser(ByteBufferPool bufferPool, Configuration configuration)
+    public Parser(RetainableByteBufferPool bufferPool, Configuration configuration)
     {
         this.bufferPool = bufferPool;
         this.configuration = configuration;
@@ -135,7 +137,7 @@ public class Parser
                         else if (payloadLength == 0)
                         {
                             state = State.START;
-                            return newFrame(firstByte, mask, null, false);
+                            return newFrame(firstByte, mask, null, null);
                         }
                         else
                         {
@@ -158,7 +160,7 @@ public class Parser
                             else if (payloadLength == 0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte, mask, null, false);
+                                return newFrame(firstByte, mask, null, null);
                             }
                             else
                             {
@@ -176,7 +178,7 @@ public class Parser
                             if (payloadLength == 0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte, mask, null, false);
+                                return newFrame(firstByte, mask, null, null);
                             }
                             state = State.PAYLOAD;
                         }
@@ -198,7 +200,7 @@ public class Parser
                             if (payloadLength == 0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte, mask, null, false);
+                                return newFrame(firstByte, mask, null, null);
                             }
                             state = State.PAYLOAD;
                         }
@@ -263,7 +265,7 @@ public class Parser
         }
     }
 
-    protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
+    protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
     {
         // Validate OpCode
         byte opcode = OpCode.getOpCode(firstByte);
@@ -275,7 +277,7 @@ public class Parser
         if (OpCode.isControlFrame(opcode) && !fin)
             throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
 
-        return new ParsedFrame(firstByte, mask, payload, releaseable);
+        return new ParsedFrame(firstByte, mask, payload, releaser);
     }
 
     private ParsedFrame autoFragment(ByteBuffer buffer, int fragmentSize)
@@ -297,7 +299,7 @@ public class Parser
         content.limit(fragmentSize);
         buffer.position(buffer.position() + fragmentSize);
 
-        final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, content, false);
+        final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, content, null);
         mask = nextMask;
         firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
         state = State.FRAGMENT;
@@ -331,14 +333,14 @@ public class Parser
 
                 // No space in the buffer, so we have to copy the partial payload
                 aggregate = bufferPool.acquire(payloadLength, false);
-                BufferUtil.append(aggregate, buffer);
+                BufferUtil.append(aggregate.getByteBuffer(), buffer);
                 return null;
             }
 
             if (available == payloadLength)
             {
                 // All the available data is for this frame and completes it 
-                ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), false);
+                ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), null);
                 buffer.position(buffer.limit());
                 state = State.START;
                 return frame;
@@ -349,7 +351,7 @@ public class Parser
             int limit = buffer.limit();
             int end = buffer.position() + payloadLength;
             buffer.limit(end);
-            final ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), false);
+            final ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), null);
             buffer.position(end);
             buffer.limit(limit);
             state = State.START;
@@ -363,26 +365,30 @@ public class Parser
             if (available < expecting)
             {
                 // not enough data to complete this frame, just copy it
-                BufferUtil.append(aggregate, buffer);
+                BufferUtil.append(aggregate.getByteBuffer(), buffer);
                 return null;
             }
 
             if (available == expecting)
             {
                 // All the available data is for this frame and completes it
-                BufferUtil.append(aggregate, buffer);
+                BufferUtil.append(aggregate.getByteBuffer(), buffer);
                 state = State.START;
-                return newFrame(firstByte, mask, aggregate, true);
+                // Capture the current aggregate to release it.
+                RetainableByteBuffer aggregate = this.aggregate;
+                return newFrame(firstByte, mask, aggregate.getByteBuffer(), aggregate::release);
             }
 
             // The buffer contains data for this frame and subsequent frames
             // Copy the first part of the buffer to the frame and complete it
             int limit = buffer.limit();
             buffer.limit(buffer.position() + expecting);
-            BufferUtil.append(aggregate, buffer);
+            BufferUtil.append(aggregate.getByteBuffer(), buffer);
             buffer.limit(limit);
             state = State.START;
-            return newFrame(firstByte, mask, aggregate, true);
+            // Capture the current aggregate to release it.
+            RetainableByteBuffer aggregate = this.aggregate;
+            return newFrame(firstByte, mask, aggregate.getByteBuffer(), aggregate::release);
         }
     }
 
@@ -390,19 +396,19 @@ public class Parser
     public String toString()
     {
         return String
-            .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null ? "-" : TypeUtil.toHexString(mask), payloadLength);
+            .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null ? "-" : StringUtil.toHexString(mask), payloadLength);
     }
 
-    public class ParsedFrame extends Frame implements Closeable, CloseStatus.Supplier
+    public static class ParsedFrame extends Frame implements Closeable, CloseStatus.Supplier
     {
         final CloseStatus closeStatus;
-        final boolean releaseable;
+        final Runnable releaser;
 
-        public ParsedFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
+        public ParsedFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
         {
             super(firstByte, mask, payload);
             demask();
-            this.releaseable = releaseable;
+            this.releaser = releaser;
             if (getOpCode() == OpCode.CLOSE)
             {
                 if (hasPayload())
@@ -419,8 +425,8 @@ public class Parser
         @Override
         public void close()
         {
-            if (releaseable)
-                bufferPool.release(getPayload());
+            if (releaser != null)
+                releaser.run();
         }
 
         @Override
@@ -431,7 +437,7 @@ public class Parser
 
         public boolean isReleaseable()
         {
-            return releaseable;
+            return releaser != null;
         }
 
         @Override
