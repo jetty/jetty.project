@@ -435,7 +435,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     private Pool.Entry<RetainableByteBuffer> findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
     {
         return bucket.stream()
-            .max(Comparator.comparingLong(b -> NanoTime.elapsed(((Buffer)b).getLastNanoTime(), now)))
+            .max(Comparator.comparingLong(entry -> NanoTime.elapsed(((Buffer)entry.getPooled()).getLastNanoTime(), now)))
             .orElse(null);
     }
 

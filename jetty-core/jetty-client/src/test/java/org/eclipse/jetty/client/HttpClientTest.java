@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -83,6 +84,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -112,14 +114,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        long start = NanoTime.now();
-        HttpConnectionOverHTTP connection = null;
-        while (connection == null && NanoTime.secondsSince(start) < 5)
+        HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().iterator().next();
-            TimeUnit.MILLISECONDS.sleep(10);
-        }
-        assertNotNull(connection);
+            Iterator<Connection> idles = connectionPool.getIdleConnections().iterator();
+            return idles.hasNext() ? idles.next() : null;
+        }, notNullValue());
 
         Origin origin = destination.getOrigin();
         String uri = origin.getScheme() + "://" + origin.getAddress();
