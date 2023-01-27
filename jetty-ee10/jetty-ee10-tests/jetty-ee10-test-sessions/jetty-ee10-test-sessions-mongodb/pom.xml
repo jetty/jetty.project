@@ -3,12 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
-    <artifactId>test-ee10-sessions</artifactId>
+    <artifactId>jetty-ee10-test-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test-ee10-mongodb-sessions</artifactId>
-  <name>EE10 :: Session Tests :: Mongo</name>
+  <artifactId>jetty-ee10-test-sessions-mongodb</artifactId>
+  <name>EE10 :: Tests :: Sessions :: Mongo</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
     <embedmongo.host>localhost</embedmongo.host>
@@ -76,7 +75,8 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>test-ee10-sessions-common</artifactId>
+      <artifactId>jetty-ee10-test-sessions-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -3,12 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
-    <artifactId>jetty-ee10</artifactId>
+    <artifactId>jetty-ee10-tests</artifactId>
     <version>12.0.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test-ee10-sessions</artifactId>
-  <name>EE10 :: Session Tests</name>
+  <artifactId>jetty-ee10-test-sessions</artifactId>
+  <name>EE10 :: Tests :: Sessions</name>
   <packaging>pom</packaging>
   <properties>
     <maven.javadoc.skip>true</maven.javadoc.skip>
@@ -16,14 +15,14 @@
     <maven.source.skip>true</maven.source.skip>
   </properties>
   <modules>
-    <module>test-ee10-sessions-common</module>
-    <module>test-ee10-file-sessions</module>
-    <module>test-ee10-jdbc-sessions</module>
-    <module>test-ee10-mongodb-sessions</module>
-    <module>test-ee10-infinispan-sessions</module>
-    <module>test-ee10-gcloud-sessions</module>
-    <module>test-ee10-memcached-sessions</module>
-    <module>test-ee10-hazelcast-sessions</module>
+    <module>jetty-ee10-test-sessions-common</module>
+    <module>jetty-ee10-test-sessions-file</module>
+    <module>jetty-ee10-test-sessions-jdbc</module>
+    <module>jetty-ee10-test-sessions-mongodb</module>
+    <module>jetty-ee10-test-sessions-infinispan</module>
+    <module>jetty-ee10-test-sessions-gcloud</module>
+    <module>jetty-ee10-test-sessions-memcached</module>
+    <module>jetty-ee10-test-sessions-hazelcast</module>
   </modules>
   <dependencyManagement>
     <dependencies>

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.session;
 
-import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

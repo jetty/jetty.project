@@ -3,12 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
-    <artifactId>test-ee10-sessions</artifactId>
+    <artifactId>jetty-ee10-test-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test-ee10-hazelcast-sessions</artifactId>
-  <name>EE10 :: Session Tests :: Hazelcast</name>
+  <artifactId>jetty-ee10-test-sessions-hazelcast</artifactId>
+  <name>EE10 :: Tests :: Sessions :: Hazelcast</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
     <skipTests>true</skipTests> <!-- disabled, see Issue #8877 -->
@@ -77,7 +76,8 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>test-ee10-sessions-common</artifactId>
+      <artifactId>jetty-ee10-test-sessions-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
