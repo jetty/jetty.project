@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
@@ -1585,7 +1586,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             catch (Throwable t)
             {
-                if (t != e)
+                if (ExceptionUtil.areNotAssociated(e, t))
                     e.addSuppressed(t);
             }
             finally
@@ -1748,10 +1749,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (LOG.isDebugEnabled())
                     LOG.debug("EOF of {}", this);
                 if (!_closed)
-                {
                     _closed = true;
-                    IO.close(_in);
-                }
                 return Action.SUCCEEDED;
             }
 
@@ -1780,12 +1778,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         protected void onCompleteSuccess()
         {
             _buffer.release();
+            IO.close(_in);
+            super.onCompleteSuccess();
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
+            IO.close(_in);
+            super.onCompleteFailure(x);
         }
     }
 
@@ -1822,11 +1824,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (LOG.isDebugEnabled())
                     LOG.debug("EOF of {}", this);
                 if (!_closed)
-                {
                     _closed = true;
-                    _buffer.release();
-                    IO.close(_in);
-                }
                 return Action.SUCCEEDED;
             }
 
@@ -1845,6 +1843,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             channelWrite(byteBuffer, _eof, this);
 
             return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            _buffer.release();
+            IO.close(_in);
+            super.onCompleteSuccess();
         }
 
         @Override
