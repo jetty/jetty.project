@@ -16,24 +16,21 @@ package org.eclipse.jetty.http2.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HeaderBlockFragments
 {
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private PriorityFrame priorityFrame;
     private boolean endStream;
     private int streamId;
-    private ByteBuffer storage;
+    private RetainableByteBuffer storage;
 
-    public HeaderBlockFragments(ByteBufferPool byteBufferPool)
+    public HeaderBlockFragments(RetainableByteBufferPool bufferPool)
     {
-        this.byteBufferPool = byteBufferPool;
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return byteBufferPool;
+        this.bufferPool = bufferPool;
     }
 
     public void storeFragment(ByteBuffer fragment, int length, boolean last)
@@ -41,27 +38,28 @@ public class HeaderBlockFragments
         if (storage == null)
         {
             int space = last ? length : length * 2;
-            storage = byteBufferPool.acquire(space, fragment.isDirect());
-            storage.clear();
+            storage = bufferPool.acquire(space, fragment.isDirect());
+            BufferUtil.flipToFill(storage.getByteBuffer());
         }
 
         // Grow the storage if necessary.
         if (storage.remaining() < length)
         {
+            ByteBuffer byteBuffer = storage.getByteBuffer();
             int space = last ? length : length * 2;
-            int capacity = storage.position() + space;
-            ByteBuffer newStorage = byteBufferPool.acquire(capacity, storage.isDirect());
-            newStorage.clear();
-            storage.flip();
-            newStorage.put(storage);
-            byteBufferPool.release(storage);
+            int capacity = byteBuffer.position() + space;
+            RetainableByteBuffer newStorage = bufferPool.acquire(capacity, storage.isDirect());
+            BufferUtil.flipToFill(newStorage.getByteBuffer());
+            byteBuffer.flip();
+            newStorage.getByteBuffer().put(byteBuffer);
+            storage.release();
             storage = newStorage;
         }
 
         // Copy the fragment into the storage.
         int limit = fragment.limit();
         fragment.limit(fragment.position() + length);
-        storage.put(fragment);
+        storage.getByteBuffer().put(fragment);
         fragment.limit(limit);
     }
 
@@ -85,11 +83,11 @@ public class HeaderBlockFragments
         this.endStream = endStream;
     }
 
-    public ByteBuffer complete()
+    public RetainableByteBuffer complete()
     {
-        ByteBuffer result = storage;
+        RetainableByteBuffer result = storage;
         storage = null;
-        result.flip();
+        result.getByteBuffer().flip();
         return result;
     }
 

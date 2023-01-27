@@ -29,7 +29,7 @@ import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,11 +46,12 @@ public class HeadersGenerateParseTest
             .put("Cookie", "c=d");
         HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
-        QpackEncoder encoder = new QpackEncoder(instructions -> {}, 100);
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
-        new MessageGenerator(encoder, 8192, true).generate(lease, 0, input, null);
+        RetainableByteBufferPool.NonPooling bufferPool = new RetainableByteBufferPool.NonPooling();
+        QpackEncoder encoder = new QpackEncoder(bufferPool, instructions -> {}, 100);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        new MessageGenerator(bufferPool, encoder, 8192, true).generate(accumulator, 0, input, null);
 
-        QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);
+        QpackDecoder decoder = new QpackDecoder(bufferPool, instructions -> {}, 8192);
         List<HeadersFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()
         {
@@ -61,7 +62,7 @@ public class HeadersGenerateParseTest
             }
         }, decoder, 13, () -> true);
         parser.init(UnaryOperator.identity());
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());

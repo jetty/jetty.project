@@ -18,9 +18,10 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.internal.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,15 +32,15 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
     public static final long STREAM_TYPE = 0x00;
     private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private final ControlParser parser;
     private boolean useInputDirectByteBuffers = true;
-    private ByteBuffer buffer;
+    private RetainableByteBuffer buffer;
 
-    public ControlStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, ControlParser parser)
+    public ControlStreamConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ControlParser parser)
     {
         super(endPoint, executor);
-        this.byteBufferPool = byteBufferPool;
+        this.bufferPool = bufferPool;
         this.parser = parser;
     }
 
@@ -57,17 +58,18 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
     public void onUpgradeTo(ByteBuffer upgrade)
     {
         int capacity = Math.max(upgrade.remaining(), getInputBufferSize());
-        buffer = byteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
-        int position = BufferUtil.flipToFill(buffer);
-        buffer.put(upgrade);
-        BufferUtil.flipToFlush(buffer, position);
+        buffer = bufferPool.acquire(capacity, isUseInputDirectByteBuffers());
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        int position = BufferUtil.flipToFill(byteBuffer);
+        byteBuffer.put(upgrade);
+        BufferUtil.flipToFlush(byteBuffer, position);
     }
 
     @Override
     public void onOpen()
     {
         super.onOpen();
-        if (BufferUtil.hasContent(buffer))
+        if (buffer != null && buffer.hasRemaining())
             onFillable();
         else
             fillInterested();
@@ -79,28 +81,28 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
         try
         {
             if (buffer == null)
-                buffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-
+                buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
             while (true)
             {
                 // Parse first in case of bytes from the upgrade.
-                parser.parse(buffer);
+                parser.parse(byteBuffer);
 
                 // Then read from the EndPoint.
-                int filled = getEndPoint().fill(buffer);
+                int filled = getEndPoint().fill(byteBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {}", filled, this);
 
                 if (filled == 0)
                 {
-                    byteBufferPool.release(buffer);
+                    buffer.release();
                     buffer = null;
                     fillInterested();
                     break;
                 }
                 else if (filled < 0)
                 {
-                    byteBufferPool.release(buffer);
+                    buffer.release();
                     buffer = null;
                     getEndPoint().close();
                     break;
@@ -111,7 +113,7 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("could not process control stream {}", getEndPoint(), x);
-            byteBufferPool.release(buffer);
+            buffer.release();
             buffer = null;
             getEndPoint().close(x);
         }

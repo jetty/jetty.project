@@ -20,6 +20,7 @@ import org.eclipse.jetty.http2.frames.ContinuationFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.Flags;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
 public class ContinuationBodyParser extends BodyParser
 {
@@ -100,9 +101,9 @@ public class ContinuationBodyParser extends BodyParser
 
     private boolean onHeaders(ByteBuffer buffer)
     {
-        ByteBuffer headerBlock = headerBlockFragments.complete();
-        MetaData metaData = headerBlockParser.parse(headerBlock, headerBlock.remaining());
-        headerBlockFragments.getByteBufferPool().release(headerBlock);
+        RetainableByteBuffer headerBlock = headerBlockFragments.complete();
+        MetaData metaData = headerBlockParser.parse(headerBlock.getByteBuffer(), headerBlock.remaining());
+        headerBlock.release();
         if (metaData == null)
             return true;
         if (metaData == HeaderBlockParser.SESSION_FAILURE)

@@ -1766,7 +1766,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
 
-        RetainableByteBufferPool rbbp = _connector.getBean(RetainableByteBufferPool.class);
+        RetainableByteBufferPool rbbp = _connector.getRetainableByteBufferPool();
         if (rbbp instanceof ArrayRetainableByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();

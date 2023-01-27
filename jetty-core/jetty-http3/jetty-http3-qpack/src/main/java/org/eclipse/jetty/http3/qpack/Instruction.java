@@ -15,11 +15,11 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public interface Instruction
 {
-    void encode(ByteBufferPool.Lease lease);
+    void encode(RetainableByteBufferPool.Accumulator accumulator);
 
     /**
      * <p>A handler for instructions issued by an {@link QpackEncoder} or {@link QpackDecoder}.</p>

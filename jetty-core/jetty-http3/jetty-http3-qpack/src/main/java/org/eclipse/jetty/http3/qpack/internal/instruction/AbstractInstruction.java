@@ -11,10 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.ssl;
+package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-public class FixJPMS
+import org.eclipse.jetty.http3.qpack.Instruction;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+
+public abstract class AbstractInstruction implements Instruction
 {
-    // This class only exists to make the tests in org.eclipse.jetty.server.ssl work
-    // These tests probably should not be in that package, but leaving them there for now to make sure we don't miss them
+    private final RetainableByteBufferPool bufferPool;
+
+    protected AbstractInstruction(RetainableByteBufferPool bufferPool)
+    {
+        this.bufferPool = bufferPool;
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return bufferPool;
+    }
 }

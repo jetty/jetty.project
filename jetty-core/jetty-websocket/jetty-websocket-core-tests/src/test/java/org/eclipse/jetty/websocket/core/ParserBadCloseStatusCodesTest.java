@@ -16,8 +16,6 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -59,8 +57,6 @@ public class ParserBadCloseStatusCodesTest
             Arguments.of(65535, "Autobahn Server Testcase 7.13.2") // RFC6455/Undefined
         );
     }
-
-    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @ParameterizedTest(name = "closeCode={0} {1}")
     @MethodSource("data")

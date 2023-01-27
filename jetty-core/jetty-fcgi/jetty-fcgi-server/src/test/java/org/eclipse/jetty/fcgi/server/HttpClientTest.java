@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
@@ -400,11 +399,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testGZIPContentEncoding() throws Exception
     {
-        // GZIPContentDecoder returns to application pooled
-        // buffers, which is fine, but in this test they will
-        // appear as "leaked", so we use a normal ByteBufferPool.
-        clientBufferPool = new MappedByteBufferPool.Tagged();
-
         byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         start(new Handler.Abstract()
         {

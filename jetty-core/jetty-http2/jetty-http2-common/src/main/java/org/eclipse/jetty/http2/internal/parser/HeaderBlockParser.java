@@ -20,7 +20,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,15 +33,15 @@ public class HeaderBlockParser
     private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private final HpackDecoder hpackDecoder;
     private final BodyParser notifier;
-    private ByteBuffer blockBuffer;
+    private RetainableByteBuffer blockBuffer;
 
-    public HeaderBlockParser(HeaderParser headerParser, ByteBufferPool byteBufferPool, HpackDecoder hpackDecoder, BodyParser notifier)
+    public HeaderBlockParser(HeaderParser headerParser, RetainableByteBufferPool bufferPool, HpackDecoder hpackDecoder, BodyParser notifier)
     {
         this.headerParser = headerParser;
-        this.byteBufferPool = byteBufferPool;
+        this.bufferPool = bufferPool;
         this.hpackDecoder = hpackDecoder;
         this.notifier = notifier;
     }
@@ -61,17 +62,19 @@ public class HeaderBlockParser
         // If they are not all available, accumulate them.
         // When all are available, decode them.
 
-        int accumulated = blockBuffer == null ? 0 : blockBuffer.position();
+        ByteBuffer byteBuffer = blockBuffer == null ? null : blockBuffer.getByteBuffer();
+        int accumulated = byteBuffer == null ? 0 : byteBuffer.position();
         int remaining = blockLength - accumulated;
 
         if (buffer.remaining() < remaining)
         {
             if (blockBuffer == null)
             {
-                blockBuffer = byteBufferPool.acquire(blockLength, buffer.isDirect());
-                BufferUtil.clearToFill(blockBuffer);
+                blockBuffer = bufferPool.acquire(blockLength, buffer.isDirect());
+                byteBuffer = blockBuffer.getByteBuffer();
+                BufferUtil.flipToFill(byteBuffer);
             }
-            blockBuffer.put(buffer);
+            byteBuffer.put(buffer);
             return null;
         }
         else
@@ -79,11 +82,11 @@ public class HeaderBlockParser
             int limit = buffer.limit();
             buffer.limit(buffer.position() + remaining);
             ByteBuffer toDecode;
-            if (blockBuffer != null)
+            if (byteBuffer != null)
             {
-                blockBuffer.put(buffer);
-                BufferUtil.flipToFlush(blockBuffer, 0);
-                toDecode = blockBuffer;
+                byteBuffer.put(buffer);
+                BufferUtil.flipToFlush(byteBuffer, 0);
+                toDecode = byteBuffer;
             }
             else
             {
@@ -121,7 +124,7 @@ public class HeaderBlockParser
 
                 if (blockBuffer != null)
                 {
-                    byteBufferPool.release(blockBuffer);
+                    blockBuffer.release();
                     blockBuffer = null;
                 }
             }

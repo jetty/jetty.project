@@ -11,34 +11,30 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.io.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class NoopByteBufferPool implements ByteBufferPool
+public class NonRetainableByteBuffer implements RetainableByteBuffer
 {
-    private final RetainableByteBufferPool _retainableByteBufferPool = RetainableByteBufferPool.from(this);
+    private final ByteBuffer byteBuffer;
 
-    @Override
-    public ByteBuffer acquire(int size, boolean direct)
+    public NonRetainableByteBuffer(ByteBuffer byteBuffer)
     {
-        if (direct)
-            return BufferUtil.allocateDirect(size);
-        else
-            return BufferUtil.allocate(size);
+        this.byteBuffer = byteBuffer;
     }
 
     @Override
-    public void release(ByteBuffer buffer)
+    public boolean isRetained()
     {
-        BufferUtil.clear(buffer);
+        return false;
     }
 
     @Override
-    public RetainableByteBufferPool asRetainableByteBufferPool()
+    public ByteBuffer getByteBuffer()
     {
-        return _retainableByteBufferPool;
+        return byteBuffer;
     }
 }

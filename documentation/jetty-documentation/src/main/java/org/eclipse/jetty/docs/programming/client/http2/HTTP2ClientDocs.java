@@ -254,7 +254,7 @@ public class HTTP2ClientDocs
                 }
 
                 // Get the content buffer.
-                ByteBuffer buffer = data.frame().getData();
+                ByteBuffer buffer = data.frame().getByteBuffer();
 
                 // Consume the buffer, here - as an example - just log it.
                 System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
@@ -368,7 +368,7 @@ public class HTTP2ClientDocs
                         }
 
                         // The pushed stream "response" content bytes.
-                        ByteBuffer buffer = data.frame().getData();
+                        ByteBuffer buffer = data.frame().getByteBuffer();
                         // Consume the buffer and release the Data object.
                         data.release();
 

@@ -40,8 +40,9 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -855,18 +856,17 @@ public class ResourceService
         private final ReadableByteChannel source;
         private final Content.Sink sink;
         private final Callback callback;
-        private final ByteBuffer byteBuffer;
-        private final ByteBufferPool byteBufferPool;
+        private final RetainableByteBuffer buffer;
 
         public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
-            this.byteBufferPool = target.getRequest().getComponents().getByteBufferPool();
             this.source = content.getResource().newReadableByteChannel();
             this.sink = target;
             this.callback = callback;
+            RetainableByteBufferPool bufferPool = target.getRequest().getComponents().getRetainableByteBufferPool();
             int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
             boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-            this.byteBuffer = byteBufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);
+            this.buffer = bufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);
         }
 
         @Override
@@ -875,6 +875,7 @@ public class ResourceService
             if (!source.isOpen())
                 return Action.SUCCEEDED;
 
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
             int read = source.read(byteBuffer);
             if (read == -1)
@@ -891,14 +892,14 @@ public class ResourceService
         @Override
         protected void onCompleteSuccess()
         {
-            byteBufferPool.release(byteBuffer);
+            buffer.release();
             callback.succeeded();
         }
 
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            byteBufferPool.release(byteBuffer);
+            buffer.release();
             callback.failed(x);
         }
     }

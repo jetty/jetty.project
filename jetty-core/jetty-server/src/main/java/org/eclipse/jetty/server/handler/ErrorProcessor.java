@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -202,74 +203,83 @@ public class ErrorProcessor implements Request.Processor
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         bufferSize = Math.min(8192, bufferSize); // TODO ?
-        ByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
+        RetainableByteBuffer buffer = request.getComponents().getRetainableByteBufferPool().acquire(bufferSize, false);
 
-        // write into the response aggregate buffer and flush it asynchronously.
-        // Looping to reduce size if buffer overflows
-        boolean showStacks = _showStacks;
-        while (true)
+        try
         {
-            try
+            // write into the response aggregate buffer and flush it asynchronously.
+            // Looping to reduce size if buffer overflows
+            boolean showStacks = _showStacks;
+            while (true)
             {
-                BufferUtil.clear(buffer);
-                ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
-                PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
-
-                switch (type)
+                try
                 {
-                    case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
-                    case TEXT_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
-                    case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
-                    default -> throw new IllegalStateException();
+                    buffer.clear();
+                    ByteBufferOutputStream out = new ByteBufferOutputStream(buffer.getByteBuffer());
+                    PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
+
+                    switch (type)
+                    {
+                        case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
+                        case TEXT_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
+                        case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
+                        default -> throw new IllegalStateException();
+                    }
+
+                    writer.flush();
+                    break;
                 }
-
-                writer.flush();
-                break;
-            }
-            catch (BufferOverflowException e)
-            {
-                if (showStacks)
+                catch (BufferOverflowException e)
                 {
+                    if (showStacks)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Disable stacks for " + e.toString());
+
+                        showStacks = false;
+                        continue;
+                    }
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Disable stacks for " + e.toString());
+                        LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request, e);
+                    else
+                        LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request);
 
-                    showStacks = false;
-                    continue;
+                    break;
                 }
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request, e);
-                else
-                    LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request);
-
-                break;
             }
-        }
 
-        if (!buffer.hasRemaining())
-        {
-            callback.succeeded();
+            if (!buffer.hasRemaining())
+            {
+                buffer.release();
+                callback.succeeded();
+                return true;
+            }
+
+            response.getHeaders().put(type.getContentTypeField(charset));
+            response.write(true, buffer.getByteBuffer(), new Callback.Nested(callback)
+            {
+                @Override
+                public void succeeded()
+                {
+                    buffer.release();
+                    super.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    buffer.release();
+                    super.failed(x);
+                }
+            });
+
             return true;
         }
-
-        response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, buffer, new Callback.Nested(callback)
+        catch (Throwable x)
         {
-            @Override
-            public void succeeded()
-            {
-                request.getComponents().getByteBufferPool().release(buffer);
-                super.succeeded();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                request.getComponents().getByteBufferPool().release(buffer);
-                super.failed(x);
-            }
-        });
-
-        return true;
+            buffer.release();
+            throw x;
+        }
     }
 
     protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException

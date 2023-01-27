@@ -28,8 +28,8 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.internal.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,12 +38,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HeadersGenerateParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testGenerateParse() throws Exception
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         int streamId = 13;
         HttpFields fields = HttpFields.build()
@@ -52,7 +52,7 @@ public class HeadersGenerateParseTest
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onHeaders(HeadersFrame frame)
@@ -65,12 +65,12 @@ public class HeadersGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
-            generator.generateHeaders(lease, streamId, metaData, priorityFrame, true);
+            generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -102,10 +102,10 @@ public class HeadersGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onHeaders(HeadersFrame frame)
@@ -124,12 +124,12 @@ public class HeadersGenerateParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
-            generator.generateHeaders(lease, streamId, metaData, priorityFrame, true);
+            generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 buffer = buffer.slice();
                 while (buffer.hasRemaining())
