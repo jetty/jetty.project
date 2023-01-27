@@ -34,16 +34,16 @@ public class PoolStrategyBenchmark
     private Pool<String> pool;
 
     @Param({
-        "Pool.Linear",
-        "Pool.Random",
-        "Pool.RoundRobin",
-        "Pool.ThreadId",
+        "First",
+        "Random",
+        "RoundRobin",
+        "ThreadId"
     })
     public static String POOL_TYPE;
 
     @Param({
         "false",
-        "true",
+        "true"
     })
     public static boolean CACHE;
 
@@ -62,24 +62,14 @@ public class PoolStrategyBenchmark
     {
         misses.reset();
 
-        switch (POOL_TYPE)
+        pool = switch (POOL_TYPE)
         {
-            case "Pool.Linear" :
-                pool = new ConcurrentPool<>(Pool.StrategyType.FIRST, SIZE, CACHE);
-                break;
-            case "Pool.Random" :
-                pool = new ConcurrentPool<>(Pool.StrategyType.RANDOM, SIZE, CACHE);
-                break;
-            case "Pool.ThreadId" :
-                pool = new ConcurrentPool<>(Pool.StrategyType.THREAD_ID, SIZE, CACHE);
-                break;
-            case "Pool.RoundRobin" :
-                pool = new ConcurrentPool<>(Pool.StrategyType.ROUND_ROBIN, SIZE, CACHE);
-                break;
-
-            default:
-                throw new IllegalStateException();
-        }
+            case "First" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, SIZE, CACHE);
+            case "Random" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.RANDOM, SIZE, CACHE);
+            case "ThreadId" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, SIZE, CACHE);
+            case "RoundRobin" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.ROUND_ROBIN, SIZE, CACHE);
+            default -> throw new IllegalStateException();
+        };
 
         for (int i = 0; i < SIZE; i++)
         {

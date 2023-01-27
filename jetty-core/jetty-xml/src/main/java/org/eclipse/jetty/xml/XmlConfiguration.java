@@ -102,7 +102,7 @@ public class XmlConfiguration
         .flatMap(p -> Stream.of(p.get()))
         .toList();
     private static final Pool<ConfigurationParser> __parsers =
-        new ConcurrentPool<>(Pool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
+        new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters

@@ -15,26 +15,32 @@ package org.eclipse.jetty.util;
 
 import java.util.Collection;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.thread.AutoLock;
 
-public class LockedPool<P> implements Pool<P>
+/**
+ * <p>A {@link Pool.Wrapper} that tracks the acquire/release/remove pool events.</p>
+ * <p>The acquire/release/remove pool events are forwarded atomically to be handled
+ * by a {@link Tracker} implementation, so that the pool event and the handling of
+ * the event by the tracker are atomic.</p>
+ *
+ * @param <P> the type of the pooled objects
+ */
+public class LockedPool<P> extends Pool.Wrapper<P>
 {
     private final AutoLock lock = new AutoLock();
-    private final Pool<P> pool;
     private final Tracker<P> tracker;
 
-    public LockedPool(StrategyType strategyType, int maxEntries, boolean cache, ToIntFunction<P> maxMultiplex)
+    public LockedPool(Pool<P> pool)
     {
-        this(strategyType, maxEntries, cache, maxMultiplex, Tracker.noTracker());
+        this(pool, Tracker.noTracker());
     }
 
-    public LockedPool(StrategyType strategyType, int maxEntries, boolean cache, ToIntFunction<P> maxMultiplex, Tracker<P> tracker)
+    public LockedPool(Pool<P> pool, Tracker<P> tracker)
     {
-        this.pool = new ConcurrentPool<>(strategyType, maxEntries, cache, maxMultiplex);
+        super(pool);
         this.tracker = tracker;
     }
 
@@ -43,7 +49,9 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            Entry<P> entry = pool.reserve();
+            Entry<P> entry = super.reserve();
+            if (entry == null)
+                return null;
             return new LockedEntry(entry);
         }
     }
@@ -53,9 +61,11 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            Entry<P> entry = pool.acquire();
+            Entry<P> entry = super.acquire();
+            if (entry == null)
+                return null;
             LockedEntry lockedEntry = new LockedEntry(entry);
-            tracker.acquired(entry);
+            tracker.acquired(getWrapped(), entry);
             return lockedEntry;
         }
     }
@@ -65,9 +75,11 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            Entry<P> entry = pool.acquire(creator);
+            Entry<P> entry = super.acquire(creator);
+            if (entry == null)
+                return null;
             LockedEntry lockedEntry = new LockedEntry(entry);
-            tracker.acquired(entry);
+            tracker.acquired(getWrapped(), entry);
             return lockedEntry;
         }
     }
@@ -77,7 +89,7 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            return pool.isTerminated();
+            return super.isTerminated();
         }
     }
 
@@ -86,8 +98,8 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            Collection<Entry<P>> result = pool.terminate();
-            tracker.terminated();
+            Collection<Entry<P>> result = super.terminate();
+            tracker.terminated(getWrapped(), result);
             return result.stream()
                 .map(LockedEntry::new)
                 .collect(Collectors.toList());
@@ -99,7 +111,7 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            return pool.size();
+            return super.size();
         }
     }
 
@@ -108,7 +120,7 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            return pool.getMaxSize();
+            return super.getMaxSize();
         }
     }
 
@@ -117,7 +129,7 @@ public class LockedPool<P> implements Pool<P>
     {
         try (AutoLock ignored = lock.lock())
         {
-            return pool.stream().map(LockedEntry::new);
+            return super.stream().map(LockedEntry::new);
         }
     }
 
@@ -134,7 +146,8 @@ public class LockedPool<P> implements Pool<P>
             try (AutoLock ignored = lock.lock())
             {
                 boolean released = super.release();
-                tracker.released(getWrapped());
+                if (released)
+                    tracker.released(LockedPool.this.getWrapped(), getWrapped());
                 return released;
             }
         }
@@ -145,14 +158,46 @@ public class LockedPool<P> implements Pool<P>
             try (AutoLock ignored = lock.lock())
             {
                 boolean removed = super.remove();
-                tracker.removed(getWrapped());
+                if (removed)
+                    tracker.removed(LockedPool.this.getWrapped(), getWrapped());
                 return removed;
             }
         }
     }
 
+    /**
+     * <p>A {@link Pool.Factory} that wraps newly created
+     * {@link Pool} instances with {@link LockedPool}.</p>
+     *
+     * @param <F> the type of pooled objects
+     */
+    public interface Factory<F> extends Pool.Factory<F>
+    {
+        @Override
+        public default Pool<F> wrap(Pool<F> pool)
+        {
+            return new LockedPool<>(pool);
+        }
+    }
+
+    /**
+     * <p>A receiver of {@link Pool} events.</p>
+     * <p>A simple implementations may just count acquire/release/remove
+     * pool events via, respectively, {@link #acquired(Pool, Entry)},
+     * {@link #released(Pool, Entry)} and {@link #removed(Pool, Entry)},
+     * and make sure that the count is {@code 0} when
+     * {@link #terminated(Pool, Collection)} is called.</p>
+     * <p>More advanced implementations may also obtain a stack trace at
+     * the time of the event to troubleshoot leaking of pooled entries.</p>
+     *
+     * @param <T> the type of pooled objects
+     */
     public interface Tracker<T>
     {
+        /**
+         * @return a no-op implementation of {@code Tracker}
+         * @param <S> the type of pooled objects
+         */
         @SuppressWarnings("unchecked")
         public static <S> Tracker<S> noTracker()
         {
@@ -164,19 +209,47 @@ public class LockedPool<P> implements Pool<P>
             return (Tracker<S>)NoTracker.INSTANCE;
         }
 
-        public default void acquired(Entry<T> entry)
+        /**
+         * <p>Callback method invoked when an entry is
+         * {@link Pool#acquire() acquired}.</p>
+         *
+         * @param pool the pool
+         * @param entry the acquired entry
+         */
+        public default void acquired(Pool<T> pool, Entry<T> entry)
         {
         }
 
-        public default void released(Entry<T> entry)
+        /**
+         * <p>Callback method invoked when an entry is
+         * {@link Entry#release() released}.</p>
+         *
+         * @param pool the pool
+         * @param entry the released entry
+         */
+        public default void released(Pool<T> pool, Entry<T> entry)
         {
         }
 
-        public default void removed(Entry<T> entry)
+        /**
+         * <p>Callback method invoked when an entry is
+         * {@link Entry#remove() removed}.</p>
+         *
+         * @param pool the pool
+         * @param entry the removed entry
+         */
+        public default void removed(Pool<T> pool, Entry<T> entry)
         {
         }
 
-        public default void terminated()
+        /**
+         * <p>Callback method invoked when the {@code Pool}
+         * is {@link Pool#terminate() terminated}.</p>
+         *
+         * @param pool the pool
+         * @param entries the list of entries at termination
+         */
+        public default void terminated(Pool<T> pool, Collection<Entry<T>> entries)
         {
         }
     }

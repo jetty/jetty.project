@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
@@ -109,7 +110,8 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("MaxDurationConnectionsWithMultiplexedPoolLifecycle", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, 10)
+            int initialMaxMultiplex = 10;
+            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, false, MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex)
             {
                 @Override
                 protected void onCreated(Connection connection)
@@ -213,7 +215,8 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("StreamIdleTimeout", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, 10)
+            int initialMaxMultiplex = 10;
+            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, false, MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex)
             {
                 @Override
                 protected void onCreated(Connection connection)
@@ -288,7 +291,7 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("maxDurationConnectionsWithMultiplexedPool", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, MAX_MULTIPLEX)
+            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, false, MultiplexConnectionPool.newMaxMultiplexer(MAX_MULTIPLEX)), MAX_MULTIPLEX)
             {
                 @Override
                 protected void onCreated(Connection connection)
@@ -359,7 +362,7 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, MAX_MULTIPLEX)
+            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, false, MultiplexConnectionPool.newMaxMultiplexer(MAX_MULTIPLEX)), MAX_MULTIPLEX)
             {
                 @Override
                 protected void onCreated(Connection connection)

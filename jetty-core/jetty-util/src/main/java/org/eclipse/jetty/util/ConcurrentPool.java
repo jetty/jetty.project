@@ -33,6 +33,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>A concurrent implementation of {@link Pool}.</p>
+ * <p>This implementation offers a number of {@link StrategyType strategies}
+ * used to select the entry returned from {@link #acquire()}, and its
+ * capacity is bounded to a {@link #getMaxSize() max size}.</p>
+ * <p>A thread-local caching is also available, disabled by default, that
+ * is useful when entries are acquired and released by the same thread,
+ * but hampering performance when entries are acquired by one thread but
+ * released by a different thread.</p>
  *
  * @param <P> the type of the pooled objects
  */
@@ -344,6 +351,42 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             size(),
             getMaxSize(),
             isTerminated());
+    }
+
+    /**
+     * The type of the strategy to use for the pool.
+     * The strategy primarily determines where iteration over the pool entries begins.
+     */
+    public enum StrategyType
+    {
+        /**
+         * A strategy that looks for an entry always starting from the first entry.
+         * It will favour the early entries in the pool, but may contend on them more.
+         */
+        FIRST,
+
+        /**
+         * A strategy that looks for an entry by iterating from a random starting
+         * index.  No entries are favoured and contention is reduced.
+         */
+        RANDOM,
+
+        /**
+         * A strategy that uses the {@link Thread#getId()} of the current thread
+         * to select a starting point for an entry search.  Whilst not as performant as
+         * using the {@link ThreadLocal} cache, it may be suitable when the pool is
+         * substantially smaller than the number of available threads.
+         * No entries are favoured and contention is reduced.
+         */
+        THREAD_ID,
+
+        /**
+         * A strategy that looks for an entry by iterating from a starting point
+         * that is incremented on every search. This gives similar results to the
+         * random strategy but with more predictable behaviour.
+         * No entries are favoured and contention is reduced.
+         */
+        ROUND_ROBIN
     }
 
     /**

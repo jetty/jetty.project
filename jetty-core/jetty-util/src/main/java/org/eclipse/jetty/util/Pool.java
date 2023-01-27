@@ -33,42 +33,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public interface Pool<P>
 {
     /**
-     * The type of the strategy to use for the pool.
-     * The strategy primarily determines where iteration over the pool entries begins.
-     */
-    public enum StrategyType
-    {
-        /**
-         * A strategy that looks for an entry always starting from the first entry.
-         * It will favour the early entries in the pool, but may contend on them more.
-         */
-        FIRST,
-
-        /**
-         * A strategy that looks for an entry by iterating from a random starting
-         * index.  No entries are favoured and contention is reduced.
-         */
-        RANDOM,
-
-        /**
-         * A strategy that uses the {@link Thread#getId()} of the current thread
-         * to select a starting point for an entry search.  Whilst not as performant as
-         * using the {@link ThreadLocal} cache, it may be suitable when the pool is
-         * substantially smaller than the number of available threads.
-         * No entries are favoured and contention is reduced.
-         */
-        THREAD_ID,
-
-        /**
-         * A strategy that looks for an entry by iterating from a starting point
-         * that is incremented on every search. This gives similar results to the
-         * random strategy but with more predictable behaviour.
-         * No entries are favoured and contention is reduced.
-         */
-        ROUND_ROBIN
-    }
-
-    /**
      * <p>Creates a new disabled slot into the pool.</p>
      * <p>The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
      * method called or be removed via {@link Pool.Entry#remove()}.</p>
@@ -404,10 +368,16 @@ public interface Pool<P>
          */
         public Pool<F> newPool();
 
+        /**
+         * <p>Wraps, if necessary, the given pool.</p>
+         *
+         * @param pool the pool to wrap
+         * @return a possibly wrapped pool
+         * @see Pool.Wrapper
+         */
         public default Pool<F> wrap(Pool<F> pool)
         {
-            return newPool();
+            return pool;
         }
-
     }
 }

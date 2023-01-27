@@ -423,7 +423,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
         private RetainedBucket(int capacity, int size)
         {
-            _pool = new ConcurrentPool<>(Pool.StrategyType.THREAD_ID, size, true);
+            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, size, true);
             _capacity = capacity;
         }
 

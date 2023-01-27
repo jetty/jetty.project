@@ -64,7 +64,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     protected void doStart() throws Exception
     {
-        pool = poolFactory.newPool();
+        pool = poolFactory.wrap(poolFactory.newPool());
         addBean(pool);
         super.doStart();
     }
