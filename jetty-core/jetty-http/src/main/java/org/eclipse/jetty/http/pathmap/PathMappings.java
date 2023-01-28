@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("Path Mappings")
 public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterable<MappedResource<E>>, Dumpable
 {
-    // TODO this class should be an AbstractMap
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
 
     private final Set<MappedResource<E>> _mappings = new TreeSet<>(Map.Entry.comparingByKey());
