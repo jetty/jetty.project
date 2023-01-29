@@ -40,6 +40,7 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
@@ -403,7 +404,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        ClassRealm original = (ClassRealm)Thread.currentThread().getContextClassLoader();
 
         Plugin targetPlugin = MojoExecutor.plugin("org.eclipse.jetty." + getEnvironment(),
                 "jetty-" + getEnvironment() + "-maven-plugin",
@@ -416,7 +417,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         {
             PluginDescriptor pluginDescriptor =
                     mavenPluginManager.getPluginDescriptor(targetPlugin, remoteRepositories, repositorySystemSession);
-            ClassLoader classLoader = buildPluginManager.getPluginRealm(session, pluginDescriptor);
+            pluginDescriptor.setDependencies(plugin.getDependencies());
+            ClassRealm classRealm = buildPluginManager.getPluginRealm(session, pluginDescriptor);
 
             Xpp3Dom originalConfiguration = mojo.getConfiguration();
 
@@ -430,11 +432,11 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 }
             }
 
-            Thread.currentThread().setContextClassLoader(classLoader);
+            Thread.currentThread().setContextClassLoader(classRealm);
             MojoExecutor.executeMojo(
                     targetPlugin,
                     mojo.getGoal(),
-                    newConfiguration, // mojo.getConfiguration(),
+                    newConfiguration,
                     MojoExecutor.executionEnvironment(project, session, buildPluginManager));
         }
         catch (PluginResolutionException | PluginManagerException | PluginDescriptorParsingException |
