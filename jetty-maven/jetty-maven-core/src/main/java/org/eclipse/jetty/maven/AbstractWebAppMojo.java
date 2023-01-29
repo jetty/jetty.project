@@ -40,6 +40,7 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -116,8 +117,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * parameters like "tmpDirectory", "contextPath" etc.
      * 
      */
-    @Parameter
-    protected Object webApp;
+    @Parameter(name = "webApp")
+    protected PlexusConfiguration webApp;
 
     /**  
      * Skip this mojo execution.
