@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +118,25 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     System.lineSeparator(), fields);
             }
 
-            return handler;
+            InvocationType invocationType = Invocable.getInvocationType(handler);
+            return new ReadyTask(invocationType, handler)
+            {
+                @Override
+                public void run()
+                {
+                    if (_stream.isClosed())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
+                                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                                _stream);
+                    }
+                    else
+                    {
+                        super.run();
+                    }
+                }
+            };
         }
         catch (BadMessageException x)
         {
@@ -238,8 +257,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}, trailer:{}{}",
-                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                    System.lineSeparator(), trailers);
+                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                System.lineSeparator(), trailers);
         }
 
         return _httpChannel.onContentAvailable();
@@ -480,9 +499,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
-                        _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getHttpVersion(),
-                        System.lineSeparator(), request.getFields());
+                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
+                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    System.lineSeparator(), request.getFields());
             }
 
             return task;
