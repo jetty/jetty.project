@@ -67,11 +67,6 @@
     <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
     <jmh.version>1.36</jmh.version>
     <jna.version>5.12.1</jna.version>
-    <jnr-constants.version>0.10.4</jnr-constants.version>
-    <jnr-enxio.version>0.32.13</jnr-enxio.version>
-    <jnr-ffi.version>2.2.12</jnr-ffi.version>
-    <jnr-posix.version>3.1.15</jnr-posix.version>
-    <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.8</json-smart.version>
     <junit.version>5.9.1</junit.version>
@@ -932,31 +927,6 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
         <version>${logback.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-constants</artifactId>
-        <version>${jnr-constants.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-enxio</artifactId>
-        <version>${jnr-enxio.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-ffi</artifactId>
-        <version>${jnr-ffi.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-posix</artifactId>
-        <version>${jnr-posix.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-unixsocket</artifactId>
-        <version>${jnr-unixsocket.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
