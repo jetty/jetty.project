@@ -613,7 +613,7 @@
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
             <settingsFile>${settingsPath}</settingsFile>
-            <ignoreFailures>true</ignoreFailures>
+            <ignoreFailures>${maven.test.failure.ignore}</ignoreFailures>
             <skipInvocation>${skipTests}</skipInvocation>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>

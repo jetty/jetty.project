@@ -101,7 +101,6 @@
           <junitPackageName>org.eclipse.jetty.maven.its.ee10</junitPackageName>
           <streamLogsOnFailures>true</streamLogsOnFailures>
           <addTestClassPath>true</addTestClassPath>
-          <ignoreFailures>true</ignoreFailures>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>

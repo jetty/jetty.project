@@ -417,7 +417,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         {
             PluginDescriptor pluginDescriptor =
                     mavenPluginManager.getPluginDescriptor(targetPlugin, remoteRepositories, repositorySystemSession);
-            pluginDescriptor.setDependencies(plugin.getDependencies());
+            //pluginDescriptor.setDependencies(plugin.getDependencies());
             ClassRealm classRealm = buildPluginManager.getPluginRealm(session, pluginDescriptor);
 
             Xpp3Dom originalConfiguration = mojo.getConfiguration();
