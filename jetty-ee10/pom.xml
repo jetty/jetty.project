@@ -19,7 +19,7 @@
     <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
 
-    <jakarta.activation.api.version>2.1.0</jakarta.activation.api.version>
+    <jakarta.activation.api.version>2.1.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>3.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>5.0.0</jakarta.el.api.version>
