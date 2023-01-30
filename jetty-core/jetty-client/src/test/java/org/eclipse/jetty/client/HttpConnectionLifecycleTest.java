@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -158,7 +157,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         assertEquals(0, idleConnections.size());
 
         Collection<Connection> activeConnections = connectionPool.getActiveConnections();

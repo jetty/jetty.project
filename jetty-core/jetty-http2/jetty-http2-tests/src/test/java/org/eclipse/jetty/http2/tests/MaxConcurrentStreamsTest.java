@@ -66,6 +66,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
@@ -385,6 +386,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             try
             {
                 MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), 1);
+                LifeCycle.start(pool);
                 pool.preCreateConnections(parallelism * 2).get();
                 return pool;
             }

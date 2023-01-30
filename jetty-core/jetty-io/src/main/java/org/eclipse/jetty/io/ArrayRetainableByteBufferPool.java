@@ -16,11 +16,13 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -182,12 +184,12 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
             return newRetainableByteBuffer(size, direct, this::removed);
-        Pool<RetainableByteBuffer>.Entry entry = bucket.getPool().acquire();
+        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
 
         RetainableByteBuffer buffer;
         if (entry == null)
         {
-            Pool<RetainableByteBuffer>.Entry reservedEntry = bucket.getPool().reserve();
+            Pool.Entry<RetainableByteBuffer> reservedEntry = bucket.getPool().reserve();
             if (reservedEntry != null)
             {
                 buffer = newRetainableByteBuffer(bucket._capacity, direct, retainedBuffer ->
@@ -287,7 +289,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     private long getAvailableByteBufferCount(boolean direct)
     {
         RetainedBucket[] buckets = direct ? _direct : _indirect;
-        return Arrays.stream(buckets).mapToLong(bucket -> bucket.getPool().values().stream().filter(Pool.Entry::isIdle).count()).sum();
+        return Arrays.stream(buckets).mapToLong(bucket -> bucket.getPool().getIdleCount()).sum();
     }
 
     @ManagedAttribute("The bytes retained by direct ByteBuffers")
@@ -328,8 +330,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         long total = 0L;
         for (RetainedBucket bucket : buckets)
         {
-            int capacity = bucket._capacity;
-            total += bucket.getPool().values().stream().filter(Pool.Entry::isIdle).count() * capacity;
+            long capacity = bucket._capacity;
+            total += bucket.getPool().getIdleCount() * capacity;
         }
         return total;
     }
@@ -343,16 +345,16 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     private void clearArray(RetainedBucket[] poolArray, AtomicLong memoryCounter)
     {
-        for (RetainedBucket pool : poolArray)
+        for (RetainedBucket bucket : poolArray)
         {
-            for (Pool<RetainableByteBuffer>.Entry entry : pool.getPool().values())
+            bucket.getPool().stream().forEach(entry ->
             {
                 if (entry.remove())
                 {
                     memoryCounter.addAndGet(-entry.getPooled().capacity());
                     removed(entry.getPooled());
                 }
-            }
+            });
         }
     }
 
@@ -369,6 +371,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     /**
      * This eviction mechanism searches for the RetainableByteBuffers that were released the longest time ago.
+     *
      * @param direct true to search in the direct buffers buckets, false to search in the heap buffers buckets.
      * @param excess the amount of bytes to evict. At least this much will be removed from the buckets.
      */
@@ -385,7 +388,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         {
             for (RetainedBucket bucket : buckets)
             {
-                Pool<RetainableByteBuffer>.Entry oldestEntry = findOldestEntry(now, bucket.getPool());
+                Pool.Entry<RetainableByteBuffer> oldestEntry = findOldestEntry(now, bucket.getPool());
                 if (oldestEntry == null)
                     continue;
 
@@ -429,25 +432,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
             DumpableCollection.fromArray("indirect", _indirect));
     }
 
-    private Pool<RetainableByteBuffer>.Entry findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
+    private Pool.Entry<RetainableByteBuffer> findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
     {
-        Pool<RetainableByteBuffer>.Entry oldestEntry = null;
-        for (Pool<RetainableByteBuffer>.Entry entry : bucket.values())
-        {
-            if (oldestEntry != null)
-            {
-                Buffer entryBuffer = (Buffer)entry.getPooled();
-                long entryAge = NanoTime.elapsed(entryBuffer.getLastNanoTime(), now);
-                Buffer oldestEntryBuffer = (Buffer)oldestEntry.getPooled();
-                if (entryAge > NanoTime.elapsed(oldestEntryBuffer.getLastNanoTime(), now))
-                    oldestEntry = entry;
-            }
-            else
-            {
-                oldestEntry = entry;
-            }
-        }
-        return oldestEntry;
+        return bucket.stream()
+            .max(Comparator.comparingLong(entry -> NanoTime.elapsed(((Buffer)entry.getPooled()).getLastNanoTime(), now)))
+            .orElse(null);
     }
 
     private static class RetainedBucket
@@ -457,11 +446,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
         private RetainedBucket(int capacity, int size)
         {
-            _pool = new Pool<>(Pool.StrategyType.THREAD_ID, size, true);
+            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, size, true);
             _capacity = capacity;
         }
 
-        public Pool<RetainableByteBuffer> getPool()
+        private Pool<RetainableByteBuffer> getPool()
         {
             return _pool;
         }
@@ -471,7 +460,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         {
             int entries = 0;
             int inUse = 0;
-            for (Pool<RetainableByteBuffer>.Entry entry : _pool.values())
+            for (Pool.Entry<RetainableByteBuffer> entry : getPool().stream().toList())
             {
                 entries++;
                 if (entry.isInUse())
