@@ -410,4 +410,37 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <!--
+        $ mvn -Pdependency-updates-reports validate
+        # once done, check the jetty-ee10/target/site/dependency-updates-aggregate-report.html
+        -->
+      <id>dependency-updates-reports</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <version>2.14.2</version>
+            <executions>
+              <execution>
+                <id>ee10-report</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>dependency-updates-aggregate-report</goal>
+                </goals>
+                <configuration>
+                  <formats>
+                    <format>html</format>
+                  </formats>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
