@@ -338,7 +338,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        return _request.getRequestedSession().sessionId();
+        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        return requestedSession == null ? null : requestedSession.sessionId();
     }
 
     @Override

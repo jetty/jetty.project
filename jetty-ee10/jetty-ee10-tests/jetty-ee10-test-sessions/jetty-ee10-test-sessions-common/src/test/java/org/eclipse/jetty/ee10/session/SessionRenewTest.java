@@ -27,8 +27,8 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
@@ -322,7 +322,7 @@ public class SessionRenewTest
                 assertTrue(beforeSession == afterSession); //same object
                 assertFalse(beforeSessionId.equals(afterSessionId)); //different id
 
-                ManagedSession coreAfterSession = ServletApiRequest.getSession(afterSession);
+                ManagedSession coreAfterSession = ServletContextRequest.getServletContextRequest(request).getManagedSession();
                 SessionManager sessionManager = coreAfterSession.getSessionManager();
                 DefaultSessionIdManager sessionIdManager = (DefaultSessionIdManager)sessionManager.getSessionIdManager();
 
