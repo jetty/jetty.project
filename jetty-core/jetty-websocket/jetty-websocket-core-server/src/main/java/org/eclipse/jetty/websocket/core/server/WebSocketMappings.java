@@ -205,7 +205,7 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
 
     public boolean removeMapping(PathSpec pathSpec)
     {
-        return mappings.remove(pathSpec);
+        return mappings.remove(pathSpec) != null;
     }
 
     /**

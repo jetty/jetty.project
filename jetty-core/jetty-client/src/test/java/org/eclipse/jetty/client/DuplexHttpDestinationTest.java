@@ -14,22 +14,23 @@
 package org.eclipse.jetty.client;
 
 import java.lang.reflect.Method;
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -255,13 +256,11 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
             if (connection1 == null)
             {
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
-
                 assertNotNull(connection1);
 
                 TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
 
-                connection1 = connectionPool.getIdleConnections().peek();
-                assertNull(connection1);
+                assertFalse(connectionPool.getIdleConnections().iterator().hasNext());
             }
         }
         finally
@@ -337,7 +336,7 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
         Destination destinationAfter = client.resolveDestination(request);
         assertSame(destinationBefore, destinationAfter);
 
-        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
 
         request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
@@ -367,25 +366,16 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
         Request request = client.newRequest(host, port).scheme(scenario.getScheme());
         assertThrows(Exception.class, request::send);
 
-        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
         assertTrue(client.getDestinations().isEmpty(), "Destination must be removed after connection error");
     }
 
-    private Connection peekIdleConnection(DuplexConnectionPool connectionPool, long time, TimeUnit unit) throws InterruptedException
+    private Connection peekIdleConnection(DuplexConnectionPool connectionPool, long time, TimeUnit unit)
     {
-        return await(() -> connectionPool.getIdleConnections().peek(), time, unit);
-    }
-
-    private Connection await(Supplier<Connection> supplier, long time, TimeUnit unit) throws InterruptedException
-    {
-        long start = NanoTime.now();
-        while (NanoTime.since(start) < unit.toNanos(time))
+        return await().atMost(time, unit).until(() ->
         {
-            Connection connection = supplier.get();
-            if (connection != null)
-                return connection;
-            TimeUnit.MILLISECONDS.sleep(5);
-        }
-        return null;
+            Iterator<Connection> idles = connectionPool.getIdleConnections().iterator();
+            return idles.hasNext() ? idles.next() : null;
+        }, notNullValue());
     }
 }

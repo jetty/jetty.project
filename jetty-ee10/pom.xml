@@ -69,7 +69,6 @@
     <module>jetty-ee10-tests</module>
     <module>jetty-ee10-examples</module>
     <module>jetty-ee10-bom</module>
-    <module>test-ee10-sessions</module>
     <module>jetty-ee10-home</module>
   </modules>
 

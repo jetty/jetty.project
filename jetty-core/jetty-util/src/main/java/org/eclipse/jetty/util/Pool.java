@@ -13,220 +13,34 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * <p>A pool of objects, with optional support for multiplexing,
- * max usage count and several optimized strategies plus
- * an optional {@link ThreadLocal} cache of the last release entry.</p>
- * <p>When the method {@link #close()} is called, all {@link Closeable}s
- * object pooled by the pool are also closed.</p>
+ * <p>A pool of objects, with support for multiplexing and several
+ * optimized strategies plus an optional {@link ThreadLocal} cache
+ * of the last released entry.</p>
+ * <p>A {@code Pool} should be {@link #terminate() terminated} when
+ * it is no longer needed; once terminated, it cannot be used anymore.</p>
  *
- * @param <T> the type of the pooled objects
+ * @param <P> the type of the pooled objects
  */
 @ManagedObject
-public class Pool<T> implements AutoCloseable, Dumpable
+public interface Pool<P>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Pool.class);
-
-    private final List<Entry> entries = new CopyOnWriteArrayList<>();
-    private final int maxEntries;
-    private final StrategyType strategyType;
-    /*
-     * The cache is used to avoid hammering on the first index of the entry list.
-     * Caches can become poisoned (i.e.: containing entries that are in use) when
-     * the release isn't done by the acquiring thread or when the entry pool is
-     * undersized compared to the load applied on it.
-     * When an entry can't be found in the cache, the global list is iterated
-     * with the configured strategy so the cache has no visible effect besides performance.
-     */
-    private final AutoLock lock = new AutoLock();
-    private final ThreadLocal<Entry> cache;
-    private final AtomicInteger nextIndex;
-    private final ToIntFunction<T> maxMultiplex;
-    private volatile boolean closed;
-
-    /**
-     * The type of the strategy to use for the pool.
-     * The strategy primarily determines where iteration over the pool entries begins.
-     */
-    public enum StrategyType
-    {
-        /**
-         * A strategy that looks for an entry always starting from the first entry.
-         * It will favour the early entries in the pool, but may contend on them more.
-         */
-        FIRST,
-
-        /**
-         * A strategy that looks for an entry by iterating from a random starting
-         * index.  No entries are favoured and contention is reduced.
-         */
-        RANDOM,
-
-        /**
-         * A strategy that uses the {@link Thread#getId()} of the current thread
-         * to select a starting point for an entry search.  Whilst not as performant as
-         * using the {@link ThreadLocal} cache, it may be suitable when the pool is substantially smaller
-         * than the number of available threads.
-         * No entries are favoured and contention is reduced.
-         */
-        THREAD_ID,
-
-        /**
-         * A strategy that looks for an entry by iterating from a starting point
-         * that is incremented on every search. This gives similar results to the
-         * random strategy but with more predictable behaviour.
-         * No entries are favoured and contention is reduced.
-         */
-        ROUND_ROBIN
-    }
-
-    /**
-     * Construct a Pool with a specified lookup strategy and no
-     * {@link ThreadLocal} cache.
-     *
-     * @param strategyType The strategy to used for looking up entries.
-     * @param maxEntries the maximum amount of entries that the pool will accept.
-     */
-    public Pool(StrategyType strategyType, int maxEntries)
-    {
-        this(strategyType, maxEntries, false);
-    }
-
-    /**
-     * Construct a Pool with the specified thread-local cache size and
-     * an optional {@link ThreadLocal} cache.
-     *
-     * @param strategyType The strategy to used for looking up entries.
-     * @param maxEntries the maximum amount of entries that the pool will accept.
-     * @param cache True if a {@link ThreadLocal} cache should be used to try the most recently released entry.
-     */
-    public Pool(StrategyType strategyType, int maxEntries, boolean cache)
-    {
-        this(strategyType, maxEntries, cache, pooled -> 1);
-    }
-
-    public Pool(StrategyType strategyType, int maxEntries, boolean cache, ToIntFunction<T> maxMultiplex)
-    {
-        this.maxEntries = maxEntries;
-        this.strategyType = Objects.requireNonNull(strategyType);
-        this.cache = cache ? new ThreadLocal<>() : null;
-        this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
-        this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
-    }
-
-    /**
-     * @return the number of reserved entries
-     */
-    @ManagedAttribute("The number of reserved entries")
-    public int getReservedCount()
-    {
-        return (int)entries.stream().filter(Entry::isReserved).count();
-    }
-
-    /**
-     * @return the number of idle entries
-     */
-    @ManagedAttribute("The number of idle entries")
-    public int getIdleCount()
-    {
-        return (int)entries.stream().filter(Entry::isIdle).count();
-    }
-
-    /**
-     * @return the number of in-use entries
-     */
-    @ManagedAttribute("The number of in-use entries")
-    public int getInUseCount()
-    {
-        return (int)entries.stream().filter(Entry::isInUse).count();
-    }
-
-    /**
-     * @return the number of closed entries
-     */
-    @ManagedAttribute("The number of closed entries")
-    public int getClosedCount()
-    {
-        return (int)entries.stream().filter(Entry::isClosed).count();
-    }
-
-    /**
-     * @return the maximum number of entries
-     */
-    @ManagedAttribute("The maximum number of entries")
-    public int getMaxEntries()
-    {
-        return maxEntries;
-    }
-
-    /**
-     * <p>Retrieves the max multiplex count for the given pooled object.</p>
-     *
-     * @param pooled the pooled object
-     * @return the max multiplex count for the given pooled object
-     */
-    private int getMaxMultiplex(T pooled)
-    {
-        return maxMultiplex.applyAsInt(pooled);
-    }
-
     /**
      * <p>Creates a new disabled slot into the pool.</p>
      * <p>The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
      * method called or be removed via {@link Pool.Entry#remove()}.</p>
      *
-     * @return a disabled entry that is contained in the pool,
-     * or null if the pool is closed or if the pool already contains
-     * {@link #getMaxEntries()} entries
+     * @return a disabled entry that is contained in the pool, or {@code null}
+     * if the pool is terminated or if the pool cannot reserve an entry
      */
-    public Entry reserve()
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            if (closed)
-            {
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("{} is closed, returning null reserved entry", this);
-                return null;
-            }
-
-            // If we have no space
-            int entriesSize = entries.size();
-            if (maxEntries > 0 && entriesSize >= maxEntries)
-            {
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("{} has no space: {} >= {}, returning null reserved entry", this, entriesSize, maxEntries);
-                return null;
-            }
-
-            Entry entry = new Entry();
-            entries.add(entry);
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("{} returning new reserved entry {}", this, entry);
-            return entry;
-        }
-    }
+    public Entry<P> reserve();
 
     /**
      * <p>Acquires an entry from the pool.</p>
@@ -236,57 +50,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      *
      * @return an entry from the pool or null if none is available.
      */
-    public Entry acquire()
-    {
-        if (closed)
-            return null;
-
-        int size = entries.size();
-        if (size == 0)
-            return null;
-
-        if (cache != null)
-        {
-            Pool<T>.Entry entry = cache.get();
-            if (entry != null && entry.tryAcquire())
-                return entry;
-        }
-
-        int index = startIndex(size);
-
-        for (int tries = size; tries-- > 0;)
-        {
-            try
-            {
-                Pool<T>.Entry entry = entries.get(index);
-                if (entry != null && entry.tryAcquire())
-                    return entry;
-            }
-            catch (IndexOutOfBoundsException e)
-            {
-                LOGGER.trace("IGNORED", e);
-                size = entries.size();
-                // Size can be 0 when the pool is in the middle of
-                // acquiring a connection while another thread
-                // removes the last one from the pool.
-                if (size == 0)
-                    break;
-            }
-            index = (index + 1) % size;
-        }
-        return null;
-    }
-
-    private int startIndex(int size)
-    {
-        return switch (strategyType)
-        {
-            case FIRST -> 0;
-            case RANDOM -> ThreadLocalRandom.current().nextInt(size);
-            case ROUND_ROBIN -> nextIndex.getAndUpdate(c -> Math.max(0, c + 1)) % size;
-            case THREAD_ID -> (int)(Thread.currentThread().getId() % size);
-        };
-    }
+    public Entry<P> acquire();
 
     /**
      * <p>Acquires an entry from the pool,
@@ -295,362 +59,325 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @param creator a function to create the pooled value for a reserved entry.
      * @return an entry from the pool or null if none is available.
      */
-    public Entry acquire(Function<Pool<T>.Entry, T> creator)
-    {
-        Entry entry = acquire();
-        if (entry != null)
-            return entry;
-
-        entry = reserve();
-        if (entry == null)
-            return null;
-
-        T value;
-        try
-        {
-            value = creator.apply(entry);
-        }
-        catch (Throwable th)
-        {
-            remove(entry);
-            throw th;
-        }
-
-        if (value == null)
-        {
-            remove(entry);
-            return null;
-        }
-
-        return entry.enable(value, true) ? entry : null;
-    }
+    public Entry<P> acquire(Function<Entry<P>, P> creator);
 
     /**
-     * <p>Releases an {@link #acquire() acquired} entry to the pool.</p>
-     * <p>Entries that are acquired from the pool but never released
-     * will result in a memory leak.</p>
-     *
-     * @param entry the value to return to the pool
-     * @return true if the entry was released and could be acquired again,
-     * false if the entry should be removed by calling {@link Entry#remove()}
-     * and the object contained by the entry should be disposed.
+     * @return whether this {@code Pool} has been terminated
+     * @see #terminate()
      */
-    private boolean release(Entry entry)
-    {
-        if (closed)
-            return false;
-
-        boolean released = entry.tryRelease();
-        if (released && cache != null)
-            cache.set(entry);
-        return released;
-    }
+    public boolean isTerminated();
 
     /**
-     * <p>Removes an entry from the pool.</p>
+     * <p>Terminates this {@code Pool}.</p>
+     * <p>All the entries are marked as terminated and cannot be
+     * acquired nor released, but only removed.</p>
+     * <p>The returned list of all entries may be iterated to
+     * perform additional operations on the pooled objects.</p>
+     * <p>The pool cannot be used anymore after it is terminated.</p>
      *
-     * @param entry the value to remove
-     * @return true if the entry was removed, false otherwise
+     * @return a list of all entries
      */
-    private boolean remove(Entry entry)
-    {
-        if (closed)
-            return false;
+    public Collection<Entry<P>> terminate();
 
-        if (!entry.tryRemove())
-        {
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Attempt to remove an object from the pool that is still in use: {}", entry);
-            return false;
-        }
-
-        boolean removed = entries.remove(entry);
-        if (!removed && LOGGER.isDebugEnabled())
-            LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
-
-        return removed;
-    }
-
-    public boolean isClosed()
-    {
-        return closed;
-    }
-
-    @Override
-    public void close()
-    {
-        if (LOGGER.isDebugEnabled())
-            LOGGER.debug("Closing {}", this);
-
-        List<Entry> copy;
-        try (AutoLock ignored = lock.lock())
-        {
-            closed = true;
-            copy = new ArrayList<>(entries);
-            entries.clear();
-        }
-
-        // iterate the copy and close its entries
-        for (Entry entry : copy)
-        {
-            boolean removed = entry.tryRemove();
-            if (removed)
-            {
-                if (entry.pooled instanceof Closeable closeable)
-                    IO.close(closeable);
-            }
-            else
-            {
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("Pooled object still in use: {}", entry);
-            }
-        }
-    }
-
+    /**
+     * @return the current number of entries in this {@code Pool}
+     */
     @ManagedAttribute("The number of entries")
-    public int size()
-    {
-        return entries.size();
-    }
+    public int size();
 
-    public Collection<Entry> values()
-    {
-        return Collections.unmodifiableCollection(entries);
-    }
+    /**
+     * @return the maximum number of entries in this {@code Pool}
+     */
+    @ManagedAttribute("The maximum number of entries")
+    public int getMaxSize();
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("entries", entries));
-    }
+    /**
+     * @return a {@link Stream} over the entries
+     */
+    public Stream<Entry<P>> stream();
 
-    @Override
-    public String toString()
+    /**
+     * @return the number of reserved entries
+     */
+    @ManagedAttribute("The number of reserved entries")
+    public default int getReservedCount()
     {
-        return String.format("%s@%x[inUse=%d,size=%d,max=%d,closed=%b]",
-            getClass().getSimpleName(),
-            hashCode(),
-            getInUseCount(),
-            size(),
-            getMaxEntries(),
-            isClosed());
+        return (int)stream().filter(Entry::isReserved).count();
     }
 
     /**
-     * <p>A Pool entry that holds metadata and a pooled object.</p>
+     * @return the number of idle entries
      */
-    public class Entry
+    @ManagedAttribute("The number of idle entries")
+    public default int getIdleCount()
     {
-        // MIN_VALUE => pending
-        // less than -1 => closed with multiplex count
-        // -1 => closed and removed
-        // 0 => idle
-        // greater than zero => multiplex count
-        private final AtomicInteger state = new AtomicInteger(Integer.MIN_VALUE);
-        // The pooled object. This is not volatile as it is set once and then never changed.
-        // Other threads accessing must check the state field above first, so a good before/after
-        // relationship exists to make a memory barrier.
-        private T pooled;
+        return (int)stream().filter(Entry::isIdle).count();
+    }
 
-        /**
-         * <p>Enables this, previously {@link #reserve() reserved}, Entry.</p>
-         * <p>An entry returned from the {@link #reserve()} method must be enabled with this method,
-         * once and only once, before it is usable by the pool.</p>
-         * <p>The entry may be enabled and not acquired, in which case it is immediately available to be
-         * acquired, potentially by another thread; or it can be enabled and acquired atomically so that
-         * no other thread can acquire it, although the acquire may still fail if the pool has been closed.</p>
-         *
-         * @param pooled the pooled object for this Entry
-         * @param acquire whether this Entry should be atomically enabled and acquired
-         * @return whether this Entry was enabled
-         * @throws IllegalStateException if this Entry was already enabled
-         */
-        public boolean enable(T pooled, boolean acquire)
+    /**
+     * @return the number of in-use entries
+     */
+    @ManagedAttribute("The number of in-use entries")
+    public default int getInUseCount()
+    {
+        return (int)stream().filter(Entry::isInUse).count();
+    }
+
+    /**
+     * @return the number of terminated entries
+     */
+    @ManagedAttribute("The number of terminated entries")
+    public default int getTerminatedCount()
+    {
+        return (int)stream().filter(Entry::isTerminated).count();
+    }
+
+    /**
+     * <p>A wrapper for {@code Pool} instances.</p>
+     *
+     * @param <W> the type of the pooled objects
+     */
+    public static class Wrapper<W> implements Pool<W>
+    {
+        private final Pool<W> wrapped;
+
+        public Wrapper(Pool<W> wrapped)
         {
-            Objects.requireNonNull(pooled);
-
-            if (!isReserved())
-            {
-                if (isClosed())
-                    return false; // Pool has been closed
-                throw new IllegalStateException("Entry already enabled: " + this);
-            }
-            this.pooled = pooled;
-
-            if (tryEnable(acquire))
-                return true;
-
-            this.pooled = null;
-            if (isClosed())
-                return false; // Pool has been closed
-            throw new IllegalStateException("Entry already enabled: " + this);
+            this.wrapped = wrapped;
         }
+
+        public Pool<W> getWrapped()
+        {
+            return wrapped;
+        }
+
+        @Override
+        public Entry<W> reserve()
+        {
+            return getWrapped().reserve();
+        }
+
+        @Override
+        public Entry<W> acquire()
+        {
+            return getWrapped().acquire();
+        }
+
+        @Override
+        public Entry<W> acquire(Function<Entry<W>, W> creator)
+        {
+            return getWrapped().acquire(creator);
+        }
+
+        @Override
+        public boolean isTerminated()
+        {
+            return getWrapped().isTerminated();
+        }
+
+        @Override
+        public Collection<Entry<W>> terminate()
+        {
+            return getWrapped().terminate();
+        }
+
+        @Override
+        public int size()
+        {
+            return getWrapped().size();
+        }
+
+        @Override
+        public int getMaxSize()
+        {
+            return getWrapped().getMaxSize();
+        }
+
+        @Override
+        public Stream<Entry<W>> stream()
+        {
+            return getWrapped().stream();
+        }
+
+        @Override
+        public int getReservedCount()
+        {
+            return getWrapped().getReservedCount();
+        }
+
+        @Override
+        public int getIdleCount()
+        {
+            return getWrapped().getIdleCount();
+        }
+
+        @Override
+        public int getInUseCount()
+        {
+            return getWrapped().getInUseCount();
+        }
+
+        @Override
+        public int getTerminatedCount()
+        {
+            return getWrapped().getTerminatedCount();
+        }
+    }
+
+    /**
+     * <p>A {@code Pool} entry that holds metadata and a pooled object.</p>
+     *
+     * @param <E> the type of the pooled objects
+     */
+    public interface Entry<E>
+    {
+        /**
+         * <p>Enables this, previously {@link #reserve() reserved}, {@code Entry}.</p>
+         * <p>An entry returned from the {@link #reserve()} method must be enabled
+         * with this method, once and only once, before it is usable by the pool.</p>
+         * <p>The entry may be enabled and not acquired, in which case it is immediately
+         * available to be acquired, potentially by another thread; or it can be enabled
+         * and acquired atomically so that no other thread can acquire it, although the
+         * acquire may still fail if the pool has been terminated.</p>
+         *
+         * @param pooled the pooled object for this {@code Entry}
+         * @param acquire whether this {@code Entry} should be atomically enabled and acquired
+         * @return whether this {@code Entry} was enabled
+         * @throws IllegalStateException if this {@code Entry} was already enabled
+         */
+        public boolean enable(E pooled, boolean acquire);
 
         /**
          * @return the pooled object
          */
-        public T getPooled()
-        {
-            return pooled;
-        }
+        public E getPooled();
 
         /**
-         * <p>Releases this Entry.</p>
+         * <p>Releases this {@code Entry} to the {@code Pool}.</p>
          *
-         * @return whether this Entry was released
+         * @return whether this {@code Entry} was released
          */
-        public boolean release()
-        {
-            return Pool.this.release(this);
-        }
+        public boolean release();
 
         /**
-         * <p>Removes this Entry from the Pool.</p>
+         * <p>Removes this {@code Entry} from the {@code Pool}.</p>
          *
-         * @return whether this Entry was removed
+         * @return whether this {@code Entry} was removed
          */
-        public boolean remove()
-        {
-            return Pool.this.remove(this);
-        }
+        public boolean remove();
 
         /**
-         * <p>Tries to enable, and possible also acquire, this Entry.</p>
-         *
-         * @param acquire whether to also acquire this Entry
-         * @return whether this Entry was enabled
+         * @return whether this {@code Entry} is reserved
+         * @see Pool#reserve()
          */
-        private boolean tryEnable(boolean acquire)
-        {
-            return state.compareAndSet(Integer.MIN_VALUE, acquire ? 1 : 0);
-        }
+        public boolean isReserved();
 
         /**
-         * <p>Tries to acquire this Entry.</p>
-         *
-         * @return whether this Entry was acquired
+         * @return whether this {@code Entry} is idle in the {@code Pool}
          */
-        private boolean tryAcquire()
+        public boolean isIdle();
+
+        /**
+         * @return whether this {@code Entry} is in use
+         */
+        public boolean isInUse();
+
+        /**
+         * @return whether this {@code Entry} is terminated
+         */
+        public boolean isTerminated();
+
+        /**
+         * <p>A wrapper for {@code Entry} instances.</p>
+         *
+         * @param <W> the type of the pooled objects
+         */
+        public static class Wrapper<W> implements Entry<W>
         {
-            while (true)
+            private final Entry<W> wrapped;
+
+            public Wrapper(Entry<W> wrapped)
             {
-                int multiplexCount = state.get();
-                if (multiplexCount < 0)
-                    return false;
-                int maxMultiplexed = getMaxMultiplex(pooled);
-                if (maxMultiplexed > 0 && multiplexCount >= maxMultiplexed)
-                    return false;
-                int newMultiplexCount = multiplexCount + 1;
-                // Handles integer overflow.
-                if (newMultiplexCount < 0)
-                    return false;
-                if (state.compareAndSet(multiplexCount, newMultiplexCount))
-                    return true;
+                this.wrapped = wrapped;
+            }
+
+            public Entry<W> getWrapped()
+            {
+                return wrapped;
+            }
+
+            @Override
+            public boolean enable(W pooled, boolean acquire)
+            {
+                return getWrapped().enable(pooled, acquire);
+            }
+
+            @Override
+            public W getPooled()
+            {
+                return getWrapped().getPooled();
+            }
+
+            @Override
+            public boolean release()
+            {
+                return getWrapped().release();
+            }
+
+            @Override
+            public boolean remove()
+            {
+                return getWrapped().remove();
+            }
+
+            @Override
+            public boolean isReserved()
+            {
+                return getWrapped().isReserved();
+            }
+
+            @Override
+            public boolean isIdle()
+            {
+                return getWrapped().isIdle();
+            }
+
+            @Override
+            public boolean isInUse()
+            {
+                return getWrapped().isInUse();
+            }
+
+            @Override
+            public boolean isTerminated()
+            {
+                return getWrapped().isTerminated();
             }
         }
+    }
+
+    /**
+     * <p>A factory for {@link Pool} instances.</p>
+     *
+     * @param <F> the type of the pooled objects
+     */
+    public interface Factory<F>
+    {
+        /**
+         * @return a new {@link Pool} instance
+         */
+        public Pool<F> newPool();
 
         /**
-         * <p>Tries to release this Entry.</p>
+         * <p>Wraps, if necessary, the given pool.</p>
          *
-         * @return true if this Entry was released,
-         * false if {@link #tryRemove()} should be called.
+         * @param pool the pool to wrap
+         * @return a possibly wrapped pool
+         * @see Pool.Wrapper
          */
-        private boolean tryRelease()
+        public default Pool<F> wrap(Pool<F> pool)
         {
-            while (true)
-            {
-                int multiplexCount = state.get();
-                if (multiplexCount < 0)
-                    return false;
-                int newMultiplexCount = multiplexCount - 1;
-                if (newMultiplexCount < 0)
-                    return false;
-                if (state.compareAndSet(multiplexCount, newMultiplexCount))
-                    return true;
-            }
-        }
-
-        /**
-         * <p>Tries to remove the entry by marking it as closed.</p>
-         *
-         * @return whether the entry can be removed from the containing pool
-         */
-        private boolean tryRemove()
-        {
-            while (true)
-            {
-                int multiplexCount = state.get();
-                int newMultiplexCount;
-                if (multiplexCount == Integer.MIN_VALUE || multiplexCount == 0)
-                {
-                    // Was reserved or idle, set the removed state, -1.
-                    newMultiplexCount = -1;
-                }
-                else if (multiplexCount > 0)
-                {
-                    // Was in use, mark as closed by flipping the sign.
-                    // The flip of the sign will count as one multiplex
-                    // decrement, so that when all the releases/removes
-                    // are done we end up with the removed state, -1.
-                    newMultiplexCount = -multiplexCount;
-                }
-                else
-                {
-                    // Was already closed, but we need to decrement the
-                    // multiplex, so we know when the entry is not in use.
-                    // Since the value is already negative, we increment
-                    // the multiplex count towards the removed state, -1.
-                    if (multiplexCount == -1)
-                        return false;
-                    newMultiplexCount = multiplexCount + 1;
-                }
-                if (state.compareAndSet(multiplexCount, newMultiplexCount))
-                    return newMultiplexCount == -1;
-            }
-        }
-
-        /**
-         * @return whether this Entry is closed
-         */
-        public boolean isClosed()
-        {
-            int s = state.get();
-            return s < 0 && s != Integer.MIN_VALUE;
-        }
-
-        /**
-         * @return whether this Entry is reserved
-         */
-        private boolean isReserved()
-        {
-            return state.get() == Integer.MIN_VALUE;
-        }
-
-        /**
-         * @return whether this Entry is idle
-         */
-        public boolean isIdle()
-        {
-            return state.get() == 0;
-        }
-
-        /**
-         * @return whether this Entry is in use.
-         */
-        public boolean isInUse()
-        {
-            return state.get() > 0;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x{multiplex=%d,pooled=%s}",
-                getClass().getSimpleName(),
-                hashCode(),
-                state.get(),
-                getPooled());
+            return pool;
         }
     }
 }

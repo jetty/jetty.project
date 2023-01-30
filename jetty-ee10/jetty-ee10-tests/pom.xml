@@ -38,5 +38,6 @@
     <module>jetty-ee10-test-webapp-rfc2616</module>
     <module>jetty-ee10-test-weld-cdi-webapp</module>
     <module>jetty-ee10-test-badinit-webapp</module>
+    <module>jetty-ee10-test-sessions</module>
   </modules>
 </project>
