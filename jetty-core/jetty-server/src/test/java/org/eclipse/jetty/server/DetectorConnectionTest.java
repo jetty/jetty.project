@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocketFactory;
@@ -44,6 +45,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -142,7 +144,11 @@ public class DetectorConnectionTest
     @AfterEach
     public void destroy() throws Exception
     {
-        assertEquals(0, _bufferLeaks.get());
+        // Wait a bit for the server to release the buffers.
+        await()
+            .pollDelay(5, TimeUnit.MILLISECONDS)
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> _bufferLeaks.get() == 0);
         if (_server != null)
             _server.stop();
     }
