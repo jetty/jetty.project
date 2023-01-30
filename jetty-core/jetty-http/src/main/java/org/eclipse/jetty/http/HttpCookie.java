@@ -77,7 +77,7 @@ public interface HttpCookie
             return this.attributeValue;
         }
 
-        private static Index<SameSite> CACHE = new Index.Builder<SameSite>()
+        private static final Index<SameSite> CACHE = new Index.Builder<SameSite>()
             .caseSensitive(false)
             .with(NONE.attributeValue, NONE)
             .with(STRICT.attributeValue, STRICT)
