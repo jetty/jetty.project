@@ -22,7 +22,8 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.Session.APISession;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.server.Session.API;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -71,12 +72,12 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public APISession newSessionAPIWrapper(Session session)
+    public API newSessionAPIWrapper(ManagedSession session)
     {
-        return new APISession()
+        return new API()
         {
             @Override
-            public Session getCoreSession()
+            public ManagedSession getSession()
             {
                 return session;
             }
@@ -89,7 +90,7 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public Session getSession(Request request)
+    public ManagedSession getManagedSession(Request request)
     {
         return null;
     }
@@ -179,7 +180,7 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
+    public HttpCookie getSessionCookie(ManagedSession session, String contextPath, boolean requestIsSecure)
     {
         if (isUsingCookies())
         {

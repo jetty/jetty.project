@@ -17,13 +17,14 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoginService;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public abstract class LoginAuthenticator implements Authenticator
         if (session == null)
             return;
 
-        session.removeAttribute(Session.SESSION_CREATED_SECURE);
+        session.removeAttribute(ManagedSession.SESSION_CREATED_SECURE);
     }
 
     @Override
@@ -118,23 +119,20 @@ public abstract class LoginAuthenticator implements Authenticator
             {
                 //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (httpSession.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
+                if (httpSession.getAttribute(ManagedSession.SESSION_CREATED_SECURE) != Boolean.TRUE)
                 {
-                    if (httpSession instanceof Session.APISession apiSession)
+                    if (httpSession instanceof Session.API api)
                     {
-                        Session session = apiSession.getCoreSession();
-                        String oldId = session.getId();
-                        session.renewId(Request.getBaseRequest(request).getHttpChannel().getCoreRequest());
-                        session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                        if (session.isSetCookieNeeded() && (response instanceof Response))
-                            ((Response)response).replaceCookie(session.getSessionManager().getSessionCookie(session, request.getContextPath(), request.isSecure()));
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("renew {}->{}", oldId, session.getId());
+                        Request baseRequest = Request.getBaseRequest(request);
+                        if (baseRequest != null)
+                        {
+                            httpSession.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
+                            HttpChannel httpChannel = baseRequest.getHttpChannel();
+                            api.getSession().renewId(httpChannel.getCoreRequest(), httpChannel.getCoreResponse());
+                            return httpSession;
+                        }
                     }
-                    else
-                    {
-                        LOG.warn("Unable to renew session {}", httpSession);
-                    }
+                    LOG.warn("Unable to renew session {}", httpSession);
                     return httpSession;
                 }
             }

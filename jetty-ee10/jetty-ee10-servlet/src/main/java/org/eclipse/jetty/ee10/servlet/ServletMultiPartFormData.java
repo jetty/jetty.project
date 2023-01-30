@@ -96,7 +96,7 @@ public class ServletMultiPartFormData
         formData.setMaxMemoryFileSize(config.getFileSizeThreshold());
         formData.setMaxFileSize(config.getMaxFileSize());
         formData.setMaxLength(config.getMaxRequestSize());
-        ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
+        ConnectionMetaData connectionMetaData = request.getServletContextRequest().getConnectionMetaData();
         formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
         Connection connection = connectionMetaData.getConnection();

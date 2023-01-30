@@ -100,9 +100,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @param secure whether the request is secure or not
      * @return the session cookie. If not null, this cookie should be set on the response to either migrate
      * the session or to refresh a session cookie that may expire.
-     * @see #complete(Session)
+     * @see #complete(ManagedSession)
      */
-    public HttpCookie access(Session session, boolean secure)
+    public HttpCookie access(ManagedSession session, boolean secure)
     {
         if (session == null)
             return null;
@@ -197,7 +197,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * will see the modifications.
      */
     @Override
-    public void commit(Session session)
+    public void commit(ManagedSession session)
     {
         if (session == null)
             return;
@@ -218,7 +218,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @param session the session object
      */
     @Override
-    public void complete(Session session)
+    public void complete(ManagedSession session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Complete called with session {}", session);
@@ -370,12 +370,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @return the Session matching the id or null if none exists
      */
     @Override
-    public Session getSession(String extendedId)
+    public ManagedSession getManagedSession(String extendedId)
     {
         String id = getSessionIdManager().getId(extendedId);
         try
         {
-            Session session = _sessionCache.get(id);
+            ManagedSession session = _sessionCache.get(id);
             if (session != null)
             {
                 //If the session we got back has expired
@@ -629,7 +629,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         {
             // Remove the Session object from the session cache and any backing
             // data store
-            Session session = _sessionCache.delete(id);
+            ManagedSession session = _sessionCache.delete(id);
             if (session != null)
             {
                 //start invalidating if it is not already begun, and call the listeners
@@ -792,11 +792,11 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @param requestedSessionId the session id used by the request
      */
     @Override
-    public void newSession(Request request, String requestedSessionId, Consumer<Session> consumer)
+    public void newSession(Request request, String requestedSessionId, Consumer<ManagedSession> consumer)
     {
         long created = System.currentTimeMillis();
         String id = _sessionIdManager.newSessionId(request, requestedSessionId, created);
-        Session session = _sessionCache.newSession(id, created, (_dftMaxIdleSecs > 0 ? _dftMaxIdleSecs * 1000L : -1));
+        ManagedSession session = _sessionCache.newSession(id, created, (_dftMaxIdleSecs > 0 ? _dftMaxIdleSecs * 1000L : -1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
         session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
         try
@@ -806,7 +806,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             _sessionsCreatedStats.increment();
 
             if (request != null && request.getConnectionMetaData().isSecure())
-                session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+                session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
 
             consumer.accept(session);
             callSessionCreatedListeners(session);
@@ -822,7 +822,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @param session the session to time
      */
     @Override
-    public SessionInactivityTimer newSessionInactivityTimer(Session session)
+    public SessionInactivityTimer newSessionInactivityTimer(ManagedSession session)
     {
         return new SessionInactivityTimer(this, session, _scheduler);
     }
@@ -834,7 +834,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @param session the session whose time to record
      */
     @Override
-    public void recordSessionTime(Session session)
+    public void recordSessionTime(ManagedSession session)
     {
         _sessionTimeStats.record(Math.round((System.currentTimeMillis() - session.getSessionData().getCreated()) / 1000.0));
     }
@@ -850,7 +850,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId)
     {
-        Session session = null;
+        ManagedSession session = null;
         try
         {
             //the use count for the session will be incremented in renewSessionId
@@ -947,7 +947,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @param now the time at which to check for expiry
      */
     @Override
-    public void sessionTimerExpired(Session session, long now)
+    public void sessionTimerExpired(ManagedSession session, long now)
     {
         if (session == null)
             return;
@@ -1005,7 +1005,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         String requestedSessionId = null;
         boolean requestedSessionIdFromCookie = false;
-        Session session = null;
+        ManagedSession session = null;
 
         //first try getting id from a cookie
         if (isUsingCookies())
@@ -1027,7 +1027,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                         if (session == null)
                         {
                             //we currently do not have a session selected, use this one if it is valid
-                            Session s = getSession(id);
+                            ManagedSession s = getManagedSession(id);
                             if (s != null && s.isValid())
                             {
                                 //associate it with the request so its reference count is decremented as the
@@ -1059,7 +1059,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                                     LOG.debug("Multiple different valid session ids: {}, {}", requestedSessionId, id);
 
                                 //load the session to see if it is valid or not
-                                Session s = getSession(id);
+                                ManagedSession s = getManagedSession(id);
                                 if (s != null && s.isValid())
                                 {
                                     //release both sessions straight away??
@@ -1115,7 +1115,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 if (LOG.isDebugEnabled())
                     LOG.debug("Got Session ID {} from URL", requestedSessionId);
 
-                session = getSession(requestedSessionId);
+                session = getManagedSession(requestedSessionId);
             }
         }
 
@@ -1132,7 +1132,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _sessionCache.shutdown();
     }
     
-    public record RequestedSession(Session session, String sessionId, boolean sessionIdFromCookie)
+    public record RequestedSession(ManagedSession session, String sessionId, boolean sessionIdFromCookie)
     {
     }
 
@@ -1183,12 +1183,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
         private void doCommit()
         {
-            commit(_sessionManager.getSession(_request));
+            commit(_sessionManager.getManagedSession(_request));
         }
 
         private void doComplete()
         {
-            complete(_sessionManager.getSession(_request));
+            complete(_sessionManager.getManagedSession(_request));
         }
     }
 }

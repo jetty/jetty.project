@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -51,7 +52,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     }
 
     @Override
-    public ContextHandler.ScopedContext getContext()
+    public Context getContext()
     {
         return _context;
     }

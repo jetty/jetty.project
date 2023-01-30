@@ -61,11 +61,13 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
+import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionDataStore;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -617,7 +619,7 @@ public class ResponseTest
         sessionHandler.setUsingCookies(true);
         _context.setHandler(sessionHandler);
         _server.start();
-        request.setSessionManager(sessionHandler.getSessionManager());
+        response.getHttpChannel().getCoreRequest().setSessionManager(sessionHandler.getSessionManager());
         HttpSession session = request.getSession(true);
 
         assertThat(session, not(nullValue()));
@@ -1603,9 +1605,9 @@ public class ResponseTest
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
-        request.setSessionManager(sessionHandler.getSessionManager());
-        request.setRequestedSessionId("12345");
-        request.setRequestedSessionIdFromCookie(false);
+        ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+        coreRequest.setSessionManager(sessionHandler.getSessionManager());
+        coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", false));
         assertNotNull(request.getSession(true));
         assertThat(request.getSession(false).getId(), is("12345"));
 
@@ -1712,15 +1714,12 @@ public class ResponseTest
                     uri.host(host).port(port);
                 request.onDispatch(uri, "/path/info");
 
-                request.setSessionManager(sessionHandler.getSessionManager());
-                request.setRequestedSessionId("12345");
-                request.setRequestedSessionIdFromCookie(cookie);
-
-                Session session = sessionHandler.getSessionManager().getSession("12345");
+                ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+                coreRequest.setSessionManager(sessionHandler.getSessionManager());
+                ManagedSession session = sessionHandler.getSessionManager().getManagedSession("12345");
+                coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(session, "12345", cookie));
                 if (session == null)
                     request.getSession(true);
-                else
-                    request.setCoreSession(session);
 
                 assertThat(request.getSession(false).getId(), is("12345"));
 
@@ -1784,8 +1783,9 @@ public class ResponseTest
                         uri.authority(host, port);
                     uri.pathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
                     request.onDispatch(uri, "/info");
-                    request.setRequestedSessionId("12345");
-                    request.setRequestedSessionIdFromCookie(i > 2);
+
+                    ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+                    coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", i > 2));
                     SessionHandler handler = new SessionHandler();
 
                     NullSessionDataStore dataStore = new NullSessionDataStore();
@@ -1795,7 +1795,7 @@ public class ResponseTest
                     DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
                     sessionIdManager.setWorkerName(null);
                     handler.getSessionManager().setSessionIdManager(sessionIdManager);
-                    request.setSessionManager(handler.getSessionManager());
+                    coreRequest.setSessionManager(handler.getSessionManager());
                     handler.setCheckingRemoteSessionIdEncoding(false);
 
                     response.sendRedirect(tests[i][0]);
@@ -2244,7 +2244,7 @@ public class ResponseTest
         org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, now, _context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
-        _channel.onRequest(coreRequest);
+        _channel.onRequest(new ContextHandler.CoreContextRequest(coreRequest, _context.getCoreContextHandler().getContext(), _channel));
         _channel.onProcess(coreResponse, Callback.NOOP);
 
         BufferUtil.clear(_content);
@@ -2374,6 +2374,12 @@ public class ResponseTest
         @Override
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            return null;
         }
     }
 

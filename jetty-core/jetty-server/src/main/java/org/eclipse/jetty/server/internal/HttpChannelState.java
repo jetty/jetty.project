@@ -53,6 +53,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
@@ -953,6 +954,12 @@ public class HttpChannelState implements HttpChannel, Components
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getHttpChannel().addHttpStreamWrapper(wrapper);
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            return null;
         }
 
         @Override

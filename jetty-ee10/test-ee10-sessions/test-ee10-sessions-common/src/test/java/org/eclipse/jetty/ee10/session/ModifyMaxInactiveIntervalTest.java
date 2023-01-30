@@ -25,9 +25,9 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
@@ -77,7 +77,7 @@ public class ModifyMaxInactiveIntervalTest extends AbstractSessionTestBase
                 String id = SessionTestSupport.extractSessionId(sessionCookie);
 
                 //check that the maxInactive is -1
-                Session s = ctxA.getSessionHandler().getSession(id);
+                Session s = ctxA.getSessionHandler().getManagedSession(id);
                 assertEquals(-1, s.getMaxInactiveInterval());
             }
             finally

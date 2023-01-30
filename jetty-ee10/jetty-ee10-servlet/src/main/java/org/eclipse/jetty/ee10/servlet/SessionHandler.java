@@ -43,9 +43,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -270,29 +271,29 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         }
     }
 
-    public static class ServletAPISession implements HttpSession, Session.APISession
+    public static class ServletAPISession implements HttpSession, Session.API
     {
-        public static ServletAPISession wrapSession(Session session)
+        public static ServletAPISession wrapSession(ManagedSession session)
         {
             return new ServletAPISession(session);
         }
         
-        public static Session getSession(HttpSession httpSession)
+        public static ManagedSession getSession(HttpSession httpSession)
         {
             if (httpSession instanceof ServletAPISession apiSession)
-                return apiSession.getCoreSession();
+                return apiSession.getSession();
             return null;
         }
         
-        private final Session _session;
+        private final ManagedSession _session;
         
-        private ServletAPISession(Session session)
+        private ServletAPISession(ManagedSession session)
         {
             _session = session;           
         }
 
         @Override
-        public Session getCoreSession()
+        public ManagedSession getSession()
         {
             return _session;
         }
@@ -391,10 +392,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
-    public Session getSession(Request request)
+    public ManagedSession getManagedSession(Request request)
     {
         ServletApiRequest apiRequest = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletApiRequest);
-        return apiRequest == null ? null : apiRequest.getCoreSession();
+        return apiRequest == null ? null : apiRequest.getServletContextRequest().getManagedSession();
     }
 
     /**
@@ -431,7 +432,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
      * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
      */
     @Override
-    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
+    public HttpCookie getSessionCookie(ManagedSession session, String contextPath, boolean requestIsSecure)
     {
         if (isUsingCookies())
         {
@@ -546,7 +547,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         }
     }
 
-    public Session.APISession newSessionAPIWrapper(Session session)
+    public Session.API newSessionAPIWrapper(ManagedSession session)
     {
         return ServletAPISession.wrapSession(session);
     }
@@ -728,24 +729,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
             return false;
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletApiRequest servletApiRequest =
-            (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
-        if (servletApiRequest == null)
-            throw new IllegalStateException("Request is not a valid ServletContextRequest");
-
         addSessionStreamWrapper(request);
 
         // find and set the session if one exists
         RequestedSession requestedSession = resolveRequestedSessionId(request);
-
-        servletApiRequest.setCoreSession(requestedSession.session());
-        servletApiRequest.setSessionManager(this);
-        servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
-        servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
-
-        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
+        servletContextRequest.setRequestedSession(requestedSession);
 
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
+        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
         if (cookie != null)
         {
             ServletContextResponse servletContextResponse = servletContextRequest.getResponse();

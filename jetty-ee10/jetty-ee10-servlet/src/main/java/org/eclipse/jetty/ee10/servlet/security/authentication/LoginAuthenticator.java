@@ -26,7 +26,8 @@ import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +83,7 @@ public abstract class LoginAuthenticator implements Authenticator
         if (session == null)
             return;
 
-        session.removeAttribute(Session.SESSION_CREATED_SECURE);
+        session.removeAttribute(ManagedSession.SESSION_CREATED_SECURE);
     }
 
     @Override
@@ -124,17 +125,12 @@ public abstract class LoginAuthenticator implements Authenticator
             {
                 //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (session.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
+                if (session.getAttribute(ManagedSession.SESSION_CREATED_SECURE) != Boolean.TRUE)
                 {
+                    session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
                     ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(httpRequest);
                     Response response = servletContextRequest.getResponse().getWrapped();
-                    String oldId = session.getId();
-                    session.renewId(servletContextRequest);
-                    session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                    if (session.isSetCookieNeeded())
-                        Response.replaceCookie(response, session.getSessionManager().getSessionCookie(session, httpRequest.getContextPath(), httpRequest.isSecure()));
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("renew {}->{}", oldId, session.getId());
+                    session.renewId(servletContextRequest, response);
                     return httpSession;
                 }
             }

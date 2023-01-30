@@ -1164,7 +1164,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                                                              String pathInContext,
                                                              MatchedResource<ServletHandler.MappedServlet> matchedResource)
     {
-        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext, matchedResource);
+        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext, matchedResource, getSessionHandler());
     }
 
     @Override

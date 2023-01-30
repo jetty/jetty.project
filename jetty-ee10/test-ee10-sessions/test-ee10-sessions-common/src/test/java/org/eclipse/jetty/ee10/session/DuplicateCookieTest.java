@@ -29,7 +29,7 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class DuplicateCookieTest
 {
-    public class TestSession extends Session
+    public class TestSession extends ManagedSession
     {
 
         public TestSession(SessionManager manager, SessionData data)
@@ -57,7 +57,7 @@ public class DuplicateCookieTest
         
         public void makeInvalid()
         {
-            _state = Session.State.INVALID;
+            _state = ManagedSession.State.INVALID;
         }
     }
      
@@ -70,7 +70,7 @@ public class DuplicateCookieTest
         }
 
         @Override
-        public Session newSession(SessionData data)
+        public ManagedSession newSession(SessionData data)
         {
             return new TestSession(getSessionManager(), data);
         }
@@ -109,7 +109,7 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s4422 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s4422 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "4422");
 
@@ -158,15 +158,15 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "1122");
             //create an invalid session
-            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "2233");
             //create another invalid session
-            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "2255");
 
@@ -218,15 +218,15 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "1122");
             //create an invalid session
-            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "2233");
             //create another invalid session
-            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "2255");
 
@@ -279,15 +279,15 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "1122");
             //create an invalid session
-            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "2233");
             //create another invalid session
-            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "2255");
 
@@ -339,13 +339,13 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create some unexpired sessions
-            Session s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "1234");
-            Session s5678 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s5678 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "5678");
-            Session s9111 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s9111 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "9111");
 
@@ -398,7 +398,7 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid  unexpired session
-            Session s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            ManagedSession s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "1234");
 
@@ -425,20 +425,20 @@ public class DuplicateCookieTest
         }
     }
 
-    public Session createUnExpiredSession(SessionCache cache, SessionDataStore store, String id) throws Exception
+    public ManagedSession createUnExpiredSession(SessionCache cache, SessionDataStore store, String id) throws Exception
     {
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData(id, now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
-        Session s = cache.newSession(data);
+        ManagedSession s = cache.newSession(data);
         cache.add(id, s);
         cache.release(s); //pretend a request that created the session is finished
         return s;
     }
 
-    public Session createInvalidSession(SessionCache cache, SessionDataStore store, String id) throws Exception
+    public ManagedSession createInvalidSession(SessionCache cache, SessionDataStore store, String id) throws Exception
     {
-        Session session = createUnExpiredSession(cache, store, id);
+        ManagedSession session = createUnExpiredSession(cache, store, id);
         ((TestSession)session).makeInvalid();
 
         return session;

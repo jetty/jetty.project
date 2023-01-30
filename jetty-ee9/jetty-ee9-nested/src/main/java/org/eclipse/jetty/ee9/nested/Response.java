@@ -51,7 +51,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
@@ -329,7 +329,7 @@ public class Response implements HttpServletResponse
     public String encodeURL(String url)
     {
         final Request request = _channel.getRequest();
-        SessionManager sessionManager = request.getSessionManager();
+        SessionManager sessionManager = _channel.getCoreRequest().getSessionManager();
 
         if (sessionManager == null)
             return url;
@@ -386,7 +386,7 @@ public class Response implements HttpServletResponse
 
         // invalid session
         Session coreSession = Session.getSession(httpSession);
-        if (coreSession.isInvalid())
+        if (!coreSession.isValid())
             return url;
 
         String id = coreSession.getExtendedId();
@@ -1182,14 +1182,15 @@ public class Response implements HttpServletResponse
         }
 
         // recreate session cookies
+        ContextHandler.CoreContextRequest coreRequest =  getHttpChannel().getCoreRequest();
         Request request = getHttpChannel().getRequest();
         HttpSession httpSession = request.getSession(false);
         if (httpSession != null && httpSession.isNew())
         {
-            SessionManager sessionManager = request.getSessionManager();
-            if (sessionManager != null && httpSession instanceof Session.APISession apiSession)
+            SessionManager sessionManager = coreRequest.getSessionManager();
+            if (sessionManager != null)
             {
-                HttpCookie cookie = sessionManager.getSessionCookie(apiSession.getCoreSession(), request.getContextPath(), request.isSecure());
+                HttpCookie cookie = sessionManager.getSessionCookie(coreRequest.getManagedSession(), request.getContextPath(), request.isSecure());
                 if (cookie != null)
                     addCookie(cookie);
             }

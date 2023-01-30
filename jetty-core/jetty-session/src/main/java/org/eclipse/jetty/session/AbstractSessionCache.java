@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -107,7 +108,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @return a new Session object
      */
     @Override
-    public abstract Session newSession(SessionData data);
+    public abstract ManagedSession newSession(SessionData data);
 
     /**
      * Get the session matching the key from the cache. Does not load
@@ -116,7 +117,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param id session id
      * @return the Session object matching the id
      */
-    protected abstract Session doGet(String id);
+    protected abstract ManagedSession doGet(String id);
 
     /**
      * Put the session into the map if it wasn't already there
@@ -125,7 +126,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param session the session object
      * @return null if the session wasn't already in the map, or the existing entry otherwise
      */
-    protected abstract Session doPutIfAbsent(String id, Session session);
+    protected abstract Session doPutIfAbsent(String id, ManagedSession session);
     
     /**
      * Compute the mappingFunction to create a Session object iff the session 
@@ -137,7 +138,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param mappingFunction the function to load the data for the session
      * @return an existing Session from the cache
      */
-    protected abstract Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction);
+    protected abstract ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction);
 
     /**
      * Replace the mapping from id to oldValue with newValue
@@ -147,7 +148,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param newValue the new value
      * @return true if replacement was done
      */
-    protected abstract boolean doReplace(String id, Session oldValue, Session newValue);
+    protected abstract boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue);
 
     /**
      * Remove the session with this identity from the store
@@ -155,7 +156,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param id the id
      * @return Session that was removed or null
      */
-    public abstract Session doDelete(String id);
+    public abstract ManagedSession doDelete(String id);
 
     /**
      * @param handler the {@link SessionManager} to use
@@ -296,7 +297,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      *
      */
     @Override
-    public Session get(String id) throws Exception
+    public ManagedSession get(String id) throws Exception
     {
         return getAndEnter(id, true);
     }
@@ -312,9 +313,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @return the session if it exists, null otherwise
      * @throws Exception if the session cannot be loaded
      */
-    protected Session getAndEnter(String id, boolean enter) throws Exception
+    protected ManagedSession getAndEnter(String id, boolean enter) throws Exception
     {
-        Session session = null;
+        ManagedSession session = null;
         AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
         session = doComputeIfAbsent(id, k ->
@@ -324,7 +325,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
             try
             {
-                Session s = loadSession(k);
+                ManagedSession s = loadSession(k);
                 if (s != null)
                 {
                     try (AutoLock lock = s.lock())
@@ -376,11 +377,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param id the id
      * @return a Session object filled with data or null if the session doesn't exist
      */
-    private Session loadSession(String id)
+    private ManagedSession loadSession(String id)
         throws Exception
     {
         SessionData data = null;
-        Session session = null;
+        ManagedSession session = null;
 
         if (_sessionDataStore == null)
             return null; //can't load it
@@ -413,7 +414,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param session the session
      */
     @Override
-    public void add(String id, Session session) throws Exception
+    public void add(String id, ManagedSession session) throws Exception
     {
         if (id == null || session == null)
             throw new IllegalArgumentException("Add key=" + id + " session=" + (session == null ? "null" : session.getId()));
@@ -444,7 +445,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * or on other nodes.
      */
     @Override
-    public void commit(Session session) throws Exception
+    public void commit(ManagedSession session) throws Exception
     {
         if (session == null)
             return;
@@ -487,7 +488,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      *
      */
     @Override
-    public void release(Session session) throws Exception
+    public void release(ManagedSession session) throws Exception
     {
         if (session == null || session.getId() == null)
             throw new IllegalArgumentException((session == null ? "Null session" : "Null session id"));
@@ -578,7 +579,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public boolean exists(String id) throws Exception
     {
         //try the object store first
-        Session s = doGet(id);
+        ManagedSession s = doGet(id);
         if (s != null)
         {
             try (AutoLock lock = s.lock())
@@ -609,10 +610,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      *
      */
     @Override
-    public Session delete(String id) throws Exception
+    public ManagedSession delete(String id) throws Exception
     {
         //get the session, if its not in memory, this will load it
-        Session session = getAndEnter(id, false);
+        ManagedSession session = getAndEnter(id, false);
 
         //Always delete it from the backing data store
         if (_sessionDataStore != null)
@@ -645,7 +646,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         {
             for (String c : allCandidates)
             {
-                Session s = doGet(c);
+                ManagedSession s = doGet(c);
                 if (s != null && s.getRequests() > 0) //if the session is in my cache, check its not in use first
                     sessionsInUse.add(c);
             }
@@ -671,7 +672,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param session session to check
      */
     @Override
-    public void checkInactiveSession(Session session)
+    public void checkInactiveSession(ManagedSession session)
     {
         if (session == null)
             return;
@@ -713,7 +714,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     @Override
-    public Session renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId)
+    public ManagedSession renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId)
         throws Exception
     {
         if (StringUtil.isBlank(oldId))
@@ -721,7 +722,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (StringUtil.isBlank(newId))
             throw new IllegalArgumentException("New session id is null");
 
-        Session session = getAndEnter(oldId, true);
+        ManagedSession session = getAndEnter(oldId, true);
         renewSessionId(session, newId, newExtendedId);
 
         return session;
@@ -735,7 +736,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param newExtendedId the full id plus node id
      * @throws Exception if there was a failure saving the change
      */
-    protected void renewSessionId(Session session, String newId, String newExtendedId)
+    protected void renewSessionId(ManagedSession session, String newId, String newExtendedId)
         throws Exception
     {
         if (session == null)
@@ -796,11 +797,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     @Override
-    public Session newSession(String id, long time, long maxInactiveMs)
+    public ManagedSession newSession(String id, long time, long maxInactiveMs)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Creating new session id={}", id);
-        Session session = newSession(_sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
+        ManagedSession session = newSession(_sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
         session.getSessionData().setLastNode(_context.getWorkerName());
         try
         {

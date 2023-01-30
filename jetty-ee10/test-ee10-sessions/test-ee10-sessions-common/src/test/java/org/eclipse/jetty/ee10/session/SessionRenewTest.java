@@ -32,8 +32,8 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionCacheFactory;
 import org.eclipse.jetty.session.SessionData;
@@ -68,7 +68,7 @@ public class SessionRenewTest
          * @return previous existing session
          * @throws Exception
          */
-        public Session getWithoutReferenceCount(String sessionId) throws Exception
+        public ManagedSession getWithoutReferenceCount(String sessionId) throws Exception
         {
             return getAndEnter(sessionId, false);
         }
@@ -183,8 +183,8 @@ public class SessionRenewTest
             contextA.getSessionHandler().getSessionCache().contains(updatedId);
             contextB.getSessionHandler().getSessionCache().contains(updatedId);
 
-            Session sessiona = ((TestSessionCache)contextA.getSessionHandler().getSessionCache()).getWithoutReferenceCount(updatedId);
-            Session sessionb = ((TestSessionCache)contextB.getSessionHandler().getSessionCache()).getWithoutReferenceCount(updatedId);
+            ManagedSession sessiona = ((TestSessionCache)contextA.getSessionHandler().getSessionCache()).getWithoutReferenceCount(updatedId);
+            ManagedSession sessionb = ((TestSessionCache)contextB.getSessionHandler().getSessionCache()).getWithoutReferenceCount(updatedId);
 
             //sessions should nor have any usecounts
             assertEquals(0, sessiona.getRequests());
@@ -322,7 +322,7 @@ public class SessionRenewTest
                 assertTrue(beforeSession == afterSession); //same object
                 assertFalse(beforeSessionId.equals(afterSessionId)); //different id
 
-                Session coreAfterSession = ServletApiRequest.getSession(afterSession);
+                ManagedSession coreAfterSession = ServletApiRequest.getSession(afterSession);
                 SessionManager sessionManager = coreAfterSession.getSessionManager();
                 DefaultSessionIdManager sessionIdManager = (DefaultSessionIdManager)sessionManager.getSessionIdManager();
 
