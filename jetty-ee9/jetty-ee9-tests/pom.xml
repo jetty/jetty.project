@@ -20,10 +20,10 @@
   <modules>
     <!-- <module>jetty-ee9-test-bad-websocket-webapp</module> -->
     <!-- <module>jetty-ee9-test-cdi</module> -->
-    <!-- <module>jetty-ee9-test-http2-webapp</module> -->
+    <module>jetty-ee9-test-http2-webapp</module>
     <module>jetty-ee9-test-client-transports</module>
     <module>jetty-ee9-test-integration</module>
-    <!-- <module>jetty-ee9-test-jmx</module> -->
+    <module>jetty-ee9-test-jmx</module>
     <module>jetty-ee9-test-jndi</module>
     <module>jetty-ee9-test-loginservice</module>
     <module>jetty-ee9-test-quickstart</module>
