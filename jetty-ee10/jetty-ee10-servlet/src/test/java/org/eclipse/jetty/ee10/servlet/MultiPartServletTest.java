@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
@@ -65,6 +66,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -423,4 +425,46 @@ public class MultiPartServletTest
         assertThat(response.getContentAsString(), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
             "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
     }
+
+    @Test
+    public void testPartAsParameter() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setContentType("text/plain");
+                Map<String, String[]> parameterMap = req.getParameterMap();
+                for (Map.Entry<String, String[]> entry : parameterMap.entrySet())
+                {
+                    assertThat(entry.getValue().length, equalTo(1));
+                    resp.getWriter().println("Parameter: " + entry.getKey() + "=" + entry.getValue()[0]);
+                }
+            }
+        });
+
+        String contentString = "the quick brown fox jumps over the lazy dog, " +
+            "the quick brown fox jumps over the lazy dog";
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("part1", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart("part2", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart("part3", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart("partFileName", "myFile", HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.close();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        String responseContent = response.getContentAsString();
+        assertThat(responseContent, containsString("Parameter: part1=" + contentString));
+        assertThat(responseContent, containsString("Parameter: part2=" + contentString));
+        assertThat(responseContent, containsString("Parameter: part3=" + contentString));
+        assertThat(responseContent, not(containsString("Parameter: partFileName=" + contentString)));
+    }
+
 }

@@ -189,25 +189,25 @@ public class MultiPartFormDataTest
 
         MultiPart.Part fileName = parts.getFirst("fileName");
         assertThat(fileName, notNullValue());
-        Content.Source partContent = fileName.newContentSource();
+        Content.Source partContent = fileName.getContentSource();
         assertThat(partContent.getLength(), is(3L));
         assertThat(Content.Source.asString(partContent), is("abc"));
 
         MultiPart.Part desc = parts.getFirst("desc");
         assertThat(desc, notNullValue());
-        partContent = desc.newContentSource();
+        partContent = desc.getContentSource();
         assertThat(partContent.getLength(), is(3L));
         assertThat(Content.Source.asString(partContent), is("123"));
 
         MultiPart.Part title = parts.getFirst("title");
         assertThat(title, notNullValue());
-        partContent = title.newContentSource();
+        partContent = title.getContentSource();
         assertThat(partContent.getLength(), is(3L));
         assertThat(Content.Source.asString(partContent), is("ttt"));
 
         MultiPart.Part datafile = parts.getFirst("datafile5239138112980980385.txt");
         assertThat(datafile, notNullValue());
-        partContent = datafile.newContentSource();
+        partContent = datafile.getContentSource();
         assertThat(partContent.getLength(), is(3L));
         assertThat(Content.Source.asString(partContent), is("000"));
     }
@@ -275,11 +275,11 @@ public class MultiPartFormDataTest
         assertThat(parts.size(), is(2));
         MultiPart.Part part1 = parts.getFirst("field1");
         assertThat(part1, notNullValue());
-        Content.Source partContent = part1.newContentSource();
+        Content.Source partContent = part1.getContentSource();
         assertThat(Content.Source.asString(partContent), is("Joe Blow"));
         MultiPart.Part part2 = parts.getFirst("stuff");
         assertThat(part2, notNullValue());
-        partContent = part2.newContentSource();
+        partContent = part2.getContentSource();
         assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
     }
 
@@ -312,7 +312,7 @@ public class MultiPartFormDataTest
         assertThat(parts.size(), is(1));
         MultiPart.Part part2 = parts.getFirst("stuff");
         assertThat(part2, notNullValue());
-        Content.Source partContent = part2.newContentSource();
+        Content.Source partContent = part2.getContentSource();
         assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
     }
 
@@ -340,7 +340,7 @@ public class MultiPartFormDataTest
         assertThat(part, instanceOf(MultiPart.PathPart.class));
         MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
         assertTrue(Files.exists(pathPart.getPath()));
-        assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Content.Source.asString(part.newContentSource()));
+        assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Content.Source.asString(part.getContentSource()));
     }
 
     @Test
@@ -422,13 +422,13 @@ public class MultiPartFormDataTest
 
         MultiPart.Part part1 = parts.get(0);
         assertThat(part1, instanceOf(MultiPart.ChunksPart.class));
-        assertEquals(chunk, Content.Source.asString(part1.newContentSource()));
+        assertEquals(chunk, Content.Source.asString(part1.getContentSource()));
 
         MultiPart.Part part2 = parts.get(1);
         assertThat(part2, instanceOf(MultiPart.PathPart.class));
         MultiPart.PathPart pathPart2 = (MultiPart.PathPart)part2;
         assertTrue(Files.exists(pathPart2.getPath()));
-        assertEquals(chunk.repeat(4), Content.Source.asString(part2.newContentSource()));
+        assertEquals(chunk.repeat(4), Content.Source.asString(part2.getContentSource()));
     }
 
     @Test

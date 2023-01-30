@@ -179,13 +179,11 @@ public class ServletMultiPartFormData
     {
         private final MultiPartFormData _formData;
         private final MultiPart.Part _part;
-        private final long _length;
 
         private ServletPart(MultiPartFormData formData, MultiPart.Part part)
         {
             _formData = formData;
             _part = part;
-            _length = _part.getLength();
         }
 
         @Override
@@ -215,13 +213,12 @@ public class ServletMultiPartFormData
         @Override
         public long getSize()
         {
-            return _length;
+            return _part.getLength();
         }
 
         @Override
         public void write(String fileName) throws IOException
         {
-            // TODO This should simply move a part that is already on the file system.
             Path filePath = Path.of(fileName);
             if (!filePath.isAbsolute())
                 filePath = _formData.getFilesDirectory().resolve(filePath).normalize();

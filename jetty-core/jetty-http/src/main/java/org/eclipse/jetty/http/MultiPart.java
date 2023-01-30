@@ -172,6 +172,7 @@ public class MultiPart
          * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
          *
          * @return the content of this part
+         * @see #newContentSource()
          */
         public Content.Source getContentSource()
         {
@@ -196,7 +197,7 @@ public class MultiPart
 
         public long getLength()
         {
-            return newContentSource().getLength();
+            return getContentSource().getLength();
         }
 
         /**
@@ -846,8 +847,8 @@ public class MultiPart
         private int trailingWhiteSpaces;
         private String fieldName;
         private String fieldValue;
-        private long maxParts;
-        private int numParts = 0;
+        private long maxParts = 1000;
+        private int numParts;
 
         public Parser(String boundary, Listener listener)
         {
@@ -880,7 +881,7 @@ public class MultiPart
         }
 
         /**
-         * @return the maximum number of parts that can be parsed from the multipart content.
+         * @return the maximum number of parts that can be parsed from the multipart content (-1 for unlimited parts).
          */
         public long getMaxParts()
         {
@@ -888,7 +889,7 @@ public class MultiPart
         }
 
         /**
-         * @param maxParts the maximum number of parts that can be parsed from the multipart content.
+         * @param maxParts the maximum number of parts that can be parsed from the multipart content (-1 for unlimited parts).
          */
         public void setMaxParts(long maxParts)
         {
