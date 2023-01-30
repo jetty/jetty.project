@@ -336,7 +336,7 @@ public class ServletContextResponse extends ContextResponse
                 // TODO: use Jan's new static method.
                 if (session instanceof SessionHandler.ServletAPISession apiSession)
                 {
-                    HttpCookie c = sh.getSessionCookie(apiSession.getCoreSession(), _request.getContext().getContextPath(), _request.isSecure());
+                    HttpCookie c = sh.getSessionCookie(apiSession.getCoreSession(), _request.isSecure());
                     if (c != null)
                         Response.addCookie(_response, c);
                 }

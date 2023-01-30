@@ -1870,10 +1870,10 @@ public class RequestTest
         String uri = "http://host/foo/something";
         HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good", "thumbsup", 100), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza", "bewdy", 1), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bad", "thumbsdown", 0), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, new HttpCookie("ugly", "duckling", 100).getSetCookie(CookieCompliance.RFC6265)));
+        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, HttpCookie.getSetCookie(HttpCookie.from("ugly", "duckling", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265)));
         request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, "flow=away; Max-Age=0; Secure; HttpOnly; SameSite=None"));
         HttpFields.Mutable fields = HttpFields.build();
         fields.add(HttpHeader.AUTHORIZATION, "Basic foo");

@@ -37,12 +37,13 @@ public class AbstractSessionManagerTest
         //Make a session
         SessionData sessionData = new SessionData("1234", "_test", "0.0.0.0", 100, 200, 200, -1);
         TestableSessionManager sessionManager = new TestableSessionManager();
+        sessionManager.setSessionPath("/test");
         Session session = new Session(sessionManager, sessionData);
         session.setExtendedId("1234.foo");
         session.getSessionData().setLastNode("foo");
 
         //check cookie with all default cookie config settings
-        HttpCookie cookie = sessionManager.getSessionCookie(session, "/test", false);
+        HttpCookie cookie = sessionManager.getSessionCookie(session, false);
         assertNotNull(cookie);
         assertEquals(SessionManager.__DefaultSessionCookie, cookie.getName());
         assertEquals(SessionManager.__DefaultSessionDomain, cookie.getDomain());
@@ -54,7 +55,7 @@ public class AbstractSessionManagerTest
         sessionManager.setHttpOnly(true);
         sessionManager.setSecureRequestOnly(true);
         sessionManager.setSecureCookies(true);
-        cookie = sessionManager.getSessionCookie(session, "/test", true);
+        cookie = sessionManager.getSessionCookie(session, true);
         assertNotNull(cookie);
         assertEquals(SessionManager.__DefaultSessionCookie, cookie.getName());
         assertEquals(SessionManager.__DefaultSessionDomain, cookie.getDomain());
@@ -67,7 +68,7 @@ public class AbstractSessionManagerTest
         sessionManager.getCookieConfig().put(SessionManager.__SessionDomainProperty, "foo.bar");
         sessionManager.getCookieConfig().put(SessionManager.__SessionPathProperty, "/special");
         sessionManager.configureCookies();
-        cookie = sessionManager.getSessionCookie(session, "/test", false);
+        cookie = sessionManager.getSessionCookie(session, false);
         assertNotNull(cookie);
         assertEquals("MYSESSIONID", cookie.getName());
         assertEquals("foo.bar", cookie.getDomain());
