@@ -28,7 +28,7 @@
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>test-ee9-sessions-common</artifactId>
+        <artifactId>jetty-ee9-test-sessions-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
