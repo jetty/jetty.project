@@ -1581,6 +1581,11 @@
         <version>${infinispan.protostream.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.infinispan.protostream</groupId>
+        <artifactId>protostream-processor</artifactId>
+        <version>${infinispan.protostream.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
