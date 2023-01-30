@@ -128,8 +128,6 @@ public class JdbcLoginServiceTest
     @Test
     public void testPut() throws Exception
     {
-        System.err.println("DOCROOT = " + __docRoot);
-        System.err.println("BASEURI = " + __baseUri);
         _authStore.addAuthentication(new BasicAuthentication(__baseUri, __realm, "jetty", "jetty"));
         _client.start();
 
@@ -138,7 +136,6 @@ public class JdbcLoginServiceTest
         request.body(new BytesRequestContent(_content.getBytes()));
         ContentResponse response = request.send();
         int responseStatus = response.getStatus();
-        System.err.println("*****" + response.getContentAsString());
         boolean statusOk = (responseStatus == 200 || responseStatus == 201);
         assertTrue(statusOk);
         String content = IO.toString(new FileInputStream(__docRoot.resolve("output.txt").toFile()));

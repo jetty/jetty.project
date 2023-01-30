@@ -119,10 +119,8 @@ public class DatabaseLoginServiceTestServer
                 //remove leading slash from pathinfo
                 Path p = _resourcePath.resolve(URLDecoder.decode(req.getPathInfo().substring(1), "utf-8"));
                 
-                System.err.println("PATH = " + p);
-                
                 File file = p.toFile();
-                FS.ensureDirExists(p);
+                FS.ensureDirExists(p.getParent());
 
                 out = new FileOutputStream(file);
                 res.setStatus(HttpServletResponse.SC_CREATED);
@@ -241,6 +239,7 @@ public class DatabaseLoginServiceTestServer
         security.setLoginService(_loginService);
 
         ServletContextHandler root = new ServletContextHandler();
+        root.setSecurityHandler(security);
         root.setContextPath("/");
         root.setBaseResourceAsPath(_resourceBase);
         ServletHolder servletHolder = new ServletHolder(new DefaultServlet());
