@@ -24,13 +24,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -41,6 +45,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DetectorConnectionTest
 {
+    private final AtomicInteger _bufferLeaks = new AtomicInteger();
     private Server _server;
 
     private static String inputStreamToString(InputStream is) throws IOException
@@ -110,7 +116,26 @@ public class DetectorConnectionTest
 
     private void start(ConnectionFactory... connectionFactories) throws Exception
     {
-        _server = new Server();
+        _server = new Server(null, null, new ArrayRetainableByteBufferPool()
+        {
+
+            @Override
+            public RetainableByteBuffer acquire(int size, boolean direct)
+            {
+                _bufferLeaks.incrementAndGet();
+                return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        boolean released = super.release();
+                        if (released)
+                            _bufferLeaks.decrementAndGet();
+                        return released;
+                    }
+                };
+            }
+        });
         _server.addConnector(new ServerConnector(_server, 1, 1, connectionFactories));
         _server.setHandler(new DumpHandler());
         _server.start();
@@ -119,6 +144,11 @@ public class DetectorConnectionTest
     @AfterEach
     public void destroy() throws Exception
     {
+        // Wait a bit for the server to release the buffers.
+        await()
+            .pollDelay(5, TimeUnit.MILLISECONDS)
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> _bufferLeaks.get() == 0);
         if (_server != null)
             _server.stop();
     }
