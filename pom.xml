@@ -989,29 +989,6 @@
         <version>${json-simple.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.jamonapi</groupId>
-        <artifactId>jamon</artifactId>
-        <version>${jamon.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>com.jamonapi</groupId>
-        <artifactId>jamon_war</artifactId>
-        <version>${jamon.version}</version>
-        <type>war</type>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.jolokia</groupId>
         <artifactId>jolokia-war</artifactId>
         <version>${jolokia.version}</version>
