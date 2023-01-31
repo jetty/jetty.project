@@ -73,6 +73,7 @@ public class SessionHandlerTest
         _sessionHandler.setSessionCookie("JSESSIONID");
         _sessionHandler.setUsingCookies(true);
         _sessionHandler.setUsingURLs(false);
+        _sessionHandler.setSessionPath("/");
         contextHandler.setHandler(_sessionHandler);
 
         _sessionHandler.setHandler(new AbstractHandler()
@@ -185,7 +186,7 @@ public class SessionHandlerTest
         //a default value on the context attribute org.eclipse.jetty.cookie.sameSiteDefault
         mgr.setSameSite(HttpCookie.SameSite.STRICT);
         
-        HttpCookie cookie = mgr.getSessionManager().getSessionCookie(session, "/bar", false);
+        HttpCookie cookie = mgr.getSessionManager().getSessionCookie(session, false);
         assertEquals("SPECIAL", cookie.getName());
         assertEquals("universe", cookie.getDomain());
         assertEquals("/foo", cookie.getPath());
@@ -193,8 +194,8 @@ public class SessionHandlerTest
         assertFalse(cookie.isSecure());
         assertEquals(99, cookie.getMaxAge());
         assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
-        
-        String cookieStr = cookie.getRFC6265SetCookie();
+
+        String cookieStr = HttpCookie.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict"));
     }
 

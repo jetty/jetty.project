@@ -56,6 +56,7 @@ public class SimpleSessionHandlerTest
         sessionManager.setSessionCookie("SIMPLE");
         sessionManager.setUsingCookies(true);
         sessionManager.setUsingURLs(false);
+        sessionManager.setSessionPath("/");
         _server.setHandler(sessionManager);
 
         sessionManager.setHandler(new Handler.Abstract()

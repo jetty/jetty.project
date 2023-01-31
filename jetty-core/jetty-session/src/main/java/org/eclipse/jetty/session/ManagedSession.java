@@ -145,10 +145,9 @@ public class ManagedSession implements Session
         _extendedId = extendedId;
     }
 
-    public HttpCookie generateSetCookie(String name, String domain, String path, int maxAge, 
-                                         boolean httpOnly, boolean secure, String comment, int version, Map<String, String> attributes)
+    public HttpCookie generateSetCookie(String name, Map<String, String> attributes)
     {
-        HttpCookie sessionCookie = new HttpCookie(name, getExtendedId(), domain, path, maxAge, httpOnly, secure, comment, version, attributes);
+        HttpCookie sessionCookie = HttpCookie.from(name, getExtendedId(), attributes);
         onSetCookieGenerated();
         return sessionCookie;
     }
@@ -628,7 +627,7 @@ public class ManagedSession implements Session
         }
 
         if (response != null && isSetCookieNeeded())
-            Response.replaceCookie(response, getSessionManager().getSessionCookie(this, request.getContext().getContextPath(), request.isSecure()));
+            Response.replaceCookie(response, getSessionManager().getSessionCookie(this, request.isSecure()));
         if (LOG.isDebugEnabled())
             LOG.debug("renew {}->{}", oldId, newId);
     }

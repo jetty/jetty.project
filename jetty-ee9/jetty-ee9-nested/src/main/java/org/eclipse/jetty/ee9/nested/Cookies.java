@@ -94,7 +94,7 @@ public class Cookies extends CookieCutter
             return _cookies;
 
         parseFields(_rawFields);
-        _cookies = (Cookie[])_cookieList.toArray(new Cookie[_cookieList.size()]);
+        _cookies = _cookieList.toArray(new Cookie[0]);
         _cookieList.clear();
         _parsed = true;
         return _cookies;

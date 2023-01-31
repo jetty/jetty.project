@@ -374,7 +374,7 @@ public class ServletContextRequest extends ContextRequest
         if (_managedSession == null)
             throw new IllegalStateException("Create session failed");
 
-        HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, getContext().getContextPath(), isSecure());
+        HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
         if (cookie != null)
             Response.replaceCookie(_response, cookie);
 

@@ -485,7 +485,7 @@ public class SessionHandlerTest
         sessionCookieConfig.setAttribute("SameSite", "Strict");
         sessionCookieConfig.setAttribute("ham", "cheese");
         
-        HttpCookie cookie = mgr.getSessionCookie(session, "/bar", false);
+        HttpCookie cookie = mgr.getSessionCookie(session, false);
         assertEquals("SPECIAL", cookie.getName());
         assertEquals("universe", cookie.getDomain());
         assertEquals("/foo", cookie.getPath());
@@ -493,8 +493,8 @@ public class SessionHandlerTest
         assertFalse(cookie.isSecure());
         assertEquals(99, cookie.getMaxAge());
         assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
-        
-        String cookieStr = cookie.getRFC6265SetCookie();
+
+        String cookieStr = HttpCookie.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict; ham=cheese"));
     }
 
@@ -518,32 +518,32 @@ public class SessionHandlerTest
         sessionCookieConfig.setSecure(true);
 
         //sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
-        HttpCookie cookie = mgr.getSessionCookie(session, "/foo", true);
+        HttpCookie cookie = mgr.getSessionCookie(session, true);
         assertTrue(cookie.isSecure());
         //sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
-        cookie = mgr.getSessionCookie(session, "/foo", false);
+        cookie = mgr.getSessionCookie(session, false);
         assertTrue(cookie.isSecure());
 
         //sessionCookieConfig.secure==false, setSecureRequestOnly==true, requestIsSecure==true
         //cookie should be secure: see SessionCookieConfig.setSecure() javadoc
         sessionCookieConfig.setSecure(false);
-        cookie = mgr.getSessionCookie(session, "/foo", true);
+        cookie = mgr.getSessionCookie(session, true);
         assertTrue(cookie.isSecure());
 
         //sessionCookieConfig.secure=false, setSecureRequestOnly==true, requestIsSecure==false
         //cookie is not secure: see SessionCookieConfig.setSecure() javadoc
-        cookie = mgr.getSessionCookie(session, "/foo", false);
+        cookie = mgr.getSessionCookie(session, false);
         assertFalse(cookie.isSecure());
 
         //sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==false
         //cookie is not secure: not a secure request
         mgr.setSecureRequestOnly(false);
-        cookie = mgr.getSessionCookie(session, "/foo", false);
+        cookie = mgr.getSessionCookie(session, false);
         assertFalse(cookie.isSecure());
 
         //sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==true
         //cookie is not secure: not on secured requests and request is secure
-        cookie = mgr.getSessionCookie(session, "/foo", true);
+        cookie = mgr.getSessionCookie(session, true);
         assertFalse(cookie.isSecure());
     }
 }

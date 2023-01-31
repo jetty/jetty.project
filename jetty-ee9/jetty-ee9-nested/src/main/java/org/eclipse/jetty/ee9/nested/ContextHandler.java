@@ -2447,7 +2447,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (_managedSession == null)
                 throw new IllegalStateException("Create session failed");
 
-            HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, getContext().getContextPath(), isSecure());
+            HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
             if (cookie != null)
                 _httpChannel.getResponse().replaceCookie(cookie);
 

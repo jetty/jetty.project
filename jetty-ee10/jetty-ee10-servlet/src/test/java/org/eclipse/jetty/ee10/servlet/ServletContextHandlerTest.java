@@ -912,6 +912,7 @@ public class ServletContextHandlerTest
         _server.setHandler(contexts);
 
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.getSessionHandler().setSessionDomain("testing");
         ListenerHolder initialListener = new ListenerHolder();
         initialListener.setListener(new InitialListener());
         root.getServletHandler().addListener(initialListener);
@@ -954,6 +955,7 @@ public class ServletContextHandlerTest
 
         //test HttpSessionAttributeListener
         response = _connector.getResponse("GET /test?session=create HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("JSESSIONID"));
         String sessionid = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";"));
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals(1, MySListener.creates);
@@ -2385,26 +2387,7 @@ public class ServletContextHandlerTest
         @Override
         public void addCookie(Cookie cookie)
         {
-            // Let's set SameSite to STRICT
-            // But we cannot use Servlet jakarta.servlet.http.Cookie.setComment(String) technique of old
-            // as the Comment field is always null and is slated for removal.
-
-            // We'll use the Jetty HttpCookie to work around this.
-            boolean httpOnly = false;
-            String comment = null;
-            HttpCookie.SameSite sameSite = HttpCookie.SameSite.STRICT;
-
-            addCookie(new HttpCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                httpOnly,
-                cookie.getSecure(),
-                comment,
-                cookie.getVersion(),
-                HttpCookie.SameSite.STRICT));
+            addCookie(new HttpCookieFacade(cookie));
         }
 
         @Override
@@ -2412,19 +2395,8 @@ public class ServletContextHandlerTest
         {
             // Let's force SameSite to STRICT
             Map<String, String> attrs = new HashMap<>(cookie.getAttributes());
-            attrs.put("SameSite", "Strict");
-            super.addCookie(new HttpCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                cookie.isHttpOnly(),
-                cookie.isSecure(),
-                cookie.getComment(),
-                cookie.getVersion(),
-                attrs
-            ));
+            attrs.put(HttpCookie.SAME_SITE_ATTRIBUTE, HttpCookie.SameSite.STRICT.getAttributeValue());
+            super.addCookie(HttpCookie.from(cookie.getName(), cookie.getValue(), attrs));
         }
     }
 
