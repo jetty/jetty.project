@@ -469,7 +469,16 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
                 ContentResponse response = client.GET("http://localhost:" + port + "/proxy/current/");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus(), () ->
+                {
+                    StringBuilder rawResponse = new StringBuilder();
+                    rawResponse.append(response.getVersion()).append(' ');
+                    rawResponse.append(response.getStatus()).append(' ');
+                    rawResponse.append(response.getReason()).append('\n');
+                    rawResponse.append(response.getHeaders());
+                    rawResponse.append(response.getContentAsString());
+                    return rawResponse.toString();
+                });
             }
         }
     }
