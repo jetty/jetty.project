@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpCookie.SameSite;
@@ -21,15 +21,11 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -82,7 +78,7 @@ public class HttpCookieTest
             "everything", "domain", "path"));
         
         //match via cookie
-        HttpCookie httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "comment", 0);
+        HttpCookie httpCookie = HttpCookie.from("everything", "value", 0, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.COMMENT_ATTRIBUTE, "comment"));
         assertTrue(HttpCookie.match(httpCookie, "everything", "domain", "path"));
         assertFalse(HttpCookie.match(httpCookie, "something", "domain", "path"));
         assertFalse(HttpCookie.match(httpCookie, "everything", "realm", "path"));
@@ -94,34 +90,34 @@ public class HttpCookieTest
     {
         HttpCookie httpCookie;
 
-        httpCookie = new HttpCookie("null", null, null, null, -1, false, false, null, -1);
-        assertEquals("null=", httpCookie.getRFC2965SetCookie());
+        httpCookie = HttpCookie.from("null", null, -1, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        assertEquals("null=", HttpCookie.getRFC2965SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("minimal", "value", null, null, -1, false, false, null, -1);
-        assertEquals("minimal=value", httpCookie.getRFC2965SetCookie());
+        httpCookie = HttpCookie.from("minimal", "value", -1, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        assertEquals("minimal=value", HttpCookie.getRFC2965SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("everything", "something", "domain", "path", 0, true, true, "noncomment", 0);
-        assertEquals("everything=something;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment", httpCookie.getRFC2965SetCookie());
+        httpCookie = HttpCookie.from("everything", "something", 0, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.COMMENT_ATTRIBUTE, "noncomment"));
+        assertEquals("everything=something;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment", HttpCookie.getRFC2965SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "comment", 0);
-        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment", httpCookie.getRFC2965SetCookie());
+        httpCookie = HttpCookie.from("everything", "value", 0, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.COMMENT_ATTRIBUTE, "comment"));
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment", HttpCookie.getRFC2965SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("ev erything", "va lue", "do main", "pa th", 1, true, true, "co mment", 1);
-        String setCookie = httpCookie.getRFC2965SetCookie();
+        httpCookie = HttpCookie.from("ev erything", "va lue", 1, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "do main", HttpCookie.PATH_ATTRIBUTE, "pa th", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.COMMENT_ATTRIBUTE, "co mment"));
+        String setCookie = HttpCookie.getRFC2965SetCookie(httpCookie);
         assertThat(setCookie, Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Path=\"pa th\";Domain=\"do main\";Expires="));
         assertThat(setCookie, Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
 
-        httpCookie = new HttpCookie("name", "value", null, null, -1, false, false, null, 0);
-        setCookie = httpCookie.getRFC2965SetCookie();
+        httpCookie = HttpCookie.from("name", "value", 0, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        setCookie = HttpCookie.getRFC2965SetCookie(httpCookie);
         assertEquals(-1, setCookie.indexOf("Version="));
-        httpCookie = new HttpCookie("name", "v a l u e", null, null, -1, false, false, null, 0);
-        setCookie = httpCookie.getRFC2965SetCookie();
+        httpCookie = HttpCookie.from("name", "v a l u e", 0, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        setCookie = HttpCookie.getRFC2965SetCookie(httpCookie);
 
-        httpCookie = new HttpCookie("json", "{\"services\":[\"cwa\",  \"aa\"]}", null, null, -1, false, false, null, -1);
-        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\"", httpCookie.getRFC2965SetCookie());
+        httpCookie = HttpCookie.from("json", "{\"services\":[\"cwa\",  \"aa\"]}", -1, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\"", HttpCookie.getRFC2965SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("name", "value%=", null, null, -1, false, false, null, 0);
-        setCookie = httpCookie.getRFC2965SetCookie();
+        httpCookie = HttpCookie.from("name", "value%=", 0, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        setCookie = HttpCookie.getRFC2965SetCookie(httpCookie);
         assertEquals("name=value%=", setCookie);
     }
 
@@ -130,30 +126,27 @@ public class HttpCookieTest
     {
         HttpCookie httpCookie;
 
-        httpCookie = new HttpCookie("null", null, null, null, -1, false, false, null, -1);
-        assertEquals("null=", httpCookie.getRFC6265SetCookie());
+        httpCookie = HttpCookie.from("null", null, -1, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        assertEquals("null=", HttpCookie.getRFC6265SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("minimal", "value", null, null, -1, false, false, null, -1);
-        assertEquals("minimal=value", httpCookie.getRFC6265SetCookie());
+        httpCookie = HttpCookie.from("minimal", "value", -1, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
+        assertEquals("minimal=value", HttpCookie.getRFC6265SetCookie(httpCookie));
 
         //test cookies with same name, domain and path
-        httpCookie = new HttpCookie("everything", "something", "domain", "path", 0, true, true, null, -1);
-        assertEquals("everything=something; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
+        httpCookie = HttpCookie.from("everything", "something", -1, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
+        assertEquals("everything=something; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", HttpCookie.getRFC6265SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1);
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
+        httpCookie = HttpCookie.from("everything", "value", -1, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", HttpCookie.getRFC6265SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.NONE);
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
+        httpCookie = HttpCookie.from("everything", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.SAME_SITE_ATTRIBUTE, SameSite.NONE.getAttributeValue()));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", HttpCookie.getRFC6265SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.LAX);
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax", httpCookie.getRFC6265SetCookie());
+        httpCookie = HttpCookie.from("everything", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.SAME_SITE_ATTRIBUTE, SameSite.LAX.getAttributeValue()));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax", HttpCookie.getRFC6265SetCookie(httpCookie));
 
-        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.STRICT);
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", httpCookie.getRFC6265SetCookie());
-        
-        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, Collections.singletonMap("SameSite", "None"));
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
+        httpCookie = HttpCookie.from("everything", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.SAME_SITE_ATTRIBUTE, SameSite.STRICT.getAttributeValue()));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", HttpCookie.getRFC6265SetCookie(httpCookie));
     }
 
     public static Stream<String> rfc6265BadNameSource()
@@ -178,8 +171,8 @@ public class HttpCookieTest
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () ->
             {
-                HttpCookie httpCookie = new HttpCookie(badNameExample, "value", null, "/", 1, true, true, null, -1);
-                httpCookie.getRFC6265SetCookie();
+                HttpCookie httpCookie = HttpCookie.from(badNameExample, "value", -1, Map.of(HttpCookie.PATH_ATTRIBUTE, "/", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
+                HttpCookie.getRFC6265SetCookie(httpCookie);
             });
         // make sure that exception mentions just how mad of a name it truly is
         assertThat("message", ex.getMessage(),
@@ -215,8 +208,8 @@ public class HttpCookieTest
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () ->
             {
-                HttpCookie httpCookie = new HttpCookie("name", badValueExample, null, "/", 1, true, true, null, -1);
-                httpCookie.getRFC6265SetCookie();
+                HttpCookie httpCookie = HttpCookie.from("name", badValueExample, -1, Map.of(HttpCookie.PATH_ATTRIBUTE, "/", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
+                HttpCookie.getRFC6265SetCookie(httpCookie);
             });
         assertThat("message", ex.getMessage(), containsString("RFC6265"));
     }
@@ -237,7 +230,7 @@ public class HttpCookieTest
     @MethodSource("rfc6265GoodNameSource")
     public void testSetRFC6265CookieGoodName(String goodNameExample)
     {
-        new HttpCookie(goodNameExample, "value", null, "/", 1, true, true, null, -1);
+        HttpCookie.from(goodNameExample, "value", -1, Map.of(HttpCookie.PATH_ATTRIBUTE, "/", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
         // should not throw an exception
     }
 
@@ -259,143 +252,7 @@ public class HttpCookieTest
     @MethodSource("rfc6265GoodValueSource")
     public void testSetRFC6265CookieGoodValue(String goodValueExample)
     {
-        new HttpCookie("name", goodValueExample, null, "/", 1, true, true, null, -1);
+        HttpCookie.from("name", goodValueExample, -1, Map.of(HttpCookie.PATH_ATTRIBUTE, "/", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
         // should not throw an exception
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "__HTTP_ONLY__",
-        "__HTTP_ONLY__comment",
-        "comment__HTTP_ONLY__"
-    })
-    public void testIsHttpOnlyInCommentTrue(String comment)
-    {
-        assertTrue(HttpCookie.isHttpOnlyInComment(comment), "Comment \"" + comment + "\"");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "comment",
-        "",
-        "__",
-        "__HTTP__ONLY__",
-        "__http_only__",
-        "HTTP_ONLY",
-        "__HTTP__comment__ONLY__"
-    })
-    public void testIsHttpOnlyInCommentFalse(String comment)
-    {
-        assertFalse(HttpCookie.isHttpOnlyInComment(comment), "Comment \"" + comment + "\"");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "__SAME_SITE_NONE__",
-        "__SAME_SITE_NONE____SAME_SITE_NONE__"
-    })
-    public void testGetSameSiteFromCommentNONE(String comment)
-    {
-        assertEquals(HttpCookie.getSameSiteFromComment(comment), HttpCookie.SameSite.NONE, "Comment \"" + comment + "\"");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "__SAME_SITE_LAX__",
-        "__SAME_SITE_LAX____SAME_SITE_NONE__",
-        "__SAME_SITE_NONE____SAME_SITE_LAX__",
-        "__SAME_SITE_LAX____SAME_SITE_NONE__"
-    })
-    public void testGetSameSiteFromCommentLAX(String comment)
-    {
-        assertEquals(HttpCookie.getSameSiteFromComment(comment), HttpCookie.SameSite.LAX, "Comment \"" + comment + "\"");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "__SAME_SITE_STRICT__",
-        "__SAME_SITE_NONE____SAME_SITE_STRICT____SAME_SITE_LAX__",
-        "__SAME_SITE_STRICT____SAME_SITE_LAX____SAME_SITE_NONE__",
-        "__SAME_SITE_STRICT____SAME_SITE_STRICT__"
-    })
-    public void testGetSameSiteFromCommentSTRICT(String comment)
-    {
-        assertEquals(HttpCookie.getSameSiteFromComment(comment), HttpCookie.SameSite.STRICT, "Comment \"" + comment + "\"");
-    }
-
-    /**
-     * A comment that does not have a declared SamesSite attribute defined
-     */
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "__HTTP_ONLY__",
-        "comment",
-        // not jetty attributes
-        "SameSite=None",
-        "SameSite=Lax",
-        "SameSite=Strict",
-        // incomplete jetty attributes
-        "SAME_SITE_NONE",
-        "SAME_SITE_LAX",
-        "SAME_SITE_STRICT",
-    })
-    public void testGetSameSiteFromCommentUndefined(String comment)
-    {
-        assertNull(HttpCookie.getSameSiteFromComment(comment), "Comment \"" + comment + "\"");
-    }
-
-    public static Stream<Arguments> getCommentWithoutAttributesSource()
-    {
-        return Stream.of(
-            // normal - only attribute comment
-            Arguments.of("__SAME_SITE_LAX__", null),
-            // normal - no attribute comment
-            Arguments.of("comment", "comment"),
-            // mixed - attributes at end
-            Arguments.of("comment__SAME_SITE_NONE__", "comment"),
-            Arguments.of("comment__HTTP_ONLY____SAME_SITE_NONE__", "comment"),
-            // mixed - attributes at start
-            Arguments.of("__SAME_SITE_NONE__comment", "comment"),
-            Arguments.of("__HTTP_ONLY____SAME_SITE_NONE__comment", "comment"),
-            // mixed - attributes at start and end
-            Arguments.of("__SAME_SITE_NONE__comment__HTTP_ONLY__", "comment"),
-            Arguments.of("__HTTP_ONLY__comment__SAME_SITE_NONE__", "comment")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("getCommentWithoutAttributesSource")
-    public void testGetCommentWithoutAttributes(String rawComment, String expectedComment)
-    {
-        String actualComment = HttpCookie.getCommentWithoutAttributes(rawComment);
-        if (expectedComment == null)
-        {
-            assertNull(actualComment);
-        }
-        else
-        {
-            assertEquals(actualComment, expectedComment);
-        }
-    }
-
-    @Test
-    public void testGetCommentWithAttributes()
-    {
-        assertThat(HttpCookie.getCommentWithAttributes(null, false, null), nullValue());
-        assertThat(HttpCookie.getCommentWithAttributes("", false, null), nullValue());
-        assertThat(HttpCookie.getCommentWithAttributes("hello", false, null), is("hello"));
-
-        assertThat(HttpCookie.getCommentWithAttributes(null, true, HttpCookie.SameSite.STRICT),
-            is("__HTTP_ONLY____SAME_SITE_STRICT__"));
-        assertThat(HttpCookie.getCommentWithAttributes("", true, HttpCookie.SameSite.NONE),
-            is("__HTTP_ONLY____SAME_SITE_NONE__"));
-        assertThat(HttpCookie.getCommentWithAttributes("hello", true, HttpCookie.SameSite.LAX),
-            is("hello__HTTP_ONLY____SAME_SITE_LAX__"));
-
-        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__", false, null), nullValue());
-        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__", true, HttpCookie.SameSite.NONE),
-            is("__HTTP_ONLY____SAME_SITE_NONE__"));
-        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__hello", true, HttpCookie.SameSite.LAX),
-            is("hello__HTTP_ONLY____SAME_SITE_LAX__"));
     }
 }

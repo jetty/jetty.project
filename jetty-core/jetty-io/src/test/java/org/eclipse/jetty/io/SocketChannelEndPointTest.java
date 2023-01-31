@@ -612,7 +612,7 @@ public class SocketChannelEndPointTest
     {
         private final NormalScenario _normalScenario;
         private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
-        private final ByteBufferPool _byteBufferPool = new MappedByteBufferPool();
+        private final RetainableByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
 
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
@@ -636,7 +636,7 @@ public class SocketChannelEndPointTest
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(_byteBufferPool, executor, endpoint, engine);
+            SslConnection sslConnection = new SslConnection(_bufferPool, executor, endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             Connection appConnection = _normalScenario.newConnection(channel, sslConnection.getDecryptedEndPoint(), executor, blockAt, writeCount);

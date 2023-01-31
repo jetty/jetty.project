@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.gcloud</groupId>
   <artifactId>jetty-gcloud</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: GCloud</name>
+  <name>Integrations :: GCloud</name>
 
   <properties>
     <gcloud.version>2.11.4</gcloud.version>

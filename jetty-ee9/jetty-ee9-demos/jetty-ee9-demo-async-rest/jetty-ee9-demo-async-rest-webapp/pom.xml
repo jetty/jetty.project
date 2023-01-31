@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-demo-async-rest-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EE9 :: Jetty Demo :: Async Rest :: WebApp</name>
+  <name>EE9 :: Demo :: Async Rest :: WebApp</name>
 
   <dependencies>
     <dependency>

@@ -22,7 +22,8 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class PushPromiseGenerator extends FrameGenerator
@@ -36,13 +37,13 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame) throws HpackException
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
-        return generatePushPromise(lease, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
+        return generatePushPromise(accumulator, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public int generatePushPromise(ByteBufferPool.Lease lease, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
+    public int generatePushPromise(RetainableByteBufferPool.Accumulator accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -54,19 +55,21 @@ public class PushPromiseGenerator extends FrameGenerator
         int extraSpace = 4;
         maxFrameSize -= extraSpace;
 
-        ByteBuffer hpacked = encode(encoder, lease, metaData, maxFrameSize);
-        int hpackedLength = hpacked.position();
-        BufferUtil.flipToFlush(hpacked, 0);
+        RetainableByteBuffer hpack = encode(encoder, metaData, maxFrameSize);
+        ByteBuffer hpackByteBuffer = hpack.getByteBuffer();
+        int hpackLength = hpackByteBuffer.position();
+        BufferUtil.flipToFlush(hpackByteBuffer, 0);
 
-        int length = hpackedLength + extraSpace;
+        int length = hpackLength + extraSpace;
         int flags = Flags.END_HEADERS;
 
-        ByteBuffer header = generateHeader(lease, FrameType.PUSH_PROMISE, length, flags, streamId);
-        header.putInt(promisedStreamId);
-        BufferUtil.flipToFlush(header, 0);
+        RetainableByteBuffer header = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
+        ByteBuffer headerByteBuffer = header.getByteBuffer();
+        headerByteBuffer.putInt(promisedStreamId);
+        BufferUtil.flipToFlush(headerByteBuffer, 0);
 
-        lease.append(header, true);
-        lease.append(hpacked, true);
+        accumulator.append(header);
+        accumulator.append(hpack);
 
         return Frame.HEADER_LENGTH + length;
     }

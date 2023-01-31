@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>EE9 :: Jetty :: Jetty Maven Plugin</name>
+  <name>EE9 :: Jetty Maven Plugin</name>
   <description>Jetty maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>

@@ -30,14 +30,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ByteBufferAccumulatorTest
 {
-    private CountingBufferPool byteBufferPool;
+    private CountingBufferPool bufferPool;
     private ByteBufferAccumulator accumulator;
 
     @BeforeEach
     public void before()
     {
-        byteBufferPool = new CountingBufferPool();
-        accumulator = new ByteBufferAccumulator(byteBufferPool, false);
+        bufferPool = new CountingBufferPool();
+        accumulator = new ByteBufferAccumulator(bufferPool, false);
     }
 
     @Test
@@ -49,58 +49,64 @@ public class ByteBufferAccumulatorTest
         ByteBuffer slice = content.slice();
 
         // We completely fill up the internal buffer with the first write.
-        ByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
-        assertThat(BufferUtil.space(internalBuffer), greaterThanOrEqualTo(allocationSize));
-        writeInFlushMode(slice, internalBuffer);
-        assertThat(BufferUtil.space(internalBuffer), is(0));
+        RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+        ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
+        assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(allocationSize));
+        writeInFlushMode(slice, byteBuffer);
+        assertThat(BufferUtil.space(byteBuffer), is(0));
 
         // If we ask for min size of 0 we get the same buffer which is full.
         internalBuffer = accumulator.ensureBuffer(0, allocationSize);
-        assertThat(BufferUtil.space(internalBuffer), is(0));
+        byteBuffer = internalBuffer.getByteBuffer();
+        assertThat(BufferUtil.space(byteBuffer), is(0));
 
         // If we need at least 1 minSpace we must allocate a new buffer.
         internalBuffer = accumulator.ensureBuffer(1, allocationSize);
-        assertThat(BufferUtil.space(internalBuffer), greaterThan(0));
-        assertThat(BufferUtil.space(internalBuffer), greaterThanOrEqualTo(allocationSize));
+        byteBuffer = internalBuffer.getByteBuffer();
+        assertThat(BufferUtil.space(byteBuffer), greaterThan(0));
+        assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(allocationSize));
 
         // Write 13 bytes from the end of the internal buffer.
-        int bytesToWrite = BufferUtil.space(internalBuffer) - 13;
+        int bytesToWrite = BufferUtil.space(byteBuffer) - 13;
         ByteBuffer buffer = BufferUtil.toBuffer(new byte[bytesToWrite]);
         BufferUtil.clear(buffer);
         assertThat(writeInFlushMode(slice, buffer), is(bytesToWrite));
-        assertThat(writeInFlushMode(buffer, internalBuffer), is(bytesToWrite));
-        assertThat(BufferUtil.space(internalBuffer), is(13));
+        assertThat(writeInFlushMode(buffer, byteBuffer), is(bytesToWrite));
+        assertThat(BufferUtil.space(byteBuffer), is(13));
 
         // If we request anything under the amount remaining we get back the same buffer.
         for (int i = 0; i <= 13; i++)
         {
             internalBuffer = accumulator.ensureBuffer(i, allocationSize);
-            assertThat(BufferUtil.space(internalBuffer), is(13));
+            byteBuffer = internalBuffer.getByteBuffer();
+            assertThat(BufferUtil.space(byteBuffer), is(13));
         }
 
         // If we request over 13 then we get a new buffer.
         internalBuffer = accumulator.ensureBuffer(14, allocationSize);
-        assertThat(BufferUtil.space(internalBuffer), greaterThanOrEqualTo(1024));
+        byteBuffer = internalBuffer.getByteBuffer();
+        assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1024));
 
         // Copy the rest of the content.
         while (slice.hasRemaining())
         {
             internalBuffer = accumulator.ensureBuffer(1, allocationSize);
-            assertThat(BufferUtil.space(internalBuffer), greaterThanOrEqualTo(1));
-            writeInFlushMode(slice, internalBuffer);
+            byteBuffer = internalBuffer.getByteBuffer();
+            assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1));
+            writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
         assertThat(accumulator.getLength(), is(size));
-        assertThat(byteBufferPool.getLeasedBuffers(), greaterThan(1L));
-        ByteBuffer combinedBuffer = accumulator.toByteBuffer();
-        assertThat(byteBufferPool.getLeasedBuffers(), is(1L));
+        assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
+        RetainableByteBuffer combinedBuffer = accumulator.toRetainableByteBuffer();
+        assertThat(bufferPool.getAcquireCount(), is(1L));
         assertThat(accumulator.getLength(), is(size));
-        assertThat(combinedBuffer, is(content));
+        assertThat(combinedBuffer.getByteBuffer(), is(content));
 
         // Close the accumulator and make sure all is returned to bufferPool.
         accumulator.close();
-        byteBufferPool.verifyClosed();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     @Test
@@ -114,24 +120,25 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            ByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
-            assertThat(BufferUtil.space(internalBuffer), greaterThanOrEqualTo(1));
-            writeInFlushMode(slice, internalBuffer);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
+            assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1));
+            writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
         assertThat(accumulator.getLength(), is(size));
-        assertThat(byteBufferPool.getLeasedBuffers(), greaterThan(1L));
-        ByteBuffer combinedBuffer = accumulator.takeByteBuffer();
-        assertThat(byteBufferPool.getLeasedBuffers(), is(1L));
+        assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
+        RetainableByteBuffer combinedBuffer = accumulator.takeRetainableByteBuffer();
+        assertThat(bufferPool.getAcquireCount(), is(1L));
         assertThat(accumulator.getLength(), is(0));
         accumulator.close();
-        assertThat(byteBufferPool.getLeasedBuffers(), is(1L));
-        assertThat(combinedBuffer, is(content));
+        assertThat(bufferPool.getAcquireCount(), is(1L));
+        assertThat(combinedBuffer.getByteBuffer(), is(content));
 
         // Return the buffer and make sure all is returned to bufferPool.
-        byteBufferPool.release(combinedBuffer);
-        byteBufferPool.verifyClosed();
+        combinedBuffer.release();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     @Test
@@ -145,42 +152,43 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            ByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
-            writeInFlushMode(slice, internalBuffer);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
+            writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
         assertThat(accumulator.getLength(), is(size));
-        assertThat(byteBufferPool.getLeasedBuffers(), greaterThan(1L));
+        assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
         byte[] combinedBuffer = accumulator.toByteArray();
-        assertThat(byteBufferPool.getLeasedBuffers(), greaterThan(1L));
+        assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
         assertThat(accumulator.getLength(), is(size));
         assertThat(BufferUtil.toBuffer(combinedBuffer), is(content));
 
         // Close the accumulator and make sure all is returned to bufferPool.
         accumulator.close();
-        byteBufferPool.verifyClosed();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     @Test
     public void testEmptyToBuffer()
     {
-        ByteBuffer combinedBuffer = accumulator.toByteBuffer();
+        RetainableByteBuffer combinedBuffer = accumulator.toRetainableByteBuffer();
         assertThat(combinedBuffer.remaining(), is(0));
-        assertThat(byteBufferPool.getLeasedBuffers(), is(1L));
+        assertThat(bufferPool.getAcquireCount(), is(1L));
         accumulator.close();
-        byteBufferPool.verifyClosed();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     @Test
     public void testEmptyTakeBuffer()
     {
-        ByteBuffer combinedBuffer = accumulator.takeByteBuffer();
+        RetainableByteBuffer combinedBuffer = accumulator.takeRetainableByteBuffer();
         assertThat(combinedBuffer.remaining(), is(0));
         accumulator.close();
-        assertThat(byteBufferPool.getLeasedBuffers(), is(1L));
-        byteBufferPool.release(combinedBuffer);
-        byteBufferPool.verifyClosed();
+        assertThat(bufferPool.getAcquireCount(), is(1L));
+        combinedBuffer.release();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     @Test
@@ -194,21 +202,22 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            ByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
-            writeInFlushMode(slice, internalBuffer);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
+            writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
-        assertThat(byteBufferPool.getLeasedBuffers(), greaterThan(1L));
-        ByteBuffer combinedBuffer = byteBufferPool.acquire(accumulator.getLength(), false);
-        accumulator.writeTo(combinedBuffer);
+        assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
+        RetainableByteBuffer combinedBuffer = bufferPool.acquire(accumulator.getLength(), false);
+        accumulator.writeTo(combinedBuffer.getByteBuffer());
         assertThat(accumulator.getLength(), is(size));
-        assertThat(combinedBuffer, is(content));
-        byteBufferPool.release(combinedBuffer);
+        assertThat(combinedBuffer.getByteBuffer(), is(content));
+        combinedBuffer.release();
 
         // Close the accumulator and make sure all is returned to bufferPool.
         accumulator.close();
-        byteBufferPool.verifyClosed();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     @Test
@@ -222,19 +231,20 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            ByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
-            writeInFlushMode(slice, internalBuffer);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
+            writeInFlushMode(slice, byteBuffer);
         }
 
         // Writing to a buffer too small gives buffer overflow.
-        assertThat(byteBufferPool.getLeasedBuffers(), greaterThan(1L));
+        assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
         ByteBuffer combinedBuffer = BufferUtil.toBuffer(new byte[accumulator.getLength() - 1]);
         BufferUtil.clear(combinedBuffer);
         assertThrows(BufferOverflowException.class, () -> accumulator.writeTo(combinedBuffer));
 
         // Close the accumulator and make sure all is returned to bufferPool.
         accumulator.close();
-        byteBufferPool.verifyClosed();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     @Test
@@ -255,16 +265,16 @@ public class ByteBufferAccumulatorTest
         }
 
         // Check we have the same content as the original buffer.
-        assertThat(byteBufferPool.getLeasedBuffers(), greaterThan(1L));
-        ByteBuffer combinedBuffer = byteBufferPool.acquire(accumulator.getLength(), false);
-        accumulator.writeTo(combinedBuffer);
+        assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
+        RetainableByteBuffer combinedBuffer = bufferPool.acquire(accumulator.getLength(), false);
+        accumulator.writeTo(combinedBuffer.getByteBuffer());
         assertThat(accumulator.getLength(), is(size));
-        assertThat(combinedBuffer, is(content));
-        byteBufferPool.release(combinedBuffer);
+        assertThat(combinedBuffer.getByteBuffer(), is(content));
+        combinedBuffer.release();
 
         // Close the accumulator and make sure all is returned to bufferPool.
         accumulator.close();
-        byteBufferPool.verifyClosed();
+        assertThat(bufferPool.getAcquireCount(), is(0L));
     }
 
     private ByteBuffer randomBytes(int size)
@@ -282,47 +292,35 @@ public class ByteBufferAccumulatorTest
         return written;
     }
 
-    public static class CountingBufferPool extends LeakTrackingByteBufferPool
+    private static class CountingBufferPool extends RetainableByteBufferPool.Wrapper
     {
-        private final AtomicLong _leasedBuffers = new AtomicLong(0);
+        private final AtomicLong _acquires = new AtomicLong();
 
         public CountingBufferPool()
         {
-            this(new MappedByteBufferPool());
-        }
-
-        public CountingBufferPool(ByteBufferPool delegate)
-        {
-            super(delegate);
+            super(new ArrayRetainableByteBufferPool());
         }
 
         @Override
-        public ByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer acquire(int size, boolean direct)
         {
-            _leasedBuffers.incrementAndGet();
-            return super.acquire(size, direct);
+            _acquires.incrementAndGet();
+            return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+            {
+                @Override
+                public boolean release()
+                {
+                    boolean released = super.release();
+                    if (released)
+                        _acquires.decrementAndGet();
+                    return released;
+                }
+            };
         }
 
-        @Override
-        public void release(ByteBuffer buffer)
+        public long getAcquireCount()
         {
-            if (buffer != null)
-                _leasedBuffers.decrementAndGet();
-            super.release(buffer);
-        }
-
-        public long getLeasedBuffers()
-        {
-            return _leasedBuffers.get();
-        }
-
-        public void verifyClosed()
-        {
-            assertThat(_leasedBuffers.get(), is(0L));
-            assertThat(getLeakedAcquires(), is(0L));
-            assertThat(getLeakedReleases(), is(0L));
-            assertThat(getLeakedResources(), is(0L));
-            assertThat(getLeakedRemoves(), is(0L));
+            return _acquires.get();
         }
     }
 }

@@ -26,9 +26,8 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -71,7 +70,9 @@ public class DebugHandlerTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
-        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+        // TODO: restore leak tracking.
+//        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+        RetainableByteBufferPool pool = new ArrayRetainableByteBufferPool();
         ServerConnector sslConnector = new ServerConnector(server, null, null, pool, 1, 1,
             AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
 

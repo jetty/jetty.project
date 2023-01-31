@@ -43,8 +43,9 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -774,8 +775,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             try
             {
                 this.transformer = transformer;
-                ByteBufferPool byteBufferPool = httpClient == null ? null : httpClient.getByteBufferPool();
-                this.decoder = new GZIPContentDecoder(byteBufferPool, GZIPContentDecoder.DEFAULT_BUFFER_SIZE);
+                RetainableByteBufferPool bufferPool = httpClient == null ? null : httpClient.getRetainableByteBufferPool();
+                this.decoder = new GZIPContentDecoder(bufferPool, GZIPContentDecoder.DEFAULT_BUFFER_SIZE);
                 this.out = new ByteArrayOutputStream();
                 this.gzipOut = new GZIPOutputStream(out);
             }
@@ -791,7 +792,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             if (logger.isDebugEnabled())
                 logger.debug("Ungzipping {} bytes, finished={}", input.remaining(), finished);
 
-            List<ByteBuffer> decodeds = Collections.emptyList();
+            List<RetainableByteBuffer> decodeds = Collections.emptyList();
             if (!input.hasRemaining())
             {
                 if (finished)
@@ -802,14 +803,14 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 decodeds = new ArrayList<>();
                 while (true)
                 {
-                    ByteBuffer decoded = decoder.decode(input);
+                    RetainableByteBuffer decoded = decoder.decode(input);
                     decodeds.add(decoded);
                     boolean decodeComplete = !input.hasRemaining() && !decoded.hasRemaining();
                     boolean complete = finished && decodeComplete;
                     if (logger.isDebugEnabled())
                         logger.debug("Ungzipped {} bytes, complete={}", decoded.remaining(), complete);
                     if (decoded.hasRemaining() || complete)
-                        transformer.transform(decoded, complete, buffers);
+                        transformer.transform(decoded.getByteBuffer(), complete, buffers);
                     if (decodeComplete)
                         break;
                 }
@@ -822,7 +823,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 output.add(result);
             }
 
-            decodeds.forEach(decoder::release);
+            decodeds.forEach(RetainableByteBuffer::release);
         }
 
         private ByteBuffer gzip(List<ByteBuffer> buffers, boolean finished) throws IOException

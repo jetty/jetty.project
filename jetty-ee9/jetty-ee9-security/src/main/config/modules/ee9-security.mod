@@ -8,6 +8,7 @@ ee9
 
 [depend]
 server
+ee9-servlet
 
 [lib]
 lib/jetty-ee9-security-${jetty.version}.jar

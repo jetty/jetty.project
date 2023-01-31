@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -61,7 +61,7 @@ public class MessageHandlerTest
 
         coreSession = new CoreSession.Empty()
         {
-            private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+            private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
             @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
@@ -71,9 +71,9 @@ public class MessageHandlerTest
             }
 
             @Override
-            public ByteBufferPool getByteBufferPool()
+            public RetainableByteBufferPool getRetainableByteBufferPool()
             {
-                return byteBufferPool;
+                return bufferPool;
             }
         };
 

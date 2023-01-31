@@ -19,7 +19,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class ResetGenerator extends FrameGenerator
@@ -30,21 +31,22 @@ public class ResetGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
     {
         ResetFrame resetFrame = (ResetFrame)frame;
-        return generateReset(lease, resetFrame.getStreamId(), resetFrame.getError());
+        return generateReset(accumulator, resetFrame.getStreamId(), resetFrame.getError());
     }
 
-    public int generateReset(ByteBufferPool.Lease lease, int streamId, int error)
+    public int generateReset(RetainableByteBufferPool.Accumulator accumulator, int streamId, int error)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        ByteBuffer header = generateHeader(lease, FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
-        header.putInt(error);
-        BufferUtil.flipToFlush(header, 0);
-        lease.append(header, true);
+        RetainableByteBuffer header = generateHeader(FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
+        ByteBuffer byteBuffer = header.getByteBuffer();
+        byteBuffer.putInt(error);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(header);
 
         return Frame.HEADER_LENGTH + ResetFrame.RESET_LENGTH;
     }

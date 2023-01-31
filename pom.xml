@@ -24,12 +24,12 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.12</ant.version>
+    <ant.version>1.10.13</ant.version>
     <apache.avro.version>1.11.1</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
-    <asciidoctorj.version>2.5.6</asciidoctorj.version>
+    <asciidoctorj.version>2.5.7</asciidoctorj.version>
     <asm.version>9.4</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
@@ -43,40 +43,16 @@
     <disruptor.version>3.4.2</disruptor.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <google.errorprone.version>2.15.0</google.errorprone.version>
-    <grpc.version>1.49.2</grpc.version>
-    <gson.version>2.9.1</gson.version>
+    <google.errorprone.version>2.18.0</google.errorprone.version>
+    <grpc.version>1.52.1</grpc.version>
+    <gson.version>2.10.1</gson.version>
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.15.2</hawtio.version>
-    <hazelcast.version>4.2.5</hazelcast.version>
+    <hazelcast.version>4.2.6</hazelcast.version>
     <infinispan.protostream.version>4.6.0.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.16.Final</infinispan.version>
-    <jackson.version>2.14.1</jackson.version>
-    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
-    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
-    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
-    <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version> <!-- TODO: remove? -->
-    <javax.cdi.api.version>2.0</javax.cdi.api.version> <!-- TODO: remove? -->
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version> <!-- TODO: remove? -->
+    <infinispan.version>11.0.17.Final</infinispan.version>
+    <jackson.version>2.14.2</jackson.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
@@ -89,21 +65,16 @@
     <jetty.test.version>6.0</jetty.test.version>
     <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
     <jmh.version>1.36</jmh.version>
-    <jna.version>5.12.1</jna.version>
-    <jnr-constants.version>0.10.4</jnr-constants.version>
-    <jnr-enxio.version>0.32.13</jnr-enxio.version>
-    <jnr-ffi.version>2.2.12</jnr-ffi.version>
-    <jnr-posix.version>3.1.15</jnr-posix.version>
-    <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
+    <jna.version>5.13.0</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.8</json-smart.version>
-    <junit.version>5.9.1</junit.version>
+    <junit.version>5.9.2</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.19.0</log4j2.version>
     <logback.version>1.4.5</logback.version>
-    <mariadb.version>3.0.8</mariadb.version>
+    <mariadb.version>3.0.10</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.deps.version>3.8.4</maven.deps.version>
+    <maven.deps.version>3.8.7</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven.resolver.version>1.9.2</maven.resolver.version>
     <maven.version>3.8.7</maven.version>
@@ -119,7 +90,7 @@
     <osgi-annotation-version>8.1.0</osgi-annotation-version>
     <osgi-services-version>3.11.100</osgi-services-version>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
-    <osgi-service-component-version>1.5.0</osgi-service-component-version>
+    <osgi-service-component-version>1.5.1</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
     <osgi-util-version>3.7.100</osgi-util-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
@@ -137,7 +108,7 @@
 
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.5.0</plexus-utils.version>
-    <slf4j.version>2.0.5</slf4j.version>
+    <slf4j.version>2.0.6</slf4j.version>
     <spifly.version>1.3.6</spifly.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
@@ -174,7 +145,7 @@
     <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.7.1</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.7.0</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
@@ -185,7 +156,7 @@
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
     <spotbugs.maven.plugin.version>4.7.2.0</spotbugs.maven.plugin.version>
-    <versions.maven.plugin.version>2.12.0</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.14.2</versions.maven.plugin.version>
 
     <!-- testing -->
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
@@ -957,31 +928,6 @@
         <version>${logback.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-constants</artifactId>
-        <version>${jnr-constants.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-enxio</artifactId>
-        <version>${jnr-enxio.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-ffi</artifactId>
-        <version>${jnr-ffi.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-posix</artifactId>
-        <version>${jnr-posix.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-unixsocket</artifactId>
-        <version>${jnr-unixsocket.version}</version>
-      </dependency>
-      <dependency>
         <groupId>com.google.code.findbugs</groupId>
         <artifactId>jsr305</artifactId>
         <version>${findbugs.jsr305.version}</version>
@@ -1012,35 +958,6 @@
         <version>${json-simple.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.jamonapi</groupId>
-        <artifactId>jamon</artifactId>
-        <version>${jamon.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>com.jamonapi</groupId>
-        <artifactId>jamon_war</artifactId>
-        <version>${jamon.version}</version>
-        <type>war</type>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.jolokia</groupId>
-        <artifactId>jolokia-war</artifactId>
-        <version>${jolokia.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
         <groupId>com.openpojo</groupId>
         <artifactId>openpojo</artifactId>
         <version>${openpojo.version}</version>
@@ -1054,12 +971,6 @@
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>${grpc.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.hawt</groupId>
-        <artifactId>hawtio-default</artifactId>
-        <version>${hawtio.version}</version>
-        <type>war</type>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -1364,21 +1275,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-unixsocket-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-unixsocket-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-unixsocket-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1534,11 +1430,6 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>test-sessions-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>jetty-websocket-core-client</artifactId>
         <version>${project.version}</version>
@@ -1666,6 +1557,11 @@
       <dependency>
         <groupId>org.infinispan.protostream</groupId>
         <artifactId>protostream</artifactId>
+        <version>${infinispan.protostream.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.infinispan.protostream</groupId>
+        <artifactId>protostream-processor</artifactId>
         <version>${infinispan.protostream.version}</version>
       </dependency>
       <dependency>

@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
@@ -48,9 +48,9 @@ public class RoundRobinConnectionPool extends MultiplexConnectionPool
         this(destination, maxConnections, 1);
     }
 
-    public RoundRobinConnectionPool(Destination destination, int maxConnections, int maxMultiplex)
+    public RoundRobinConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        super(destination, Pool.StrategyType.ROUND_ROBIN, maxConnections, false, maxMultiplex);
+        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.ROUND_ROBIN, maxConnections, false, newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
         // If there are queued requests and connections get
         // closed due to idle timeout or overuse, we want to
         // aggressively try to open new connections to replace

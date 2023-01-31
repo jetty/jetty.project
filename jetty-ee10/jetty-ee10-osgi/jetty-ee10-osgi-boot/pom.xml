@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-osgi-boot</artifactId>
-  <name>EE10 :: Jetty :: OSGi :: Boot</name>
+  <name>EE10 :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>

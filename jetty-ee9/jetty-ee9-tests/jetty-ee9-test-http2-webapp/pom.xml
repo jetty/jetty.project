@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-test-http2-webapp</artifactId>
-  <name>Test :: Jetty HTTP2 Webapp</name>
+  <name>EE9 :: Tests :: HTTP2 WebApp</name>
   <packaging>war</packaging>
 
   <properties>

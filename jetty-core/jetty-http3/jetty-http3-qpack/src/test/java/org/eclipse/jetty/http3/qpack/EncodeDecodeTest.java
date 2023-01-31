@@ -27,6 +27,8 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentI
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -56,7 +58,8 @@ public class EncodeDecodeTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS)
+        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        _encoder = new QpackEncoder(bufferPool, _encoderHandler, MAX_BLOCKED_STREAMS)
         {
             @Override
             protected boolean shouldHuffmanEncode(HttpField httpField)
@@ -64,7 +67,7 @@ public class EncodeDecodeTest
                 return false;
             }
         };
-        _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
+        _decoder = new QpackDecoder(bufferPool, _decoderHandler, MAX_HEADER_SIZE);
 
         _encoderInstructionParser = new EncoderInstructionParser(new EncoderParserDebugHandler(_encoder));
         _decoderInstructionParser = new DecoderInstructionParser(new DecoderParserDebugHandler(_decoder));
@@ -91,7 +94,7 @@ public class EncodeDecodeTest
         assertThat(_decoderHandler.getInstruction(), instanceOf(SectionAcknowledgmentInstruction.class));
         assertTrue(_decoderHandler.isEmpty());
 
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(_encoder.getRetainableByteBufferPool(), streamId))));
 
         // B.2. Dynamic Table.
 
@@ -143,8 +146,8 @@ public class EncodeDecodeTest
         assertTrue(_decoderHandler.isEmpty());
 
         // Parse the decoder instructions on the encoder.
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new InsertCountIncrementInstruction(2))));
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new InsertCountIncrementInstruction(_encoder.getRetainableByteBufferPool(), 2))));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(_encoder.getRetainableByteBufferPool(), streamId))));
 
         // B.3. Speculative Insert
         _encoder.insert(new HttpField("custom-key", "custom-value"));

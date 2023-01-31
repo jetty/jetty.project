@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-slf4j-impl</artifactId>
-  <name>Jetty Core :: Slf4j Implementation</name>
+  <name>Core :: SLF4J Implementation</name>
   <description>Slf4j Logging Implementation based on Jetty's older StdErrLog</description>
   
   <properties>

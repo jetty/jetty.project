@@ -21,11 +21,11 @@ import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
-import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,18 +33,18 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnidirectionalStreamConnection.class);
 
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
     private final ParserListener listener;
     private final VarLenInt parser = new VarLenInt();
     private boolean useInputDirectByteBuffers = true;
-    private ByteBuffer buffer;
+    private RetainableByteBuffer buffer;
 
-    public UnidirectionalStreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
+    public UnidirectionalStreamConnection(QuicStreamEndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor);
-        this.byteBufferPool = byteBufferPool;
+        this.bufferPool = bufferPool;
         this.encoder = encoder;
         this.decoder = decoder;
         this.listener = listener;
@@ -78,8 +78,8 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     {
         int remaining = buffer.remaining();
         ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(remaining) : ByteBuffer.allocate(remaining);
-        copy.put(buffer);
-        byteBufferPool.release(buffer);
+        copy.put(buffer.getByteBuffer());
+        buffer.release();
         buffer = null;
         copy.flip();
         return copy;
@@ -91,28 +91,28 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         try
         {
             if (buffer == null)
-                buffer = byteBufferPool.acquire(2048, isUseInputDirectByteBuffers());
-
+                buffer = bufferPool.acquire(2048, isUseInputDirectByteBuffers());
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
             while (true)
             {
-                int filled = getEndPoint().fill(buffer);
+                int filled = getEndPoint().fill(byteBuffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} on {}: {}", filled, this, BufferUtil.toDetailString(buffer));
+                    LOG.debug("filled {} on {}: {}", filled, this, buffer);
 
                 if (filled > 0)
                 {
-                    if (parser.decode(buffer, this::detectAndUpgrade))
+                    if (parser.decode(byteBuffer, this::detectAndUpgrade))
                         break;
                 }
                 else if (filled == 0)
                 {
-                    byteBufferPool.release(buffer);
+                    buffer.release();
                     fillInterested();
                     break;
                 }
                 else
                 {
-                    byteBufferPool.release(buffer);
+                    buffer.release();
                     buffer = null;
                     getEndPoint().close();
                     break;
@@ -123,7 +123,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("could not process stream {}", getEndPoint(), x);
-            byteBufferPool.release(buffer);
+            buffer.release();
             buffer = null;
             getEndPoint().close(x);
         }
@@ -134,7 +134,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         if (streamType == ControlStreamConnection.STREAM_TYPE)
         {
             ControlParser parser = new ControlParser(listener);
-            ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
+            ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), bufferPool, parser);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
@@ -143,7 +143,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         }
         else if (streamType == EncoderStreamConnection.STREAM_TYPE)
         {
-            EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, decoder);
+            EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, decoder);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
@@ -152,7 +152,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         }
         else if (streamType == DecoderStreamConnection.STREAM_TYPE)
         {
-            DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, encoder);
+            DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, encoder);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())

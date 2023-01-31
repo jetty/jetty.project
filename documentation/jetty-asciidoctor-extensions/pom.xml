@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-asciidoctor-extensions</artifactId>
-  <name>Jetty :: Documentation :: AsciiDoctor Extensions</name>
+  <name>Documentation :: AsciiDoctor Extensions</name>
   <packaging>jar</packaging>
 
   <properties>

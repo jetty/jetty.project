@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests</artifactId>
-  <name>Jetty Tests :: Parent</name>
+  <name>Tests</name>
   <packaging>pom</packaging>
   <properties>
     <spotbugs.skip>true</spotbugs.skip>

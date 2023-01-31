@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -54,7 +53,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
     private final AutoLock lock = new AutoLock();
-    private final ByteBufferPool bufferPool;
     private final RetainableByteBufferPool retainableByteBufferPool;
     private final Generator generator;
     private final Parser parser;
@@ -80,11 +78,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public WebSocketConnection(EndPoint endp,
                                Executor executor,
                                Scheduler scheduler,
-                               ByteBufferPool bufferPool,
                                RetainableByteBufferPool retainableByteBufferPool,
                                WebSocketCoreSession coreSession)
     {
-        this(endp, executor, scheduler, bufferPool, retainableByteBufferPool, coreSession, null);
+        this(endp, executor, scheduler, retainableByteBufferPool, coreSession, null);
     }
 
     /**
@@ -96,7 +93,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * @param endp The endpoint ever which Websockot is sent/received
      * @param executor A thread executor to use for WS callbacks.
      * @param scheduler A scheduler to use for timeouts
-     * @param bufferPool A pool of buffers to use.
      * @param retainableByteBufferPool A pool of retainable buffers to use.
      * @param coreSession The WC core session to which frames are delivered.
      * @param randomMask A Random used to mask frames. If null then SecureRandom will be created if needed.
@@ -104,7 +100,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public WebSocketConnection(EndPoint endp,
                                Executor executor,
                                Scheduler scheduler,
-                               ByteBufferPool bufferPool,
                                RetainableByteBufferPool retainableByteBufferPool,
                                WebSocketCoreSession coreSession,
                                Random randomMask)
@@ -114,14 +109,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(endp, "EndPoint");
         Objects.requireNonNull(coreSession, "Session");
         Objects.requireNonNull(executor, "Executor");
-        Objects.requireNonNull(bufferPool, "ByteBufferPool");
         Objects.requireNonNull(retainableByteBufferPool, "RetainableByteBufferPool");
 
-        this.bufferPool = bufferPool;
         this.retainableByteBufferPool = retainableByteBufferPool;
         this.coreSession = coreSession;
         this.generator = new Generator();
-        this.parser = new Parser(bufferPool, coreSession);
+        this.parser = new Parser(retainableByteBufferPool, coreSession);
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());
 
@@ -134,11 +127,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public Executor getExecutor()
     {
         return super.getExecutor();
-    }
-
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
     }
 
     public Generator getGenerator()
@@ -305,7 +293,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (networkBuffer == null)
                 throw new IllegalStateException();
 
-            if (networkBuffer.getBuffer().hasRemaining())
+            if (networkBuffer.getByteBuffer().hasRemaining())
                 throw new IllegalStateException();
 
             networkBuffer.release();
@@ -392,7 +380,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 return true;
 
             fillingAndParsing = false;
-            if (networkBuffer.isEmpty())
+            if (!networkBuffer.hasRemaining())
                 releaseNetworkBuffer();
 
             return false;
@@ -437,9 +425,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             while (true)
             {
                 // Parse and handle frames
-                while (!networkBuffer.isEmpty())
+                while (networkBuffer.hasRemaining())
                 {
-                    Parser.ParsedFrame frame = parser.parse(networkBuffer.getBuffer());
+                    Parser.ParsedFrame frame = parser.parse(networkBuffer.getByteBuffer());
                     if (frame == null)
                         break;
 
@@ -453,7 +441,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 }
 
                 // buffer must be empty here because parser is fully consuming
-                assert (networkBuffer.isEmpty());
+                assert (!networkBuffer.hasRemaining());
 
                 if (!getEndPoint().isOpen())
                 {
@@ -465,7 +453,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
-                int filled = getEndPoint().fill(networkBuffer.getBuffer()); // TODO check if compact is possible.
+                int filled = getEndPoint().fill(networkBuffer.getByteBuffer()); // TODO check if compact is possible.
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("endpointFill() filled={}: {}", filled, networkBuffer);
@@ -494,7 +482,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (networkBuffer != null)
             {
-                BufferUtil.clear(networkBuffer.getBuffer());
+                BufferUtil.clear(networkBuffer.getByteBuffer());
                 releaseNetworkBuffer();
             }
             coreSession.processConnectionError(t, Callback.NOOP);
@@ -516,7 +504,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             networkBuffer = newNetworkBuffer(initialBuffer.remaining());
         }
-        ByteBuffer buffer = networkBuffer.getBuffer();
+        ByteBuffer buffer = networkBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);
         BufferUtil.put(initialBuffer, buffer);
         BufferUtil.flipToFlush(buffer, 0);
@@ -638,7 +626,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         private Flusher(Scheduler scheduler, int bufferSize, Generator generator, EndPoint endpoint)
         {
-            super(bufferPool, scheduler, generator, endpoint, bufferSize, 8);
+            super(retainableByteBufferPool, scheduler, generator, endpoint, bufferSize, 8);
             setUseDirectByteBuffers(isUseOutputDirectByteBuffers());
         }
 

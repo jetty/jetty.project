@@ -7,7 +7,7 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-demo-jaas-webapp</artifactId>
-  <name>EE9 :: Jetty Demo :: JAAS :: WebApp</name>
+  <name>EE9 :: Demo :: JAAS WebApp</name>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>

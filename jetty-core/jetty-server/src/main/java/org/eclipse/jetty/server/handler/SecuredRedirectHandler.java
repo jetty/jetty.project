@@ -23,11 +23,17 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * <p>SecuredRedirectHandler redirects from {@code http} to {@code https}.</p>
- * <p>SecuredRedirectHandler uses the information present in {@link HttpConfiguration}
- * attempting to redirect to the {@link HttpConfiguration#getSecureScheme()} and
- * {@link HttpConfiguration#getSecurePort()} for any request that
- * {@link Request#isSecure()} is false.</p>
+ * Forces a redirect to the secure form of the resource before allowed to access the resource.
+ *
+ * <p>
+ * {@link SecuredRedirectHandler} enforces that all requests passing through it must have {@link Request#isSecure()} set to true.
+ * </p>
+ * <p>
+ * {@link SecuredRedirectHandler} will send a Redirect HTTP Response (default to {@code 302: Moved Temporarily})
+ * with the information present in the {@link HttpConfiguration} for the connector that the response is being processed on.
+ * The {@code Location} response header will be built from {@link HttpConfiguration#getSecureScheme()} and
+ * {@link HttpConfiguration#getSecurePort()}
+ * </p>
  */
 public class SecuredRedirectHandler extends Handler.Wrapper
 {

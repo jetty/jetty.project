@@ -66,7 +66,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
-        retainableByteBufferPool = httpClient.getByteBufferPool().asRetainableByteBufferPool();
+        retainableByteBufferPool = httpClient.getRetainableByteBufferPool();
     }
 
     void receive()
@@ -169,7 +169,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     protected ByteBuffer getResponseBuffer()
     {
-        return networkBuffer == null ? null : networkBuffer.getBuffer();
+        return networkBuffer == null ? null : networkBuffer.getByteBuffer();
     }
 
     private void acquireNetworkBuffer()
@@ -222,7 +222,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             HttpClient client = getHttpDestination().getHttpClient();
             upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining(), client.isUseInputDirectByteBuffers());
             BufferUtil.clearToFill(upgradeBuffer);
-            BufferUtil.put(networkBuffer.getBuffer(), upgradeBuffer);
+            BufferUtil.put(networkBuffer.getByteBuffer(), upgradeBuffer);
             BufferUtil.flipToFlush(upgradeBuffer, 0);
         }
         releaseNetworkBuffer();
@@ -245,7 +245,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             while (true)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Parsing {} in {}", BufferUtil.toDetailString(networkBuffer.getBuffer()), this);
+                    LOG.debug("Parsing {} in {}", BufferUtil.toDetailString(networkBuffer.getByteBuffer()), this);
                 // Always parse even empty buffers to advance the parser.
                 if (parse())
                 {
@@ -269,7 +269,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.
-                int read = endPoint.fill(networkBuffer.getBuffer());
+                int read = endPoint.fill(networkBuffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes in {} from {} in {}", read, networkBuffer, endPoint, this);
 
@@ -309,7 +309,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         while (true)
         {
-            boolean handle = parser.parseNext(networkBuffer.getBuffer());
+            boolean handle = parser.parseNext(networkBuffer.getByteBuffer());
             if (LOG.isDebugEnabled())
                 LOG.debug("Parse result={} on {}", handle, this);
             Runnable action = getAndSetAction(null);
@@ -347,7 +347,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 if (getHttpChannel().isTunnel(method, status))
                     return true;
 
-                if (networkBuffer.isEmpty())
+                if (!networkBuffer.hasRemaining())
                     return false;
 
                 if (!HttpStatus.isInformational(status))
@@ -359,7 +359,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 return false;
             }
 
-            if (networkBuffer.isEmpty())
+            if (!networkBuffer.hasRemaining())
                 return false;
         }
     }

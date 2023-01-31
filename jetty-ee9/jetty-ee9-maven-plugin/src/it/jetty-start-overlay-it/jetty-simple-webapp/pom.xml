@@ -11,7 +11,7 @@
   <artifactId>jetty-simple-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>Jetty :: Simple :: Webapp</name>
+  <name>Jetty :: Simple :: WebApp</name>
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-port.txt</jetty.port.file>

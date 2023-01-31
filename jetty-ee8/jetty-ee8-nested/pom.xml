@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-nested</artifactId>
-  <name>EE8 :: Jetty :: Nested</name>
+  <name>EE8 :: Nested</name>
   <description>The jetty core handler adapted to legacy ee8 handler.</description>
 
   <properties>

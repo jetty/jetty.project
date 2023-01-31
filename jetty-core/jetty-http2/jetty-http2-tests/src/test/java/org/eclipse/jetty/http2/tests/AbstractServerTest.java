@@ -29,8 +29,8 @@ import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -42,7 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 public class AbstractServerTest
 {
     protected ServerConnector connector;
-    protected ByteBufferPool byteBufferPool;
+    protected RetainableByteBufferPool bufferPool;
     protected Generator generator;
     protected Server server;
     protected String path;
@@ -68,8 +68,8 @@ public class AbstractServerTest
         connector = new ServerConnector(server, connectionFactory);
         server.addConnector(connector);
         path = "/test";
-        byteBufferPool = new MappedByteBufferPool();
-        generator = new Generator(byteBufferPool);
+        bufferPool = new ArrayRetainableByteBufferPool();
+        generator = new Generator(bufferPool);
     }
 
     protected MetaData.Request newRequest(String method, HttpFields fields)

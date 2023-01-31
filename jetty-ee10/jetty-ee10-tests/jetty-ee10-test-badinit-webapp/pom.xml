@@ -11,7 +11,7 @@
 
   <packaging>war</packaging>
 
-  <name>Test :: Jetty EE10 Test Bad Init Webapp</name>
+  <name>EE10 :: Tests :: Bad Init WebApp</name>
 
   <dependencies>
     <dependency>

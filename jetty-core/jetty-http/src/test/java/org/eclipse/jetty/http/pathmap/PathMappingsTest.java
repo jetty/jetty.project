@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -270,15 +272,15 @@ public class PathMappingsTest
     public void testPutRejectsDuplicates()
     {
         PathMappings<String> p = new PathMappings<>();
-        assertThat(p.put(new UriTemplatePathSpec("/a/{var1}/c"), "resourceA"), is(true));
-        assertThat(p.put(new UriTemplatePathSpec("/a/{var2}/c"), "resourceAA"), is(false));
-        assertThat(p.put(new UriTemplatePathSpec("/a/b/c"), "resourceB"), is(true));
-        assertThat(p.put(new UriTemplatePathSpec("/a/b/c"), "resourceBB"), is(false));
-        assertThat(p.put(new ServletPathSpec("/a/b/c"), "resourceBB"), is(true));
-        assertThat(p.put(new RegexPathSpec("/a/b/c"), "resourceBB"), is(true));
+        assertThat(p.put(new UriTemplatePathSpec("/a/{var2}/c"), "resourceA"), nullValue());
+        assertThat(p.put(new UriTemplatePathSpec("/a/{var1}/c"), "resourceAA"), is("resourceA"));
+        assertThat(p.put(new UriTemplatePathSpec("/a/b/c"), "resourceB"), nullValue());
+        assertThat(p.put(new UriTemplatePathSpec("/a/b/c"), "resourceBB"), is("resourceB"));
+        assertThat(p.put(new ServletPathSpec("/a/b/c"), "resourceBB"), nullValue());
+        assertThat(p.put(new RegexPathSpec("/a/b/c"), "resourceBB"), nullValue());
 
-        assertThat(p.put(new ServletPathSpec("/*"), "resourceC"), is(true));
-        assertThat(p.put(new RegexPathSpec("/(.*)"), "resourceCC"), is(true));
+        assertThat(p.put(new ServletPathSpec("/*"), "resourceC"), nullValue());
+        assertThat(p.put(new RegexPathSpec("/(.*)"), "resourceCC"), nullValue());
     }
 
     @Test
@@ -373,27 +375,27 @@ public class PathMappingsTest
         PathMappings<String> p = new PathMappings<>();
 
         p.put(new UriTemplatePathSpec("/a/{var1}/c"), "resourceA");
-        assertThat(p.remove(new UriTemplatePathSpec("/a/{var1}/c")), is(true));
+        assertThat(p.remove(new UriTemplatePathSpec("/a/{var1}/c")), is("resourceA"));
 
         p.put(new UriTemplatePathSpec("/a/{var1}/c"), "resourceA");
-        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new UriTemplatePathSpec("/a/{b}/c")), is(true));
-        assertThat(p.remove(new UriTemplatePathSpec("/a/{b}/c")), is(false));
+        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new UriTemplatePathSpec("/a/{b}/c")), is("resourceA"));
+        assertThat(p.remove(new UriTemplatePathSpec("/a/{b}/c")), nullValue());
 
         p.put(new UriTemplatePathSpec("/{var1}/b/c"), "resourceA");
-        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new UriTemplatePathSpec("/{a}/b/c")), is(true));
-        assertThat(p.remove(new UriTemplatePathSpec("/{a}/b/c")), is(false));
+        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new UriTemplatePathSpec("/{a}/b/c")), is("resourceA"));
+        assertThat(p.remove(new UriTemplatePathSpec("/{a}/b/c")), nullValue());
 
         p.put(new UriTemplatePathSpec("/a/b/{var1}"), "resourceA");
-        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new UriTemplatePathSpec("/a/b/{c}")), is(true));
-        assertThat(p.remove(new UriTemplatePathSpec("/a/b/{c}")), is(false));
+        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new UriTemplatePathSpec("/a/b/{c}")), is("resourceA"));
+        assertThat(p.remove(new UriTemplatePathSpec("/a/b/{c}")), nullValue());
 
         p.put(new UriTemplatePathSpec("/{var1}/{var2}/{var3}"), "resourceA");
-        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new UriTemplatePathSpec("/{a}/{b}/{c}")), is(true));
-        assertThat(p.remove(new UriTemplatePathSpec("/{a}/{b}/{c}")), is(false));
+        assertThat(p.remove(new UriTemplatePathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new UriTemplatePathSpec("/{a}/{b}/{c}")), is("resourceA"));
+        assertThat(p.remove(new UriTemplatePathSpec("/{a}/{b}/{c}")), nullValue());
     }
 
     @Test
@@ -402,24 +404,24 @@ public class PathMappingsTest
         PathMappings<String> p = new PathMappings<>();
 
         p.put(new RegexPathSpec("/a/(.*)/c"), "resourceA");
-        assertThat(p.remove(new RegexPathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new RegexPathSpec("/a/(.*)/c")), is(true));
-        assertThat(p.remove(new RegexPathSpec("/a/(.*)/c")), is(false));
+        assertThat(p.remove(new RegexPathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new RegexPathSpec("/a/(.*)/c")), is("resourceA"));
+        assertThat(p.remove(new RegexPathSpec("/a/(.*)/c")), nullValue());
 
         p.put(new RegexPathSpec("/(.*)/b/c"), "resourceA");
-        assertThat(p.remove(new RegexPathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new RegexPathSpec("/(.*)/b/c")), is(true));
-        assertThat(p.remove(new RegexPathSpec("/(.*)/b/c")), is(false));
+        assertThat(p.remove(new RegexPathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new RegexPathSpec("/(.*)/b/c")), is("resourceA"));
+        assertThat(p.remove(new RegexPathSpec("/(.*)/b/c")), nullValue());
 
         p.put(new RegexPathSpec("/a/b/(.*)"), "resourceA");
-        assertThat(p.remove(new RegexPathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new RegexPathSpec("/a/b/(.*)")), is(true));
-        assertThat(p.remove(new RegexPathSpec("/a/b/(.*)")), is(false));
+        assertThat(p.remove(new RegexPathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new RegexPathSpec("/a/b/(.*)")), is("resourceA"));
+        assertThat(p.remove(new RegexPathSpec("/a/b/(.*)")), nullValue());
 
         p.put(new RegexPathSpec("/a/b/c"), "resourceA");
-        assertThat(p.remove(new RegexPathSpec("/a/b/d")), is(false));
-        assertThat(p.remove(new RegexPathSpec("/a/b/c")), is(true));
-        assertThat(p.remove(new RegexPathSpec("/a/b/c")), is(false));
+        assertThat(p.remove(new RegexPathSpec("/a/b/d")), nullValue());
+        assertThat(p.remove(new RegexPathSpec("/a/b/c")), is("resourceA"));
+        assertThat(p.remove(new RegexPathSpec("/a/b/c")), nullValue());
     }
 
     @Test
@@ -428,34 +430,34 @@ public class PathMappingsTest
         PathMappings<String> p = new PathMappings<>();
 
         p.put(new ServletPathSpec("/a/*"), "resourceA");
-        assertThat(p.remove(new ServletPathSpec("/a/b")), is(false));
-        assertThat(p.remove(new ServletPathSpec("/a/*")), is(true));
-        assertThat(p.remove(new ServletPathSpec("/a/*")), is(false));
+        assertThat(p.remove(new ServletPathSpec("/a/b")), nullValue());
+        assertThat(p.remove(new ServletPathSpec("/a/*")), is("resourceA"));
+        assertThat(p.remove(new ServletPathSpec("/a/*")), nullValue());
 
         p.put(new ServletPathSpec("/a/b/*"), "resourceA");
-        assertThat(p.remove(new ServletPathSpec("/a/b/c")), is(false));
-        assertThat(p.remove(new ServletPathSpec("/a/b/*")), is(true));
-        assertThat(p.remove(new ServletPathSpec("/a/b/*")), is(false));
+        assertThat(p.remove(new ServletPathSpec("/a/b/c")), nullValue());
+        assertThat(p.remove(new ServletPathSpec("/a/b/*")), is("resourceA"));
+        assertThat(p.remove(new ServletPathSpec("/a/b/*")), nullValue());
 
         p.put(new ServletPathSpec("*.do"), "resourceA");
-        assertThat(p.remove(new ServletPathSpec("*.gz")), is(false));
-        assertThat(p.remove(new ServletPathSpec("*.do")), is(true));
-        assertThat(p.remove(new ServletPathSpec("*.do")), is(false));
+        assertThat(p.remove(new ServletPathSpec("*.gz")), nullValue());
+        assertThat(p.remove(new ServletPathSpec("*.do")), is("resourceA"));
+        assertThat(p.remove(new ServletPathSpec("*.do")), nullValue());
 
         p.put(new ServletPathSpec("/"), "resourceA");
-        assertThat(p.remove(new ServletPathSpec("/a")), is(false));
-        assertThat(p.remove(new ServletPathSpec("/")), is(true));
-        assertThat(p.remove(new ServletPathSpec("/")), is(false));
+        assertThat(p.remove(new ServletPathSpec("/a")), nullValue());
+        assertThat(p.remove(new ServletPathSpec("/")), is("resourceA"));
+        assertThat(p.remove(new ServletPathSpec("/")), nullValue());
 
         p.put(new ServletPathSpec(""), "resourceA");
-        assertThat(p.remove(new ServletPathSpec("/")), is(false));
-        assertThat(p.remove(new ServletPathSpec("")), is(true));
-        assertThat(p.remove(new ServletPathSpec("")), is(false));
+        assertThat(p.remove(new ServletPathSpec("/")), nullValue());
+        assertThat(p.remove(new ServletPathSpec("")), is("resourceA"));
+        assertThat(p.remove(new ServletPathSpec("")), nullValue());
 
         p.put(new ServletPathSpec("/a/b/c"), "resourceA");
-        assertThat(p.remove(new ServletPathSpec("/a/b/d")), is(false));
-        assertThat(p.remove(new ServletPathSpec("/a/b/c")), is(true));
-        assertThat(p.remove(new ServletPathSpec("/a/b/c")), is(false));
+        assertThat(p.remove(new ServletPathSpec("/a/b/d")), nullValue());
+        assertThat(p.remove(new ServletPathSpec("/a/b/c")), is("resourceA"));
+        assertThat(p.remove(new ServletPathSpec("/a/b/c")), nullValue());
     }
 
     @Test
@@ -510,6 +512,37 @@ public class PathMappingsTest
         assertThat(p.getMatched("/foo.do").getResource(), equalTo("resourceS"));
         assertThat(p.getMatched("/a/foo.do").getResource(), equalTo("resourceP"));
         assertThat(p.getMatched("/b/foo.do").getResource(), equalTo("resourceS"));
-
     }
+
+    @Test
+    public void testAsMap()
+    {
+        PathMappings<String> p = new PathMappings<>();
+        p.put(new ServletPathSpec(""), "resourceR");
+        p.put(new ServletPathSpec("/"), "resourceD");
+        p.put(new ServletPathSpec("/exact"), "REPLACED");
+        p.put(new ServletPathSpec("/exact"), "resourceE");
+        p.put(new ServletPathSpec("/a/*"), "resourceP");
+        p.put(new ServletPathSpec("*.do"), "resourceS");
+
+        @SuppressWarnings("redundant")
+        Map<PathSpec, String> map = p;
+
+        assertThat(map.keySet(), containsInAnyOrder(
+            new ServletPathSpec(""),
+            new ServletPathSpec("/"),
+            new ServletPathSpec("/exact"),
+            new ServletPathSpec("/a/*"),
+            new ServletPathSpec("*.do")
+            ));
+
+        assertThat(map.values(), containsInAnyOrder(
+            "resourceR",
+            "resourceD",
+            "resourceE",
+            "resourceP",
+            "resourceS"
+            ));
+    }
+
 }

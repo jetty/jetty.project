@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-proxy</artifactId>
   <packaging>jar</packaging>
-  <name>Jetty Core :: Proxy</name>
+  <name>Core :: Proxy</name>
   <description>Jetty Core Proxy</description>
 
   <properties>

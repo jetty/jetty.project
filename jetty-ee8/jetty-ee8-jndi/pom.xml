@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-jndi</artifactId>
-  <name>EE8 :: Jetty :: JNDI</name>
+  <name>EE8 :: JNDI</name>
   <description>EE8 JNDI factories</description>
 
   <properties>

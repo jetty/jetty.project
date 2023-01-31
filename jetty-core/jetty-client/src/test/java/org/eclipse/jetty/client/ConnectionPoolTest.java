@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -635,6 +636,7 @@ public class ConnectionPoolTest
             try
             {
                 ConnectionPool connectionPool = factory.factory.newConnectionPool(destination);
+                LifeCycle.start(connectionPool);
                 connectionPool.preCreateConnections(1).get();
                 return connectionPool;
             }

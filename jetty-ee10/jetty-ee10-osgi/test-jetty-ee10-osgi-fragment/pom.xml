@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-ee10-osgi-fragment</artifactId>
-  <name>EE10 :: Jetty :: OSGi :: WebApp Fragment</name>
+  <name>EE10 :: OSGi :: WebApp Fragment</name>
   <description>Test Jetty OSGi Webapp Fragment bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.fragment</bundle-symbolic-name>

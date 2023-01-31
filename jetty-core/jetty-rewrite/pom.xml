@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-rewrite</artifactId>
-  <name>Jetty Core :: Rewrite Handler</name>
+  <name>Core :: Rewrite</name>
   <description>Jetty Rewrite Handler</description>
 
   <properties>

@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-websocket-jetty-api</artifactId>
-  <name>EE9 :: Jetty :: Websocket :: org.eclipse.jetty.websocket :: API</name>
+  <name>EE9 :: Websocket :: Jetty API</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>

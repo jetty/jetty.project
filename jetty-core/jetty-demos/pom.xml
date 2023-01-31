@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.demos</groupId>
   <artifactId>jetty-demos</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty Core :: Demos</name>
+  <name>Core :: Demos</name>
 
   <modules>
     <module>jetty-demo-handler</module>

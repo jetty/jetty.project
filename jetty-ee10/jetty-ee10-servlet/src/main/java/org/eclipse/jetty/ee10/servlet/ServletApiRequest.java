@@ -421,7 +421,7 @@ public class ServletApiRequest implements HttpServletRequest
         if (_coreSession == null)
             throw new IllegalStateException("Create session failed");
 
-        var cookie = _sessionManager.getSessionCookie(_coreSession, getContextPath(), isSecure());
+        var cookie = _sessionManager.getSessionCookie(_coreSession, isSecure());
 
         if (cookie != null)
             Response.replaceCookie(_request.getResponse(), cookie);
@@ -455,7 +455,7 @@ public class ServletApiRequest implements HttpServletRequest
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
 
         if (getSessionManager().isUsingCookies())
-            Response.replaceCookie(_request.getResponse(), getSessionManager().getSessionCookie(session, getContextPath(), isSecure()));
+            Response.replaceCookie(_request.getResponse(), getSessionManager().getSessionCookie(session, isSecure()));
 
         return session.getId();
     }

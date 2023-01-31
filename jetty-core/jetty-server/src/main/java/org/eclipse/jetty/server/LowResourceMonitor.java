@@ -322,7 +322,7 @@ public class LowResourceMonitor extends ContainerLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        _scheduler = _server.getBean(Scheduler.class);
+        _scheduler = _server.getScheduler();
 
         if (_scheduler == null)
         {

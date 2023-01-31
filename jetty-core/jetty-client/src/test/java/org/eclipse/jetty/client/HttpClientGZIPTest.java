@@ -27,9 +27,9 @@ import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
@@ -242,9 +242,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             }
         });
 
-        ByteBufferPool pool = client.getByteBufferPool();
-        assumeTrue(pool instanceof MappedByteBufferPool);
-        MappedByteBufferPool bufferPool = (MappedByteBufferPool)pool;
+        RetainableByteBufferPool pool = client.getRetainableByteBufferPool();
+        assumeTrue(pool instanceof ArrayRetainableByteBufferPool);
+        ArrayRetainableByteBufferPool bufferPool = (ArrayRetainableByteBufferPool)pool;
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -254,9 +254,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(content, response.getContent());
 
-        long directMemory = bufferPool.getMemory(true);
+        long directMemory = bufferPool.getDirectMemory();
         assertThat(directMemory, lessThan((long)content.length));
-        long heapMemory = bufferPool.getMemory(false);
+        long heapMemory = bufferPool.getHeapMemory();
         assertThat(heapMemory, lessThan((long)content.length));
     }
 

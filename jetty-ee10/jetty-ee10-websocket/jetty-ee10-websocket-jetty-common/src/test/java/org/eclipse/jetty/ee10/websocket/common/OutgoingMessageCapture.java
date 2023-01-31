@@ -20,8 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -42,7 +41,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     public BlockingQueue<ByteBuffer> binaryMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<String> events = new LinkedBlockingDeque<>();
 
-    private final ByteBufferPool bufferPool = new NoopByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new RetainableByteBufferPool.NonPooling();
     private final MethodHandle wholeTextHandle;
     private final MethodHandle wholeBinaryHandle;
     private MessageSink messageSink;
@@ -129,7 +128,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     }
 
     @Override
-    public ByteBufferPool getByteBufferPool()
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
         return bufferPool;
     }

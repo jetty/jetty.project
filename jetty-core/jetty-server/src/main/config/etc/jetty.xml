@@ -24,7 +24,7 @@
 <!-- configuration that may be set here.                             -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-    <Arg name="threadpool"><Ref refid="threadPool"/></Arg>
+    <Arg name="threadPool"><Ref refid="threadPool"/></Arg>
 
     <Call name="addBean">
       <Arg><Ref refid="byteBufferPool"/></Arg>

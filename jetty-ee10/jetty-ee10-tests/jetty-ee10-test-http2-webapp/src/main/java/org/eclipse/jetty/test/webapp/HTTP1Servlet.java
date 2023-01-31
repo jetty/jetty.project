@@ -114,7 +114,7 @@ public class HTTP1Servlet extends HttpServlet
                             else
                             {
                                 // Process the content.
-                                ByteBuffer buffer = data.frame().getData();
+                                ByteBuffer buffer = data.frame().getByteBuffer();
                                 byte[] bytes = new byte[buffer.remaining()];
                                 buffer.get(bytes);
                                 output.write(bytes);

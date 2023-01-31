@@ -170,7 +170,7 @@ public class Dispatcher implements RequestDispatcher
                 checkUriViolations(_uri, baseRequest);
 
                 // If we have already been forwarded previously, then keep using the established
-                // original value. Otherwise, this is the first forward and we need to establish the values.
+                // original value. Otherwise, this is the first forward, and we need to establish the values.
                 // Note: the established value on the original request for pathInfo and
                 // for queryString is allowed to be null, but cannot be null for the other values.
                 // Note: the pathInfo is passed as the pathInContext since it is only used when there is
@@ -178,7 +178,7 @@ public class Dispatcher implements RequestDispatcher
                 if (old_attr.getAttribute(FORWARD_REQUEST_URI) == null)
                     baseRequest.setAttributes(new ForwardAttributes(old_attr,
                         old_uri.getPath(),
-                        old_context.getContextHandler().getContextPathEncoded(),
+                        baseRequest.getContextPath(),
                         baseRequest.getPathInContext(),
                         source_mapping,
                         old_uri.getQuery()));

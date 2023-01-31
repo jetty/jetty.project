@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-server</artifactId>
-  <name>Jetty Core :: Server</name>
+  <name>Core :: Server</name>
   <description>The legacy jetty server artifact.</description>
 
   <properties>
@@ -21,7 +21,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
+            @{argLine} ${jetty.surefire.argLine}
+            --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging
+            --add-reads org.eclipse.jetty.server=java.xml
           </argLine>
         </configuration>
       </plugin>

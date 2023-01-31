@@ -176,7 +176,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             connectionPoolSweeper.remove((Sweeper.Sweepable)connectionPool);
         super.doStop();
         removeBean(connectionPool);
-        connectionPool.close();
     }
 
     protected ConnectionPool newConnectionPool(HttpClient client)

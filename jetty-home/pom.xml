@@ -8,7 +8,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
-  <name>Jetty :: Home Assembly</name>
+  <name>Home</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -132,10 +132,10 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-start,jetty-slf4j-impl,javadoc
+                jetty-ee8-apache-jsp,jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-start,jetty-slf4j-impl,javadoc
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -153,7 +153,7 @@
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                jetty-ee9-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-apache-jsp,jetty-ee10-glassfish-jtl,jetty-start
+                jetty-ee8-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-apache-jsp,jetty-ee10-glassfish-jtl,jetty-start
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
@@ -303,6 +303,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
+              <!-- useful for troubleshooting the source archive of a particular file: <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact> -->
               <includeGroupIds>
                 org.eclipse.jetty, org.eclipse.jetty.websocket
               </includeGroupIds>

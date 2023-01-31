@@ -7,7 +7,7 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee10-test-webapp-rfc2616</artifactId>
-  <name>Tests :: Jetty EE10 RFC2616 WebApp</name>
+  <name>EE10 :: Tests :: RFC2616 WebApp</name>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.rfc2616</bundle-symbolic-name>
