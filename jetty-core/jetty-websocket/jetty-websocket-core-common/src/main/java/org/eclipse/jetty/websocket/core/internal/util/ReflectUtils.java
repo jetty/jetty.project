@@ -63,9 +63,7 @@ public class ReflectUtils
             this.genericType = type;
             this.genericIndex = index;
             if (type instanceof Class)
-            {
                 this.genericClass = (Class<?>)type;
-            }
         }
 
         @Override
@@ -97,13 +95,9 @@ public class ReflectUtils
                     for (int i = 0; i < dimensions; i++)
                     {
                         if (ellipses)
-                        {
                             sb.append("...");
-                        }
                         else
-                        {
                             sb.append("[]");
-                        }
                     }
                     return sb;
                 }
@@ -139,15 +133,9 @@ public class ReflectUtils
     {
         Method[] methods = findAnnotatedMethods(pojo, anno);
         if (methods == null)
-        {
             return null;
-        }
-
         if (methods.length > 1)
-        {
             throw DuplicateAnnotationException.build(pojo, anno, methods);
-        }
-
         return methods[0];
     }
 
@@ -219,61 +207,21 @@ public class ReflectUtils
         }
     }
 
-    private static boolean resolveGenericRef(GenericRef ref, Class<?> clazz, Type type)
-    {
-        if (type instanceof Class)
-        {
-            if (type == ref.ifaceClass)
-            {
-                // is this a straight ref or a TypeVariable?
-                ref.setGenericFromType(type, 0);
-                return true;
-            }
-            else
-            {
-                // Keep digging
-                return resolveGenericRef(ref, type);
-            }
-        }
-
-        if (type instanceof ParameterizedType)
-        {
-            ParameterizedType ptype = (ParameterizedType)type;
-            Type rawType = ptype.getRawType();
-            if (rawType == ref.ifaceClass)
-            {
-                // Always get the raw type parameter, let unwrap() solve for what it is
-                ref.setGenericFromType(ptype.getActualTypeArguments()[0], 0);
-                return true;
-            }
-            else
-            {
-                // Keep digging
-                return resolveGenericRef(ref, rawType);
-            }
-        }
-        return false;
-    }
-
     private static boolean resolveGenericRef(GenericRef ref, Type type)
     {
         if ((type == null) || (type == Object.class))
-        {
             return false;
-        }
 
         if (type instanceof Class<?> clazz)
         {
             // Prevent spinning off into Serialization and other parts of the standard tree that we couldn't care less about.
             if (JAKARTA_CLASSNAME_PATTERN.matcher(clazz.getName()).matches() || JAVAX_CLASSNAME_PATTERN.matcher(clazz.getName()).matches())
-            {
                 return false;
-            }
 
             Type[] ifaces = clazz.getGenericInterfaces();
             for (Type iface : ifaces)
             {
-                if (resolveGenericRef(ref, clazz, iface))
+                if (resolveGenericRef(ref, iface))
                 {
                     if (ref.needsUnwrap())
                     {
@@ -286,9 +234,7 @@ public class ReflectUtils
                             // found a type parameter, use it
                             TypeVariable<?>[] params = clazz.getTypeParameters();
                             if (params.length >= typeParamIdx)
-                            {
                                 ref.setGenericFromType(params[typeParamIdx], typeParamIdx);
-                            }
                         }
                         else if (iface instanceof ParameterizedType)
                         {

@@ -249,13 +249,11 @@ public class InvokerUtils
         }
 
         // Parameter to Calling Argument mapping.
-        // The size of this array must be the the same as the parameterArgs array (or bigger)
+        // The size of this array must be the same as the parameterArgs array (or bigger)
         if (callingArgs.length < parameterTypes.length)
         {
             if (!throwOnFailure)
-            {
                 return null;
-            }
 
             StringBuilder err = new StringBuilder();
             err.append("Target method ");
@@ -274,13 +272,9 @@ public class InvokerUtils
             for (Arg arg : callingArgs)
             {
                 if (arg.name != null)
-                {
                     hasNamedCallingArgs = true;
-                }
                 if (arg.convertible)
-                {
                     hasConvertibleTypes = true;
-                }
                 cTypes.add(arg.getType());
             }
         }
@@ -299,9 +293,7 @@ public class InvokerUtils
             // If callingType and rawType are the same (and there's no named args),
             // then there's no need to reorder / permute / drop args
             if (!hasNamedCallingArgs && !hasNamedParamArgs && rawType.equals(callingType))
-            {
                 return methodHandle;
-            }
 
             // If we reached this point, then we know that the callingType and rawType don't
             // match, so we have to drop and/or permute(reorder) the arguments
@@ -336,9 +328,7 @@ public class InvokerUtils
                 if (ref < 0)
                 {
                     if (!throwOnFailure)
-                    {
                         return null;
-                    }
 
                     StringBuilder err = new StringBuilder();
                     err.append("Invalid mapping of type [");
@@ -364,9 +354,7 @@ public class InvokerUtils
                         if (callingArgs[uci].required)
                         {
                             if (!throwOnFailure)
-                            {
                                 return null;
-                            }
 
                             StringBuilder err = new StringBuilder();
                             err.append("Missing required argument [");
