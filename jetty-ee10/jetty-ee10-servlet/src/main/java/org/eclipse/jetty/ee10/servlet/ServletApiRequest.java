@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -577,9 +576,7 @@ public class ServletApiRequest implements HttpServletRequest
             {
                 try (InputStream is = charsetPart.getInputStream())
                 {
-                    ByteArrayOutputStream os = new ByteArrayOutputStream();
-                    IO.copy(is, os);
-                    formCharset = os.toString(StandardCharsets.UTF_8);
+                    formCharset = IO.toString(is, StandardCharsets.UTF_8);
                 }
             }
 
@@ -602,7 +599,6 @@ public class ServletApiRequest implements HttpServletRequest
                 defaultCharset = StandardCharsets.UTF_8;
 
             long formContentSize = 0;
-            ByteArrayOutputStream os = null;
             for (Part p : parts)
             {
                 if (p.getSubmittedFileName() == null)
@@ -618,16 +614,11 @@ public class ServletApiRequest implements HttpServletRequest
 
                     try (InputStream is = p.getInputStream())
                     {
-                        if (os == null)
-                            os = new ByteArrayOutputStream();
-                        IO.copy(is, os);
-
-                        String content = os.toString(charset == null ? defaultCharset : Charset.forName(charset));
+                        String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
                         if (_contentParameters == null)
                             _contentParameters = new Fields();
                         _contentParameters.add(p.getName(), content);
                     }
-                    os.reset();
                 }
             }
         }

@@ -466,5 +466,4 @@ public class MultiPartServletTest
         assertThat(responseContent, containsString("Parameter: part3=" + contentString));
         assertThat(responseContent, not(containsString("Parameter: partFileName=" + contentString)));
     }
-
 }

@@ -18,7 +18,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.SearchPattern;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -121,18 +121,32 @@ public class MultiPart
      */
     public abstract static class Part
     {
+        private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
+
         private final String name;
         private final String fileName;
         private final HttpFields fields;
-        protected Path path;
+        private final Content.Source contentSource;
+        private Path path;
         private boolean temporary = true;
-        private Content.Source content;
 
         public Part(String name, String fileName, HttpFields fields)
+        {
+            this(name, fileName, fields, null);
+        }
+
+        private Part(String name, String fileName, HttpFields fields, Path path)
         {
             this.name = name;
             this.fileName = fileName;
             this.fields = fields != null ? fields : HttpFields.EMPTY;
+            this.path = path;
+            this.contentSource = newContentSource();
+        }
+
+        private Path getPath()
+        {
+            return path;
         }
 
         /**
@@ -164,7 +178,7 @@ public class MultiPart
 
         /**
          * <p>Returns the content of this part as a {@link Content.Source}.</p>
-         * <p>Calling this method multiple times will return the same instance.</p>
+         * <p>Calling this method multiple times will return the same instance, which can only be consumed once.</p>
          * <p>The content type and content encoding are specified in this part's
          * {@link #getHeaders() headers}.</p>
          * <p>The content encoding may be specified by the part named {@code _charset_},
@@ -176,9 +190,7 @@ public class MultiPart
          */
         public Content.Source getContentSource()
         {
-            if (content == null)
-                content = newContentSource();
-            return content;
+            return contentSource;
         }
 
         /**
@@ -246,6 +258,7 @@ public class MultiPart
          */
         public void writeTo(Path path) throws IOException
         {
+            this.temporary = false;
             if (this.path == null)
             {
                 try (OutputStream out = Files.newOutputStream(path))
@@ -257,7 +270,6 @@ public class MultiPart
             else
             {
                 this.path = Files.move(this.path, path, StandardCopyOption.REPLACE_EXISTING);
-                this.temporary = false;
             }
         }
 
@@ -269,22 +281,22 @@ public class MultiPart
 
         public void close()
         {
-            try
-            {
-                if (temporary)
-                    delete();
-            }
-            catch (Throwable t)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Error closing part {}", this, t);
-            }
+            fail(SENTINEL_CLOSE_EXCEPTION);
         }
 
         public void fail(Throwable t)
         {
-            getContentSource().fail(t);
-            close();
+            try
+            {
+                getContentSource().fail(t);
+                if (temporary)
+                    delete();
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error closing part {}", this, x);
+            }
         }
     }
 
@@ -295,7 +307,6 @@ public class MultiPart
     public static class ByteBufferPart extends Part
     {
         private final List<ByteBuffer> content;
-        private final long length;
 
         public ByteBufferPart(String name, String fileName, HttpFields fields, ByteBuffer... buffers)
         {
@@ -305,14 +316,7 @@ public class MultiPart
         public ByteBufferPart(String name, String fileName, HttpFields fields, List<ByteBuffer> content)
         {
             super(name, fileName, fields);
-            this.length = content.stream().mapToLong(Buffer::remaining).sum();
             this.content = content;
-        }
-
-        @Override
-        public long getLength()
-        {
-            return length;
         }
 
         @Override
@@ -329,7 +333,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                length
+                getLength()
             );
         }
     }
@@ -340,19 +344,11 @@ public class MultiPart
     public static class ChunksPart extends Part
     {
         private final List<Content.Chunk> content;
-        private final long length;
 
         public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
             super(name, fileName, fields);
             this.content = content;
-            this.length = content.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
-        }
-
-        @Override
-        public long getLength()
-        {
-            return length;
         }
 
         @Override
@@ -377,7 +373,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                length
+                getLength()
             );
         }
     }
@@ -389,32 +385,18 @@ public class MultiPart
     {
         public PathPart(String name, String fileName, HttpFields fields, Path path)
         {
-            super(name, fileName, fields);
-            this.path = path;
-        }
-
-        @Override
-        public long getLength()
-        {
-            try
-            {
-                return Files.size(path);
-            }
-            catch (IOException x)
-            {
-                throw new UncheckedIOException(x);
-            }
+            super(name, fileName, fields, path);
         }
 
         public Path getPath()
         {
-            return path;
+            return super.getPath();
         }
 
         @Override
         public Content.Source newContentSource()
         {
-            return new PathContentSource(path);
+            return new PathContentSource(getPath());
         }
 
         @Override
@@ -425,7 +407,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                path
+                getPath()
             );
         }
     }
@@ -459,7 +441,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                content.getLength()
+                getLength()
             );
         }
     }
@@ -881,7 +863,7 @@ public class MultiPart
         }
 
         /**
-         * @return the maximum number of parts that can be parsed from the multipart content (-1 for unlimited parts).
+         * @return the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
          */
         public long getMaxParts()
         {
@@ -889,7 +871,7 @@ public class MultiPart
         }
 
         /**
-         * @param maxParts the maximum number of parts that can be parsed from the multipart content (-1 for unlimited parts).
+         * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
          */
         public void setMaxParts(long maxParts)
         {
@@ -955,7 +937,7 @@ public class MultiPart
                             else if (type == HttpTokens.Type.LF)
                             {
                                 numParts++;
-                                if (numParts > maxParts)
+                                if (maxParts >= 0 && numParts > maxParts)
                                     throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
 
                                 notifyPartBegin();
