@@ -321,7 +321,7 @@ public class Request implements HttpServletRequest
                     Map<String, String> cookieFields = HttpCookie.extractBasics(field.getValue());
                     cookieName = cookieFields.get("name");
                     cookieValue = cookieFields.get("value");
-                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.valueOf(cookieFields.get("max-age")) : -1;
+                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.parseLong(cookieFields.get("max-age")) : -1;
                 }
                 
                 if (cookieMaxAge > 0)
