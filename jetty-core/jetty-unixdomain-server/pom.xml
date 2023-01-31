@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-unixdomain-server</artifactId>
-  <name>Jetty Core :: Unix-Domain Sockets :: Server</name>
+  <name>Core :: Unix-Domain Sockets :: Server</name>
   <description>Jetty Unix-Domain Sockets Server</description>
 
   <properties>

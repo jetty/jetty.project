@@ -81,7 +81,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.parser = new ClientParser(new ResponseListener());
         requests.addLast(0);
         HttpClient client = destination.getHttpClient();
-        this.networkByteBufferPool = client.getByteBufferPool().asRetainableByteBufferPool();
+        this.networkByteBufferPool = client.getRetainableByteBufferPool();
     }
 
     public HttpDestination getHttpDestination()
@@ -161,14 +161,14 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             while (true)
             {
-                if (parse(networkBuffer.getBuffer()))
+                if (parse(networkBuffer.getByteBuffer()))
                     return false;
 
                 if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.
-                int read = endPoint.fill(networkBuffer.getBuffer());
+                int read = endPoint.fill(networkBuffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes from {}", read, endPoint);
 

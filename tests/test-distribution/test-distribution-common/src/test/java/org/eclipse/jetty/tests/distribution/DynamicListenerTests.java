@@ -13,17 +13,14 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.File;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
-import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -33,15 +30,20 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DynamicListenerTests
-    extends AbstractJettyHomeTest
+public class DynamicListenerTests extends AbstractJettyHomeTest
 {
-    @Disabled //TODO websocket.mod broken
+    private Path jettyBase;
+
+    @BeforeEach
+    public void setUp() throws IOException
+    {
+        jettyBase = newTestJettyBaseDirectory();
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee8", "ee9", "ee10"})
     public void testSimpleWebAppWithJSP(String env) throws Exception
     {
-        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyBase(jettyBase)
@@ -49,55 +51,31 @@ public class DynamicListenerTests
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        String[] args1 = {
+        String[] args = {
             "--approve-all-licenses",
-            "--add-modules=resources,server,http,jmx,websocket," +
-                toEnvironment("webapp", env) + "," +
-                toEnvironment("deploy", env) + "," +
-                toEnvironment("apache-jsp", env) + "," +
-                toEnvironment("security", env)
+            "--add-modules=resources,server,http,jmx",
+            "--add-modules=" + toEnvironment("demo-jetty", env)
         };
-        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
-
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jetty-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "test");
-
-            Path etc = Paths.get(jettyBase.toString(), "etc");
-            if (!Files.exists(etc))
-            {
-                Files.createDirectory(etc);
-            }
-
-            Files.copy(Paths.get("src/test/resources/realm.ini"),
-                Paths.get(jettyBase.toString(), "start.d").resolve("realm.ini"));
-            Files.copy(Paths.get("src/test/resources/realm.properties"),
-                etc.resolve("realm.properties"));
-            Files.copy(Paths.get("src/test/resources/test-realm.xml"),
-                       etc.resolve("test-realm.xml"));
-
-            int port = distribution.freePort();
-            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
-            {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
-
-                startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + port + "/test/testservlet/foo");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                String content = response.getContentAsString();
-                System.out.println(content);
-                assertThat(content, containsString("All Good"));
-                assertThat(content, containsString("requestInitialized"));
-                assertThat(content, containsString("requestInitialized"));
-                assertThat(content, not(containsString("<%")));
-            }
         }
-        finally
+
+        int port = distribution.freePort();
+        try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
         {
-            IO.delete(jettyBase.toFile());
+            assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + port + "/" + env + "-test/testservlet/foo");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            System.out.println(content);
+            assertThat(content, containsString("All Good"));
+            assertThat(content, containsString("requestInitialized"));
+            assertThat(content, containsString("requestInitialized"));
+            assertThat(content, not(containsString("<%")));
         }
     }
-
 }

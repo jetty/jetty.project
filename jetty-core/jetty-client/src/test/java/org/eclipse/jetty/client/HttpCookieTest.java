@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -48,7 +49,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                org.eclipse.jetty.server.Response.addCookie(response, new org.eclipse.jetty.http.HttpCookie(name, value));
+                org.eclipse.jetty.server.Response.addCookie(response, org.eclipse.jetty.http.HttpCookie.from(name, value));
             }
         });
 
@@ -179,7 +180,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue);
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue);
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
@@ -234,7 +235,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue);
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue);
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
@@ -290,7 +291,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue, null, "/foo/bar");
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo/bar"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
@@ -346,7 +347,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue, null, "/foo");
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
@@ -403,9 +404,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue1, null, "/foo");
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue1, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
-                    cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue2, null, "/foo");
+                    cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue2, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
@@ -462,9 +463,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue1, null, "/foo");
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue1, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
-                    cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue2, null, "/bar");
+                    cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue2, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/bar"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
@@ -528,9 +529,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue1, null, "/foo");
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue1, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
-                    cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue2, null, "/foo/bar");
+                    cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue2, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo/bar"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
@@ -598,7 +599,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
-                    org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue, null, "/foo/");
+                    org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue, Map.of(org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, "/foo/"));
                     org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else

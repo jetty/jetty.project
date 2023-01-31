@@ -11,7 +11,7 @@
   <artifactId>jetty-simple-base-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>Jetty :: Simple :: Base Webapp</name>
+  <name>Jetty :: Simple :: Base WebApp</name>
 
   <build>
       <plugins>

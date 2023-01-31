@@ -20,6 +20,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,8 +42,9 @@ public class EvictionTest
     @BeforeEach
     public void before()
     {
-        _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
-        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS)
+        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        _decoder = new QpackDecoder(bufferPool, _decoderHandler, MAX_HEADER_SIZE);
+        _encoder = new QpackEncoder(bufferPool, _encoderHandler, MAX_BLOCKED_STREAMS)
         {
             @Override
             protected boolean shouldHuffmanEncode(HttpField httpField)

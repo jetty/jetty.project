@@ -11,7 +11,7 @@
 
   <packaging>war</packaging>
 
-  <name>Test :: Jetty EE10 Test Simple Session Webapp</name>
+  <name>EE10 :: Tests :: Simple Session WebApp</name>
 
   <dependencies>
     <dependency>

@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-demo-jetty-webapp</artifactId>
-  <name>EE10 :: Jetty Demo :: Jetty :: WebApp</name>
+  <name>EE10 :: Demo :: Jetty WebApp</name>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
@@ -115,7 +115,7 @@
               <tempDirectory>${project.build.directory}/work</tempDirectory>
             </webApp>
             <loginServices>
-              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+              <loginService implementation="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
                 <name>Test Realm</name>
                 <config>src/test/resources/test-realm.properties</config>
               </loginService>

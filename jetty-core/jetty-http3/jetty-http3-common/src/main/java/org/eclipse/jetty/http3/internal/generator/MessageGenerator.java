@@ -18,21 +18,21 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class MessageGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public MessageGenerator(QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
+    public MessageGenerator(RetainableByteBufferPool bufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
     {
-        generators[FrameType.DATA.type()] = new DataGenerator(useDirectByteBuffers);
-        generators[FrameType.HEADERS.type()] = new HeadersGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
-        generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator();
+        generators[FrameType.DATA.type()] = new DataGenerator(bufferPool, useDirectByteBuffers);
+        generators[FrameType.HEADERS.type()] = new HeadersGenerator(bufferPool, encoder, maxHeadersLength, useDirectByteBuffers);
+        generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator(bufferPool);
     }
 
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
-        return generators[frame.getFrameType().type()].generate(lease, streamId, frame, fail);
+        return generators[frame.getFrameType().type()].generate(accumulator, streamId, frame, fail);
     }
 }

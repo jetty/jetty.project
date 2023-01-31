@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-websocket-jakarta-common</artifactId>
-  <name>EE10 :: Jetty :: Websocket :: jakarta.websocket :: Common</name>
+  <name>EE10 :: Websocket :: Jakarta Common</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jakarta.common</bundle-symbolic-name>

@@ -33,8 +33,8 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
@@ -140,7 +140,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         startClient(transport);
         client.stop();
-        client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
+        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool(0, bufferSize, -1));
         client.setResponseBufferSize(bufferSize);
         client.start();
 
@@ -322,7 +322,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         startClient(transport);
         client.stop();
-        client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
+        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool(0, bufferSize, -1));
         client.setResponseBufferSize(bufferSize);
         client.start();
 

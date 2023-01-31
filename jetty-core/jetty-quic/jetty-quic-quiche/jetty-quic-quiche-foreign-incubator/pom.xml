@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
-  <name>Jetty Core :: QUIC :: Quiche :: Foreign (Java 17)</name>
+  <name>Core :: QUIC :: Quiche :: Foreign (Java 17)</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quic-quiche-foreign-incubator</bundle-symbolic-name>

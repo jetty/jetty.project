@@ -20,7 +20,9 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public abstract class FrameGenerator
 {
@@ -31,11 +33,11 @@ public abstract class FrameGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public abstract int generate(ByteBufferPool.Lease lease, Frame frame) throws HpackException;
+    public abstract int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException;
 
-    protected ByteBuffer generateHeader(ByteBufferPool.Lease lease, FrameType frameType, int length, int flags, int streamId)
+    protected RetainableByteBuffer generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
-        return headerGenerator.generate(lease, frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        return headerGenerator.generate(frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
 
     public int getMaxFrameSize()
@@ -48,17 +50,19 @@ public abstract class FrameGenerator
         return headerGenerator.isUseDirectByteBuffers();
     }
 
-    protected ByteBuffer encode(HpackEncoder encoder, ByteBufferPool.Lease lease, MetaData metaData, int maxFrameSize) throws HpackException
+    protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData, int maxFrameSize) throws HpackException
     {
-        ByteBuffer hpacked = lease.acquire(maxFrameSize, isUseDirectByteBuffers());
+        RetainableByteBuffer hpacked = headerGenerator.getRetainableByteBufferPool().acquire(maxFrameSize, isUseDirectByteBuffers());
         try
         {
-            encoder.encode(hpacked, metaData);
+            ByteBuffer byteBuffer = hpacked.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
+            encoder.encode(byteBuffer, metaData);
             return hpacked;
         }
         catch (HpackException x)
         {
-            lease.release(hpacked);
+            hpacked.release();
             throw x;
         }
     }

@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-ant</artifactId>
   <packaging>jar</packaging>
-  <name>EE10 :: Jetty :: Ant Plugin</name>
+  <name>EE10 :: Ant Plugin</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.ant</bundle-symbolic-name>

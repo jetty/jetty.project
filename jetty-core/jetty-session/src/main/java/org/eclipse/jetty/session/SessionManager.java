@@ -95,7 +95,7 @@ public interface SessionManager extends LifeCycle, SessionConfig
     
     boolean isIdInUse(String id) throws Exception;
 
-    HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure);
+    HttpCookie getSessionCookie(Session session, boolean requestIsSecure);
 
     void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId) throws Exception;
     

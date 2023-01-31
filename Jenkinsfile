@@ -1,7 +1,7 @@
 #!groovy
 
 pipeline {
-  agent any
+  agent none
   // save some io during the build
   options {
     skipDefaultCheckout()

@@ -411,7 +411,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -425,7 +425,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -462,7 +462,7 @@ public class ForwardProxyWithDynamicTransportTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
                 data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();
@@ -494,7 +494,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -508,7 +508,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -550,7 +550,7 @@ public class ForwardProxyWithDynamicTransportTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
                 data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();

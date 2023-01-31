@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-test-integration</artifactId>
   <packaging>jar</packaging>
-  <name>EE9 :: Jetty Test :: Integrations</name>
+  <name>EE9 :: Tests :: Integration</name>
   <properties>
     <test-wars-dir>${project.build.directory}/test-wars</test-wars-dir>
     <test-libs-dir>${project.build.directory}/test-libs</test-libs-dir>

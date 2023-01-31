@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.util.LeakDetector;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,13 +34,6 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
     {
         super(destination, maxConnections);
         addBean(leakDetector);
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-        LifeCycle.stop(this);
     }
 
     @Override

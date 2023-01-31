@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-quickstart</artifactId>
-  <name>EE8 :: Jetty :: Quick Start</name>
+  <name>EE8 :: Quick Start</name>
   <description>Jetty Quick Start</description>
 
   <properties>

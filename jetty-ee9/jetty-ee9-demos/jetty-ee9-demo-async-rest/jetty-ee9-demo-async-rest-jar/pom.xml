@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-demo-async-rest-jar</artifactId>
   <packaging>jar</packaging>
-  <name>EE9 :: Jetty Demo :: Async Rest :: Jar</name>
+  <name>EE9 :: Demo :: Async Rest :: Jar</name>
 
   <properties>
     <bundle-symbolic-name>${project.parent.groupId}.async.rest</bundle-symbolic-name>

@@ -43,12 +43,8 @@ public class HouseKeeper extends AbstractLifeCycle
     protected boolean _ownScheduler = false;
     private long _intervalMs = DEFAULT_PERIOD_MS;
 
-    /**
-     * Runner
-     */
     protected class Runner implements Runnable
     {
-
         @Override
         public void run()
         {
@@ -104,7 +100,7 @@ public class HouseKeeper extends AbstractLifeCycle
                 if (_sessionIdManager instanceof DefaultSessionIdManager)
                 {
                     //try and use a common scheduler, fallback to own
-                    _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
+                    _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getScheduler();
                 }
 
                 if (_scheduler == null)

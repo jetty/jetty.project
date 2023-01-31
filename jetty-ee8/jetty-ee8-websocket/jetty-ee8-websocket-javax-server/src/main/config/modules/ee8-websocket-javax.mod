@@ -12,9 +12,9 @@ client
 ee8-annotations
 
 [lib]
-lib/ee8-websocket/jetty-websocket-core-common-${jetty.version}.jar
-lib/ee8-websocket/jetty-websocket-core-client-${jetty.version}.jar
-lib/ee8-websocket/jetty-websocket-core-server-${jetty.version}.jar
+lib/jetty-websocket-core-common-${jetty.version}.jar
+lib/jetty-websocket-core-client-${jetty.version}.jar
+lib/jetty-websocket-core-server-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-servlet-${jetty.version}.jar
 lib/ee8-websocket/jetty-javax-websocket-api-@jakarta.websocket.api.version@.jar
 lib/ee8-websocket/jetty-ee8-websocket-javax-client-${jetty.version}.jar

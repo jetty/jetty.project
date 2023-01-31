@@ -150,10 +150,9 @@ public class Session
         _extendedId = extendedId;
     }
 
-    public HttpCookie generateSetCookie(String name, String domain, String path, int maxAge, 
-                                         boolean httpOnly, boolean secure, String comment, int version, Map<String, String> attributes)
+    public HttpCookie generateSetCookie(String name, Map<String, String> attributes)
     {
-        HttpCookie sessionCookie = new HttpCookie(name, getExtendedId(), domain, path, maxAge, httpOnly, secure, comment, version, attributes);
+        HttpCookie sessionCookie = HttpCookie.from(name, getExtendedId(), attributes);
         onSetCookieGenerated();
         return sessionCookie;
     }

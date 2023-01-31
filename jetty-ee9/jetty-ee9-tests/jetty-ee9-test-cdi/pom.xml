@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-test-cdi</artifactId>
   <packaging>jar</packaging>
-  <name>EE9 :: Jetty Test :: CDI</name>
+  <name>EE9 :: Tests :: CDI</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi.tests</bundle-symbolic-name>

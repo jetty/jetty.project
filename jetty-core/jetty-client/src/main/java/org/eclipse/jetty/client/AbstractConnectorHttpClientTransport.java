@@ -52,7 +52,7 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
     {
         HttpClient httpClient = getHttpClient();
         connector.setBindAddress(httpClient.getBindAddress());
-        connector.setByteBufferPool(httpClient.getByteBufferPool());
+        connector.setRetainableByteBufferPool(httpClient.getRetainableByteBufferPool());
         connector.setConnectBlocking(httpClient.isConnectBlocking());
         connector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
         connector.setExecutor(httpClient.getExecutor());

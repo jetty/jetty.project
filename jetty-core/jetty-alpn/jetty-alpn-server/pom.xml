@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-server</artifactId>
-  <name>Jetty Core :: ALPN :: Server</name>
+  <name>Core :: ALPN :: Server</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.server</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.alpn.*</spotbugs.onlyAnalyze>

@@ -27,7 +27,6 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -41,7 +40,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private static final ByteBuffer EMPTY_DATA_FRAME = ByteBuffer.allocate(2);
 
     private final AtomicReference<Runnable> action = new AtomicReference<>();
-    private final RetainableByteBufferPool buffers;
+    private final RetainableByteBufferPool bufferPool;
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
     private HTTP3Stream stream;
@@ -49,10 +48,10 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private boolean applicationMode;
     private boolean remotelyClosed;
 
-    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
+    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, MessageParser parser)
     {
         super(endPoint, executor);
-        this.buffers = byteBufferPool.asRetainableByteBufferPool();
+        this.bufferPool = bufferPool;
         this.parser = parser;
         parser.init(MessageListener::new);
     }
@@ -239,7 +238,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         if (networkBuffer == null)
         {
-            networkBuffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            networkBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
                 LOG.debug("acquired {}", networkBuffer);
         }
@@ -270,7 +269,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
             while (true)
             {
-                ByteBuffer byteBuffer = networkBuffer.getBuffer();
+                ByteBuffer byteBuffer = networkBuffer.getByteBuffer();
                 MessageParser.Result result = parser.parse(byteBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("parsed {} on {} with buffer {}", result, this, networkBuffer);
@@ -280,11 +279,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (networkBuffer.isRetained())
                 {
                     networkBuffer.release();
-                    RetainableByteBuffer newBuffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+                    RetainableByteBuffer newBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
                     if (LOG.isDebugEnabled())
                         LOG.debug("reacquired {} for retained {}", newBuffer, networkBuffer);
                     networkBuffer = newBuffer;
-                    byteBuffer = networkBuffer.getBuffer();
+                    byteBuffer = networkBuffer.getByteBuffer();
                 }
 
                 int filled = fill(byteBuffer);

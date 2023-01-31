@@ -111,7 +111,7 @@ public class CookiesTest
         final String cookiePath = "/path";
         startServer((req, resp, cb) ->
         {
-            org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue, cookieDomain, cookiePath);
+            org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue, Map.of(org.eclipse.jetty.http.HttpCookie.DOMAIN_ATTRIBUTE, cookieDomain, org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, cookiePath));
             Response.addCookie(resp, cookie);
             return new WholeMessageEcho();
         });

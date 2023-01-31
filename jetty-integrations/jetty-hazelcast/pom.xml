@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-hazelcast</artifactId>
-  <name>Jetty :: Hazelcast Session Manager</name>
+  <name>Integrations :: Hazelcast :: Sessions</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.hazelcast</bundle-symbolic-name>

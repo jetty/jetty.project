@@ -35,7 +35,9 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Attributes;
@@ -59,6 +61,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -71,6 +75,8 @@ public class Server extends Handler.Wrapper implements Attributes
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
+    private final Scheduler _scheduler;
+    private final RetainableByteBufferPool _bufferPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
@@ -105,7 +111,7 @@ public class Server extends Handler.Wrapper implements Attributes
         this((ThreadPool)null);
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
-        setConnectors(new Connector[]{connector});
+        addConnector(connector);
         addBean(_attributes);
     }
 
@@ -122,13 +128,22 @@ public class Server extends Handler.Wrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
-        setConnectors(new Connector[]{connector});
+        addConnector(connector);
     }
 
-    public Server(@Name("threadpool") ThreadPool pool)
+    public Server(@Name("threadPool") ThreadPool pool)
     {
-        _threadPool = pool != null ? pool : new QueuedThreadPool();
+        this(pool, null, null);
+    }
+
+    public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") RetainableByteBufferPool bufferPool)
+    {
+        _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
         addBean(_threadPool);
+        _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler();
+        addBean(_scheduler);
+        _bufferPool = bufferPool != null ? bufferPool : new ArrayRetainableByteBufferPool();
+        addBean(_bufferPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);
     }
@@ -398,6 +413,16 @@ public class Server extends Handler.Wrapper implements Attributes
     public ThreadPool getThreadPool()
     {
         return _threadPool;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return _scheduler;
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return _bufferPool;
     }
 
     /**

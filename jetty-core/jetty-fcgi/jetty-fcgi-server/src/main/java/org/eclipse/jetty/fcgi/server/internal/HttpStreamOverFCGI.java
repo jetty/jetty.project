@@ -18,7 +18,6 @@ import java.util.Locale;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
-import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
@@ -229,8 +229,9 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 if (last)
                 {
-                    Generator.Result result = generateResponseContent(true, BufferUtil.EMPTY_BUFFER, callback);
-                    flusher.flush(result);
+                    RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+                    generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
+                    flusher.flush(accumulator, callback);
                 }
                 else
                 {
@@ -240,8 +241,9 @@ public class HttpStreamOverFCGI implements HttpStream
             }
             else
             {
-                Generator.Result result = generateResponseContent(last, content, callback);
-                flusher.flush(result);
+                RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+                generateResponseContent(accumulator, last, content);
+                flusher.flush(accumulator, callback);
             }
 
             if (last && _shutdown)
@@ -258,40 +260,42 @@ public class HttpStreamOverFCGI implements HttpStream
 
         boolean shutdown = _shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
+        RetainableByteBufferPool bufferPool = _generator.getRetainableByteBufferPool();
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
         if (head)
         {
             if (last)
             {
-                Generator.Result headersResult = generateResponseHeaders(info, Callback.NOOP);
-                Generator.Result contentResult = generateResponseContent(true, BufferUtil.EMPTY_BUFFER, callback);
-                flusher.flush(headersResult, contentResult);
+                generateResponseHeaders(accumulator, info);
+                generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
+                flusher.flush(accumulator, callback);
             }
             else
             {
-                Generator.Result headersResult = generateResponseHeaders(info, callback);
-                flusher.flush(headersResult);
+                generateResponseHeaders(accumulator, info);
+                flusher.flush(accumulator, callback);
             }
         }
         else
         {
-            Generator.Result headersResult = generateResponseHeaders(info, Callback.NOOP);
-            Generator.Result contentResult = generateResponseContent(last, content, callback);
-            flusher.flush(headersResult, contentResult);
+            generateResponseHeaders(accumulator, info);
+            generateResponseContent(accumulator, last, content);
+            flusher.flush(accumulator, callback);
         }
 
         if (last && shutdown)
             flusher.shutdown();
     }
 
-    private Generator.Result generateResponseHeaders(MetaData.Response info, Callback callback)
+    private void generateResponseHeaders(RetainableByteBufferPool.Accumulator accumulator, MetaData.Response info)
     {
-        return _generator.generateResponseHeaders(_id, info.getStatus(), info.getReason(), info.getFields(), callback);
+        _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getFields());
     }
 
-    private Generator.Result generateResponseContent(boolean last, ByteBuffer buffer, Callback callback)
+    private void generateResponseContent(RetainableByteBufferPool.Accumulator accumulator, boolean last, ByteBuffer buffer)
     {
-        return _generator.generateResponseContent(_id, buffer, last, _aborted, callback);
+        _generator.generateResponseContent(accumulator, _id, buffer, last, _aborted);
     }
 
     @Override

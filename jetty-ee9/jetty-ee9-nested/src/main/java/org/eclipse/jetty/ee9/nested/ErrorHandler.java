@@ -282,7 +282,7 @@ public class ErrorHandler extends AbstractHandler
         // write into the response aggregate buffer and flush it asynchronously.
         while (true)
         {
-            ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
+            ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getByteBuffer();
             try
             {
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);

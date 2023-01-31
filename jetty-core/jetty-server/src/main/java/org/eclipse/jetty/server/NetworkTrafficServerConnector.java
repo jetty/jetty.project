@@ -17,10 +17,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -49,9 +49,9 @@ public class NetworkTrafficServerConnector extends ServerConnector
         super(server, connectionFactory);
     }
 
-    public NetworkTrafficServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, int selectors, ConnectionFactory... factories)
+    public NetworkTrafficServerConnector(Server server, Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, int acceptors, int selectors, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, pool, acceptors, selectors, factories);
+        super(server, executor, scheduler, bufferPool, acceptors, selectors, factories);
     }
 
     public NetworkTrafficServerConnector(Server server, SslContextFactory.Server sslContextFactory)

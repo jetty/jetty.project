@@ -21,7 +21,8 @@ import java.util.Queue;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -37,9 +38,9 @@ public class ControlFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
-    private final ByteBufferPool.Lease lease;
-    private final ControlGenerator generator;
     private final QuicStreamEndPoint endPoint;
+    private final ControlGenerator generator;
+    private final RetainableByteBufferPool.Accumulator accumulator;
     private boolean initialized;
     private Throwable terminated;
     private List<Entry> entries;
@@ -47,15 +48,16 @@ public class ControlFlusher extends IteratingCallback
 
     public ControlFlusher(QuicSession session, QuicStreamEndPoint endPoint, boolean useDirectByteBuffers)
     {
-        this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
         this.endPoint = endPoint;
-        this.generator = new ControlGenerator(useDirectByteBuffers);
+        RetainableByteBufferPool bufferPool = session.getRetainableByteBufferPool();
+        this.generator = new ControlGenerator(bufferPool, useDirectByteBuffers);
+        this.accumulator = new RetainableByteBufferPool.Accumulator();
     }
 
     public boolean offer(Frame frame, Callback callback)
     {
         Throwable closed;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -70,7 +72,7 @@ public class ControlFlusher extends IteratingCallback
     @Override
     protected Action process()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (queue.isEmpty())
                 return Action.IDLE;
@@ -83,7 +85,7 @@ public class ControlFlusher extends IteratingCallback
 
         for (Entry entry : entries)
         {
-            generator.generate(lease, endPoint.getStreamId(), entry.frame, null);
+            generator.generate(accumulator, endPoint.getStreamId(), entry.frame, null);
             invocationType = Invocable.combine(invocationType, entry.callback.getInvocationType());
         }
 
@@ -93,12 +95,12 @@ public class ControlFlusher extends IteratingCallback
             ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(ControlStreamConnection.STREAM_TYPE));
             VarLenInt.encode(buffer, ControlStreamConnection.STREAM_TYPE);
             buffer.flip();
-            lease.insert(0, buffer, false);
+            accumulator.insert(0, RetainableByteBuffer.wrap(buffer));
         }
 
-        List<ByteBuffer> buffers = lease.getByteBuffers();
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), lease.getTotalLength(), this);
+            LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), accumulator.getTotalLength(), this);
         endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
         return Action.SCHEDULED;
     }
@@ -109,7 +111,7 @@ public class ControlFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entries, this);
 
-        lease.recycle();
+        accumulator.release();
 
         entries.forEach(e -> e.callback.succeeded());
         entries.clear();
@@ -125,11 +127,11 @@ public class ControlFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", entries, this, failure);
 
-        lease.recycle();
+        accumulator.release();
 
         List<Entry> allEntries = new ArrayList<>(entries);
         entries.clear();
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             terminated = failure;
             allEntries.addAll(queue);
@@ -157,21 +159,7 @@ public class ControlFlusher extends IteratingCallback
         return String.format("%s#%s", super.toString(), endPoint.getStreamId());
     }
 
-    private static class Entry
+    private record Entry(Frame frame, Callback callback)
     {
-        private final Frame frame;
-        private final Callback callback;
-
-        private Entry(Frame frame, Callback callback)
-        {
-            this.frame = frame;
-            this.callback = callback;
-        }
-
-        @Override
-        public String toString()
-        {
-            return frame.toString();
-        }
     }
 }

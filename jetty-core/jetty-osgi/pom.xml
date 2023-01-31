@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi</artifactId>
-  <name>Jetty Core :: OSGi</name>
+  <name>Core :: OSGi</name>
   <description>Support for OSGi integration</description>
 
   <properties>

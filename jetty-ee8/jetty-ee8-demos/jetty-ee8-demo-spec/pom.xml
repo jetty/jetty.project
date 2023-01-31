@@ -6,7 +6,7 @@
     <artifactId>jetty-ee8-demos</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <name>EE8 :: Jetty Demo :: Servlet Spec</name>
+  <name>EE8 :: Demo :: Servlet Spec</name>
   <artifactId>jetty-ee8-demo-spec</artifactId>
   <packaging>pom</packaging>
 

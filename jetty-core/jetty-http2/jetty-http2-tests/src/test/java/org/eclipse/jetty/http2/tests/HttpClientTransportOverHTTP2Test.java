@@ -67,10 +67,10 @@ import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -111,7 +111,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertTrue(http2Client.isStarted());
         assertSame(httpClient.getExecutor(), http2Client.getExecutor());
         assertSame(httpClient.getScheduler(), http2Client.getScheduler());
-        assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
+        assertSame(httpClient.getRetainableByteBufferPool(), http2Client.getRetainableByteBufferPool());
         assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
         assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
         assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
@@ -541,9 +541,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         resultLatch.countDown();
                 });
 
-            ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            Generator generator = new Generator(byteBufferPool);
+            RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())
             {
@@ -551,7 +551,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 OutputStream output = socket.getOutputStream();
                 InputStream input = socket.getInputStream();
 
-                ServerParser parser = new ServerParser(byteBufferPool, new ServerParser.Listener.Adapter()
+                ServerParser parser = new ServerParser(bufferPool, new ServerParser.Listener.Adapter()
                 {
                     @Override
                     public void onPreface()
@@ -559,9 +559,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Server's preface.
-                            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+                            generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
                             // Reply to client's SETTINGS.
-                            generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                            generator.control(accumulator, new SettingsFrame(new HashMap<>(), true));
                             writeFrames();
                         }
                         catch (HpackException x)
@@ -578,7 +578,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             // Response.
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
-                            generator.control(lease, response);
+                            generator.control(accumulator, response);
                             writeFrames();
                         }
                         catch (HpackException x)
@@ -592,11 +592,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Write the frames.
-                            for (ByteBuffer buffer : lease.getByteBuffers())
+                            for (ByteBuffer buffer : accumulator.getByteBuffers())
                             {
                                 output.write(BufferUtil.toArray(buffer));
                             }
-                            lease.recycle();
+                            accumulator.release();
                         }
                         catch (Throwable x)
                         {

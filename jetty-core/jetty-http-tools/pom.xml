@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http-tools</artifactId>
-  <name>Jetty :: HTTP Testing Utilities</name>
+  <name>Core :: HTTP Tools</name>
 
   <dependencies>
     <dependency>

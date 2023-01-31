@@ -7,8 +7,8 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jmh</artifactId>
-  <name>Jetty :: Jmh</name>
-  <description>Jmh classes for Jetty</description>
+  <name>Tests :: JMH</name>
+  <description>JMH Tests</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmh</bundle-symbolic-name>

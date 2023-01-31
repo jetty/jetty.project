@@ -1,9 +1,2 @@
-[description]
-Enable both jetty and jakarta websocket jetty modules for deployed web applications.
-
-[tags]
-websocket
-
-[depend]
-websocket-jetty
-websocket-jakarta
+# Empty on purpose
+# TODO delete me after beta release

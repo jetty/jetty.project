@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>jetty-ee8-bom</artifactId>
-  <name>EE8 :: Jetty :: BOM</name>
+  <name>EE8 :: BOM</name>
   <description>Jetty EE8 APIs BOM artifact</description>
   <packaging>pom</packaging>
 

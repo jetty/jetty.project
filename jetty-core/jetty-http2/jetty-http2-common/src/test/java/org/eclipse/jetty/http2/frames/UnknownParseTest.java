@@ -21,8 +21,8 @@ import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class UnknownParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testParse()
@@ -48,7 +48,7 @@ public class UnknownParseTest
     public void testInvalidFrameSize()
     {
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter(), 4096, 8192);
         parser.init(listener -> new Parser.Listener.Wrapper(listener)
         {
             @Override
@@ -73,7 +73,7 @@ public class UnknownParseTest
     private void testParse(Function<ByteBuffer, ByteBuffer> fn)
     {
         AtomicBoolean failure = new AtomicBoolean();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)

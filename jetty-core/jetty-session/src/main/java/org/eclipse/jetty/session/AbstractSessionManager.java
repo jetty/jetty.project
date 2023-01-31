@@ -73,17 +73,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private SessionCache _sessionCache;
     private Scheduler _scheduler;
     private boolean _ownScheduler = false;
-    private boolean _httpOnly = false;
     private String _sessionCookie = __DefaultSessionCookie;
     private String _sessionIdPathParameterName = __DefaultSessionIdPathParameterName;
     private String _sessionIdPathParameterNamePrefix = ";" + _sessionIdPathParameterName + "=";
-    private String _sessionDomain;
-    private String _sessionPath;
-    private String _sessionComment;
     private final Map<String, String> _sessionAttributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private boolean _secureCookies = false;
+    private Map<String, String> _sessionAttributesSecure;
     private boolean _secureRequestOnly = true;
-    private int _maxCookieAge = -1;
     private int _refreshCookieAge;
     private boolean _checkingRemoteSessionIdEncoding;
     
@@ -117,7 +112,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     (getMaxCookieAge() > 0 && getRefreshCookieAge() > 0 &&
                         ((now - session.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
             {
-                return getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);
+                return getSessionCookie(session, secure);
             }
         }
         return null;
@@ -244,6 +239,11 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _context = ContextHandler.getCurrentContext();
         _loader = Thread.currentThread().getContextClassLoader();
 
+        // ensure a session path is set for non root contexts
+        String contextPath = _context == null ? "/" : _context.getContextPath();
+        if (!"/".equals(contextPath) && getSessionPath() == null)
+            setSessionPath(contextPath);
+
         // Use a coarser lock to serialize concurrent start of many contexts.
         synchronized (server)
         {
@@ -289,7 +289,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 addBean(_sessionIdManager, false);
             }
 
-            _scheduler = server.getBean(Scheduler.class);
+            _scheduler = server.getScheduler();
             if (_scheduler == null)
             {
                 _scheduler = new ScheduledExecutorScheduler(String.format("Session-Scheduler-%x", hashCode()), false);
@@ -301,6 +301,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _sessionContext = new SessionContext(this);
         _sessionCache.initialize(_sessionContext);
 
+        secureRequestOnlyAttributes();
         super.doStart();
     }
     
@@ -312,13 +313,15 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public int getMaxCookieAge()
     {
-        return _maxCookieAge;
+        String mca = _sessionAttributes.get(HttpCookie.MAX_AGE_ATTRIBUTE);
+        return mca == null ? -1 : Integer.parseInt(mca);
     }
 
     @Override
     public void setMaxCookieAge(int maxCookieAge)
     {
-        _maxCookieAge = maxCookieAge;
+        _sessionAttributes.put(HttpCookie.MAX_AGE_ATTRIBUTE, Integer.toString(maxCookieAge));
+        secureRequestOnlyAttributes();
     }
 
     /**
@@ -447,13 +450,27 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public String getSessionComment()
     {
-        return _sessionComment;
+        return _sessionAttributes.get(HttpCookie.COMMENT_ATTRIBUTE);
     }
 
     @Override
     public void setSessionComment(String sessionComment)
     {
-        _sessionComment = sessionComment;
+        _sessionAttributes.put(HttpCookie.COMMENT_ATTRIBUTE, sessionComment);
+        secureRequestOnlyAttributes();
+    }
+
+    @Override
+    public HttpCookie.SameSite getSameSite()
+    {
+        return HttpCookie.SameSite.from(_sessionAttributes.get(HttpCookie.SAME_SITE_ATTRIBUTE));
+    }
+
+    @Override
+    public void setSameSite(HttpCookie.SameSite sessionSameSite)
+    {
+        _sessionAttributes.put(HttpCookie.SAME_SITE_ATTRIBUTE, sessionSameSite.getAttributeValue());
+        secureRequestOnlyAttributes();
     }
 
     public SessionContext getSessionContext()
@@ -479,18 +496,20 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public String getSessionDomain()
     {
-        return _sessionDomain;
+        return _sessionAttributes.get(HttpCookie.DOMAIN_ATTRIBUTE);
     }
     
     @Override
     public void setSessionDomain(String domain)
     {
-        _sessionDomain = domain;
+        _sessionAttributes.put(HttpCookie.DOMAIN_ATTRIBUTE, domain);
+        secureRequestOnlyAttributes();
     }
     
     public void setSessionAttribute(String name, String value)
     {
         _sessionAttributes.put(name, value);
+        secureRequestOnlyAttributes();
     }
     
     public String getSessionAttribute(String name)
@@ -564,13 +583,14 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public String getSessionPath()
     {
-        return _sessionPath;
+        return _sessionAttributes.get(HttpCookie.PATH_ATTRIBUTE);
     }
 
     @Override
     public void setSessionPath(String sessionPath)
     {
-        _sessionPath = sessionPath;
+        _sessionAttributes.put(HttpCookie.PATH_ATTRIBUTE, sessionPath);
+        secureRequestOnlyAttributes();
     }
     
     /**
@@ -687,7 +707,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public boolean isHttpOnly()
     {
-        return _httpOnly;
+        return Boolean.parseBoolean(_sessionAttributes.get(HttpCookie.HTTP_ONLY_ATTRIBUTE));
     }
 
     /**
@@ -699,7 +719,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public void setHttpOnly(boolean httpOnly)
     {
-        _httpOnly = httpOnly;
+        _sessionAttributes.put(HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(httpOnly));
     }
     
     /**
@@ -724,13 +744,14 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public boolean isSecureCookies()
     {
-        return _secureCookies;
+        return Boolean.parseBoolean(_sessionAttributes.get(HttpCookie.SECURE_ATTRIBUTE));
     }
     
     @Override
     public void setSecureCookies(boolean secure)
     {
-        _secureCookies = secure;
+        _sessionAttributes.put(HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(secure));
+        secureRequestOnlyAttributes();
     }
 
     /**
@@ -752,6 +773,22 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public void setSecureRequestOnly(boolean secureRequestOnly)
     {
         _secureRequestOnly = secureRequestOnly;
+        secureRequestOnlyAttributes();
+    }
+
+    private void secureRequestOnlyAttributes()
+    {
+        if (isSecureRequestOnly() && !Boolean.parseBoolean(_sessionAttributes.get(HttpCookie.SECURE_ATTRIBUTE)))
+        {
+            Map<String, String> attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            attributes.putAll(_sessionAttributes);
+            attributes.put(HttpCookie.SECURE_ATTRIBUTE, Boolean.TRUE.toString());
+            _sessionAttributesSecure = attributes;
+        }
+        else
+        {
+            _sessionAttributesSecure = _sessionAttributes;
+        }
     }
     
     /**
@@ -1134,6 +1171,55 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     
     public record RequestedSession(Session session, String sessionId, boolean sessionIdFromCookie)
     {
+    }
+
+    /**
+     * A session cookie is marked as secure IFF any of the following conditions are true:
+     * <ol>
+     * <li>SessionCookieConfig.setSecure == true</li>
+     * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
+     * </ol>
+     * According to SessionCookieConfig javadoc, case 1 can be used when:
+     * "... even though the request that initiated the session came over HTTP,
+     * is to support a topology where the web container is front-ended by an
+     * SSL offloading load balancer. In this case, the traffic between the client
+     * and the load balancer will be over HTTPS, whereas the traffic between the
+     * load balancer and the web container will be over HTTP."
+     * <p>
+     * For case 2, you can use _secureRequestOnly to determine if you want the
+     * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
+     * which is:
+     * <cite>
+     * "they shall be marked as secure only if the request that initiated the
+     * corresponding session was also secure"
+     * </cite>
+     * <p>
+     * The default for _secureRequestOnly is true, which gives the above behavior. If
+     * you set it to false, then a session cookie is NEVER marked as secure, even if
+     * the initiating request was secure.
+     *
+     * @param session the session to which the cookie should refer.
+     * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
+     * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
+     * {@link HttpCookie cookie object} that should be set on the client in order to link future HTTP requests
+     * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
+     */
+    @Override
+    public HttpCookie getSessionCookie(Session session, boolean requestIsSecure)
+    {
+        if (isUsingCookies())
+        {
+            String name = getSessionCookie();
+            if (name == null)
+                name = _sessionAttributes.get("name");
+            if (name == null)
+                name =  __DefaultSessionCookie;
+            if (isSecureRequestOnly() && requestIsSecure && _sessionAttributesSecure != null && _sessionAttributes != _sessionAttributesSecure)
+                return session.generateSetCookie(name, _sessionAttributesSecure);
+            return session.generateSetCookie(name, _sessionAttributes);
+        }
+
+        return null;
     }
 
     /**

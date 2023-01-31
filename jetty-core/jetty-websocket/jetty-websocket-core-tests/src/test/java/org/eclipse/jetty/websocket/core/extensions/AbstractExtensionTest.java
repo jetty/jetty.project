@@ -26,7 +26,7 @@ public abstract class AbstractExtensionTest
     @BeforeEach
     public void init()
     {
-        clientExtensions = new ExtensionTool(components.getBufferPool());
-        serverExtensions = new ExtensionTool(components.getBufferPool());
+        clientExtensions = new ExtensionTool();
+        serverExtensions = new ExtensionTool();
     }
 }
