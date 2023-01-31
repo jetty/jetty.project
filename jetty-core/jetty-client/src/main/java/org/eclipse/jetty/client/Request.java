@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -30,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -188,13 +188,30 @@ public interface Request
     /**
      * @return the cookies associated with this request
      */
-    List<HttpCookie> getCookies();
+    List<java.net.HttpCookie> getCookies();
+
+    /**
+     * @return the cookies associated with this request
+     */
+    default List<HttpCookie> getHttpCookies()
+    {
+        return getCookies().stream().map(HttpCookie::from).toList();
+    }
 
     /**
      * @param cookie a cookie for this request
      * @return this request object
      */
-    Request cookie(HttpCookie cookie);
+    Request cookie(java.net.HttpCookie cookie);
+
+    /**
+     * @param cookie a cookie for this request
+     * @return this request object
+     */
+    default Request cookie(HttpCookie cookie)
+    {
+        return cookie(HttpCookie.asJavaNetHttpCookie(cookie));
+    }
 
     /**
      * <p>Tags this request with the given metadata tag.</p>

@@ -110,8 +110,8 @@ public interface HttpCookie
      * @param value the value of the cookie
      * @param attributes the map of attributes to use with this cookie (this map is used for field values
      *   such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     *   {@link #isSecure()}, {@link #getComment()}.  These attributes are removed from the stored
-     *   attributes returned from {@link #getAttributes()}.
+     *   {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
+     *   code base.
      */
     static HttpCookie from(String name, String value, Map<String, String> attributes)
     {
@@ -126,8 +126,8 @@ public interface HttpCookie
      * @param version the version of the cookie (only used in RFC2965 mode)
      * @param attributes the map of attributes to use with this cookie (this map is used for field values
      *   such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     *   {@link #isSecure()}, {@link #getComment()}.  These attributes are removed from the stored
-     *   attributes returned from {@link #getAttributes()}.
+     *   {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
+     *   code base.
      */
     static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
     {
@@ -333,7 +333,7 @@ public interface HttpCookie
             _name = name;
             _value = value;
             _version = version;
-            _attributes = attributes == null ? Collections.emptyMap() : attributes;
+            _attributes = attributes == null || attributes.isEmpty() ? Collections.emptyMap() : attributes;
         }
 
         /**
