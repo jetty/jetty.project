@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee9.session.SessionTestSupport;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;

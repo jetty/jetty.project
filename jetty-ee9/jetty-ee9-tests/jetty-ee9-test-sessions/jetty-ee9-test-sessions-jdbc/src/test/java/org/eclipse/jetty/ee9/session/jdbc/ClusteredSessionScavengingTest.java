@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.session.jdbc;
 
 import org.eclipse.jetty.ee9.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.junit.jupiter.Testcontainers;

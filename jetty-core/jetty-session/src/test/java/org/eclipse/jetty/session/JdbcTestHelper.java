@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session.jdbc;
+package org.eclipse.jetty.session;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,12 +26,6 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.session.DatabaseAdaptor;
-import org.eclipse.jetty.session.DatabaseTestHelper;
-import org.eclipse.jetty.session.JDBCSessionDataStore;
-import org.eclipse.jetty.session.JDBCSessionDataStoreFactory;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,6 +117,16 @@ public class JdbcTestHelper
         return DriverManager.getConnection(DEFAULT_CONNECTION_URL);
     }
 
+    public static void setDatabaseAdaptor(JDBCSessionDataStore.SessionTableSchema sessionTableSchema, DatabaseAdaptor databaseAdaptor)
+    {
+        sessionTableSchema.setDatabaseAdaptor(databaseAdaptor);
+    }
+
+    public static Connection getConnection(DatabaseAdaptor databaseAdaptor) throws SQLException
+    {
+        return databaseAdaptor.getConnection();
+    }
+
     /**
      * @return a fresh JDBCSessionDataStoreFactory
      */
@@ -162,8 +166,7 @@ public class JdbcTestHelper
     {
         DatabaseAdaptor da = buildDatabaseAdaptor();
         JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema();
-        DatabaseTestHelper.setDatabaseAdaptor(sessionTableSchema, da);
-
+        sessionTableSchema.setDatabaseAdaptor(da);
         sessionTableSchema.prepareTables();
     }
     

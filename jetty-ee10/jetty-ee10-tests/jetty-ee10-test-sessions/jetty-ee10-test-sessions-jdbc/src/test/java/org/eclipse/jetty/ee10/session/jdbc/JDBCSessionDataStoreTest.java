@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.session.jdbc;
 
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;

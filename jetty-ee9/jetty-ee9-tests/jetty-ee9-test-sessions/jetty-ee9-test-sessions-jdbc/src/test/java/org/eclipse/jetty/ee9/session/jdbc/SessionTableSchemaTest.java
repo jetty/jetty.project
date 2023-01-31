@@ -21,9 +21,9 @@ import java.sql.ResultSet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DatabaseAdaptor;
-import org.eclipse.jetty.session.DatabaseTestHelper;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.JDBCSessionDataStore;
+import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterEach;
@@ -60,7 +60,7 @@ public class SessionTableSchemaTest
         };
         _da.setDriverInfo(JdbcTestHelper.DRIVER_CLASS, JdbcTestHelper.DEFAULT_CONNECTION_URL);
         _tableSchema = JdbcTestHelper.newSessionTableSchema();
-        DatabaseTestHelper.setDatabaseAdaptor(_tableSchema, _da);
+        JdbcTestHelper.setDatabaseAdaptor(_tableSchema, _da);
     }
 
     @AfterEach
@@ -122,7 +122,7 @@ public class SessionTableSchemaTest
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
         //test if it can be seen
-        try (Connection con = DatabaseTestHelper.getConnection(_da))
+        try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             //make a root context
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -150,7 +150,7 @@ public class SessionTableSchemaTest
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
         //test if it can be seen
-        try (Connection con = DatabaseTestHelper.getConnection(_da))
+        try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
             handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
@@ -177,7 +177,7 @@ public class SessionTableSchemaTest
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
         //test if it can be deleted
-        try (Connection con = DatabaseTestHelper.getConnection(_da))
+        try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
             handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
@@ -203,7 +203,7 @@ public class SessionTableSchemaTest
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
-        try (Connection con = DatabaseTestHelper.getConnection(_da))
+        try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
             handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
@@ -232,7 +232,7 @@ public class SessionTableSchemaTest
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
-        try (Connection con = DatabaseTestHelper.getConnection(_da))
+        try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
             DefaultSessionIdManager idMgr = new DefaultSessionIdManager(new Server());
@@ -262,7 +262,7 @@ public class SessionTableSchemaTest
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
-        try (Connection con = DatabaseTestHelper.getConnection(_da))
+        try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
             handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
