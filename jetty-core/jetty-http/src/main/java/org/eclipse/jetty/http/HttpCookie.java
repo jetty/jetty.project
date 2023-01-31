@@ -156,6 +156,55 @@ public interface HttpCookie
         return new Immutable(cookie.getName(), cookie.getValue(), cookie.getVersion(), attributes);
     }
 
+    static HttpCookie from(java.net.HttpCookie httpCookie)
+    {
+        return new JavaNetHttpCookie(httpCookie);
+    }
+
+    static Builder build(String name, String value)
+    {
+        return new Builder(name, value);
+    }
+
+    static Builder build(String name, String value, int version)
+    {
+        return new Builder(name, value, version);
+    }
+
+    static Builder build(HttpCookie httpCookie)
+    {
+        Builder builder = new Builder(httpCookie.getName(), httpCookie.getValue(), httpCookie.getVersion());
+        for (Map.Entry<String, String> entry : httpCookie.getAttributes().entrySet())
+            builder = builder.attribute(entry.getKey(), entry.getValue());
+        return builder;
+    }
+
+    static Builder build(java.net.HttpCookie httpCookie)
+    {
+        return new Builder(httpCookie.getName(), httpCookie.getValue(), httpCookie.getVersion())
+            .comment(httpCookie.getComment())
+            .domain(httpCookie.getDomain())
+            .httpOnly(httpCookie.isHttpOnly())
+            .maxAge(httpCookie.getMaxAge())
+            .path(httpCookie.getPath())
+            .secure(httpCookie.getSecure());
+    }
+
+    static java.net.HttpCookie asJavaNetHttpCookie(HttpCookie httpCookie)
+    {
+        if (httpCookie.getSameSite() != null)
+            throw new IllegalArgumentException("SameSite is not supported by java.net.Cookie");
+        java.net.HttpCookie cookie = new java.net.HttpCookie(httpCookie.getName(), httpCookie.getValue());
+        cookie.setVersion(httpCookie.getVersion());
+        cookie.setComment(httpCookie.getComment());
+        cookie.setDomain(httpCookie.getDomain());
+        cookie.setHttpOnly(httpCookie.isHttpOnly());
+        cookie.setMaxAge(httpCookie.getMaxAge());
+        cookie.setPath(httpCookie.getPath());
+        cookie.setSecure(httpCookie.isSecure());
+        return cookie;
+    }
+
     /**
      * @return the cookie name
      */
@@ -279,25 +328,7 @@ public interface HttpCookie
         private final int _version;
         private final Map<String, String> _attributes;
 
-        Immutable(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite, Map<String, String> attributes)
-        {
-            _name = name;
-            _value = value;
-            _version = version;
-            Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            if (attributes != null)
-                attrs.putAll(attributes);
-            attrs.put(DOMAIN_ATTRIBUTE, domain);
-            attrs.put(PATH_ATTRIBUTE, path);
-            attrs.put(MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
-            attrs.put(HTTP_ONLY_ATTRIBUTE, Boolean.toString(httpOnly));
-            attrs.put(SECURE_ATTRIBUTE, Boolean.toString(secure));
-            attrs.put(COMMENT_ATTRIBUTE, comment);
-            attrs.put(SAME_SITE_ATTRIBUTE, sameSite == null ? null : sameSite.getAttributeValue());
-            _attributes = Collections.unmodifiableMap(attrs);
-        }
-
-        Immutable(String name, String value, int version, Map<String, String> attributes)
+        private Immutable(String name, String value, int version, Map<String, String> attributes)
         {
             _name = name;
             _value = value;
@@ -737,5 +768,204 @@ public interface HttpCookie
             return cookie; //no default set
 
         return HttpCookie.from(cookie, HttpCookie.SAME_SITE_ATTRIBUTE, contextDefault.getAttributeValue());
+    }
+
+    class JavaNetHttpCookie implements HttpCookie
+    {
+        private final java.net.HttpCookie _httpCookie;
+        private Map<String, String> _attributes;
+
+        private JavaNetHttpCookie(java.net.HttpCookie httpCookie)
+        {
+            _httpCookie = httpCookie;
+        }
+
+        @Override
+        public String getComment()
+        {
+            return _httpCookie.getComment();
+        }
+
+        @Override
+        public String getDomain()
+        {
+            return _httpCookie.getDomain();
+        }
+
+        @Override
+        public long getMaxAge()
+        {
+            return _httpCookie.getMaxAge();
+        }
+
+        @Override
+        public String getPath()
+        {
+            return _httpCookie.getPath();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return _httpCookie.getSecure();
+        }
+
+        @Override
+        public String getName()
+        {
+            return _httpCookie.getName();
+        }
+
+        @Override
+        public String getValue()
+        {
+            return _httpCookie.getValue();
+        }
+
+        @Override
+        public int getVersion()
+        {
+            return _httpCookie.getVersion();
+        }
+
+        @Override
+        public boolean isHttpOnly()
+        {
+            return _httpCookie.isHttpOnly();
+        }
+
+        @Override
+        public Map<String, String> getAttributes()
+        {
+            if (_attributes == null)
+            {
+                Map<String, String> attributes = lazyAttributePut(null, COMMENT_ATTRIBUTE, getComment());
+                attributes = lazyAttributePut(attributes, DOMAIN_ATTRIBUTE, getDomain());
+                if (isHttpOnly())
+                    attributes = lazyAttributePut(attributes, HTTP_ONLY_ATTRIBUTE, Boolean.TRUE.toString());
+                if (getMaxAge() >= 0)
+                    attributes = lazyAttributePut(attributes, MAX_AGE_ATTRIBUTE, Long.toString(getMaxAge()));
+                attributes = lazyAttributePut(attributes, PATH_ATTRIBUTE, getPath());
+                if (isSecure())
+                    attributes = lazyAttributePut(attributes, SECURE_ATTRIBUTE,  Boolean.TRUE.toString());
+                _attributes = HttpCookie.lazyAttributes(attributes);
+            }
+            return _attributes;
+        }
+    }
+
+    /**
+     * A HttpCookie Builder
+     * @see HttpCookie#build(String, String)
+     */
+    class Builder
+    {
+        private final String _name;
+        private final String _value;
+        private final int _version;
+        private Map<String, String> _attributes;
+
+        private Builder(String name, String value)
+        {
+            this(name, value, 0);
+        }
+
+        private Builder(String name, String value, int version)
+        {
+            _name = name;
+            _value = value;
+            _version = version;
+        }
+
+        public Builder attribute(String name, String value)
+        {
+            _attributes = lazyAttributePut(_attributes, name, value);
+            return this;
+        }
+
+        public Builder comment(String comment)
+        {
+            _attributes = lazyAttributePut(_attributes, COMMENT_ATTRIBUTE, comment);
+            return this;
+        }
+
+        public Builder domain(String domain)
+        {
+            _attributes = lazyAttributePut(_attributes, DOMAIN_ATTRIBUTE, domain);
+            return this;
+        }
+
+        public Builder httpOnly()
+        {
+            _attributes = lazyAttributePut(_attributes, HTTP_ONLY_ATTRIBUTE, Boolean.TRUE.toString());
+            return this;
+        }
+
+        public Builder httpOnly(boolean httpOnly)
+        {
+            if (httpOnly)
+                _attributes = lazyAttributePut(_attributes, HTTP_ONLY_ATTRIBUTE, Boolean.TRUE.toString());
+            else
+                _attributes = lazyAttributeRemove(_attributes, HTTP_ONLY_ATTRIBUTE);
+            return this;
+        }
+
+        public Builder maxAge(long maxAge)
+        {
+            if (maxAge >= 0)
+                _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
+            else
+                _attributes = lazyAttributeRemove(_attributes, MAX_AGE_ATTRIBUTE);
+            return this;
+        }
+
+        public Builder path(String path)
+        {
+            _attributes = lazyAttributePut(_attributes, PATH_ATTRIBUTE, path);
+            return this;
+        }
+
+        public Builder secure()
+        {
+            _attributes = lazyAttributePut(_attributes, SECURE_ATTRIBUTE, Boolean.TRUE.toString());
+            return this;
+        }
+
+        public Builder secure(boolean secure)
+        {
+            if (secure)
+                _attributes = lazyAttributePut(_attributes, SECURE_ATTRIBUTE, Boolean.TRUE.toString());
+            else
+                _attributes = lazyAttributeRemove(_attributes, SECURE_ATTRIBUTE);
+            return this;
+        }
+
+        public HttpCookie build()
+        {
+            return new Immutable(_name, _value, _version, lazyAttributes(_attributes));
+        }
+    }
+
+    private static Map<String, String> lazyAttributePut(Map<String, String> attributes, String key, String value)
+    {
+        if (value == null)
+            return attributes;
+        if (attributes == null)
+            attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        attributes.put(key, value);
+        return attributes;
+    }
+
+    private static Map<String, String> lazyAttributeRemove(Map<String, String> attributes, String key)
+    {
+        if (attributes == null)
+            return null;
+        attributes.remove(key);
+        return attributes;
+    }
+
+    private static Map<String, String> lazyAttributes(Map<String, String> attributes)
+    {
+        return attributes == null || attributes.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(attributes);
     }
 }

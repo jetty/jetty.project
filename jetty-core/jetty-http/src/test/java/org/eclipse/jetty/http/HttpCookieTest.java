@@ -25,7 +25,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anEmptyMap;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -255,4 +259,106 @@ public class HttpCookieTest
         HttpCookie.from("name", goodValueExample, -1, Map.of(HttpCookie.PATH_ATTRIBUTE, "/", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
         // should not throw an exception
     }
+
+    @Test
+    public void testBuilderSimple()
+    {
+        HttpCookie httpCookie = HttpCookie.build("name", "value").build();
+        assertThat(httpCookie.getName(), equalToIgnoringCase("name"));
+        assertThat(httpCookie.getValue(), equalTo("value"));
+        assertThat(httpCookie.getVersion(), equalTo(0));
+        assertThat(httpCookie.getAttributes(), anEmptyMap());
+    }
+
+    @Test
+    public void testBuilderNull()
+    {
+        HttpCookie httpCookie = HttpCookie.build("name", "value")
+            .attribute(null, null)
+            .comment(null)
+            .domain(null)
+            .httpOnly(false)
+            .maxAge(-1)
+            .secure(false)
+            .path(null)
+            .build();
+        assertThat(httpCookie.getName(), equalToIgnoringCase("name"));
+        assertThat(httpCookie.getValue(), equalTo("value"));
+        assertThat(httpCookie.getVersion(), equalTo(0));
+        assertThat(httpCookie.getAttributes(), anEmptyMap());
+    }
+
+    @Test
+    public void testBuilderFull()
+    {
+        HttpCookie httpCookie = HttpCookie.build("name", "value")
+            .attribute("some", "value")
+            .comment("comment")
+            .domain("domain")
+            .httpOnly(true)
+            .maxAge(42)
+            .secure(true)
+            .path("/path")
+            .build();
+        assertThat(httpCookie.getName(), equalToIgnoringCase("name"));
+        assertThat(httpCookie.getValue(), equalTo("value"));
+        assertThat(httpCookie.getVersion(), equalTo(0));
+        assertThat(httpCookie.getAttributes().keySet(), containsInAnyOrder(
+            "some",
+            HttpCookie.COMMENT_ATTRIBUTE,
+            HttpCookie.DOMAIN_ATTRIBUTE,
+            HttpCookie.HTTP_ONLY_ATTRIBUTE,
+            HttpCookie.MAX_AGE_ATTRIBUTE,
+            HttpCookie.SECURE_ATTRIBUTE,
+            HttpCookie.PATH_ATTRIBUTE));
+        assertThat(httpCookie.getAttributes().values(), containsInAnyOrder(
+            "value",
+            Boolean.TRUE.toString(),
+            Boolean.TRUE.toString(),
+            "comment",
+            "domain",
+            "42",
+            "/path"));
+    }
+
+    @Test
+    public void testJavaNetHttpCookie()
+    {
+        java.net.HttpCookie cookie = new java.net.HttpCookie("name", "value");
+        cookie.setVersion(1);
+        cookie.setComment("comment");
+        cookie.setDomain("domain");
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(42);
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+
+        HttpCookie httpCookie = HttpCookie.from(cookie);
+
+        assertThat(httpCookie.getName(), equalTo("name"));
+        assertThat(httpCookie.getValue(), equalTo("value"));
+        assertThat(httpCookie.getVersion(), equalTo(1));
+        assertThat(httpCookie.getDomain(), equalTo("domain"));
+        assertThat(httpCookie.getMaxAge(), equalTo(42L));
+        assertThat(httpCookie.isSecure(), equalTo(true));
+
+        assertThat(httpCookie.getAttributes().keySet(), containsInAnyOrder(
+            HttpCookie.COMMENT_ATTRIBUTE,
+            HttpCookie.DOMAIN_ATTRIBUTE,
+            HttpCookie.HTTP_ONLY_ATTRIBUTE,
+            HttpCookie.MAX_AGE_ATTRIBUTE,
+            HttpCookie.SECURE_ATTRIBUTE,
+            HttpCookie.PATH_ATTRIBUTE));
+        assertThat(httpCookie.getAttributes().values(), containsInAnyOrder(
+            Boolean.TRUE.toString(),
+            Boolean.TRUE.toString(),
+            "comment",
+            "domain",
+            "42",
+            "/path"));
+
+        java.net.HttpCookie cookie2 = HttpCookie.asJavaNetHttpCookie(httpCookie);
+        assertEquals(cookie, cookie2);
+    }
+
 }
