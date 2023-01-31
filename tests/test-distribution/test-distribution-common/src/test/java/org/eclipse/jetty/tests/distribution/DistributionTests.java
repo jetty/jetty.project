@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.net.http.WebSocket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -461,6 +462,15 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-proxy-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "proxy");
+
+            Path loggingProps = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                .LEVEL=DEBUG
+                """;
+
+            Files.writeString(loggingProps, loggingConfig, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
 
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
