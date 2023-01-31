@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class InvokerUtils
             if ((this.name != null) || (other.name != null))
             {
                 // They have to match
-                if (this.name.equals(other.name))
+                if (Objects.equals(this.name, other.name))
                 {
                     if (convertible)
                     {
@@ -79,7 +80,7 @@ public class InvokerUtils
                 return false;
             }
 
-            // Not named, then its a simple type / assignable match
+            // Not named, then it's a simple type / assignable match
             return (other.type.isAssignableFrom(this.type));
         }
 
@@ -111,11 +112,6 @@ public class InvokerUtils
         public boolean isRequired()
         {
             return required;
-        }
-
-        public boolean isConvertible()
-        {
-            return convertible;
         }
     }
 
@@ -218,7 +214,7 @@ public class InvokerUtils
         Class<?>[] parameterTypes = method.getParameterTypes();
 
         // Construct Actual Calling Args.
-        // This is the array of args, arriving as all of the named variables (usually static in nature),
+        // This is the array of args, arriving as all the named variables (usually static in nature),
         // then the raw calling arguments (very dynamic in nature)
         Arg[] callingArgs = new Arg[rawCallingArgs.length + (namedVariables == null ? 0 : namedVariables.length)];
         {
@@ -275,9 +271,8 @@ public class InvokerUtils
         List<Class<?>> cTypes = new ArrayList<>();
         {
             cTypes.add(targetClass); // targetClass always at index 0
-            for (int i = 0; i < callingArgs.length; i++)
+            for (Arg arg : callingArgs)
             {
-                Arg arg = callingArgs[i];
                 if (arg.name != null)
                 {
                     hasNamedCallingArgs = true;
@@ -364,7 +359,7 @@ public class InvokerUtils
             {
                 for (int uci = 0; uci < usedCallingArgs.length; uci++)
                 {
-                    if (usedCallingArgs[uci] == false)
+                    if (!usedCallingArgs[uci])
                     {
                         if (callingArgs[uci].required)
                         {
@@ -407,9 +402,8 @@ public class InvokerUtils
                 // Use converted Types for callingArgs
                 cTypes = new ArrayList<>();
                 cTypes.add(targetClass); // targetClass always at index 0
-                for (int i = 0; i < callingArgs.length; i++)
+                for (Arg arg : callingArgs)
                 {
-                    Arg arg = callingArgs[i];
                     cTypes.add(arg.getConvertedType());
                 }
                 callingType = MethodType.methodType(method.getReturnType(), cTypes);
@@ -474,20 +468,6 @@ public class InvokerUtils
             if (comma)
                 str.append(", ");
             str.append(arg.getType().getName());
-            comma = true;
-        }
-        str.append(")");
-    }
-
-    private static void appendTypeList(StringBuilder str, Class<?>[] types)
-    {
-        str.append("(");
-        boolean comma = false;
-        for (Class<?> type : types)
-        {
-            if (comma)
-                str.append(", ");
-            str.append(type.getName());
             comma = true;
         }
         str.append(")");
