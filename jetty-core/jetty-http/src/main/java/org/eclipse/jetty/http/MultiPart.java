@@ -32,7 +32,6 @@ import java.util.Queue;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
@@ -119,7 +118,7 @@ public class MultiPart
      * <p>A part has an optional name, an optional fileName,
      * optional headers and an optional content.</p>
      */
-    public abstract static class Part
+    public abstract static class Part implements Closeable
     {
         private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
 
@@ -204,6 +203,7 @@ public class MultiPart
          * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
          *
          * @return the content of this part as a new {@link Content.Source}
+         * @see #getContentSource()
          */
         public abstract Content.Source newContentSource();
 
@@ -279,6 +279,7 @@ public class MultiPart
                 Files.delete(this.path);
         }
 
+        @Override
         public void close()
         {
             fail(SENTINEL_CLOSE_EXCEPTION);
@@ -354,15 +355,18 @@ public class MultiPart
         @Override
         public Content.Source newContentSource()
         {
-            return new ChunksContentSource(content.stream().map(c ->
-                Content.Chunk.asChunk(c.getByteBuffer().slice(), c.isLast(), Retainable.NOOP)).toList());
+            List<Content.Chunk> newChunks = content.stream()
+                .map(chunk -> Content.Chunk.asChunk(chunk.getByteBuffer().slice(), chunk.isLast(), chunk))
+                .peek(Content.Chunk::retain)
+                .toList();
+            return new ChunksContentSource(newChunks);
         }
 
         @Override
         public void close()
         {
             super.close();
-            content.forEach(Retainable::release);
+            content.forEach(Content.Chunk::release);
         }
 
         @Override

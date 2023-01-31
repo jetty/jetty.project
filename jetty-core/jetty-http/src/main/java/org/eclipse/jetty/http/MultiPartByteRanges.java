@@ -24,8 +24,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link CompletableFuture} that is completed when a multipart/byteranges
@@ -56,8 +54,6 @@ import org.slf4j.LoggerFactory;
  */
 public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.Parts>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MultiPartByteRanges.class);
-
     private final PartsListener listener = new PartsListener();
     private final MultiPart.Parser parser;
 

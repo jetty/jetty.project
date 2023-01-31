@@ -26,26 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public interface Retainable
 {
-    Retainable NOOP = new Retainable()
-    {
-        @Override
-        public boolean canRetain()
-        {
-            return true;
-        }
-
-        @Override
-        public void retain()
-        {
-        }
-
-        @Override
-        public boolean release()
-        {
-            return true;
-        }
-    };
-
     /**
      * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
      * and {@link #release()}.</p>

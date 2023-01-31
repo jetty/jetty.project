@@ -386,7 +386,8 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn("Errors deleting multipart tmp files", e);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Could not close part {}", p, e);
                 }
             }
         }
@@ -565,7 +566,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             }
             for (MultiPart.Part part : toFail)
             {
-                part.close();
+                part.fail(cause);
             }
             close();
             delete();

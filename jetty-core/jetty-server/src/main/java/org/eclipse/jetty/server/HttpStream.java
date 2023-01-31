@@ -110,10 +110,10 @@ public interface HttpStream extends Callback
     {
         long consumedRequestContentBytes = 0;
         long maxUnconsumedRequestContentBytes = httpConfig.getMaxUnconsumedRequestContentBytes();
-        while (consumedRequestContentBytes < maxUnconsumedRequestContentBytes)
+        while (maxUnconsumedRequestContentBytes < 0 || consumedRequestContentBytes < maxUnconsumedRequestContentBytes)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
-            Content.Chunk content = stream.read();
+            Chunk content = stream.read();
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
@@ -124,7 +124,7 @@ public interface HttpStream extends Callback
             content.release();
 
             // if the input failed, then fail the stream for same reason
-            if (content instanceof Content.Chunk.Error error)
+            if (content instanceof Chunk.Error error)
                 return error.getCause();
 
             if (content.isLast())

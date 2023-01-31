@@ -291,7 +291,7 @@ public class DelayedHandler extends Handler.Wrapper
             {
                 // We must execute here as even though we have consumed all the input, we are probably
                 // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(super::process);
+                getRequest().getContext().execute(this::process);
             }
             else
             {
