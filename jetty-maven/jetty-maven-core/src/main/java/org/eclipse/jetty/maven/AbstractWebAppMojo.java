@@ -410,6 +410,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 "jetty-" + getEnvironment() + "-maven-plugin",
                 plugin.getVersion());
 
+        targetPlugin.setDependencies(plugin.getPlugin().getDependencies());
         RepositorySystemSession repositorySystemSession = session.getRepositorySession();
         List<RemoteRepository> remoteRepositories = session.getCurrentProject().getRemotePluginRepositories();
 
