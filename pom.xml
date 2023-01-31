@@ -87,14 +87,12 @@
 
     <osgi-version>3.18.200</osgi-version>
     <!-- really used -->
-    <osgi-annotation-version>8.1.0</osgi-annotation-version>
     <osgi-services-version>3.11.100</osgi-services-version>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.1</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
     <osgi-util-version>3.7.100</osgi-util-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
-    <osgi-util-promise-version>1.2.0</osgi-util-promise-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
     <osgi-util-position-version>1.0.1</osgi-util-position-version>
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
@@ -1495,11 +1493,6 @@
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
-        <artifactId>osgi.annotation</artifactId>
-        <version>${osgi-annotation-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
         <artifactId>org.osgi.service.component</artifactId>
         <version>${osgi-service-component-version}</version>
       </dependency>
@@ -1512,12 +1505,6 @@
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.util.tracker</artifactId>
         <version>${osgi-util-tracker-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.promise</artifactId>
-        <version>${osgi-util-promise-version}</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
