@@ -24,7 +24,7 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.12</ant.version>
+    <ant.version>1.10.13</ant.version>
     <apache.avro.version>1.11.1</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
@@ -104,7 +104,7 @@
     <logback.version>1.3.5</logback.version>
     <mariadb.version>3.0.8</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.resolver.version>1.9.2</maven.resolver.version>
+    <maven.resolver.version>1.9.4</maven.resolver.version>
     <maven.version>3.8.7</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -138,9 +138,9 @@
     <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
-    <maven.checkstyle.plugin.version>3.2.0</maven.checkstyle.plugin.version>
+    <maven.checkstyle.plugin.version>3.2.1</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.4.0</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.5.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
     <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
@@ -150,8 +150,8 @@
     <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
-    <maven-plugin.plugin.version>3.7.0</maven-plugin.plugin.version>
+    <maven.plugin-tools.version>3.7.1</maven.plugin-tools.version>
+    <maven-plugin.plugin.version>3.7.1</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
