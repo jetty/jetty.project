@@ -52,8 +52,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -660,6 +663,45 @@ public class ConnectionPoolTest
         Thread.sleep(idleTimeout + idleTimeout / 2);
 
         assertEquals(0, connectionPool.getConnectionCount());
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testCountersSweepToStringThroughLifecycle(ConnectionPoolFactory factory) throws Exception
+    {
+        startClient(destination ->
+        {
+            ConnectionPool connectionPool = factory.factory.newConnectionPool(destination);
+            LifeCycle.start(connectionPool);
+            return connectionPool;
+        });
+
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0), false));
+        assertThat(connectionPool.getConnectionCount(), is(0));
+        assertThat(connectionPool.getActiveConnectionCount(), is(0));
+        assertThat(connectionPool.getIdleConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), is(0));
+        assertThat(connectionPool.isEmpty(), is(true));
+        assertThat(connectionPool.sweep(), is(false));
+        assertThat(connectionPool.toString(), not(nullValue()));
+
+        LifeCycle.start(connectionPool);
+        assertThat(connectionPool.getConnectionCount(), is(0));
+        assertThat(connectionPool.getActiveConnectionCount(), is(0));
+        assertThat(connectionPool.getIdleConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), greaterThan(0));
+        assertThat(connectionPool.isEmpty(), is(true));
+        assertThat(connectionPool.sweep(), is(false));
+        assertThat(connectionPool.toString(), not(nullValue()));
+
+        LifeCycle.stop(connectionPool);
+        assertThat(connectionPool.getConnectionCount(), is(0));
+        assertThat(connectionPool.getActiveConnectionCount(), is(0));
+        assertThat(connectionPool.getIdleConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), is(0));
+        assertThat(connectionPool.isEmpty(), is(true));
+        assertThat(connectionPool.sweep(), is(false));
+        assertThat(connectionPool.toString(), not(nullValue()));
     }
 
     private static class ConnectionPoolFactory
