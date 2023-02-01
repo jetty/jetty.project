@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -38,6 +39,7 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTIPLE_CONTENT_L
 import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.DUPLICATE_HOST_HEADERS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.UNSAFE_HOST_HEADER;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_FIELD_NAME;
 
 /**
@@ -1034,9 +1036,19 @@ public class HttpParser
                         _host = true;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
                         {
-                            _field = new HostPortHttpField(_header,
-                                CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
-                                _valueString);
+                            HostPort hostPort;
+                            if (UNSAFE_HOST_HEADER.isAllowedBy(_complianceMode))
+                            {
+                                _field = new HostPortHttpField(_header,
+                                    CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
+                                    HostPort.unsafe(_valueString));
+                            }
+                            else
+                            {
+                                _field = new HostPortHttpField(_header,
+                                    CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
+                                    _valueString);
+                            }
                             addToFieldCache = _fieldCache.isEnabled();
                         }
                         break;

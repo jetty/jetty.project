@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -28,7 +29,6 @@ public class HostPortTest
 {
     public static Stream<Arguments> validAuthorityProvider()
     {
-
         return Stream.of(
             Arguments.of("", "", null),
             Arguments.of("host", "host", null),
@@ -67,6 +67,8 @@ public class HostPortTest
             ":80", // no host, port only
             "host:", // no port
             "127.0.0.1:", // no port
+            "[0::0::0::0::1", // no IP literal ending bracket
+            "0::0::0::0::1]", // no IP literal starting bracket
             "[0::0::0::0::1]:", // no port
             "[0::0::0::1]", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
             "[0::0::0::1]:80", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
@@ -77,7 +79,21 @@ public class HostPortTest
             "host:-80", // host + invalid port
             "127.0.0.1:-80", // ipv4 + invalid port
             "[0::0::0::0::1]:-80", // ipv6 + invalid port
-            "127.0.0.1:65536" // ipv4 + port value too high
+            "127.0.0.1:65536", // ipv4 + port value too high
+            // Examples of bad Host header values (usually client bugs that shouldn't allow them)
+            "Group - Machine", // spaces
+            "<calculated when request is sent>",
+            "[link](https://example.org/)",
+            "example.org/zed", // has slash
+            // common hacking attempts, seen as values on the `Host:` request header
+            "| ping 127.0.0.1 -n 10",
+            "%uf%80%ff%xx%uffff",
+            "[${jndi${:-:}ldap${:-:}]", // log4j hacking
+            "[${jndi:ldap://example.org:59377/nessus}]", // log4j hacking
+            "${ip}", // variation of log4j hack
+            "' *; host xyz.hacking.pro; '",
+            "'/**/OR/**/1/**/=/**/1",
+            "AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT('x',(SELECT (ELT(1=1,1))),'x',FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.CHARACTER_SETS GROUP BY x)a)"
         ).map(Arguments::of);
     }
 
@@ -111,5 +127,13 @@ public class HostPortTest
         {
             new HostPort(authority);
         });
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidAuthorityProvider")
+    public void testUnsafeAuthority(String authority)
+    {
+        HostPort hostPort = HostPort.unsafe(authority);
+        assertNotNull(hostPort);
     }
 }

@@ -27,6 +27,93 @@ public class HostPort
     private final String _host;
     private final int _port;
 
+    public static HostPort unsafe(String authority)
+    {
+        if (authority == null)
+            return new HostPort("", 0);
+
+        try
+        {
+            if (authority.isEmpty())
+            {
+                return new HostPort(authority, 0);
+            }
+            else if (authority.charAt(0) == '[')
+            {
+                // ipv6reference
+                int close = authority.lastIndexOf(']');
+                String host = authority.substring(0, close + 1);
+                if (authority.length() > close + 1)
+                {
+                    // ipv6 with port
+                    String strPort = authority.substring(close + 2);
+                    int port = 0;
+                    if (StringUtil.isNotBlank(strPort))
+                    {
+                        try
+                        {
+                            port = Integer.parseInt(strPort);
+                        }
+                        catch (NumberFormatException ignore)
+                        {
+                            // ignore
+                        }
+                    }
+                    return new HostPort(host, port);
+                }
+                else
+                {
+                    return new HostPort(host, 0);
+                }
+            }
+            else
+            {
+                // ipv6address or ipv4address or hostname
+                int c = authority.lastIndexOf(':');
+                if (c >= 0)
+                {
+                    if (c != authority.indexOf(':'))
+                    {
+                        // ipv6address no port
+                        return new HostPort("[" + authority + "]", 0);
+                    }
+                    else
+                    {
+                        // host/ipv4 with port
+                        String host = authority.substring(0, c);
+                        String strPort = authority.substring(c + 1);
+                        int port = 0;
+                        if (StringUtil.isNotBlank(strPort))
+                        {
+                            try
+                            {
+                                port = Integer.parseInt(strPort);
+                            }
+                            catch (NumberFormatException ignore)
+                            {
+                                // ignore
+                            }
+                        }
+                        return new HostPort(host, port);
+                    }
+                }
+                else
+                {
+                    // host/ipv4 without port
+                    return new HostPort(authority, 0);
+                }
+            }
+        }
+        catch (IllegalArgumentException iae)
+        {
+            throw iae;
+        }
+        catch (Exception ex)
+        {
+            throw new IllegalArgumentException("Bad HostPort", ex);
+        }
+    }
+
     public HostPort(String host, int port)
     {
         _host = normalizeHost(host);

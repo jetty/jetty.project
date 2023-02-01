@@ -110,7 +110,14 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * says that a Server must reject a request duplicate host headers.
          * A deployment may include this violation to allow duplicate host headers on a received request.
          */
-        DUPLICATE_HOST_HEADERS("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Duplicate Host Header");
+        DUPLICATE_HOST_HEADERS("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Duplicate Host Header"),
+
+        /**
+         * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1">RFC 7230</a>, the HTTP protocol
+         * should reject a request if the Host headers contains an invalid / unsafe authority.
+         * A deployment may include this violation to allow unsafe host headesr on a received request.
+         */
+        UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority");
 
         private final String url;
         private final String description;
