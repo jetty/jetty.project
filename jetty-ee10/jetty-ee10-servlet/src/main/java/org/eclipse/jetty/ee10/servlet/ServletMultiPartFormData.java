@@ -29,9 +29,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -118,14 +119,15 @@ public class ServletMultiPartFormData
         ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
         formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
-        ByteBufferPool byteBufferPool = request.getRequest().getComponents().getByteBufferPool();
+        RetainableByteBufferPool byteBufferPool = request.getRequest().getComponents().getRetainableByteBufferPool();
         Connection connection = connectionMetaData.getConnection();
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
         InputStream input = request.getInputStream();
         while (!formData.isDone())
         {
-            ByteBuffer buffer = byteBufferPool.newByteBuffer(bufferSize, false);
+            RetainableByteBuffer retainable = byteBufferPool.acquire(bufferSize, false);
             boolean readEof = false;
+            ByteBuffer buffer = retainable.getByteBuffer();
             while (BufferUtil.space(buffer) > bufferSize / 2)
             {
                 int read = BufferUtil.readFrom(input, buffer);
@@ -136,7 +138,7 @@ public class ServletMultiPartFormData
                 }
             }
 
-            formData.parse(Content.Chunk.from(buffer, false, byteBuffer -> byteBufferPool.release(buffer)));
+            formData.parse(Content.Chunk.from(buffer, false, byteBuffer -> retainable.release()));
             if (readEof)
             {
                 formData.parse(Content.Chunk.EOF);
