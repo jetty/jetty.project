@@ -150,7 +150,7 @@ public class Constraint implements Cloneable, Serializable
     }
 
     /**
-     * @return List of roles for this constraint.
+     * @return String array of roles for this constraint.
      */
     public String[] getRoles()
     {

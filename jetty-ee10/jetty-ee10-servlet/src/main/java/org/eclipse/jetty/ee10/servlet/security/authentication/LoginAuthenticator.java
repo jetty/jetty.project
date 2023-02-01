@@ -17,8 +17,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
+import org.eclipse.jetty.ee10.servlet.ServletApiResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.servlet.security.Authenticator;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
@@ -62,8 +63,8 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         //TODO do we need to operate on a Response passed in, rather than the Response obtained from the Request
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
-        ServletContextResponse.ServletApiResponse servletApiResponse = servletContextRequest.getResponse().getServletApiResponse();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletApiResponse servletApiResponse = servletContextRequest.getResponse().getServletApiResponse();
         UserIdentity user = _loginService.login(username, password, servletApiRequest);
         if (user != null)
         {
@@ -76,7 +77,7 @@ public abstract class LoginAuthenticator implements Authenticator
     public void logout(Request request)
     {
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
         HttpSession session = servletApiRequest.getSession(false);
         if (session == null)
             return;
@@ -131,7 +132,7 @@ public abstract class LoginAuthenticator implements Authenticator
                     session.renewId(servletContextRequest);
                     session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
                     if (session.isSetCookieNeeded())
-                        Response.replaceCookie(response, session.getSessionManager().getSessionCookie(session, httpRequest.getContextPath(), httpRequest.isSecure()));
+                        Response.replaceCookie(response, session.getSessionManager().getSessionCookie(session, httpRequest.isSecure()));
                     if (LOG.isDebugEnabled())
                         LOG.debug("renew {}->{}", oldId, session.getId());
                     return httpSession;

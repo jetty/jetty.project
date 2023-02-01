@@ -56,7 +56,7 @@ public class DatabaseTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Arrays.asList(
-                "--module=main,db",
+                "--modules=main,db",
                 "mysql.user=frank",
                 "mysql.pass=secret"
             ),

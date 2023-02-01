@@ -39,7 +39,7 @@ public class EmptyAddToStartTest extends AbstractUseCase
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
-            "--add-module=extra,optional"
+            "--add-modules=extra,optional"
         );
         exec(prepareArgs, true);
 

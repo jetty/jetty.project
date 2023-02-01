@@ -58,7 +58,7 @@ The replacement `logging.mod` performs a number of tasks.
 . The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by `mybase` only.
 . The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}`
 configuration.
-.. The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.
+.. The `--modules=logging` command is added to the `${jetty.base}/start.ini` configuration.
 .. Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
 .. Required configuration files are downloaded (if not present already): `jetty-logging.properties`, and `logging.properties`
 * The configuration files are put in the `${jetty.base}/resources/` directory.

@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -408,7 +407,7 @@ public class ServerProxyImpl implements ServerProxy
             contexts = new ContextHandlerCollection();
             HandlerCollection handlers = server.getChildHandlerByClass(HandlerCollection.class);
             if (handlers == null)
-                server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+                server.setHandler(contexts);
             else
                 handlers.addHandler(contexts);
         }

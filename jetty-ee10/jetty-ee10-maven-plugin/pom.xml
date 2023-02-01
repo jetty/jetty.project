@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>EE10 :: Jetty :: Jetty Maven Plugin</name>
+  <name>EE10 :: Jetty Maven Plugin</name>
   <description>Jetty EE10 maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
@@ -62,6 +62,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
+        <configuration>
+          <goalPrefix>jetty</goalPrefix>
+        </configuration>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>

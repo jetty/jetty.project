@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-test-weld-cdi-webapp</artifactId>
-  <name>Test :: Jetty EE9 CDI Weld Demo Webapp</name>
+  <name>EE9 :: Tests :: CDI Weld Demo WebApp</name>
   <packaging>war</packaging>
 
   <properties>

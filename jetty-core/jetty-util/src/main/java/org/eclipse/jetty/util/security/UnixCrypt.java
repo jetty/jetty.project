@@ -9,7 +9,7 @@
  * all copies.
  */
 
-/**
+/*
  * Unix crypt(3C) utility
  *
  * @version 0.9, 11/25/96
@@ -24,11 +24,6 @@
  * modified April 2001
  * by Iris Van den Broeke, Daniel Deville
  *
- * modified April 2001
- * by Iris Van den Broeke, Daniel Deville
- */
-
-/**
  * modified April 2001
  * by Iris Van den Broeke, Daniel Deville
  */

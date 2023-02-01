@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-infinispan-remote</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: Infinispan Session Manager Remote</name>
+  <name>Integrations :: Infinispan :: Remote</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote</bundle-symbolic-name>
   </properties>

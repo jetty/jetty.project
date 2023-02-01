@@ -465,6 +465,7 @@ public class SocketChannelEndPointTest
         AtomicInteger timeout = new AtomicInteger();
         AtomicInteger rejections = new AtomicInteger();
         AtomicInteger echoed = new AtomicInteger();
+        AtomicInteger broken = new AtomicInteger();
 
         int iterations = 50;
 
@@ -490,6 +491,11 @@ public class SocketChannelEndPointTest
                         for (char c : "HelloWorld".toCharArray())
                         {
                             int b = client.getInputStream().read();
+                            if (b == -1)
+                            {
+                                broken.incrementAndGet();
+                                return;
+                            }
                             assertTrue(b > 0);
                             assertEquals(c, (char)b);
                         }
@@ -499,12 +505,10 @@ public class SocketChannelEndPointTest
                 }
                 catch (SocketTimeoutException x)
                 {
-                    x.printStackTrace();
                     timeout.incrementAndGet();
                 }
                 catch (Throwable x)
                 {
-                    x.printStackTrace();
                     rejections.incrementAndGet();
                 }
                 finally
@@ -523,7 +527,7 @@ public class SocketChannelEndPointTest
         // none should have timed out
         assertThat(timeout.get(), Matchers.equalTo(0));
         // and the rest should have worked
-        assertThat(echoed.get(), Matchers.equalTo(iterations - rejections.get()));
+        assertThat(echoed.get(), Matchers.equalTo(iterations - rejections.get() - broken.get()));
 
         // make sure that not all iterations failed (as this indicates a test case setup issue)
         assertThat(rejections.get(), not(is(iterations)));
@@ -612,7 +616,7 @@ public class SocketChannelEndPointTest
     {
         private final NormalScenario _normalScenario;
         private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
-        private final ByteBufferPool _byteBufferPool = new MappedByteBufferPool();
+        private final RetainableByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
 
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
@@ -636,7 +640,7 @@ public class SocketChannelEndPointTest
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(_byteBufferPool, executor, endpoint, engine);
+            SslConnection sslConnection = new SslConnection(_bufferPool, executor, endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             Connection appConnection = _normalScenario.newConnection(channel, sslConnection.getDecryptedEndPoint(), executor, blockAt, writeCount);
@@ -786,8 +790,6 @@ public class SocketChannelEndPointTest
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Fill interrupted", e);
-                else
-                    LOG.info(e.getClass().getName());
             }
             catch (Exception e)
             {

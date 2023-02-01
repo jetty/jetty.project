@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-demo-async-rest</artifactId>
   <packaging>pom</packaging>
-  <name>EE8 :: Jetty Demo :: Async Rest</name>
+  <name>EE8 :: Demo :: Async Rest</name>
 
   <modules>
     <module>jetty-ee8-demo-async-rest-jar</module>

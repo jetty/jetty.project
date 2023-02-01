@@ -31,7 +31,7 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,7 @@ public class Parser
 {
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private final Listener listener;
     private final HeaderParser headerParser;
     private final HpackDecoder hpackDecoder;
@@ -55,14 +55,14 @@ public class Parser
     private boolean continuation;
     private State state = State.HEADER;
 
-    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
+    public Parser(RetainableByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
-        this(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+        this(bufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
     }
 
-    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    public Parser(RetainableByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
     {
-        this.byteBufferPool = byteBufferPool;
+        this.bufferPool = bufferPool;
         this.listener = listener;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
         this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
@@ -73,8 +73,8 @@ public class Parser
     {
         Listener listener = wrapper.apply(this.listener);
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
-        HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, hpackDecoder, unknownBodyParser);
-        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(byteBufferPool);
+        HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, bufferPool, hpackDecoder, unknownBodyParser);
+        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(bufferPool);
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);

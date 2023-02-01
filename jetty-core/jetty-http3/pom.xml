@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.http3</groupId>
   <artifactId>jetty-http3</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty Core :: HTTP3</name>
+  <name>Core :: HTTP3</name>
 
   <modules>
     <module>jetty-http3-qpack</module>

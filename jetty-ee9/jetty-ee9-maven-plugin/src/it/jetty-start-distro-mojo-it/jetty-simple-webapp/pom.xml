@@ -11,7 +11,7 @@
   <artifactId>jetty-simple-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>ee9 :: Jetty :: Simple :: Webapp</name>
+  <name>EE9 :: Simple :: WebApp</name>
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-distro-port.txt</jetty.port.file>

@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-test-client-transports</artifactId>
-  <name>Jetty Core :: Tests :: Client Transports</name>
+  <name>Core :: Tests :: Client Transports</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.test.client.transport</bundle-symbolic-name>

@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jmx</artifactId>
-  <name>Jetty Core :: JMX Management</name>
+  <name>Core :: JMX</name>
   <description>JMX management artifact for jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmx</bundle-symbolic-name>

@@ -20,9 +20,11 @@ import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -38,7 +40,8 @@ public class InstructionFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
-    private final ByteBufferPool.Lease lease;
+    private final RetainableByteBufferPool bufferPool;
+    private final RetainableByteBufferPool.Accumulator accumulator;
     private final QuicStreamEndPoint endPoint;
     private final long streamType;
     private boolean initialized;
@@ -46,7 +49,8 @@ public class InstructionFlusher extends IteratingCallback
 
     public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, long streamType)
     {
-        this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
+        this.bufferPool = session.getRetainableByteBufferPool();
+        this.accumulator = new RetainableByteBufferPool.Accumulator();
         this.endPoint = endPoint;
         this.streamType = streamType;
     }
@@ -54,7 +58,7 @@ public class InstructionFlusher extends IteratingCallback
     public boolean offer(List<Instruction> instructions)
     {
         Throwable closed;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -67,7 +71,7 @@ public class InstructionFlusher extends IteratingCallback
     protected Action process()
     {
         List<Instruction> instructions;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (queue.isEmpty())
                 return Action.IDLE;
@@ -78,20 +82,22 @@ public class InstructionFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("flushing {} on {}", instructions, this);
 
-        instructions.forEach(i -> i.encode(lease));
+        instructions.forEach(i -> i.encode(accumulator));
 
         if (!initialized)
         {
             initialized = true;
-            ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(streamType));
-            VarLenInt.encode(buffer, streamType);
-            buffer.flip();
-            lease.insert(0, buffer, false);
+            RetainableByteBuffer buffer = bufferPool.acquire(VarLenInt.length(streamType), false);
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
+            VarLenInt.encode(byteBuffer, streamType);
+            byteBuffer.flip();
+            accumulator.insert(0, buffer);
         }
 
-        List<ByteBuffer> buffers = lease.getByteBuffers();
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), lease.getTotalLength(), this);
+            LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), accumulator.getTotalLength(), this);
         endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
         return Action.SCHEDULED;
     }
@@ -100,9 +106,9 @@ public class InstructionFlusher extends IteratingCallback
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to write {} on {}", lease.getByteBuffers(), this);
+            LOG.debug("succeeded to write {} buffers on {}", accumulator.getByteBuffers().size(), this);
 
-        lease.recycle();
+        accumulator.release();
 
         super.succeeded();
     }
@@ -111,11 +117,11 @@ public class InstructionFlusher extends IteratingCallback
     protected void onCompleteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to write {} on {}", lease.getByteBuffers(), this, failure);
+            LOG.debug("failed to write {} buffers on {}", accumulator.getByteBuffers().size(), this, failure);
 
-        lease.recycle();
+        accumulator.release();
 
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             terminated = failure;
             queue.clear();

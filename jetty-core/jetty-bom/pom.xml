@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>jetty-bom</artifactId>
-  <name>Jetty Core :: BOM</name>
+  <name>Core :: BOM</name>
   <description>Jetty Core BOM artifact</description>
   <packaging>pom</packaging>
 

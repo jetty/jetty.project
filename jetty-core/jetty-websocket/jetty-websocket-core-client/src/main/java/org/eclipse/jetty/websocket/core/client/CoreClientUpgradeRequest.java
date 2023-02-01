@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -478,9 +477,8 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
-        ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getBufferPool();
-        RetainableByteBufferPool retainableByteBufferPool = bufferPool.asRetainableByteBufferPool();
-        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, retainableByteBufferPool, coreSession);
+        RetainableByteBufferPool bufferPool = wsClient.getWebSocketComponents().getRetainableByteBufferPool();
+        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));

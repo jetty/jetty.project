@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-ee10-osgi-server</artifactId>
-  <name>EE10 :: Jetty :: OSGi :: Server</name>
+  <name>EE10 :: OSGi :: Server</name>
   <description>Test Jetty OSGi bundle with a Server</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.testserver</bundle-symbolic-name>

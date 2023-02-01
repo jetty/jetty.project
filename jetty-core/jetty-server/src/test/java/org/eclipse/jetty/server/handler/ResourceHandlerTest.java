@@ -355,7 +355,7 @@ public class ResourceHandlerTest
                 (response) ->
                 {
                     String body = response.getContent();
-                    assertThat(body, containsString("/../../"));
+                    assertThat(body, containsString("Not Found"));
                     assertThat(body, not(containsString("Directory: ")));
                 }
             );
@@ -670,7 +670,7 @@ public class ResourceHandlerTest
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getByteBufferPool());
+                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getRetainableByteBufferPool());
                 return contentFactory;
             }
         };

@@ -129,7 +129,7 @@ public class ProxyConfiguration
         }
 
         /**
-         * @return the list of origins that must be proxied
+         * @return the set of origins that must be proxied
          * @see #matches(Origin)
          * @see #getExcludedAddresses()
          */
@@ -139,7 +139,7 @@ public class ProxyConfiguration
         }
 
         /**
-         * @return the list of origins that must not be proxied.
+         * @return the set of origins that must not be proxied.
          * @see #matches(Origin)
          * @see #getIncludedAddresses()
          */

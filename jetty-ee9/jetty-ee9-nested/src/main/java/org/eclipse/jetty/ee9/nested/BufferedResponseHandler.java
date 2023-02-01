@@ -266,7 +266,7 @@ public class BufferedResponseHandler extends HandlerWrapper
                     // Do we need a new aggregate buffer.
                     if (BufferUtil.space(_aggregate) == 0)
                     {
-                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the ByteBufferPool.
+                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the ByteBuffer pool.
                         int size = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content));
                         _aggregate = BufferUtil.allocate(size);
                         _buffers.offer(_aggregate);

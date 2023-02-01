@@ -21,8 +21,6 @@ import com.sun.net.httpserver.HttpsServer;
 import com.sun.net.httpserver.spi.HttpServerProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -31,7 +29,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class JettyHttpServerProvider extends HttpServerProvider
 {
-
     private static Server _server;
 
     public static void setServer(Server server)
@@ -51,8 +48,7 @@ public class JettyHttpServerProvider extends HttpServerProvider
             ThreadPool threadPool = new DelegatingThreadPool(new QueuedThreadPool());
             server = new Server(threadPool);
 
-            HandlerList handlerCollection = new HandlerList(new ContextHandlerCollection(), new DefaultHandler());
-            server.setHandler(handlerCollection);
+            server.setHandler(new ContextHandlerCollection(true));
 
             shared = false;
         }

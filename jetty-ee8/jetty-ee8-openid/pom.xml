@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-openid</artifactId>
-  <name>EE8 :: Jetty :: OpenID</name>
+  <name>EE8 :: OpenID</name>
   <description>Jetty OpenID Connect infrastructure</description>
 
   <properties>

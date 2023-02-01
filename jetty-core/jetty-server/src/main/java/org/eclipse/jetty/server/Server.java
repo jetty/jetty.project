@@ -35,10 +35,13 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -56,7 +59,10 @@ import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -69,6 +75,8 @@ public class Server extends Handler.Wrapper implements Attributes
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
+    private final Scheduler _scheduler;
+    private final RetainableByteBufferPool _bufferPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
@@ -77,6 +85,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
+    private Handler _defaultHandler;
     private Request.Processor _errorProcessor;
     private RequestLog _requestLog;
     private boolean _dryRun;
@@ -102,7 +111,7 @@ public class Server extends Handler.Wrapper implements Attributes
         this((ThreadPool)null);
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
-        setConnectors(new Connector[]{connector});
+        addConnector(connector);
         addBean(_attributes);
     }
 
@@ -119,15 +128,49 @@ public class Server extends Handler.Wrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
-        setConnectors(new Connector[]{connector});
+        addConnector(connector);
     }
 
-    public Server(@Name("threadpool") ThreadPool pool)
+    public Server(@Name("threadPool") ThreadPool pool)
     {
-        _threadPool = pool != null ? pool : new QueuedThreadPool();
+        this(pool, null, null);
+    }
+
+    public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") RetainableByteBufferPool bufferPool)
+    {
+        _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
         addBean(_threadPool);
+        _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler();
+        addBean(_scheduler);
+        _bufferPool = bufferPool != null ? bufferPool : new ArrayRetainableByteBufferPool();
+        addBean(_bufferPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);
+    }
+
+    public Handler getDefaultHandler()
+    {
+        return _defaultHandler;
+    }
+
+    /**
+     * @param defaultHandler The handler to use if no other handler is set or has processed the request. This handler should
+     *                       always accept the request, even if only to send a 404.
+     */
+    public void setDefaultHandler(Handler defaultHandler)
+    {
+        if (!isDynamic() && isStarted())
+            throw new IllegalStateException(getState());
+        Handler old = _defaultHandler;
+        _defaultHandler = defaultHandler;
+        updateBean(old, defaultHandler);
+    }
+
+    @Override
+    public boolean process(Request request, Response response, Callback callback) throws Exception
+    {
+        // Handle either with normal handler or default handler
+        return super.process(request, response, callback) || _defaultHandler != null && _defaultHandler.process(request, response, callback);
     }
 
     public String getServerInfo()
@@ -195,11 +238,22 @@ public class Server extends Handler.Wrapper implements Attributes
     @Override
     public InvocationType getInvocationType()
     {
-        Handler handler = getHandler();
-        if (handler == null)
-            return InvocationType.NON_BLOCKING;
+        if (isDynamic())
+            return InvocationType.BLOCKING;
+
         // Return cached type to avoid a full handler tree walk.
-        return isRunning() ? _invocationType : handler.getInvocationType();
+        if (isStarted())
+            return _invocationType;
+
+        InvocationType type = InvocationType.NON_BLOCKING;
+        Handler handler = getHandler();
+        if (handler != null)
+            type = Invocable.combine(type, handler.getInvocationType());
+        handler = getDefaultHandler();
+        if (handler != null)
+            type = Invocable.combine(type, handler.getInvocationType());
+
+        return type;
     }
 
     public boolean isDryRun()
@@ -361,6 +415,16 @@ public class Server extends Handler.Wrapper implements Attributes
         return _threadPool;
     }
 
+    public Scheduler getScheduler()
+    {
+        return _scheduler;
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return _bufferPool;
+    }
+
     /**
      * @return true if {@link #dumpStdErr()} is called after starting
      */
@@ -475,8 +539,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             // Cache the invocation type to avoid runtime walk of handler tree
             // Handlers must check they don't change the InvocationType of a started server
-            Handler handler = getHandler();
-            _invocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
+            _invocationType = getInvocationType();
 
             if (_dryRun)
             {

@@ -75,7 +75,7 @@ public class LoopTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=root"
+                "--modules=root"
             ),
             StandardCharsets.UTF_8);
 
@@ -83,7 +83,7 @@ public class LoopTest extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=tom"
+            "--add-modules=tom"
         );
         exec(prepareArgs, true);
 
@@ -145,7 +145,7 @@ public class LoopTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=root"
+                "--modules=root"
             ),
             StandardCharsets.UTF_8);
 
@@ -153,7 +153,7 @@ public class LoopTest extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=tom"
+            "--add-modules=tom"
         );
         exec(prepareArgs, true);
 

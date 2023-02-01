@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
 /**
  * {@link ContentDecoder} decodes content bytes of a response.
@@ -29,21 +30,14 @@ import org.eclipse.jetty.http.HttpHeader;
 public interface ContentDecoder
 {
     /**
-     * <p>Decodes the bytes in the given {@code buffer} and returns decoded bytes, if any.</p>
+     * <p>Decodes the bytes in the given {@code buffer} and returns the decoded bytes.</p>
+     * <p>The returned {@link RetainableByteBuffer} containing the decoded bytes may
+     * be empty and <b>must</b> be released via {@link RetainableByteBuffer#release()}.</p>
      *
      * @param buffer the buffer containing encoded bytes
-     * @return a buffer containing decoded bytes, if any
+     * @return a buffer containing decoded bytes that must be released
      */
-    public abstract ByteBuffer decode(ByteBuffer buffer);
-
-    /**
-     * <p>Releases the ByteBuffer returned by {@link #decode(ByteBuffer)}.</p>
-     *
-     * @param decoded the ByteBuffer returned by {@link #decode(ByteBuffer)}
-     */
-    public default void release(ByteBuffer decoded)
-    {
-    }
+    public abstract RetainableByteBuffer decode(ByteBuffer buffer);
 
     /**
      * Factory for {@link ContentDecoder}s; subclasses must implement {@link #newContentDecoder()}.

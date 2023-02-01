@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -25,13 +24,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
@@ -45,14 +44,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.component.Environment;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,6 +59,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
@@ -81,10 +80,16 @@ public class DeploymentErrorTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
+        
+        ResourceFactory resourceFactory = ResourceFactory.of(server);
 
         // Empty contexts collections
         contexts = new ContextHandlerCollection();
 
+        //Environment
+        Environment ee9 = Environment.ensure("ee9");
+        ee9.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee9.webapp.WebAppContext");
+        
         // Deployment Manager
         deploymentManager = new DeploymentManager();
         deploymentManager.setContexts(contexts);
@@ -100,14 +105,15 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        WebAppProvider appProvider = new WebAppProvider();
-        appProvider.setMonitoredDirResource(new PathResource(docroots));
+        ContextProvider appProvider = new ContextProvider();
+        appProvider.setEnvironmentName("ee9");
+        appProvider.setMonitoredDirResource(resourceFactory.newResource(docroots));
         appProvider.setScanInterval(1);
         deploymentManager.addAppProvider(appProvider);
         server.addBean(deploymentManager);
 
         // Server handlers
-        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+        server.setHandler(contexts);
 
         // Setup Configurations
         Configurations.setServerDefault(server)
@@ -133,10 +139,10 @@ public class DeploymentErrorTest
     {
         try
         {
-            File deployErrorSrc = MavenTestingUtils.getTestResourceDir("docroots/deployerror");
-            IO.copy(new File(deployErrorSrc, sourceXml), docroots.resolve("badapp.xml").toFile());
-            File badappDir = new File(deployErrorSrc, "badapp");
-            File badappDest = docroots.resolve("badapp").toFile();
+            Path deployErrorSrc = MavenTestingUtils.getTestResourcePathDir("docroots/deployerror");
+            IO.copy(deployErrorSrc.resolve(sourceXml), docroots.resolve("badapp.xml"));
+            Path badappDir = deployErrorSrc.resolve("badapp");
+            Path badappDest = docroots.resolve("badapp");
             FS.ensureDirExists(badappDest);
             IO.copyDir(badappDir, badappDest);
         }
@@ -164,7 +170,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a DeploymentManager has a ContextProvider pointing
      * to a directory that already has a webapp that will deploy with an error.
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=false;}.
      */
@@ -178,11 +184,17 @@ public class DeploymentErrorTest
         assertThat("Apps tracked", apps.size(), is(1));
         String contextPath = "/badapp-uaf";
         App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
-        assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
-        assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
-        assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext)context;
+        ContextHandler coreContext = app.getContextHandler();
+        org.eclipse.jetty.ee9.nested.ContextHandler contextHandler = null;
+        if (coreContext instanceof org.eclipse.jetty.ee9.nested.ContextHandler.CoreContextHandler coreContextHandler)
+        {
+           contextHandler = coreContextHandler.getContextHandler();
+        }
+        assertNotNull(contextHandler);
+        assertThat("ContextHandler.isStarted", contextHandler.isStarted(), is(true));
+        assertThat("ContextHandler.isFailed", contextHandler.isFailed(), is(false));
+        assertThat("ContextHandler.isAvailable", contextHandler.isAvailable(), is(false));
+        WebAppContext webapp = (WebAppContext)contextHandler;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getConfigurations())
         {
@@ -224,11 +236,18 @@ public class DeploymentErrorTest
         apps.addAll(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
-        assertThat("ContextHandler.isStarted", context.isStarted(), is(false));
-        assertThat("ContextHandler.isFailed", context.isFailed(), is(true));
-        assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext)context;
+        ContextHandler coreContext = app.getContextHandler();
+        org.eclipse.jetty.ee9.nested.ContextHandler contextHandler = null;
+        if (coreContext instanceof org.eclipse.jetty.ee9.nested.ContextHandler.CoreContextHandler coreContextHandler)
+        {
+           contextHandler = coreContextHandler.getContextHandler();
+        }
+        assertNotNull(contextHandler);
+        
+        assertThat("ContextHandler.isStarted", contextHandler.isStarted(), is(false));
+        assertThat("ContextHandler.isFailed", contextHandler.isFailed(), is(true));
+        assertThat("ContextHandler.isAvailable", contextHandler.isAvailable(), is(false));
+        WebAppContext webapp = (WebAppContext)contextHandler;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getConfigurations())
         {
@@ -270,11 +289,18 @@ public class DeploymentErrorTest
         apps.addAll(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
-        assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
-        assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
-        assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext)context;
+        ContextHandler coreContext = app.getContextHandler();
+        org.eclipse.jetty.ee9.nested.ContextHandler contextHandler = null;
+        if (coreContext instanceof org.eclipse.jetty.ee9.nested.ContextHandler.CoreContextHandler coreContextHandler)
+        {
+           contextHandler = coreContextHandler.getContextHandler();
+        }
+        assertNotNull(contextHandler);
+        
+        assertThat("ContextHandler.isStarted", contextHandler.isStarted(), is(true));
+        assertThat("ContextHandler.isFailed", contextHandler.isFailed(), is(false));
+        assertThat("ContextHandler.isAvailable", contextHandler.isAvailable(), is(false));
+        WebAppContext webapp = (WebAppContext)contextHandler;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getConfigurations())
         {

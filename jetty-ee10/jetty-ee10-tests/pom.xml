@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-tests</artifactId>
-  <name>EE10 :: Tests :: Parent</name>
+  <name>EE10 :: Tests</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -38,5 +38,6 @@
     <module>jetty-ee10-test-webapp-rfc2616</module>
     <module>jetty-ee10-test-weld-cdi-webapp</module>
     <module>jetty-ee10-test-badinit-webapp</module>
+    <module>jetty-ee10-test-sessions</module>
   </modules>
 </project>

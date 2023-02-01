@@ -48,11 +48,7 @@ public class DefaultHandlerTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handler = new DefaultHandler();
-        server.setHandler(new Handler.Collection(contexts, handler));
-
-        handler.setServeIcon(true);
-        handler.setShowContexts(true);
+        server.setHandler(new Handler.Collection(contexts, new DefaultHandler(true, true)));
 
         contexts.addHandler(new ContextHandler("/foo"));
         contexts.addHandler(new ContextHandler("/bar"));

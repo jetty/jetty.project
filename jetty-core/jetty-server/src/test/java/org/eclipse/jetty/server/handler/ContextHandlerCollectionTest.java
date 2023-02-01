@@ -60,6 +60,9 @@ public class ContextHandlerCollectionTest
             Arguments.of(1, "www.example.com", "/ctx/info", "A", HttpStatus.OK_200),
             Arguments.of(1, "alias.example.com", "/ctx/info", "A", HttpStatus.OK_200),
 
+            Arguments.of(0, "simple.example.com", "/ctxsimple/info", "H", HttpStatus.OK_200),
+            Arguments.of(1, "simple.example.com", "/ctxsimple/info", "G", HttpStatus.OK_200),
+
             Arguments.of(1, "www.other.com", "/ctx", "-", HttpStatus.MOVED_PERMANENTLY_301),
             Arguments.of(1, "www.other.com", "/ctx/", "B", HttpStatus.OK_200),
             Arguments.of(1, "www.other.com", "/ctx/info", "B", HttpStatus.OK_200),
@@ -105,10 +108,19 @@ public class ContextHandlerCollectionTest
         ContextHandler contextF = new ContextHandler("/ctxlong");
         contextF.setHandler(new IsHandledHandler("F"));
 
+        ContextHandler contextG = new ContextHandler("/ctxsimple");
+        contextG.setHandler(new IsHandledHandler("G"));
+        contextG.setVirtualHosts(List.of("@connector1")); // simple named connector
+
+        ContextHandler contextH = new ContextHandler("/ctxsimple");
+        contextH.setHandler(new IsHandledHandler("H"));
+
         ContextHandlerCollection c = new ContextHandlerCollection();
         c.addHandler(contextA);
         c.addHandler(contextB);
         c.addHandler(contextC);
+        c.addHandler(contextG);
+        c.addHandler(contextH);
 
         Handler.Collection handlers = new Handler.Collection();
         handlers.addHandler(contextE);
@@ -285,7 +297,7 @@ public class ContextHandlerCollectionTest
             String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-            assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("<h2>HTTP ERROR 404 Not Found</h2>"));
+            assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("Not Found"));
             assertThat("Response Header for [GET " + requestHost + "]", response.get("X-IsHandled-Name"), nullValue());
 
             connector.getResponse(rawRequest);

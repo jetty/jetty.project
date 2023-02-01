@@ -7,7 +7,7 @@
   </parent>
   <artifactId>jetty-ee8-demo-container-initializer</artifactId>
   <packaging>jar</packaging>
-  <name>EE8 :: Jetty Demo :: Servlet Spec :: ServletContainerInitializer Jar</name>
+  <name>EE8 :: Demo :: Servlet Spec :: ServletContainerInitializer Jar</name>
   <properties>
     <ee9.module>jetty-ee9-demos/jetty-ee9-demo-spec/jetty-ee9-demo-container-initializer</ee9.module>
     <bundle-symbolic-name>${project.groupId}.sci</bundle-symbolic-name>

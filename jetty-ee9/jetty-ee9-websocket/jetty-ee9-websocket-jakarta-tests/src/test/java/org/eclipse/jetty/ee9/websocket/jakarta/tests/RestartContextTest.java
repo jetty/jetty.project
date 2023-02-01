@@ -32,8 +32,6 @@ import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketSer
 import org.eclipse.jetty.ee9.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,7 +65,7 @@ public class RestartContextTest
         context.addEventListener(new AddEndpointListener());
 
         // Setup handler tree
-        server.setHandler(new HandlerList(context.getCoreContextHandler(), new DefaultHandler()));
+        server.setHandler(context.getCoreContextHandler());
 
         // Start server
         server.start();
@@ -103,11 +101,8 @@ public class RestartContextTest
             serverContainer.addEndpoint(EchoEndpoint.class);
         });
 
-        // Setup handler tree
-        HandlerList handlers = new HandlerList(context.getCoreContextHandler(), new DefaultHandler());
-
-        // Add handler tree to server
-        server.setHandler(handlers);
+        // Add context to server
+        server.setHandler(context);
 
         // Start server
         server.start();

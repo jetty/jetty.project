@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-annotations</artifactId>
-  <name>EE10 :: Jetty :: Servlet Annotations</name>
+  <name>EE10 :: Servlet Annotations</name>
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>

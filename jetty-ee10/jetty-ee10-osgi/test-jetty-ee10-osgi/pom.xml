@@ -6,11 +6,10 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-ee10-osgi</artifactId>
-  <name>EE10 :: Jetty :: OSGi :: Test</name>
+  <name>EE10 :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>

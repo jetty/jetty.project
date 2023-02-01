@@ -35,8 +35,7 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -55,7 +54,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
-    private ByteBufferPool _byteBufferPool;
+    private RetainableByteBufferPool _bufferPool;
     Resource _baseResource;
     ContextHandler _context;
     Resource _defaultStyleSheet;
@@ -106,7 +105,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? MimeTypes.DEFAULTS : _context.getMimeTypes();
 
-        _byteBufferPool = getByteBufferPool(_context);
+        _bufferPool = getRetainableByteBufferPool(_context);
         if (_resourceService.getHttpContentFactory() == null)
             _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(this);
@@ -114,15 +113,14 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         super.doStart();
     }
 
-    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    private static RetainableByteBufferPool getRetainableByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new NoopByteBufferPool();
+            return new RetainableByteBufferPool.NonPooling();
         Server server = contextHandler.getServer();
         if (server == null)
-            return new NoopByteBufferPool();
-        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
-        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+            return new RetainableByteBufferPool.NonPooling();
+        return server.getRetainableByteBufferPool();
     }
 
     public HttpContent.Factory getHttpContentFactory()
@@ -136,7 +134,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _bufferPool);
         return contentFactory;
     }
 
@@ -456,6 +454,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
      * @param baseResource The base resource as a string.
      * @deprecated use {@link #setBaseResource(Resource)}
      */
+    @Deprecated
     public void setBaseResourceAsString(String baseResource)
     {
         try

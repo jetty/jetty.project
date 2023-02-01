@@ -159,7 +159,7 @@ public class HTTP2ServerDocs
                         }
 
                         // Get the content buffer.
-                        ByteBuffer buffer = data.frame().getData();
+                        ByteBuffer buffer = data.frame().getByteBuffer();
 
                         // Consume the buffer, here - as an example - just log it.
                         System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);

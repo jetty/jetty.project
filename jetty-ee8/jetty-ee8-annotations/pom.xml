@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-annotations</artifactId>
-  <name>EE8 :: Jetty :: Servlet Annotations</name>
+  <name>EE8 :: Servlet Annotations</name>
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
     <ee9.module>jetty-ee9-annotations</ee9.module>

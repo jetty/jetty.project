@@ -50,6 +50,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
@@ -101,7 +102,7 @@ public class XmlConfiguration
         .flatMap(p -> Stream.of(p.get()))
         .toList();
     private static final Pool<ConfigurationParser> __parsers =
-        new Pool<>(Pool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
+        new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters
@@ -204,7 +205,7 @@ public class XmlConfiguration
 
     ConfigurationParser getParser()
     {
-        Pool<ConfigurationParser>.Entry entry = __parsers.acquire(ConfigurationParser::new);
+        Pool.Entry<ConfigurationParser> entry = __parsers.acquire(ConfigurationParser::new);
         if (entry == null)
             return new ConfigurationParser(null);
         return entry.getPooled();
@@ -2005,9 +2006,9 @@ public class XmlConfiguration
 
     private static class ConfigurationParser extends XmlParser implements AutoCloseable
     {
-        private final Pool<ConfigurationParser>.Entry _entry;
+        private final Pool.Entry<ConfigurationParser> _entry;
 
-        private ConfigurationParser(Pool<ConfigurationParser>.Entry entry)
+        private ConfigurationParser(Pool.Entry<ConfigurationParser> entry)
         {
             _entry = entry;
 

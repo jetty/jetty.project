@@ -10,7 +10,7 @@
   <artifactId>jetty-ee9-test-bad-websocket-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>EE9 :: Jetty Test :: Jetty Bad Websocket Simple Webapp</name>
+  <name>EE9 :: Tests :: Bad Websocket Simple WebApp</name>
   <description>Contains wrong websocket which should fail at deployment</description>
 
   <dependencies>
@@ -20,7 +20,7 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>
       <scope>provided</scope>
     </dependency>

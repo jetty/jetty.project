@@ -39,6 +39,16 @@ public class PathMappingsHandler extends Handler.AbstractContainer
 
     private final PathMappings<Handler> mappings = new PathMappings<>();
 
+    public PathMappingsHandler()
+    {
+        this(true);
+    }
+
+    public PathMappingsHandler(boolean dynamic)
+    {
+        super(dynamic);
+    }
+
     @Override
     public void addHandler(Handler handler)
     {
@@ -63,22 +73,17 @@ public class PathMappingsHandler extends Handler.AbstractContainer
             throw new IllegalStateException("Cannot add mapping: " + this);
 
         // check that self isn't present
-        if (handler == this || handler instanceof Handler.Container container && container.getDescendants().contains(this))
+        if (handler == this)
             throw new IllegalStateException("Unable to addHandler of self: " + handler);
 
-        // check existing mappings
-        for (MappedResource<Handler> entry : mappings)
-        {
-            Handler entryHandler = entry.getResource();
+        // check for loops
+        if (handler instanceof Handler.Container container && container.getDescendants().contains(this))
+            throw new IllegalStateException("loop detected: " + handler);
 
-            if (entryHandler == this ||
-                entryHandler == handler ||
-                (entryHandler instanceof Handler.Container container && container.getDescendants().contains(this)))
-                throw new IllegalStateException("addMapping loop detected: " + handler);
-        }
-
+        // add new mapping and remove any old
+        Handler old = mappings.get(pathSpec);
         mappings.put(pathSpec, handler);
-        addBean(handler);
+        updateBean(old, handler);
     }
 
     @Override

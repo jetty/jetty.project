@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee8</groupId>
   <artifactId>jetty-ee8</artifactId>
-  <name>EE8 :: Parent</name>
+  <name>EE8</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -47,7 +47,6 @@
     <module>jetty-ee8-glassfish-jstl</module>
     <module>jetty-ee8-bom</module>
     <module>jetty-ee8-demos</module>
-    <module>test-ee8-sessions</module>
     <module>jetty-ee8-home</module>
   </modules>
 

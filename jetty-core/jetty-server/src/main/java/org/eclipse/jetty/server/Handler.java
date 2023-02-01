@@ -297,9 +297,17 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         {
             // check state
             Server server = nested.getServer();
-            if (server != null && server.isStarted() && handler != null &&
-                server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
-                throw new IllegalArgumentException("Cannot change invocation type of started server");
+
+            // If the collection is changed whilst started, then the risk is that if we switch from NON_BLOCKING to BLOCKING
+            // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
+            // never block, only for it to lose the race and find a newly added BLOCKING handler.
+            if (server != null && server.isStarted() && handler != null)
+            {
+                InvocationType serverInvocationType = server.getInvocationType();
+                if (serverInvocationType != Invocable.combine(serverInvocationType, handler.getInvocationType()) &&
+                    serverInvocationType != InvocationType.BLOCKING)
+                    throw new IllegalArgumentException("Cannot change invocation type of started server");
+            }
 
             // Check for loops.
             if (handler == nested || (handler instanceof Handler.Container container &&
@@ -401,13 +409,33 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
      */
     abstract class AbstractContainer extends Abstract implements Container
     {
+        private boolean _dynamic;
+
         protected AbstractContainer()
         {
+            this(true);
         }
 
-        protected AbstractContainer(InvocationType invocationType)
+        /**
+         * @param dynamic If true, then handlers may be added to the container dynamically when started,
+         *                thus the InvocationType is assumed to be BLOCKING,
+         *                otherwise handlers cannot be modified once the container is started.
+         */
+        protected AbstractContainer(boolean dynamic)
         {
-            super(invocationType);
+            _dynamic = dynamic;
+        }
+
+        public boolean isDynamic()
+        {
+            return _dynamic;
+        }
+
+        public void setDynamic(boolean dynamic)
+        {
+            if (isStarted())
+                throw new IllegalStateException(getState());
+            _dynamic = dynamic;
         }
 
         @Override
@@ -468,6 +496,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         @Override
         public InvocationType getInvocationType()
         {
+            // Dynamic is always BLOCKING, as a blocking handler can be added at any time.
+            if (_dynamic)
+                return InvocationType.BLOCKING;
             InvocationType invocationType = InvocationType.NON_BLOCKING;
             for (Handler child : getHandlers())
                 invocationType = Invocable.combine(invocationType, child.getInvocationType());
@@ -512,8 +543,19 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             this(null);
         }
 
+        public Wrapper(boolean dynamic)
+        {
+            this(dynamic, null);
+        }
+
         public Wrapper(Handler handler)
         {
+            this(false, handler);
+        }
+
+        public Wrapper(boolean dynamic, Handler handler)
+        {
+            super(dynamic);
             _handler = handler == null ? null : Nested.updateHandler(this, handler);
         }
 
@@ -524,6 +566,8 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
         public void setHandler(Handler handler)
         {
+            if (!isDynamic() && isStarted())
+                throw new IllegalStateException(getState());
             _handler = Nested.updateHandler(this, handler);
         }
 
@@ -544,6 +588,8 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         @Override
         public InvocationType getInvocationType()
         {
+            if (isDynamic())
+                return InvocationType.BLOCKING;
             Handler next = getHandler();
             return next == null ? InvocationType.NON_BLOCKING : next.getInvocationType();
         }
@@ -557,15 +603,32 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
     class Collection extends AbstractContainer
     {
         private volatile List<Handler> _handlers = new ArrayList<>();
-        private volatile InvocationType _invocationType = InvocationType.BLOCKING;
 
         public Collection(Handler... handlers)
         {
-            this(List.of(handlers));
+            this(handlers.length == 0, List.of(handlers));
+        }
+
+        public Collection(boolean dynamic)
+        {
+            this(dynamic, Collections.emptyList());
         }
 
         public Collection(List<Handler> handlers)
         {
+            this(handlers == null || handlers.size() == 0, handlers);
+        }
+
+         /**
+         * @param dynamic If true, then handlers may be added dynamically once started,
+         *                so the InvocationType is assumed to be BLOCKING, otherwise
+         *                handlers cannot be modified once started.
+         *
+         * @param handlers The handlers to add.
+         */
+        public Collection(boolean dynamic, List<Handler> handlers)
+        {
+            super(dynamic);
             setHandlers(handlers);
         }
 
@@ -593,11 +656,14 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
         public void setHandlers(List<Handler> handlers)
         {
+            if (!isDynamic() && isStarted())
+                throw new IllegalStateException(getState());
+
             List<Handler> newHandlers = newHandlers(handlers);
 
             Server server = getServer();
-            InvocationType invocationType = server == null ? null : server.getInvocationType();
-            _invocationType = InvocationType.BLOCKING;  // switch to blocking invocation type whilst updating handlers;
+            InvocationType serverInvocationType = server == null ? null : server.getInvocationType();
+            InvocationType invocationType = InvocationType.NON_BLOCKING;
 
             // Check for loops && InvocationType changes.
             for (Handler handler : newHandlers)
@@ -609,24 +675,31 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
                     container.getDescendants().contains(this)))
                     throw new IllegalStateException("setHandler loop");
                 invocationType = Invocable.combine(invocationType, handler.getInvocationType());
-                if (server != null && server.isStarted() &&
-                    server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
-                    throw new IllegalArgumentException("Cannot change invocation type of started server");
-
                 if (server != null)
                     handler.setServer(server);
             }
 
+            // If the collection can be changed dynamically, then the risk is that if we switch from NON_BLOCKING to BLOCKING
+            // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
+            // never block, only for it to lose the race and find a newly added BLOCKING handler.
+            if (isDynamic() && server != null && server.isStarted() && serverInvocationType != invocationType && serverInvocationType != InvocationType.BLOCKING)
+                throw new IllegalArgumentException("Cannot change invocation type of started server");
+
             updateBeans(_handlers, handlers);
 
             _handlers = newHandlers;
-            _invocationType = invocationType;
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            return _invocationType == null ? super.getInvocationType() : _invocationType;
+            if (isDynamic())
+                return InvocationType.BLOCKING;
+
+            InvocationType invocationType = InvocationType.NON_BLOCKING;
+            for (Handler handler : _handlers)
+                invocationType = Invocable.combine(invocationType, handler.getInvocationType());
+            return invocationType;
         }
 
         protected List<Handler> newHandlers(List<Handler> handlers)

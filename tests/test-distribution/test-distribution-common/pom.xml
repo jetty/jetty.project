@@ -7,6 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-distribution-common</artifactId>
+  <name>Tests :: Distribution :: Common</name>
   <packaging>jar</packaging>
 
   <properties>
@@ -109,6 +110,10 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-infinispan-remote-query</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-core-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

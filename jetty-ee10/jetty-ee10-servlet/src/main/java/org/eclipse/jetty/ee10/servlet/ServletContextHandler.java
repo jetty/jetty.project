@@ -1158,6 +1158,15 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         getServletContext().removeAttribute(DecoratedObjectFactory.ATTR);
     }
 
+    protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel,
+                                                             Request request,
+                                                             Response response,
+                                                             String pathInContext,
+                                                             MatchedResource<ServletHandler.MappedServlet> matchedResource)
+    {
+        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext, matchedResource);
+    }
+
     @Override
     protected ServletContextRequest wrapRequest(Request request, Response response)
     {
@@ -1180,8 +1189,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             cache.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
-        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext,
-            matchedResource.getResource(), matchedResource.getPathSpec(), matchedResource.getMatchedPath());
+        ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, pathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
         return servletContextRequest;
     }

@@ -9,25 +9,19 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee10</groupId>
   <artifactId>jetty-ee10</artifactId>
-  <name>EE10 :: Parent</name>
+  <name>EE10</name>
   <packaging>pom</packaging>
 
   <properties>
-    <com.sun.mail.version>2.0.1</com.sun.mail.version>
-    <!-- TODO: Remove these javax.* entries? -->
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
-
-    <jakarta.activation.api.version>2.1.0</jakarta.activation.api.version>
+    <jakarta.activation.api.version>2.1.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>3.0.0</jakarta.authentication.api.version>
-    <jakarta.el.api.version>5.0.0</jakarta.el.api.version>
+    <jakarta.el.api.version>5.0.1</jakarta.el.api.version>
     <jakarta.enterprise.cdi.api.version>4.0.1</jakarta.enterprise.cdi.api.version>
     <jakarta.enterprise.lang.model.version>4.0.1</jakarta.enterprise.lang.model.version>
     <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
     <jakarta.interceptor.api.version>2.1.0</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.1.0</jakarta.mail.api.version>
+    <jakarta.mail.api.version>2.1.1</jakarta.mail.api.version>
     <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
     <jakarta.servlet.api.version>6.0.0</jakarta.servlet.api.version>
     <jakarta.servlet.jsp.api.version>3.1.0</jakarta.servlet.jsp.api.version>
@@ -35,11 +29,14 @@
     <jakarta.servlet.jsp.jstl.impl.version>3.0.1</jakarta.servlet.jsp.jstl.impl.version>
     <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
     <jakarta.xml.bind.api.version>4.0.0</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>4.0.0</jakarta.xml.bind.impl.version>
+    <jakarta.xml.bind.impl.version>4.0.1</jakarta.xml.bind.impl.version>
     <jakarta.xml.ws.api.version>4.0.0</jakarta.xml.ws.api.version>
-    <jakarta.xml.jaxws.impl.version>4.0.0-M4</jakarta.xml.jaxws.impl.version>
+    <jakarta.xml.jaxws.impl.version>4.0.0</jakarta.xml.jaxws.impl.version>
     <jakarta.websocket.api.version>2.1.0</jakarta.websocket.api.version>
+
     <jsp.impl.version>10.1.1</jsp.impl.version>
+    <mail.impl.version>2.0.1</mail.impl.version>
+
     <sonar.skip>true</sonar.skip>
   </properties>
 
@@ -67,9 +64,8 @@
     <module>jetty-ee10-webapp</module>
     <module>jetty-ee10-websocket</module>
     <module>jetty-ee10-tests</module>
-    <module>jetty-examples</module>
+    <module>jetty-ee10-examples</module>
     <module>jetty-ee10-bom</module>
-    <module>test-ee10-sessions</module>
     <module>jetty-ee10-home</module>
   </modules>
 
@@ -282,7 +278,7 @@
       <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
-        <version>${com.sun.mail.version}</version>
+        <version>${mail.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.el</groupId>
@@ -394,21 +390,38 @@
         <artifactId>jakarta.servlet.jsp.jstl</artifactId>
         <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.mail.glassfish</artifactId>
-        <version>${javax.mail.glassfish.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.activation</artifactId>
-        <version>${javax.activation.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.security.auth.message</artifactId>
-        <version>${javax.security.auth.message.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <!--
+        $ mvn -Pdependency-updates-reports validate
+        # once done, check the jetty-ee10/target/site/dependency-updates-aggregate-report.html
+        -->
+      <id>dependency-updates-reports</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>ee10-report</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>dependency-updates-aggregate-report</goal>
+                </goals>
+                <configuration>
+                  <formats>
+                    <format>html</format>
+                  </formats>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

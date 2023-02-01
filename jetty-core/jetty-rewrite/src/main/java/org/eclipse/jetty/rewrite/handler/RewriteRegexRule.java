@@ -22,7 +22,6 @@ import org.eclipse.jetty.util.annotation.Name;
 /**
  * <p>A rule to rewrite the path and query that match a regular expression pattern with a fixed string.</p>
  * <p>The replacement String follows standard {@link Matcher#replaceAll(String)} behavior, including named groups</p>
- * <p></p>
  */
 public class RewriteRegexRule extends RegexRule
 {

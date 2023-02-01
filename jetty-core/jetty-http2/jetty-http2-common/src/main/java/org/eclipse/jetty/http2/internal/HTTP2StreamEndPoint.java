@@ -215,7 +215,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     private int fillFromData(Stream.Data data, ByteBuffer sink)
     {
         int length = 0;
-        ByteBuffer source = data.frame().getData();
+        ByteBuffer source = data.frame().getByteBuffer();
         boolean hasContent = source.hasRemaining();
         if (hasContent)
         {

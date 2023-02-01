@@ -17,7 +17,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -37,19 +38,17 @@ public class MessageOutputStream extends OutputStream
 
     private final AutoLock lock = new AutoLock();
     private final CoreSession coreSession;
-    private final ByteBufferPool bufferPool;
     private final int bufferSize;
+    private final RetainableByteBuffer buffer;
     private long frameCount;
     private long bytesSent;
-    private ByteBuffer buffer;
     private Callback callback;
     private boolean closed;
     private byte messageOpCode = OpCode.BINARY;
 
-    public MessageOutputStream(CoreSession coreSession, ByteBufferPool bufferPool)
+    public MessageOutputStream(CoreSession coreSession, RetainableByteBufferPool bufferPool)
     {
         this.coreSession = coreSession;
-        this.bufferPool = bufferPool;
         this.bufferSize = coreSession.getOutputBufferSize();
         this.buffer = bufferPool.acquire(bufferSize, true);
     }
@@ -120,14 +119,14 @@ public class MessageOutputStream extends OutputStream
 
     private void flush(boolean fin) throws IOException
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (closed)
                 throw new IOException("Stream is closed");
 
             closed = fin;
             Frame frame = new Frame(frameCount == 0 ? messageOpCode : OpCode.CONTINUATION);
-            frame.setPayload(buffer);
+            frame.setPayload(buffer.getByteBuffer());
             frame.setFin(fin);
 
             int initialBufferSize = buffer.remaining();
@@ -143,7 +142,7 @@ public class MessageOutputStream extends OutputStream
             try
             {
                 assert buffer.remaining() == initialBufferSize;
-                BufferUtil.clear(buffer);
+                buffer.clear();
             }
             catch (Throwable t)
             {
@@ -154,7 +153,7 @@ public class MessageOutputStream extends OutputStream
 
     private void send(ByteBuffer data) throws IOException
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (closed)
                 throw new IOException("Stream is closed");
@@ -163,7 +162,7 @@ public class MessageOutputStream extends OutputStream
             {
                 int bufferRemainingSpace = bufferSize - buffer.remaining();
                 int copied = Math.min(bufferRemainingSpace, data.remaining());
-                BufferUtil.append(buffer, data.array(), data.arrayOffset() + data.position(), copied);
+                BufferUtil.append(buffer.getByteBuffer(), data.array(), data.arrayOffset() + data.position(), copied);
                 data.position(data.position() + copied);
 
                 if (data.hasRemaining())
@@ -178,7 +177,7 @@ public class MessageOutputStream extends OutputStream
         try
         {
             flush(true);
-            bufferPool.release(buffer);
+            buffer.release();
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream closed, {} frames ({} bytes) sent", frameCount, bytesSent);
             // Notify without holding locks.
@@ -194,7 +193,7 @@ public class MessageOutputStream extends OutputStream
 
     public void setCallback(Callback callback)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             this.callback = callback;
         }
@@ -203,7 +202,7 @@ public class MessageOutputStream extends OutputStream
     private void notifySuccess()
     {
         Callback callback;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             callback = this.callback;
         }
@@ -214,7 +213,7 @@ public class MessageOutputStream extends OutputStream
     private void notifyFailure(Throwable failure)
     {
         Callback callback;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             callback = this.callback;
         }

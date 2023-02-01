@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-xml</artifactId>
-  <name>Jetty Core :: XML utilities</name>
+  <name>Core :: XML</name>
   <description>The jetty xml utilities.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.xml</bundle-symbolic-name>

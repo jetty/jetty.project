@@ -1,7 +1,7 @@
 #!groovy
 
 pipeline {
-  agent any
+  agent none
   // save some io during the build
   options {
     skipDefaultCheckout()
@@ -105,7 +105,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -Dmaven.repo.uri=http://10.0.0.15:8081/repository/maven-public/ -Dmaven.test.failure.ignore=true -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -DexcludedGroups=\"external, large-disk-resource, stress, slow, not-on-ci, flaky\" -V -B -e -Djetty.testtracker.log=true $cmdline"
+          sh "mvn -Dmaven.repo.uri=http://10.0.0.15:8081/repository/maven-public/ -Dmaven.test.failure.ignore=true -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -DexcludedGroups=\"external, large-disk-resource, stress, slow, not-on-ci, flaky\" -V -B -e -Djetty.testtracker.log=true -Dsurefire.rerunFailingTestsCount=1 $cmdline"
         }
       }
     }

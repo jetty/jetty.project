@@ -13,69 +13,61 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.net.URI;
-import java.net.URL;
-import java.util.List;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.IO;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled // TODO
 public class SecuredRedirectHandlerTest
 {
     private static Server server;
-    private static HostnameVerifier origVerifier;
-    private static SSLSocketFactory origSsf;
     private static URI serverHttpUri;
     private static URI serverHttpsUri;
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    public void startServer(Handler handler) throws Exception
     {
         // Setup SSL
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
+        Path keystore = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
+        sslContextFactory.setKeyStorePath(keystore.toUri().toASCIIString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         server = new Server();
 
-        int port = 32080;
-        int securePort = 32443;
-
         // Setup HTTP Configuration
         HttpConfiguration httpConf = new HttpConfiguration();
-        httpConf.setSecurePort(securePort);
         httpConf.setSecureScheme("https");
 
         ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConf));
         httpConnector.setName("unsecured");
-        httpConnector.setPort(port);
+        httpConnector.setPort(0);
 
         // Setup HTTPS Configuration
         HttpConfiguration httpsConf = new HttpConfiguration(httpConf);
@@ -83,178 +75,281 @@ public class SecuredRedirectHandlerTest
 
         ServerConnector httpsConnector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConf));
         httpsConnector.setName("secured");
-        httpsConnector.setPort(securePort);
+        httpsConnector.setPort(0);
 
         // Add connectors
-        server.setConnectors(new Connector[]{httpConnector, httpsConnector});
-
-        // Wire up contexts
-        List<String> secureHosts = List.of("@secured");
-
-        ContextHandler test1Context = new ContextHandler();
-        test1Context.setContextPath("/test1");
-        test1Context.setHandler(new HelloHandler("Hello1"));
-        test1Context.setVirtualHosts(secureHosts);
-
-        ContextHandler test2Context = new ContextHandler();
-        test2Context.setContextPath("/test2");
-        test2Context.setHandler(new HelloHandler("Hello2"));
-        test2Context.setVirtualHosts(secureHosts);
-
-        ContextHandler rootContext = new ContextHandler();
-        rootContext.setContextPath("/");
-        // TODO rootContext.setHandler(new RootHandler("/test1", "/test2"));
-        rootContext.setVirtualHosts(secureHosts);
-
-        // Wire up context for unsecure handling to only
-        // the named 'unsecured' connector
-        ContextHandler redirectHandler = new ContextHandler();
-        redirectHandler.setContextPath("/");
-        redirectHandler.setHandler(new SecuredRedirectHandler());
-        redirectHandler.setVirtualHosts(List.of("@unsecured"));
-
-        // Establish all handlers that have a context
-        ContextHandlerCollection contextHandlers = new ContextHandlerCollection();
-        contextHandlers.setHandlers(redirectHandler, rootContext, test1Context, test2Context);
+        server.addConnector(httpConnector);
+        server.addConnector(httpsConnector);
 
         // Create server level handler tree
-        server.setHandler(new HandlerList(contextHandlers, new DefaultHandler()));
+        server.setHandler(handler);
 
         server.start();
 
-        // calculate serverUri
+        // calculate Server URIs
         String host = httpConnector.getHost();
         if (host == null)
         {
             host = "localhost";
         }
-        serverHttpUri = new URI(String.format("http://%s:%d/", host, httpConnector.getLocalPort()));
-        serverHttpsUri = new URI(String.format("https://%s:%d/", host, httpsConnector.getLocalPort()));
-
-        origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
-        origSsf = HttpsURLConnection.getDefaultSSLSocketFactory();
-
-        HttpsURLConnection.setDefaultHostnameVerifier(new AllowAllVerifier());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sslContextFactory.getSslContext().getSocketFactory());
+        serverHttpUri = new URI(String.format("http://localhost:%d/", httpConnector.getLocalPort()));
+        serverHttpsUri = new URI(String.format("https://localhost:%d/", httpsConnector.getLocalPort()));
+        httpConf.setSecurePort(httpsConnector.getLocalPort());
     }
 
     @AfterAll
     public static void stopServer() throws Exception
     {
-        HttpsURLConnection.setDefaultSSLSocketFactory(origSsf);
-        HttpsURLConnection.setDefaultHostnameVerifier(origVerifier);
-
-        server.stop();
-        server.join();
+        LifeCycle.stop(server);
     }
 
+    /**
+     * Access the root resource in an unsecured way that is protected by the SecuredRedirectHandler.
+     * Should result in a redirect to the secure location.
+     */
     @Test
     public void testRedirectUnsecuredRoot() throws Exception
     {
-        URL url = serverHttpUri.resolve("/").toURL();
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        connection.setInstanceFollowRedirects(false);
-        connection.setAllowUserInteraction(false);
-        assertThat("response code", connection.getResponseCode(), is(302));
-        assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/").toASCIIString()));
-        connection.disconnect();
-    }
+        ContextHandler test1Context = new ContextHandler();
+        test1Context.setContextPath("/test1");
+        test1Context.setHandler(new HelloHandler("Hello-from-test1"));
 
-    @Test
-    public void testRedirectSecuredRoot() throws Exception
-    {
-        URL url = serverHttpsUri.resolve("/").toURL();
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        connection.setInstanceFollowRedirects(false);
-        connection.setAllowUserInteraction(false);
-        assertThat("response code", connection.getResponseCode(), is(200));
-        String content = getContent(connection);
-        assertThat("response content", content, containsString("<a href=\"/test1\">"));
-        connection.disconnect();
-    }
+        ContextHandler test2Context = new ContextHandler();
+        test2Context.setContextPath("/test2");
+        test2Context.setHandler(new HelloHandler("Hello-from-test2"));
 
-    @Test
-    public void testAccessUnsecuredHandler() throws Exception
-    {
-        URL url = serverHttpUri.resolve("/test1").toURL();
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        connection.setInstanceFollowRedirects(false);
-        connection.setAllowUserInteraction(false);
-        assertThat("response code", connection.getResponseCode(), is(302));
-        assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/test1").toASCIIString()));
-        connection.disconnect();
-    }
+        ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+        contextHandlerCollection.addHandler(test1Context);
+        contextHandlerCollection.addHandler(test2Context);
 
-    @Test
-    public void testAccessUnsecured404() throws Exception
-    {
-        URL url = serverHttpUri.resolve("/nothing/here").toURL();
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        connection.setInstanceFollowRedirects(false);
-        connection.setAllowUserInteraction(false);
-        assertThat("response code", connection.getResponseCode(), is(302));
-        assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/nothing/here").toASCIIString()));
-        connection.disconnect();
-    }
+        SecuredRedirectHandler securedRedirectHandler = new SecuredRedirectHandler();
+        securedRedirectHandler.setHandler(contextHandlerCollection);
 
-    @Test
-    public void testAccessSecured404() throws Exception
-    {
-        URL url = serverHttpsUri.resolve("/nothing/here").toURL();
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        connection.setInstanceFollowRedirects(false);
-        connection.setAllowUserInteraction(false);
-        assertThat("response code", connection.getResponseCode(), is(404));
-        connection.disconnect();
-    }
+        startServer(securedRedirectHandler);
 
-    private String getContent(HttpURLConnection connection) throws IOException
-    {
-        try (InputStream in = connection.getInputStream();
-             InputStreamReader reader = new InputStreamReader(in))
+        URI destURI = serverHttpUri.resolve("/");
+        try (Socket socket = newSocket(destURI);
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
         {
-            StringWriter writer = new StringWriter();
-            IO.copy(reader, writer);
-            return writer.toString();
+            String rawRequest = """
+                GET %s HTTP/1.1
+                Host: %s:%d
+                Connection: close
+                
+                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+            URI expectedURI = serverHttpsUri.resolve("/");
+            assertEquals(expectedURI.toASCIIString(), response.get(HttpHeader.LOCATION));
         }
     }
 
-    /* TODO
-    public static class RootHandler extends AbstractHandler
-    {
-        private final String[] childContexts;
-
-        public RootHandler(String... children)
-        {
-            this.childContexts = children;
-        }
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            if (!"/".equals(target))
-            {
-                baseRequest.setHandled(true);
-                response.sendError(404);
-                return;
-            }
-
-            response.setContentType("text/html");
-            PrintWriter out = response.getWriter();
-            out.println("<html>");
-            out.println("<head><title>Contexts</title></head>");
-            out.println("<body>");
-            out.println("<h4>Child Contexts</h4>");
-            out.println("<ul>");
-            for (String child : childContexts)
-            {
-                out.printf("<li><a href=\"%s\">%s</a></li>%n", child, child);
-            }
-            out.println("</ul>");
-            out.println("</body></html>");
-            baseRequest.setHandled(true);
-        }
-    }
-
+    /**
+     * Access a resource in a secured way that is protected by the SecuredRedirectHandler.
+     * Normal access to the resource should occur.
      */
+    @Test
+    public void testSecuredRequestToProtectedHandler() throws Exception
+    {
+        ContextHandler test1Context = new ContextHandler();
+        test1Context.setContextPath("/test1");
+        test1Context.setHandler(new HelloHandler("Hello-from-test1"));
+
+        SecuredRedirectHandler securedRedirectHandler = new SecuredRedirectHandler();
+        securedRedirectHandler.setHandler(test1Context);
+
+        startServer(securedRedirectHandler);
+
+        URI destURI = serverHttpsUri.resolve("/test1/info");
+        try (Socket socket = newSecureSocket(destURI);
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
+        {
+            String rawRequest = """
+                GET %s HTTP/1.1
+                Host: %s:%d
+                Connection: close
+                
+                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat(response.getContent(), is("Hello-from-test1"));
+        }
+    }
+
+    /**
+     * Access a resource in an unsecured way that is protected by the SecuredRedirectHandler.
+     * Should result in a redirect to the secure location.
+     */
+    @Test
+    public void testUnsecuredRequestToProtectedHandler() throws Exception
+    {
+        ContextHandler test1Context = new ContextHandler();
+        test1Context.setContextPath("/test1");
+        test1Context.setHandler(new HelloHandler("Hello-from-test1"));
+
+        SecuredRedirectHandler securedRedirectHandler = new SecuredRedirectHandler();
+        securedRedirectHandler.setHandler(test1Context);
+
+        startServer(securedRedirectHandler);
+
+        URI destURI = serverHttpUri.resolve("/test1/info");
+        try (Socket socket = newSocket(destURI);
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
+        {
+            String rawRequest = """
+                GET %s HTTP/1.1
+                Host: %s:%d
+                Connection: close
+                
+                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+            URI expectedURI = serverHttpsUri.resolve("/test1/info");
+            assertEquals(expectedURI.toASCIIString(), response.get(HttpHeader.LOCATION));
+        }
+    }
+
+    /**
+     * Attempt to access a resource that doesn't exist in unsecure mode.
+     * This should redirect to the same non-existent resource in secure mode.
+     */
+    @Test
+    public void testUnsecuredRequestTo404() throws Exception
+    {
+        ContextHandler test1Context = new ContextHandler();
+        test1Context.setContextPath("/test1");
+        test1Context.setHandler(new HelloHandler("Hello1"));
+
+        SecuredRedirectHandler securedRedirectHandler = new SecuredRedirectHandler();
+        securedRedirectHandler.setHandler(test1Context);
+
+        startServer(securedRedirectHandler);
+
+        URI destURI = serverHttpUri.resolve("/nothing/here");
+        try (Socket socket = newSocket(destURI);
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
+        {
+            String rawRequest = """
+                GET %s HTTP/1.1
+                Host: %s:%d
+                Connection: close
+                
+                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+            URI expectedURI = serverHttpsUri.resolve("/nothing/here");
+            assertEquals(expectedURI.toASCIIString(), response.get(HttpHeader.LOCATION));
+        }
+    }
+
+    /**
+     * Secure request to non-existent resource
+     */
+    @Test
+    public void testSecuredRequestTo404() throws Exception
+    {
+        ContextHandler test1Context = new ContextHandler();
+        test1Context.setContextPath("/test1");
+        test1Context.setHandler(new HelloHandler("Hello1"));
+
+        SecuredRedirectHandler securedRedirectHandler = new SecuredRedirectHandler();
+        securedRedirectHandler.setHandler(test1Context);
+
+        startServer(securedRedirectHandler);
+
+        URI destURI = serverHttpsUri.resolve("/nothing/here");
+        try (Socket socket = newSecureSocket(destURI);
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
+        {
+            String rawRequest = """
+                GET %s HTTP/1.1
+                Host: %s:%d
+                Connection: close
+                
+                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+        }
+    }
+
+    /**
+     * An unsecured request to a resource that passes through the {@link SecuredRedirectHandler}
+     * but the underlying Handler doesn't process the request (returns false), the redirect
+     * will occur before the child handler is processed.
+     */
+    @Test
+    public void testUnsecuredRequestToNullChildHandler() throws Exception
+    {
+        Handler.Collection handlers = new Handler.Collection();
+        SecuredRedirectHandler securedRedirectHandler = new SecuredRedirectHandler(HttpStatus.MOVED_PERMANENTLY_301);
+        handlers.addHandler(securedRedirectHandler); // first handler (no children)
+        handlers.addHandler(new HelloHandler("Hello-from-test"));
+
+        startServer(handlers);
+
+        URI destURI = serverHttpUri.resolve("/foo");
+        try (Socket socket = newSocket(destURI);
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
+        {
+            String rawRequest = """
+                GET %s HTTP/1.1
+                Host: %s:%d
+                Connection: close
+                
+                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
+            URI expectedURI = serverHttpsUri.resolve("/foo");
+            assertEquals(expectedURI.toASCIIString(), response.get(HttpHeader.LOCATION));
+        }
+
+        destURI = serverHttpsUri.resolve("/foo");
+        try (Socket socket = newSecureSocket(destURI);
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
+        {
+            String rawRequest = """
+                GET %s HTTP/1.1
+                Host: %s:%d
+                Connection: close
+                
+                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat(response.getContent(), is("Hello-from-test"));
+        }
+    }
+
+    private Socket newSocket(URI destURI) throws NoSuchAlgorithmException, KeyManagementException, IOException
+    {
+        return new Socket(destURI.getHost(), destURI.getPort());
+    }
+
+    private Socket newSecureSocket(URI destURI) throws NoSuchAlgorithmException, KeyManagementException, IOException
+    {
+        SSLContext ctx = SSLContext.getInstance("TLSv1.2");
+        ctx.init(null, SslContextFactory.TRUST_ALL_CERTS, null);
+        SSLSocketFactory socketFactory = ctx.getSocketFactory();
+        return socketFactory.createSocket(destURI.getHost(), destURI.getPort());
+    }
 }

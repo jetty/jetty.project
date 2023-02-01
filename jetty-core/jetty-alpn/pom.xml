@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty Core :: ALPN :: Parent</name>
+  <name>Core :: ALPN</name>
 
   <modules>
     <module>jetty-alpn-server</module>

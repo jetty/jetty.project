@@ -18,41 +18,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpCookie
+/**
+ * Jetty Management of RFC6265 HTTP Cookies (with fallback support for RFC2965)
+ */
+public interface HttpCookie
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpCookie.class);
+    Logger LOG = LoggerFactory.getLogger(HttpCookie.class);
     
-    private static final String __COOKIE_DELIM = "\",;\\ \t";
-    private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
+    String __COOKIE_DELIM = "\",;\\ \t";
+    String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
-    /**
-     * If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
-     **/
-    public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
-    /**
-     * These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
-     **/
-    private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
-    public static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
-    public static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
-    public static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
+    String COMMENT_ATTRIBUTE = "Comment";
+    String DOMAIN_ATTRIBUTE = "Domain";
+    String HTTP_ONLY_ATTRIBUTE = "HttpOnly";
+    String MAX_AGE_ATTRIBUTE = "Max-Age";
+    String PATH_ATTRIBUTE = "Path";
+    String SAME_SITE_ATTRIBUTE = "SameSite";
+    String SECURE_ATTRIBUTE = "Secure";
+    Index<String> KNOWN_ATTRIBUTES = new Index.Builder<String>().caseSensitive(false)
+        .with(COMMENT_ATTRIBUTE)
+        .with(DOMAIN_ATTRIBUTE)
+        .with(HTTP_ONLY_ATTRIBUTE)
+        .with(MAX_AGE_ATTRIBUTE)
+        .with(PATH_ATTRIBUTE)
+        .with(SAME_SITE_ATTRIBUTE)
+        .with(SECURE_ATTRIBUTE)
+        .build();
 
     /**
      * Name of context attribute with default SameSite cookie value
      */
-    public static final String SAME_SITE_DEFAULT_ATTRIBUTE = "org.eclipse.jetty.cookie.sameSiteDefault";
+    String SAME_SITE_DEFAULT_ATTRIBUTE = "org.eclipse.jetty.cookie.sameSiteDefault";
 
-    public enum SameSite
+    enum SameSite
     {
         NONE("None"),
         STRICT("Strict"),
@@ -69,194 +76,288 @@ public class HttpCookie
         {
             return this.attributeValue;
         }
+
+        private static final Index<SameSite> CACHE = new Index.Builder<SameSite>()
+            .caseSensitive(false)
+            .with(NONE.attributeValue, NONE)
+            .with(STRICT.attributeValue, STRICT)
+            .with(LAX.attributeValue, LAX)
+            .build();
+
+        public static SameSite from(String sameSite)
+        {
+            if (sameSite == null)
+                return null;
+            return CACHE.get(sameSite);
+        }
     }
 
-    private final String _name;
-    private final String _value;
-    private final String _comment;
-    private final String _domain;
-    private final long _maxAge;
-    private final String _path;
-    private final boolean _secure;
-    private final int _version;
-    private final boolean _httpOnly;
-    private final long _expiration;
-    private final Map<String, String> _attributes;
-
-    public HttpCookie(String name, String value)
+    /**
+     * Create new HttpCookie from specific values.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     */
+    static HttpCookie from(String name, String value)
     {
-        this(name, value, -1);
+        return new Immutable(name, value, 0, null);
     }
 
-    public HttpCookie(String name, String value, String domain, String path)
+    /**
+     * Create new HttpCookie from specific values and attributes.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param attributes the map of attributes to use with this cookie (this map is used for field values
+     *   such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
+     *   {@link #isSecure()}, {@link #getComment()}.  These attributes are removed from the stored
+     *   attributes returned from {@link #getAttributes()}.
+     */
+    static HttpCookie from(String name, String value, Map<String, String> attributes)
     {
-        this(name, value, domain, path, -1, false, false);
+        return new Immutable(name, value, 0, attributes);
     }
 
-    public HttpCookie(String name, String value, long maxAge)
+    /**
+     * Create new HttpCookie from specific values and attributes.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param version the version of the cookie (only used in RFC2965 mode)
+     * @param attributes the map of attributes to use with this cookie (this map is used for field values
+     *   such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
+     *   {@link #isSecure()}, {@link #getComment()}.  These attributes are removed from the stored
+     *   attributes returned from {@link #getAttributes()}.
+     */
+    static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
     {
-        this(name, value, null, null, maxAge, false, false);
+        if (attributes == null || attributes.isEmpty())
+            return new Immutable(name, value, version, Collections.emptyMap());
+
+        Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        attrs.putAll(attributes);
+
+        return new Immutable(name, value, version, attrs);
     }
 
-    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure)
+    /**
+     * @param cookie A cookie to base the new cookie on.
+     * @param additionalAttributes Additional name value pairs of strings to use as additional attributes
+     * @return A new cookie based on the passed cookie plus additional attributes.
+     */
+    static HttpCookie from(HttpCookie cookie, String... additionalAttributes)
     {
-        this(name, value, domain, path, maxAge, httpOnly, secure, null, 0);
-    }
-
-    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
-    {
-        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, (SameSite)null);
-    }
-
-    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite)
-    {
-
-        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, Collections.singletonMap("SameSite", sameSite == null ? null : sameSite.getAttributeValue()));
-    }
-
-    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, Map<String, String> attributes)
-    {
-        _name = name;
-        _value = value;
-        _domain = domain;
-        _path = path;
-        _maxAge = maxAge;
-        _httpOnly = httpOnly;
-        _secure = secure;
-        _comment = comment;
-        _version = version;
-        _expiration = maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(maxAge);
-        _attributes = (attributes == null ? Collections.emptyMap() : attributes);
-    }
-
-    public HttpCookie(String name, String value, int version, Map<String, String> attributes)
-    {
-        _name = name;
-        _value = value;
-        _version = version;
-        _attributes = (attributes == null ? Collections.emptyMap() : new TreeMap<>(attributes));
-
-        //remove all of the well-known attributes, leaving only those pass-through ones
-        _domain = _attributes.remove("Domain");
-        _path = _attributes.remove("Path");
-
-        String tmp = _attributes.remove("Max-Age");
-        _maxAge = StringUtil.isBlank(tmp) ? -1L : Long.valueOf(tmp);
-        _expiration = _maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(_maxAge);
-        _httpOnly = Boolean.parseBoolean(_attributes.remove("HttpOnly"));
-        _secure = Boolean.parseBoolean(_attributes.remove("Secure"));
-        _comment = _attributes.remove("Comment");
+        if (additionalAttributes.length % 2 != 0)
+            throw new IllegalArgumentException("additional attributes must have name and value");
+        Map<String, String> attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        attributes.putAll(Objects.requireNonNull(cookie).getAttributes());
+        for (int i = 0; i < additionalAttributes.length; i += 2)
+            attributes.put(additionalAttributes[i], additionalAttributes[i + 1]);
+        return new Immutable(cookie.getName(), cookie.getValue(), cookie.getVersion(), attributes);
     }
 
     /**
      * @return the cookie name
      */
-    public String getName()
-    {
-        return _name;
-    }
+    String getName();
 
     /**
      * @return the cookie value
      */
-    public String getValue()
-    {
-        return _value;
-    }
-
-    /**
-     * @return the cookie comment
-     */
-    public String getComment()
-    {
-        return _comment;
-    }
-
-    /**
-     * @return the cookie domain
-     */
-    public String getDomain()
-    {
-        return _domain;
-    }
-
-    /**
-     * @return the cookie max age in seconds
-     */
-    public long getMaxAge()
-    {
-        return _maxAge;
-    }
-
-    /**
-     * @return the cookie path
-     */
-    public String getPath()
-    {
-        return _path;
-    }
-
-    /**
-     * @return whether the cookie is valid for secure domains
-     */
-    public boolean isSecure()
-    {
-        return _secure;
-    }
+    String getValue();
 
     /**
      * @return the cookie version
      */
-    public int getVersion()
+    int getVersion();
+
+    /**
+     * @return the cookie comment.
+     *         Equivalent to a `get` of {@link #COMMENT_ATTRIBUTE} on {@link #getAttributes()}.
+     */
+    default String getComment()
     {
-        return _version;
+        return getAttributes().get(COMMENT_ATTRIBUTE);
     }
 
     /**
-     * @return the cookie SameSite enum attribute
+     * @return the cookie domain.
+     *         Equivalent to a `get` of {@link #DOMAIN_ATTRIBUTE} on {@link #getAttributes()}.
      */
-    public SameSite getSameSite()
+    default String getDomain()
     {
-        String val = _attributes.get("SameSite");
-        if (val == null)
-            return null;
-        return SameSite.valueOf(val.toUpperCase(Locale.ENGLISH));
+        return getAttributes().get(DOMAIN_ATTRIBUTE);
+    }
+
+    /**
+     * @return the cookie max age in seconds
+     *         Equivalent to a `get` of {@link #MAX_AGE_ATTRIBUTE} on {@link #getAttributes()}.
+     */
+    default long getMaxAge()
+    {
+        String ma = getAttributes().get(MAX_AGE_ATTRIBUTE);
+        return ma == null ? -1 : Long.parseLong(ma);
+    }
+
+    /**
+     * @return the cookie path
+     *         Equivalent to a `get` of {@link #PATH_ATTRIBUTE} on {@link #getAttributes()}.
+     */
+    default String getPath()
+    {
+        return getAttributes().get(PATH_ATTRIBUTE);
+    }
+
+    /**
+     * @return whether the cookie is valid for secure domains
+     *         Equivalent to a `get` of {@link #SECURE_ATTRIBUTE} on {@link #getAttributes()}.
+     */
+    default boolean isSecure()
+    {
+        return Boolean.parseBoolean(getAttributes().get(SECURE_ATTRIBUTE));
+    }
+
+    /**
+     * @return the cookie {@code SameSite} attribute value
+     *         Equivalent to a `get` of {@link #SAME_SITE_ATTRIBUTE} on {@link #getAttributes()}.
+     */
+    default SameSite getSameSite()
+    {
+        return SameSite.from(getAttributes().get(SAME_SITE_ATTRIBUTE));
     }
 
     /**
      * @return whether the cookie is valid for the http protocol only
+     *         Equivalent to a `get` of {@link #HTTP_ONLY_ATTRIBUTE} on {@link #getAttributes()}.
      */
-    public boolean isHttpOnly()
+    default boolean isHttpOnly()
     {
-        return _httpOnly;
+        return Boolean.parseBoolean(getAttributes().get(HTTP_ONLY_ATTRIBUTE));
     }
 
     /**
-     * @param timeNanos the time to check for cookie expiration, in nanoseconds
-     * @return whether the cookie is expired by the given time
+     * @return the attributes associated with this cookie
      */
-    public boolean isExpired(long timeNanos)
+    Map<String, String> getAttributes();
+
+    /**
+     * @return a string representation of this cookie
+     */
+    default String asString()
     {
-        return _expiration != -1 && NanoTime.isBefore(_expiration, timeNanos);
+        return HttpCookie.asString(this);
     }
 
     /**
      * @return a string representation of this cookie
      */
-    public String asString()
+    static String asString(HttpCookie httpCookie)
     {
         StringBuilder builder = new StringBuilder();
-        builder.append(getName()).append("=").append(getValue());
-        if (getDomain() != null)
-            builder.append(";$Domain=").append(getDomain());
-        if (getPath() != null)
-            builder.append(";$Path=").append(getPath());
+        builder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
+        String domain = httpCookie.getDomain();
+        if (domain != null)
+            builder.append(";$Domain=").append(domain);
+        String path = httpCookie.getPath();
+        if (path != null)
+            builder.append(";$Path=").append(path);
         return builder.toString();
     }
 
-    public String toString()
+    static String toString(HttpCookie httpCookie)
     {
-        return "%x@%s".formatted(hashCode(), asString());
+        return "%x@%s".formatted(httpCookie.hashCode(), asString(httpCookie));
+    }
+
+    /**
+     * Immutable implementation of HttpCookie.
+     */
+    class Immutable implements HttpCookie
+    {
+        private final String _name;
+        private final String _value;
+        private final int _version;
+        private final Map<String, String> _attributes;
+
+        Immutable(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite, Map<String, String> attributes)
+        {
+            _name = name;
+            _value = value;
+            _version = version;
+            Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            if (attributes != null)
+                attrs.putAll(attributes);
+            attrs.put(DOMAIN_ATTRIBUTE, domain);
+            attrs.put(PATH_ATTRIBUTE, path);
+            attrs.put(MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
+            attrs.put(HTTP_ONLY_ATTRIBUTE, Boolean.toString(httpOnly));
+            attrs.put(SECURE_ATTRIBUTE, Boolean.toString(secure));
+            attrs.put(COMMENT_ATTRIBUTE, comment);
+            attrs.put(SAME_SITE_ATTRIBUTE, sameSite == null ? null : sameSite.getAttributeValue());
+            _attributes = Collections.unmodifiableMap(attrs);
+        }
+
+        Immutable(String name, String value, int version, Map<String, String> attributes)
+        {
+            _name = name;
+            _value = value;
+            _version = version;
+            _attributes = attributes == null ? Collections.emptyMap() : attributes;
+        }
+
+        /**
+         * @return the cookie name
+         */
+        @Override
+        public String getName()
+        {
+            return _name;
+        }
+
+        /**
+         * @return the cookie value
+         */
+        @Override
+        public String getValue()
+        {
+            return _value;
+        }
+
+        /**
+         * @return the cookie version
+         */
+        @Override
+        public int getVersion()
+        {
+            return _version;
+        }
+
+        /**
+         * @return the cookie {@code SameSite} attribute value
+         */
+        @Override
+        public SameSite getSameSite()
+        {
+            String val = _attributes.get(SAME_SITE_ATTRIBUTE);
+            if (val == null)
+                return null;
+            return SameSite.valueOf(val.toUpperCase(Locale.ENGLISH));
+        }
+
+        /**
+         * @return the attributes associated with this cookie
+         */
+        @Override
+        public Map<String, String> getAttributes()
+        {
+            return _attributes;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%x@%s".formatted(hashCode(), asString());
+        }
     }
 
     private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
@@ -272,7 +373,7 @@ public class HttpCookie
      *
      * @param s value string
      * @return true if quoted;
-     * @throws IllegalArgumentException If there a control characters in the string
+     * @throws IllegalArgumentException If there is a String contains unexpected / illegal characters
      */
     private static boolean isQuoteNeededForCookie(String s)
     {
@@ -295,45 +396,51 @@ public class HttpCookie
         return false;
     }
 
-    public String getSetCookie(CookieCompliance compliance)
+    static String getSetCookie(HttpCookie httpCookie, CookieCompliance compliance)
     {
         if (compliance == CookieCompliance.RFC6265)
-            return getRFC6265SetCookie();
+            return getRFC6265SetCookie(httpCookie);
         if (compliance == CookieCompliance.RFC2965)
-            return getRFC2965SetCookie();
+            return getRFC2965SetCookie(httpCookie);
         throw new IllegalStateException();
     }
 
-    public String getRFC2965SetCookie()
+    static String getRFC2965SetCookie(HttpCookie httpCookie)
     {
         // Check arguments
-        if (_name == null || _name.length() == 0)
+        String name = httpCookie.getName();
+        if (name == null || name.length() == 0)
             throw new IllegalArgumentException("Bad cookie name");
 
         // Format value and params
         StringBuilder buf = new StringBuilder();
 
         // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
-        boolean quoteName = isQuoteNeededForCookie(_name);
-        quoteOnlyOrAppend(buf, _name, quoteName);
+        boolean quoteName = isQuoteNeededForCookie(name);
+        quoteOnlyOrAppend(buf, name, quoteName);
 
         buf.append('=');
 
         // Append the value
-        boolean quoteValue = isQuoteNeededForCookie(_value);
-        quoteOnlyOrAppend(buf, _value, quoteValue);
+        String value = httpCookie.getValue();
+        boolean quoteValue = isQuoteNeededForCookie(value);
+        quoteOnlyOrAppend(buf, value, quoteValue);
 
         // Look for domain and path fields and check if they need to be quoted
-        boolean hasDomain = _domain != null && _domain.length() > 0;
-        boolean quoteDomain = hasDomain && isQuoteNeededForCookie(_domain);
-        boolean hasPath = _path != null && _path.length() > 0;
-        boolean quotePath = hasPath && isQuoteNeededForCookie(_path);
+        String domain = httpCookie.getDomain();
+        boolean hasDomain = domain != null && domain.length() > 0;
+        boolean quoteDomain = hasDomain && isQuoteNeededForCookie(domain);
+
+        String path = httpCookie.getPath();
+        boolean hasPath = path != null && path.length() > 0;
+        boolean quotePath = hasPath && isQuoteNeededForCookie(path);
 
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
-        int version = _version;
-        if (version == 0 && (_comment != null || quoteName || quoteValue || quoteDomain || quotePath ||
-            QuotedStringTokenizer.isQuoted(_name) || QuotedStringTokenizer.isQuoted(_value) ||
-            QuotedStringTokenizer.isQuoted(_path) || QuotedStringTokenizer.isQuoted(_domain)))
+        int version = httpCookie.getVersion();
+        String comment = httpCookie.getComment();
+        if (version == 0 && (comment != null || quoteName || quoteValue || quoteDomain || quotePath ||
+            QuotedStringTokenizer.isQuoted(name) || QuotedStringTokenizer.isQuoted(value) ||
+            QuotedStringTokenizer.isQuoted(path) || QuotedStringTokenizer.isQuoted(domain)))
             version = 1;
 
         // Append version
@@ -346,130 +453,123 @@ public class HttpCookie
         if (hasPath)
         {
             buf.append(";Path=");
-            quoteOnlyOrAppend(buf, _path, quotePath);
+            quoteOnlyOrAppend(buf, path, quotePath);
         }
 
         // Append domain
         if (hasDomain)
         {
             buf.append(";Domain=");
-            quoteOnlyOrAppend(buf, _domain, quoteDomain);
+            quoteOnlyOrAppend(buf, domain, quoteDomain);
         }
 
         // Handle max-age and/or expires
-        if (_maxAge >= 0)
+        long maxAge = httpCookie.getMaxAge();
+        if (maxAge >= 0)
         {
             // Always use expires
             // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
             buf.append(";Expires=");
-            if (_maxAge == 0)
+            if (maxAge == 0)
                 buf.append(__01Jan1970_COOKIE);
             else
-                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * _maxAge);
+                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
 
             buf.append(";Max-Age=");
-            buf.append(_maxAge);
+            buf.append(maxAge);
         }
 
         // add the other fields
-        if (_secure)
+        if (httpCookie.isSecure())
             buf.append(";Secure");
-        if (_httpOnly)
+        if (httpCookie.isHttpOnly())
             buf.append(";HttpOnly");
-        if (_comment != null)
+        if (comment != null)
         {
             buf.append(";Comment=");
-            quoteOnlyOrAppend(buf, _comment, isQuoteNeededForCookie(_comment));
+            quoteOnlyOrAppend(buf, comment, isQuoteNeededForCookie(comment));
         }
         return buf.toString();
     }
 
-    public String getRFC6265SetCookie()
+    static String getRFC6265SetCookie(HttpCookie httpCookie)
     {
         // Check arguments
-        if (_name == null || _name.length() == 0)
+        String name = httpCookie.getName();
+        if (name == null || name.length() == 0)
             throw new IllegalArgumentException("Bad cookie name");
 
         // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
         // Per RFC6265, Cookie.name follows RFC2616 Section 2.2 token rules
-        Syntax.requireValidRFC2616Token(_name, "RFC6265 Cookie name");
+        Syntax.requireValidRFC2616Token(name, "RFC6265 Cookie name");
         // Ensure that Per RFC6265, Cookie.value follows syntax rules
-        Syntax.requireValidRFC6265CookieValue(_value);
+        String value = httpCookie.getValue();
+        Syntax.requireValidRFC6265CookieValue(value);
 
         // Format value and params
         StringBuilder buf = new StringBuilder();
-        buf.append(_name).append('=').append(_value == null ? "" : _value);
+        buf.append(name).append('=').append(value == null ? "" : value);
 
         // Append path
-        if (_path != null && _path.length() > 0)
-            buf.append("; Path=").append(_path);
+        String path = httpCookie.getPath();
+        if (path != null && path.length() > 0)
+            buf.append("; Path=").append(path);
 
         // Append domain
-        if (_domain != null && _domain.length() > 0)
-            buf.append("; Domain=").append(_domain);
+        String domain = httpCookie.getDomain();
+        if (domain != null && domain.length() > 0)
+            buf.append("; Domain=").append(domain);
 
         // Handle max-age and/or expires
-        if (_maxAge >= 0)
+        long maxAge = httpCookie.getMaxAge();
+        if (maxAge >= 0)
         {
             // Always use expires
             // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
             buf.append("; Expires=");
-            if (_maxAge == 0)
+            if (maxAge == 0)
                 buf.append(__01Jan1970_COOKIE);
             else
-                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * _maxAge);
+                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
 
             buf.append("; Max-Age=");
-            buf.append(_maxAge);
+            buf.append(maxAge);
         }
 
         // add the other fields
-        if (_secure)
+        if (httpCookie.isSecure())
             buf.append("; Secure");
-        if (_httpOnly)
+        if (httpCookie.isHttpOnly())
             buf.append("; HttpOnly");
 
-        String sameSite = _attributes.get("SameSite");
-        if (sameSite != null)
+        Map<String, String> attributes = httpCookie.getAttributes();
+
+        String sameSiteAttr = attributes.get(SAME_SITE_ATTRIBUTE);
+        if (sameSiteAttr != null)
         {
             buf.append("; SameSite=");
-            buf.append(sameSite);
+            buf.append(sameSiteAttr);
+        }
+        else
+        {
+            SameSite sameSite = httpCookie.getSameSite();
+            if (sameSite != null)
+            {
+                buf.append("; SameSite=");
+                buf.append(sameSite.getAttributeValue());
+            }
         }
 
         //Add all other attributes
-        _attributes.entrySet().stream().filter(e -> !"SameSite".equals(e.getKey())).forEach(e ->
+        for (Map.Entry<String, String> e : attributes.entrySet())
         {
-            buf.append("; " + e.getKey() + "=");
+            if (KNOWN_ATTRIBUTES.contains(e.getKey()))
+                continue;
+            buf.append("; ").append(e.getKey()).append("=");
             buf.append(e.getValue());
-        });
-
-        return buf.toString();
-    }
-
-    public static boolean isHttpOnlyInComment(String comment)
-    {
-        return comment != null && comment.contains(HTTP_ONLY_COMMENT);
-    }
-
-    public static SameSite getSameSiteFromComment(String comment)
-    {
-        if (comment != null)
-        {
-            if (comment.contains(SAME_SITE_STRICT_COMMENT))
-            {
-                return SameSite.STRICT;
-            }
-            if (comment.contains(SAME_SITE_LAX_COMMENT))
-            {
-                return SameSite.LAX;
-            }
-            if (comment.contains(SAME_SITE_NONE_COMMENT))
-            {
-                return SameSite.NONE;
-            }
         }
 
-        return null;
+        return buf.toString();
     }
 
     /**
@@ -480,7 +580,7 @@ public class HttpCookie
      * @return the default SameSite value or null if one does not exist
      * @throws IllegalStateException if the default value is not a permitted value
      */
-    public static SameSite getSameSiteDefault(Attributes contextAttributes)
+    static SameSite getSameSiteDefault(Attributes contextAttributes)
     {
         if (contextAttributes == null)
             return null;
@@ -511,15 +611,17 @@ public class HttpCookie
     /**
      * Extract the bare minimum of info from a Set-Cookie header string.
      *
+     * <p>
      * Ideally this method should not be necessary, however as java.net.HttpCookie
      * does not yet support generic attributes, we have to use it in a minimal
      * fashion. When it supports attributes, we could look at reverting to a
      * constructor on o.e.j.h.HttpCookie to take the set-cookie header string.
+     * </p>
      *
      * @param setCookieHeader the header as a string
      * @return a map containing the name, value, domain, path. max-age of the set cookie header
      */
-    public static Map<String, String> extractBasics(String setCookieHeader)
+    static Map<String, String> extractBasics(String setCookieHeader)
     {
         //Parse the bare minimum
         List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
@@ -544,7 +646,7 @@ public class HttpCookie
      * @param path the cookie path to check
      * @return true if all of the name, domain and path match the Set-Cookie header, false otherwise
      */
-    public static boolean match(String setCookieHeader, String name, String domain, String path)
+    static boolean match(String setCookieHeader, String name, String domain, String path)
     {
         //Parse the bare minimum
         List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
@@ -562,9 +664,9 @@ public class HttpCookie
      * @param name the cookie name to check
      * @param domain the cookie domain to check
      * @param path the cookie path to check
-     * @return true if all of the name, domain and path all match the HttpCookie, false otherwise
+     * @return true if name, domain, and path, match all match the HttpCookie, false otherwise
      */
-    public static boolean match(HttpCookie cookie, String name, String domain, String path)
+    static boolean match(HttpCookie cookie, String name, String domain, String path)
     {
         if (cookie == null)
             return false;
@@ -574,12 +676,6 @@ public class HttpCookie
     /**
      * Check if all old parameters match the new parameters.
      *
-     * @param oldName
-     * @param oldDomain
-     * @param oldPath
-     * @param newName
-     * @param newDomain
-     * @param newPath
      * @return true if old and new names match exactly and the old and new domains match case-insensitively and the paths match exactly
      */
     private static boolean match(String oldName, String oldDomain, String oldPath, String newName, String newDomain, String newPath)
@@ -601,79 +697,18 @@ public class HttpCookie
             return false;
 
         if (oldPath == null)
-        {
-            if (newPath != null)
-                return false;
-        }
-        else if (!oldPath.equals(newPath))
-            return false;
+            return newPath == null;
 
-        return true;
+        return oldPath.equals(newPath);
     }
 
-    /**
-     * @deprecated We should not need to do this now
-     */
-    @Deprecated
-    public static String getCommentWithoutAttributes(String comment)
-    {
-        if (comment == null)
-        {
-            return null;
-        }
-
-        String strippedComment = comment.trim();
-
-        strippedComment = StringUtil.strip(strippedComment, HTTP_ONLY_COMMENT);
-        strippedComment = StringUtil.strip(strippedComment, SAME_SITE_NONE_COMMENT);
-        strippedComment = StringUtil.strip(strippedComment, SAME_SITE_LAX_COMMENT);
-        strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
-
-        return strippedComment.length() == 0 ? null : strippedComment;
-    }
-
-    /**
-     * @deprecated We should not need to do this now
-     */
-    @Deprecated
-    public static String getCommentWithAttributes(String comment, boolean httpOnly, SameSite sameSite)
-    {
-        if (comment == null && sameSite == null)
-            return null;
-
-        StringBuilder builder = new StringBuilder();
-        if (StringUtil.isNotBlank(comment))
-        {
-            comment = getCommentWithoutAttributes(comment);
-            if (StringUtil.isNotBlank(comment))
-                builder.append(comment);
-        }
-        if (httpOnly)
-            builder.append(HTTP_ONLY_COMMENT);
-
-        if (sameSite != null)
-        {
-            switch (sameSite)
-            {
-                case NONE -> builder.append(SAME_SITE_NONE_COMMENT);
-                case STRICT -> builder.append(SAME_SITE_STRICT_COMMENT);
-                case LAX -> builder.append(SAME_SITE_LAX_COMMENT);
-                default -> throw new IllegalArgumentException(sameSite.toString());
-            }
-        }
-
-        if (builder.length() == 0)
-            return null;
-        return builder.toString();
-    }
-
-    public static class SetCookieHttpField extends HttpField
+    class SetCookieHttpField extends HttpField
     {
         final HttpCookie _cookie;
 
         public SetCookieHttpField(HttpCookie cookie, CookieCompliance compliance)
         {
-            super(HttpHeader.SET_COOKIE, cookie.getSetCookie(compliance));
+            super(HttpHeader.SET_COOKIE, getSetCookie(cookie, compliance));
             this._cookie = cookie;
         }
 
@@ -691,7 +726,7 @@ public class HttpCookie
      * @param attributes the context to check settings
      * @return either the original cookie, or a new one that has the samesit default set
      */
-    public static HttpCookie checkSameSite(HttpCookie cookie, Attributes attributes)
+    static HttpCookie checkSameSite(HttpCookie cookie, Attributes attributes)
     {
         if (cookie == null || cookie.getSameSite() != null)
             return cookie;
@@ -701,15 +736,6 @@ public class HttpCookie
         if (contextDefault == null)
             return cookie; //no default set
 
-        return new HttpCookie(cookie.getName(),
-            cookie.getValue(),
-            cookie.getDomain(),
-            cookie.getPath(),
-            cookie.getMaxAge(),
-            cookie.isHttpOnly(),
-            cookie.isSecure(),
-            cookie.getComment(),
-            cookie.getVersion(),
-            contextDefault);
+        return HttpCookie.from(cookie, HttpCookie.SAME_SITE_ATTRIBUTE, contextDefault.getAttributeValue());
     }
 }

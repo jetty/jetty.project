@@ -17,22 +17,22 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class ControlGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public ControlGenerator(boolean useDirectByteBuffers)
+    public ControlGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
-        generators[FrameType.CANCEL_PUSH.type()] = new CancelPushGenerator();
-        generators[FrameType.SETTINGS.type()] = new SettingsGenerator(useDirectByteBuffers);
-        generators[FrameType.GOAWAY.type()] = new GoAwayGenerator(useDirectByteBuffers);
-        generators[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdGenerator();
+        generators[FrameType.CANCEL_PUSH.type()] = new CancelPushGenerator(bufferPool);
+        generators[FrameType.SETTINGS.type()] = new SettingsGenerator(bufferPool, useDirectByteBuffers);
+        generators[FrameType.GOAWAY.type()] = new GoAwayGenerator(bufferPool, useDirectByteBuffers);
+        generators[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdGenerator(bufferPool);
     }
 
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
-        return generators[frame.getFrameType().type()].generate(lease, streamId, frame, fail);
+        return generators[frame.getFrameType().type()].generate(accumulator, streamId, frame, fail);
     }
 }

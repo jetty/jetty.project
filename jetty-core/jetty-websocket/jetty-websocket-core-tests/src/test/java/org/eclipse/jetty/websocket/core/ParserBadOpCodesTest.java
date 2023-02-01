@@ -16,8 +16,6 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -51,8 +49,6 @@ public class ParserBadOpCodesTest
             Arguments.of((byte)15, "Autobahn Server Testcase 4.2.5")
         );
     }
-
-    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @ParameterizedTest(name = "opcode={0} {1}")
     @MethodSource("data")

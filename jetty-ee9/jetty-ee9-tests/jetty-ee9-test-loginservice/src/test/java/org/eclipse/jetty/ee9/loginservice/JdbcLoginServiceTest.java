@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.ee9.loginservice;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,14 +20,15 @@ import java.io.FileReader;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee9.security.JDBCLoginService;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.http.HttpMethod;
@@ -51,7 +52,7 @@ public class JdbcLoginServiceTest
     private static String _content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
-    private static File __docRoot;
+    private static Path __docRoot;
     private static String __realm = "JdbcRealm";
     private static URI __baseUri;
     private static DatabaseLoginServiceTestServer __testServer;
@@ -61,26 +62,26 @@ public class JdbcLoginServiceTest
     @BeforeAll
     public static void setUp() throws Exception
     {
-        File dir = MavenTestingUtils.getTargetTestingDir("jdbcloginservice-test");
+        DatabaseLoginServiceTestServer.beforeAll();
+        Path dir = MavenTestingUtils.getTargetTestingPath("jdbcloginservice-test");
         FS.ensureDirExists(dir);
 
         //create the realm properties file based on dynamic + static info
-        File skeletonFile = MavenTestingUtils.getTestResourceFile("jdbcrealm.properties");
-        File realmFile = new File(dir, "realm.properties");
+        File realmFile = dir.resolve("realm.properties").toFile();
         try (PrintWriter writer = new PrintWriter(new FileOutputStream(realmFile)))
         {
             writer.println("jdbcdriver = " + DatabaseLoginServiceTestServer.MARIA_DB_DRIVER_CLASS);
             writer.println("url = " + DatabaseLoginServiceTestServer.MARIA_DB_URL);
             writer.println("username = " + DatabaseLoginServiceTestServer.MARIA_DB_USER);
             writer.println("password = " + DatabaseLoginServiceTestServer.MARIA_DB_PASSWORD);
-            IO.copy(new FileReader(skeletonFile), writer);
+            IO.copy(new FileReader(MavenTestingUtils.getTestResourcePath("jdbcrealm.properties").toFile()), writer);
         }
 
         //make some static content
-        __docRoot = new File(dir, "docroot");
+        __docRoot = dir.resolve("docroot");
         FS.ensureDirExists(__docRoot);
-        File content = new File(__docRoot, "input.txt");
-        try (FileOutputStream out = new FileOutputStream(content))
+        Path content = __docRoot.resolve("input.txt");
+        try (FileOutputStream out = new FileOutputStream(content.toFile()))
         {
             out.write(_content.getBytes(StandardCharsets.UTF_8));
         }
@@ -88,7 +89,7 @@ public class JdbcLoginServiceTest
         LoginService loginService = new JDBCLoginService(__realm, realmFile.getAbsolutePath());
         
         __testServer = new DatabaseLoginServiceTestServer();
-        __testServer.setResourceBase(__docRoot.getAbsolutePath());
+        __testServer.setResourceBase(__docRoot);
         __testServer.setLoginService(loginService);
         __testServer.start();
         
@@ -99,6 +100,7 @@ public class JdbcLoginServiceTest
     public static void tearDown()
         throws Exception
     {
+        DatabaseLoginServiceTestServer.afterAll();
         if (__testServer != null)
         {
             __testServer.stop();
@@ -136,7 +138,7 @@ public class JdbcLoginServiceTest
         int responseStatus = response.getStatus();
         boolean statusOk = (responseStatus == 200 || responseStatus == 201);
         assertTrue(statusOk);
-        String content = IO.toString(new FileInputStream(new File(__docRoot, "output.txt")));
+        String content = IO.toString(new FileInputStream(__docRoot.resolve("output.txt").toFile()));
         assertEquals(_content, content);
     }
 
@@ -185,6 +187,6 @@ public class JdbcLoginServiceTest
         request.body(new BytesRequestContent(_content.getBytes()));
         ContentResponse response = request.send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(_content, __testServer.getTestHandler().getRequestContent());
+        assertEquals(_content, __testServer.getTestFilter().getRequestContent());
     }
 }

@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-java-server</artifactId>
-  <name>Jetty Core :: ALPN :: JDK9 Server Implementation</name>
+  <name>Core :: ALPN :: Java Server</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.java.server</bundle-symbolic-name>

@@ -42,8 +42,8 @@
     <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
     <!-- for all configuration that may be set here.                 -->
     <!-- =========================================================== -->
-    <!-- uncomment to change type of threadpool
-    <Arg name="threadpool"><New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
+    <!-- uncomment to change type of thread pool
+    <Arg name="threadPool"><New id="threadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
     -->
     <Get name="ThreadPool">
       <Set name="minThreads" type="int"><Property name="jetty.threadPool.minThreads" default="10"/></Set>
@@ -93,29 +93,11 @@
       -->
     </New>
 
-
     <!-- =========================================================== -->
     <!-- Set the default handler structure for the Server            -->
-    <!-- A handler collection is used to pass received requests to   -->
-    <!-- both the ContextHandlerCollection, which selects the next   -->
-    <!-- handler by context path and virtual host, and the           -->
-    <!-- DefaultHandler, which handles any requests not handled by   -->
-    <!-- the context handlers.                                       -->
-    <!-- Other handlers may be added to the "Handlers" collection.   -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.Handler$Collection">
-        <Set name="handlers">
-         <Array type="org.eclipse.jetty.server.Handler">
-           <Item>
-             <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
-           </Item>
-           <Item>
-             <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-           </Item>
-         </Array>
-        </Set>
-      </New>
+      <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
     </Set>
 
     <!-- =========================================================== -->

@@ -40,7 +40,7 @@ public class EmptyCreateStartdTest extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=extra,optional"
+            "--add-modules=extra,optional"
         );
         exec(prepareArgs, true);
 

@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-conscrypt-server</artifactId>
-  <name>Jetty Core :: ALPN :: Conscrypt Server Implementation</name>
+  <name>Core :: ALPN :: Conscrypt Server</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.conscrypt.server</bundle-symbolic-name>

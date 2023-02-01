@@ -37,10 +37,10 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -220,15 +220,15 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     @Override
-    public ByteBufferPool getByteBufferPool()
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
-        return getConnectionMetaData().getConnector().getByteBufferPool();
+        return getConnectionMetaData().getConnector().getRetainableByteBufferPool();
     }
 
     @Override
     public Scheduler getScheduler()
     {
-        return getServer().getBean(Scheduler.class);
+        return getServer().getScheduler();
     }
 
     @Override
@@ -1347,7 +1347,10 @@ public class HttpChannelState implements HttpChannel, Components
             if (httpChannelState._callbackCompleted)
             {
                 if (LOG.isDebugEnabled())
+                {
                     LOG.debug("already completed {} by", _request, _completedBy);
+                    LOG.debug("Second complete", new Throwable("second complete"));
+                }
                 return false;
             }
 

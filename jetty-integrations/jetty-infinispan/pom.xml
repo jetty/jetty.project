@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-infinispan</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: Infinispan</name>
+  <name>Integrations :: Infinispan</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan</bundle-symbolic-name>

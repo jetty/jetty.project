@@ -73,7 +73,6 @@ public class AdaptiveExecutionStrategyTest
                     }
                     catch (InterruptedException x)
                     {
-                        x.printStackTrace();
                         return null;
                     }
                     finally

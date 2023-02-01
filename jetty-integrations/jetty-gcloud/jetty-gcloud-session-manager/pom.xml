@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-gcloud-session-manager</artifactId>
-  <name>Jetty :: GCloud :: Session Manager</name>
+  <name>Integrations :: GCloud :: Sessions</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>

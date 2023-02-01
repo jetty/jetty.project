@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,24 +47,35 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     private final AtomicInteger pending = new AtomicInteger();
     private final HttpDestination destination;
-    private final Pool<Connection> pool;
+    private final Pool.Factory<Connection> poolFactory;
+    private Pool<Connection> pool;
     private boolean maximizeConnections;
     private volatile long maxDurationNanos;
     private volatile int maxUsage;
     private volatile int initialMaxMultiplex;
 
-    protected AbstractConnectionPool(Destination destination, Pool<Connection> pool, int initialMaxMultiplex)
+    protected AbstractConnectionPool(Destination destination, Pool.Factory<Connection> poolFactory, int initialMaxMultiplex)
     {
         this.destination = (HttpDestination)destination;
-        this.pool = pool;
+        this.poolFactory = poolFactory;
         this.initialMaxMultiplex = initialMaxMultiplex;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        pool = poolFactory.wrap(poolFactory.newPool());
         addBean(pool);
+        super.doStart();
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        pool.close();
+        super.doStop();
+        removeBean(pool);
+        pool.terminate().forEach(this::close);
+        pool = null;
     }
 
     @Override
@@ -77,7 +87,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < connectionCount; i++)
         {
-            Pool<Connection>.Entry entry = pool.reserve();
+            Pool.Entry<Connection> entry = pool.reserve();
             if (entry == null)
                 break;
             pending.incrementAndGet();
@@ -144,25 +154,29 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @ManagedAttribute(value = "The number of active connections", readonly = true)
     public int getActiveConnectionCount()
     {
-        return pool.getInUseCount();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.getInUseCount();
     }
 
     @ManagedAttribute(value = "The number of idle connections", readonly = true)
     public int getIdleConnectionCount()
     {
-        return pool.getIdleCount();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.getIdleCount();
     }
 
     @ManagedAttribute(value = "The max number of connections", readonly = true)
     public int getMaxConnectionCount()
     {
-        return pool.getMaxEntries();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.getMaxSize();
     }
 
     @ManagedAttribute(value = "The number of connections", readonly = true)
     public int getConnectionCount()
     {
-        return pool.size();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.size();
     }
 
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
@@ -174,14 +188,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean isEmpty()
     {
-        return pool.size() == 0;
-    }
-
-    @Override
-    @ManagedAttribute("Whether this pool is closed")
-    public boolean isClosed()
-    {
-        return pool.isClosed();
+        Pool<Connection> pool = this.pool;
+        return pool == null || pool.size() == 0;
     }
 
     @ManagedAttribute("Whether the pool tries to maximize the number of connections used")
@@ -270,7 +278,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         }
 
         // Create the connection.
-        Pool<Connection>.Entry entry = pool.reserve();
+        Pool.Entry<Connection> entry = pool.reserve();
         if (entry == null)
         {
             pending.decrementAndGet();
@@ -290,7 +298,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     {
         if (!(connection instanceof Attachable attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
-        Pool<Connection>.Entry entry = pool.reserve();
+        Pool.Entry<Connection> entry = pool.reserve();
         if (entry == null)
             return false;
         if (LOG.isDebugEnabled())
@@ -311,7 +319,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     {
         while (true)
         {
-            Pool<Connection>.Entry entry = pool.acquire();
+            Pool.Entry<Connection> entry = pool.acquire();
             if (entry != null)
             {
                 Connection connection = entry.getPooled();
@@ -375,7 +383,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (!deactivate(connection))
             return false;
         released(connection);
-        return idle(connection, isClosed());
+        return idle(connection, isStopped());
     }
 
     protected boolean deactivate(Connection connection)
@@ -452,52 +460,47 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     {
     }
 
-    Queue<Connection> getIdleConnections()
+    Collection<Connection> getIdleConnections()
     {
-        return pool.values().stream()
+        return pool.stream()
             .filter(Pool.Entry::isIdle)
-            .filter(entry -> !entry.isClosed())
+            .filter(entry -> !entry.isTerminated())
             .map(Pool.Entry::getPooled)
             .collect(toCollection(ArrayDeque::new));
     }
 
     Collection<Connection> getActiveConnections()
     {
-        return pool.values().stream()
+        return pool.stream()
             .filter(entry -> !entry.isIdle())
-            .filter(entry -> !entry.isClosed())
+            .filter(entry -> !entry.isTerminated())
             .map(Pool.Entry::getPooled)
             .collect(Collectors.toList());
     }
 
-    @Override
-    public void close()
+    private void close(Pool.Entry<Connection> entry)
     {
-        // Forcibly release and remove entries to do our best effort calling the listeners.
-        try
+        assert pool.isTerminated();
+        // Forcibly release and remove entries to
+        // do our best effort calling the listeners;
+        // the pool is terminated so there is no
+        // need to release the entries, we can
+        // directly remove them.
+        Connection connection = entry.getPooled();
+        while (true)
         {
-            for (Pool<Connection>.Entry entry : pool.values())
+            if (entry.remove())
             {
-                while (entry.isInUse())
-                {
-                    if (entry.release())
-                    {
-                        released(entry.getPooled());
-                        break;
-                    }
-                }
-                if (entry.remove())
-                    removed(entry.getPooled());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Removed terminated entry {}", entry);
+                removed(connection);
+                IO.close(connection);
             }
-        }
-        catch (Throwable x)
-        {
+            if (!entry.isInUse())
+                break;
             if (LOG.isDebugEnabled())
-                LOG.debug("Detected concurrent modification while forcibly releasing the pooled connections", x);
-            // We could not call the listeners for all entries, but at least the following
-            // pool.close() call will still release all resources.
+                LOG.debug("Entry {} still in use, removing it again", entry);
         }
-        pool.close();
     }
 
     @Override
@@ -509,22 +512,26 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean sweep()
     {
-        pool.values().stream()
-            .map(Pool.Entry::getPooled)
-            .filter(connection -> connection instanceof Sweeper.Sweepable)
-            .forEach(connection ->
-            {
-                if (((Sweeper.Sweepable)connection).sweep())
+        Pool<Connection> pool = this.pool;
+        if (pool != null)
+        {
+            pool.stream()
+                .map(Pool.Entry::getPooled)
+                .filter(connection -> connection instanceof Sweeper.Sweepable)
+                .forEach(connection ->
                 {
-                    boolean removed = remove(connection);
-                    LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                        connection,
-                        System.lineSeparator(),
-                        removed ? "Removed" : "Not removed",
-                        System.lineSeparator(),
-                        dump());
-                }
-            });
+                    if (((Sweeper.Sweepable)connection).sweep())
+                    {
+                        boolean removed = remove(connection);
+                        LOG.warn("Connection swept: {}{}{} from active connections{}{}",
+                            connection,
+                            System.lineSeparator(),
+                            removed ? "Removed" : "Not removed",
+                            System.lineSeparator(),
+                            dump());
+                    }
+                });
+        }
         return false;
     }
 
@@ -546,9 +553,9 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     private class FutureConnection extends Promise.Completable<Connection>
     {
-        private final Pool<Connection>.Entry reserved;
+        private final Pool.Entry<Connection> reserved;
 
-        public FutureConnection(Pool<Connection>.Entry reserved)
+        public FutureConnection(Pool.Entry<Connection> reserved)
         {
             this.reserved = reserved;
         }
@@ -590,11 +597,11 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     private static class EntryHolder
     {
-        private final Pool<Connection>.Entry entry;
+        private final Pool.Entry<Connection> entry;
         private final long creationNanoTime = NanoTime.now();
         private final AtomicInteger usage = new AtomicInteger();
 
-        private EntryHolder(Pool<Connection>.Entry entry)
+        private EntryHolder(Pool.Entry<Connection> entry)
         {
             this.entry = Objects.requireNonNull(entry);
         }

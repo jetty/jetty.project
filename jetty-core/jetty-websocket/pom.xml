@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.websocket</groupId>
   <artifactId>jetty-websocket</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty Core :: WebSocket</name>
+  <name>Core :: WebSocket</name>
 
   <modules>
     <module>jetty-websocket-core-client</module>

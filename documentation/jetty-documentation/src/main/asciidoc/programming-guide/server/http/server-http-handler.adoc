@@ -16,21 +16,15 @@
 
 An `org.eclipse.jetty.server.Handler` is the component that processes incoming HTTP requests and eventually produces HTTP responses.
 
-``Handler``s can be organized in different ways:
+``Handler``s can process the HTTP request themselves, or they can be ``Handler.Container``s that delegate HTTP request processing to one or more contained ``Handler``s.
+This allows ``Handler``s to be organised as a tree comprised of:
 
-* in a sequence, where ``Handler``s are invoked one after the other
-** `HandlerCollection` invokes _all_ ``Handler``s one after the other
-** `HandlerList` invokes ``Handlers``s until one calls `Request.setHandled(true)` to indicate that the request has been handled and no further `Handler` should be invoked
-* nested, where one `Handler` invokes the next, nested, `Handler`
-** `HandlerWrapper` implements this behavior
+* Leaf ``Handler``s that return `true` from the `process(\...)` method, generate a response and succeed the `Callback`.
+* A `Handler.Wrapper` can be used to form a chain of ``Handler``s where request, response or callback objects are wrapped in the `process(\...)` method before being passed down the chain.
+* A `Handler.Collection` that contains a sequence of ``Handler``s, with each `Handler` being called in sequence until one returns `true` from its `process(\..)` method.
+* A specialized `Handler.Container` that may use properties of the request (for example, the URI, or a header, etc.) to select from one or more contained ``Handler``s to delegate the HTTP request processing to.
 
-The `HandlerCollection` behavior (invoking _all_ handlers) is useful when for example the last `Handler` is a logging `Handler` that logs the request (that may have been modified by previous handlers).
-
-The `HandlerList` behavior (invoking handlers up to the first that calls `Request.setHandled(true)`) is useful when each handler processes a different URIs or a different virtual hosts: ``Handler``s are invoked one after the other until one matches the URI or virtual host.
-
-The nested behavior is useful to enrich the request with additional services such as HTTP session support (`SessionHandler`), or with specific behaviors dictated by the Servlet specification (`ServletHandler`).
-
-``Handler``s can be organized in a tree by composing them together:
+A `Handler` tree is created by composing ``Handler``s together:
 
 [source,java,indent=0]
 ----
@@ -42,7 +36,7 @@ The corresponding `Handler` tree structure looks like the following:
 [source,screen]
 ----
 Server
-└── LoggingHandler
+└── GzipHandler
     └── Handler.Collection
         ├── App1Handler
         └── App2Handler

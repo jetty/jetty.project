@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-websocket-javax-client</artifactId>
-  <name>EE8 :: Jetty :: Websocket :: javax.websocket :: Client</name>
+  <name>EE8 :: Websocket :: Javax Client</name>
 
   <properties>
     <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jakarta-client</ee9.module>

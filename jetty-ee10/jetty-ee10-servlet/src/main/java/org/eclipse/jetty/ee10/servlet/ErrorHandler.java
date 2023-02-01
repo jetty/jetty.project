@@ -293,7 +293,7 @@ public class ErrorHandler implements Request.Processor
                 // TODO error page may cause a BufferOverflow.  In which case we try
                 // TODO again with stacks disabled. If it still overflows, it is
                 // TODO written without a body.
-                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
+                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getByteBuffer();
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
@@ -388,7 +388,7 @@ public class ErrorHandler implements Request.Processor
         if (showStacks && !_disableStacks)
             writeErrorPageStacks(request, writer);
 
-        ((ServletContextRequest.ServletApiRequest)request).getRequest().getServletChannel().getHttpConfiguration()
+        ((ServletApiRequest)request).getRequest().getServletChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
