@@ -108,19 +108,19 @@ public interface HttpStream extends Callback
 
     static Throwable consumeAvailable(HttpStream stream, HttpConfiguration httpConfig)
     {
-        long consumedRequestContentBytes = 0;
-        long maxUnconsumedRequestContentBytes = httpConfig.getMaxUnconsumedRequestContentBytes();
-        while (maxUnconsumedRequestContentBytes < 0 || consumedRequestContentBytes < maxUnconsumedRequestContentBytes)
+        int numReads = 0;
+        int maxReads = httpConfig.getMaxUnconsumedRequestContentReads();
+        while (maxReads < 0 || numReads < maxReads)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
             Chunk content = stream.read();
+            numReads++;
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
                 return new IOException("Content not consumed");
 
             // Always release any returned content. This is a noop for EOF and Error content.
-            consumedRequestContentBytes += content.remaining();
             content.release();
 
             // if the input failed, then fail the stream for same reason
