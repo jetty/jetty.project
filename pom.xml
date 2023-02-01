@@ -136,7 +136,7 @@
     <!-- testing -->
     <awaitility.version>4.2.0</awaitility.version>
     <it.debug>false</it.debug>
-    <jetty.test.version>5.9</jetty.test.version>
+    <jetty.test.version>6.0</jetty.test.version>
     <jetty.testtracker.log>false</jetty.testtracker.log>
 
     <jsr250-api.version>1.0</jsr250-api.version>
