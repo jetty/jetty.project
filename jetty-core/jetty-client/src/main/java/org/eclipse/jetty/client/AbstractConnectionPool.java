@@ -480,21 +480,26 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     private void close(Pool.Entry<Connection> entry)
     {
+        assert pool.isTerminated();
         // Forcibly release and remove entries to
-        // do our best effort calling the listeners.
+        // do our best effort calling the listeners;
+        // the pool is terminated so there is no
+        // need to release the entries, we can
+        // directly remove them.
         Connection connection = entry.getPooled();
-        while (entry.isInUse())
+        while (true)
         {
-            if (entry.release())
+            if (entry.remove())
             {
-                released(connection);
-                break;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Removed terminated entry {}", entry);
+                removed(connection);
+                IO.close(connection);
             }
-        }
-        if (entry.remove())
-        {
-            removed(connection);
-            IO.close(connection);
+            if (!entry.isInUse())
+                break;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Entry {} still in use, removing it again", entry);
         }
     }
 
