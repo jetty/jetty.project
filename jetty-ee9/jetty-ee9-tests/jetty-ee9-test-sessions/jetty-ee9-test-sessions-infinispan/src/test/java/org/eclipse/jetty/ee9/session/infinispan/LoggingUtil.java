@@ -20,7 +20,7 @@ public final class LoggingUtil
      * then it is to setup the various system properties and files for every test
      * execution (maven, CI, and IDE).
      */
-    static
+    public static void init()
     {
         // Wire up jboss logging (used by infinispan) to slf4j
         System.setProperty("org.jboss.logging.provider", "slf4j");
