@@ -1146,8 +1146,9 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         // Send two parallel requests.
-        client.newRequest(newURI(transport)).send(result -> {});
-        client.newRequest(newURI(transport)).send(result -> {});
+        CountDownLatch clientLatch = new CountDownLatch(2);
+        client.newRequest(newURI(transport)).send(result -> clientLatch.countDown());
+        client.newRequest(newURI(transport)).send(result -> clientLatch.countDown());
 
         // Wait until both requests are in-flight.
         await().atMost(timeoutInSeconds, TimeUnit.SECONDS).until(processCount::get, is(2));
@@ -1155,8 +1156,9 @@ public class HttpClientStreamTest extends AbstractTest
         // Stop the client while it has requests in-flight.
         Assertions.assertTimeout(Duration.ofSeconds(timeoutInSeconds), () -> LifeCycle.stop(client));
 
-        // Let the server threads go.
+        // Let the server threads go & wait for the requests to be processed.
         processLatch.countDown();
+        clientLatch.await(timeoutInSeconds, TimeUnit.SECONDS);
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)
