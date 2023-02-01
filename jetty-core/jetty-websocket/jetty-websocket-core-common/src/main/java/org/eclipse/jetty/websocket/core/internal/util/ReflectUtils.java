@@ -207,6 +207,41 @@ public class ReflectUtils
         }
     }
 
+    private static boolean resolveGenericRef(GenericRef ref, Class<?> clazz, Type type)
+    {
+        if (type instanceof Class)
+        {
+            if (type == ref.ifaceClass)
+            {
+                // is this a straight ref or a TypeVariable?
+                ref.setGenericFromType(type, 0);
+                return true;
+            }
+            else
+            {
+                // Keep digging
+                return resolveGenericRef(ref, type);
+            }
+        }
+
+        if (type instanceof ParameterizedType ptype)
+        {
+            Type rawType = ptype.getRawType();
+            if (rawType == ref.ifaceClass)
+            {
+                // Always get the raw type parameter, let unwrap() solve for what it is
+                ref.setGenericFromType(ptype.getActualTypeArguments()[0], 0);
+                return true;
+            }
+            else
+            {
+                // Keep digging
+                return resolveGenericRef(ref, rawType);
+            }
+        }
+        return false;
+    }
+
     private static boolean resolveGenericRef(GenericRef ref, Type type)
     {
         if ((type == null) || (type == Object.class))
@@ -221,7 +256,7 @@ public class ReflectUtils
             Type[] ifaces = clazz.getGenericInterfaces();
             for (Type iface : ifaces)
             {
-                if (resolveGenericRef(ref, iface))
+                if (resolveGenericRef(ref, clazz, iface))
                 {
                     if (ref.needsUnwrap())
                     {
