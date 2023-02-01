@@ -163,7 +163,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
 
         public Set<String> getAttributeNames()
         {
-            return _session.getNames();
+            return _session.getAttributeNameSet();
         }
 
         public Object getAttribute(String name)

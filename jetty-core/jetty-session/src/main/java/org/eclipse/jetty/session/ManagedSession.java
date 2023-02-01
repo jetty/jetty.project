@@ -372,12 +372,6 @@ public class ManagedSession implements Session
         return _extendedId;
     }
 
-    @Override
-    public String getContextPath()
-    {
-        return _sessionData.getContextPath();
-    }
-
     public String getVHost()
     {
         return _sessionData.getVhost();
@@ -507,13 +501,7 @@ public class ManagedSession implements Session
     }
 
     @Override
-    public int getAttributes()
-    {
-        return _sessionData.getKeys().size();
-    }
-
-    @Override
-    public Set<String> getNames()
+    public Set<String> getAttributeNameSet()
     {
         try (AutoLock l = _lock.lock())
         {
@@ -523,7 +511,7 @@ public class ManagedSession implements Session
     }
 
     @Override
-    public void setAttribute(String name, Object value)
+    public Object setAttribute(String name, Object value)
     {
         Object old = null;
         try (AutoLock l = _lock.lock())
@@ -533,15 +521,16 @@ public class ManagedSession implements Session
             old = _sessionData.setAttribute(name, value);
         }
         if (value == null && old == null)
-            return; // if same as remove attribute but attribute was already
+            return null; // if same as remove attribute but attribute was already
         // removed, no change
         callSessionAttributeListeners(name, value, old);
+        return old;
     }
 
     @Override
-    public void removeAttribute(String name)
+    public Object removeAttribute(String name)
     {
-        setAttribute(name, null);
+        return setAttribute(name, null);
     }
 
     /**

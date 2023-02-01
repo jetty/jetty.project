@@ -738,7 +738,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            return Collections.enumeration(_session.getNames());
+            return Collections.enumeration(_session.getAttributeNameSet());
         }
 
         @Override
@@ -780,7 +780,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         @Override
         public String[] getValueNames()
         {
-            return _session.getNames().toArray(new String[0]);
+            return _session.getAttributeNameSet().toArray(new String[0]);
         }
 
         @Override

@@ -342,7 +342,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            final Iterator<String> itor = _session.getNames().iterator();
+            final Iterator<String> itor = _session.getAttributeNameSet().iterator();
             return new Enumeration<>()
             {
 

@@ -137,7 +137,7 @@ public class SimpleSessionHandlerTest
                 else
                 {
                     out.append("Session=").append(session.getId()).append('\n');
-                    for (String name : session.getNames())
+                    for (String name : session.getAttributeNameSet())
                         out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
                 }
 
