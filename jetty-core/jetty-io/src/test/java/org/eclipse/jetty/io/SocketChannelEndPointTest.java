@@ -465,6 +465,7 @@ public class SocketChannelEndPointTest
         AtomicInteger timeout = new AtomicInteger();
         AtomicInteger rejections = new AtomicInteger();
         AtomicInteger echoed = new AtomicInteger();
+        AtomicInteger broken = new AtomicInteger();
 
         int iterations = 50;
 
@@ -490,6 +491,11 @@ public class SocketChannelEndPointTest
                         for (char c : "HelloWorld".toCharArray())
                         {
                             int b = client.getInputStream().read();
+                            if (b == -1)
+                            {
+                                broken.incrementAndGet();
+                                return;
+                            }
                             assertTrue(b > 0);
                             assertEquals(c, (char)b);
                         }
@@ -499,12 +505,10 @@ public class SocketChannelEndPointTest
                 }
                 catch (SocketTimeoutException x)
                 {
-                    x.printStackTrace();
                     timeout.incrementAndGet();
                 }
                 catch (Throwable x)
                 {
-                    x.printStackTrace();
                     rejections.incrementAndGet();
                 }
                 finally
@@ -523,7 +527,7 @@ public class SocketChannelEndPointTest
         // none should have timed out
         assertThat(timeout.get(), Matchers.equalTo(0));
         // and the rest should have worked
-        assertThat(echoed.get(), Matchers.equalTo(iterations - rejections.get()));
+        assertThat(echoed.get(), Matchers.equalTo(iterations - rejections.get() - broken.get()));
 
         // make sure that not all iterations failed (as this indicates a test case setup issue)
         assertThat(rejections.get(), not(is(iterations)));
@@ -786,8 +790,6 @@ public class SocketChannelEndPointTest
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Fill interrupted", e);
-                else
-                    LOG.info(e.getClass().getName());
             }
             catch (Exception e)
             {

@@ -2586,6 +2586,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
+        public ContextHandler getContextHandler()
+        {
+
+            return ContextHandler.this;
+        }
+        
         class CoreContext extends ScopedContext
         {
             public APIContext getAPIContext()

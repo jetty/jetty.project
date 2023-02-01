@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +111,25 @@ public class HttpStreamOverHTTP3 implements HttpStream
                     System.lineSeparator(), fields);
             }
 
-            return handler;
+            InvocationType invocationType = Invocable.getInvocationType(handler);
+            return new ReadyTask(invocationType, handler)
+            {
+                @Override
+                public void run()
+                {
+                    if (stream.isClosed())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
+                                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                                stream);
+                    }
+                    else
+                    {
+                        super.run();
+                    }
+                }
+            };
         }
         catch (BadMessageException x)
         {
