@@ -24,7 +24,6 @@ import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -302,23 +301,6 @@ public class ServletContextRequest extends ContextRequest
         @SuppressWarnings("ReferenceEquality")
         boolean isNoParams = (fields == NO_PARAMS);
         return isNoParams;
-    }
-
-    public String changeSessionId()
-    {
-        if (_managedSession == null)
-            return null;
-        if (_managedSession.isInvalid())
-            return _managedSession.getId();
-
-        HttpSession httpSession = _managedSession.getAPISession();
-        if (httpSession == null)
-            throw new IllegalStateException("No session");
-
-        ManagedSession session = _managedSession;
-        session.renewId(this, _response);
-
-        return httpSession.getId();
     }
 
     public ManagedSession getManagedSession()

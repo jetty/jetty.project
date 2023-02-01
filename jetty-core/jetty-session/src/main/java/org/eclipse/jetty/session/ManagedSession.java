@@ -111,7 +111,7 @@ public class ManagedSession implements Session
         _sessionInactivityTimer = manager.newSessionInactivityTimer(this);
         _api = _manager.newSessionAPIWrapper(this);
         if (_api != null && _api.getSession() != this)
-            throw new IllegalStateException("APISession must wrap this session");
+            throw new IllegalStateException("Session.API must wrap this session");
     }
 
     /**
@@ -122,7 +122,7 @@ public class ManagedSession implements Session
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends API> T getAPISession()
+    public <T extends API> T getApi()
     {
         return (T)_api;
     }
@@ -331,11 +331,11 @@ public class ManagedSession implements Session
         }
     }
 
-    public boolean isInvalid()
+    public boolean isInvalidOrInvalidating()
     {
         try (AutoLock l = _lock.lock())
         {
-            // TODO this is not the inverse of isValue???? what about CHANGING
+            // TODO review if this can be replaced by !isValid()
             return _state == State.INVALID || _state == State.INVALIDATING;
         }
     }

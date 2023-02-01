@@ -69,7 +69,7 @@ public class SimpleSessionHandlerTest
 
                 SessionRequest sessionRequest = Request.as(request, SessionRequest.class);
                 Session session = sessionRequest.getSession(false);
-                SessionAPI api = session == null ? null : session.getAPISession();
+                SessionAPI api = session == null ? null : session.getApi();
 
                 if (split.length > 0)
                 {

@@ -107,7 +107,7 @@ public class ServletApiRequest implements HttpServletRequest
 
     protected ServletApiRequest(ServletContextRequest servletContextRequest)
     {
-        this._request = servletContextRequest;
+        _request = servletContextRequest;
     }
 
     public Fields getQueryParams()
@@ -369,7 +369,7 @@ public class ServletApiRequest implements HttpServletRequest
             return null;
         if (session.isNew() && getAuthentication() instanceof Authentication.User)
             session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-        return session.getAPISession();
+        return session.getApi();
     }
 
     @Override
@@ -381,16 +381,9 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String changeSessionId()
     {
-        HttpSession httpSession = getSession(false);
-        if (httpSession == null)
-            throw new IllegalStateException("No session");
-
-        ManagedSession session = SessionHandler.ServletAPISession.getSession(httpSession);
+        Session session = _request.getSession(false);
         if (session == null)
-            throw new IllegalStateException("!org.eclipse.jetty.session.Session");
-
-        if (_request.getSessionManager() == null)
-            throw new IllegalStateException("No SessionManager.");
+            throw new IllegalStateException("No session");
 
         session.renewId(_request, _request.getResponse());
 

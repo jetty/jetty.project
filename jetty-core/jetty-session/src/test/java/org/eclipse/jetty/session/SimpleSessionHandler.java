@@ -118,7 +118,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
                     Response.replaceCookie(_response, cookie);
             }
 
-            return session == null || session.isInvalid() ? null : session;
+            return session == null || !session.isValid() ? null : session;
         }
 
         public boolean process(Handler handler, Response response, Callback callback) throws Exception

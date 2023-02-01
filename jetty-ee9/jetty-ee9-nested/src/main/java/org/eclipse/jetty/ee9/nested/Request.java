@@ -372,7 +372,7 @@ public class Request implements HttpServletRequest
             LOG.debug("Response {} committing for session {}", this, session);
 
         //try and scope to a request and context before committing the session
-        HttpSession httpSession = session.getAPISession();
+        HttpSession httpSession = session.getApi();
         ServletContext ctx = httpSession.getServletContext();
         ContextHandler handler = ContextHandler.getContextHandler(ctx);
         if (handler == null)
@@ -1328,7 +1328,7 @@ public class Request implements HttpServletRequest
     {
         ManagedSession managedSession = _coreRequest.getManagedSession();
         if (managedSession != null && managedSession.getSessionManager() == sessionManager)
-            return managedSession.getAPISession();
+            return managedSession.getApi();
         return null;
     }
 
@@ -1344,7 +1344,7 @@ public class Request implements HttpServletRequest
         Session session = _coreRequest.getSession(create);
         if (session != null && session.isNew() && getAuthentication() instanceof Authentication.User)
             session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-        return session == null ? null : session.getAPISession();
+        return session == null ? null : session.getApi();
     }
 
     /**

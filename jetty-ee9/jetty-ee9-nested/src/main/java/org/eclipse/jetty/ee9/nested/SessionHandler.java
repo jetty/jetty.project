@@ -557,7 +557,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         @Override
         public Session.API newSessionAPIWrapper(ManagedSession session)
         {
-            return new ServletAPISession(session);
+            return new ServletSessionApi(session);
         }
 
         @Override
@@ -571,7 +571,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             if (!_sessionAttributeListeners.isEmpty())
             {
-                HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getAPISession(), name, old == null ? value : old);
+                HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
 
                 for (HttpSessionAttributeListener l : _sessionAttributeListeners)
                 {
@@ -597,7 +597,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             if (session == null)
                 return;
 
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (HttpSessionListener  l : _sessionListeners)
                 l.sessionCreated(event);
         }
@@ -619,7 +619,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             //come from the scavenger, rather than a request thread
             Runnable r = () ->
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 for (int i = _sessionListeners.size() - 1; i >= 0; i--)
                 {
                     _sessionListeners.get(i).sessionDestroyed(event);
@@ -634,7 +634,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             //inform the listeners
             if (!_sessionIdListeners.isEmpty())
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 for (HttpSessionIdListener l : _sessionIdListeners)
                 {
                     l.sessionIdChanged(event, oldId);
@@ -646,14 +646,14 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         public void callUnboundBindingListener(Session session, String name, Object value)
         {
             if (value instanceof HttpSessionBindingListener)
-                ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getAPISession(), name));
+                ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
         }
 
         @Override
         public void callBoundBindingListener(Session session, String name, Object value)
         {
             if (value instanceof HttpSessionBindingListener)
-                ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name));
+                ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getApi(), name));
         }
 
         @Override
@@ -661,7 +661,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             if (value instanceof HttpSessionActivationListener listener)
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 listener.sessionDidActivate(event);
             }
 
@@ -672,17 +672,17 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             if (value instanceof HttpSessionActivationListener listener)
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 listener.sessionWillPassivate(event);
             }
         }
     }
 
-    public class ServletAPISession implements HttpSession, Session.API
+    public class ServletSessionApi implements HttpSession, Session.API
     {
         private final ManagedSession _session;
 
-        private ServletAPISession(ManagedSession session)
+        private ServletSessionApi(ManagedSession session)
         {
             _session = session;
         }

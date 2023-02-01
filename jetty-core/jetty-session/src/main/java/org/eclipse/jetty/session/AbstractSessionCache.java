@@ -500,7 +500,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             if (session.getSessionManager() == null)
                 throw new IllegalStateException("Session " + id + " is not managed");
 
-            if (session.isInvalid())
+            if (session.isInvalidOrInvalidating())
                 return;
 
             session.release();

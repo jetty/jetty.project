@@ -270,23 +270,23 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         }
     }
 
-    public static class ServletAPISession implements HttpSession, Session.API
+    public static class ServletSessionApi implements HttpSession, Session.API
     {
-        public static ServletAPISession wrapSession(ManagedSession session)
+        public static ServletSessionApi wrapSession(ManagedSession session)
         {
-            return new ServletAPISession(session);
+            return new ServletSessionApi(session);
         }
         
         public static ManagedSession getSession(HttpSession httpSession)
         {
-            if (httpSession instanceof ServletAPISession apiSession)
+            if (httpSession instanceof ServletSessionApi apiSession)
                 return apiSession.getSession();
             return null;
         }
         
         private final ManagedSession _session;
         
-        private ServletAPISession(ManagedSession session)
+        private ServletSessionApi(ManagedSession session)
         {
             _session = session;           
         }
@@ -461,7 +461,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
 
     public Session.API newSessionAPIWrapper(ManagedSession session)
     {
-        return ServletAPISession.wrapSession(session);
+        return ServletSessionApi.wrapSession(session);
     }
 
     @Override
@@ -469,7 +469,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (!_sessionAttributeListeners.isEmpty())
         {
-            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getAPISession(), name, old == null ? value : old);
+            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
 
             for (HttpSessionAttributeListener l : _sessionAttributeListeners)
             {
@@ -495,7 +495,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         if (session == null)
             return;
 
-        HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+        HttpSessionEvent event = new HttpSessionEvent(session.getApi());
         for (HttpSessionListener  l : _sessionListeners)
         {
             l.sessionCreated(event);
@@ -519,7 +519,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         //come from the scavenger, rather than a request thread
         getSessionContext().run(() ->
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (int i = _sessionListeners.size() - 1; i >= 0; i--)
             {
                 _sessionListeners.get(i).sessionDestroyed(event);
@@ -533,7 +533,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         //inform the listeners
         if (!_sessionIdListeners.isEmpty())
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (HttpSessionIdListener l : _sessionIdListeners)
             {
                 l.sessionIdChanged(event, oldId);
@@ -545,14 +545,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     public void callUnboundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getAPISession(), name));
+            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
     }
     
     @Override
     public void callBoundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name)); 
+            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getApi(), name));
     }
     
     @Override
@@ -560,7 +560,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (value instanceof HttpSessionActivationListener listener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             listener.sessionDidActivate(event);
         }
     }
@@ -570,7 +570,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (value instanceof HttpSessionActivationListener listener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             listener.sessionWillPassivate(event);
         }
     }

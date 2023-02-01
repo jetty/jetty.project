@@ -334,7 +334,7 @@ public class ServletContextResponse extends ContextResponse
             SessionHandler sh = _servletChannel.getContextHandler().getSessionHandler();
             if (sh != null)
             {
-                ManagedSession managedSession = SessionHandler.ServletAPISession.getSession(session);
+                ManagedSession managedSession = SessionHandler.ServletSessionApi.getSession(session);
                 if (managedSession != null)
                 {
                     HttpCookie c = sh.getSessionCookie(managedSession, _request.isSecure());

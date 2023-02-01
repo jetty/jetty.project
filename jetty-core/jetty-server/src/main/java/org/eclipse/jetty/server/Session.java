@@ -31,6 +31,7 @@ public interface Session
     }
 
     /**
+     * <p>An API wrapper of the core session.</p>
      * <p>API wrappers of the {@link Session} must implement this interface and return
      * the {@link Session} that they wrap.</p>
      */
@@ -40,7 +41,7 @@ public interface Session
     }
 
     @SuppressWarnings("unchecked")
-    <T extends API> T getAPISession();
+    <T extends API> T getApi();
 
     boolean isValid();
 
