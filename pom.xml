@@ -25,7 +25,7 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
-    <ant.version>1.10.12</ant.version>
+    <ant.version>1.10.13</ant.version>
     <apache.avro.version>1.11.1</apache.avro.version>
     <asm.version>9.4</asm.version>
     <bndlib.version>6.3.1</bndlib.version>
@@ -46,7 +46,7 @@
     <hawtio.version>2.15.0</hawtio.version>
     <hazelcast.version>3.12.12</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.16.Final</infinispan.version>
+    <infinispan.version>11.0.17.Final</infinispan.version>
     <jackson.annotations.version>2.13.3</jackson.annotations.version>
     <jackson.core.version>2.13.3</jackson.core.version>
     <jackson.databind.version>2.13.3</jackson.databind.version>
@@ -76,8 +76,8 @@
     <junit.version>5.9.1</junit.version>
     <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.2.11</logback.version>
-    <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
-    <maven.resolver.version>1.9.2</maven.resolver.version>
+    <maven.plugin-tools.version>3.7.1</maven.plugin-tools.version>
+    <maven.resolver.version>1.9.4</maven.resolver.version>
     <maven.version>3.8.7</maven.version>
     <mongodb.version>2.14.3</mongodb.version>
     <osgi.annotation.version>8.1.0</osgi.annotation.version>
@@ -110,17 +110,17 @@
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
     <maven.invoker.plugin.version>3.4.0</maven.invoker.plugin.version>
-    <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
-    <maven.checkstyle.plugin.version>3.2.0</maven.checkstyle.plugin.version>
+    <maven.surefire.plugin.version>3.0.0-M8</maven.surefire.plugin.version>
+    <maven.checkstyle.plugin.version>3.2.1</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.4.0</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.5.0</maven.dependency.plugin.version>
     <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>3.2.1</maven.enforcer.plugin.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.3.1</maven.jxr.plugin.version>
-    <maven.plugin.plugin.version>3.7.0</maven.plugin.plugin.version>
+    <maven.plugin.plugin.version>3.7.1</maven.plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources.plugin.version>3.0.0</maven.remote-resources.plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
@@ -475,7 +475,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.2.1</version>
         <configuration>
           <configLocation>jetty-checkstyle.xml</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -1610,7 +1610,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.3.4</cbi-plugins.version>
+        <cbi-plugins.version>1.4.0</cbi-plugins.version>
       </properties>
       <build>
         <plugins>
