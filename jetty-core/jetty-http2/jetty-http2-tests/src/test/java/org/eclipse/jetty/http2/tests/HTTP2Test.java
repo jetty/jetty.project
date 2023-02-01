@@ -201,7 +201,7 @@ public class HTTP2Test extends AbstractTest
                 Stream.Data data = stream.readData();
                 DataFrame frame = data.frame();
                 assertTrue(frame.isEndStream());
-                assertEquals(ByteBuffer.wrap(content), frame.getData());
+                assertEquals(ByteBuffer.wrap(content), frame.getByteBuffer());
                 data.release();
                 latch.countDown();
             }
@@ -593,10 +593,10 @@ public class HTTP2Test extends AbstractTest
         DataFrame data1 = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), false)
         {
             @Override
-            public ByteBuffer getData()
+            public ByteBuffer getByteBuffer()
             {
                 sleep(2 * sleep);
-                return super.getData();
+                return super.getByteBuffer();
             }
         };
         DataFrame data2 = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);

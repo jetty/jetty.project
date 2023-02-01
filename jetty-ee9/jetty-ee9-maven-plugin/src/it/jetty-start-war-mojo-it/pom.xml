@@ -13,7 +13,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>ee9 :: Jetty :: Simple start war mojo test</name>
+  <name>EE9 :: Simple start war mojo test</name>
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-war-port.txt</jetty.port.file>

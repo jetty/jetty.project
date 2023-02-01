@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jndi</artifactId>
-  <name>Jetty Core :: JNDI Naming</name>
+  <name>Core :: JNDI</name>
   <description>JNDI spi impl for java namespace.</description>
 
   <properties>

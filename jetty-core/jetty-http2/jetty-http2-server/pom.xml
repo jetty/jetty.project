@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http2-server</artifactId>
-  <name>Jetty Core :: HTTP2 :: Server</name>
+  <name>Core :: HTTP2 :: Server</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

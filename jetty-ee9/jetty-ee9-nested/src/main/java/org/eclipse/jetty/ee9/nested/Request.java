@@ -1293,7 +1293,7 @@ public class Request implements HttpServletRequest
         if (getRemoteUser() != null)
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
         if (session.isSetCookieNeeded())
-            _channel.getResponse().replaceCookie(_sessionManager.getSessionCookie(session, getContextPath(), isSecure()));
+            _channel.getResponse().replaceCookie(_sessionManager.getSessionCookie(session, isSecure()));
 
         return httpSession.getId();
     }
@@ -1376,7 +1376,7 @@ public class Request implements HttpServletRequest
         if (_coreSession == null)
             throw new IllegalStateException("Create session failed");
 
-        HttpCookie cookie = _sessionManager.getSessionCookie(_coreSession, getContextPath(), isSecure());
+        HttpCookie cookie = _sessionManager.getSessionCookie(_coreSession, isSecure());
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
 

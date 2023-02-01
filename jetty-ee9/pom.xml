@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee9</groupId>
   <artifactId>jetty-ee9</artifactId>
-  <name>EE9 :: Parent</name>
+  <name>EE9</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -70,7 +70,6 @@
     <module>jetty-ee9-websocket</module>
     <module>jetty-ee9-tests</module>
     <module>jetty-ee9-bom</module>
-    <module>test-ee9-sessions</module>
     <module>jetty-ee9-home</module>
   </modules>
 
@@ -433,4 +432,36 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <!--
+        $ mvn -Pdependency-updates-reports validate
+        # once done, check the jetty-ee9/target/site/dependency-updates-aggregate-report.html
+        -->
+      <id>dependency-updates-reports</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>ee9-report</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>dependency-updates-aggregate-report</goal>
+                </goals>
+                <configuration>
+                  <formats>
+                    <format>html</format>
+                  </formats>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 /**
  * {@link ContentDecoder} for the "gzip" encoding.
@@ -34,13 +33,13 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
         this(null, bufferSize);
     }
 
-    public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)
+    public GZIPContentDecoder(RetainableByteBufferPool retainableByteBufferPool, int bufferSize)
     {
-        super(byteBufferPool, bufferSize);
+        super(retainableByteBufferPool, bufferSize);
     }
 
     @Override
-    protected boolean decodedChunk(ByteBuffer chunk)
+    protected boolean decodedChunk(RetainableByteBuffer chunk)
     {
         super.decodedChunk(chunk);
         return true;
@@ -51,8 +50,8 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
      */
     public static class Factory extends ContentDecoder.Factory
     {
+        private final RetainableByteBufferPool retainableByteBufferPool;
         private final int bufferSize;
-        private final ByteBufferPool byteBufferPool;
 
         public Factory()
         {
@@ -64,22 +63,22 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
             this(null, bufferSize);
         }
 
-        public Factory(ByteBufferPool byteBufferPool)
+        public Factory(RetainableByteBufferPool retainableByteBufferPool)
         {
-            this(byteBufferPool, DEFAULT_BUFFER_SIZE);
+            this(retainableByteBufferPool, DEFAULT_BUFFER_SIZE);
         }
 
-        public Factory(ByteBufferPool byteBufferPool, int bufferSize)
+        public Factory(RetainableByteBufferPool retainableByteBufferPool, int bufferSize)
         {
             super("gzip");
-            this.byteBufferPool = byteBufferPool;
+            this.retainableByteBufferPool = retainableByteBufferPool;
             this.bufferSize = bufferSize;
         }
 
         @Override
         public ContentDecoder newContentDecoder()
         {
-            return new GZIPContentDecoder(byteBufferPool, bufferSize);
+            return new GZIPContentDecoder(retainableByteBufferPool, bufferSize);
         }
     }
 }

@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http-spi</artifactId>
-  <name>Jetty Core :: Http Service Provider Interface</name>
+  <name>Core :: HTTP SPI</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.http.spi.*</spotbugs.onlyAnalyze>

@@ -24,8 +24,9 @@ import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -41,8 +42,8 @@ public class WebSocketTester
 {
     private static final String NON_RANDOM_KEY = Base64.getEncoder().encodeToString("0123456701234567".getBytes());
     private static SslContextFactory.Client sslContextFactory;
-    protected ByteBufferPool bufferPool;
-    protected ByteBuffer buffer;
+    protected RetainableByteBufferPool bufferPool;
+    protected RetainableByteBuffer buffer;
     protected Parser parser;
 
     @BeforeAll
@@ -62,7 +63,7 @@ public class WebSocketTester
     @BeforeEach
     public void before()
     {
-        bufferPool = new ArrayByteBufferPool();
+        bufferPool = new ArrayRetainableByteBufferPool();
         parser = new Parser(bufferPool);
     }
 
@@ -160,26 +161,28 @@ public class WebSocketTester
 
         while (true)
         {
-            Parser.ParsedFrame frame = parser.parse(buffer);
-            if (!buffer.hasRemaining())
-                BufferUtil.clear(buffer);
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            Parser.ParsedFrame frame = parser.parse(byteBuffer);
+            if (!byteBuffer.hasRemaining())
+                BufferUtil.clear(byteBuffer);
             if (frame != null)
                 return frame;
 
-            int p = BufferUtil.flipToFill(buffer);
-            int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+            int p = BufferUtil.flipToFill(byteBuffer);
+            int len = in.read(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
             if (len < 0)
                 return null;
-            buffer.position(buffer.position() + len);
-            BufferUtil.flipToFlush(buffer, p);
+            byteBuffer.position(byteBuffer.position() + len);
+            BufferUtil.flipToFlush(byteBuffer, p);
         }
     }
 
     protected void receiveEof(InputStream in) throws IOException
     {
-        ByteBuffer buffer = bufferPool.acquire(4096, false);
-        BufferUtil.clearToFill(buffer);
-        int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        RetainableByteBuffer buffer = bufferPool.acquire(4096, false);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
+        int len = in.read(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), buffer.remaining());
         if (len < 0)
             return;
 

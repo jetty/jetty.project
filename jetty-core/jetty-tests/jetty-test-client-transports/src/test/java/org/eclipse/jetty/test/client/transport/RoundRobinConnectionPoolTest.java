@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -68,6 +69,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         client.getTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
+            LifeCycle.start(pool);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });
@@ -147,6 +149,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         client.getTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
+            LifeCycle.start(pool);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });

@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-util</artifactId>
-  <name>Jetty Core :: Utilities</name>
+  <name>Core :: Utilities</name>
   <description>Utility classes for Jetty</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util</bundle-symbolic-name>

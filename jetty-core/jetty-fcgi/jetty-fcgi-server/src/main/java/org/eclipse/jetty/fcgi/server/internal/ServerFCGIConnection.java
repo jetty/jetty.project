@@ -63,7 +63,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;
-        this.networkByteBufferPool = connector.getByteBufferPool().asRetainableByteBufferPool();
+        this.networkByteBufferPool = connector.getRetainableByteBufferPool();
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;
         this.sendStatus200 = sendStatus200;
@@ -212,7 +212,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
                     LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
                 if (read > 0)
                 {
-                    if (parse(networkBuffer.getBuffer()))
+                    if (parse(networkBuffer.getByteBuffer()))
                         return;
                 }
                 else if (read == 0)
@@ -252,7 +252,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
         // See also HttpConnection.parseAndFillForContent().
         while (stream != null)
         {
-            if (parse(networkBuffer.getBuffer()))
+            if (parse(networkBuffer.getByteBuffer()))
                 return;
             // Check if the request was completed by the parsing.
             if (stream == null)
@@ -281,7 +281,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     {
         try
         {
-            return getEndPoint().fill(networkBuffer.getBuffer());
+            return getEndPoint().fill(networkBuffer.getByteBuffer());
         }
         catch (Throwable x)
         {
@@ -333,7 +333,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
             HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
-            ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
+            ServerGenerator generator = new ServerGenerator(connector.getRetainableByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);
             if (LOG.isDebugEnabled())

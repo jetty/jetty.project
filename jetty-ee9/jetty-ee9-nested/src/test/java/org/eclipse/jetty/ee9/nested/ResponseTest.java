@@ -29,6 +29,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -1939,6 +1940,23 @@ public class ResponseTest
     }
 
     @Test
+    public void testAddCookieSameSiteByComment() throws Exception
+    {
+        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
+
+        Response response = getResponse();
+        Cookie cookie = new Cookie("name", "value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY____SAME_SITE_LAX__");
+
+        response.addCookie(cookie);
+        String set = response.getHttpFields().get("Set-Cookie");
+        assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly; SameSite=Lax", set);
+    }
+
+    @Test
     public void testAddCookieSameSiteDefault() throws Exception
     {
         Response response = getResponse();
@@ -2072,21 +2090,21 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        response.replaceCookie(new HttpCookie("Foo", "123456"));
-        response.replaceCookie(new HttpCookie("Foo", "123456", "A", "/path"));
-        response.replaceCookie(new HttpCookie("Foo", "123456", "B", "/path"));
+        response.replaceCookie(HttpCookie.from("Foo", "123456"));
+        response.replaceCookie(HttpCookie.from("Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from("Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
 
-        response.replaceCookie(new HttpCookie("Bar", "123456"));
-        response.replaceCookie(new HttpCookie("Bar", "123456", null, "/left"));
-        response.replaceCookie(new HttpCookie("Bar", "123456", null, "/right"));
+        response.replaceCookie(HttpCookie.from("Bar", "123456"));
+        response.replaceCookie(HttpCookie.from("Bar", "123456", Map.of(HttpCookie.PATH_ATTRIBUTE, "/left")));
+        response.replaceCookie(HttpCookie.from("Bar", "123456", Map.of(HttpCookie.PATH_ATTRIBUTE, "/right")));
 
-        response.replaceCookie(new HttpCookie("Bar", "value", null, "/right"));
-        response.replaceCookie(new HttpCookie("Bar", "value", null, "/left"));
-        response.replaceCookie(new HttpCookie("Bar", "value"));
+        response.replaceCookie(HttpCookie.from("Bar", "value", Map.of(HttpCookie.PATH_ATTRIBUTE, "/right")));
+        response.replaceCookie(HttpCookie.from("Bar", "value", Map.of(HttpCookie.PATH_ATTRIBUTE, "/left")));
+        response.replaceCookie(HttpCookie.from("Bar", "value"));
 
-        response.replaceCookie(new HttpCookie("Foo", "value", "B", "/path"));
-        response.replaceCookie(new HttpCookie("Foo", "value", "A", "/path"));
-        response.replaceCookie(new HttpCookie("Foo", "value"));
+        response.replaceCookie(HttpCookie.from("Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from("Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from("Foo", "value"));
 
         String[] expected = new String[]{
             "Foo=value",
@@ -2107,11 +2125,11 @@ public class ResponseTest
         Response response = getResponse();
         _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
         //replace with no prior does an add
-        response.replaceCookie(new HttpCookie("Foo", "123456"));
+        response.replaceCookie(HttpCookie.from("Foo", "123456"));
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=123456; SameSite=Lax", set);
         //check replacement
-        response.replaceCookie(new HttpCookie("Foo", "other"));
+        response.replaceCookie(HttpCookie.from("Foo", "other"));
         set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=other; SameSite=Lax", set);
     }
@@ -2122,21 +2140,21 @@ public class ResponseTest
         Response response = getResponse();
 
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
-        response.replaceCookie(new HttpCookie("Foo", "value"));
+        response.replaceCookie(HttpCookie.from("Foo", "value"));
         List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=value"));
 
         response.setHeader(HttpHeader.SET_COOKIE, "Foo=123456; domain=Bah; Path=/path");
-        response.replaceCookie(new HttpCookie("Foo", "other"));
+        response.replaceCookie(HttpCookie.from("Foo", "other"));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=123456; domain=Bah; Path=/path", "Foo=other"));
 
-        response.replaceCookie(new HttpCookie("Foo", "replaced", "Bah", "/path"));
+        response.replaceCookie(HttpCookie.from("Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah", "Foo=other"));
 
         response.setHeader(HttpHeader.SET_COOKIE, "Foo=123456; domain=Bah; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; Path=/path");
-        response.replaceCookie(new HttpCookie("Foo", "replaced", "Bah", "/path"));
+        response.replaceCookie(HttpCookie.from("Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah"));
     }
@@ -2148,7 +2166,7 @@ public class ResponseTest
         _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
 
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
-        response.replaceCookie(new HttpCookie("Foo", "value"));
+        response.replaceCookie(HttpCookie.from("Foo", "value"));
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=value; SameSite=Lax", set);
     }

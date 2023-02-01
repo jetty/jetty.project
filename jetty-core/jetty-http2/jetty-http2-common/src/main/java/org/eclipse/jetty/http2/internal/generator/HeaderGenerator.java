@@ -17,21 +17,30 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HeaderGenerator
 {
     private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
+    private final RetainableByteBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 
-    public HeaderGenerator()
+    public HeaderGenerator(RetainableByteBufferPool bufferPool)
     {
-        this(true);
+        this(bufferPool, true);
     }
 
-    public HeaderGenerator(boolean useDirectByteBuffers)
+    public HeaderGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
+        this.bufferPool = bufferPool;
         this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return bufferPool;
     }
 
     public boolean isUseDirectByteBuffers()
@@ -39,16 +48,18 @@ public class HeaderGenerator
         return useDirectByteBuffers;
     }
 
-    public ByteBuffer generate(ByteBufferPool.Lease lease, FrameType frameType, int capacity, int length, int flags, int streamId)
+    public RetainableByteBuffer generate(FrameType frameType, int capacity, int length, int flags, int streamId)
     {
-        ByteBuffer header = lease.acquire(capacity, isUseDirectByteBuffers());
+        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
+        ByteBuffer header = buffer.getByteBuffer();
+        BufferUtil.clearToFill(header);
         header.put((byte)((length & 0x00_FF_00_00) >>> 16));
         header.put((byte)((length & 0x00_00_FF_00) >>> 8));
         header.put((byte)((length & 0x00_00_00_FF)));
         header.put((byte)frameType.getType());
         header.put((byte)flags);
         header.putInt(streamId);
-        return header;
+        return buffer;
     }
 
     public int getMaxFrameSize()

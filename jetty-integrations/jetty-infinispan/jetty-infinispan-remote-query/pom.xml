@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-infinispan-remote-query</artifactId>
-  <name>Jetty :: Infinispan Session Manager Remote with Querying</name>
+  <name>Integrations :: Infinispan :: Remote with Querying</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
     <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>

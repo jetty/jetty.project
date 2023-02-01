@@ -28,9 +28,9 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -153,14 +153,14 @@ public class HTTP2Client extends ContainerLifeCycle
         connector.setScheduler(scheduler);
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
-        return connector.getByteBufferPool();
+        return connector.getRetainableByteBufferPool();
     }
 
-    public void setByteBufferPool(ByteBufferPool bufferPool)
+    public void setRetainableByteBufferPool(RetainableByteBufferPool bufferPool)
     {
-        connector.setByteBufferPool(bufferPool);
+        connector.setRetainableByteBufferPool(bufferPool);
     }
 
     public FlowControlStrategy.Factory getFlowControlStrategyFactory()
@@ -435,7 +435,7 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             if (isUseALPN())
                 factory = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
-            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), factory);
+            factory = new SslClientConnectionFactory(sslContextFactory, getRetainableByteBufferPool(), getExecutor(), factory);
         }
         return factory;
     }

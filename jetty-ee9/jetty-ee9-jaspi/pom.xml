@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-jaspi</artifactId>
-  <name>EE9 :: Jetty :: JASPI Security</name>
+  <name>EE9 :: JASPI</name>
   <description>Jetty security infrastructure</description>
 
   <properties>

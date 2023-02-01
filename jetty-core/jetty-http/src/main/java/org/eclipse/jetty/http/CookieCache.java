@@ -15,8 +15,10 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -48,7 +50,16 @@ public class CookieCache
             @Override
             protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
             {
-                _cookieList.add(new HttpCookie(cookieName, cookieValue, cookieDomain, cookiePath, -1, false, false, cookieComment, cookieVersion));
+                if (StringUtil.isEmpty(cookieDomain) && StringUtil.isEmpty(cookiePath) && cookieVersion <= 0 && StringUtil.isEmpty(cookieComment))
+                   _cookieList.add(HttpCookie.from(cookieName, cookieValue));
+                else
+                {
+                    Map<String, String> attributes = new HashMap<>();
+                    attributes.put(HttpCookie.DOMAIN_ATTRIBUTE, cookieDomain);
+                    attributes.put(HttpCookie.PATH_ATTRIBUTE, cookiePath);
+                    attributes.put(HttpCookie.COMMENT_ATTRIBUTE, cookieComment);
+                    _cookieList.add(HttpCookie.from(cookieName, cookieValue, cookieVersion, attributes));
+                }
             }
         };
     }

@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee10.osgi</groupId>
   <artifactId>jetty-ee10-osgi</artifactId>
-  <name>EE10 :: Jetty :: OSGi</name>
+  <name>EE10 :: OSGi</name>
   <packaging>pom</packaging>
 
   <properties>

@@ -21,7 +21,6 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
@@ -167,22 +166,17 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
 
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
-        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        RetainableByteBufferPool retainableByteBufferPool = byteBufferPool.asRetainableByteBufferPool();
-        return new SslConnection(retainableByteBufferPool, byteBufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        RetainableByteBufferPool retainableByteBufferPool = connector.getRetainableByteBufferPool();
+        return new SslConnection(retainableByteBufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override
     protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
     {
-        if (connection instanceof SslConnection)
+        if (connection instanceof SslConnection sslConnection)
         {
-            SslConnection sslConnection = (SslConnection)connection;
-            if (connector instanceof ContainerLifeCycle)
-            {
-                ContainerLifeCycle container = (ContainerLifeCycle)connector;
+            if (connector instanceof ContainerLifeCycle container)
                 container.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
-            }
             getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
         return super.configure(connection, connector, endPoint);

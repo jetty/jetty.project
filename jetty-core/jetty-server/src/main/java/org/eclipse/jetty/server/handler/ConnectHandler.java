@@ -32,11 +32,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
@@ -48,7 +48,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +63,7 @@ public class ConnectHandler extends Handler.Wrapper
     private final Set<String> blackList = new HashSet<>();
     private Executor executor;
     private Scheduler scheduler;
-    private ByteBufferPool bufferPool;
+    private RetainableByteBufferPool bufferPool;
     private SelectorManager selector;
     private long connectTimeout = 15000;
     private long idleTimeout = 30000;
@@ -101,12 +100,12 @@ public class ConnectHandler extends Handler.Wrapper
         this.scheduler = scheduler;
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
         return bufferPool;
     }
 
-    public void setByteBufferPool(ByteBufferPool bufferPool)
+    public void setRetainableByteBufferPool(RetainableByteBufferPool bufferPool)
     {
         updateBean(this.bufferPool, bufferPool);
         this.bufferPool = bufferPool;
@@ -162,15 +161,13 @@ public class ConnectHandler extends Handler.Wrapper
 
         if (scheduler == null)
         {
-            scheduler = getServer().getBean(Scheduler.class);
-            if (scheduler == null)
-                scheduler = new ScheduledExecutorScheduler(String.format("Proxy-Scheduler-%x", hashCode()), false);
+            scheduler = getServer().getScheduler();
             addBean(scheduler);
         }
 
         if (bufferPool == null)
         {
-            bufferPool = new MappedByteBufferPool();
+            bufferPool = getServer().getRetainableByteBufferPool();
             addBean(bufferPool);
         }
 
@@ -385,12 +382,12 @@ public class ConnectHandler extends Handler.Wrapper
 
     protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
     {
-        return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context);
+        return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context);
     }
 
     protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
     {
-        return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext);
+        return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext);
     }
 
     protected void prepareContext(Request request, ConcurrentMap<String, Object> context)
@@ -556,7 +553,7 @@ public class ConnectHandler extends Handler.Wrapper
     {
         private final ConnectContext connectContext;
 
-        public UpstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectContext connectContext)
+        public UpstreamConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ConnectContext connectContext)
         {
             super(endPoint, executor, bufferPool, connectContext.getContext());
             this.connectContext = connectContext;
@@ -592,7 +589,7 @@ public class ConnectHandler extends Handler.Wrapper
     {
         private ByteBuffer buffer;
 
-        public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
+        public DownstreamConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor, bufferPool, context);
         }
@@ -659,18 +656,18 @@ public class ConnectHandler extends Handler.Wrapper
     private abstract static class TunnelConnection extends AbstractConnection
     {
         private final IteratingCallback pipe = new ProxyIteratingCallback();
-        private final ByteBufferPool bufferPool;
+        private final RetainableByteBufferPool bufferPool;
         private final ConcurrentMap<String, Object> context;
         private TunnelConnection connection;
 
-        protected TunnelConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
+        protected TunnelConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor);
             this.bufferPool = bufferPool;
             this.context = context;
         }
 
-        public ByteBufferPool getByteBufferPool()
+        public RetainableByteBufferPool getRetainableByteBufferPool()
         {
             return bufferPool;
         }
@@ -718,7 +715,7 @@ public class ConnectHandler extends Handler.Wrapper
 
         private class ProxyIteratingCallback extends IteratingCallback
         {
-            private ByteBuffer buffer;
+            private RetainableByteBuffer buffer;
             private int filled;
 
             @Override
@@ -727,21 +724,22 @@ public class ConnectHandler extends Handler.Wrapper
                 buffer = bufferPool.acquire(getInputBufferSize(), true);
                 try
                 {
-                    int filled = this.filled = read(getEndPoint(), buffer);
+                    ByteBuffer byteBuffer = buffer.getByteBuffer();
+                    int filled = this.filled = read(getEndPoint(), byteBuffer);
                     if (filled > 0)
                     {
-                        write(connection.getEndPoint(), buffer, this);
+                        write(connection.getEndPoint(), byteBuffer, this);
                         return Action.SCHEDULED;
                     }
                     else if (filled == 0)
                     {
-                        bufferPool.release(buffer);
+                        buffer.release();
                         fillInterested();
                         return Action.IDLE;
                     }
                     else
                     {
-                        bufferPool.release(buffer);
+                        buffer.release();
                         connection.getEndPoint().shutdownOutput();
                         return Action.SUCCEEDED;
                     }
@@ -750,7 +748,7 @@ public class ConnectHandler extends Handler.Wrapper
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Could not fill {}", TunnelConnection.this, x);
-                    bufferPool.release(buffer);
+                    buffer.release();
                     disconnect(x);
                     return Action.SUCCEEDED;
                 }
@@ -761,7 +759,7 @@ public class ConnectHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Wrote {} bytes {}", filled, TunnelConnection.this);
-                bufferPool.release(buffer);
+                buffer.release();
                 super.succeeded();
             }
 
@@ -775,7 +773,7 @@ public class ConnectHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, x);
-                bufferPool.release(buffer);
+                buffer.release();
                 disconnect(x);
             }
 

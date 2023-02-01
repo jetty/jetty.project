@@ -39,7 +39,7 @@ public class DataFrame extends StreamFrame
         this.padding = padding;
     }
 
-    public ByteBuffer getData()
+    public ByteBuffer getByteBuffer()
     {
         return data;
     }
@@ -68,12 +68,12 @@ public class DataFrame extends StreamFrame
     @Override
     public DataFrame withStreamId(int streamId)
     {
-        return new DataFrame(streamId, getData(), isEndStream());
+        return new DataFrame(streamId, getByteBuffer(), isEndStream());
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s#%d{length:%d,end=%b}", super.toString(), getStreamId(), data.remaining(), endStream);
+        return String.format("%s#%d{length:%d,end=%b}", super.toString(), getStreamId(), remaining(), isEndStream());
     }
 }

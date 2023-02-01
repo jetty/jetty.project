@@ -28,8 +28,8 @@ import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSessionLi
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -60,7 +60,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalServer.class);
-    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
     private Server server;
     private ServerConnector connector;
     private LocalConnector localConnector;

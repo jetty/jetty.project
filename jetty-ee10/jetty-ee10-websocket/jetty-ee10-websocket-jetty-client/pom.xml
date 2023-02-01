@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
-  <name>EE10 :: Jetty :: Websocket :: org.eclipse.jetty.websocket :: Client</name>
+  <name>EE10 :: Websocket :: Jetty Client</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>

@@ -20,7 +20,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class SettingsGenerator extends FrameGenerator
@@ -31,13 +32,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
-        return generateSettings(lease, settingsFrame.getSettings(), settingsFrame.isReply());
+        return generateSettings(accumulator, settingsFrame.getSettings(), settingsFrame.isReply());
     }
 
-    public int generateSettings(ByteBufferPool.Lease lease, Map<Integer, Integer> settings, boolean reply)
+    public int generateSettings(RetainableByteBufferPool.Accumulator accumulator, Map<Integer, Integer> settings, boolean reply)
     {
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;
@@ -45,16 +46,17 @@ public class SettingsGenerator extends FrameGenerator
         if (length > getMaxFrameSize())
             throw new IllegalArgumentException("Invalid settings, too big");
 
-        ByteBuffer header = generateHeader(lease, FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
+        RetainableByteBuffer header = generateHeader(FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
+        ByteBuffer byteBuffer = header.getByteBuffer();
 
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
-            header.putShort(entry.getKey().shortValue());
-            header.putInt(entry.getValue());
+            byteBuffer.putShort(entry.getKey().shortValue());
+            byteBuffer.putInt(entry.getValue());
         }
 
-        BufferUtil.flipToFlush(header, 0);
-        lease.append(header, true);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(header);
 
         return Frame.HEADER_LENGTH + length;
     }

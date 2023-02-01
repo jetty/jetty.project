@@ -19,9 +19,6 @@ module org.eclipse.jetty.server
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 
-    // TODO needed for testing??
-    requires static java.xml;
-
     exports org.eclipse.jetty.server;
     exports org.eclipse.jetty.server.handler;
     exports org.eclipse.jetty.server.handler.gzip;
@@ -31,7 +28,4 @@ module org.eclipse.jetty.server
 
     exports org.eclipse.jetty.server.jmx to
          org.eclipse.jetty.jmx;
-
-    // TODO required for testing ????
-    exports org.eclipse.jetty.server.ssl;
 }

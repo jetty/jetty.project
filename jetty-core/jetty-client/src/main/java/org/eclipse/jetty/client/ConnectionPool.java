@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * <p>Client-side connection pool abstraction.</p>
  */
-public interface ConnectionPool extends Closeable
+public interface ConnectionPool
 {
     /**
      * Optionally pre-create up to {@code connectionCount}
@@ -41,12 +40,6 @@ public interface ConnectionPool extends Closeable
      * @return whether this ConnectionPool has no open connections
      */
     boolean isEmpty();
-
-    /**
-     * @return whether this ConnectionPool has been closed
-     * @see #close()
-     */
-    boolean isClosed();
 
     /**
      * <p>Returns an idle connection, if available;
@@ -85,9 +78,6 @@ public interface ConnectionPool extends Closeable
      * @return true if the connection was removed from this ConnectionPool
      */
     boolean remove(Connection connection);
-
-    @Override
-    void close();
 
     /**
      * Factory for ConnectionPool instances.

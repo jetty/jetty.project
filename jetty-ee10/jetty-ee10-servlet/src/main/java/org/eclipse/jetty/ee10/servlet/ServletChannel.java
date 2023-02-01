@@ -744,7 +744,7 @@ public class ServletChannel
         try
         {
             _state.completing();
-            getResponse().write(true, getResponse().getHttpOutput().getBuffer(), Callback.from(() -> _state.completed(null), _state::completed));
+            getResponse().write(true, getResponse().getHttpOutput().getByteBuffer(), Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.internal;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,8 +26,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -578,17 +577,17 @@ public abstract class HttpReceiver
                     _chunk.retain();
                 if (LOG.isDebugEnabled())
                     LOG.debug("decoding: {}", _chunk);
-                ByteBuffer decodedBuffer = _decoder.decode(_chunk.getByteBuffer());
+                RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk.getByteBuffer());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("decoded: {}", BufferUtil.toDetailString(decodedBuffer));
+                    LOG.debug("decoded: {}", decodedBuffer);
 
-                if (BufferUtil.hasContent(decodedBuffer))
+                if (decodedBuffer != null && decodedBuffer.hasRemaining())
                 {
                     // The decoded ByteBuffer is a transformed "copy" of the
                     // compressed one, so it has its own reference counter.
                     if (LOG.isDebugEnabled())
                         LOG.debug("returning decoded content");
-                    return Content.Chunk.from(decodedBuffer, false, _decoder::release);
+                    return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
                 }
                 else
                 {

@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-osgi-alpn</artifactId>
-  <name>EE10 :: Jetty :: OSGi ALPN Fragment</name>
+  <name>EE10 :: OSGi :: ALPN Fragment</name>
   <packaging>jar</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.fragment</bundle-symbolic-name>

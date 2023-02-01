@@ -313,10 +313,10 @@ public interface Stream
          * <p>It is always guaranteed that invoking {@link Stream#demand()}
          * from within this method will not cause a {@link StackOverflowError}.</p>
          * <p>Typical usage:</p>
-         * <pre>
+         * <pre>{@code
          * class MyStreamListener implements Stream.Listener
          * {
-         *     &#64;Override
+         *     @Override
          *     public void onDataAvailable(Stream stream)
          *     {
          *         // Read a chunk of the content.
@@ -329,7 +329,7 @@ public interface Stream
          *         else
          *         {
          *             // Process the content.
-         *             process(data.getByteBuffer());
+         *             process(data.frame().getByteBuffer());
          *             // Notify that the content has been consumed.
          *             data.release();
          *             if (!data.frame().isEndStream())
@@ -340,7 +340,7 @@ public interface Stream
          *         }
          *     }
          * }
-         * </pre>
+         * }</pre>
          *
          * @param stream the stream
          * @see Stream#demand()

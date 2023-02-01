@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.util.Blocker;
@@ -651,7 +652,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                     if (chunk.isLast())
                     {
                         // write accumulated buffers
-                        response.write(true, bufferAccumulator.toByteBuffer(), callback);
+                        RetainableByteBuffer buffer = bufferAccumulator.toRetainableByteBuffer();
+                        response.write(true, buffer.getByteBuffer(), Callback.from(buffer::release, callback));
                         return;
                     }
                 }

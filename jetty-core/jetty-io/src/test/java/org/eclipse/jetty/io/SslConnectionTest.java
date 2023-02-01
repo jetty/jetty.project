@@ -59,8 +59,9 @@ public class SslConnectionTest
     private static final Logger LOG = LoggerFactory.getLogger(SslConnectionTest.class);
 
     private static final int TIMEOUT = 1000000;
-    private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
+    // TODO: track leaks
+    private final RetainableByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
     private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill = true;
@@ -86,7 +87,7 @@ public class SslConnectionTest
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(__byteBufferPool, getExecutor(), endpoint, engine);
+            SslConnection sslConnection = new SslConnection(_bufferPool, getExecutor(), endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             Connection appConnection = new TestConnection(sslConnection.getDecryptedEndPoint());

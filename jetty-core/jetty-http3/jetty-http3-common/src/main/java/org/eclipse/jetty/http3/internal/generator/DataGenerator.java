@@ -20,35 +20,40 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.internal.VarLenInt;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class DataGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public DataGenerator(boolean useDirectByteBuffers)
+    public DataGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
+        super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         DataFrame dataFrame = (DataFrame)frame;
-        return generateDataFrame(lease, dataFrame);
+        return generateDataFrame(accumulator, dataFrame);
     }
 
-    private int generateDataFrame(ByteBufferPool.Lease lease, DataFrame frame)
+    private int generateDataFrame(RetainableByteBufferPool.Accumulator accumulator, DataFrame frame)
     {
         ByteBuffer data = frame.getByteBuffer();
         int dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
-        ByteBuffer header = lease.acquire(headerLength, useDirectByteBuffers);
-        VarLenInt.encode(header, FrameType.DATA.type());
-        VarLenInt.encode(header, dataLength);
-        header.flip();
-        lease.append(header, true);
-        lease.append(data, false);
+        RetainableByteBuffer header = getRetainableByteBufferPool().acquire(headerLength, useDirectByteBuffers);
+        ByteBuffer byteBuffer = header.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
+        VarLenInt.encode(byteBuffer, FrameType.DATA.type());
+        VarLenInt.encode(byteBuffer, dataLength);
+        byteBuffer.flip();
+        accumulator.append(header);
+        accumulator.append(RetainableByteBuffer.wrap(data));
         return headerLength + dataLength;
     }
 }

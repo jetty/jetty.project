@@ -72,11 +72,14 @@ public class HouseKeeperTest
     @Test
     public void testHouseKeeper() throws Exception
     {
+        Server server = new Server();
+        server.start();
+
         HouseKeeper t = new TestHouseKeeper();
         assertThrows(IllegalStateException.class, () -> t.start());
         
         TestHouseKeeper hk = new TestHouseKeeper();
-        hk.setSessionIdManager(new TestSessionIdManager(new Server()));
+        hk.setSessionIdManager(new TestSessionIdManager(server));
         hk.setIntervalSec(-1);
         hk.start(); //no scavenging
         
@@ -103,8 +106,7 @@ public class HouseKeeperTest
         assertNotNull(hk.getRunner());
         assertNotNull(hk.getTask());
         assertNotNull(hk.getScheduler());
-        assertTrue(hk.isOwnScheduler());
-        
+
         //stop it
         hk.stop();
         assertNull(hk.getRunner());
@@ -124,6 +126,5 @@ public class HouseKeeperTest
         //provide that functionality.
         assertNotSame(oldTask, hk.getTask());
         assertNotNull(hk.getScheduler());
-        assertTrue(hk.isOwnScheduler());
     }
 }

@@ -7,6 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-ee9-distribution</artifactId>
+  <name>Tests :: Distribution :: EE9</name>
   <packaging>jar</packaging>
 
   <properties>

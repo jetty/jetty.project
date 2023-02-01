@@ -20,7 +20,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayGenerator extends FrameGenerator
@@ -31,13 +32,13 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
-        return generateGoAway(lease, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());
+        return generateGoAway(accumulator, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());
     }
 
-    public int generateGoAway(ByteBufferPool.Lease lease, int lastStreamId, int error, byte[] payload)
+    public int generateGoAway(RetainableByteBufferPool.Accumulator accumulator, int lastStreamId, int error, byte[] payload)
     {
         if (lastStreamId < 0)
             lastStreamId = 0;
@@ -51,16 +52,17 @@ public class GoAwayGenerator extends FrameGenerator
             payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
 
         int length = fixedLength + (payload != null ? payload.length : 0);
-        ByteBuffer header = generateHeader(lease, FrameType.GO_AWAY, length, Flags.NONE, 0);
+        RetainableByteBuffer header = generateHeader(FrameType.GO_AWAY, length, Flags.NONE, 0);
+        ByteBuffer byteBuffer = header.getByteBuffer();
 
-        header.putInt(lastStreamId);
-        header.putInt(error);
+        byteBuffer.putInt(lastStreamId);
+        byteBuffer.putInt(error);
 
         if (payload != null)
-            header.put(payload);
+            byteBuffer.put(payload);
 
-        BufferUtil.flipToFlush(header, 0);
-        lease.append(header, true);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(header);
 
         return Frame.HEADER_LENGTH + length;
     }
