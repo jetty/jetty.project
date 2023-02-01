@@ -1444,7 +1444,6 @@ public abstract class RFC2616BaseTest
             req4.append("\n");
 
             HttpTester.Response response = http.request(req4);
-
             assertThat("14.23 HTTP/1.1 - Empty Host", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         }
     }

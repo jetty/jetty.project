@@ -20,18 +20,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,7 +69,7 @@ public class AliasCheckerSymlinkTest
         IO.delete(path.toFile());
     }
 
-    private static void setAliasChecker(ContextHandler.AliasCheck aliasChecker)
+    private static void setAliasChecker(AliasCheck aliasChecker)
     {
         _context.clearAliasChecks();
         if (aliasChecker != null)
@@ -123,7 +123,7 @@ public class AliasCheckerSymlinkTest
         _server.addConnector(_connector);
         _context = new ServletContextHandler();
         _context.setContextPath("/");
-        _context.setResourceBase(webRootPath);
+        _context.setBaseResourceAsPath(webRootPath);
         _context.setWelcomeFiles(new String[]{"index.html"});
         _context.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
         _context.getMimeTypes().addMimeMapping("txt", "text/plain;charset=utf-8");
@@ -152,12 +152,20 @@ public class AliasCheckerSymlinkTest
         _server.stop();
     }
 
+    private static class ApproveAliases implements AliasCheck
+    {
+        @Override
+        public boolean checkAlias(String pathInContext, Resource resource)
+        {
+            return true;
+        }
+    }
+    
     public static Stream<Arguments> testCases()
     {
-        AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context);
-        SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(_context);
-        AllowSymLinkAliasChecker allowSymlinks = new AllowSymLinkAliasChecker();
-        ContextHandler.ApproveAliases approveAliases = new ContextHandler.ApproveAliases();
+        AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context.getCoreContextHandler());
+        SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(_context.getCoreContextHandler());
+        ApproveAliases approveAliases = new ApproveAliases();
 
         return Stream.of(
                 // AllowedResourceAliasChecker that checks the target of symlinks.
@@ -177,15 +185,6 @@ public class AliasCheckerSymlinkTest
                 Arguments.of(symlinkAllowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
                 Arguments.of(symlinkAllowedResource, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
                 Arguments.of(symlinkAllowedResource, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
-
-                // The AllowSymLinkAliasChecker.
-                Arguments.of(allowSymlinks, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(allowSymlinks, "/symlinkExternalFile", HttpStatus.OK_200, "This file is outside webroot."),
-                Arguments.of(allowSymlinks, "/symlinkDir/file", HttpStatus.OK_200, "This file is inside webroot/documents."),
-                Arguments.of(allowSymlinks, "/symlinkParentDir/webroot/file", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(allowSymlinks, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
-                Arguments.of(allowSymlinks, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
-                Arguments.of(allowSymlinks, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
 
                 // The ApproveAliases (approves everything regardless).
                 Arguments.of(approveAliases, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
@@ -209,7 +208,7 @@ public class AliasCheckerSymlinkTest
 
     @ParameterizedTest
     @MethodSource("testCases")
-    public void test(ContextHandler.AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
+    public void test(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
     {
         setAliasChecker(aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);

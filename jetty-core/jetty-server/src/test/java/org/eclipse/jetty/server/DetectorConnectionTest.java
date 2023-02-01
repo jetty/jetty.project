@@ -55,6 +55,7 @@ public class DetectorConnectionTest
 {
     private final AtomicInteger _bufferLeaks = new AtomicInteger();
     private Server _server;
+    private StacklessLogging _stacklessLogging;
 
     private static String inputStreamToString(InputStream is) throws IOException
     {
@@ -139,6 +140,7 @@ public class DetectorConnectionTest
         _server.addConnector(new ServerConnector(_server, 1, 1, connectionFactories));
         _server.setHandler(new DumpHandler());
         _server.start();
+        _stacklessLogging = new StacklessLogging(DetectorConnectionFactory.class);
     }
 
     @AfterEach
@@ -151,6 +153,8 @@ public class DetectorConnectionTest
             .until(() -> _bufferLeaks.get() == 0);
         if (_server != null)
             _server.stop();
+        if (_stacklessLogging != null)
+            _stacklessLogging.close();
     }
 
     @Test
@@ -536,11 +540,9 @@ public class DetectorConnectionTest
             Connection: close\r
             \r
             """;
-        try (StacklessLogging ignore = new StacklessLogging(DetectorConnectionFactory.class))
-        {
-            String response = getResponse(StringUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
-            assertThat(response, Matchers.nullValue());
-        }
+
+        String response = getResponse(StringUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
+        assertThat(response, Matchers.nullValue());
     }
 
     @Test
