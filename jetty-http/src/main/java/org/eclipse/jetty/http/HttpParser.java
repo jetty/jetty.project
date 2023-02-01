@@ -36,6 +36,7 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIE
 import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.DUPLICATE_HOST_HEADERS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_FIELD_NAME;
 
@@ -1029,7 +1030,7 @@ public class HttpParser
 
                     case HOST:
                         if (_host)
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Host: multiple headers");
+                            checkViolation(DUPLICATE_HOST_HEADERS);
                         _host = true;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
                         {

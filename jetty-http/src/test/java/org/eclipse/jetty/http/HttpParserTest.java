@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -28,6 +29,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
@@ -39,6 +42,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -2048,8 +2052,7 @@ public class HttpParserTest
         "Host: a b c d", // whitespace in reg-name
         "Host: a\to\tz", // tabs in reg-name
         "Host: hosta, hostb, hostc", // spaces in reg-name
-        "Host: [sd ajklf;d sajklf;d sajfkl;d]", // not a valid IPv6 address
-        "Host: hosta\nHost: hostb\nHost: hostc" // multi-line
+        "Host: [sd ajklf;d sajklf;d sajfkl;d]" // not a valid IPv6 address
     })
     public void testBadHost(String hostline)
     {
@@ -2062,7 +2065,53 @@ public class HttpParserTest
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
-        assertThat(_bad, startsWith("Bad"));
+        assertThat(_bad, startsWith("Bad "));
+    }
+
+    public static Stream<Arguments> duplicateHostHeadersSource()
+    {
+        return Stream.of(
+            // different values
+            Arguments.of("Host: hosta\nHost: hostb\nHost: hostc"),
+            // same values
+            Arguments.of("Host: foo\nHost: foo"),
+            // separated by another header
+            Arguments.of("Host: bar\nX-Zed: zed\nHost: bar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("duplicateHostHeadersSource")
+    public void testDuplicateHostReject(String hostline)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1\n" +
+                hostline + "\n" +
+                "Connection: close\n" +
+                "\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertThat(_bad, startsWith("Duplicate Host Header"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("duplicateHostHeadersSource")
+    public void testDuplicateHostAllow(String hostline)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1\n" +
+                hostline + "\n" +
+                "Connection: close\n" +
+                "\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpCompliance httpCompliance = HttpCompliance.from("RFC7230,DUPLICATE_HOST_HEADERS");
+        HttpParser parser = new HttpParser(handler, httpCompliance);
+        parser.parseNext(buffer);
+        assertThat(_bad, nullValue());
+        assertThat(_host, notNullValue());
     }
 
     @ParameterizedTest
