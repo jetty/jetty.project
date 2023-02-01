@@ -1036,7 +1036,6 @@ public class HttpParser
                             if (LOG.isWarnEnabled())
                                 LOG.warn("Encountered multiple `Host` headers.  Previous `Host` header already seen as `{}`, new `Host` header has appeared as `{}`", _parsedHost, _valueString);
                             checkViolation(DUPLICATE_HOST_HEADERS);
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Host: multiple headers");
                         }
                         _parsedHost = _valueString;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
