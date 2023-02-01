@@ -208,7 +208,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         String[] args1 = {
             "--approve-all-licenses",
-            "--add-modules=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
+            "--add-modules=resources,server,http,webapp,deploy,jsp,jstl,jmx,servlet,servlets"
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
@@ -232,6 +232,11 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
+
+                response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("JSTL Example"));
+                assertThat(response.getContentAsString(), not(containsString("<c:")));
             }
         }
     }
