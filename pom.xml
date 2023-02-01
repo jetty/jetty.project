@@ -30,6 +30,7 @@
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.6</asciidoctorj.version>
+    <mina.core.version>2.2.1</mina.core.version>
     <asm.version>9.4</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
@@ -142,7 +143,7 @@
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.5.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
-    <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
+    <maven.enforcer.plugin.version>3.2.1</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
@@ -1890,6 +1891,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons.compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.mina</groupId>
+        <artifactId>mina-core</artifactId>
+        <version>${mina.core.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
