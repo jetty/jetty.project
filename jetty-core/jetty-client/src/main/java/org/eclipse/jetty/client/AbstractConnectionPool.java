@@ -75,6 +75,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         super.doStop();
         removeBean(pool);
         pool.terminate().forEach(this::close);
+        pool = null;
     }
 
     @Override
@@ -153,25 +154,29 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @ManagedAttribute(value = "The number of active connections", readonly = true)
     public int getActiveConnectionCount()
     {
-        return pool.getInUseCount();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.getInUseCount();
     }
 
     @ManagedAttribute(value = "The number of idle connections", readonly = true)
     public int getIdleConnectionCount()
     {
-        return pool.getIdleCount();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.getIdleCount();
     }
 
     @ManagedAttribute(value = "The max number of connections", readonly = true)
     public int getMaxConnectionCount()
     {
-        return pool.getMaxSize();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.getMaxSize();
     }
 
     @ManagedAttribute(value = "The number of connections", readonly = true)
     public int getConnectionCount()
     {
-        return pool.size();
+        Pool<Connection> pool = this.pool;
+        return pool == null ? 0 : pool.size();
     }
 
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
@@ -183,7 +188,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean isEmpty()
     {
-        return pool.size() == 0;
+        Pool<Connection> pool = this.pool;
+        return pool == null || pool.size() == 0;
     }
 
     @ManagedAttribute("Whether the pool tries to maximize the number of connections used")
@@ -501,22 +507,26 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean sweep()
     {
-        pool.stream()
-            .map(Pool.Entry::getPooled)
-            .filter(connection -> connection instanceof Sweeper.Sweepable)
-            .forEach(connection ->
-            {
-                if (((Sweeper.Sweepable)connection).sweep())
+        Pool<Connection> pool = this.pool;
+        if (pool != null)
+        {
+            pool.stream()
+                .map(Pool.Entry::getPooled)
+                .filter(connection -> connection instanceof Sweeper.Sweepable)
+                .forEach(connection ->
                 {
-                    boolean removed = remove(connection);
-                    LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                        connection,
-                        System.lineSeparator(),
-                        removed ? "Removed" : "Not removed",
-                        System.lineSeparator(),
-                        dump());
-                }
-            });
+                    if (((Sweeper.Sweepable)connection).sweep())
+                    {
+                        boolean removed = remove(connection);
+                        LOG.warn("Connection swept: {}{}{} from active connections{}{}",
+                            connection,
+                            System.lineSeparator(),
+                            removed ? "Removed" : "Not removed",
+                            System.lineSeparator(),
+                            dump());
+                    }
+                });
+        }
         return false;
     }
 
