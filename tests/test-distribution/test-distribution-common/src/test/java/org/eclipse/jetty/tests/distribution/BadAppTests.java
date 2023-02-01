@@ -14,11 +14,13 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -27,6 +29,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -156,10 +159,9 @@ public class BadAppTests extends AbstractJettyHomeTest
         }
     }
 
-    /*
     @ParameterizedTest
-    @CsvSource({",ee9", ",ee10", "--jpms,ee9", "--jpms,ee10"})
-    public void testBadWebSocketWebapp(String arg, String env) throws Exception
+    @CsvSource({"ee9", "ee10"})
+    public void testBadWebSocketWebapp(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -172,7 +174,7 @@ public class BadAppTests extends AbstractJettyHomeTest
             toEnvironment("jsp", env) + "," + 
             "jmx," +
             toEnvironment("servlet", env) + "," +
-            toEnvironment("websocket", env);
+            toEnvironment("websocket-jakarta", env);
         //servlets,
         String[] args1 = {
             "--approve-all-licenses",
@@ -184,11 +186,11 @@ public class BadAppTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + "tests:" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
+            File badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
             distribution.installWarFile(badWebApp, "test");
 
             int port = distribution.freePort();
-            String[] args2 = {arg, "jetty.http.port=" + port};
+            String[] args2 = {"jetty.http.port=" + port};
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
@@ -196,7 +198,7 @@ public class BadAppTests extends AbstractJettyHomeTest
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();
-                WebSocketClient wsClient = new WebSocketClient(client);
+                WebSocketCoreClient wsClient = new WebSocketCoreClient(client, null);
                 wsClient.start();
                 URI serverUri = URI.create("ws://localhost:" + port);
 
@@ -206,5 +208,4 @@ public class BadAppTests extends AbstractJettyHomeTest
             }
         }
     }
-    */
 }

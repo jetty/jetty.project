@@ -30,22 +30,24 @@ import java.util.zip.GZIPOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
+import org.eclipse.jetty.ee9.nested.HttpInput;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -178,14 +180,14 @@ public class GzipWithSendErrorTest
         AtomicLong inputContentReceived = new AtomicLong(0L);
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
-
-        connector.addBean(new HttpChannelState.Listener()
+        
+        connector.addBean(new HttpChannel.Listener()
         {
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request baseRequest)
             {
-                HttpConnection connection = (HttpConnection)request.getHttpChannel().getConnection();
-                HttpInput httpInput = request.getHttpInput();
+                HttpConnection connection = (HttpConnection)baseRequest.getCoreRequest().getConnectionMetaData().getConnection();
+                HttpInput httpInput = baseRequest.getHttpInput();
                 inputContentConsumed.set(httpInput.getContentConsumed());
                 inputContentReceived.set(httpInput.getContentReceived());
                 inputBytesIn.set(connection.getBytesIn());
@@ -255,7 +257,8 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
+        content.write(true, ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
+        
         content.close();
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
@@ -285,20 +288,20 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        connector.addBean(new HttpChannelState.Listener()
+        connector.addBean(new HttpChannel.Listener()
         {
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request baseRequest)
             {
-                HttpConnection connection = (HttpConnection)request.getHttpChannel().getConnection();
-                HttpInput httpInput = request.getHttpInput();
+                HttpConnection connection = (HttpConnection)baseRequest.getCoreRequest().getConnectionMetaData().getConnection();
+                HttpInput httpInput = baseRequest.getHttpInput();
                 inputContentConsumed.set(httpInput.getContentConsumed());
                 inputContentReceived.set(httpInput.getContentReceived());
                 inputBytesIn.set(connection.getBytesIn());
                 serverRequestCompleteLatch.countDown();
             }
         });
-
+        
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the
         // 3KB version is adequate.
@@ -356,7 +359,8 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
+        content.write(true, ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
+        
         content.close();
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
