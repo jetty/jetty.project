@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.hazelcast.remote;
+package org.eclipse.jetty.ee10.session.infinispan.remote;
 
-import org.eclipse.jetty.ee10.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.ee10.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.ee10.session.infinispan.LoggingUtil;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
@@ -22,15 +22,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * ClusteredSessionScavengingTest
+ * InvalidationSessionTest
  */
 @Testcontainers(disabledWithoutDocker = true)
-public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
+public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
 
     public static RemoteInfinispanTestSupport __testSupport;
 

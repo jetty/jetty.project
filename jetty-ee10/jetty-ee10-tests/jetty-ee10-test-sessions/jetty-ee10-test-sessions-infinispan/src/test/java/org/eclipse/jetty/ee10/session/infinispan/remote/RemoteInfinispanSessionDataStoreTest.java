@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.hazelcast.remote;
+package org.eclipse.jetty.ee10.session.infinispan.remote;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.session.infinispan.LoggingUtil;
@@ -48,11 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Testcontainers(disabledWithoutDocker = true)
 public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
-
     public static RemoteInfinispanTestSupport __testSupport;
 
     public RemoteInfinispanSessionDataStoreTest() throws Exception

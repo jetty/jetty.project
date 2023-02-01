@@ -46,10 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(WorkDirExtension.class)
 public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
 
     public InfinispanTestSupport _testSupport;
 

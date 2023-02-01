@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.hazelcast.remote;
+package org.eclipse.jetty.ee10.session.infinispan.remote;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;

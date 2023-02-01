@@ -27,10 +27,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
 
     public static RemoteInfinispanTestSupport __testSupport;
 

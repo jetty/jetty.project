@@ -29,10 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
 
     public WorkDir workDir;
     public InfinispanTestSupport testSupport;

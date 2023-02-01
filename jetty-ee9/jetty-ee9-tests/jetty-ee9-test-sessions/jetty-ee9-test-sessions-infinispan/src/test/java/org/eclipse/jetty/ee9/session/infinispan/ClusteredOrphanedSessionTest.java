@@ -28,10 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
 
     public WorkDir workDir;
     public InfinispanTestSupport testSupport;

@@ -48,10 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Testcontainers(disabledWithoutDocker = true)
 public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
 
     public static RemoteInfinispanTestSupport __testSupport;
 
