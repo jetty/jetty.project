@@ -28,6 +28,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -380,15 +382,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         {
             for (MultiPart.Part p : parts)
             {
-                try
-                {
-                    p.close();
-                }
-                catch (Throwable e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Could not close part {}", p, e);
-                }
+                IO.close(p);
             }
         }
     }
@@ -523,6 +517,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             memoryFileSize = 0;
             filePath = null;
             fileChannel = null;
+            partChunks.forEach(Content.Chunk::release);
             partChunks.clear();
             // Store the new part.
             try (AutoLock ignored = lock.lock())
@@ -555,19 +550,20 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
 
         private void fail(Throwable cause)
         {
-            List<MultiPart.Part> toFail;
+            List<MultiPart.Part> partsToFail;
+            List<Content.Chunk> partChunksToFail;
             try (AutoLock ignored = lock.lock())
             {
                 if (failure != null)
                     return;
                 failure = cause;
-                toFail = new ArrayList<>(parts);
+                partsToFail = new ArrayList<>(parts);
                 parts.clear();
+                partChunksToFail = new ArrayList<>(partChunks);
+                partChunks.clear();
             }
-            for (MultiPart.Part part : toFail)
-            {
-                part.fail(cause);
-            }
+            partsToFail.forEach(p -> p.fail(cause));
+            partChunksToFail.forEach(Retainable::release);
             close();
             delete();
         }

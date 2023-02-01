@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -294,6 +295,7 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         public void onPart(String name, String fileName, HttpFields headers)
         {
             parts.add(new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks)));
+            partChunks.forEach(Content.Chunk::release);
             partChunks.clear();
         }
 
@@ -313,16 +315,20 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
 
         private void fail(Throwable cause)
         {
-            List<MultiPart.Part> toFail;
+            List<MultiPart.Part> partsToFail;
+            List<Content.Chunk> partChunksToFail;
             try (AutoLock ignored = lock.lock())
             {
                 if (failure != null)
                     return;
                 failure = cause;
-                toFail = new ArrayList<>(parts);
+                partsToFail = new ArrayList<>(parts);
                 parts.clear();
+                partChunksToFail = new ArrayList<>(partChunks);
+                partChunks.clear();
             }
-            toFail.forEach(MultiPart.Part::close);
+            partsToFail.forEach(p -> p.fail(cause));
+            partChunksToFail.forEach(Retainable::release);
         }
     }
 }

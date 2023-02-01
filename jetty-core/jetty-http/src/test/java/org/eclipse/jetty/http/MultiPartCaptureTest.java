@@ -51,7 +51,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartCaptureTest
 {
@@ -255,8 +254,7 @@ public class MultiPartCaptureTest
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 String charset = getCharsetFromContentType(part.getHeaders().get(HttpHeader.CONTENT_TYPE), defaultCharset);
-                assertTrue(part.getContentSource().rewind());
-                String partContent = Content.Source.asString(part.getContentSource(), Charset.forName(charset));
+                String partContent = Content.Source.asString(part.newContentSource(), Charset.forName(charset));
                 assertThat("Part[" + expected.name + "].contents", partContent, containsString(expected.value));
             }
 
@@ -276,8 +274,7 @@ public class MultiPartCaptureTest
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 MessageDigest digest = MessageDigest.getInstance("SHA1");
-                assertTrue(part.getContentSource().rewind());
-                try (InputStream partInputStream = Content.Source.asInputStream(part.getContentSource());
+                try (InputStream partInputStream = Content.Source.asInputStream(part.newContentSource());
                      DigestOutputStream digester = new DigestOutputStream(OutputStream.nullOutputStream(), digest))
                 {
                     IO.copy(partInputStream, digester);

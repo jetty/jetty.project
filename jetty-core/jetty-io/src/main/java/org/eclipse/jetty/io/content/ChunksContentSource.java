@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -38,6 +40,7 @@ public class ChunksContentSource implements Content.Source
 
     public ChunksContentSource(Collection<Content.Chunk> chunks)
     {
+        chunks.forEach(Content.Chunk::retain);
         this.chunks = chunks;
         this.length = chunks.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
     }
@@ -113,11 +116,23 @@ public class ChunksContentSource implements Content.Source
     @Override
     public void fail(Throwable failure)
     {
+        List<Content.Chunk> chunksToRelease;
         try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
                 return;
             terminated = Content.Chunk.from(failure);
+            if (iterator != null)
+            {
+                chunksToRelease = new ArrayList<>();
+                iterator.forEachRemaining(chunksToRelease::add);
+            }
+            else
+            {
+                chunksToRelease = List.copyOf(chunks);
+            }
         }
+
+        chunksToRelease.forEach(Content.Chunk::release);
     }
 }

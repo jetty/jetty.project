@@ -120,7 +120,7 @@ public class MultiPart
      */
     public abstract static class Part implements Closeable
     {
-        private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
+        private static final Throwable CLOSE_EXCEPTION = new StaticException("Closed");
 
         private final String name;
         private final String fileName;
@@ -202,7 +202,7 @@ public class MultiPart
          * as specified in
          * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
          *
-         * @return the content of this part as a new {@link Content.Source}
+         * @return the content of this part as a new {@link Content.Source} or null if the content cannot be consumed multiple times.
          * @see #getContentSource()
          */
         public abstract Content.Source newContentSource();
@@ -258,7 +258,6 @@ public class MultiPart
          */
         public void writeTo(Path path) throws IOException
         {
-            this.temporary = false;
             if (this.path == null)
             {
                 try (OutputStream out = Files.newOutputStream(path))
@@ -266,10 +265,12 @@ public class MultiPart
                     IO.copy(Content.Source.asInputStream(newContentSource()), out);
                 }
                 this.path = path;
+                this.temporary = false;
             }
             else
             {
                 this.path = Files.move(this.path, path, StandardCopyOption.REPLACE_EXISTING);
+                this.temporary = false;
             }
         }
 
@@ -282,7 +283,7 @@ public class MultiPart
         @Override
         public void close()
         {
-            fail(SENTINEL_CLOSE_EXCEPTION);
+            fail(CLOSE_EXCEPTION);
         }
 
         public void fail(Throwable t)
@@ -349,6 +350,7 @@ public class MultiPart
         public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
             super(name, fileName, fields);
+            content.forEach(Content.Chunk::retain);
             this.content = content;
         }
 
@@ -356,8 +358,7 @@ public class MultiPart
         public Content.Source newContentSource()
         {
             List<Content.Chunk> newChunks = content.stream()
-                .map(chunk -> Content.Chunk.asChunk(chunk.getByteBuffer().slice(), chunk.isLast(), chunk))
-                .peek(Content.Chunk::retain)
+                .map(chunk -> Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast()))
                 .toList();
             return new ChunksContentSource(newChunks);
         }
