@@ -1158,7 +1158,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         // Let the server threads go & wait for the requests to be processed.
         processLatch.countDown();
-        clientLatch.await(timeoutInSeconds, TimeUnit.SECONDS);
+        assertTrue(clientLatch.await(timeoutInSeconds, TimeUnit.SECONDS));
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)
