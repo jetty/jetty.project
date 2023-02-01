@@ -76,6 +76,7 @@ public class HostPortTest
             "host:xxx", // invalid port
             "127.0.0.1:xxx", // host + invalid port
             "[0::0::0::0::1]:xxx", // ipv6 + invalid port
+            "[0::0::0::0::1].80", // ipv6 with bogus port setup
             "host:-80", // host + invalid port
             "127.0.0.1:-80", // ipv4 + invalid port
             "[0::0::0::0::1]:-80", // ipv6 + invalid port
@@ -104,6 +105,28 @@ public class HostPortTest
         try
         {
             HostPort hostPort = new HostPort(authority);
+            assertThat(authority, hostPort.getHost(), is(expectedHost));
+
+            if (expectedPort == null)
+                assertThat(authority, hostPort.getPort(), is(0));
+            else
+                assertThat(authority, hostPort.getPort(), is(expectedPort));
+        }
+        catch (Exception e)
+        {
+            if (expectedHost != null)
+                e.printStackTrace();
+            assertNull(authority, expectedHost);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("validAuthorityProvider")
+    public void testValidAuthorityViaUnsafe(String authority, String expectedHost, Integer expectedPort)
+    {
+        try
+        {
+            HostPort hostPort = HostPort.unsafe(authority);
             assertThat(authority, hostPort.getHost(), is(expectedHost));
 
             if (expectedPort == null)

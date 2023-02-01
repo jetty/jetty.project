@@ -30,6 +30,18 @@ public class HostPort
     private final String _host;
     private final int _port;
 
+    /**
+     * Create a HostPort from an unsafe (and not validated) authority.
+     *
+     * <p>
+     *   There are no validations performed agains the provided authority.
+     *   It is quite possible to end up with HostPort that cannot be used
+     *   to generate valid URL, URI, InetAddress, Location header, etc.
+     * </p>
+     *
+     * @param authority raw authority
+     * @return the HostPort
+     */
     public static HostPort unsafe(String authority)
     {
         if (authority == null)
