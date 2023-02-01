@@ -208,20 +208,20 @@ public class MavenLocalRepoFileInitializerTest
 
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false, "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty/jetty-rewrite/10.0.0-SNAPSHOT/jar";
+        String ref = "maven://org.eclipse.jetty/jetty-rewrite/10.0.14-SNAPSHOT/jar";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
 
         assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
         assertThat("coords.artifactId", coords.artifactId, is("jetty-rewrite"));
-        assertThat("coords.version", coords.version, is("10.0.0-SNAPSHOT"));
+        assertThat("coords.version", coords.version, is("10.0.14-SNAPSHOT"));
         assertThat("coords.type", coords.type, is("jar"));
         assertThat("coords.classifier", coords.classifier, is(nullValue()));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://oss.sonatype.org/content/repositories/jetty-snapshots/org/eclipse/jetty/jetty-rewrite/10.0.0-SNAPSHOT/jetty-rewrite-10.0.0-SNAPSHOT.jar"));
+            is("https://oss.sonatype.org/content/repositories/jetty-snapshots/org/eclipse/jetty/jetty-rewrite/10.0.14-SNAPSHOT/jetty-rewrite-10.0.14-SNAPSHOT.jar"));
 
-        Path destination = baseHome.getBasePath().resolve("jetty-rewrite-10.0.0-SNAPSHOT.jar");
+        Path destination = baseHome.getBasePath().resolve("jetty-rewrite-10.0.14-SNAPSHOT.jar");
         repo.download(coords, destination);
         assertThat(Files.exists(destination), is(true));
         assertThat("Snapshot File size", destination.toFile().length(), greaterThan(10_000L));
@@ -237,11 +237,11 @@ public class MavenLocalRepoFileInitializerTest
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
                 "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty/test-jetty-webapp/10.0.0-SNAPSHOT/jar/config";
+        String ref = "maven://org.eclipse.jetty.demos/demo-simple-webapp/10.0.14-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:company/");
 
-        assertThat(Files.exists(baseDir.resolve("company/webapps/test.d/override-web.xml")), is(true));
+        assertThat(Files.exists(baseDir.resolve("company/modules/demo-simple.mod")), is(true));
     }
 
     @Test
@@ -254,10 +254,10 @@ public class MavenLocalRepoFileInitializerTest
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
                 "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty/test-jetty-webapp/10.0.0-SNAPSHOT/jar/config";
+        String ref = "maven://org.eclipse.jetty.demos/demo-simple-webapp/10.0.14-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:/");
 
-        assertThat(Files.exists(baseDir.resolve("webapps/test.d/override-web.xml")), is(true));
+        assertThat(Files.exists(baseDir.resolve("modules/demo-simple.mod")), is(true));
     }
 }
