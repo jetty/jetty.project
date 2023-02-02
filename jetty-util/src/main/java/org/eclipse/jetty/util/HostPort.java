@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.net.InetAddress;
-import java.util.Objects;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.slf4j.Logger;
@@ -23,7 +22,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Parse an authority string (in the form {@code host:port}) into
  * {@code host} and {@code port}, handling IPv4 and IPv6 host formats
- * as defined in https://www.ietf.org/rfc/rfc2732.txt</p>
+ * as defined in <a href="https://www.ietf.org/rfc/rfc2732.txt">RFC 2732</a></p>
  */
 public class HostPort
 {
@@ -60,6 +59,7 @@ public class HostPort
         this(authority, false);
     }
 
+    @SuppressWarnings({"ReassignedVariable", "DataFlowIssue"})
     private HostPort(String authority, boolean unsafe)
     {
         String host;
@@ -68,10 +68,9 @@ public class HostPort
 
         if (authority == null)
         {
+            LOG.warn("Bad Authority [<null>]");
             if (!unsafe)
                 throw new IllegalArgumentException("No Authority");
-
-            LOG.warn("Bad Authority [<null>]");
             _host = "";
             _port = 0;
             return;
@@ -203,14 +202,14 @@ public class HostPort
         {
             if (!unsafe)
                 throw iae;
-            host = "";
+            host = authority;
             port = 0;
         }
         catch (Exception ex)
         {
             if (!unsafe)
                 throw new IllegalArgumentException("Bad HostPort", ex);
-            host = "";
+            host = authority;
             port = 0;
         }
         _host = host;
@@ -289,8 +288,8 @@ public class HostPort
     }
 
     /**
-     * Normalizes IPv6 address as per https://tools.ietf.org/html/rfc2732
-     * and https://tools.ietf.org/html/rfc6874,
+     * Normalizes IPv6 address as per <a href="https://tools.ietf.org/html/rfc2732">RFC 2732</a>
+     * and <a href="https://tools.ietf.org/html/rfc6874">RFC 6874</a>,
      * surrounding with square brackets if they are absent.
      *
      * @param host a host name, IPv4 address, IPv6 address or IPv6 literal
