@@ -32,6 +32,7 @@ public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessi
     {
         LoggingUtil.init();
     }
+    
     public static RemoteInfinispanTestSupport __testSupport;
 
     @BeforeAll
