@@ -125,7 +125,7 @@ public class HostPort
                         // horribly bad port during unsafe
                         if (unsafe && (port == BAD_PORT))
                         {
-                            host = authority;
+                            host = authority; // whole authority (no substring)
                             port = 0;
                         }
                     }
@@ -179,7 +179,7 @@ public class HostPort
                         // horribly bad port during unsafe
                         if (unsafe && (port == BAD_PORT))
                         {
-                            host = authority;
+                            host = authority; // whole authority (no substring)
                             port = 0;
                         }
                     }
