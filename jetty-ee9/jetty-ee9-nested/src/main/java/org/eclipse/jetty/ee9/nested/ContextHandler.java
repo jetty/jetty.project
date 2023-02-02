@@ -58,10 +58,12 @@ import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspConfigDescriptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -72,8 +74,12 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -2351,19 +2357,101 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static class CoreContextRequest extends ContextRequest
     {
         private final HttpChannel _httpChannel;
+        private SessionManager _sessionManager;
+        private ManagedSession _managedSession;
+        AbstractSessionManager.RequestedSession _requestedSession;
 
-        protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
+        protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
                                      org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context,
-                                     org.eclipse.jetty.server.Request wrapped,
                                      HttpChannel httpChannel)
         {
             super(context, wrapped);
             _httpChannel = httpChannel;
         }
 
+        public String changeSessionId()
+        {
+            if (_managedSession == null)
+                return null;
+            if (!_managedSession.isValid())
+                return _managedSession.getId();
+
+            HttpSession httpSession = _managedSession.getApi();
+            if (httpSession == null)
+                throw new IllegalStateException("No session");
+
+            ManagedSession session = _managedSession;
+            session.renewId(this, _httpChannel.getCoreResponse());
+
+            return httpSession.getId();
+        }
+
         public HttpChannel getHttpChannel()
         {
             return _httpChannel;
+        }
+
+        public ManagedSession getManagedSession()
+        {
+            return _managedSession;
+        }
+
+        public void setManagedSession(ManagedSession managedSession)
+        {
+            _managedSession = managedSession;
+        }
+
+        public SessionManager getSessionManager()
+        {
+            return _sessionManager;
+        }
+
+        public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
+        {
+            _requestedSession = requestedSession;
+            _managedSession = requestedSession.session();
+        }
+
+        public AbstractSessionManager.RequestedSession getRequestedSession()
+        {
+            return _requestedSession;
+        }
+
+        public void setSessionManager(SessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            if (_managedSession != null)
+            {
+                if (_sessionManager != null && !_managedSession.isValid())
+                    _managedSession = null;
+                else
+                    return _managedSession;
+            }
+
+            if (!create)
+                return null;
+
+            if (_httpChannel.getResponse().isCommitted())
+                throw new IllegalStateException("Response is committed");
+
+            if (_sessionManager == null)
+                throw new IllegalStateException("No SessionManager");
+
+            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+
+            if (_managedSession == null)
+                throw new IllegalStateException("Create session failed");
+
+            HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
+            if (cookie != null)
+                _httpChannel.getResponse().replaceCookie(cookie);
+
+            return _managedSession;
         }
     }
 
@@ -2465,7 +2553,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(request, this.getContext(), httpChannel);
             httpChannel.onRequest(coreContextRequest);
             return coreContextRequest;
         }

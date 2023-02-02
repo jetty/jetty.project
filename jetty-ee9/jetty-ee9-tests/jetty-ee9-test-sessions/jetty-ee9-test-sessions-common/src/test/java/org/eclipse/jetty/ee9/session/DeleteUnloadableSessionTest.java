@@ -32,6 +32,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.session.AbstractSessionDataStore;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
@@ -157,7 +158,7 @@ public class DeleteUnloadableSessionTest
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
 
-        try (StacklessLogging ignored = new StacklessLogging(DeleteUnloadableSessionTest.class.getPackage(), org.eclipse.jetty.session.Session.class.getPackage()))
+        try (StacklessLogging ignored = new StacklessLogging(DeleteUnloadableSessionTest.class.getPackage(), ManagedSession.class.getPackage()))
         {
             server.start();
             int port = server.getPort();

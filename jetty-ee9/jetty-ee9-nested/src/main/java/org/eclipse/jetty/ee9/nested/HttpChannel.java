@@ -93,7 +93,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Bytes written after interception (eg after compression)
      */
     private long _written;
-    private org.eclipse.jetty.server.Request _coreRequest;
+    private ContextHandler.CoreContextRequest _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
     private boolean _expects100Continue;
@@ -327,7 +327,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _connector.getServer();
     }
 
-    public org.eclipse.jetty.server.Request getCoreRequest()
+    public ContextHandler.CoreContextRequest getCoreRequest()
     {
         return _coreRequest;
     }
@@ -926,7 +926,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
-    public void onRequest(org.eclipse.jetty.server.Request coreRequest)
+    public void onRequest(ContextHandler.CoreContextRequest coreRequest)
     {
         _coreRequest = coreRequest;
         _requests.incrementAndGet();

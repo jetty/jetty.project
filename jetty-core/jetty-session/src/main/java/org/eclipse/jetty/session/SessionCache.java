@@ -20,7 +20,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 /**
  * SessionCache
  *
- * A working set of {@link Session} objects for a context.
+ * A working set of {@link ManagedSession} objects for a context.
  *
  * Ideally, multiple requests for the same session id in the same context will always
  * share the same Session object from the SessionCache, but it would be possible
@@ -68,7 +68,7 @@ public interface SessionCache extends LifeCycle
      * @param maxInactiveMs the max inactive time in milliseconds
      * @return a new Session
      */
-    Session newSession(String id, long time, long maxInactiveMs);
+    ManagedSession newSession(String id, long time, long maxInactiveMs);
 
     /**
      * Re-materialize a Session that has previously existed.
@@ -76,7 +76,7 @@ public interface SessionCache extends LifeCycle
      * @param data the data associated with the session
      * @return a Session object for the data supplied
      */
-    Session newSession(SessionData data);
+    ManagedSession newSession(SessionData data);
 
     /**
      * Change the id of a Session.
@@ -88,7 +88,7 @@ public interface SessionCache extends LifeCycle
      * @return the Session after changing its id
      * @throws Exception if any error occurred
      */
-    Session renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId) throws Exception;
+    ManagedSession renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId) throws Exception;
     
     /**
      * Adds a new Session, with a never-before-used id,
@@ -97,7 +97,7 @@ public interface SessionCache extends LifeCycle
      * @param id id
      * @param session session
      */
-    void add(String id, Session session) throws Exception;
+    void add(String id, ManagedSession session) throws Exception;
 
     /**
      * Get an existing Session. If necessary, the cache will load the data for
@@ -107,7 +107,7 @@ public interface SessionCache extends LifeCycle
      * @return the Session if one exists, null otherwise
      * @throws Exception if any error occurred
      */
-    Session get(String id) throws Exception;
+    ManagedSession get(String id) throws Exception;
 
     /**
      * Finish using a Session. This is called by the SessionHandler
@@ -117,7 +117,7 @@ public interface SessionCache extends LifeCycle
      * @param session the current session object
      * @throws Exception if any error occurred
      */
-    void release(Session session) throws Exception;
+    void release(ManagedSession session) throws Exception;
 
     /**
      * Called when a response is about to be committed. The
@@ -128,7 +128,7 @@ public interface SessionCache extends LifeCycle
      * different server, it will be able to see the session
      * changes via the shared store.
      */
-    void commit(Session session) throws Exception;
+    void commit(ManagedSession session) throws Exception;
     
     /**
      * Check to see if a Session is in the cache. Does NOT consult
@@ -159,7 +159,7 @@ public interface SessionCache extends LifeCycle
      * @return the Session that was removed, null otherwise
      * @throws Exception if any error occurred
      */
-    Session delete(String id) throws Exception;
+    ManagedSession delete(String id) throws Exception;
 
     /**
      * Check a list of session ids that belong to potentially expired
@@ -179,7 +179,7 @@ public interface SessionCache extends LifeCycle
      *
      * @param session the session to check
      */
-    void checkInactiveSession(Session session);
+    void checkInactiveSession(ManagedSession session);
 
     /**
      * A SessionDataStore that is the authoritative source

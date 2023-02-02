@@ -35,7 +35,7 @@ import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
@@ -67,7 +67,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
          * @param id
          * @return session already in the cache
          */
-        public Session peek(String id)
+        public ManagedSession peek(String id)
         {
             return doGet(id);
         }
@@ -149,7 +149,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
 
                     
                     //Peek at the contents of the cache without doing all the reference counting etc
-                    Session s1 = ((TestSessionCache)m1.getSessionCache()).peek(id);
+                    ManagedSession s1 = ((TestSessionCache)m1.getSessionCache()).peek(id);
                     assertNotNull(s1);
                     long expiry = s1.getSessionData().getExpiry();
 

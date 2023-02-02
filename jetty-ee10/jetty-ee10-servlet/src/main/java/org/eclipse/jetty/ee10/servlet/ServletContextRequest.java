@@ -24,6 +24,7 @@ import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
@@ -31,8 +32,12 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +56,7 @@ public class ServletContextRequest extends ContextRequest
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
         if (request instanceof ServletApiRequest)
-            return ((ServletApiRequest)request).getRequest();
+            return ((ServletApiRequest)request).getServletContextRequest();
 
         Object channel = request.getAttribute(ServletChannel.class.getName());
         if (channel instanceof ServletChannel)
@@ -63,7 +68,7 @@ public class ServletContextRequest extends ContextRequest
         }
 
         if (request instanceof ServletApiRequest)
-            return ((ServletApiRequest)request).getRequest();
+            return ((ServletApiRequest)request).getServletContextRequest();
 
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
     }
@@ -76,9 +81,12 @@ public class ServletContextRequest extends ContextRequest
     private final String _pathInContext;
     private final ServletChannel _servletChannel;
     private final PathSpec _pathSpec;
+    private final SessionManager _sessionManager;
     final MatchedPath _matchedPath;
     private Charset _queryEncoding;
     private HttpFields _trailers;
+    private ManagedSession _managedSession;
+    AbstractSessionManager.RequestedSession _requestedSession;
 
     protected ServletContextRequest(
         ServletContextHandler.ServletContextApi servletContextApi,
@@ -86,7 +94,8 @@ public class ServletContextRequest extends ContextRequest
         Request request,
         Response response,
         String pathInContext,
-        MatchedResource<ServletHandler.MappedServlet> matchedResource)
+        MatchedResource<ServletHandler.MappedServlet> matchedResource,
+        SessionManager sessionManager)
     {
         super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
@@ -97,6 +106,7 @@ public class ServletContextRequest extends ContextRequest
         _pathSpec = matchedResource.getPathSpec();
         _matchedPath = matchedResource.getMatchedPath();
         _response =  newServletContextResponse(response);
+        _sessionManager = sessionManager;
     }
 
     protected ServletApiRequest newServletApiRequest()
@@ -291,5 +301,65 @@ public class ServletContextRequest extends ContextRequest
         @SuppressWarnings("ReferenceEquality")
         boolean isNoParams = (fields == NO_PARAMS);
         return isNoParams;
+    }
+
+    public ManagedSession getManagedSession()
+    {
+        return _managedSession;
+    }
+
+    public void setManagedSession(ManagedSession managedSession)
+    {
+        _managedSession = managedSession;
+    }
+
+    public SessionManager getSessionManager()
+    {
+        return _sessionManager;
+    }
+
+    public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
+    {
+        if (_requestedSession != null)
+            throw new IllegalStateException();
+        _requestedSession = requestedSession;
+        _managedSession = requestedSession.session();
+    }
+
+    public AbstractSessionManager.RequestedSession getRequestedSession()
+    {
+        return _requestedSession;
+    }
+
+    @Override
+    public Session getSession(boolean create)
+    {
+        if (_managedSession != null)
+        {
+            if (_sessionManager != null && !_managedSession.isValid())
+                _managedSession = null;
+            else
+                return _managedSession;
+        }
+
+        if (!create)
+            return null;
+
+        if (_response.isCommitted())
+            throw new IllegalStateException("Response is committed");
+
+        if (_sessionManager == null)
+            throw new IllegalStateException("No SessionManager");
+
+        _sessionManager.newSession(this, _requestedSession.sessionId(), this::setManagedSession);
+
+        if (_managedSession == null)
+            throw new IllegalStateException("Create session failed");
+
+        HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
+        if (cookie != null)
+            Response.replaceCookie(_response, cookie);
+
+        return _managedSession;
     }
 }

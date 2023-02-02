@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -68,20 +69,20 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     }
 
     @Override
-    public Session getSession(Request request)
+    public ManagedSession getManagedSession(Request request)
     {
-        return Request.get(request, SessionRequest.class, SessionRequest::getCoreSession);
+        return Request.get(request, SessionRequest.class, SessionRequest::getManagedSession);
     }
 
     @Override
-    public Session.APISession newSessionAPIWrapper(Session session)
+    public Session.API newSessionAPIWrapper(ManagedSession session)
     {
         return new SessionAPI(session);
     }
 
     public class SessionRequest extends Request.Wrapper
     {
-        private final AtomicReference<Session> _session = new AtomicReference<>();
+        private final AtomicReference<ManagedSession> _session = new AtomicReference<>();
         private String _requestedSessionId;
         private Response _response;
 
@@ -90,33 +91,34 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             super(request);
         }
 
-        private Session getCoreSession()
-        {
-            return _session.get();
-        }
-        
-        public void setCoreSession(Session session)
+        void setManagedSession(ManagedSession session)
         {
             _session.set(session);
         }
 
-        public SessionAPI getSession(boolean create)
+        ManagedSession getManagedSession()
+        {
+            return _session.get();
+        }
+
+        @Override
+        public Session getSession(boolean create)
         {
             if (_response == null)
                 throw new IllegalStateException("!processing");
 
-            Session session = _session.get();
+            ManagedSession session = _session.get();
 
             if (session == null && create)
             {
-                newSession(this, _requestedSessionId, this::setCoreSession);
+                newSession(this, _requestedSessionId, this::setManagedSession);
                 session = _session.get();
                 HttpCookie cookie = getSessionCookie(session, getConnectionMetaData().isSecure());
                 if (cookie != null)
                     Response.replaceCookie(_response, cookie);
             }
 
-            return session == null || session.isInvalid() ? null : session.getAPISession();
+            return session == null || !session.isValid() ? null : session;
         }
 
         public boolean process(Handler handler, Response response, Callback callback) throws Exception
@@ -125,11 +127,11 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
 
             RequestedSession requestedSession = resolveRequestedSessionId(this);
             _requestedSessionId = requestedSession.sessionId();
-            Session session = requestedSession.session();
-            _session.set(session);
+            ManagedSession session = requestedSession.session();
 
             if (session != null)
             {
+                _session.set(session);
                 HttpCookie cookie = access(session, getConnectionMetaData().isSecure());
                 if (cookie != null)
                     Response.replaceCookie(_response, cookie);
@@ -139,53 +141,49 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         }
     }
 
-    public static class SessionAPI implements Session.APISession
+    public static class SessionAPI implements Session.API
     {
-        private final Session _coreSession;
+        private final Session _session;
 
-        public SessionAPI(Session coreSession)
+        public SessionAPI(Session session)
         {
-            _coreSession = coreSession;
+            _session = session;
         }
 
         @Override
-        public Session getCoreSession()
+        public Session getSession()
         {
-            return _coreSession;
+            return _session;
         }
 
         public String getId()
         {
-            return _coreSession.getId();
+            return _session.getId();
         }
 
         public Set<String> getAttributeNames()
         {
-            return _coreSession.getNames();
+            return _session.getAttributeNameSet();
         }
 
         public Object getAttribute(String name)
         {
-            return _coreSession.getAttribute(name);
+            return _session.getAttribute(name);
         }
 
         public void setAttribute(String name, Object value)
         {
-            _coreSession.setAttribute(name, value);
+            _session.setAttribute(name, value);
         }
 
         public void invalidate()
         {
-            _coreSession.invalidate();
+            _session.invalidate();
         }
 
         public void renewId(Request request, Response response)
         {
-            _coreSession.renewId(request);
-            SessionManager sessionManager = _coreSession.getSessionManager();
-
-            if (sessionManager.isUsingCookies())
-                Response.replaceCookie(response, sessionManager.getSessionCookie(getCoreSession(), request.isSecure()));
+            _session.renewId(request, response);
         }
     }
 }

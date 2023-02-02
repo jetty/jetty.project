@@ -20,6 +20,8 @@ import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +41,10 @@ import org.slf4j.LoggerFactory;
  * @see SessionManager
  * @see org.eclipse.jetty.session.SessionIdManager
  */
-public class Session
+public class ManagedSession implements Session
 {
-    public interface APISession
-    {
-        Session getCoreSession();
-    }
 
-    private static final Logger LOG = LoggerFactory.getLogger(Session.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedSession.class);
 
     /**
      * Attribute set if the session is secure
@@ -70,7 +68,7 @@ public class Session
         SET, CHANGING
     }
     
-    private Object _apiSession;
+    private final API _api;
 
     protected final SessionData _sessionData; // the actual data associated with
     // a session
@@ -101,7 +99,7 @@ public class Session
      * @param manager the SessionHandler that manages this session
      * @param data the session data
      */
-    public Session(SessionManager manager, SessionData data)
+    public ManagedSession(SessionManager manager, SessionData data)
     {
         _manager = manager;
         _sessionData = data;
@@ -111,25 +109,22 @@ public class Session
             _sessionData.setDirty(true);
         }
         _sessionInactivityTimer = manager.newSessionInactivityTimer(this);
-        _apiSession = _manager.newSessionAPIWrapper(this);
+        _api = _manager.newSessionAPIWrapper(this);
+        if (_api != null && _api.getSession() != this)
+            throw new IllegalStateException("Session.API must wrap this session");
     }
 
-    public static Session getSession(Object session)
-    {
-        if (session instanceof APISession wrapper)
-            return wrapper.getCoreSession();
-        return null;
-    }
-
+    /**
+     * <p>A {@link ManagedSession} may have an API wrapper (e.g. Servlet API), that is created by the
+     * {@link SessionManager#newSessionAPIWrapper(ManagedSession)} method during construction of a {@link ManagedSession} instance.</p>
+     * @param <T> The type of the {@link API}
+     * @return The {@link API} wrapper of this core {@link ManagedSession}.
+     */
+    @Override
     @SuppressWarnings("unchecked")
-    public <T> T getAPISession()
+    public <T extends API> T getApi()
     {
-        return (T)_apiSession;
-    }
-    
-    public void setAPISession(Object o)
-    {
-        _apiSession = o;
+        return (T)_api;
     }
     
     /**
@@ -327,6 +322,7 @@ public class Session
         }
     }
 
+    @Override
     public boolean isValid()
     {
         try (AutoLock l = _lock.lock())
@@ -335,10 +331,11 @@ public class Session
         }
     }
 
-    public boolean isInvalid()
+    public boolean isInvalidOrInvalidating()
     {
         try (AutoLock l = _lock.lock())
         {
+            // TODO review if this can be replaced by !isValid()
             return _state == State.INVALID || _state == State.INVALIDATING;
         }
     }
@@ -360,6 +357,7 @@ public class Session
         }
     }
 
+    @Override
     public String getId()
     {
         try (AutoLock l = _lock.lock())
@@ -368,14 +366,10 @@ public class Session
         }
     }
 
+    @Override
     public String getExtendedId()
     {
         return _extendedId;
-    }
-
-    public String getContextPath()
-    {
-        return _sessionData.getContextPath();
     }
 
     public String getVHost()
@@ -383,6 +377,7 @@ public class Session
         return _sessionData.getVhost();
     }
 
+    @Override
     public long getLastAccessedTime()
     {
         try (AutoLock l = _lock.lock())
@@ -392,6 +387,7 @@ public class Session
         }
     }
 
+    @Override
     public void setMaxInactiveInterval(int secs)
     {
         try (AutoLock l = _lock.lock())
@@ -434,6 +430,7 @@ public class Session
         return time;
     }
 
+    @Override
     public int getMaxInactiveInterval()
     {
         try (AutoLock l = _lock.lock())
@@ -493,6 +490,7 @@ public class Session
             throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() + " not resident");
     }
 
+    @Override
     public Object getAttribute(String name)
     {
         try (AutoLock l = _lock.lock())
@@ -502,12 +500,8 @@ public class Session
         }
     }
 
-    public int getAttributes()
-    {
-        return _sessionData.getKeys().size();
-    }
-
-    public Set<String> getNames()
+    @Override
+    public Set<String> getAttributeNameSet()
     {
         try (AutoLock l = _lock.lock())
         {
@@ -516,7 +510,8 @@ public class Session
         }
     }
 
-    public void setAttribute(String name, Object value)
+    @Override
+    public Object setAttribute(String name, Object value)
     {
         Object old = null;
         try (AutoLock l = _lock.lock())
@@ -526,14 +521,16 @@ public class Session
             old = _sessionData.setAttribute(name, value);
         }
         if (value == null && old == null)
-            return; // if same as remove attribute but attribute was already
+            return null; // if same as remove attribute but attribute was already
         // removed, no change
         callSessionAttributeListeners(name, value, old);
+        return old;
     }
 
-    public void removeAttribute(String name)
+    @Override
+    public Object removeAttribute(String name)
     {
-        setAttribute(name, null);
+        return setAttribute(name, null);
     }
 
     /**
@@ -541,12 +538,16 @@ public class Session
      *
      * @param request the Request associated with the call to change id.
      */
-    public void renewId(Request request)
+    @Override
+    public void renewId(Request request, Response response)
     {
         if (_manager == null)
             throw new IllegalStateException("No session manager for session " + _sessionData.getId());
 
-        String id = null;
+        if (response != null && response.isCommitted())
+            throw new IllegalStateException("Response committed " + _sessionData.getId());
+
+        String oldId = null;
         String extendedId = null;
         try (AutoLock l = _lock.lock())
         {
@@ -578,18 +579,18 @@ public class Session
                 break;
             }
 
-            id = _sessionData.getId(); // grab the values as they are now
+            oldId = _sessionData.getId(); // grab the values as they are now
             extendedId = getExtendedId();
         }
 
-        String newId = _manager.getSessionIdManager().renewSessionId(id, extendedId, request);
+        String newId = _manager.getSessionIdManager().renewSessionId(oldId, extendedId, request);
 
         try (AutoLock l = _lock.lock())
         {
             switch (_state)
             {
                 case CHANGING:
-                    if (id.equals(newId))
+                    if (oldId.equals(newId))
                         throw new IllegalStateException("Unable to change session id");
 
                     // this shouldn't be necessary to do here EXCEPT that when a
@@ -613,6 +614,11 @@ public class Session
                     throw new IllegalStateException();
             }
         }
+
+        if (response != null && isSetCookieNeeded())
+            Response.replaceCookie(response, getSessionManager().getSessionCookie(this, request.isSecure()));
+        if (LOG.isDebugEnabled())
+            LOG.debug("renew {}->{}", oldId, newId);
     }
 
     /**
@@ -621,6 +627,7 @@ public class Session
      * manager as a result of scavenger expiring session
      */
 
+    @Override
     public void invalidate()
     {
         if (_manager == null)
@@ -769,6 +776,7 @@ public class Session
         }
     }
 
+    @Override
     public boolean isNew() throws IllegalStateException
     {
         try (AutoLock l = _lock.lock())
