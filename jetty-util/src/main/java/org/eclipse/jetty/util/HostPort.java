@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.net.InetAddress;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 public class HostPort
 {
     private static final Logger LOG = LoggerFactory.getLogger(HostPort.class);
+    private static final int BAD_PORT = -1;
     private final String _host;
     private final int _port;
 
@@ -34,9 +36,9 @@ public class HostPort
      * Create a HostPort from an unsafe (and not validated) authority.
      *
      * <p>
-     *   There are no validations performed agains the provided authority.
+     *   There are no validations performed against the provided authority.
      *   It is quite possible to end up with HostPort that cannot be used
-     *   to generate valid URL, URI, InetAddress, Location header, etc.
+     *   to generate valid URL, URI, InetSocketAddress, Location header, etc.
      * </p>
      *
      * @param authority raw authority
@@ -44,89 +46,7 @@ public class HostPort
      */
     public static HostPort unsafe(String authority)
     {
-        if (authority == null)
-            return new HostPort("", 0);
-
-        try
-        {
-            if (authority.isEmpty())
-            {
-                return new HostPort(authority, 0);
-            }
-            else if (authority.charAt(0) == '[')
-            {
-                // ipv6reference
-                int close = authority.lastIndexOf(']');
-                String host = authority.substring(0, close + 1);
-                if (authority.length() > close + 1)
-                {
-                    // ipv6 with port
-                    String strPort = authority.substring(close + 2);
-                    int port = 0;
-                    if (StringUtil.isNotBlank(strPort))
-                    {
-                        try
-                        {
-                            port = Integer.parseInt(strPort);
-                        }
-                        catch (NumberFormatException ignore)
-                        {
-                            // ignore
-                        }
-                    }
-                    return new HostPort(host, port);
-                }
-                else
-                {
-                    return new HostPort(host, 0);
-                }
-            }
-            else
-            {
-                // ipv6address or ipv4address or hostname
-                int c = authority.lastIndexOf(':');
-                if (c >= 0)
-                {
-                    if (c != authority.indexOf(':'))
-                    {
-                        // ipv6address no port
-                        return new HostPort("[" + authority + "]", 0);
-                    }
-                    else
-                    {
-                        // host/ipv4 with port
-                        String host = authority.substring(0, c);
-                        String strPort = authority.substring(c + 1);
-                        int port = 0;
-                        if (StringUtil.isNotBlank(strPort))
-                        {
-                            try
-                            {
-                                port = Integer.parseInt(strPort);
-                            }
-                            catch (NumberFormatException ignore)
-                            {
-                                // ignore
-                            }
-                        }
-                        return new HostPort(host, port);
-                    }
-                }
-                else
-                {
-                    // host/ipv4 without port
-                    return new HostPort(authority, 0);
-                }
-            }
-        }
-        catch (IllegalArgumentException iae)
-        {
-            throw iae;
-        }
-        catch (Exception ex)
-        {
-            throw new IllegalArgumentException("Bad HostPort", ex);
-        }
+        return new HostPort(authority, true);
     }
 
     public HostPort(String host, int port)
@@ -137,29 +57,56 @@ public class HostPort
 
     public HostPort(String authority) throws IllegalArgumentException
     {
+        this(authority, false);
+    }
+
+    private HostPort(String authority, boolean unsafe)
+    {
+        String host;
+        //noinspection UnusedAssignment
+        int port = 0;
+
         if (authority == null)
-            throw new IllegalArgumentException("No Authority");
+        {
+            if (!unsafe)
+                throw new IllegalArgumentException("No Authority");
+
+            LOG.warn("Bad Authority [<null>]");
+            _host = "";
+            _port = 0;
+            return;
+        }
+
+        if (authority.isEmpty())
+        {
+            _host = authority;
+            _port = 0;
+            return;
+        }
+
         try
         {
-            if (authority.isEmpty())
-            {
-                _host = authority;
-                _port = 0;
-            }
-            else if (authority.charAt(0) == '[')
+            if (authority.charAt(0) == '[')
             {
                 // ipv6reference
                 int close = authority.lastIndexOf(']');
                 if (close < 0)
                 {
                     LOG.warn("Bad IPv6 host: [{}]", authority);
-                    throw new IllegalArgumentException("Bad IPv6 host");
+                    if (!unsafe)
+                        throw new IllegalArgumentException("Bad IPv6 host");
+                    host = authority;
                 }
-                _host = authority.substring(0, close + 1);
-                if (!isValidIpAddress(_host))
+                else
                 {
-                    LOG.warn("Bad IPv6 host: [{}]", _host);
-                    throw new IllegalArgumentException("Bad IPv6 host");
+                    host = authority.substring(0, close + 1);
+                }
+
+                if (!isValidIpAddress(host))
+                {
+                    LOG.warn("Bad IPv6 host: [{}]", host);
+                    if (!unsafe)
+                        throw new IllegalArgumentException("Bad IPv6 host");
                 }
 
                 if (authority.length() > close + 1)
@@ -168,13 +115,25 @@ public class HostPort
                     if (authority.charAt(close + 1) != ':')
                     {
                         LOG.warn("Bad IPv6 port: [{}]", authority);
-                        throw new IllegalArgumentException("Bad IPv6 port");
+                        if (!unsafe)
+                            throw new IllegalArgumentException("Bad IPv6 port");
+                        host = authority; // whole authority (no substring)
+                        port = 0; // no port
                     }
-                    _port = parsePort(authority.substring(close + 2));
+                    else
+                    {
+                        port = parsePort(authority.substring(close + 2), unsafe);
+                        // horribly bad port during unsafe
+                        if (unsafe && (port == BAD_PORT))
+                        {
+                            host = authority;
+                            port = 0;
+                        }
+                    }
                 }
                 else
                 {
-                    _port = 0;
+                    port = 0;
                 }
             }
             else
@@ -186,47 +145,76 @@ public class HostPort
                     if (c != authority.indexOf(':'))
                     {
                         // ipv6address no port
-                        _host = "[" + authority + "]";
-                        if (!isValidIpAddress(_host))
+                        port = 0;
+                        host = "[" + authority + "]";
+                        if (!isValidIpAddress(host))
                         {
-                            LOG.warn("Bad IPv6Address: [{}]", _host);
-                            throw new IllegalArgumentException("Bad IPv6 host");
+                            LOG.warn("Bad IPv6Address: [{}]", host);
+                            if (!unsafe)
+                                throw new IllegalArgumentException("Bad IPv6 host");
+                            host = authority; // whole authority (no substring)
                         }
-                        _port = 0;
                     }
                     else
                     {
                         // host/ipv4 with port
-                        _host = authority.substring(0, c);
-                        if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                        host = authority.substring(0, c);
+                        if (StringUtil.isBlank(host))
                         {
-                            LOG.warn("Bad Authority: [{}]", _host);
-                            throw new IllegalArgumentException("Bad Authority");
+                            LOG.warn("Bad Authority: [{}]", host);
+                            if (!unsafe)
+                                throw new IllegalArgumentException("Bad Authority");
+                            // unsafe - allow host to be empty
+                            host = "";
                         }
-                        _port = parsePort(authority.substring(c + 1));
+                        else if (!isValidHostName(host))
+                        {
+                            LOG.warn("Bad Authority: [{}]", host);
+                            if (!unsafe)
+                                throw new IllegalArgumentException("Bad Authority");
+                            // unsafe - bad hostname
+                            host = authority; // whole authority (no substring)
+                        }
+
+                        port = parsePort(authority.substring(c + 1), unsafe);
+                        // horribly bad port during unsafe
+                        if (unsafe && (port == BAD_PORT))
+                        {
+                            host = authority;
+                            port = 0;
+                        }
                     }
                 }
                 else
                 {
                     // host/ipv4 without port
-                    _host = authority;
-                    if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                    host = authority;
+                    if (StringUtil.isBlank(host) || !isValidHostName(host))
                     {
-                        LOG.warn("Bad Authority: [{}]", _host);
-                        throw new IllegalArgumentException("Bad Authority");
+                        LOG.warn("Bad Authority: [{}]", host);
+                        if (!unsafe)
+                            throw new IllegalArgumentException("Bad Authority");
                     }
-                    _port = 0;
+                    port = 0;
                 }
             }
         }
         catch (IllegalArgumentException iae)
         {
-            throw iae;
+            if (!unsafe)
+                throw iae;
+            host = "";
+            port = 0;
         }
         catch (Exception ex)
         {
-            throw new IllegalArgumentException("Bad HostPort", ex);
+            if (!unsafe)
+                throw new IllegalArgumentException("Bad HostPort", ex);
+            host = "";
+            port = 0;
         }
+        _host = host;
+        _port = port;
     }
 
     protected boolean isValidIpAddress(String ip)
@@ -335,5 +323,44 @@ public class HostPort
             throw new IllegalArgumentException("Bad port");
 
         return port;
+    }
+
+    /**
+     * Parse a potential port.
+     *
+     * @param rawPort the raw port string to parse
+     * @param unsafe true to always return a port in the range 0 to 65535 (or -1 for undefined if rawPort is horribly bad), false to return
+     *  the provided port (or {@link IllegalArgumentException} if it is horribly bad)
+     * @return the port
+     * @throws IllegalArgumentException if unable to parse a valid port and {@code unsafe} is false
+     */
+    private int parsePort(String rawPort, boolean unsafe)
+    {
+        if (StringUtil.isEmpty(rawPort))
+        {
+            if (!unsafe)
+                throw new IllegalArgumentException("Bad port [" + rawPort + "]");
+            return 0;
+        }
+
+        try
+        {
+            int port = Integer.parseInt(rawPort);
+            if (port <= 0 || port > 65535)
+            {
+                LOG.warn("Bad port [{}]", port);
+                if (!unsafe)
+                    throw new IllegalArgumentException("Bad port");
+                return BAD_PORT;
+            }
+            return port;
+        }
+        catch (NumberFormatException e)
+        {
+            LOG.warn("Bad port [{}]", rawPort);
+            if (!unsafe)
+                throw new IllegalArgumentException("Bad Port");
+            return BAD_PORT;
+        }
     }
 }
