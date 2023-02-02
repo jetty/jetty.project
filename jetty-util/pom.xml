@@ -65,6 +65,9 @@
           <systemPropertyVariables>
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
           </systemPropertyVariables>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.util=org.eclipse.jetty.logging
+          </argLine>
         </configuration>
       </plugin>
     </plugins>

@@ -15,6 +15,20 @@
     <spotbugs.onlyAnalyze>org.eclipse.jetty.proxy.*</spotbugs.onlyAnalyze>
   </properties>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-reads org.eclipse.jetty.proxy=org.eclipse.jetty.logging
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
