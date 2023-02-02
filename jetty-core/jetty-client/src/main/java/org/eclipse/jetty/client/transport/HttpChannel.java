@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.internal;
+package org.eclipse.jetty.client.transport;
 
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;

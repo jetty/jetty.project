@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.internal;
+package org.eclipse.jetty.client.transport;
 
 import java.util.ArrayList;
 import java.util.Deque;
@@ -22,12 +22,12 @@ import org.eclipse.jetty.client.AuthenticationProtocolHandler;
 import org.eclipse.jetty.client.RedirectProtocolHandler;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConversation extends AttributesMap
+public class HttpConversation extends Attributes.Lazy
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConversation.class);
 

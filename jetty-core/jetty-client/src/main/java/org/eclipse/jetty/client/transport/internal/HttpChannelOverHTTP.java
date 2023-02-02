@@ -17,8 +17,8 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
