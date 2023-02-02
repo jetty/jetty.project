@@ -2142,6 +2142,62 @@
         <spotbugs.skip>true</spotbugs.skip>
       </properties>
     </profile>
+    <profile>
+      <id>reformat</id><!-- invoke with mvn process-sources -Preformat -->
+      <properties>
+        <skipTests>true</skipTests>
+        <checkstyle.skip>true</checkstyle.skip>
+        <enforcer.skip>true</enforcer.skip>
+        <license.skip>true</license.skip>
+        <spotbugs.skip>true</spotbugs.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>net.revelc.code</groupId>
+            <artifactId>impsort-maven-plugin</artifactId>
+            <version>1.8.0</version>
+            <configuration>
+              <groups>java,*</groups>
+              <staticGroups>*</staticGroups>
+              <excludes>
+                <exclude>**/module-info.java</exclude>
+              </excludes>
+              <compliance>14_PREVIEW</compliance>
+              <staticAfter>true</staticAfter>
+              <removeUnused>false</removeUnused>
+            </configuration>
+            <executions>
+              <execution>
+                <id>sort-imports</id>
+                <goals>
+                  <goal>sort</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>net.revelc.code.formatter</groupId>
+            <artifactId>formatter-maven-plugin</artifactId>
+            <version>2.21.0</version>
+            <executions>
+              <execution>
+                <id>format-sourcecode</id>
+                <configuration>
+                  <configFile>${maven.multiModuleProjectDirectory}/build/build-resources/jetty-codestyle-eclipse-ide.xml</configFile>
+                  <excludes>
+                    <exclude>**/*.min.js</exclude>
+                  </excludes>
+                </configuration>
+                <goals>
+                  <goal>format</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <issueManagement>
