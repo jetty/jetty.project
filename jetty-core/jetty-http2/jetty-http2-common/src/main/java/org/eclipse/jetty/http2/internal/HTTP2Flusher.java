@@ -26,13 +26,12 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.frames.Frame;
-import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -47,14 +46,14 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private final AutoLock lock = new AutoLock();
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
-    private final Deque<Entry> entries = new ArrayDeque<>();
-    private final Queue<Entry> pendingEntries = new ArrayDeque<>();
-    private final Collection<Entry> processedEntries = new ArrayList<>();
+    private final Deque<HTTP2Session.Entry> entries = new ArrayDeque<>();
+    private final Queue<HTTP2Session.Entry> pendingEntries = new ArrayDeque<>();
+    private final Collection<HTTP2Session.Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
     private final RetainableByteBufferPool.Accumulator accumulator;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
     private Throwable terminated;
-    private Entry stalledEntry;
+    private HTTP2Session.Entry stalledEntry;
 
     public HTTP2Flusher(HTTP2Session session)
     {
@@ -82,7 +81,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             iterate();
     }
 
-    public boolean prepend(Entry entry)
+    public boolean prepend(HTTP2Session.Entry entry)
     {
         Throwable closed;
         try (AutoLock ignored = lock.lock())
@@ -101,7 +100,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         return false;
     }
 
-    public boolean append(Entry entry)
+    public boolean append(HTTP2Session.Entry entry)
     {
         Throwable closed;
         try (AutoLock ignored = lock.lock())
@@ -120,7 +119,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         return false;
     }
 
-    public boolean append(List<Entry> list)
+    public boolean append(List<HTTP2Session.Entry> list)
     {
         Throwable closed;
         try (AutoLock ignored = lock.lock())
@@ -172,7 +171,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 windowEntry.perform();
             }
 
-            Entry entry;
+            HTTP2Session.Entry entry;
             while ((entry = entries.poll()) != null)
             {
                 pendingEntries.offer(entry);
@@ -193,10 +192,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             if (pendingEntries.isEmpty())
                 break;
 
-            Iterator<Entry> pending = pendingEntries.iterator();
+            Iterator<HTTP2Session.Entry> pending = pendingEntries.iterator();
             while (pending.hasNext())
             {
-                Entry entry = pending.next();
+                HTTP2Session.Entry entry = pending.next();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Processing {}", entry);
 
@@ -294,10 +293,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         return Action.SCHEDULED;
     }
 
-    void onFlushed(long bytes) throws IOException
+    public void onFlushed(long bytes) throws IOException
     {
         // A single EndPoint write may be flushed multiple times (for example with SSL).
-        for (Entry entry : processedEntries)
+        for (HTTP2Session.Entry entry : processedEntries)
         {
             bytes = entry.onFlushed(bytes);
         }
@@ -321,7 +320,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     {
         accumulator.release();
 
-        processedEntries.forEach(Entry::succeeded);
+        processedEntries.forEach(HTTP2Session.Entry::succeeded);
         processedEntries.clear();
         invocationType = InvocationType.NON_BLOCKING;
 
@@ -330,7 +329,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             int size = pendingEntries.size();
             for (int i = 0; i < size; ++i)
             {
-                Entry entry = pendingEntries.peek();
+                HTTP2Session.Entry entry = pendingEntries.peek();
                 if (entry == stalledEntry)
                     break;
                 pendingEntries.poll();
@@ -352,7 +351,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         accumulator.release();
 
         Throwable closed;
-        Set<Entry> allEntries;
+        Set<HTTP2Session.Entry> allEntries;
         try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
@@ -379,7 +378,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             session.onWriteFailure(x);
     }
 
-    void terminate(Throwable cause)
+    public void terminate(Throwable cause)
     {
         Throwable closed;
         try (AutoLock ignored = lock.lock())
@@ -393,7 +392,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             iterate();
     }
 
-    private void closed(Entry entry, Throwable failure)
+    private void closed(HTTP2Session.Entry entry, Throwable failure)
     {
         entry.failed(failure);
     }
@@ -419,96 +418,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             getFrameQueueSize(),
             processedEntries.size(),
             pendingEntries.size());
-    }
-
-    public abstract static class Entry extends Callback.Nested
-    {
-        protected final Frame frame;
-        protected final HTTP2Stream stream;
-
-        protected Entry(Frame frame, HTTP2Stream stream, Callback callback)
-        {
-            super(callback);
-            this.frame = frame;
-            this.stream = stream;
-        }
-
-        public abstract int getFrameBytesGenerated();
-
-        public int getDataBytesRemaining()
-        {
-            return 0;
-        }
-
-        protected abstract boolean generate(RetainableByteBufferPool.Accumulator accumulator) throws HpackException;
-
-        public abstract long onFlushed(long bytes) throws IOException;
-
-        boolean hasHighPriority()
-        {
-            return false;
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            if (stream != null)
-            {
-                stream.close();
-                stream.getSession().removeStream(stream);
-            }
-            super.failed(x);
-        }
-
-        /**
-         * @return whether the entry should not be processed
-         */
-        private boolean shouldBeDropped()
-        {
-            switch (frame.getType())
-            {
-                // Frames of this type should not be dropped.
-                case PRIORITY:
-                case SETTINGS:
-                case PING:
-                case GO_AWAY:
-                case WINDOW_UPDATE:
-                case PREFACE:
-                case DISCONNECT:
-                    return false;
-                // Frames of this type follow the logic below.
-                case DATA:
-                case HEADERS:
-                case PUSH_PROMISE:
-                case CONTINUATION:
-                case RST_STREAM:
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
-
-            // SPEC: section 6.4.
-            if (frame.getType() == FrameType.RST_STREAM)
-                return stream != null && stream.isLocal() && !stream.isCommitted();
-
-            // Frames that do not have a stream associated are dropped.
-            if (stream == null)
-                return true;
-
-            return stream.isResetOrFailed();
-        }
-
-        void commit()
-        {
-            if (stream != null)
-                stream.commit();
-        }
-
-        @Override
-        public String toString()
-        {
-            return frame.toString();
-        }
     }
 
     private class WindowEntry

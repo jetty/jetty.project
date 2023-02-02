@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.ErrorCode;
 
 public class ResetFrame extends Frame
 {
