@@ -28,7 +28,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 
-    static { LoggingUtil.init();}
+    static
+    {
+        LoggingUtil.init();
+    }
     public static RemoteInfinispanTestSupport __testSupport;
 
     @BeforeAll

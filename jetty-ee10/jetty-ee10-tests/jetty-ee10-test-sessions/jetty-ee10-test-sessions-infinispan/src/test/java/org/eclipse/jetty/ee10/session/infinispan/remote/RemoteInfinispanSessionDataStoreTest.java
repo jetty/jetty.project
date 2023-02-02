@@ -49,7 +49,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
 
-    static { LoggingUtil.init();}
+    static
+    {
+        LoggingUtil.init();
+    }
 
     public static RemoteInfinispanTestSupport __testSupport;
 
