@@ -13,6 +13,17 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules jetty.servlet.api
+            --add-reads org.eclipse.jetty.http2.server=jetty.servlet.api
+            --add-reads org.eclipse.jetty.http2.server=org.eclipse.jetty.logging
+          </argLine>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>h2spec-maven-plugin</artifactId>
         <version>1.0.10</version>
