@@ -20,9 +20,9 @@ import java.util.Random;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
-import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
+import org.eclipse.jetty.http3.generator.MessageGenerator;
+import org.eclipse.jetty.http3.parser.MessageParser;
+import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;

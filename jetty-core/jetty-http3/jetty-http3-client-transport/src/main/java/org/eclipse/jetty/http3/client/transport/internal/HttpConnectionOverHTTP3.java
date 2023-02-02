@@ -28,7 +28,7 @@ import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
