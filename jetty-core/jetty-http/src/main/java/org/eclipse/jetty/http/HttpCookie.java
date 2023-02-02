@@ -150,9 +150,18 @@ public interface HttpCookie
         return Boolean.parseBoolean(getAttributes().get(HTTP_ONLY_ATTRIBUTE));
     }
 
+    /**
+     * @return the cookie hash code
+     * @see #hashCode(HttpCookie)
+     */
     @Override
     int hashCode();
 
+    /**
+     * @param obj the object to test for equality
+     * @return whether this cookie is equal to the given object
+     * @see #equals(HttpCookie, Object)
+     */
     @Override
     boolean equals(Object obj);
 
@@ -288,36 +297,24 @@ public interface HttpCookie
             _attributes = attributes == null || attributes.isEmpty() ? Collections.emptyMap() : attributes;
         }
 
-        /**
-         * @return the cookie name
-         */
         @Override
         public String getName()
         {
             return _name;
         }
 
-        /**
-         * @return the cookie value
-         */
         @Override
         public String getValue()
         {
             return _value;
         }
 
-        /**
-         * @return the cookie version
-         */
         @Override
         public int getVersion()
         {
             return _version;
         }
 
-        /**
-         * @return the attributes associated with this cookie
-         */
         @Override
         public Map<String, String> getAttributes()
         {
@@ -343,10 +340,24 @@ public interface HttpCookie
         }
     }
 
+    /**
+     * <p>The possible values for the {@code SameSite} attribute, defined
+     * in the follow-up of RFC 6265, at the time of this writing defined at
+     * <a href="https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis">RFC 6265bis</a>.</p>
+     */
     enum SameSite
     {
+        /**
+         * The value {@code None} for the {@code SameSite} attribute
+         */
         NONE("None"),
+        /**
+         * The value {@code Strict} for the {@code SameSite} attribute
+         */
         STRICT("Strict"),
+        /**
+         * The value {@code Lax} for the {@code SameSite} attribute
+         */
         LAX("Lax");
 
         private final String attributeValue;
@@ -356,6 +367,9 @@ public interface HttpCookie
             this.attributeValue = attributeValue;
         }
 
+        /**
+         * @return the {@code SameSite} attribute value
+         */
         public String getAttributeValue()
         {
             return this.attributeValue;
@@ -368,6 +382,11 @@ public interface HttpCookie
             .with(LAX.attributeValue, LAX)
             .build();
 
+        /**
+         * @param sameSite the {@code SameSite} attribute value
+         * @return the enum constant associated with the {@code SameSite} attribute value,
+         * or {@code null} if the value is not a known {@code SameSite} attribute value
+         */
         public static SameSite from(String sameSite)
         {
             if (sameSite == null)
@@ -377,203 +396,8 @@ public interface HttpCookie
     }
 
     /**
-     * Creates new HttpCookie from specific values.
-     *
-     * @param name the name of the cookie
-     * @param value the value of the cookie
+     * <p>A {@link HttpCookie} that wraps a {@link java.net.HttpCookie}.</p>
      */
-    static HttpCookie from(String name, String value)
-    {
-        return new Immutable(name, value, 0, null);
-    }
-
-    /**
-     * Creates new HttpCookie from specific values and attributes.
-     *
-     * @param name the name of the cookie
-     * @param value the value of the cookie
-     * @param attributes the map of attributes to use with this cookie (this map is used for field values
-     *   such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     *   {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
-     *   code base.
-     */
-    static HttpCookie from(String name, String value, Map<String, String> attributes)
-    {
-        return new Immutable(name, value, 0, attributes);
-    }
-
-    /**
-     * Creates new HttpCookie from specific values and attributes.
-     *
-     * @param name the name of the cookie
-     * @param value the value of the cookie
-     * @param version the version of the cookie (only used in RFC2965 mode)
-     * @param attributes the map of attributes to use with this cookie (this map is used for field values
-     *   such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     *   {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
-     *   code base.
-     */
-    static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
-    {
-        if (attributes == null || attributes.isEmpty())
-            return new Immutable(name, value, version, Collections.emptyMap());
-
-        Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        attrs.putAll(attributes);
-
-        return new Immutable(name, value, version, attrs);
-    }
-
-    /**
-     * @param cookie A cookie to base the new cookie on.
-     * @param additionalAttributes Additional name value pairs of strings to use as additional attributes
-     * @return A new cookie based on the passed cookie plus additional attributes.
-     */
-    static HttpCookie from(HttpCookie cookie, String... additionalAttributes)
-    {
-        if (additionalAttributes.length % 2 != 0)
-            throw new IllegalArgumentException("additional attributes must have name and value");
-        Map<String, String> attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        attributes.putAll(Objects.requireNonNull(cookie).getAttributes());
-        for (int i = 0; i < additionalAttributes.length; i += 2)
-            attributes.put(additionalAttributes[i], additionalAttributes[i + 1]);
-        return new Immutable(cookie.getName(), cookie.getValue(), cookie.getVersion(), attributes);
-    }
-
-    static HttpCookie from(java.net.HttpCookie httpCookie)
-    {
-        return new JavaNetHttpCookie(httpCookie);
-    }
-
-    static Builder build(String name, String value)
-    {
-        return new Builder(name, value);
-    }
-
-    static Builder build(String name, String value, int version)
-    {
-        return new Builder(name, value, version);
-    }
-
-    static Builder build(HttpCookie httpCookie)
-    {
-        Builder builder = new Builder(httpCookie.getName(), httpCookie.getValue(), httpCookie.getVersion());
-        for (Map.Entry<String, String> entry : httpCookie.getAttributes().entrySet())
-            builder = builder.attribute(entry.getKey(), entry.getValue());
-        return builder;
-    }
-
-    static Builder build(java.net.HttpCookie httpCookie)
-    {
-        return new Builder(httpCookie.getName(), httpCookie.getValue(), httpCookie.getVersion())
-            .comment(httpCookie.getComment())
-            .domain(httpCookie.getDomain())
-            .httpOnly(httpCookie.isHttpOnly())
-            .maxAge(httpCookie.getMaxAge())
-            .path(httpCookie.getPath())
-            .secure(httpCookie.getSecure());
-    }
-
-    static java.net.HttpCookie asJavaNetHttpCookie(HttpCookie httpCookie)
-    {
-        if (httpCookie.getSameSite() != null)
-            throw new IllegalArgumentException("SameSite attribute not supported by " + java.net.HttpCookie.class.getName());
-        java.net.HttpCookie cookie = new java.net.HttpCookie(httpCookie.getName(), httpCookie.getValue());
-        cookie.setVersion(httpCookie.getVersion());
-        cookie.setComment(httpCookie.getComment());
-        cookie.setDomain(httpCookie.getDomain());
-        cookie.setHttpOnly(httpCookie.isHttpOnly());
-        cookie.setMaxAge(httpCookie.getMaxAge());
-        cookie.setPath(httpCookie.getPath());
-        cookie.setSecure(httpCookie.isSecure());
-        return cookie;
-    }
-
-    /**
-     * <p>Implementation of {@link Object#hashCode()} compatible with RFC 6265.</p>
-     *
-     * @param httpCookie the cookie to be hashed
-     * @return the hash code of the cookie
-     * @see #equals(HttpCookie, Object)
-     */
-    static int hashCode(HttpCookie httpCookie)
-    {
-        String domain = httpCookie.getDomain();
-        if (domain != null)
-            domain = domain.toLowerCase(Locale.ENGLISH);
-        return Objects.hash(httpCookie.getName(), domain, httpCookie.getPath());
-    }
-
-    /**
-     * <p>Implementation of {@link Object#equals(Object)} compatible with RFC 6265.</p>
-     * <p>Two cookies are equal if they have the same name (case-sensitive), the same
-     * domain (case-insensitive) and the same path (case-sensitive).</p>
-     *
-     * @param cookie1 the first cookie to equal
-     * @param obj the second cookie to equal
-     * @return whether the cookies are equal
-     * @see #hashCode(HttpCookie)
-     */
-    static boolean equals(HttpCookie cookie1, Object obj)
-    {
-        if (cookie1 == obj)
-            return true;
-        if (cookie1 == null || obj == null)
-            return false;
-        if (!(obj instanceof HttpCookie cookie2))
-            return false;
-        // RFC 2965 section. 3.3.3 and RFC 6265 section 4.1.2.
-        // Names are case-sensitive.
-        if (!Objects.equals(cookie1.getName(), cookie2.getName()))
-            return false;
-        // Domains are case-insensitive.
-        if (!equalsIgnoreCase(cookie1.getDomain(), cookie2.getDomain()))
-            return false;
-        // Paths are case-sensitive.
-        return Objects.equals(cookie1.getPath(), cookie2.getPath());
-    }
-
-    private static boolean equalsIgnoreCase(String obj1, String obj2)
-    {
-        if (obj1 == obj2)
-            return true;
-        if (obj1 == null || obj2 == null)
-            return false;
-        return obj1.equalsIgnoreCase(obj2);
-    }
-
-    /**
-     * <p>Formats this cookie into a string suitable to be used
-     * in {@code Cookie} or {@code Set-Cookie} headers.</p>
-     *
-     * @param httpCookie the cookie to format
-     * @return a header string representation of the cookie
-     */
-    static String asString(HttpCookie httpCookie)
-    {
-        StringBuilder builder = new StringBuilder();
-        builder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
-        String domain = httpCookie.getDomain();
-        if (domain != null)
-            builder.append(";$Domain=").append(domain);
-        String path = httpCookie.getPath();
-        if (path != null)
-            builder.append(";$Path=").append(path);
-        return builder.toString();
-    }
-
-    /**
-     * <p>Formats this cookie into a string suitable to be used
-     * for logging.</p>
-     *
-     * @param httpCookie the cookie to format
-     * @return a logging string representation of the cookie
-     */
-    static String toString(HttpCookie httpCookie)
-    {
-        return "%s@%x[%s]".formatted(httpCookie.getClass().getSimpleName(), httpCookie.hashCode(), asString(httpCookie));
-    }
-
     class JavaNetHttpCookie implements HttpCookie
     {
         private final java.net.HttpCookie _httpCookie;
@@ -651,7 +475,7 @@ public interface HttpCookie
                     attributes = lazyAttributePut(attributes, MAX_AGE_ATTRIBUTE, Long.toString(getMaxAge()));
                 attributes = lazyAttributePut(attributes, PATH_ATTRIBUTE, getPath());
                 if (isSecure())
-                    attributes = lazyAttributePut(attributes, SECURE_ATTRIBUTE,  Boolean.TRUE.toString());
+                    attributes = lazyAttributePut(attributes, SECURE_ATTRIBUTE, Boolean.TRUE.toString());
                 _attributes = HttpCookie.lazyAttributes(attributes);
             }
             return _attributes;
@@ -677,8 +501,22 @@ public interface HttpCookie
     }
 
     /**
-     * A HttpCookie Builder
+     * <p>A builder for {@link HttpCookie} instances.</p>
+     * <p>The typical usage is to use one of the
+     * {@link HttpCookie#build(String, String) build methods}
+     * to obtain the builder, and then chain method calls to
+     * customize the cookie attributes and finally calling
+     * the {@link #build()} method, for example:</p>
+     * <pre>{@code
+     * HttpCookie cookie = HttpCookie.build("name", "value")
+     *     .maxAge(24 * 60 * 60)
+     *     .domain("example.com")
+     *     .path("/")
+     *     .build();
+     * }</pre>
+     *
      * @see HttpCookie#build(String, String)
+     * @see #build()
      */
     class Builder
     {
@@ -686,11 +524,6 @@ public interface HttpCookie
         private final String _value;
         private final int _version;
         private Map<String, String> _attributes;
-
-        private Builder(String name, String value)
-        {
-            this(name, value, 0);
-        }
 
         private Builder(String name, String value, int version)
         {
@@ -759,10 +592,284 @@ public interface HttpCookie
             return this;
         }
 
+        /**
+         * @return an immutable {@link HttpCookie} instance.
+         */
         public HttpCookie build()
         {
             return new Immutable(_name, _value, _version, lazyAttributes(_attributes));
         }
+    }
+
+    /**
+     * Creates a new {@code HttpCookie} from the given name and value.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     */
+    static HttpCookie from(String name, String value)
+    {
+        return from(name, value, 0, null);
+    }
+
+    /**
+     * Creates a new {@code HttpCookie} from the given name, value and attributes.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param attributes the map of attributes to use with this cookie (this map is used for field values
+     * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
+     * {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
+     * code base.
+     */
+    static HttpCookie from(String name, String value, Map<String, String> attributes)
+    {
+        return from(name, value, 0, attributes);
+    }
+
+    /**
+     * Creates a new {@code HttpCookie} from the given name, value, version and attributes.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param version the version of the cookie (only used in RFC2965 mode)
+     * @param attributes the map of attributes to use with this cookie (this map is used for field values
+     * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
+     * {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
+     * code base.
+     */
+    static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
+    {
+        if (attributes == null || attributes.isEmpty())
+            return new Immutable(name, value, version, Collections.emptyMap());
+
+        Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        attrs.putAll(attributes);
+
+        return new Immutable(name, value, version, attrs);
+    }
+
+    /**
+     * @param cookie A cookie to base the new cookie on.
+     * @param additionalAttributes Additional name value pairs of strings to use as additional attributes
+     * @return A new cookie based on the passed cookie plus additional attributes.
+     */
+    static HttpCookie from(HttpCookie cookie, String... additionalAttributes)
+    {
+        if (additionalAttributes.length % 2 != 0)
+            throw new IllegalArgumentException("additional attributes must have name and value");
+        Map<String, String> attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        attributes.putAll(Objects.requireNonNull(cookie).getAttributes());
+        for (int i = 0; i < additionalAttributes.length; i += 2)
+        {
+            attributes.put(additionalAttributes[i], additionalAttributes[i + 1]);
+        }
+        return from(cookie.getName(), cookie.getValue(), cookie.getVersion(), attributes);
+    }
+
+    /**
+     * Creates a new {@code HttpCookie} copied from the given {@link java.net.HttpCookie}.
+     *
+     * @param httpCookie the {@link java.net.HttpCookie} instance to copy
+     * @return a new {@code HttpCookie} copied from the {@link java.net.HttpCookie}
+     * @see #asJavaNetHttpCookie(HttpCookie)
+     */
+    static HttpCookie from(java.net.HttpCookie httpCookie)
+    {
+        return new JavaNetHttpCookie(httpCookie);
+    }
+
+    /**
+     * Creates a {@link Builder} to build a {@code HttpCookie}.
+     *
+     * @param name the cookie name
+     * @param value the cookie value
+     * @return a new {@link Builder} initialized with the given values
+     */
+    static Builder build(String name, String value)
+    {
+        return build(name, value, 0);
+    }
+
+    /**
+     * Creates a {@link Builder} to build a {@code HttpCookie}.
+     *
+     * @param name the cookie name
+     * @param value the cookie value
+     * @param version the cookie version
+     * @return a new {@link Builder} initialized with the given values
+     */
+    static Builder build(String name, String value, int version)
+    {
+        return new Builder(name, value, version);
+    }
+
+    /**
+     * Creates a {@link Builder} to build a {@code HttpCookie}.
+     *
+     * @param httpCookie the cookie to copy
+     * @return a new {@link Builder} initialized with the given cookie
+     */
+    static Builder build(HttpCookie httpCookie)
+    {
+        Builder builder = new Builder(httpCookie.getName(), httpCookie.getValue(), httpCookie.getVersion());
+        for (Map.Entry<String, String> entry : httpCookie.getAttributes().entrySet())
+        {
+            builder = builder.attribute(entry.getKey(), entry.getValue());
+        }
+        return builder;
+    }
+
+    /**
+     * Creates a {@link Builder} to build a {@code HttpCookie}.
+     *
+     * @param httpCookie the {@link java.net.HttpCookie} to copy
+     * @return a new {@link Builder} initialized with the given cookie
+     */
+    static Builder build(java.net.HttpCookie httpCookie)
+    {
+        return new Builder(httpCookie.getName(), httpCookie.getValue(), httpCookie.getVersion())
+            .comment(httpCookie.getComment())
+            .domain(httpCookie.getDomain())
+            .httpOnly(httpCookie.isHttpOnly())
+            .maxAge(httpCookie.getMaxAge())
+            .path(httpCookie.getPath())
+            .secure(httpCookie.getSecure());
+    }
+
+    /**
+     * Converts a {@code HttpCookie} to a {@link java.net.HttpCookie}.
+     *
+     * @param httpCookie the cookie to convert
+     * @return a new {@link java.net.HttpCookie}
+     * @see #from(java.net.HttpCookie)
+     */
+    static java.net.HttpCookie asJavaNetHttpCookie(HttpCookie httpCookie)
+    {
+        if (httpCookie.getSameSite() != null)
+            throw new IllegalArgumentException("SameSite attribute not supported by " + java.net.HttpCookie.class.getName());
+        java.net.HttpCookie cookie = new java.net.HttpCookie(httpCookie.getName(), httpCookie.getValue());
+        cookie.setVersion(httpCookie.getVersion());
+        cookie.setComment(httpCookie.getComment());
+        cookie.setDomain(httpCookie.getDomain());
+        cookie.setHttpOnly(httpCookie.isHttpOnly());
+        cookie.setMaxAge(httpCookie.getMaxAge());
+        cookie.setPath(httpCookie.getPath());
+        cookie.setSecure(httpCookie.isSecure());
+        return cookie;
+    }
+
+    /**
+     * <p>Implementation of {@link Object#hashCode()} compatible with RFC 6265.</p>
+     *
+     * @param httpCookie the cookie to be hashed
+     * @return the hash code of the cookie
+     * @see #equals(HttpCookie, Object)
+     */
+    static int hashCode(HttpCookie httpCookie)
+    {
+        String domain = httpCookie.getDomain();
+        if (domain != null)
+            domain = domain.toLowerCase(Locale.ENGLISH);
+        return Objects.hash(httpCookie.getName(), domain, httpCookie.getPath());
+    }
+
+    /**
+     * <p>Implementation of {@link Object#equals(Object)} compatible with RFC 6265.</p>
+     * <p>Two cookies are equal if they have the same name (case-sensitive), the same
+     * domain (case-insensitive) and the same path (case-sensitive).</p>
+     *
+     * @param cookie1 the first cookie to equal
+     * @param obj the second cookie to equal
+     * @return whether the cookies are equal
+     * @see #hashCode(HttpCookie)
+     */
+    static boolean equals(HttpCookie cookie1, Object obj)
+    {
+        if (cookie1 == obj)
+            return true;
+        if (cookie1 == null || obj == null)
+            return false;
+        if (!(obj instanceof HttpCookie cookie2))
+            return false;
+        // RFC 2965 section. 3.3.3 and RFC 6265 section 4.1.2.
+        // Names are case-sensitive.
+        if (!Objects.equals(cookie1.getName(), cookie2.getName()))
+            return false;
+        // Domains are case-insensitive.
+        if (!equalsIgnoreCase(cookie1.getDomain(), cookie2.getDomain()))
+            return false;
+        // Paths are case-sensitive.
+        return Objects.equals(cookie1.getPath(), cookie2.getPath());
+    }
+
+    private static boolean equalsIgnoreCase(String obj1, String obj2)
+    {
+        if (obj1 == obj2)
+            return true;
+        if (obj1 == null || obj2 == null)
+            return false;
+        return obj1.equalsIgnoreCase(obj2);
+    }
+
+    /**
+     * <p>Formats this cookie into a string suitable to be used
+     * in {@code Cookie} or {@code Set-Cookie} headers.</p>
+     *
+     * @param httpCookie the cookie to format
+     * @return a header string representation of the cookie
+     */
+    private static String asString(HttpCookie httpCookie)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
+        String domain = httpCookie.getDomain();
+        if (domain != null)
+            builder.append(";Domain=").append(domain);
+        String path = httpCookie.getPath();
+        if (path != null)
+            builder.append(";Path=").append(path);
+        return builder.toString();
+    }
+
+    /**
+     * <p>Formats this cookie into a string suitable to be used
+     * for logging.</p>
+     *
+     * @param httpCookie the cookie to format
+     * @return a logging string representation of the cookie
+     */
+    static String toString(HttpCookie httpCookie)
+    {
+        return "%s@%x[%s]".formatted(httpCookie.getClass().getSimpleName(), httpCookie.hashCode(), asString(httpCookie));
+    }
+
+    /**
+     * <p>Formats the {@link Instant} associated with the
+     * {@code Expires} attribute into a RFC 1123 string.</p>
+     *
+     * @param expires the expiration instant
+     * @return the instant formatted as an RFC 1123 string
+     * @see #parseExpires(String)
+     */
+    static String formatExpires(Instant expires)
+    {
+        return DateTimeFormatter.RFC_1123_DATE_TIME
+            .withZone(ZoneOffset.UTC)
+            .format(expires);
+    }
+
+    /**
+     * <p>Parses the {@code Expires} attribute value
+     * (in RFC 1123 format) into an {@link Instant}.</p>
+     *
+     * @param expires an instant in the RFC 1123 string format
+     * @return an {@link Instant} parsed from the given string
+     */
+    static Instant parseExpires(String expires)
+    {
+        // TODO: RFC 1123 format only for now, see https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1.
+        return ZonedDateTime.parse(expires, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
     }
 
     private static Map<String, String> lazyAttributePut(Map<String, String> attributes, String key, String value)
@@ -786,18 +893,5 @@ public interface HttpCookie
     private static Map<String, String> lazyAttributes(Map<String, String> attributes)
     {
         return attributes == null || attributes.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(attributes);
-    }
-
-    static String formatExpires(Instant expires)
-    {
-        return DateTimeFormatter.RFC_1123_DATE_TIME
-            .withZone(ZoneOffset.UTC)
-            .format(expires);
-    }
-
-    private static Instant parseExpires(String expires)
-    {
-        // TODO: RFC 1123 format only for now, see https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1.
-        return ZonedDateTime.parse(expires, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
     }
 }
