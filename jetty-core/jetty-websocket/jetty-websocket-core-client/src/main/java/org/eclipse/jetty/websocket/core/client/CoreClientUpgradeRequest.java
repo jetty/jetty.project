@@ -465,10 +465,11 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         // We can upgrade
         customize(endPoint);
 
+        String scheme = request.getScheme();
         Negotiated negotiated = new Negotiated(
             request.getURI(),
             negotiatedSubProtocol,
-            HttpClient.isSchemeSecure(request.getScheme()),
+            HttpScheme.isSecure(scheme),
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 

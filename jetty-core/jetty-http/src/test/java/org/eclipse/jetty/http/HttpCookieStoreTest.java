@@ -252,9 +252,11 @@ public class HttpCookieStoreTest
     {
         HttpCookieStore store = new HttpCookieStore.Default();
         URI uri = URI.create("http://example.com");
-        assertTrue(store.add(uri, HttpCookie.build("n1", "v1").secure(true).build()));
+        // Dumb server sending a secure cookie on clear-text scheme.
+        assertFalse(store.add(uri, HttpCookie.build("n1", "v1").secure(true).build()));
         URI secureURI = URI.create("https://example.com");
         assertTrue(store.add(secureURI, HttpCookie.build("n2", "v2").secure(true).build()));
+        assertTrue(store.add(secureURI, HttpCookie.from("n3", "v3")));
 
         List<HttpCookie> matches = store.match(uri);
         assertEquals(0, matches.size());

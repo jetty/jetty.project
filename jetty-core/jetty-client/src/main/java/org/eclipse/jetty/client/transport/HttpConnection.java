@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
@@ -155,13 +156,17 @@ public abstract class HttpConnection implements IConnection, Attachable
         }
 
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()))
+        if (proxy instanceof HttpProxy)
         {
-            URI uri = request.getURI();
-            if (uri != null)
+            String scheme = request.getScheme();
+            if (!HttpScheme.isSecure(scheme))
             {
-                path = uri.toString();
-                request.path(path);
+                URI uri = request.getURI();
+                if (uri != null)
+                {
+                    path = uri.toString();
+                    request.path(path);
+                }
             }
         }
 

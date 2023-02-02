@@ -102,14 +102,14 @@ public class HttpCookieTest
         assertEquals("minimal=value", HttpCookieUtils.getRFC2965SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("everything", "something", 0, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.COMMENT_ATTRIBUTE, "noncomment"));
-        assertEquals("everything=something;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment", HttpCookieUtils.getRFC2965SetCookie(httpCookie));
+        assertEquals("everything=something;Version=1;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment", HttpCookieUtils.getRFC2965SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("everything", "value", 0, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.COMMENT_ATTRIBUTE, "comment"));
-        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment", HttpCookieUtils.getRFC2965SetCookie(httpCookie));
+        assertEquals("everything=value;Version=1;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment", HttpCookieUtils.getRFC2965SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("ev erything", "va lue", 1, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "do main", HttpCookie.PATH_ATTRIBUTE, "pa th", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.COMMENT_ATTRIBUTE, "co mment"));
         String setCookie = HttpCookieUtils.getRFC2965SetCookie(httpCookie);
-        assertThat(setCookie, Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Path=\"pa th\";Domain=\"do main\";Expires="));
+        assertThat(setCookie, Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Domain=\"do main\";Path=\"pa th\";Expires="));
         assertThat(setCookie, Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
 
         httpCookie = HttpCookie.from("name", "value", 0, Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(-1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(false), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(false)));
@@ -139,19 +139,19 @@ public class HttpCookieTest
 
         //test cookies with same name, domain and path
         httpCookie = HttpCookie.from("everything", "something", -1, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
-        assertEquals("everything=something; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
+        assertEquals("everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("everything", "value", -1, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true)));
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("everything", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.SAME_SITE_ATTRIBUTE, SameSite.NONE.getAttributeValue()));
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("everything", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.SAME_SITE_ATTRIBUTE, SameSite.LAX.getAttributeValue()));
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("everything", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.SAME_SITE_ATTRIBUTE, SameSite.STRICT.getAttributeValue()));
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
     }
 
     public static Stream<String> rfc6265BadNameSource()

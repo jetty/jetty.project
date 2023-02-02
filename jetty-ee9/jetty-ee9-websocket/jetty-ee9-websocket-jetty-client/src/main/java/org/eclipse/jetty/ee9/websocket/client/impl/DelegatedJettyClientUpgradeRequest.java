@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -156,7 +156,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public boolean isSecure()
     {
-        return HttpClient.isSchemeSecure(delegate.getURI().getScheme());
+        return HttpScheme.isSecure(delegate.getURI().getScheme());
     }
 
     @Override

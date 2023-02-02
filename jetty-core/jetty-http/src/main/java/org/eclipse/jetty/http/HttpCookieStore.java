@@ -128,6 +128,11 @@ public interface HttpCookieStore
         {
             // TODO: reject if cookie size is too big?
 
+            boolean secure = HttpScheme.isSecure(uri.getScheme());
+            // Do not accept a secure cookie sent over an insecure channel.
+            if (cookie.isSecure() && !secure)
+                return false;
+
             String cookieDomain = cookie.getDomain();
             if (cookieDomain != null)
             {
@@ -169,7 +174,7 @@ public interface HttpCookieStore
             // - add(sub.example.com, cookie[Domain]=example.com) => Key[domain=example.com]
             // This facilitates the matching algorithm.
             Key key = new Key(uri.getScheme(), cookieDomain);
-            boolean[] result = new boolean[1];
+            boolean[] result = new boolean[]{true};
             try (AutoLock ignored = lock.lock())
             {
                 cookies.compute(key, (k, v) ->
@@ -183,7 +188,7 @@ public interface HttpCookieStore
                     // Add only non-expired cookies.
                     if (cookie.isExpired())
                     {
-                        result[0] = true;
+                        result[0] = false;
                         return v == null || v.isEmpty() ? null : v;
                     }
 
@@ -194,7 +199,7 @@ public interface HttpCookieStore
                 });
             }
 
-            return !result[0];
+            return result[0];
         }
 
         @Override
@@ -213,7 +218,7 @@ public interface HttpCookieStore
         {
             List<HttpCookie> result = new ArrayList<>();
             String scheme = uri.getScheme();
-            boolean secure = HttpScheme.HTTPS.is(scheme);
+            boolean secure = HttpScheme.isSecure(scheme);
             String uriDomain = uri.getHost();
             String path = uri.getPath();
             if (path == null || path.trim().isEmpty())
