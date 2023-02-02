@@ -1997,7 +1997,7 @@ public class ResponseTest
 
         String set = response.getHttpFields().get("Set-Cookie");
 
-        assertEquals("name=value;Version=1;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
+        assertEquals("name=value;Version=1;Domain=domain;Path=/path;Secure;HttpOnly;Comment=comment", set);
     }
 
     /**
