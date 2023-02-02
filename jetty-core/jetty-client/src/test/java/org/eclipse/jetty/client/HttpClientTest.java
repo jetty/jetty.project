@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -122,7 +122,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Origin origin = destination.getOrigin();
         String uri = origin.getScheme() + "://" + origin.getAddress();
-        client.getCookieStore().add(URI.create(uri), new HttpCookie("foo", "bar"));
+        client.getHttpCookieStore().add(URI.create(uri), HttpCookie.from("foo", "bar"));
 
         client.stop();
 

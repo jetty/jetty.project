@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.net.CookieStore;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -23,9 +21,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -60,7 +59,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         Response response = client.GET(uri);
         assertEquals(200, response.getStatus());
 
-        List<HttpCookie> cookies = client.getCookieStore().get(URI.create(uri));
+        List<HttpCookie> cookies = client.getHttpCookieStore().match(URI.create(uri));
         assertNotNull(cookies);
         assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
@@ -92,8 +91,8 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         String path = "/path";
         String uri = scenario.getScheme() + "://" + host + ":" + port;
-        HttpCookie cookie = new HttpCookie(name, value);
-        client.getCookieStore().add(URI.create(uri), cookie);
+        HttpCookie cookie = HttpCookie.from(name, value);
+        client.getHttpCookieStore().add(URI.create(uri), cookie);
 
         Response response = client.GET(scenario.getScheme() + "://" + host + ":" + port + path);
         assertEquals(200, response.getStatus());
@@ -116,7 +115,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .send();
         assertEquals(200, response.getStatus());
-        assertTrue(client.getCookieStore().getCookies().isEmpty());
+        assertTrue(client.getHttpCookieStore().all().isEmpty());
     }
 
     @ParameterizedTest
@@ -133,7 +132,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         testPerRequestCookieIsSent(scenario, new HttpCookieStore.Empty());
     }
 
-    private void testPerRequestCookieIsSent(Scenario scenario, CookieStore cookieStore) throws Exception
+    private void testPerRequestCookieIsSent(Scenario scenario, HttpCookieStore cookieStore) throws Exception
     {
         final String name = "foo";
         final String value = "bar";
@@ -153,12 +152,12 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         startClient(scenario, client ->
         {
             if (cookieStore != null)
-                client.setCookieStore(cookieStore);
+                client.setHttpCookieStore(cookieStore);
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .cookie(new HttpCookie(name, value))
+            .cookie(HttpCookie.from(name, value))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
