@@ -169,7 +169,11 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
      * with only the violations that differ from {@link #RFC7230}.
      */
-    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
+    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(
+        Violation.HTTP_0_9,
+        Violation.MULTILINE_FIELD_VALUE,
+        Violation.MISMATCHED_AUTHORITY
+    ));
 
     /**
      * A legacy HttpCompliance mode that allows all violations except case-insensitive methods.
