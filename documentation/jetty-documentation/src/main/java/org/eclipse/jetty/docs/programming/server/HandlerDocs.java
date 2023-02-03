@@ -189,7 +189,7 @@ public class HandlerDocs
         }
     }
 
-    public static class RootHandler extends Handler.Collection
+    public static class RootHandler extends Handler.Sequence
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

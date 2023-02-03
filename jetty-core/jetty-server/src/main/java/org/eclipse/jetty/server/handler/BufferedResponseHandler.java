@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * generated can also be unbounded.
  * </p>
  */
-public class BufferedResponseHandler extends Handler.Wrapper
+public class BufferedResponseHandler extends Handler.BaseWrapper
 {
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
 

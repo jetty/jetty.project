@@ -248,8 +248,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _initParams = new HashMap<>();
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent != null)
-            parent.addHandler(_coreContextHandler);
+        Handler.Container.setAsParent(parent, _coreContextHandler);
     }
 
     @Override
@@ -2503,11 +2502,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         
         @Override
-        public void insertHandler(Nested handler)
+        public void insertHandler(Handler.Wrapper handler)
         {
-            Nested tail = handler;
-            while (tail.getHandler() instanceof Handler.Wrapper)
-                tail = (Handler.Wrapper)tail.getHandler();
+            Handler.Wrapper tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
         

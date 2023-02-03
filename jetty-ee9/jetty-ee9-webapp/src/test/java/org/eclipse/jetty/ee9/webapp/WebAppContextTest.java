@@ -40,7 +40,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -71,7 +70,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -250,7 +248,7 @@ public class WebAppContextTest
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         WebAppContext contextA = new WebAppContext(".", "/A");
 
         contextA.addServlet(ServletA.class, "/s");
@@ -315,11 +313,8 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
-        server.setHandler(handlers);
-
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
@@ -379,11 +374,8 @@ public class WebAppContextTest
         server.addConnector(connector);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
 
-        Handler.Collection handlers = new Handler.Collection();
-        server.setHandler(handlers);
-
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
@@ -402,11 +394,8 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
-        server.setHandler(handlers);
-
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenPaths.findTestResourceDir("webapp");
@@ -437,11 +426,8 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
-        server.setHandler(handlers);
-
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
 
         WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
@@ -622,17 +608,5 @@ public class WebAppContextTest
         Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
-    }
-
-    @Test
-    void testSetServerPropagation()
-    {
-        Server server = new Server();
-        WebAppContext context = new WebAppContext();
-        context.setContextPath("/");
-        DefaultHandler handler = new DefaultHandler();
-        server.setHandler(new Handler.Collection(context.get(), handler));
-
-        assertThat(handler.getServer(), sameInstance(server));
     }
 }

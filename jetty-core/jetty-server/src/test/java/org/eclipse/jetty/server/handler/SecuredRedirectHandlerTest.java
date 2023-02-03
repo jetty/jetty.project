@@ -295,7 +295,7 @@ public class SecuredRedirectHandlerTest
     @Test
     public void testUnsecuredRequestToNullChildHandler() throws Exception
     {
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         SecuredRedirectHandler securedRedirectHandler = new SecuredRedirectHandler(HttpStatus.MOVED_PERMANENTLY_301);
         handlers.addHandler(securedRedirectHandler); // first handler (no children)
         handlers.addHandler(new HelloHandler("Hello-from-test"));

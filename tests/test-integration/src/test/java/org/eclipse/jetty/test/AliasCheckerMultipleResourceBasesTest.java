@@ -130,10 +130,10 @@ public class AliasCheckerMultipleResourceBasesTest
     @Test
     public void test() throws Exception
     {
-        Handler.Collection collection = new Handler.Collection();
-        collection.addHandler(newResourceHandler(_altDir1Symlink));
-        collection.addHandler(newResourceHandler(_altDir2Symlink));
-        _context.setHandler(collection);
+        Handler.Sequence handlers = new Handler.Sequence();
+        handlers.addHandler(newResourceHandler(_altDir1Symlink));
+        handlers.addHandler(newResourceHandler(_altDir2Symlink));
+        _context.setHandler(handlers);
         _server.start();
 
         // With no alias checkers we cannot access file 1.

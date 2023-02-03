@@ -1825,7 +1825,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testProcessingAfterCompletion() throws Exception
     {
         AtomicReference<String> result = new AtomicReference<>();
-        Handler.Wrapper wrapper = new Handler.Wrapper()
+        Handler.Wrapper wrapper = new Handler.BaseWrapper()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

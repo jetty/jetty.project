@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
-public class WebSocketUpgradeHandler extends Handler.Wrapper
+public class WebSocketUpgradeHandler extends Handler.BaseWrapper
 {
     private final WebSocketMappings mappings;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();

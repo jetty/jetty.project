@@ -122,7 +122,7 @@ public class ContextHandlerCollectionTest
         c.addHandler(contextG);
         c.addHandler(contextH);
 
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         handlers.addHandler(contextE);
         handlers.addHandler(contextF);
         handlers.addHandler(contextD);
@@ -320,7 +320,7 @@ public class ContextHandlerCollectionTest
 
         ContextHandler contextB = new ContextHandler("/b");
         IsHandledHandler handlerB = new IsHandledHandler("B");
-        Handler.Wrapper wrapperB = new Handler.Wrapper();
+        Handler.Wrapper wrapperB = new Handler.BaseWrapper();
         wrapperB.setHandler(handlerB);
         contextB.setHandler(wrapperB);
 
@@ -334,16 +334,16 @@ public class ContextHandlerCollectionTest
         collection.addHandler(contextB);
         collection.addHandler(contextC);
 
-        Handler.Wrapper wrapper = new Handler.Wrapper();
+        Handler.Wrapper wrapper = new Handler.BaseWrapper();
         wrapper.setHandler(collection);
         server.setHandler(wrapper);
 
-        assertEquals(wrapper, Handler.AbstractContainer.findContainerOf(server, Handler.Wrapper.class, handlerA));
+        assertEquals(wrapper, Handler.AbstractContainer.findContainerOf(server, Handler.BaseWrapper.class, handlerA));
         assertEquals(contextA, Handler.AbstractContainer.findContainerOf(server, ContextHandler.class, handlerA));
         assertEquals(contextB, Handler.AbstractContainer.findContainerOf(server, ContextHandler.class, handlerB));
-        assertEquals(wrapper, Handler.AbstractContainer.findContainerOf(server, Handler.Wrapper.class, handlerB));
-        assertEquals(contextB, Handler.AbstractContainer.findContainerOf(collection, Handler.Wrapper.class, handlerB));
-        assertEquals(wrapperB, Handler.AbstractContainer.findContainerOf(contextB, Handler.Wrapper.class, handlerB));
+        assertEquals(wrapper, Handler.AbstractContainer.findContainerOf(server, Handler.BaseWrapper.class, handlerB));
+        assertEquals(contextB, Handler.AbstractContainer.findContainerOf(collection, Handler.BaseWrapper.class, handlerB));
+        assertEquals(wrapperB, Handler.AbstractContainer.findContainerOf(contextB, Handler.BaseWrapper.class, handlerB));
     }
 
     @Test
@@ -359,7 +359,7 @@ public class ContextHandlerCollectionTest
         ContextHandler left = new ContextHandler("/left");
         left.setHandler(new IsHandledHandler("left"));
 
-        Handler.Collection centre = new Handler.Collection();
+        Handler.Sequence centre = new Handler.Sequence();
         ContextHandler centreLeft = new ContextHandler("/leftcentre");
         centreLeft.setHandler(new IsHandledHandler("left of centre"));
         ContextHandler centreRight = new ContextHandler("/rightcentre");
@@ -407,7 +407,7 @@ public class ContextHandlerCollectionTest
         assertThat(response, containsString("Wrapped: right"));
     }
 
-    private static final class WrappedHandler extends Handler.Wrapper
+    private static final class WrappedHandler extends Handler.BaseWrapper
     {
         private final String tag;
 

@@ -44,10 +44,10 @@ import org.eclipse.jetty.util.ajax.JSON;
  * </ul>
  * Multiple handlers may be combined with:
  * <ul>
- * <li>{@link Handler.Wrapper} which will nest one handler inside another. In
+ * <li>{@link Handler.BaseWrapper} which will nest one handler inside another. In
  * this example, the HelloHandler is nested inside a HandlerWrapper that sets
  * the greeting as a request attribute.
- * <li>{@link Handler.Collection} which will call a collection of handlers until the
+ * <li>{@link Handler.Sequence} which will call a collection of handlers until the
  * request is marked as handled. In this example, a list is used to combine the
  * param handler (which only handles the request if there are parameters) and
  * the wrapper handler. Frequently handler lists are terminated with the
@@ -78,7 +78,7 @@ public class ManyHandlers
     /**
      * Add a request attribute, but produce no output.
      */
-    public static class WelcomeWrapHandler extends Handler.Wrapper
+    public static class WelcomeWrapHandler extends Handler.BaseWrapper
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -94,6 +94,7 @@ public class ManyHandlers
     public static Server createServer(int port) throws IOException
     {
         Server server = new Server(port);
+        server.setDefaultHandler(new DefaultHandler());
 
         // create the handlers
         Handler param = new ParamHandler();
@@ -109,9 +110,6 @@ public class ManyHandlers
         CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.toString());
         server.setRequestLog(ncsaLog);
 
-        // create the handlers list
-        Handler.Collection handlers = new Handler.Collection();
-
         // wrap contexts around specific handlers
         wrapper.setHandler(hello);
         ContextHandler helloContext = new ContextHandler("/hello");
@@ -126,15 +124,12 @@ public class ManyHandlers
         gzipHandler.setHandler(contexts);
 
         // Set the top level Handler List
-        handlers.addHandler(gzipHandler);
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(gzipHandler);
         server.setDumpAfterStart(true);
 
         /* At this point you have the following handler hierarchy.
          *
-         * Server.handler:
-         * HandlerList
+         * Server:
          *    \- GzipHandler
          *    |   \- ContextHandlerCollection
          *    |       \- ContextHandler ("/hello")

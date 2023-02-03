@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 
-public class DelayedHandler extends Handler.Wrapper
+public class DelayedHandler extends Handler.BaseWrapper
 {
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception

@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -47,18 +46,6 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     public PathMappingsHandler(boolean dynamic)
     {
         super(dynamic);
-    }
-
-    @Override
-    public void addHandler(Handler handler)
-    {
-        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
-    }
-
-    @Override
-    public void addHandler(Supplier<Handler> supplier)
-    {
-        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
     }
 
     @Override

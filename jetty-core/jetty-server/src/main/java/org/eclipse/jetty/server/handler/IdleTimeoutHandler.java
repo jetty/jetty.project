@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.Callback;
  *   &lt;/Set&gt;
  * </pre>
  */
-public class IdleTimeoutHandler extends Handler.Wrapper
+public class IdleTimeoutHandler extends Handler.BaseWrapper
 {
     private long _idleTimeoutMs = 1000;
     private boolean _applyToAsync = false;

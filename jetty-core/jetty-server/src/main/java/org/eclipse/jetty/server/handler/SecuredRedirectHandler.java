@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.URIUtil;
  * {@link HttpConfiguration#getSecurePort()}
  * </p>
  */
-public class SecuredRedirectHandler extends Handler.Wrapper
+public class SecuredRedirectHandler extends Handler.BaseWrapper
 {
     /**
      * The redirect code to send in response.

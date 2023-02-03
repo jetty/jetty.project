@@ -1728,7 +1728,7 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
-        Handler.Wrapper extra = new Handler.Wrapper();
+        Handler.Wrapper extra = new Handler.BaseWrapper();
 
         context.getSessionHandler().insertHandler(extra);
 
@@ -1790,10 +1790,10 @@ public class ServletContextHandlerTest
         SecurityHandler securityHandler = context.getSecurityHandler();
 
         //check the handler linking order
-        Handler.Nested h = (Handler.Nested)context.getHandler();
+        Handler.Wrapper h = (Handler.Wrapper)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Nested)h.getHandler();
+        h = (Handler.Wrapper)h.getHandler();
         assertSame(h, securityHandler);
 
         //replace the security handler
@@ -1830,10 +1830,10 @@ public class ServletContextHandlerTest
         context.setSecurityHandler(myHandler);
         assertSame(myHandler, context.getSecurityHandler());
 
-        h = (Handler.Nested)context.getHandler();
+        h = (Handler.Wrapper)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Nested)h.getHandler();
+        h = (Handler.Wrapper)h.getHandler();
         assertSame(h, myHandler);
     }
 
@@ -1915,7 +1915,7 @@ public class ServletContextHandlerTest
     @Test
     public void testFallThrough() throws Exception
     {
-        Handler.Collection list = new Handler.Collection();
+        Handler.Sequence list = new Handler.Sequence();
         _server.setHandler(list);
 
         ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);

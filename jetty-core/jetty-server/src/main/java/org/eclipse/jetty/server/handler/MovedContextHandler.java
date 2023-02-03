@@ -42,9 +42,9 @@ public class MovedContextHandler extends ContextHandler
         setAllowNullPathInContext(true);
     }
 
-    public MovedContextHandler(Handler.Collection parent, String contextPath, String redirectURI)
+    public MovedContextHandler(Handler.Container parent, String contextPath, String redirectURI)
     {
-        parent.addHandler(this);
+        Handler.Container.setAsParent(parent, this);
         setContextPath(contextPath);
         setRedirectURI(redirectURI);
     }
