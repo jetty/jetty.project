@@ -14,10 +14,10 @@
 package org.eclipse.jetty.http3.client.transport.internal;
 
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpReceiver;
-import org.eclipse.jetty.client.internal.HttpSender;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpReceiver;
+import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;

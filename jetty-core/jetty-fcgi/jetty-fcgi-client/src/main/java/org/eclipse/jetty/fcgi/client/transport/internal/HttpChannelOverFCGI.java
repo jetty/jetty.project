@@ -16,10 +16,10 @@ package org.eclipse.jetty.fcgi.client.transport.internal;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpReceiver;
-import org.eclipse.jetty.client.internal.HttpSender;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpReceiver;
+import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;

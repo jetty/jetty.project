@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.internal;
+package org.eclipse.jetty.client.transport;
 
 import java.net.CookieStore;
 import java.net.HttpCookie;

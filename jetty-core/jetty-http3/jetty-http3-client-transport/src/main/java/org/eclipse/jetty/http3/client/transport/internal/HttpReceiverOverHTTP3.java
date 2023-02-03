@@ -15,9 +15,9 @@ package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpReceiver;
-import org.eclipse.jetty.client.internal.HttpResponse;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpReceiver;
+import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;

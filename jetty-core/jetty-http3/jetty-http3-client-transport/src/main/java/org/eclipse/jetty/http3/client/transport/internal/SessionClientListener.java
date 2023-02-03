@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.http3.frames.SettingsFrame;

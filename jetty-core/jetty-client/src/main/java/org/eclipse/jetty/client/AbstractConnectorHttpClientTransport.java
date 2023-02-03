@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
