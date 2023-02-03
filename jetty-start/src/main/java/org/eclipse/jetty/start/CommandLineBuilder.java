@@ -19,6 +19,17 @@ import java.util.List;
 
 public class CommandLineBuilder
 {
+    // Matrix of 7-bit characters that needs escaping on command line.
+    private static final boolean[] NEEDS_ESCAPING = new boolean[127];
+
+    static
+    {
+        for (char c : " %$\\{}[]()\"|<>&;`!".toCharArray())
+        {
+            NEEDS_ESCAPING[c] = true;
+        }
+    }
+
     public static File findExecutable(File root, String path)
     {
         String npath = path.replace('/', File.separatorChar);
@@ -59,21 +70,28 @@ public class CommandLineBuilder
      *
      * @param arg the argument to quote
      * @return the quoted and escaped argument
+     * @deprecated use {@link #escape(String) instead}
      */
+    @Deprecated
     public static String quote(String arg)
     {
-        boolean needsQuoting = (arg.indexOf(' ') >= 0) || (arg.indexOf('"') >= 0);
-        if (!needsQuoting)
-        {
-            return arg;
-        }
+        return escape(arg);
+    }
+
+    /**
+     * Escape the raw string to make it suitable for use on a command line.
+     *
+     * @param arg the argument to escape
+     * @return the escaped argument
+     */
+    public static String escape(String arg)
+    {
         StringBuilder buf = new StringBuilder();
-        // buf.append('"');
         boolean escaped = false;
         boolean quoted = false;
         for (char c : arg.toCharArray())
         {
-            if (!quoted && !escaped && ((c == '"') || (c == ' ')))
+            if (!quoted && !escaped && NEEDS_ESCAPING[c])
             {
                 buf.append("\\");
             }
@@ -85,7 +103,6 @@ public class CommandLineBuilder
             escaped = (c == '\\');
             buf.append(c);
         }
-        // buf.append('"');
         return buf.toString();
     }
 
@@ -113,7 +130,7 @@ public class CommandLineBuilder
     {
         if (arg != null)
         {
-            args.add(quote(arg));
+            args.add(escape(arg));
         }
     }
 
@@ -136,11 +153,11 @@ public class CommandLineBuilder
     {
         if ((value != null) && (value.length() > 0))
         {
-            args.add(quote(name + "=" + value));
+            args.add(escape(name + "=" + value));
         }
         else
         {
-            args.add(quote(name));
+            args.add(escape(name));
         }
     }
 
@@ -180,7 +197,7 @@ public class CommandLineBuilder
             {
                 buf.append(delim);
             }
-            buf.append(quote(arg));
+            buf.append(arg); // we assume escaping has occurred during addArg
         }
 
         return buf.toString();

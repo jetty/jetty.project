@@ -21,54 +21,49 @@ import static org.hamcrest.Matchers.is;
 
 public class CommandLineBuilderTest
 {
-    private CommandLineBuilder cmd = new CommandLineBuilder("java");
-
-    @BeforeEach
-    public void setUp()
-    {
-        cmd.addEqualsArg("-Djava.io.tmpdir", "/home/java/temp dir/");
-        cmd.addArg("--version");
-    }
-
     @Test
     public void testSimpleCommandline()
     {
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djava.io.tmpdir", "/home/java/temp dir/");
+        cmd.addArg("--version");
         assertThat(cmd.toString(), is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
     }
 
     @Test
-    public void testQuotingSimple()
+    public void testEscapedSimple()
     {
-        assertQuoting("/opt/jetty", "/opt/jetty");
+        assertEscaping("/opt/jetty", "/opt/jetty");
     }
 
     @Test
-    public void testQuotingSpaceInPath()
+    public void testEscapedSpaceInPath()
     {
-        assertQuoting("/opt/jetty 7/home", "/opt/jetty\\ 7/home");
+        assertEscaping("/opt/jetty 7/home", "/opt/jetty\\ 7/home");
     }
 
     @Test
-    public void testQuotingSpaceAndQuotesInPath()
+    public void testEscapedSpaceAndQuotesInPath()
     {
-        assertQuoting("/opt/jetty 7 \"special\"/home", "/opt/jetty\\ 7\\ \\\"special\\\"/home");
+        assertEscaping("/opt/jetty 7 \"special\"/home", "/opt/jetty\\ 7\\ \\\"special\\\"/home");
     }
 
     @Test
-    public void testToStringIsQuotedEvenIfArgsAreNotQuotedForProcessBuilder()
+    public void testEscapedFormattingString()
     {
-        System.out.println(cmd.toString());
+        assertEscaping("%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"",
+            "\\%\\{client\\}a\\ -\\ \\%u\\ \\%\\{dd/MMM/yyyy:HH:mm:ss\\ ZZZ\\|GMT\\}t\\ \\\"\\%r\\\"\\ \\%s\\ \\%O\\ \\\"\\%\\{Referer\\}i\\\"\\ \\\"\\%\\{User-Agent\\}i\\\"");
     }
 
     @Test
-    public void testQuoteQuotationMarks()
+    public void testEscapeQuotationMarks()
     {
-        assertQuoting("-XX:OnOutOfMemoryError='kill -9 %p'", "-XX:OnOutOfMemoryError='kill -9 %p'");
+        assertEscaping("-XX:OnOutOfMemoryError='kill -9 %p'", "-XX:OnOutOfMemoryError='kill -9 %p'");
     }
 
-    private void assertQuoting(String raw, String expected)
+    private void assertEscaping(String raw, String expected)
     {
-        String actual = CommandLineBuilder.quote(raw);
-        assertThat("Quoted version of [" + raw + "]", actual, is(expected));
+        String actual = CommandLineBuilder.escape(raw);
+        assertThat("Escaped version of [" + raw + "]", actual, is(expected));
     }
 }
