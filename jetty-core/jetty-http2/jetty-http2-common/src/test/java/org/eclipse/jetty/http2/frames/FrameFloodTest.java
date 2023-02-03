@@ -23,7 +23,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;

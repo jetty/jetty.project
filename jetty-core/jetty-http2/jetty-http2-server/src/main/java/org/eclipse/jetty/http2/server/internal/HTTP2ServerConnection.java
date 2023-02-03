@@ -28,18 +28,18 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
+import org.eclipse.jetty.http2.HTTP2Channel;
+import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.http2.internal.HTTP2Connection;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
-import org.eclipse.jetty.http2.internal.parser.ServerParser;
-import org.eclipse.jetty.http2.internal.parser.SettingsBodyParser;
+import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
@@ -54,9 +54,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnection.class);
+
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final List<Frame> upgradeFrames = new ArrayList<>();
