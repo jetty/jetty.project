@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal;
+package org.eclipse.jetty.quic.common;
 
 public enum QuicErrorCode
 {
