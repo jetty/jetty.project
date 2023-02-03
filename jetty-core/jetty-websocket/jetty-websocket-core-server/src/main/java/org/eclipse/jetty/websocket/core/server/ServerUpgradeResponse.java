@@ -13,84 +13,20 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.server.internal.WebSocketHttpFieldsWrapper;
-import org.eclipse.jetty.websocket.core.server.internal.WebSocketNegotiation;
 
-/**
- * Upgrade response used for websocket negotiation.
- * Allows setting of extensions and subprotocol without using headers directly.
- */
-public class ServerUpgradeResponse extends Response.Wrapper
+public interface ServerUpgradeResponse extends Response
 {
-    private final Response response;
-    private final WebSocketNegotiation negotiation;
-    private final HttpFields.Mutable fields;
+    String getAcceptedSubProtocol();
 
-    public ServerUpgradeResponse(WebSocketNegotiation negotiation, Response baseResponse)
-    {
-        super(baseResponse.getRequest(), baseResponse);
-        this.negotiation = negotiation;
-        this.response = baseResponse;
-        this.fields = new WebSocketHttpFieldsWrapper(response.getHeaders(), this, negotiation);
-    }
+    void setAcceptedSubProtocol(String protocol);
 
-    @Override
-    public HttpFields.Mutable getHeaders()
-    {
-        return fields;
-    }
+    List<ExtensionConfig> getExtensions();
 
-    public String getAcceptedSubProtocol()
-    {
-        return negotiation.getSubprotocol();
-    }
+    void addExtensions(List<ExtensionConfig> configs);
 
-    public void setAcceptedSubProtocol(String protocol)
-    {
-        negotiation.setSubprotocol(protocol);
-    }
-
-    public List<ExtensionConfig> getExtensions()
-    {
-        return negotiation.getNegotiatedExtensions();
-    }
-
-    public void addExtensions(List<ExtensionConfig> configs)
-    {
-        ArrayList<ExtensionConfig> combinedConfig = new ArrayList<>();
-        combinedConfig.addAll(getExtensions());
-        combinedConfig.addAll(configs);
-        setExtensions(combinedConfig);
-    }
-
-    public void setExtensions(List<ExtensionConfig> configs)
-    {
-        // This validation is also done later in RFC6455Handshaker but it is better to fail earlier
-        for (ExtensionConfig config : configs)
-        {
-            if (config.getName().startsWith("@"))
-                continue;
-
-            long matches = negotiation.getOfferedExtensions().stream().filter(e -> e.getName().equals(config.getName())).count();
-            if (matches < 1)
-                throw new IllegalArgumentException("Extension not a requested extension");
-
-            matches = configs.stream().filter(e -> e.getName().equals(config.getName())).count();
-            if (matches > 1)
-                throw new IllegalArgumentException("Multiple extensions of the same name");
-        }
-
-        negotiation.setNegotiatedExtensions(configs);
-    }
-
-    public String toString()
-    {
-        return String.format("UpgradeResponse=%s", response);
-    }
+    void setExtensions(List<ExtensionConfig> configs);
 }
