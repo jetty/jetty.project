@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Reformats java files that have been added or modified, according to git, using Maven
+#
+# SPDX-License-Identifier: Apache-2.0 OR EPL-2.0
+# Copyright 2023 Christian Kohlschuetter, christian@kohlschutter.com
+#
+# Usage: reformat-modified [git-diff-args]
+#
+
+cd $(dirname $0)/../..
+
+# In a multi-module Maven project setup, the files are relative to each submodule,
+# so we have to wildcard the path relative from each submodule.
+includes=($(for f in $(git diff --name-only $@ | grep \.java); do
+  if [[ -z "${f##*/src/*}" ]]; then
+      echo **/${f##*/src/},
+  else
+      echo "$f,"
+  fi
+done)
+$(git ls-files --others --exclude-standard | grep \.java )
+)
+includes=$(echo ${includes[@]} | tr -d ' ')
+
+if [[ -n "$includes" ]]; then
+  # This assumes that revelc's formatter-maven-plugin is enabled for the "reformat" profile
+  mvn process-sources -Preformat -Dformatter.includes="$includes"
+else
+  echo "No changed files found." >&2
+fi
