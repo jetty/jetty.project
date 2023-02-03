@@ -125,7 +125,7 @@ public class MultiPart
         private final String name;
         private final String fileName;
         private final HttpFields fields;
-        private final Content.Source contentSource;
+        private Content.Source contentSource;
         private Path path;
         private boolean temporary = true;
 
@@ -140,7 +140,6 @@ public class MultiPart
             this.fileName = fileName;
             this.fields = fields != null ? fields : HttpFields.EMPTY;
             this.path = path;
-            this.contentSource = newContentSource();
         }
 
         private Path getPath()
@@ -189,6 +188,8 @@ public class MultiPart
          */
         public Content.Source getContentSource()
         {
+            if (contentSource == null)
+                contentSource = newContentSource();
             return contentSource;
         }
 
@@ -350,8 +351,8 @@ public class MultiPart
         public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
             super(name, fileName, fields);
+            this.content = Objects.requireNonNull(content);
             content.forEach(Content.Chunk::retain);
-            this.content = content;
         }
 
         @Override

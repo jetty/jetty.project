@@ -138,7 +138,7 @@ public class ServletMultiPartFormData
                 }
             }
 
-            formData.parse(Content.Chunk.from(buffer, false, byteBuffer -> retainable.release()));
+            formData.parse(Content.Chunk.from(buffer, false, retainable::release));
             if (readEof)
             {
                 formData.parse(Content.Chunk.EOF);

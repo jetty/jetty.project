@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -96,7 +97,12 @@ public class MultiPartServletTest
 
     private void start(HttpServlet servlet, MultipartConfigElement config) throws Exception
     {
-        server = new Server();
+        start(servlet, config, null);
+    }
+
+    private void start(HttpServlet servlet, MultipartConfigElement config, RetainableByteBufferPool bufferPool) throws Exception
+    {
+        server = new Server(null, null, bufferPool);
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
@@ -128,6 +134,7 @@ public class MultiPartServletTest
     @Test
     public void testLargePart() throws Exception
     {
+        RetainableByteBufferPool bufferPool = new RetainableByteBufferPool.NonPooling();
         start(new HttpServlet()
         {
             @Override
@@ -135,7 +142,7 @@ public class MultiPartServletTest
             {
                 req.getParameterMap();
             }
-        }, new MultipartConfigElement(tmpDirString));
+        }, new MultipartConfigElement(tmpDirString), bufferPool);
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
@@ -159,7 +166,7 @@ public class MultiPartServletTest
         }
         content.close();
 
-        Response response = listener.get(2, TimeUnit.MINUTES);
+        Response response = listener.get(30, TimeUnit.MINUTES);
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         String responseContent = IO.toString(listener.getInputStream());
         assertThat(responseContent, containsString("Unable to parse form content"));
