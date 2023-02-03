@@ -15,7 +15,6 @@ package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.jetty.maven.AbstractWebAppMojo;
 
 /**
  * This goal stops a running instance of jetty.

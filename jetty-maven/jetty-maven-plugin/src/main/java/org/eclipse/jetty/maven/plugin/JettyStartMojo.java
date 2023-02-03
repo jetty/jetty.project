@@ -15,7 +15,6 @@ package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.eclipse.jetty.maven.AbstractUnassembledWebAppMojo;
 
 /**
  *  <p>

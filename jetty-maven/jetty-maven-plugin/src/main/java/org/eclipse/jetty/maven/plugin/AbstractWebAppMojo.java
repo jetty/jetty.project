@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven;
+package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.util.Collections;
@@ -46,6 +46,8 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.ScanTargetPattern;
 import org.eclipse.jetty.maven.utils.MavenProjectHelper;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;

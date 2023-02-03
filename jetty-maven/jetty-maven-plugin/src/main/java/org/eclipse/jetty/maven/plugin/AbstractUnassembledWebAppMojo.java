@@ -11,11 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven;
+package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.jetty.maven.ScanPattern;
 
 /**
  * Base class for all goals that operate on unassembled webapps.

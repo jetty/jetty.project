@@ -18,7 +18,6 @@ import java.io.File;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.eclipse.jetty.maven.AbstractUnassembledWebAppMojo;
 
 /**
  * Generate the effective web.xml for a pre-built webapp. This goal will NOT
