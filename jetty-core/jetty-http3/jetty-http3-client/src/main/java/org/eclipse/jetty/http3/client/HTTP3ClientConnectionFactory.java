@@ -16,9 +16,8 @@ package org.eclipse.jetty.http3.client;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
 import org.eclipse.jetty.http3.client.internal.ClientHTTP3StreamConnection;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

@@ -23,7 +23,4 @@ module org.eclipse.jetty.http3.client
     requires transitive org.eclipse.jetty.util;
 
     exports org.eclipse.jetty.http3.client;
-
-    exports org.eclipse.jetty.http3.client.internal to
-        org.eclipse.jetty.http3.client.transport;
 }

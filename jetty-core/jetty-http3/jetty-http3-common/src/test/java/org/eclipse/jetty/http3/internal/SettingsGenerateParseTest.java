@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
-import org.eclipse.jetty.http3.internal.parser.ControlParser;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
+import org.eclipse.jetty.http3.generator.ControlGenerator;
+import org.eclipse.jetty.http3.parser.ControlParser;
+import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 

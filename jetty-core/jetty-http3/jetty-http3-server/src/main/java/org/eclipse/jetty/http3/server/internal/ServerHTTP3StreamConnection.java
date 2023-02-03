@@ -19,10 +19,10 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http3.HTTP3Stream;
+import org.eclipse.jetty.http3.HTTP3StreamConnection;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Stream;
-import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;

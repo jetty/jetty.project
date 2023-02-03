@@ -18,9 +18,9 @@ import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpSender;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
-import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 
 public class HttpChannelOverHTTP3 extends HttpChannel
 {

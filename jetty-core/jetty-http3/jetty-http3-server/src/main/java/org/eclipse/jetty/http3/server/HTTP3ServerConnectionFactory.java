@@ -17,10 +17,10 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
 import org.eclipse.jetty.http3.server.internal.HttpStreamOverHTTP3;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
