@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -28,6 +29,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
@@ -39,6 +42,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -2041,17 +2045,95 @@ public class HttpParserTest
         assertEquals(8888, _port);
     }
 
+    public static Stream<String> badHostHeaderSource()
+    {
+        return List.of(
+            ":80", // no host, port only
+            "host:", // no port
+            "127.0.0.1:", // no port
+            "[0::0::0::0::1", // no IP literal ending bracket
+            "0::0::0::0::1]", // no IP literal starting bracket
+            "[0::0::0::0::1]:", // no port
+            "[0::0::0::1]", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
+            "[0::0::0::1]:80", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
+            "0:1:2:3:4:5:6", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "IPv6 address too short"
+            "host:xxx", // invalid port
+            "127.0.0.1:xxx", // host + invalid port
+            "[0::0::0::0::1]:xxx", // ipv6 + invalid port
+            "host:-80", // host + invalid port
+            "127.0.0.1:-80", // ipv4 + invalid port
+            "[0::0::0::0::1]:-80", // ipv6 + invalid port
+            "127.0.0.1:65536", // ipv4 + port value too high
+            "a b c d", // whitespace in reg-name
+            "a\to\tz", // tabs in reg-name
+            "hosta, hostb, hostc", // space sin reg-name
+            "[ab:cd:ef:gh:ij:kl:mn]", // invalid ipv6 address
+            // Examples of bad Host header values (usually client bugs that shouldn't allow them)
+            "Group - Machine", // spaces
+            "<calculated when request is sent>",
+            "[link](https://example.org/)",
+            "example.org/zed", // has slash
+            // common hacking attempts, seen as values on the `Host:` request header
+            "| ping 127.0.0.1 -n 10",
+            "%uf%80%ff%xx%uffff",
+            "[${jndi${:-:}ldap${:-:}]", // log4j hacking
+            "[${jndi:ldap://example.org:59377/nessus}]", // log4j hacking
+            "${ip}", // variation of log4j hack
+            "' *; host xyz.hacking.pro; '",
+            "'/**/OR/**/1/**/=/**/1",
+            "AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT('x',(SELECT (ELT(1=1,1))),'x',FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.CHARACTER_SETS GROUP BY x)a)"
+        ).stream();
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {
-        "Host: whatever.com:xxxx",
-        "Host: myhost:testBadPort",
-        "Host: a b c d", // whitespace in reg-name
-        "Host: a\to\tz", // tabs in reg-name
-        "Host: hosta, hostb, hostc", // spaces in reg-name
-        "Host: [sd ajklf;d sajklf;d sajfkl;d]", // not a valid IPv6 address
-        "Host: hosta\nHost: hostb\nHost: hostc" // multi-line
-    })
-    public void testBadHost(String hostline)
+    @MethodSource("badHostHeaderSource")
+    public void testBadHostReject(String hostline)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1\n" +
+                "Host: " + hostline + "\n" +
+                "Connection: close\n" +
+                "\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertThat(_bad, startsWith("Bad "));
+    }
+
+    @ParameterizedTest
+    @MethodSource("badHostHeaderSource")
+    public void testBadHostAllow(String hostline)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1\n" +
+                "Host: " + hostline + "\n" +
+                "Connection: close\n" +
+                "\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpCompliance httpCompliance = HttpCompliance.from("RFC7230,UNSAFE_HOST_HEADER");
+        HttpParser parser = new HttpParser(handler, httpCompliance);
+        parser.parseNext(buffer);
+        assertNull(_bad);
+        assertNotNull(_host);
+    }
+
+    public static Stream<Arguments> duplicateHostHeadersSource()
+    {
+        return Stream.of(
+            // different values
+            Arguments.of("Host: hosta\nHost: hostb\nHost: hostc"),
+            // same values
+            Arguments.of("Host: foo\nHost: foo"),
+            // separated by another header
+            Arguments.of("Host: bar\nX-Zed: zed\nHost: bar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("duplicateHostHeadersSource")
+    public void testDuplicateHostReject(String hostline)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.1\n" +
@@ -2062,7 +2144,25 @@ public class HttpParserTest
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
-        assertThat(_bad, startsWith("Bad"));
+        assertThat(_bad, startsWith("Duplicate Host Header"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("duplicateHostHeadersSource")
+    public void testDuplicateHostAllow(String hostline)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1\n" +
+                hostline + "\n" +
+                "Connection: close\n" +
+                "\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpCompliance httpCompliance = HttpCompliance.from("RFC7230,DUPLICATE_HOST_HEADERS");
+        HttpParser parser = new HttpParser(handler, httpCompliance);
+        parser.parseNext(buffer);
+        assertNull(_bad);
+        assertNotNull(_host);
     }
 
     @ParameterizedTest
