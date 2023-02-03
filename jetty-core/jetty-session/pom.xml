@@ -71,7 +71,7 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>test</artifactId>
+      <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
