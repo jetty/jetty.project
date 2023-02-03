@@ -969,6 +969,15 @@ public class RequestTest
                 "Connection: close\n" +
                 "\n");
         i = 0;
+        assertThat(response, containsString("400 Bad Request"));
+
+        results.clear();
+        response = _connector.getResponse(
+            "GET http://myhost:8888/ HTTP/1.1\n" +
+                "Host: myhost:8888\n" +
+                "Connection: close\n" +
+                "\n");
+        i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost:8888/", results.get(i++));
         assertEquals("0.0.0.0", results.get(i++));
