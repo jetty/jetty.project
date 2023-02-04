@@ -30,9 +30,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
@@ -69,16 +69,16 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private final HttpContent.Factory _authority;
     private final ConcurrentHashMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
-    private final RetainableByteBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private int _maxCachedFileSize = DEFAULT_MAX_CACHED_FILE_SIZE;
     private int _maxCachedFiles = DEFAULT_MAX_CACHED_FILES;
     private long _maxCacheSize = DEFAULT_MAX_CACHE_SIZE;
     private boolean _useDirectByteBuffers = true;
 
-    public CachingHttpContentFactory(HttpContent.Factory authority, RetainableByteBufferPool bufferPool)
+    public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool bufferPool)
     {
         _authority = authority;
-        _bufferPool = bufferPool != null ? bufferPool : new RetainableByteBufferPool.NonPooling();
+        _bufferPool = bufferPool != null ? bufferPool : new ByteBufferPool.NonPooling();
     }
 
     protected ConcurrentMap<String, CachingHttpContent> getCache()

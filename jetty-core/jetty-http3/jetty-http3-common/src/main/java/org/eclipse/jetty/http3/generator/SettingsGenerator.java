@@ -20,28 +20,28 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class SettingsGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public SettingsGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public SettingsGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame);
     }
 
-    private int generateSettings(RetainableByteBufferPool.Accumulator accumulator, SettingsFrame frame)
+    private int generateSettings(ByteBufferPool.Accumulator accumulator, SettingsFrame frame)
     {
         int length = 0;
         Map<Long, Long> settings = frame.getSettings();
@@ -50,7 +50,7 @@ public class SettingsGenerator extends FrameGenerator
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
-        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(capacity, useDirectByteBuffers);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(capacity, useDirectByteBuffers);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
         VarLenInt.encode(byteBuffer, frame.getFrameType().type());

@@ -19,8 +19,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.internal.Flags;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class DataGenerator
@@ -32,12 +32,12 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
+    public int generate(ByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
     {
         return generateData(accumulator, frame.getStreamId(), frame.getByteBuffer(), frame.isEndStream(), maxLength);
     }
 
-    public int generateData(RetainableByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public int generateData(ByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -62,7 +62,7 @@ public class DataGenerator
         return Frame.HEADER_LENGTH + length;
     }
 
-    private void generateFrame(RetainableByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last)
+    private void generateFrame(ByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last)
     {
         int length = data.remaining();
 

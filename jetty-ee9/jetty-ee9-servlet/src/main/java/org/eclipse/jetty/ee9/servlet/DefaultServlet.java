@@ -41,7 +41,7 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -261,7 +261,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                RetainableByteBufferPool bufferPool = getRetainableByteBufferPool(_contextHandler);
+                ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
                 _cachingContentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                 contentFactory = _cachingContentFactory;
@@ -301,14 +301,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             LOG.debug("resource base = {}", _baseResource);
     }
 
-    private static RetainableByteBufferPool getRetainableByteBufferPool(ContextHandler contextHandler)
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new RetainableByteBufferPool.NonPooling();
+            return new ByteBufferPool.NonPooling();
         Server server = contextHandler.getServer();
         if (server == null)
-            return new RetainableByteBufferPool.NonPooling();
-        return server.getRetainableByteBufferPool();
+            return new ByteBufferPool.NonPooling();
+        return server.getByteBufferPool();
     }
 
     private String getInitParameter(String name, String... deprecated)

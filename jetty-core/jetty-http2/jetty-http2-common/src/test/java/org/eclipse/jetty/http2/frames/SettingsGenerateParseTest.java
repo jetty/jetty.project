@@ -27,7 +27,7 @@ import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SettingsGenerateParseTest
 {
-    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testGenerateParseNoSettings()
@@ -85,7 +85,7 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateSettings(accumulator, settings, true);
 
             frames.clear();
@@ -119,7 +119,7 @@ public class SettingsGenerateParseTest
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateSettings(accumulator, settings1, true);
         // Modify the length of the frame to make it invalid
         ByteBuffer bytes = accumulator.getByteBuffers().get(0);
@@ -160,7 +160,7 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateSettings(accumulator, settings1, true);
 
             frames.clear();
@@ -205,7 +205,7 @@ public class SettingsGenerateParseTest
             settings.put(i + 10, i);
         }
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateSettings(accumulator, settings, false);
 
         for (ByteBuffer buffer : accumulator.getByteBuffers())
@@ -283,7 +283,7 @@ public class SettingsGenerateParseTest
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(13, 17);
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
         {
             generator.generateSettings(accumulator, settings, false);

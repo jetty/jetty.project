@@ -16,15 +16,15 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class SetCapacityInstruction extends AbstractInstruction
 {
     private final int _capacity;
 
-    public SetCapacityInstruction(RetainableByteBufferPool bufferPool, int capacity)
+    public SetCapacityInstruction(ByteBufferPool bufferPool, int capacity)
     {
         super(bufferPool);
         _capacity = capacity;
@@ -36,10 +36,10 @@ public class SetCapacityInstruction extends AbstractInstruction
     }
 
     @Override
-    public void encode(RetainableByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(5, _capacity) + 1;
-        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
         byteBuffer.put((byte)0x20);

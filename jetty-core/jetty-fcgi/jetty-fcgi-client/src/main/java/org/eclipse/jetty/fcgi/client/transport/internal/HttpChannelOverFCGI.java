@@ -24,9 +24,9 @@ import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IdleTimeout;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -162,7 +162,7 @@ public class HttpChannelOverFCGI extends HttpChannel
             release();
     }
 
-    protected void flush(RetainableByteBufferPool.Accumulator accumulator, Callback callback)
+    protected void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
     {
         flusher.flush(accumulator, callback);
     }

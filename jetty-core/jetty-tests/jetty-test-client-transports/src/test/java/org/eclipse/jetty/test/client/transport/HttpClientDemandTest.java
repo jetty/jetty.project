@@ -140,7 +140,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         startClient(transport);
         client.stop();
-        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool(0, bufferSize, -1));
+        client.setByteBufferPool(new ArrayRetainableByteBufferPool(0, bufferSize, -1));
         client.setResponseBufferSize(bufferSize);
         client.start();
 
@@ -322,7 +322,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         startClient(transport);
         client.stop();
-        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool(0, bufferSize, -1));
+        client.setByteBufferPool(new ArrayRetainableByteBufferPool(0, bufferSize, -1));
         client.setResponseBufferSize(bufferSize);
         client.start();
 

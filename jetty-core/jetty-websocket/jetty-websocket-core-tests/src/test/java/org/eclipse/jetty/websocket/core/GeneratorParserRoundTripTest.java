@@ -18,8 +18,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GeneratorParserRoundTripTest
 {
-    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testParserAndGenerator() throws Exception

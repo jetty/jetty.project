@@ -35,10 +35,10 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.Handler;
@@ -238,10 +238,10 @@ public class HttpClientTimeoutTest extends AbstractTest
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getRetainableByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
-                    protected SslConnection newSslConnection(RetainableByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    protected SslConnection newSslConnection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
                         return new SslConnection(bufferPool, executor, endPoint, engine)
                         {

@@ -22,8 +22,8 @@ import java.util.List;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class ClientGenerator extends Generator
@@ -33,17 +33,17 @@ public class ClientGenerator extends Generator
     // 0x7F_FF - 4 (the 4 is to make room for the name (or value) length).
     public static final int MAX_PARAM_LENGTH = 0x7F_FF - 4;
 
-    public ClientGenerator(RetainableByteBufferPool bufferPool)
+    public ClientGenerator(ByteBufferPool bufferPool)
     {
         this(bufferPool, true);
     }
 
-    public ClientGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public ClientGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool, useDirectByteBuffers);
     }
 
-    public void generateRequestHeaders(RetainableByteBufferPool.Accumulator accumulator, int request, HttpFields fields)
+    public void generateRequestHeaders(ByteBufferPool.Accumulator accumulator, int request, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -79,7 +79,7 @@ public class ClientGenerator extends Generator
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
 
-        RetainableByteBuffer beginBuffer = getRetainableByteBufferPool().acquire(16, isUseDirectByteBuffers());
+        RetainableByteBuffer beginBuffer = getByteBufferPool().acquire(16, isUseDirectByteBuffers());
         accumulator.append(beginBuffer);
         ByteBuffer beginByteBuffer = beginBuffer.getByteBuffer();
         BufferUtil.clearToFill(beginByteBuffer);
@@ -95,7 +95,7 @@ public class ClientGenerator extends Generator
         while (fieldsLength > 0)
         {
             int capacity = 8 + Math.min(maxCapacity, fieldsLength);
-            RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
+            RetainableByteBuffer buffer = getByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
             accumulator.append(buffer);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
@@ -133,7 +133,7 @@ public class ClientGenerator extends Generator
             BufferUtil.flipToFlush(byteBuffer, 0);
         }
 
-        RetainableByteBuffer lastBuffer = getRetainableByteBufferPool().acquire(8, isUseDirectByteBuffers());
+        RetainableByteBuffer lastBuffer = getByteBufferPool().acquire(8, isUseDirectByteBuffers());
         accumulator.append(lastBuffer);
         ByteBuffer lastByteBuffer = lastBuffer.getByteBuffer();
         BufferUtil.clearToFill(lastByteBuffer);
@@ -159,7 +159,7 @@ public class ClientGenerator extends Generator
         return length > 127 ? 4 : 1;
     }
 
-    public void generateRequestContent(RetainableByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent)
+    public void generateRequestContent(ByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent)
     {
         generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDIN);
     }

@@ -28,7 +28,7 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -58,7 +58,7 @@ public class EncodeDecodeTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         _encoder = new QpackEncoder(bufferPool, _encoderHandler, MAX_BLOCKED_STREAMS)
         {
             @Override
@@ -94,7 +94,7 @@ public class EncodeDecodeTest
         assertThat(_decoderHandler.getInstruction(), instanceOf(SectionAcknowledgmentInstruction.class));
         assertTrue(_decoderHandler.isEmpty());
 
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(_encoder.getRetainableByteBufferPool(), streamId))));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(_encoder.getByteBufferPool(), streamId))));
 
         // B.2. Dynamic Table.
 
@@ -146,8 +146,8 @@ public class EncodeDecodeTest
         assertTrue(_decoderHandler.isEmpty());
 
         // Parse the decoder instructions on the encoder.
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new InsertCountIncrementInstruction(_encoder.getRetainableByteBufferPool(), 2))));
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(_encoder.getRetainableByteBufferPool(), streamId))));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new InsertCountIncrementInstruction(_encoder.getByteBufferPool(), 2))));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(_encoder.getByteBufferPool(), streamId))));
 
         // B.3. Speculative Insert
         _encoder.insert(new HttpField("custom-key", "custom-value"));

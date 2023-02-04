@@ -22,7 +22,7 @@ import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,9 +59,9 @@ public class ClientGeneratorTest
         String longLongValue = new String(chars);
         fields.put(new HttpField(longLongName, longLongValue));
 
-        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         int id = 13;
         generator.generateRequestHeaders(accumulator, id, fields);
 
@@ -157,9 +157,9 @@ public class ClientGeneratorTest
     {
         ByteBuffer content = ByteBuffer.allocate(contentLength);
 
-        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         int id = 13;
         generator.generateRequestContent(accumulator, id, content, true);
 

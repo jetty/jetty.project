@@ -19,7 +19,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class ServerParser extends Parser
     private State state = State.PREFACE;
     private boolean notifyPreface = true;
 
-    public ServerParser(RetainableByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    public ServerParser(ByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
     {
         super(bufferPool, listener, maxDynamicTableSize, maxHeaderSize, rateControl);
         this.listener = listener;

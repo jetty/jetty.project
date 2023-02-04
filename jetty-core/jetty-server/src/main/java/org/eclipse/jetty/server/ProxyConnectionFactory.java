@@ -158,7 +158,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 super(endp, connector.getExecutor());
                 _connector = connector;
                 _next = next;
-                _buffer = _connector.getRetainableByteBufferPool().acquire(getInputBufferSize(), true);
+                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
             }
 
             @Override
@@ -451,7 +451,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 super(endp, connector.getExecutor());
                 _connector = connector;
                 _next = next;
-                _buffer = _connector.getRetainableByteBufferPool().acquire(getInputBufferSize(), true);
+                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
             }
 
             @Override

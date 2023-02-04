@@ -64,8 +64,8 @@ import org.eclipse.jetty.http2.internal.HTTP2Flusher;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -887,7 +887,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        RetainableByteBufferPool bufferPool = http2Client.getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
             String host = "localhost";
@@ -895,7 +895,7 @@ public class StreamResetTest extends AbstractTest
             socket.connect(new InetSocketAddress(host, port));
 
             Generator generator = new Generator(bufferPool);
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -978,7 +978,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        RetainableByteBufferPool bufferPool = http2Client.getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
             String host = "localhost";
@@ -986,7 +986,7 @@ public class StreamResetTest extends AbstractTest
             socket.connect(new InetSocketAddress(host, port));
 
             Generator generator = new Generator(bufferPool);
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.

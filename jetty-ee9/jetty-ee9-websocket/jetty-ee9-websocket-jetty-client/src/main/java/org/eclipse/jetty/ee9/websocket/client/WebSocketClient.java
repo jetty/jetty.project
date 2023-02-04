@@ -40,8 +40,8 @@ import org.eclipse.jetty.ee9.websocket.client.impl.JettyClientUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.common.SessionTracker;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Graceful;
@@ -334,9 +334,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         getHttpClient().setCookieStore(cookieStore);
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return getHttpClient().getRetainableByteBufferPool();
+        return getHttpClient().getByteBufferPool();
     }
 
     @Override

@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class LiteralNameEntryInstruction extends AbstractInstruction
@@ -29,12 +29,12 @@ public class LiteralNameEntryInstruction extends AbstractInstruction
     private final String _name;
     private final String _value;
 
-    public LiteralNameEntryInstruction(RetainableByteBufferPool bufferPool, HttpField httpField, boolean huffman)
+    public LiteralNameEntryInstruction(ByteBufferPool bufferPool, HttpField httpField, boolean huffman)
     {
         this(bufferPool, httpField, huffman, huffman);
     }
 
-    public LiteralNameEntryInstruction(RetainableByteBufferPool bufferPool, HttpField httpField, boolean huffmanName, boolean huffmanValue)
+    public LiteralNameEntryInstruction(ByteBufferPool bufferPool, HttpField httpField, boolean huffmanName, boolean huffmanValue)
     {
         super(bufferPool);
         _huffmanName = huffmanName;
@@ -54,11 +54,11 @@ public class LiteralNameEntryInstruction extends AbstractInstruction
     }
 
     @Override
-    public void encode(RetainableByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool.Accumulator accumulator)
     {
         int size = (_huffmanName ? HuffmanEncoder.octetsNeeded(_name) : _name.length()) +
             (_huffmanValue ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
 

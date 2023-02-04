@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.qpack;
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
@@ -26,11 +26,11 @@ import static org.hamcrest.Matchers.is;
 
 public class InstructionGeneratorTest
 {
-    private final RetainableByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
 
     private String toHexString(Instruction instruction)
     {
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         instruction.encode(accumulator);
         assertThat(accumulator.getSize(), is(1));
         return BufferUtil.toHexString(accumulator.getByteBuffers().get(0));

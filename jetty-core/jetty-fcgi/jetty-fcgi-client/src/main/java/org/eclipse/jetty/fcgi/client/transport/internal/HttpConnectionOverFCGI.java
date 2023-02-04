@@ -42,10 +42,10 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
@@ -57,7 +57,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
-    private final RetainableByteBufferPool networkByteBufferPool;
+    private final ByteBufferPool networkByteBufferPool;
     private final AutoLock lock = new AutoLock();
     private final LinkedList<Integer> requests = new LinkedList<>();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -81,7 +81,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.parser = new ClientParser(new ResponseListener());
         requests.addLast(0);
         HttpClient client = destination.getHttpClient();
-        this.networkByteBufferPool = client.getRetainableByteBufferPool();
+        this.networkByteBufferPool = client.getByteBufferPool();
     }
 
     public HttpDestination getHttpDestination()

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FrameFlusherTest
 {
-    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
     private Scheduler scheduler;
 
     @BeforeEach
@@ -231,7 +231,7 @@ public class FrameFlusherTest
         public Parser parser;
         public LinkedBlockingQueue<Frame> incomingFrames = new LinkedBlockingQueue<>();
 
-        public CapturingEndPoint(RetainableByteBufferPool bufferPool)
+        public CapturingEndPoint(ByteBufferPool bufferPool)
         {
             parser = new Parser(bufferPool);
         }
@@ -282,7 +282,7 @@ public class FrameFlusherTest
             blockTime = time;
         }
 
-        public BlockingEndpoint(RetainableByteBufferPool bufferPool)
+        public BlockingEndpoint(ByteBufferPool bufferPool)
         {
             super(bufferPool);
         }

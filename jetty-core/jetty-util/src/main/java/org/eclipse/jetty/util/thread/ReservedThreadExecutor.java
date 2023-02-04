@@ -40,7 +40,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
 import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
 
-
 /**
  * <p>A TryExecutor using pre-allocated/reserved threads from an external Executor.</p>
  * <p>Calls to {@link #tryExecute(Runnable)} on ReservedThreadExecutor will either

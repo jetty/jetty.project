@@ -24,9 +24,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -51,7 +51,7 @@ public class FrameFlusher extends IteratingCallback
     private final AutoLock lock = new AutoLock();
     private final LongAdder messagesOut = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final EndPoint endPoint;
     private final int bufferSize;
     private final Generator generator;
@@ -71,7 +71,7 @@ public class FrameFlusher extends IteratingCallback
     private long idleTimeout;
     private boolean useDirectByteBuffers;
 
-    public FrameFlusher(RetainableByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
+    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
         this.bufferPool = bufferPool;
         this.endPoint = endPoint;

@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * divided by 8.</p>
  */
 @ManagedObject
-public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, Dumpable
+public class ArrayRetainableByteBufferPool implements ByteBufferPool, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ArrayRetainableByteBufferPool.class);
     static final int DEFAULT_FACTOR = 4096;
@@ -336,7 +336,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         return total;
     }
 
-    @ManagedOperation(value = "Clears this RetainableByteBufferPool", impact = "ACTION")
+    @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
     public void clear()
     {
         clearArray(_direct, _currentDirectMemory);

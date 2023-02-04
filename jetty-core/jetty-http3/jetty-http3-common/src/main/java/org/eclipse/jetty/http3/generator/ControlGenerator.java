@@ -17,13 +17,13 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public class ControlGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public ControlGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public ControlGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         generators[FrameType.CANCEL_PUSH.type()] = new CancelPushGenerator(bufferPool);
         generators[FrameType.SETTINGS.type()] = new SettingsGenerator(bufferPool, useDirectByteBuffers);
@@ -31,7 +31,7 @@ public class ControlGenerator
         generators[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdGenerator(bufferPool);
     }
 
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         return generators[frame.getFrameType().type()].generate(accumulator, streamId, frame, fail);
     }

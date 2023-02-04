@@ -20,7 +20,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matcher;
@@ -32,7 +32,7 @@ public class QpackTestUtil
 {
     public static ByteBuffer toBuffer(Instruction... instructions)
     {
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (Instruction instruction : instructions)
         {
             instruction.encode(accumulator);
@@ -55,7 +55,7 @@ public class QpackTestUtil
 
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         instructions.forEach(i -> i.encode(accumulator));
         assertThat(accumulator.getSize(), is(instructions.size()));
         ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()), false);

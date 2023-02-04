@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public interface Components
 {
-    RetainableByteBufferPool getRetainableByteBufferPool();
+    ByteBufferPool getByteBufferPool();
 
     Scheduler getScheduler();
 

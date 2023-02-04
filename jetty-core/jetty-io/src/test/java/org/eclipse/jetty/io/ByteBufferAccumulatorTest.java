@@ -292,7 +292,7 @@ public class ByteBufferAccumulatorTest
         return written;
     }
 
-    private static class CountingBufferPool extends RetainableByteBufferPool.Wrapper
+    private static class CountingBufferPool extends ByteBufferPool.Wrapper
     {
         private final AtomicLong _acquires = new AtomicLong();
 

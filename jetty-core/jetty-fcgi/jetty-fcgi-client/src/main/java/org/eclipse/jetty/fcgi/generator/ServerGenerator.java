@@ -23,8 +23,8 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class ServerGenerator extends Generator
@@ -35,18 +35,18 @@ public class ServerGenerator extends Generator
 
     private final boolean sendStatus200;
 
-    public ServerGenerator(RetainableByteBufferPool bufferPool)
+    public ServerGenerator(ByteBufferPool bufferPool)
     {
         this(bufferPool, true, true);
     }
 
-    public ServerGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers, boolean sendStatus200)
+    public ServerGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, boolean sendStatus200)
     {
         super(bufferPool, useDirectByteBuffers);
         this.sendStatus200 = sendStatus200;
     }
 
-    public void generateResponseHeaders(RetainableByteBufferPool.Accumulator accumulator, int request, int code, String reason, HttpFields fields)
+    public void generateResponseHeaders(ByteBufferPool.Accumulator accumulator, int request, int code, String reason, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -97,7 +97,7 @@ public class ServerGenerator extends Generator
         generateContent(accumulator, request, byteBuffer, false, FCGI.FrameType.STDOUT);
     }
 
-    public void generateResponseContent(RetainableByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent, boolean aborted)
+    public void generateResponseContent(ByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent, boolean aborted)
     {
         if (aborted)
         {
@@ -117,7 +117,7 @@ public class ServerGenerator extends Generator
     private RetainableByteBuffer generateEndRequest(int request, boolean aborted)
     {
         request &= 0xFF_FF;
-        RetainableByteBuffer endRequestBuffer = getRetainableByteBufferPool().acquire(16, isUseDirectByteBuffers());
+        RetainableByteBuffer endRequestBuffer = getByteBufferPool().acquire(16, isUseDirectByteBuffers());
         ByteBuffer byteBuffer = endRequestBuffer.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
         byteBuffer.putInt(0x01_03_00_00 + request);

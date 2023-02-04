@@ -18,20 +18,20 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public class MessageGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public MessageGenerator(RetainableByteBufferPool bufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
+    public MessageGenerator(ByteBufferPool bufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
     {
         generators[FrameType.DATA.type()] = new DataGenerator(bufferPool, useDirectByteBuffers);
         generators[FrameType.HEADERS.type()] = new HeadersGenerator(bufferPool, encoder, maxHeadersLength, useDirectByteBuffers);
         generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator(bufferPool);
     }
 
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         return generators[frame.getFrameType().type()].generate(accumulator, streamId, frame, fail);
     }

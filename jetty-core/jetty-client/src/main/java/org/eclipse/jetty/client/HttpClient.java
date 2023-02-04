@@ -49,9 +49,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -199,9 +199,9 @@ public class HttpClient extends ContainerLifeCycle
         int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
             ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
             : ProcessorUtils.availableProcessors() * 2;
-        RetainableByteBufferPool retainableByteBufferPool = getRetainableByteBufferPool();
-        if (retainableByteBufferPool == null)
-            setRetainableByteBufferPool(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
+        ByteBufferPool byteBufferPool = getByteBufferPool();
+        if (byteBufferPool == null)
+            setByteBufferPool(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
         {
@@ -220,7 +220,7 @@ public class HttpClient extends ContainerLifeCycle
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
         handlers.put(new UpgradeProtocolHandler());
 
-        decoderFactories.put(new GZIPContentDecoder.Factory(retainableByteBufferPool));
+        decoderFactories.put(new GZIPContentDecoder.Factory(byteBufferPool));
 
         cookieManager = newCookieManager();
         cookieStore = cookieManager.getCookieStore();
@@ -646,19 +646,19 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link RetainableByteBufferPool} of this HttpClient
+     * @return the {@link ByteBufferPool} of this HttpClient
      */
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return connector.getRetainableByteBufferPool();
+        return connector.getByteBufferPool();
     }
 
     /**
-     * @param retainableByteBufferPool the {@link RetainableByteBufferPool} of this HttpClient
+     * @param byteBufferPool the {@link ByteBufferPool} of this HttpClient
      */
-    public void setRetainableByteBufferPool(RetainableByteBufferPool retainableByteBufferPool)
+    public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
-        connector.setRetainableByteBufferPool(retainableByteBufferPool);
+        connector.setByteBufferPool(byteBufferPool);
     }
 
     /**
@@ -1152,6 +1152,6 @@ public class HttpClient extends ContainerLifeCycle
     {
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
-        return new SslClientConnectionFactory(sslContextFactory, getRetainableByteBufferPool(), getExecutor(), connectionFactory);
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 }

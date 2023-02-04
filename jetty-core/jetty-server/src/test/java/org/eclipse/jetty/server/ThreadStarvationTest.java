@@ -32,7 +32,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -85,7 +85,7 @@ public class ThreadStarvationTest
             sslContextFactory.setKeyStorePassword("storepwd");
             // TODO: restore leak tracking.
 //            ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-            RetainableByteBufferPool pool = new ArrayRetainableByteBufferPool();
+            ByteBufferPool pool = new ArrayRetainableByteBufferPool();
 
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
             ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,

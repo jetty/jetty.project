@@ -616,7 +616,7 @@ public class SocketChannelEndPointTest
     {
         private final NormalScenario _normalScenario;
         private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
-        private final RetainableByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
+        private final ByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
 
         public SslScenario(NormalScenario normalScenario) throws Exception
         {

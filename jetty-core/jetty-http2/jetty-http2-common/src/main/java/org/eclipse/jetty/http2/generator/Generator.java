@@ -18,27 +18,27 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public class Generator
 {
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final HeaderGenerator headerGenerator;
     private final HpackEncoder hpackEncoder;
     private final FrameGenerator[] generators;
     private final DataGenerator dataGenerator;
 
-    public Generator(RetainableByteBufferPool bufferPool)
+    public Generator(ByteBufferPool bufferPool)
     {
         this(bufferPool, 4096, 0);
     }
 
-    public Generator(RetainableByteBufferPool bufferPool, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    public Generator(ByteBufferPool bufferPool, int maxDynamicTableSize, int maxHeaderBlockFragment)
     {
         this(bufferPool, true, maxDynamicTableSize, maxHeaderBlockFragment);
     }
 
-    public Generator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
     {
         this.bufferPool = bufferPool;
 
@@ -61,7 +61,7 @@ public class Generator
         this.dataGenerator = new DataGenerator(headerGenerator);
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }
@@ -81,12 +81,12 @@ public class Generator
         headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
-    public int control(RetainableByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
+    public int control(ByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
     {
         return generators[frame.getType().getType()].generate(accumulator, frame);
     }
 
-    public int data(RetainableByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
+    public int data(ByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
     {
         return dataGenerator.generate(accumulator, frame, maxLength);
     }

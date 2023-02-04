@@ -23,7 +23,7 @@ import org.eclipse.jetty.http2.generator.DataGenerator;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ public class DataGenerateParseTest
 {
     private final byte[] smallContent = new byte[128];
     private final byte[] largeContent = new byte[128 * 1024];
-    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     public DataGenerateParseTest()
     {
@@ -101,7 +101,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             ByteBuffer slice = data.slice();
             int generated = 0;
             while (true)
@@ -141,7 +141,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             ByteBuffer data = ByteBuffer.wrap(largeContent);
             ByteBuffer slice = data.slice();
             int generated = 0;

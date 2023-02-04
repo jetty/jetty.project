@@ -30,7 +30,7 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.client.ClientProtocolSession;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -64,7 +64,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         long encoderStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
-        RetainableByteBufferPool bufferPool = quicSession.getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = quicSession.getByteBufferPool();
         this.encoder = new QpackEncoder(bufferPool, new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
         addBean(encoder);
         if (LOG.isDebugEnabled())
@@ -85,7 +85,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
-        this.messageFlusher = new MessageFlusher(quicSession.getRetainableByteBufferPool(), encoder, configuration.getMaxRequestHeadersSize(), configuration.isUseOutputDirectByteBuffers());
+        this.messageFlusher = new MessageFlusher(quicSession.getByteBufferPool(), encoder, configuration.getMaxRequestHeadersSize(), configuration.isUseOutputDirectByteBuffers());
         addBean(messageFlusher);
     }
 
@@ -199,7 +199,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
     private void openUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
     {
-        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getRetainableByteBufferPool(), encoder, decoder, session);
+        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, session);
         endPoint.setConnection(connection);
         endPoint.opened();
     }

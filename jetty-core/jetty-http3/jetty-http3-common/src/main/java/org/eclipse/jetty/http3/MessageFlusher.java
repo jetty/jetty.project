@@ -21,7 +21,7 @@ import java.util.Queue;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -35,13 +35,13 @@ public class MessageFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
-    private final RetainableByteBufferPool.Accumulator accumulator;
+    private final ByteBufferPool.Accumulator accumulator;
     private final MessageGenerator generator;
     private Entry entry;
 
-    public MessageFlusher(RetainableByteBufferPool bufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
+    public MessageFlusher(ByteBufferPool bufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
     {
-        this.accumulator = new RetainableByteBufferPool.Accumulator();
+        this.accumulator = new ByteBufferPool.Accumulator();
         this.generator = new MessageGenerator(bufferPool, encoder, maxHeadersLength, useDirectByteBuffers);
     }
 

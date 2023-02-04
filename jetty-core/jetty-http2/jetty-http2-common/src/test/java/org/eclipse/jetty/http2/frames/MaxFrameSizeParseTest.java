@@ -20,14 +20,14 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MaxFrameSizeParseTest
 {
-    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testMaxFrameSize()

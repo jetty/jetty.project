@@ -24,11 +24,11 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -47,7 +47,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
-    private final RetainableByteBufferPool retainableByteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private final Parser parser;
     private final HTTP2Session session;
     private final int bufferSize;
@@ -55,10 +55,10 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
-    protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, HTTP2Session session, int bufferSize)
+    protected HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, HTTP2Session session, int bufferSize)
     {
         super(endPoint, executor);
-        this.retainableByteBufferPool = retainableByteBufferPool;
+        this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
@@ -450,7 +450,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private NetworkBuffer()
         {
-            delegate = retainableByteBufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
+            delegate = byteBufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
         }
 
         public ByteBuffer getBuffer()

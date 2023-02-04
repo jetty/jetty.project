@@ -90,7 +90,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             HttpClient httpClient = getHttpClient();
             client.setExecutor(httpClient.getExecutor());
             client.setScheduler(httpClient.getScheduler());
-            client.setRetainableByteBufferPool(httpClient.getRetainableByteBufferPool());
+            client.setByteBufferPool(httpClient.getByteBufferPool());
             client.setConnectTimeout(httpClient.getConnectTimeout());
             client.setIdleTimeout(httpClient.getIdleTimeout());
             client.setInputBufferSize(httpClient.getResponseBufferSize());
