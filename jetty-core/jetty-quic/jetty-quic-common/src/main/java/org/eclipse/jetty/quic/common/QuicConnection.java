@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
-import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
