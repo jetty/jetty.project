@@ -17,8 +17,8 @@
         <configuration>
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
-            --add-modules jetty.servlet.api
-            --add-reads org.eclipse.jetty.http2.server=jetty.servlet.api
+            --add-modules jakarta.servlet
+            --add-reads org.eclipse.jetty.http2.server=jakarta.servlet
             --add-reads org.eclipse.jetty.http2.server=org.eclipse.jetty.logging
           </argLine>
         </configuration>
