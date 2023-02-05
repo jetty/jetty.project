@@ -129,15 +129,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
-        {
-            ServletContextListener.class,
-            ServletContextAttributeListener.class,
-            ServletRequestListener.class,
-            ServletRequestAttributeListener.class,
-            HttpSessionIdListener.class,
-            HttpSessionListener.class,
-            HttpSessionAttributeListener.class
-        };
+            {
+                    ServletContextListener.class,
+                    ServletContextAttributeListener.class,
+                    ServletRequestListener.class,
+                    ServletRequestAttributeListener.class,
+                    HttpSessionIdListener.class,
+                    HttpSessionListener.class,
+                    HttpSessionAttributeListener.class
+            };
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
 
@@ -1629,8 +1629,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (servletContext != null)
                 {
                     String encodedContextPath = servletContext instanceof APIContext
-                        ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded()
-                        : URIUtil.encodePath(servletContext.getContextPath());
+                            ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded()
+                            : URIUtil.encodePath(servletContext.getContextPath());
                     if (!StringUtil.isEmpty(encodedContextPath))
                     {
                         encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
@@ -2501,7 +2501,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 Thread.currentThread().setContextClassLoader(old);
             }
         }
-        
+
         @Override
         public void insertHandler(Nested handler)
         {
@@ -2510,11 +2510,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 tail = (Handler.Wrapper)tail.getHandler();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
-        
+
             tail.setHandler(getHandler());
             super.setHandler(handler);
         }
-        
+
         @Override
         public void setHandler(Handler handler)
         {
@@ -2564,8 +2564,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             __context.set(_apiContext);
             super.notifyEnterScope(coreRequest);
             Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                ? coreContextRequest.getHttpChannel().getRequest()
-                : null;
+                    ? coreContextRequest.getHttpChannel().getRequest()
+                    : null;
             ContextHandler.this.enterScope(request, "Entered core context");
         }
 
@@ -2575,8 +2575,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                    ? coreContextRequest.getHttpChannel().getRequest()
-                    : null;
+                        ? coreContextRequest.getHttpChannel().getRequest()
+                        : null;
                 ContextHandler.this.exitScope(request);
                 super.notifyExitScope(coreRequest);
             }
@@ -2591,7 +2591,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             return ContextHandler.this;
         }
-        
+
         class CoreContext extends ScopedContext
         {
             public APIContext getAPIContext()

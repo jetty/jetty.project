@@ -103,7 +103,21 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * line of a single token with neither a colon nor value following, to be interpreted as a field name with no value.
          * A deployment may include this violation to allow such fields to be in a received request.
          */
-        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon");
+        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon"),
+
+        /**
+         * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-5.4">RFC 7230: Section 5.4</a>, the HTTP protocol
+         * says that a Server must reject a request duplicate host headers.
+         * A deployment may include this violation to allow duplicate host headers on a received request.
+         */
+        DUPLICATE_HOST_HEADERS("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Duplicate Host Header"),
+
+        /**
+         * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1">RFC 7230</a>, the HTTP protocol
+         * should reject a request if the Host headers contains an invalid / unsafe authority.
+         * A deployment may include this violation to allow unsafe host headesr on a received request.
+         */
+        UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority");
 
         private final String url;
         private final String description;
