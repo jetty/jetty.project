@@ -10,4 +10,4 @@ server
 server
 
 [xml]
-etc/jetty-stats.xml
+etc/jetty-statistics.xml

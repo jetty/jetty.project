@@ -102,7 +102,7 @@ public class ModulesTest
     }
 
     @Test
-    public void testStats() throws Exception
+    public void testStatistics() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -111,7 +111,7 @@ public class ModulesTest
             .build();
 
         // Add module.
-        try (JettyHomeTester.Run run = distribution.start("--add-modules=stats"))
+        try (JettyHomeTester.Run run = distribution.start("--add-modules=statistics"))
         {
             run.awaitFor(5, TimeUnit.SECONDS);
             assertThat(run.getExitValue(), is(0));
