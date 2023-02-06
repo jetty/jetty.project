@@ -121,7 +121,6 @@ import org.slf4j.LoggerFactory;
  * this alias checker is not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * </p>
  */
-// TODO make this work
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
 {
@@ -280,18 +279,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public boolean getAllowNullPathInfo()
     {
         return _coreContextHandler.getAllowNullPathInContext();
-    }
-
-    // TODO this is a thought bubble
-    public void setCanonicalEncodingURIs(boolean encoding)
-    {
-        _canonicalEncodingURIs = encoding;
-    }
-
-    // TODO this is a thought bubble
-    public boolean isCanonicalEncodingURIs()
-    {
-        return _canonicalEncodingURIs;
     }
 
     /**
@@ -1653,7 +1640,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
                 baseRequest.onDispatch(uri, pathInContext);
                 if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
-                    // TODO why can't the old map be passed?
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }
 
@@ -2063,7 +2049,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return _extendedListenerTypes;
         }
 
-        // TODO  Empty implementations - should we merge in ServletContextHandler?
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {

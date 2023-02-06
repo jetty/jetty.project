@@ -449,8 +449,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
      */
     protected Resource resolve(String subUriPath)
     {
-        if (!_contextHandler.isCanonicalEncodingURIs())
-            subUriPath = URIUtil.encodePath(subUriPath);
+        subUriPath = URIUtil.encodePath(subUriPath);
 
         Resource r = null;
         if (_relativeBaseResource != null)
