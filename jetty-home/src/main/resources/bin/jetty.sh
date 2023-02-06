@@ -170,6 +170,7 @@ dumpEnv()
     echo "JETTY_START_LOG       =  $JETTY_START_LOG"
     echo "JETTY_STATE           =  $JETTY_STATE"
     echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
+    echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
     echo "RUN_CMD               =  ${RUN_CMD[*]}"
 }
 
@@ -414,9 +415,6 @@ TMPDIR="`cygpath -w $TMPDIR`"
 ;;
 esac
 
-BASE_JETTY_SYS_PROPS=$(echo -ne "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
-JETTY_SYS_PROPS=(${JETTY_SYS_PROPS[*]} $BASE_JETTY_SYS_PROPS)
-
 #####################################################
 # This is how the Jetty server will be started
 #####################################################
@@ -435,7 +433,7 @@ CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
 RUN_ARGS=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
-RUN_CMD=("$JAVA" $JETTY_SYS_PROPS ${RUN_ARGS[@]})
+RUN_CMD=($JETTY_SYS_PROPS ${RUN_ARGS[@]})
 
 #####################################################
 # Comment these out after you're happy with what
@@ -495,11 +493,11 @@ case "$ACTION" in
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          exec ${RUN_CMD[*]} start-log-file=\"$JETTY_START_LOG\" > /dev/null &
+          echo ${RUN_CMD[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
           disown \$!
           echo \$! > \"$JETTY_PID\""
       else
-        "${RUN_CMD[@]}" > /dev/null &
+        echo ${RUN_CMD[*]} | xargs ${JAVA} > /dev/null &
         disown $!
         echo $! > "$JETTY_PID"
       fi
