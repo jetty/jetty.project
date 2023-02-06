@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,43 +26,41 @@ public class CommandLineBuilderTest
         CommandLineBuilder cmd = new CommandLineBuilder("java");
         cmd.addEqualsArg("-Djava.io.tmpdir", "/home/java/temp dir/");
         cmd.addArg("--version");
-        assertThat(cmd.toString(), is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
+        assertThat(cmd.toQuotedString(" "), is("java '-Djava.io.tmpdir=/home/java/temp dir/' --version"));
     }
 
     @Test
-    public void testEscapedSimple()
+    public void testSimpleHomeNoSpace()
     {
-        assertEscaping("/opt/jetty", "/opt/jetty");
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
+        assertThat(cmd.toQuotedString(" "), is("java -Djetty.home=/opt/jetty"));
     }
 
     @Test
-    public void testEscapedSpaceInPath()
+    public void testSimpleHomeWithSpace()
     {
-        assertEscaping("/opt/jetty 7/home", "/opt/jetty\\ 7/home");
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty 10/home");
+        assertThat(cmd.toQuotedString(" "), is("java '-Djetty.home=/opt/jetty 10/home'"));
     }
 
-    @Test
-    public void testEscapedSpaceAndQuotesInPath()
-    {
-        assertEscaping("/opt/jetty 7 \"special\"/home", "/opt/jetty\\ 7\\ \\\"special\\\"/home");
-    }
 
     @Test
     public void testEscapedFormattingString()
     {
-        assertEscaping("%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"",
-            "\\%\\{client\\}a\\ -\\ \\%u\\ \\%\\{dd/MMM/yyyy:HH:mm:ss\\ ZZZ\\|GMT\\}t\\ \\\"\\%r\\\"\\ \\%s\\ \\%O\\ \\\"\\%\\{Referer\\}i\\\"\\ \\\"\\%\\{User-Agent\\}i\\\"");
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
+        cmd.addEqualsArg("jetty.requestlog.formatter", "%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"");
+        assertThat(cmd.toQuotedString(" "), is("java -Djetty.home=/opt/jetty 'jetty.requestlog.formatter=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"'"));
     }
 
     @Test
-    public void testEscapeQuotationMarks()
+    public void testEscapeUnicode()
     {
-        assertEscaping("-XX:OnOutOfMemoryError='kill -9 %p'", "-XX:OnOutOfMemoryError='kill -9 %p'");
-    }
-
-    private void assertEscaping(String raw, String expected)
-    {
-        String actual = CommandLineBuilder.escape(raw);
-        assertThat("Escaped version of [" + raw + "]", actual, is(expected));
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
+        cmd.addEqualsArg("monetary.symbol", "€");
+        assertThat(cmd.toQuotedString(" "), is("java -Djetty.home=/opt/jetty monetary.symbol=€"));
     }
 }

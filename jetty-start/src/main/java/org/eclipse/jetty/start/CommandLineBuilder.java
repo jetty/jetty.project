@@ -19,17 +19,6 @@ import java.util.List;
 
 public class CommandLineBuilder
 {
-    // Matrix of 7-bit characters that needs escaping on command line.
-    private static final boolean[] NEEDS_ESCAPING = new boolean[127];
-
-    static
-    {
-        for (char c : " %$\\{}[]()\"|<>&;`!".toCharArray())
-        {
-            NEEDS_ESCAPING[c] = true;
-        }
-    }
-
     public static File findExecutable(File root, String path)
     {
         String npath = path.replace('/', File.separatorChar);
@@ -70,40 +59,10 @@ public class CommandLineBuilder
      *
      * @param arg the argument to quote
      * @return the quoted and escaped argument
-     * @deprecated use {@link #escape(String) instead}
      */
-    @Deprecated
     public static String quote(String arg)
     {
-        return escape(arg);
-    }
-
-    /**
-     * Escape the raw string to make it suitable for use on a command line.
-     *
-     * @param arg the argument to escape
-     * @return the escaped argument
-     */
-    public static String escape(String arg)
-    {
-        StringBuilder buf = new StringBuilder();
-        boolean escaped = false;
-        boolean quoted = false;
-        for (char c : arg.toCharArray())
-        {
-            if (!quoted && !escaped && NEEDS_ESCAPING[c])
-            {
-                buf.append("\\");
-            }
-            // don't quote text in single quotes
-            if (!escaped && (c == '\''))
-            {
-                quoted = !quoted;
-            }
-            escaped = (c == '\\');
-            buf.append(c);
-        }
-        return buf.toString();
+        return "'" + arg + "'";
     }
 
     private List<String> args;
@@ -130,7 +89,7 @@ public class CommandLineBuilder
     {
         if (arg != null)
         {
-            args.add(escape(arg));
+            args.add(arg);
         }
     }
 
@@ -153,11 +112,11 @@ public class CommandLineBuilder
     {
         if ((value != null) && (value.length() > 0))
         {
-            args.add(escape(name + "=" + value));
+            args.add(name + "=" + value);
         }
         else
         {
-            args.add(escape(name));
+            args.add(name);
         }
     }
 
@@ -198,6 +157,31 @@ public class CommandLineBuilder
                 buf.append(delim);
             }
             buf.append(arg); // we assume escaping has occurred during addArg
+        }
+
+        return buf.toString();
+    }
+
+    /**
+     * A version of {@link #toString()} where every arg is evaluated for potential {@code '} (single-quote tick) wrapping.
+     *
+     * @param delim the delimiter between args, use {@code ' '} (space) for shell executable command line.
+     * @return the toString but each arg that has spaces is surrounded by {@code '} (single-quote tick)
+     */
+    public String toQuotedString(String delim)
+    {
+        StringBuilder buf = new StringBuilder();
+
+        for (String arg : args)
+        {
+            if (buf.length() > 0)
+                buf.append(delim);
+            boolean needsQuotes = (arg.contains(" "));
+            if (needsQuotes)
+                buf.append("'");
+            buf.append(arg);
+            if (needsQuotes)
+                buf.append("'");
         }
 
         return buf.toString();

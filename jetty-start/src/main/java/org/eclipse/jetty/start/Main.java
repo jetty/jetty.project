@@ -440,7 +440,7 @@ public class Main
         if (args.isDryRun())
         {
             CommandLineBuilder cmd = args.getMainArgs(args.getDryRunParts());
-            System.out.println(cmd.toString(StartLog.isDebugEnabled() ? " \\\n" : " "));
+            System.out.println(cmd.toQuotedString(StartLog.isDebugEnabled() ? " \\\n" : " "));
         }
 
         if (args.isStopCommand())
