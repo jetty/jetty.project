@@ -164,9 +164,9 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
-    public void testMaxBucketSize()
+    public void testMaxBucketPoolSize()
     {
-        ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 20, 2);
+        ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 20, 2, 0);
 
         RetainableByteBuffer buf1 = pool.acquire(1, true); // pooled
         assertThat(buf1.capacity(), is(10));
@@ -192,7 +192,7 @@ public class ArrayByteBufferPoolTest
     @Test
     public void testBufferReleaseRepools()
     {
-        ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 20, 1);
+        ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 20, 1, 0);
 
         List<RetainableByteBuffer> all = new ArrayList<>();
 

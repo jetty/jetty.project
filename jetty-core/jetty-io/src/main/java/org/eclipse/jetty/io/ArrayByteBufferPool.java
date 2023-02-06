@@ -100,6 +100,21 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * Creates a new ArrayByteBufferPool with the given configuration.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     * @param maxBucketSize the maximum number of ByteBuffers to be pooled for each bucket
+     * @param maxBucketQueue the maximum number of ByteBuffers to be queued for each bucket
+     */
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, int maxBucketQueue)
+    {
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxBucketQueue, 0L, 0L, null, null);
+    }
+
+    /**
+     * Creates a new ArrayByteBufferPool with the given configuration.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -241,7 +256,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             RetainableByteBuffer buffer = queue.poll();
             if (buffer != null)
                 return buffer;
-            return newRetainableByteBuffer(size, direct, bucket::offer);
+            buffer = newRetainableByteBuffer(size, direct, bucket::offer);
+            if (direct)
+                _currentDirectMemory.addAndGet(buffer.capacity());
+            else
+                _currentHeapMemory.addAndGet(buffer.capacity());
+            releaseExcessMemory(direct);
+
+            return buffer;
         }
 
         return newRetainableByteBuffer(size, direct, this::removed);
@@ -414,11 +436,38 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         RetainedBucket[] buckets = direct ? _direct : _indirect;
 
+        // evict from the queues
+        for (RetainedBucket bucket : buckets)
+        {
+            Queue<RetainableByteBuffer> queue = bucket.getQueue();
+            if (queue == null)
+                break;
+            while (totalClearedCapacity < excess)
+            {
+                RetainableByteBuffer buffer = queue.poll();
+                if (buffer == null)
+                    break;
+
+                int clearedCapacity = bucket._capacity;
+                if (direct)
+                    _currentDirectMemory.addAndGet(-clearedCapacity);
+                else
+                    _currentHeapMemory.addAndGet(-clearedCapacity);
+                totalClearedCapacity += clearedCapacity;
+                removed(buffer);
+            }
+        }
+
+        // evict from the pools
         while (totalClearedCapacity < excess)
         {
             for (RetainedBucket bucket : buckets)
             {
-                Pool.Entry<RetainableByteBuffer> oldestEntry = findOldestEntry(now, bucket.getPool());
+                Pool<RetainableByteBuffer> pool = bucket.getPool();
+                if (pool == null)
+                    break;
+
+                Pool.Entry<RetainableByteBuffer> oldestEntry = findOldestEntry(now, pool);
                 if (oldestEntry == null)
                     continue;
 
@@ -492,10 +541,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return _queue;
         }
 
-        public void offer(RetainableByteBuffer retainableByteBuffer)
+        private void offer(RetainableByteBuffer retainableByteBuffer)
         {
             if (!_queue.offer(retainableByteBuffer))
+            {
+                if (retainableByteBuffer.getByteBuffer().isDirect())
+                    _currentDirectMemory.addAndGet(-_capacity);
+                else
+                    _currentHeapMemory.addAndGet(-_capacity);
                 removed(retainableByteBuffer);
+            }
         }
 
         @Override
