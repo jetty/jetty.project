@@ -113,7 +113,6 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-
         Path extraJarResources = MavenPaths.findTestResourceFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
@@ -1132,12 +1131,10 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled("Not working as RequestDispatcher.include() isn't behaving as expected")
     public void testIncludedWelcomeDifferentBase() throws Exception
     {
         Path altRoot = workDir.getPath().resolve("altroot");
         FS.ensureDirExists(altRoot);
-        Path altIndex = altRoot.resolve("index.html");
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
         defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
@@ -1149,10 +1146,10 @@ public class DefaultServletTest
         ServletHolder gwholder = new ServletHolder("gateway", new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-                    throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                req.getRequestDispatcher("/alt/").include(req, resp);
+                String includeTarget = req.getParameter("includeTarget");
+                req.getRequestDispatcher(includeTarget).include(req, resp);
             }
         });
         context.addServlet(gwholder, "/gateway");
@@ -1160,9 +1157,9 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        // Test included alt default
+        // Test an included a resource which does not exist.
         rawResponse = connector.getResponse("""
-            GET /context/gateway HTTP/1.1\r
+            GET /context/gateway?includeTarget=/alt/thisResourceDoesNotExist HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
@@ -1177,9 +1174,20 @@ public class DefaultServletTest
          */
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
-        Files.writeString(altIndex, "<h1>Alt Index</h1>", UTF_8);
+        // This resource does exist but directory listings are not allowed and there are no welcome files.
         rawResponse = connector.getResponse("""
-            GET /context/gateway HTTP/1.1\r
+            GET /context/gateway?includeTarget=/alt/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
+
+        // Once index.html has been created we can include this same target and see it as a welcome file.
+        Files.writeString(altRoot.resolve("index.html"), "<h1>Alt Index</h1>", UTF_8);
+        rawResponse = connector.getResponse("""
+            GET /context/gateway?includeTarget=/alt/ HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
