@@ -2487,9 +2487,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        public void insertHandler(Handler.Wrapper handler)
+        public void insertHandler(Singleton handler)
         {
-            Handler.Wrapper tail = handler.getTail();
+            Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 

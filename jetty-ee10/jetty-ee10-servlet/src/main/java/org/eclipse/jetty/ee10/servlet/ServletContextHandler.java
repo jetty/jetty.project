@@ -985,7 +985,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    private void doSetHandler(Handler.Wrapper wrapper, Handler handler)
+    private void doSetHandler(Singleton wrapper, Handler handler)
     {
         if (wrapper == this)
             super.setHandler(handler);
@@ -995,7 +995,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     private void relinkHandlers()
     {
-        Handler.Wrapper handler = this;
+        Singleton handler = this;
 
         // link session handler
         if (getSessionHandler() != null)
@@ -1003,7 +1003,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             while (!(handler.getHandler() instanceof SessionHandler) &&
                 !(handler.getHandler() instanceof SecurityHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Wrapper wrapped)
+                handler.getHandler() instanceof Singleton wrapped)
             {
                 handler = wrapped;
             }
@@ -1018,7 +1018,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             while (!(handler.getHandler() instanceof SecurityHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Wrapper wrapped)
+                handler.getHandler() instanceof Singleton wrapped)
             {
                 handler = wrapped;
             }
@@ -1032,7 +1032,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (getServletHandler() != null)
         {
             while (!(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Wrapper wrapped)
+                handler.getHandler() instanceof Singleton wrapped)
             {
                 handler = wrapped;
             }
@@ -1612,7 +1612,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         l.contextDestroyed(e);
     }
 
-    private void replaceHandler(Handler.Wrapper handler, Handler.Wrapper replacement)
+    private void replaceHandler(Singleton handler, Singleton replacement)
     {
         if (isStarted())
             throw new IllegalStateException("STARTED");
@@ -1623,7 +1623,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             next = handler.getHandler();
             handler.setHandler((Handler)null);
 
-            Handler.Wrapper wrapper = this;
+            Singleton wrapper = this;
             while (wrapper != null)
             {
                 if (wrapper.getHandler() == handler)
@@ -1632,7 +1632,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                     break;
                 }
 
-                wrapper = (wrapper.getHandler() instanceof Handler.Wrapper wrapped) ? wrapped : null;
+                wrapper = (wrapper.getHandler() instanceof Singleton wrapped) ? wrapped : null;
             }
         }
 
@@ -1675,7 +1675,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      * but after any other HandlerWrappers.
      */
     @Override
-    public void insertHandler(Handler.Wrapper handler)
+    public void insertHandler(Singleton handler)
     {
         if (handler instanceof SessionHandler)
             setSessionHandler((SessionHandler)handler);
@@ -1685,13 +1685,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             setServletHandler((ServletHandler)handler);
         else
         {
-            Handler.Wrapper tail = handler.getTail();
+            Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 
             // Skip any injected handlers
-            Handler.Wrapper h = this;
-            while (h.getHandler() instanceof Handler.Wrapper wrapper)
+            Singleton h = this;
+            while (h.getHandler() instanceof Singleton wrapper)
             {
                 if (wrapper instanceof SessionHandler ||
                     wrapper instanceof SecurityHandler ||

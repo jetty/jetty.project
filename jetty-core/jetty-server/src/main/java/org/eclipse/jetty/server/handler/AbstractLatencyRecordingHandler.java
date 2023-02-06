@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * (obtained from {@link HttpStream#getNanoTime()}) until the stream completion event has been handled by
  * {@link HttpStream#succeeded()} or {@link HttpStream#failed(Throwable)}.</p>
  */
-public abstract class AbstractLatencyRecordingHandler extends Handler.BaseWrapper
+public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractLatencyRecordingHandler.class);
 

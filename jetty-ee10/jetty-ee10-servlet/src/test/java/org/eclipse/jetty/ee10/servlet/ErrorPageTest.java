@@ -103,7 +103,7 @@ public class ErrorPageTest
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
         _context.addServlet(ExceptionServlet.class, "/exception-servlet");
 
-        Handler.Wrapper noopHandler = new Handler.BaseWrapper()
+        Handler.Singleton noopHandler = new Handler.Wrapper()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

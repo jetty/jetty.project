@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Callback;
 /**
  * SimpleSessionHandler example
  */
-public class SimpleSessionHandler extends AbstractSessionManager implements Handler.Wrapper
+public class SimpleSessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
     private Server _server;
     private Handler _handler;
@@ -47,7 +47,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = Handler.Wrapper.updateHandler(this, handler);
+        _handler = Handler.Singleton.updateHandler(this, handler);
     }
 
     @Override

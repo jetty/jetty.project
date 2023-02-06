@@ -583,7 +583,7 @@ public class HTTPServerDocs
         }
 
         // tag::handlerFilter[]
-        class FilterHandler extends Handler.BaseWrapper
+        class FilterHandler extends Handler.Wrapper
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

@@ -208,7 +208,7 @@ public class FastCGIProxyHandlerTest
         fcgiHandler.setOriginalQueryAttribute(queryAttribute);
 
         proxyContext.stop();
-        proxyContext.insertHandler(new Handler.BaseWrapper()
+        proxyContext.insertHandler(new Handler.Wrapper()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

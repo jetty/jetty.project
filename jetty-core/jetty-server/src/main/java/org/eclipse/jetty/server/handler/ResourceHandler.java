@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.resource.Resources;
  *  - request ranges
  *  - a way to configure caching or not
  */
-public class ResourceHandler extends Handler.BaseWrapper
+public class ResourceHandler extends Handler.Wrapper
 {
     private final ResourceService _resourceService;
 

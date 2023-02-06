@@ -71,7 +71,7 @@ public class ShutdownHandlerTest
         shutdownHandler.setHandler(new EchoHandler());
 
         InetSocketAddress fakeRemoteAddr = new InetSocketAddress("127.0.0.1", 22033);
-        Handler.Wrapper fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
+        Handler.Singleton fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
         fakeRemoteAddressHandler.setHandler(shutdownHandler);
 
         createServer(fakeRemoteAddressHandler);
@@ -119,7 +119,7 @@ public class ShutdownHandlerTest
         shutdownHandler.setHandler(new EchoHandler());
 
         InetSocketAddress fakeRemoteAddr = new InetSocketAddress("192.168.0.1", 12345);
-        Handler.Wrapper fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
+        Handler.Singleton fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
         fakeRemoteAddressHandler.setHandler(shutdownHandler);
 
         createServer(fakeRemoteAddressHandler);
@@ -155,7 +155,7 @@ public class ShutdownHandlerTest
         }
     }
 
-    static class FakeRemoteAddressHandlerWrapper extends Handler.BaseWrapper
+    static class FakeRemoteAddressHandlerWrapper extends Handler.Wrapper
     {
         private final InetSocketAddress fakeRemoteAddress;
 

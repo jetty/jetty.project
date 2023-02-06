@@ -218,7 +218,7 @@ public class PathMappingsHandlerTest
 
         Handler.Sequence sequence = new Handler.Sequence();
         sequence.addHandler(new SimpleHandler("phpIndex"));
-        Handler.Wrapper handlerWrapper = new Handler.BaseWrapper(new SimpleHandler("other"));
+        Handler.Singleton handlerWrapper = new Handler.Wrapper(new SimpleHandler("other"));
         sequence.addHandler(handlerWrapper);
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();

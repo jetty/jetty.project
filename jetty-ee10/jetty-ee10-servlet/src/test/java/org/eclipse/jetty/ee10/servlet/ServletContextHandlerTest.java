@@ -1728,7 +1728,7 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
-        Handler.Wrapper extra = new Handler.BaseWrapper();
+        Handler.Singleton extra = new Handler.Wrapper();
 
         context.getSessionHandler().insertHandler(extra);
 
@@ -1790,10 +1790,10 @@ public class ServletContextHandlerTest
         SecurityHandler securityHandler = context.getSecurityHandler();
 
         //check the handler linking order
-        Handler.Wrapper h = (Handler.Wrapper)context.getHandler();
+        Handler.Singleton h = (Handler.Singleton)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Wrapper)h.getHandler();
+        h = (Handler.Singleton)h.getHandler();
         assertSame(h, securityHandler);
 
         //replace the security handler
@@ -1830,10 +1830,10 @@ public class ServletContextHandlerTest
         context.setSecurityHandler(myHandler);
         assertSame(myHandler, context.getSecurityHandler());
 
-        h = (Handler.Wrapper)context.getHandler();
+        h = (Handler.Singleton)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Wrapper)h.getHandler();
+        h = (Handler.Singleton)h.getHandler();
         assertSame(h, myHandler);
     }
 
