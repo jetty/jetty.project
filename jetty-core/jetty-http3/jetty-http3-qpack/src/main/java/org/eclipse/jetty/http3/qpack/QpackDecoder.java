@@ -34,7 +34,7 @@ import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class QpackDecoder implements Dumpable
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
     private final InstructionHandler _instructionHandler = new InstructionHandler();
     private final Map<Long, AtomicInteger> _blockedStreams = new HashMap<>();
-    private final RetainableByteBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private int _maxHeaderSize;
     private int _maxBlockedStreams;
 
@@ -82,7 +82,7 @@ public class QpackDecoder implements Dumpable
     /**
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
-    public QpackDecoder(RetainableByteBufferPool bufferPool, Instruction.Handler handler, int maxHeaderSize)
+    public QpackDecoder(ByteBufferPool bufferPool, Instruction.Handler handler, int maxHeaderSize)
     {
         _bufferPool = bufferPool;
         _context = new QpackContext();
@@ -91,7 +91,7 @@ public class QpackDecoder implements Dumpable
         _maxHeaderSize = maxHeaderSize;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
     }

@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-public class StatisticsHandler extends Handler.Wrapper
+public class StatisticsHandler extends Handler.BaseWrapper
 {
     private final Set<String> _connectionStats = ConcurrentHashMap.newKeySet();
     private final CounterStatistic _requestStats = new CounterStatistic();

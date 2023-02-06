@@ -23,12 +23,10 @@ import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -67,11 +65,7 @@ public class ServerSupport
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            Handler.Collection handlers = server.getDescendant(Handler.Collection.class);
-            if (handlers == null)
-                server.setHandler(new Handler.Collection(contexts, new DefaultHandler()));
-            else
-                handlers.addHandler(contexts);
+            server.setHandler(contexts);
         } 
         
         if (contextHandlers != null)

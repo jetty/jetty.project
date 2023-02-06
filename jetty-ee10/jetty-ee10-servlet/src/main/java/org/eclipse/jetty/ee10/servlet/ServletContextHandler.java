@@ -271,10 +271,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent instanceof Handler.Wrapper)
-            ((Handler.Wrapper)parent).setHandler(this);
-        else if (parent instanceof Collection)
-            parent.addHandler(this);
+        Container.setAsParent(parent, this);
 
         _options = options;
         _sessionHandler = sessionHandler;
@@ -897,14 +894,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         return (ServletScopedContext)super.getContext();
     }
 
-    protected void setParent(Container parent)
-    {
-        if (parent instanceof Handler.Wrapper)
-            ((Handler.Wrapper)parent).setHandler(this);
-        else if (parent instanceof Collection)
-            ((Collection)parent).addHandler(this);
-    }
-
     /**
      * Add a context event listeners.
      *
@@ -996,7 +985,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    private void doSetHandler(Handler.Nested wrapper, Handler handler)
+    private void doSetHandler(Handler.Wrapper wrapper, Handler handler)
     {
         if (wrapper == this)
             super.setHandler(handler);
@@ -1006,7 +995,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     private void relinkHandlers()
     {
-        Handler.Nested handler = this;
+        Handler.Wrapper handler = this;
 
         // link session handler
         if (getSessionHandler() != null)
@@ -1014,9 +1003,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             while (!(handler.getHandler() instanceof SessionHandler) &&
                 !(handler.getHandler() instanceof SecurityHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Nested)
+                handler.getHandler() instanceof Handler.Wrapper wrapped)
             {
-                handler = (Handler.Nested)handler.getHandler();
+                handler = wrapped;
             }
 
             if (handler.getHandler() != _sessionHandler)
@@ -1029,9 +1018,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             while (!(handler.getHandler() instanceof SecurityHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Nested)
+                handler.getHandler() instanceof Handler.Wrapper wrapped)
             {
-                handler = (Handler.Nested)handler.getHandler();
+                handler = wrapped;
             }
 
             if (handler.getHandler() != _securityHandler)
@@ -1043,9 +1032,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (getServletHandler() != null)
         {
             while (!(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Nested)
+                handler.getHandler() instanceof Handler.Wrapper wrapped)
             {
-                handler = (Handler.Nested)handler.getHandler();
+                handler = wrapped;
             }
 
             if (handler.getHandler() != _servletHandler)
@@ -1164,7 +1153,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                                                              String pathInContext,
                                                              MatchedResource<ServletHandler.MappedServlet> matchedResource)
     {
-        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext, matchedResource);
+        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext, matchedResource, getSessionHandler());
     }
 
     @Override
@@ -1623,7 +1612,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         l.contextDestroyed(e);
     }
 
-    private void replaceHandler(Handler.Nested handler, Handler.Nested replacement)
+    private void replaceHandler(Handler.Wrapper handler, Handler.Wrapper replacement)
     {
         if (isStarted())
             throw new IllegalStateException("STARTED");
@@ -1643,7 +1632,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                     break;
                 }
 
-                wrapper = (wrapper.getHandler() instanceof Handler.Wrapper) ? (Handler.Wrapper)wrapper.getHandler() : null;
+                wrapper = (wrapper.getHandler() instanceof Handler.Wrapper wrapped) ? wrapped : null;
             }
         }
 
@@ -1686,7 +1675,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      * but after any other HandlerWrappers.
      */
     @Override
-    public void insertHandler(Handler.Nested handler)
+    public void insertHandler(Handler.Wrapper handler)
     {
         if (handler instanceof SessionHandler)
             setSessionHandler((SessionHandler)handler);
@@ -1696,17 +1685,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             setServletHandler((ServletHandler)handler);
         else
         {
-            Handler.Nested tail = handler;
-            while (tail.getHandler() instanceof Handler.Wrapper)
-            {
-                tail = (Handler.Wrapper)tail.getHandler();
-            }
+            Handler.Wrapper tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 
             // Skip any injected handlers
-            Handler.Nested h = this;
-            while (h.getHandler() instanceof Handler.Nested wrapper)
+            Handler.Wrapper h = this;
+            while (h.getHandler() instanceof Handler.Wrapper wrapper)
             {
                 if (wrapper instanceof SessionHandler ||
                     wrapper instanceof SecurityHandler ||

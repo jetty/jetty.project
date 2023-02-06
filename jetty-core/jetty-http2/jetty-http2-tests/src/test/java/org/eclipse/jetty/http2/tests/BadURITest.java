@@ -29,9 +29,9 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -97,7 +97,7 @@ public class BadURITest
             }
         });
 
-        RetainableByteBufferPool bufferPool = connector.getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = connector.getByteBufferPool();
         Generator generator = new Generator(bufferPool);
 
         // Craft a request with a bad URI, it will not hit the Handler.
@@ -111,7 +111,7 @@ public class BadURITest
             HttpFields.EMPTY,
             -1
         );
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         generator.control(accumulator, new HeadersFrame(1, metaData1, null, true));

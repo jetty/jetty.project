@@ -17,8 +17,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class IndexedNameEntryInstruction extends AbstractInstruction
@@ -28,7 +28,7 @@ public class IndexedNameEntryInstruction extends AbstractInstruction
     private final boolean _huffman;
     private final String _value;
 
-    public IndexedNameEntryInstruction(RetainableByteBufferPool bufferPool, boolean dynamic, int index, boolean huffman, String value)
+    public IndexedNameEntryInstruction(ByteBufferPool bufferPool, boolean dynamic, int index, boolean huffman, String value)
     {
         super(bufferPool);
         _dynamic = dynamic;
@@ -53,10 +53,10 @@ public class IndexedNameEntryInstruction extends AbstractInstruction
     }
 
     @Override
-    public void encode(RetainableByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
 

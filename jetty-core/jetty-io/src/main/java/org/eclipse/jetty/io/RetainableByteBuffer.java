@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.BufferUtil;
 /**
  * <p>A pooled {@link ByteBuffer} which maintains a reference count that is
  * incremented with {@link #retain()} and decremented with {@link #release()}.</p>
- * <p>The {@code ByteBuffer} is released to a {@link RetainableByteBufferPool}
+ * <p>The {@code ByteBuffer} is released to a {@link ByteBufferPool}
  * when {@link #release()} is called one more time than {@link #retain()};
  * in such case, the call to {@link #release()} returns {@code true}.</p>
  * <p>A {@code RetainableByteBuffer} can either be:</p>
@@ -50,7 +50,7 @@ public interface RetainableByteBuffer extends Retainable
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @return a non-retainable {@code RetainableByteBuffer}
-     * @see RetainableByteBufferPool.NonPooling
+     * @see ByteBufferPool.NonPooling
      */
     public static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {

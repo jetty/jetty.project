@@ -27,9 +27,9 @@ import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
@@ -242,9 +242,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             }
         });
 
-        RetainableByteBufferPool pool = client.getRetainableByteBufferPool();
-        assumeTrue(pool instanceof ArrayRetainableByteBufferPool);
-        ArrayRetainableByteBufferPool bufferPool = (ArrayRetainableByteBufferPool)pool;
+        ByteBufferPool pool = client.getByteBufferPool();
+        assumeTrue(pool instanceof ArrayByteBufferPool);
+        ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)pool;
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())

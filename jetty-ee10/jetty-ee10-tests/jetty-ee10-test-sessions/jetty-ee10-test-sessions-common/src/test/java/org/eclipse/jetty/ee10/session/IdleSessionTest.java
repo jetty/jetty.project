@@ -24,13 +24,13 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
@@ -264,7 +264,8 @@ public class IdleSessionTest
                 session.setAttribute("value", 1);
                 originalId = session.getId();
 
-                Session s = ServletApiRequest.getSession(session);
+
+                ManagedSession s = (ManagedSession)((Session.API)session).getSession();
                 try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());
@@ -276,7 +277,7 @@ public class IdleSessionTest
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
                 assertEquals(originalId, session.getId());
-                Session s = ServletApiRequest.getSession(session);
+                ManagedSession s = (ManagedSession)((Session.API)session).getSession();
                 try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());

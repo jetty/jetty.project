@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.BufferUtil;
 /**
  * Accumulates data into a list of ByteBuffers which can then be combined into a single buffer or written to an OutputStream.
  * The buffer list automatically grows as data is written to it, the buffers are taken from the
- * supplied {@link RetainableByteBufferPool} or freshly allocated if one is not supplied.
+ * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
  *
  * The method {@link #ensureBuffer(int, int)} is used to write directly to the last buffer stored in the buffer list,
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public class ByteBufferAccumulator implements AutoCloseable
 {
     private final List<RetainableByteBuffer> _buffers = new ArrayList<>();
-    private final RetainableByteBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final boolean _direct;
 
     public ByteBufferAccumulator()
@@ -42,9 +42,9 @@ public class ByteBufferAccumulator implements AutoCloseable
         this(null, false);
     }
 
-    public ByteBufferAccumulator(RetainableByteBufferPool bufferPool, boolean direct)
+    public ByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct)
     {
-        _bufferPool = (bufferPool == null) ? new RetainableByteBufferPool.NonPooling() : bufferPool;
+        _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
         _direct = direct;
     }
 

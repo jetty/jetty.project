@@ -43,9 +43,9 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -775,7 +775,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             try
             {
                 this.transformer = transformer;
-                RetainableByteBufferPool byteBufferPool = httpClient == null ? null : httpClient.getRetainableByteBufferPool();
+                ByteBufferPool byteBufferPool = httpClient == null ? null : httpClient.getByteBufferPool();
                 this.decoder = new GZIPContentDecoder(byteBufferPool, GZIPContentDecoder.DEFAULT_BUFFER_SIZE);
                 this.out = new ByteArrayOutputStream();
                 this.gzipOut = new GZIPOutputStream(out);

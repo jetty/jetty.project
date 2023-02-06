@@ -25,21 +25,21 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Connection;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.http2.internal.parser.ServerParser;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerSession;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -271,7 +271,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getRetainableByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
+        Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
@@ -291,9 +291,9 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
-        RetainableByteBufferPool retainableByteBufferPool = connector.getRetainableByteBufferPool();
+        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
 
-        HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector,
+        HTTP2Connection connection = new HTTP2ServerConnection(byteBufferPool, connector,
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
@@ -305,7 +305,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     private ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
     {
-        return new ServerParser(connector.getRetainableByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
+        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }
 
     @ManagedObject("The container of HTTP/2 sessions")

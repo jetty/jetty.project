@@ -58,10 +58,12 @@ import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspConfigDescriptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -72,8 +74,12 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -115,7 +121,6 @@ import org.slf4j.LoggerFactory;
  * this alias checker is not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * </p>
  */
-// TODO make this work
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
 {
@@ -123,15 +128,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
-        {
-            ServletContextListener.class,
-            ServletContextAttributeListener.class,
-            ServletRequestListener.class,
-            ServletRequestAttributeListener.class,
-            HttpSessionIdListener.class,
-            HttpSessionListener.class,
-            HttpSessionAttributeListener.class
-        };
+            {
+                    ServletContextListener.class,
+                    ServletContextAttributeListener.class,
+                    ServletRequestListener.class,
+                    ServletRequestAttributeListener.class,
+                    HttpSessionIdListener.class,
+                    HttpSessionListener.class,
+                    HttpSessionAttributeListener.class
+            };
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
 
@@ -242,8 +247,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _initParams = new HashMap<>();
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent != null)
-            parent.addHandler(_coreContextHandler);
+        Handler.Container.setAsParent(parent, _coreContextHandler);
     }
 
     @Override
@@ -275,18 +279,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public boolean getAllowNullPathInfo()
     {
         return _coreContextHandler.getAllowNullPathInContext();
-    }
-
-    // TODO this is a thought bubble
-    public void setCanonicalEncodingURIs(boolean encoding)
-    {
-        _canonicalEncodingURIs = encoding;
-    }
-
-    // TODO this is a thought bubble
-    public boolean isCanonicalEncodingURIs()
-    {
-        return _canonicalEncodingURIs;
     }
 
     /**
@@ -1623,8 +1615,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (servletContext != null)
                 {
                     String encodedContextPath = servletContext instanceof APIContext
-                        ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded()
-                        : URIUtil.encodePath(servletContext.getContextPath());
+                            ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded()
+                            : URIUtil.encodePath(servletContext.getContextPath());
                     if (!StringUtil.isEmpty(encodedContextPath))
                     {
                         encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
@@ -1648,7 +1640,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
                 baseRequest.onDispatch(uri, pathInContext);
                 if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
-                    // TODO why can't the old map be passed?
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }
 
@@ -2058,7 +2049,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return _extendedListenerTypes;
         }
 
-        // TODO  Empty implementations - should we merge in ServletContextHandler?
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
@@ -2147,8 +2137,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                // TODO object factory!
-                return clazz.getDeclaredConstructor().newInstance();
+                T instance = clazz.getDeclaredConstructor().newInstance();
+                return getCoreContext().decorate(instance);
             }
             catch (Exception e)
             {
@@ -2351,19 +2341,101 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static class CoreContextRequest extends ContextRequest
     {
         private final HttpChannel _httpChannel;
+        private SessionManager _sessionManager;
+        private ManagedSession _managedSession;
+        AbstractSessionManager.RequestedSession _requestedSession;
 
-        protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
+        protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
                                      org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context,
-                                     org.eclipse.jetty.server.Request wrapped,
                                      HttpChannel httpChannel)
         {
             super(context, wrapped);
             _httpChannel = httpChannel;
         }
 
+        public String changeSessionId()
+        {
+            if (_managedSession == null)
+                return null;
+            if (!_managedSession.isValid())
+                return _managedSession.getId();
+
+            HttpSession httpSession = _managedSession.getApi();
+            if (httpSession == null)
+                throw new IllegalStateException("No session");
+
+            ManagedSession session = _managedSession;
+            session.renewId(this, _httpChannel.getCoreResponse());
+
+            return httpSession.getId();
+        }
+
         public HttpChannel getHttpChannel()
         {
             return _httpChannel;
+        }
+
+        public ManagedSession getManagedSession()
+        {
+            return _managedSession;
+        }
+
+        public void setManagedSession(ManagedSession managedSession)
+        {
+            _managedSession = managedSession;
+        }
+
+        public SessionManager getSessionManager()
+        {
+            return _sessionManager;
+        }
+
+        public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
+        {
+            _requestedSession = requestedSession;
+            _managedSession = requestedSession.session();
+        }
+
+        public AbstractSessionManager.RequestedSession getRequestedSession()
+        {
+            return _requestedSession;
+        }
+
+        public void setSessionManager(SessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            if (_managedSession != null)
+            {
+                if (_sessionManager != null && !_managedSession.isValid())
+                    _managedSession = null;
+                else
+                    return _managedSession;
+            }
+
+            if (!create)
+                return null;
+
+            if (_httpChannel.getResponse().isCommitted())
+                throw new IllegalStateException("Response is committed");
+
+            if (_sessionManager == null)
+                throw new IllegalStateException("No SessionManager");
+
+            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+
+            if (_managedSession == null)
+                throw new IllegalStateException("Create session failed");
+
+            HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
+            if (cookie != null)
+                _httpChannel.getResponse().replaceCookie(cookie);
+
+            return _managedSession;
         }
     }
 
@@ -2413,20 +2485,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 Thread.currentThread().setContextClassLoader(old);
             }
         }
-        
+
         @Override
-        public void insertHandler(Nested handler)
+        public void insertHandler(Handler.Wrapper handler)
         {
-            Nested tail = handler;
-            while (tail.getHandler() instanceof Handler.Wrapper)
-                tail = (Handler.Wrapper)tail.getHandler();
+            Handler.Wrapper tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
-        
+
             tail.setHandler(getHandler());
             super.setHandler(handler);
         }
-        
+
         @Override
         public void setHandler(Handler handler)
         {
@@ -2465,7 +2535,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(request, this.getContext(), httpChannel);
             httpChannel.onRequest(coreContextRequest);
             return coreContextRequest;
         }
@@ -2476,8 +2546,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             __context.set(_apiContext);
             super.notifyEnterScope(coreRequest);
             Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                ? coreContextRequest.getHttpChannel().getRequest()
-                : null;
+                    ? coreContextRequest.getHttpChannel().getRequest()
+                    : null;
             ContextHandler.this.enterScope(request, "Entered core context");
         }
 
@@ -2487,8 +2557,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                    ? coreContextRequest.getHttpChannel().getRequest()
-                    : null;
+                        ? coreContextRequest.getHttpChannel().getRequest()
+                        : null;
                 ContextHandler.this.exitScope(request);
                 super.notifyExitScope(coreRequest);
             }
@@ -2503,7 +2573,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             return ContextHandler.this;
         }
-        
+
         class CoreContext extends ScopedContext
         {
             public APIContext getAPIContext()

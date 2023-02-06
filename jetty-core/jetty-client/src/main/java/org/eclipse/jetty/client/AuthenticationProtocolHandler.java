@@ -25,9 +25,9 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
-import org.eclipse.jetty.client.internal.HttpConversation;
-import org.eclipse.jetty.client.internal.HttpRequest;
-import org.eclipse.jetty.client.internal.ResponseNotifier;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.ResponseNotifier;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;

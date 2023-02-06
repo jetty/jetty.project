@@ -37,11 +37,11 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
@@ -1766,8 +1766,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
 
-        RetainableByteBufferPool rbbp = _connector.getRetainableByteBufferPool();
-        if (rbbp instanceof ArrayRetainableByteBufferPool pool)
+        ByteBufferPool rbbp = _connector.getByteBufferPool();
+        if (rbbp instanceof ArrayByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
             contents.forEach(Content.Chunk::release);
@@ -1777,7 +1777,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         else
         {
-            assertThat(rbbp, instanceOf(ArrayRetainableByteBufferPool.class));
+            assertThat(rbbp, instanceOf(ArrayByteBufferPool.class));
         }
     }
 
@@ -1825,7 +1825,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testProcessingAfterCompletion() throws Exception
     {
         AtomicReference<String> result = new AtomicReference<>();
-        Handler.Wrapper wrapper = new Handler.Wrapper()
+        Handler.Wrapper wrapper = new Handler.BaseWrapper()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

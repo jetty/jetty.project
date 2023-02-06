@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.SimpleSessionHandler.SessionAPI;
 import org.eclipse.jetty.session.SimpleSessionHandler.SessionRequest;
 import org.eclipse.jetty.util.Callback;
@@ -67,7 +68,8 @@ public class SimpleSessionHandlerTest
                 String[] split = pathInContext.substring(1).split("/");
 
                 SessionRequest sessionRequest = Request.as(request, SessionRequest.class);
-                SessionAPI session = sessionRequest.getSession(false);
+                Session session = sessionRequest.getSession(false);
+                SessionAPI api = session == null ? null : session.getApi();
 
                 if (split.length > 0)
                 {
@@ -124,7 +126,7 @@ public class SimpleSessionHandlerTest
                                 callback.failed(new IllegalStateException("No Session"));
                                 return true;
                             }
-                            session.renewId(request, response);
+                            api.renewId(request, response);
                         }
                     }
                 }
@@ -135,7 +137,7 @@ public class SimpleSessionHandlerTest
                 else
                 {
                     out.append("Session=").append(session.getId()).append('\n');
-                    for (String name : session.getAttributeNames())
+                    for (String name : session.getAttributeNameSet())
                         out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
                 }
 

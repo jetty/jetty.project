@@ -37,7 +37,7 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.AbstractConnector;
@@ -140,7 +140,7 @@ public class AbstractTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         // TODO: restore leak tracking.
-        return new Server(serverThreads, null, new ArrayRetainableByteBufferPool());
+        return new Server(serverThreads, null, new ArrayByteBufferPool());
     }
 
     protected SslContextFactory.Server newSslContextFactoryServer()

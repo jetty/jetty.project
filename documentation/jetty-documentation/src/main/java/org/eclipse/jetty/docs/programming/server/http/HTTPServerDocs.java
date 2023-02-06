@@ -511,11 +511,11 @@ public class HTTPServerDocs
         GzipHandler gzipHandler = new GzipHandler();
         server.setHandler(gzipHandler);
 
-        Handler.Collection collection = new Handler.Collection();
-        gzipHandler.setHandler(collection);
+        Handler.Sequence sequence = new Handler.Sequence();
+        gzipHandler.setHandler(sequence);
 
-        collection.addHandler(new App1Handler());
-        collection.addHandler(new App2Handler());
+        sequence.addHandler(new App1Handler());
+        sequence.addHandler(new App2Handler());
         // end::handlerTree[]
     }
 
@@ -583,7 +583,7 @@ public class HTTPServerDocs
         }
 
         // tag::handlerFilter[]
-        class FilterHandler extends Handler.Wrapper
+        class FilterHandler extends Handler.BaseWrapper
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

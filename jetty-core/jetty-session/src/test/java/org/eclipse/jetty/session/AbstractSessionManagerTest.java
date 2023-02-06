@@ -18,6 +18,7 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +39,7 @@ public class AbstractSessionManagerTest
         SessionData sessionData = new SessionData("1234", "_test", "0.0.0.0", 100, 200, 200, -1);
         TestableSessionManager sessionManager = new TestableSessionManager();
         sessionManager.setSessionPath("/test");
-        Session session = new Session(sessionManager, sessionData);
+        ManagedSession session = new ManagedSession(sessionManager, sessionData);
         session.setExtendedId("1234.foo");
         session.getSessionData().setLastNode("foo");
 
@@ -83,7 +84,7 @@ public class AbstractSessionManagerTest
         //Make a session
         SessionData sessionData = new SessionData("1234", "_test", "0.0.0.0", 100, 200, 200, -1);
         TestableSessionManager sessionManager = new TestableSessionManager();
-        Session session = new Session(sessionManager, sessionData);
+        ManagedSession session = new ManagedSession(sessionManager, sessionData);
         session.setExtendedId("1234.foo");
         session.getSessionData().setLastNode("foo");
         session.setResident(true); //pretend its in a cache
@@ -121,37 +122,37 @@ public class AbstractSessionManagerTest
             }
 
             @Override
-            public Session newSession(SessionData data)
+            public ManagedSession newSession(SessionData data)
             {
                 return null;
             }
 
             @Override
-            protected Session doGet(String id)
+            protected ManagedSession doGet(String id)
             {
                 return null;
             }
 
             @Override
-            protected Session doPutIfAbsent(String id, Session session)
+            protected Session doPutIfAbsent(String id, ManagedSession session)
             {
                 return null;
             }
 
             @Override
-            protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+            protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
             {
                 return null;
             }
 
             @Override
-            protected boolean doReplace(String id, Session oldValue, Session newValue)
+            protected boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
             {
                 return false;
             }
 
             @Override
-            public Session doDelete(String id)
+            public ManagedSession doDelete(String id)
             {
                 return null;
             }
@@ -313,7 +314,7 @@ public class AbstractSessionManagerTest
 
         TestableSessionConsumer consumer = new TestableSessionConsumer();
         sessionManager.newSession(null, "1234", consumer);
-        Session session = consumer.getSession();
+        ManagedSession session = consumer.getSession();
         String id = session.getId();
         sessionManager.commit(session);
         sessionManager.complete(session); //exit the session
@@ -334,7 +335,7 @@ public class AbstractSessionManagerTest
         Thread.sleep(waitMs);
 
         //test the session
-        session = sessionManager.getSession(id);
+        session = sessionManager.getManagedSession(id);
         if (expectExist)
         {
             assertNotNull(session);

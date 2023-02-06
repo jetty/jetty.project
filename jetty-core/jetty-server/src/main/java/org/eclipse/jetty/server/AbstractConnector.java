@@ -31,10 +31,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -65,8 +65,8 @@ import org.slf4j.LoggerFactory;
  * to the connections to time such things as asynchronous request timeouts.  The default is to use a new
  * {@link ScheduledExecutorScheduler} instance.
  * </li>
- * <li>The {@link RetainableByteBufferPool} service is made available to all connections to be used to acquire and release
- * {@link RetainableByteBuffer} instances from a pool.  The default is to use a new {@link ArrayRetainableByteBufferPool}
+ * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release
+ * {@link RetainableByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool}
  * instance.
  * </li>
  * </ul>
@@ -145,7 +145,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Server _server;
     private final Executor _executor;
     private final Scheduler _scheduler;
-    private final RetainableByteBufferPool _retainableByteBufferPool;
+    private final ByteBufferPool _bufferPool;
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
@@ -164,7 +164,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * @param server The {@link Server} this connector will be added to, must not be null
      * @param executor An {@link Executor} for this connector or null to use the Server's Executor
      * @param scheduler A {@link Scheduler} for this connector or null to use the Server's Scheduler
-     * @param bufferPool A {@link RetainableByteBufferPool} for this connector or null to use the Server's RetainableByteBufferPool
+     * @param bufferPool A {@link ByteBufferPool} for this connector or null to use the Server's ByteBufferPool
      * @param acceptors the number of acceptor threads to use, or -1 for a default value.
      * If 0, then no acceptor threads will be launched and some other mechanism will need to be used to accept new connections.
      * @param factories The {@link ConnectionFactory} instances to use
@@ -173,7 +173,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         Server server,
         Executor executor,
         Scheduler scheduler,
-        RetainableByteBufferPool bufferPool,
+        ByteBufferPool bufferPool,
         int acceptors,
         ConnectionFactory... factories)
     {
@@ -185,8 +185,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _scheduler = scheduler != null ? scheduler : _server.getScheduler();
         addBean(_scheduler, scheduler != null);
 
-        _retainableByteBufferPool = bufferPool != null ? bufferPool : server.getRetainableByteBufferPool();
-        addBean(_retainableByteBufferPool, bufferPool != null);
+        _bufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
+        addBean(_bufferPool, bufferPool != null);
 
         for (ConnectionFactory factory : factories)
         {
@@ -214,9 +214,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return _retainableByteBufferPool;
+        return _bufferPool;
     }
 
     @Override

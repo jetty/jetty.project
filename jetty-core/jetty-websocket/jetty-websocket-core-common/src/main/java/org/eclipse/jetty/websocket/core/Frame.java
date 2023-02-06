@@ -18,7 +18,6 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
@@ -412,7 +411,7 @@ public class Frame
         b.append(((finRsvOp & 0x40) != 0) ? '1' : '0');
         b.append(((finRsvOp & 0x20) != 0) ? '1' : '0');
         b.append(((finRsvOp & 0x10) != 0) ? '1' : '0');
-        b.append(",m=").append(mask == null ? "null" : TypeUtil.toHexString(mask));
+        b.append(",m=").append(mask == null ? "null" : StringUtil.toHexString(mask));
         b.append(']');
         if (payload != null)
             b.append(BufferUtil.toDetailString(payload));

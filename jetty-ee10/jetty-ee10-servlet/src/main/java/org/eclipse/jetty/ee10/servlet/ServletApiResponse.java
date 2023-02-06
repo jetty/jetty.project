@@ -45,7 +45,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.FutureCallback;
@@ -158,16 +159,16 @@ public class ServletApiResponse implements HttpServletResponse
         HttpSession session = httpServletRequest.getSession(false);
 
         // no session
-        if (session == null || !(session instanceof Session.APISession))
+        if (session == null || !(session instanceof Session.API))
             return url;
 
         // invalid session
-        Session.APISession apiSession = (Session.APISession)session;
+        Session.API api = (Session.API)session;
 
-        if (!apiSession.getCoreSession().isValid())
+        if (!api.getSession().isValid())
             return url;
 
-        String id = apiSession.getCoreSession().getExtendedId();
+        String id = api.getSession().getExtendedId();
 
         if (uri == null)
             uri = HttpURI.from(url);
@@ -559,11 +560,12 @@ public class ServletApiResponse implements HttpServletResponse
 
         _response.reset();
 
+
         ServletApiRequest servletApiRequest = _response.getServletContextRequest().getServletApiRequest();
-        Session session = servletApiRequest.getCoreSession();
+        ManagedSession session = servletApiRequest.getServletContextRequest().getManagedSession();
         if (session != null && session.isNew())
         {
-            SessionManager sessionManager = servletApiRequest.getSessionManager();
+            SessionManager sessionManager = servletApiRequest.getServletContextRequest().getSessionManager();
             if (sessionManager != null)
             {
                 HttpCookie cookie = sessionManager.getSessionCookie(session, servletApiRequest.getServletConnection().isSecure());

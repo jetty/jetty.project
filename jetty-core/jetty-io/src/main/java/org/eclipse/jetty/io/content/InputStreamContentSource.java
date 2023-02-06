@@ -16,9 +16,9 @@ package org.eclipse.jetty.io.content;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -27,9 +27,9 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
  * <p>
  * A {@link Content.Source} that is backed by an {@link InputStream}.
  * Data is read from the {@link InputStream} into a buffer that is optionally acquired
- * from a {@link RetainableByteBufferPool}, and converted to a {@link Content.Chunk} that is
- * returned from {@link #read()}. If no {@link RetainableByteBufferPool} is provided, then
- * a {@link RetainableByteBufferPool.NonPooling} is used.
+ * from a {@link ByteBufferPool}, and converted to a {@link Content.Chunk} that is
+ * returned from {@link #read()}. If no {@link ByteBufferPool} is provided, then
+ * a {@link ByteBufferPool.NonPooling} is used.
  * </p>
  */
 public class InputStreamContentSource implements Content.Source
@@ -37,7 +37,7 @@ public class InputStreamContentSource implements Content.Source
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final InputStream inputStream;
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private int bufferSize = 4096;
     private Runnable demandCallback;
     private Content.Chunk.Error errorChunk;
@@ -48,10 +48,10 @@ public class InputStreamContentSource implements Content.Source
         this(inputStream, null);
     }
 
-    public InputStreamContentSource(InputStream inputStream, RetainableByteBufferPool bufferPool)
+    public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
         this.inputStream = inputStream;
-        this.bufferPool = bufferPool != null ? bufferPool : new RetainableByteBufferPool.NonPooling();
+        this.bufferPool = bufferPool != null ? bufferPool : new ByteBufferPool.NonPooling();
     }
 
     public int getBufferSize()

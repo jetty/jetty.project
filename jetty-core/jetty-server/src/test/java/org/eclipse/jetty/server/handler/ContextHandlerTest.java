@@ -658,7 +658,7 @@ public class ContextHandlerTest
     public void testSetHandlerLoopDeepWrapper()
     {
         ContextHandler contextHandlerA = new ContextHandler();
-        Handler.Wrapper handlerWrapper = new Handler.Wrapper();
+        Handler.Wrapper handlerWrapper = new Handler.BaseWrapper();
         contextHandlerA.setHandler(handlerWrapper);
         assertThrows(IllegalStateException.class, () -> handlerWrapper.setHandler(contextHandlerA));
     }
@@ -667,7 +667,7 @@ public class ContextHandlerTest
     public void testAddHandlerLoopDeep()
     {
         ContextHandler contextHandlerA = new ContextHandler();
-        Handler.Collection handlerCollection = new Handler.Collection();
+        Handler.Sequence handlerCollection = new Handler.Sequence();
         contextHandlerA.setHandler(handlerCollection);
         assertThrows(IllegalStateException.class, () -> handlerCollection.addHandler(contextHandlerA));
     }

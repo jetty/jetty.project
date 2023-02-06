@@ -37,8 +37,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -477,7 +477,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
-        RetainableByteBufferPool bufferPool = wsClient.getWebSocketComponents().getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getByteBufferPool();
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);

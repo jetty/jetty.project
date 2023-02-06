@@ -43,14 +43,15 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionHandler extends AbstractSessionManager implements Handler.Nested
+public class SessionHandler extends AbstractSessionManager implements Handler.Wrapper
 {    
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
     
@@ -92,7 +93,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = Nested.updateHandler(this, handler);
+        _handler = Wrapper.updateHandler(this, handler);
     }
 
     @Override
@@ -269,29 +270,29 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         }
     }
 
-    public static class ServletAPISession implements HttpSession, Session.APISession
+    public static class ServletSessionApi implements HttpSession, Session.API
     {
-        public static ServletAPISession wrapSession(Session session)
+        public static ServletSessionApi wrapSession(ManagedSession session)
         {
-            return new ServletAPISession(session);
+            return new ServletSessionApi(session);
         }
         
-        public static Session getSession(HttpSession httpSession)
+        public static ManagedSession getSession(HttpSession httpSession)
         {
-            if (httpSession instanceof ServletAPISession apiSession)
-                return apiSession.getCoreSession();
+            if (httpSession instanceof ServletSessionApi apiSession)
+                return apiSession.getSession();
             return null;
         }
         
-        private final Session _session;
+        private final ManagedSession _session;
         
-        private ServletAPISession(Session session)
+        private ServletSessionApi(ManagedSession session)
         {
             _session = session;           
         }
 
         @Override
-        public Session getCoreSession()
+        public ManagedSession getSession()
         {
             return _session;
         }
@@ -341,7 +342,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            final Iterator<String> itor = _session.getNames().iterator();
+            final Iterator<String> itor = _session.getAttributeNameSet().iterator();
             return new Enumeration<>()
             {
 
@@ -390,10 +391,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
-    public Session getSession(Request request)
+    public ManagedSession getManagedSession(Request request)
     {
         ServletApiRequest apiRequest = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletApiRequest);
-        return apiRequest == null ? null : apiRequest.getCoreSession();
+        return apiRequest == null ? null : apiRequest.getServletContextRequest().getManagedSession();
     }
 
     /**
@@ -458,9 +459,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
     }
 
-    public Session.APISession newSessionAPIWrapper(Session session)
+    public Session.API newSessionAPIWrapper(ManagedSession session)
     {
-        return ServletAPISession.wrapSession(session);
+        return ServletSessionApi.wrapSession(session);
     }
 
     @Override
@@ -468,7 +469,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (!_sessionAttributeListeners.isEmpty())
         {
-            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getAPISession(), name, old == null ? value : old);
+            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
 
             for (HttpSessionAttributeListener l : _sessionAttributeListeners)
             {
@@ -494,7 +495,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         if (session == null)
             return;
 
-        HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+        HttpSessionEvent event = new HttpSessionEvent(session.getApi());
         for (HttpSessionListener  l : _sessionListeners)
         {
             l.sessionCreated(event);
@@ -518,7 +519,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         //come from the scavenger, rather than a request thread
         getSessionContext().run(() ->
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (int i = _sessionListeners.size() - 1; i >= 0; i--)
             {
                 _sessionListeners.get(i).sessionDestroyed(event);
@@ -532,7 +533,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         //inform the listeners
         if (!_sessionIdListeners.isEmpty())
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (HttpSessionIdListener l : _sessionIdListeners)
             {
                 l.sessionIdChanged(event, oldId);
@@ -544,14 +545,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     public void callUnboundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getAPISession(), name));
+            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
     }
     
     @Override
     public void callBoundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name)); 
+            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getApi(), name));
     }
     
     @Override
@@ -559,7 +560,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (value instanceof HttpSessionActivationListener listener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             listener.sessionDidActivate(event);
         }
     }
@@ -569,7 +570,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (value instanceof HttpSessionActivationListener listener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             listener.sessionWillPassivate(event);
         }
     }
@@ -640,24 +641,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
             return false;
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletApiRequest servletApiRequest =
-            (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
-        if (servletApiRequest == null)
-            throw new IllegalStateException("Request is not a valid ServletContextRequest");
-
         addSessionStreamWrapper(request);
 
         // find and set the session if one exists
         RequestedSession requestedSession = resolveRequestedSessionId(request);
-
-        servletApiRequest.setCoreSession(requestedSession.session());
-        servletApiRequest.setSessionManager(this);
-        servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
-        servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
-
-        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
+        servletContextRequest.setRequestedSession(requestedSession);
 
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
+        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
         if (cookie != null)
         {
             ServletContextResponse servletContextResponse = servletContextRequest.getResponse();

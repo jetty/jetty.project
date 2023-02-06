@@ -17,8 +17,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -51,9 +51,9 @@ public interface Connector extends LifeCycle, Container, Graceful
     public Scheduler getScheduler();
 
     /**
-     * @return the {@link RetainableByteBufferPool} to acquire buffers from and release buffers to
+     * @return the {@link ByteBufferPool} to acquire buffers from and release buffers to
      */
-    public RetainableByteBufferPool getRetainableByteBufferPool();
+    public ByteBufferPool getByteBufferPool();
 
     /**
      * @param nextProtocol the next protocol

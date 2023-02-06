@@ -32,10 +32,10 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -108,7 +108,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
-    private final RetainableByteBufferPool _retainableByteBufferPool;
+    private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
     private final DecryptedEndPoint _decryptedEndPoint;
     private final boolean _encryptedDirectBuffers;
@@ -164,18 +164,18 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     };
 
-    public SslConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        this(retainableByteBufferPool, executor, endPoint, sslEngine, false, false);
+        this(byteBufferPool, executor, endPoint, sslEngine, false, false);
     }
 
-    public SslConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
                          boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
     {
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
         // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
         super(endPoint, executor);
-        this._retainableByteBufferPool = retainableByteBufferPool;
+        this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
         this._encryptedDirectBuffers = useDirectBuffersForEncryption;
@@ -310,14 +310,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private void acquireEncryptedInput()
     {
         if (_encryptedInput == null)
-            _encryptedInput = _retainableByteBufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
+            _encryptedInput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
     }
 
     private void acquireEncryptedOutput()
     {
         // TODO: before the output was done with the BBP only.
         if (_encryptedOutput == null)
-            _encryptedOutput = _retainableByteBufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
+            _encryptedOutput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
     }
 
     @Override
@@ -682,7 +682,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 }
                                 else
                                 {
-                                    _decryptedInput = _retainableByteBufferPool.acquire(appBufferSize, _decryptedDirectBuffers);
+                                    _decryptedInput = _bufferPool.acquire(appBufferSize, _decryptedDirectBuffers);
                                     appIn = _decryptedInput.getByteBuffer();
                                 }
                             }

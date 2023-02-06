@@ -16,25 +16,25 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class StreamCancellationInstruction extends AbstractInstruction
 {
     private final long _streamId;
 
-    public StreamCancellationInstruction(RetainableByteBufferPool bufferPool, long streamId)
+    public StreamCancellationInstruction(ByteBufferPool bufferPool, long streamId)
     {
         super(bufferPool);
         _streamId = streamId;
     }
 
     @Override
-    public void encode(RetainableByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _streamId) + 1;
-        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(size, false);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
         byteBuffer.put((byte)0x40);

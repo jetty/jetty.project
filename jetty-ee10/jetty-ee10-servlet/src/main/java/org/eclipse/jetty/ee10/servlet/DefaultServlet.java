@@ -60,7 +60,7 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -167,7 +167,7 @@ public class DefaultServlet extends HttpServlet
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                RetainableByteBufferPool bufferPool = getRetainableByteBufferPool(servletContextHandler);
+                ByteBufferPool bufferPool = getByteBufferPool(servletContextHandler);
                 ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                 contentFactory = cached;
@@ -238,14 +238,14 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static RetainableByteBufferPool getRetainableByteBufferPool(ContextHandler contextHandler)
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new RetainableByteBufferPool.NonPooling();
+            return new ByteBufferPool.NonPooling();
         Server server = contextHandler.getServer();
         if (server == null)
-            return new RetainableByteBufferPool.NonPooling();
-        return server.getRetainableByteBufferPool();
+            return new ByteBufferPool.NonPooling();
+        return server.getByteBufferPool();
     }
 
     private String getInitParameter(String name, String... deprecated)
@@ -357,8 +357,13 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        String pathInContext = isPathInfoOnly() ? req.getPathInfo() : URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
-        boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+        String includedServletPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+        boolean included = includedServletPath != null;
+        String pathInContext;
+        if (included)
+            pathInContext = getIncludedPathInContext(req, includedServletPath, isPathInfoOnly());
+        else
+            pathInContext = URIUtil.addPaths(isPathInfoOnly() ? "/" : req.getServletPath(), req.getPathInfo());
 
         if (LOG.isDebugEnabled())
             LOG.debug("doGet(req={}, resp={}) pathInContext={}, included={}", req, resp, pathInContext, included);
@@ -469,10 +474,16 @@ public class DefaultServlet extends HttpServlet
                     fields.add(new HttpField(headerName, headerValue));
                 }
             }
+
             _httpFields = fields.asImmutable();
-            _uri = (request.getDispatcherType() == DispatcherType.REQUEST)
-                ? getWrapped().getHttpURI()
-                : Request.newHttpURIFrom(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
+            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            boolean included = includedServletPath != null;
+            if (request.getDispatcherType() == DispatcherType.REQUEST)
+                _uri = getWrapped().getHttpURI();
+            else if (included)
+                _uri = Request.newHttpURIFrom(getWrapped(), getIncludedPathInContext(request, includedServletPath, false));
+            else
+                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
         }
 
         @Override
@@ -904,22 +915,18 @@ public class DefaultServlet extends HttpServlet
         public String getWelcomeTarget(Request coreRequest) throws IOException
         {
             String[] welcomes = _servletContextHandler.getWelcomeFiles();
-
             if (welcomes == null)
                 return null;
 
             HttpServletRequest request = getServletRequest(coreRequest);
-
-            boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
-
-            if (included)
-            {
-                // Servlet 9.3 - don't process welcome target from INCLUDE dispatch
-                return null;
-            }
-
             String pathInContext = Request.getPathInContext(coreRequest);
-            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
+            String requestTarget;
+            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            boolean included = includedServletPath != null;
+            if (included)
+                requestTarget = getIncludedPathInContext(request, includedServletPath, isPathInfoOnly());
+            else
+                requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
 
             String welcomeServlet = null;
             Resource base = _baseResource.resolve(requestTarget);
@@ -951,7 +958,7 @@ public class DefaultServlet extends HttpServlet
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
             ServletContext context = request.getServletContext();
-            boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            boolean included = isIncluded(request);
 
             String welcome = welcomeAction.target();
             if (LOG.isDebugEnabled())
@@ -1056,9 +1063,9 @@ public class DefaultServlet extends HttpServlet
         @Override
         protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
         {
-            boolean included = getServletRequest(request).getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            boolean included = isIncluded(getServletRequest(request));
             if (included)
-                return true;
+                return false;
             return super.passConditionalHeaders(request, response, content, callback);
         }
 
@@ -1073,6 +1080,18 @@ public class DefaultServlet extends HttpServlet
             // TODO, this unwrapping is fragile
             return ((ServletCoreResponse)response)._response;
         }
+    }
+
+    private static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
+    {
+        String servletPath = isPathInfoOnly ? "/" : includedServletPath;
+        String pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
+        return URIUtil.addPaths(servletPath, pathInfo);
+    }
+
+    private static boolean isIncluded(HttpServletRequest request)
+    {
+        return request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
     }
 
     /**

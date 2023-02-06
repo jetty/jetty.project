@@ -28,8 +28,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
@@ -229,7 +229,7 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 if (last)
                 {
-                    RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+                    ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
                     generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
                     flusher.flush(accumulator, callback);
                 }
@@ -241,7 +241,7 @@ public class HttpStreamOverFCGI implements HttpStream
             }
             else
             {
-                RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+                ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
                 generateResponseContent(accumulator, last, content);
                 flusher.flush(accumulator, callback);
             }
@@ -260,8 +260,8 @@ public class HttpStreamOverFCGI implements HttpStream
 
         boolean shutdown = _shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
-        RetainableByteBufferPool bufferPool = _generator.getRetainableByteBufferPool();
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool bufferPool = _generator.getByteBufferPool();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
         if (head)
         {
@@ -288,12 +288,12 @@ public class HttpStreamOverFCGI implements HttpStream
             flusher.shutdown();
     }
 
-    private void generateResponseHeaders(RetainableByteBufferPool.Accumulator accumulator, MetaData.Response info)
+    private void generateResponseHeaders(ByteBufferPool.Accumulator accumulator, MetaData.Response info)
     {
         _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getFields());
     }
 
-    private void generateResponseContent(RetainableByteBufferPool.Accumulator accumulator, boolean last, ByteBuffer buffer)
+    private void generateResponseContent(ByteBufferPool.Accumulator accumulator, boolean last, ByteBuffer buffer)
     {
         _generator.generateResponseContent(accumulator, _id, buffer, last, _aborted);
     }

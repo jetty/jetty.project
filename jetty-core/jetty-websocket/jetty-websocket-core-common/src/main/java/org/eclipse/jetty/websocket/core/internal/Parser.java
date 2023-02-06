@@ -16,8 +16,8 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -48,7 +48,7 @@ public class Parser
 
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final Configuration configuration;
 
     // State specific
@@ -59,12 +59,12 @@ public class Parser
     private int payloadLength;
     private RetainableByteBuffer aggregate;
 
-    public Parser(RetainableByteBufferPool bufferPool)
+    public Parser(ByteBufferPool bufferPool)
     {
         this(bufferPool, new Configuration.ConfigurationCustomizer());
     }
 
-    public Parser(RetainableByteBufferPool bufferPool, Configuration configuration)
+    public Parser(ByteBufferPool bufferPool, Configuration configuration)
     {
         this.bufferPool = bufferPool;
         this.configuration = configuration;

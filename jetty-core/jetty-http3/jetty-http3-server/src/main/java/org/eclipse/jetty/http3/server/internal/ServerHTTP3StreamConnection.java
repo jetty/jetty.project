@@ -19,10 +19,10 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http3.HTTP3Stream;
+import org.eclipse.jetty.http3.HTTP3StreamConnection;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Stream;
-import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -42,7 +42,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
 
     public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser)
     {
-        super(endPoint, connector.getExecutor(), connector.getRetainableByteBufferPool(), parser);
+        super(endPoint, connector.getExecutor(), connector.getByteBufferPool(), parser);
         this.connector = connector;
         this.httpConfiguration = httpConfiguration;
         this.session = session;

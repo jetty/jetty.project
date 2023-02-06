@@ -33,10 +33,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionDataStore;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionManager;
 import org.junit.jupiter.api.AfterEach;
@@ -171,7 +172,7 @@ public class SessionHandlerTest
 
         long now = System.currentTimeMillis();
 
-        Session session = new Session(mgr.getSessionManager(), new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
+        ManagedSession session = new ManagedSession(mgr.getSessionManager(), new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
         session.setExtendedId("123.node1");
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setName("SPECIAL");
@@ -249,7 +250,7 @@ public class SessionHandlerTest
         _sessionHandler.addEventListener(new Listener2());
         _server.start();
 
-        Session session = new Session(_sessionHandler.getSessionManager(), new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
+        Session session = new ManagedSession(_sessionHandler.getSessionManager(), new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
         _sessionHandler.getSessionManager().callSessionCreatedListeners(session);
         _sessionHandler.getSessionManager().callSessionDestroyedListeners(session);
         assertEquals("Listener1 create;Listener2 create;Listener2 destroy;Listener1 destroy;", result.toString());
@@ -435,37 +436,37 @@ public class SessionHandlerTest
         }
 
         @Override
-        public Session doGet(String key)
+        public ManagedSession doGet(String key)
         {
             return null;
         }
 
         @Override
-        public Session doPutIfAbsent(String key, Session session)
+        public Session doPutIfAbsent(String key, ManagedSession session)
         {
             return null;
         }
 
         @Override
-        public Session doDelete(String key)
+        public ManagedSession doDelete(String key)
         {
             return null;
         }
 
         @Override
-        public boolean doReplace(String id, Session oldValue, Session newValue)
+        public boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
         {
             return false;
         }
 
         @Override
-        public Session newSession(SessionData data)
+        public ManagedSession newSession(SessionData data)
         {
             return null;
         }
 
         @Override
-        protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+        protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
         {
             return mappingFunction.apply(id);
         }

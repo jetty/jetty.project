@@ -43,11 +43,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -93,7 +93,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Bytes written after interception (eg after compression)
      */
     private long _written;
-    private org.eclipse.jetty.server.Request _coreRequest;
+    private ContextHandler.CoreContextRequest _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
     private boolean _expects100Continue;
@@ -312,9 +312,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _endPoint.setIdleTimeout(timeoutMs);
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return _connector.getRetainableByteBufferPool();
+        return _connector.getByteBufferPool();
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -327,7 +327,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _connector.getServer();
     }
 
-    public org.eclipse.jetty.server.Request getCoreRequest()
+    public ContextHandler.CoreContextRequest getCoreRequest()
     {
         return _coreRequest;
     }
@@ -926,7 +926,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
-    public void onRequest(org.eclipse.jetty.server.Request coreRequest)
+    public void onRequest(ContextHandler.CoreContextRequest coreRequest)
     {
         _coreRequest = coreRequest;
         _requests.incrementAndGet();

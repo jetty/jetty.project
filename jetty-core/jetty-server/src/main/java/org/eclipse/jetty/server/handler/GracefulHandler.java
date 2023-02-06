@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Handler to track active requests and allow them to gracefully complete.
  */
-public class GracefulHandler extends Handler.Wrapper implements Graceful
+public class GracefulHandler extends Handler.BaseWrapper implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(GracefulHandler.class);
 

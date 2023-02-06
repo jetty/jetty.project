@@ -670,7 +670,7 @@ public class ResourceHandlerTest
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getRetainableByteBufferPool());
+                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getByteBufferPool());
                 return contentFactory;
             }
         };

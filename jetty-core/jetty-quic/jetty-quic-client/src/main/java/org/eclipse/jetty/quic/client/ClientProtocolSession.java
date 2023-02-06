@@ -14,9 +14,9 @@
 package org.eclipse.jetty.quic.client;
 
 import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
-import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -23,7 +23,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 
-public class ProxiedRequestHandler extends Handler.Wrapper
+public class ProxiedRequestHandler extends Handler.BaseWrapper
 {
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception

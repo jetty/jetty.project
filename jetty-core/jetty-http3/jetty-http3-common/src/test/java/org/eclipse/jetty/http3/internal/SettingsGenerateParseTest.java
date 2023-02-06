@@ -19,10 +19,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
-import org.eclipse.jetty.http3.internal.parser.ControlParser;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.http3.generator.ControlGenerator;
+import org.eclipse.jetty.http3.parser.ControlParser;
+import org.eclipse.jetty.http3.parser.ParserListener;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,8 +46,8 @@ public class SettingsGenerateParseTest
     {
         SettingsFrame input = new SettingsFrame(settings);
 
-        RetainableByteBufferPool.NonPooling bufferPool = new RetainableByteBufferPool.NonPooling();
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.NonPooling bufferPool = new ByteBufferPool.NonPooling();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<SettingsFrame> frames = new ArrayList<>();

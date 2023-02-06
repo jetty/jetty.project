@@ -38,7 +38,9 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -46,8 +48,6 @@ import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Connection;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -411,7 +411,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -425,7 +425,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -494,7 +494,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -508,7 +508,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)

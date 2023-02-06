@@ -49,12 +49,12 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
 
     protected MessageWriter newMessageWriter()
     {
-        return new MessageWriter(coreSession, session.getContainerImpl().getRetainableByteBufferPool());
+        return new MessageWriter(coreSession, session.getContainerImpl().getByteBufferPool());
     }
 
     protected MessageOutputStream newMessageOutputStream()
     {
-        return new MessageOutputStream(coreSession, session.getContainerImpl().getRetainableByteBufferPool());
+        return new MessageOutputStream(coreSession, session.getContainerImpl().getByteBufferPool());
     }
 
     @Override

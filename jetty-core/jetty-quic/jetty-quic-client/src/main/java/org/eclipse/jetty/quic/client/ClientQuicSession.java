@@ -19,10 +19,10 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
@@ -43,9 +43,9 @@ public class ClientQuicSession extends QuicSession
     private final Map<String, Object> context;
     private final AtomicReference<Runnable> task = new AtomicReference<>();
 
-    protected ClientQuicSession(Executor executor, Scheduler scheduler, RetainableByteBufferPool retainableByteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Map<String, Object> context)
+    protected ClientQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Map<String, Object> context)
     {
-        super(executor, scheduler, retainableByteBufferPool, quicheConnection, connection, remoteAddress);
+        super(executor, scheduler, byteBufferPool, quicheConnection, connection, remoteAddress);
         this.context = context;
     }
 
