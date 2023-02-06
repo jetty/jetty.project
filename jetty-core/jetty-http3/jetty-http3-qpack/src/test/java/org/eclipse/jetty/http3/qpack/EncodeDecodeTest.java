@@ -27,7 +27,7 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentI
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +58,7 @@ public class EncodeDecodeTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         _encoder = new QpackEncoder(bufferPool, _encoderHandler, MAX_BLOCKED_STREAMS)
         {
             @Override

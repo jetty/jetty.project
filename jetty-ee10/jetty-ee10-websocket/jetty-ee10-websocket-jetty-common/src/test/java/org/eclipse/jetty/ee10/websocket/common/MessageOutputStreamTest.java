@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
@@ -46,7 +46,7 @@ public class MessageOutputStreamTest
     @BeforeEach
     public void setupTest() throws Exception
     {
-        bufferPool = new ArrayRetainableByteBufferPool()
+        bufferPool = new ArrayByteBufferPool()
         {
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)

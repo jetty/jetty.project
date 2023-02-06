@@ -37,7 +37,7 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -1767,7 +1767,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         assertThat(total, equalTo(chunk.length * 4L));
 
         ByteBufferPool rbbp = _connector.getByteBufferPool();
-        if (rbbp instanceof ArrayRetainableByteBufferPool pool)
+        if (rbbp instanceof ArrayByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
             contents.forEach(Content.Chunk::release);
@@ -1777,7 +1777,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         else
         {
-            assertThat(rbbp, instanceOf(ArrayRetainableByteBufferPool.class));
+            assertThat(rbbp, instanceOf(ArrayByteBufferPool.class));
         }
     }
 

@@ -298,7 +298,7 @@ public class ByteBufferAccumulatorTest
 
         public CountingBufferPool()
         {
-            super(new ArrayRetainableByteBufferPool());
+            super(new ArrayByteBufferPool());
         }
 
         @Override

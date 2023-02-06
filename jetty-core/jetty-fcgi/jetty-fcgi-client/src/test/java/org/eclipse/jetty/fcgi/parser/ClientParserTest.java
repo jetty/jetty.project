@@ -22,7 +22,7 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +44,7 @@ public class ClientParserTest
         String contentTypeValue = "text/html;charset=utf-8";
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, statusCode, statusMessage, fields);
@@ -108,7 +108,7 @@ public class ClientParserTest
         HttpFields fields = HttpFields.build()
             .put("Content-Length", "0");
 
-        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, 200, "OK", fields);
@@ -158,7 +158,7 @@ public class ClientParserTest
         String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
@@ -209,7 +209,7 @@ public class ClientParserTest
         String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);

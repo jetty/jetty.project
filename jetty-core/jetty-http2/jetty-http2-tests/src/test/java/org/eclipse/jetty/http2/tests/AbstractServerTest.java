@@ -29,7 +29,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -68,7 +68,7 @@ public class AbstractServerTest
         connector = new ServerConnector(server, connectionFactory);
         server.addConnector(connector);
         path = "/test";
-        bufferPool = new ArrayRetainableByteBufferPool();
+        bufferPool = new ArrayByteBufferPool();
         generator = new Generator(bufferPool);
     }
 

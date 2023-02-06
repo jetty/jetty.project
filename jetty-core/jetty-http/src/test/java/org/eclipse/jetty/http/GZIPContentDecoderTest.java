@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +47,7 @@ public class GZIPContentDecoderTest
     @BeforeEach
     public void before()
     {
-        pool = new ByteBufferPool.Wrapper(new ArrayRetainableByteBufferPool())
+        pool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)

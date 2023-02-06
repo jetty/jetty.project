@@ -67,7 +67,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
@@ -541,7 +541,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         resultLatch.countDown();
                 });
 
-            ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+            ByteBufferPool bufferPool = new ArrayByteBufferPool();
             ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             Generator generator = new Generator(bufferPool);
 

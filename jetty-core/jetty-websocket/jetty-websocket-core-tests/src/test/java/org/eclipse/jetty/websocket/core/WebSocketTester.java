@@ -24,7 +24,7 @@ import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
@@ -63,7 +63,7 @@ public class WebSocketTester
     @BeforeEach
     public void before()
     {
-        bufferPool = new ArrayRetainableByteBufferPool();
+        bufferPool = new ArrayByteBufferPool();
         parser = new Parser(bufferPool);
     }
 

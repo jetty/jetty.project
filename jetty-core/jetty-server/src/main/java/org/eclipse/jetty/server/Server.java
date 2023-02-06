@@ -35,7 +35,7 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -142,7 +142,7 @@ public class Server extends Handler.BaseWrapper implements Attributes
         addBean(_threadPool);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler();
         addBean(_scheduler);
-        _bufferPool = bufferPool != null ? bufferPool : new ArrayRetainableByteBufferPool();
+        _bufferPool = bufferPool != null ? bufferPool : new ArrayByteBufferPool();
         addBean(_bufferPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);

@@ -31,7 +31,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * {@link ScheduledExecutorScheduler} instance.
  * </li>
  * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release
- * {@link RetainableByteBuffer} instances from a pool.  The default is to use a new {@link ArrayRetainableByteBufferPool}
+ * {@link RetainableByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool}
  * instance.
  * </li>
  * </ul>
@@ -145,7 +145,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Server _server;
     private final Executor _executor;
     private final Scheduler _scheduler;
-    private final ByteBufferPool _retainableByteBufferPool;
+    private final ByteBufferPool _bufferPool;
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
@@ -185,8 +185,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _scheduler = scheduler != null ? scheduler : _server.getScheduler();
         addBean(_scheduler, scheduler != null);
 
-        _retainableByteBufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
-        addBean(_retainableByteBufferPool, bufferPool != null);
+        _bufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
+        addBean(_bufferPool, bufferPool != null);
 
         for (ConnectionFactory factory : factories)
         {
@@ -216,7 +216,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        return _retainableByteBufferPool;
+        return _bufferPool;
     }
 
     @Override

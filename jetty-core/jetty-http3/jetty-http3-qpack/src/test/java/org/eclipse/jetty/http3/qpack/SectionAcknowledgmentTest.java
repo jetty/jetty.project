@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.QpackException.SessionException;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +48,7 @@ public class SectionAcknowledgmentTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         _encoder = new QpackEncoder(bufferPool, _encoderHandler, MAX_BLOCKED_STREAMS);
         _decoder = new QpackDecoder(bufferPool, _decoderHandler, MAX_HEADER_SIZE);
     }

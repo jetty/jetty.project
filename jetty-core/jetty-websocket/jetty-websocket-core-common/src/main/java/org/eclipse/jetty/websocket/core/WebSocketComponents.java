@@ -16,7 +16,7 @@ package org.eclipse.jetty.websocket.core;
 import java.util.concurrent.Executor;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -54,7 +54,7 @@ public class WebSocketComponents extends ContainerLifeCycle
     {
         _extensionRegistry = (extensionRegistry == null) ? new WebSocketExtensionRegistry() : extensionRegistry;
         _objectFactory = (objectFactory == null) ? new DecoratedObjectFactory() : objectFactory;
-        _bufferPool = (bufferPool == null) ? new ArrayRetainableByteBufferPool() : bufferPool;
+        _bufferPool = (bufferPool == null) ? new ArrayByteBufferPool() : bufferPool;
         _inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
         _deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
 

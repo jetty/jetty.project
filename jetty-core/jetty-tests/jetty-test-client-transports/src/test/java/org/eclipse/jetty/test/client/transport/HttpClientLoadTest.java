@@ -34,7 +34,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -68,7 +68,7 @@ public class HttpClientLoadTest extends AbstractTest
         setStreamIdleTimeout(120000);
         client.stop();
         // TODO: restore leak tracking.
-        client.setByteBufferPool(new ArrayRetainableByteBufferPool());
+        client.setByteBufferPool(new ArrayByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setIdleTimeout(120000);
@@ -118,7 +118,7 @@ public class HttpClientLoadTest extends AbstractTest
         start(transport, new LoadHandler());
         client.stop();
         // TODO: restore leak tracking.
-        client.setByteBufferPool(new ArrayRetainableByteBufferPool());
+        client.setByteBufferPool(new ArrayByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.start();

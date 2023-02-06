@@ -44,7 +44,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -753,7 +753,7 @@ public class HttpClientTLSTest
 
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
-        ArrayRetainableByteBufferPool bufferPool = (ArrayRetainableByteBufferPool)server.getByteBufferPool();
+        ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)server.getByteBufferPool();
         Pool<RetainableByteBuffer> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
         assertEquals(1, bucket.size());
         assertEquals(1, bucket.getIdleCount());
@@ -769,7 +769,7 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         List<RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
-        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayRetainableByteBufferPool())
+        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)
@@ -839,7 +839,7 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         List<RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
-        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayRetainableByteBufferPool())
+        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)
@@ -924,7 +924,7 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         List<RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
-        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayRetainableByteBufferPool())
+        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)

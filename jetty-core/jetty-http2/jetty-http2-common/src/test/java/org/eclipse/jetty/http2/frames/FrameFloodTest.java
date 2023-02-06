@@ -24,7 +24,7 @@ import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.internal.Flags;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.lessThan;
 
 public class FrameFloodTest
 {
-    private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     // Frame structure:
     // | Len0 | Len1 | Len2 | Type | Flags | StreamID0 |StreamID1 |StreamID2 |StreamID3 | Payload... |

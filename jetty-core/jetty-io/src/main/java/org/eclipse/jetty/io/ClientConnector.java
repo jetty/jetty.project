@@ -367,7 +367,7 @@ public class ClientConnector extends ContainerLifeCycle
         if (scheduler == null)
             setScheduler(new ScheduledExecutorScheduler(String.format("client-scheduler@%x", hashCode()), false));
         if (byteBufferPool == null)
-            setByteBufferPool(new ArrayRetainableByteBufferPool());
+            setByteBufferPool(new ArrayByteBufferPool());
         if (sslContextFactory == null)
             setSslContextFactory(newSslContextFactory());
         selectorManager = newSelectorManager();

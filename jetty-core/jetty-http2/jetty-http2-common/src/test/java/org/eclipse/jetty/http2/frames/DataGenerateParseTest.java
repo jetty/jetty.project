@@ -22,7 +22,7 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http2.generator.DataGenerator;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ public class DataGenerateParseTest
 {
     private final byte[] smallContent = new byte[128];
     private final byte[] largeContent = new byte[128 * 1024];
-    private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     public DataGenerateParseTest()
     {

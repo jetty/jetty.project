@@ -38,7 +38,7 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -150,7 +150,7 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             assertTrue(upgrade.toString().startsWith("HTTP/1.1 101 "));
 
-            bufferPool = new ArrayRetainableByteBufferPool();
+            bufferPool = new ArrayByteBufferPool();
             generator = new Generator(bufferPool);
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
@@ -231,7 +231,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     {
         final CountDownLatch latch = new CountDownLatch(3);
 
-        bufferPool = new ArrayRetainableByteBufferPool();
+        bufferPool = new ArrayByteBufferPool();
         generator = new Generator(bufferPool);
 
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
@@ -328,7 +328,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         // Now send an HTTP/2 direct request, which
         // will have the PRI * HTTP/2.0 preface.
 
-        bufferPool = new ArrayRetainableByteBufferPool();
+        bufferPool = new ArrayByteBufferPool();
         generator = new Generator(bufferPool);
 
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();

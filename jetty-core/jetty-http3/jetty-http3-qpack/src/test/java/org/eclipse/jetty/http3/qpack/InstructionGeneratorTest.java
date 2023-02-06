@@ -15,7 +15,7 @@ package org.eclipse.jetty.http3.qpack;
 
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.is;
 
 public class InstructionGeneratorTest
 {
-    private final ByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool _bufferPool = new ArrayByteBufferPool();
 
     private String toHexString(Instruction instruction)
     {

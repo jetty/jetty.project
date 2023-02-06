@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -61,7 +61,7 @@ public class MessageHandlerTest
 
         coreSession = new CoreSession.Empty()
         {
-            private final ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+            private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
             @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
