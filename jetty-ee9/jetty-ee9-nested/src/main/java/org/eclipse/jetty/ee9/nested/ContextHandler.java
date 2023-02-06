@@ -2137,8 +2137,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                // TODO object factory!
-                return clazz.getDeclaredConstructor().newInstance();
+                T instance = clazz.getDeclaredConstructor().newInstance();
+                return getCoreContext().decorate(instance);
             }
             catch (Exception e)
             {
