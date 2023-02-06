@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -333,10 +334,10 @@ public class ServletContextResponse extends ContextResponse
             SessionHandler sh = _servletChannel.getContextHandler().getSessionHandler();
             if (sh != null)
             {
-                // TODO: use Jan's new static method.
-                if (session instanceof SessionHandler.ServletAPISession apiSession)
+                ManagedSession managedSession = SessionHandler.ServletSessionApi.getSession(session);
+                if (managedSession != null)
                 {
-                    HttpCookie c = sh.getSessionCookie(apiSession.getCoreSession(), _request.isSecure());
+                    HttpCookie c = sh.getSessionCookie(managedSession, _request.isSecure());
                     if (c != null)
                         Response.addCookie(_response, c);
                 }

@@ -388,7 +388,7 @@ public class ErrorHandler implements Request.Processor
         if (showStacks && !_disableStacks)
             writeErrorPageStacks(request, writer);
 
-        ((ServletApiRequest)request).getRequest().getServletChannel().getHttpConfiguration()
+        ((ServletApiRequest)request).getServletContextRequest().getServletChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 

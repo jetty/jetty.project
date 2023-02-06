@@ -260,6 +260,15 @@ public interface Request extends Attributes, Content.Source
 
     void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
 
+    /**
+     * <p>Get a {@link Session} associated with the request.
+     * Sessions may not be supported by a given configuration, in which case
+     * {@code null} will be returned.</p>
+     * @param create True if the session should be created for the request.
+     * @return The session associated with the request or {@code null}.
+     */
+    Session getSession(boolean create);
+
     static String getLocalAddr(Request request)
     {
         if (request == null)
@@ -649,6 +658,12 @@ public interface Request extends Attributes, Content.Source
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getWrapped().addHttpStreamWrapper(wrapper);
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            return getWrapped().getSession(create);
         }
 
         @Override

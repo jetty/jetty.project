@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
@@ -332,39 +333,43 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleDelayedDispatch() throws Exception
     {
         startServer(new EchoHandler());
-        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-        client.setSoTimeout(10000);
-        InputStream is = client.getInputStream();
-        assertFalse(client.isClosed());
 
-        OutputStream os = client.getOutputStream();
-        long start = NanoTime.now();
-        os.write((
-            "GET / HTTP/1.1\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: keep-alive\r\n" +
-                "Content-Length: 20\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        try (StacklessLogging ignore = new StacklessLogging(Response.class);
+             Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
-            try
+            client.setSoTimeout(10000);
+            InputStream is = client.getInputStream();
+            assertFalse(client.isClosed());
+
+            OutputStream os = client.getOutputStream();
+            long start = NanoTime.now();
+            os.write((
+                "GET / HTTP/1.1\r\n" +
+                    "host: localhost:" + _serverURI.getPort() + "\r\n" +
+                    "connection: keep-alive\r\n" +
+                    "Content-Length: 20\r\n" +
+                    "Content-Type: text/plain\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            os.flush();
+
+            assertTimeoutPreemptively(ofSeconds(10), () ->
             {
-                String response = IO.toString(is);
-                assertThat(response, containsString("500"));
-                assertEquals(-1, is.read());
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-        });
-        long duration = NanoTime.millisSince(start);
-        assertThat(duration, greaterThanOrEqualTo(MAX_IDLE_TIME));
-        assertThat(duration, lessThan(maximumTestRuntime));
+                try
+                {
+                    String response = IO.toString(is);
+                    assertThat(response, containsString("500"));
+                    assertEquals(-1, is.read());
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            long duration = NanoTime.millisSince(start);
+            assertThat(duration, greaterThanOrEqualTo(MAX_IDLE_TIME));
+            assertThat(duration, lessThan(maximumTestRuntime));
+        }
     }
 
     @Test
@@ -372,7 +377,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     {
         startServer(new EchoWholeHandler());
 
-        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        try (StacklessLogging ignore = new StacklessLogging(Response.class);
+             Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             client.setSoTimeout(10000);
 

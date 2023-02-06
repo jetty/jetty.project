@@ -27,14 +27,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +118,25 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     System.lineSeparator(), fields);
             }
 
-            return handler;
+            InvocationType invocationType = Invocable.getInvocationType(handler);
+            return new ReadyTask(invocationType, handler)
+            {
+                @Override
+                public void run()
+                {
+                    if (_stream.isClosed())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
+                                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                                _stream);
+                    }
+                    else
+                    {
+                        super.run();
+                    }
+                }
+            };
         }
         catch (BadMessageException x)
         {
@@ -238,8 +257,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}, trailer:{}{}",
-                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                    System.lineSeparator(), trailers);
+                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                System.lineSeparator(), trailers);
         }
 
         return _httpChannel.onContentAvailable();
@@ -480,9 +499,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
-                        _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getHttpVersion(),
-                        System.lineSeparator(), request.getFields());
+                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
+                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    System.lineSeparator(), request.getFields());
             }
 
             return task;

@@ -116,10 +116,10 @@ public class ServletMultiPartFormData
         formData.setMaxMemoryFileSize(config.getFileSizeThreshold());
         formData.setMaxFileSize(config.getMaxFileSize());
         formData.setMaxLength(config.getMaxRequestSize());
-        ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
+        ConnectionMetaData connectionMetaData = request.getServletContextRequest().getConnectionMetaData();
         formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
-        RetainableByteBufferPool byteBufferPool = request.getRequest().getComponents().getRetainableByteBufferPool();
+        RetainableByteBufferPool byteBufferPool = request.getServletContextRequest().getComponents().getRetainableByteBufferPool();
         Connection connection = connectionMetaData.getConnection();
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
         InputStream input = request.getInputStream();

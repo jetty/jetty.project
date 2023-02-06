@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -254,7 +255,7 @@ public interface Response extends Content.Sink
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (logger.isDebugEnabled())
             logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
-        else if (cause instanceof BadMessageException || cause instanceof QuietException)
+        else if (cause instanceof BadMessageException || cause instanceof QuietException || cause instanceof TimeoutException)
             logger.debug("writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
         else if (cause != null)
             logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);

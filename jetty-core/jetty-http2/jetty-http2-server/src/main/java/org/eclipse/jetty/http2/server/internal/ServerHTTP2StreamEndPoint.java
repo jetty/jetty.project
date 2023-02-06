@@ -15,10 +15,10 @@ package org.eclipse.jetty.http2.server.internal;
 
 import java.util.function.BiConsumer;
 
+import org.eclipse.jetty.http2.HTTP2Channel;
+import org.eclipse.jetty.http2.HTTP2Stream;
+import org.eclipse.jetty.http2.HTTP2StreamEndPoint;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
-import org.eclipse.jetty.http2.internal.HTTP2StreamEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;

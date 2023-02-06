@@ -17,6 +17,8 @@ import java.net.URI;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpRequest;
 
 public class TunnelRequest extends HttpRequest
 {

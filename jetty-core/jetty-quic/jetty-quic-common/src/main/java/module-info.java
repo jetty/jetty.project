@@ -19,8 +19,4 @@ module org.eclipse.jetty.quic.common
     requires transitive org.eclipse.jetty.quic.quiche;
 
     exports org.eclipse.jetty.quic.common;
-
-    exports org.eclipse.jetty.quic.common.internal to
-        org.eclipse.jetty.quic.client,
-        org.eclipse.jetty.quic.server;
 }

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.ee9.loginservice;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -20,12 +20,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.nio.file.Path;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
@@ -33,10 +38,10 @@ import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.security.Constraint;
@@ -65,80 +70,71 @@ public class DatabaseLoginServiceTestServer
     protected static String _protocol;
     protected static URI _baseUri;
     protected LoginService _loginService;
-    protected String _resourceBase;
-    protected TestHandler _handler;
+    protected Path _resourceBase;
+    protected TestFilter _filter;
     protected static String _requestContent;
-
     protected static File _dbRoot;
 
-    static
+    public static void beforeAll() throws Exception
     {
-        try
-        {
-            MARIA_DB =
-                new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
-                .withUsername(MARIA_DB_USER)
-                .withPassword(MARIA_DB_PASSWORD);
-            MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
-            MARIA_DB = (MariaDBContainer)MARIA_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG));
-            MARIA_DB.start();
-            String containerIpAddress =  MARIA_DB.getContainerIpAddress();
-            int mariadbPort = MARIA_DB.getMappedPort(3306);
-            MARIA_DB_URL = MARIA_DB.getJdbcUrl();
-            MARIA_DB_FULL_URL = MARIA_DB_URL + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
-            MARIA_DB_DRIVER_CLASS = MARIA_DB.getDriverClassName();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e.getMessage(), e);
-        }
+        MARIA_DB =
+            new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+            .withUsername(MARIA_DB_USER)
+            .withPassword(MARIA_DB_PASSWORD);
+        MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
+        MARIA_DB = (MariaDBContainer)MARIA_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG));
+        MARIA_DB.start();
+        MARIA_DB_URL = MARIA_DB.getJdbcUrl();
+        MARIA_DB_FULL_URL = MARIA_DB_URL + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
+        MARIA_DB_DRIVER_CLASS = MARIA_DB.getDriverClassName();
     }
 
-    public static class TestHandler extends AbstractHandler
+    public static void afterAll() throws Exception
     {
-        private final String _resourcePath;
+        if (MARIA_DB != null)
+            MARIA_DB.close();
+    }
+
+    public static class TestFilter extends HttpFilter
+    {
+        private final Path _resourcePath;
         private String _requestContent;
-
-        public TestHandler(String repositoryPath)
+        
+        public TestFilter(Path resourcePath)
         {
-            _resourcePath = repositoryPath;
+            _resourcePath = resourcePath;
         }
-
-        @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest,
-                           HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException
+        
+        public String getRequestContent()
         {
-            if (baseRequest.isHandled())
-            {
-                return;
-            }
-
+            return _requestContent;
+        }
+        
+        @Override
+        protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException
+        {
             OutputStream out = null;
-
-            if (baseRequest.getMethod().equals("PUT"))
+            if (req.getMethod().equals("PUT"))
             {
-                baseRequest.setHandled(true);
-
-                File file = new File(_resourcePath, URLDecoder.decode(request.getPathInfo(), "utf-8"));
-                FS.ensureDirExists(file.getParentFile());
+                //remove leading slash from pathinfo
+                Path p = _resourcePath.resolve(URLDecoder.decode(req.getPathInfo().substring(1), "utf-8"));
+                
+                File file = p.toFile();
+                FS.ensureDirExists(p.getParent());
 
                 out = new FileOutputStream(file);
-
-                response.setStatus(HttpServletResponse.SC_CREATED);
+                res.setStatus(HttpServletResponse.SC_CREATED);
             }
 
-            if (baseRequest.getMethod().equals("POST"))
+            if (req.getMethod().equals("POST"))
             {
-                baseRequest.setHandled(true);
                 out = new ByteArrayOutputStream();
-
-                response.setStatus(HttpServletResponse.SC_OK);
+                res.setStatus(HttpServletResponse.SC_OK);
             }
 
             if (out != null)
             {
-                try (ServletInputStream in = request.getInputStream())
+                try (ServletInputStream in = req.getInputStream())
                 {
                     IO.copy(in, out);
                 }
@@ -150,11 +146,28 @@ public class DatabaseLoginServiceTestServer
                 if (!(out instanceof FileOutputStream))
                     _requestContent = out.toString();
             }
+            else
+                super.doFilter(req, res, chain);
+        }
+    }
+    
+    public static class ExtendedDefaultServlet extends DefaultServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            if (resp.getStatus() == HttpServletResponse.SC_OK)
+                return;
+            
+            super.doPost(req, resp);
         }
 
-        public String getRequestContent()
+        @Override
+        protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            return _requestContent;
+            if (resp.getStatus() == HttpServletResponse.SC_CREATED)
+                return;
+            super.doPut(req, resp);
         }
     }
 
@@ -168,7 +181,7 @@ public class DatabaseLoginServiceTestServer
         _loginService = loginService;
     }
 
-    public void setResourceBase(String resourceBase)
+    public void setResourceBase(Path resourceBase)
     {
         _resourceBase = resourceBase;
     }
@@ -190,10 +203,10 @@ public class DatabaseLoginServiceTestServer
     {
         return _baseUri;
     }
-
-    public TestHandler getTestHandler()
+    
+    public TestFilter getTestFilter()
     {
-        return _handler;
+        return _filter;
     }
 
     public Server getServer()
@@ -207,7 +220,6 @@ public class DatabaseLoginServiceTestServer
         _server.addBean(_loginService);
 
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
-        _server.setHandler(security);
 
         Constraint constraint = new Constraint();
         constraint.setName("auth");
@@ -227,14 +239,16 @@ public class DatabaseLoginServiceTestServer
         security.setLoginService(_loginService);
 
         ServletContextHandler root = new ServletContextHandler();
+        root.setSecurityHandler(security);
         root.setContextPath("/");
-        root.setResourceBase(_resourceBase);
+        root.setBaseResourceAsPath(_resourceBase);
         ServletHolder servletHolder = new ServletHolder(new DefaultServlet());
         servletHolder.setInitParameter("gzip", "true");
         root.addServlet(servletHolder, "/*");
 
-        _handler = new TestHandler(_resourceBase);
-
-        security.setHandler(new HandlerList(_handler, root));
+        _filter = new TestFilter(_resourceBase);
+        FilterHolder filterHolder = new FilterHolder(_filter);
+        root.addFilter(filterHolder, "/*", EnumSet.allOf(DispatcherType.class));
+        _server.setHandler(root);        
     }
 }

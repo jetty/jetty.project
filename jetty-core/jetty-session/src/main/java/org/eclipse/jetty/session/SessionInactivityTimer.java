@@ -38,9 +38,9 @@ public class SessionInactivityTimer
     private final SessionManager _sessionManager;
     private final Scheduler _scheduler;
     private final CyclicTimeout _timer;
-    private final Session _session;
+    private final ManagedSession _session;
 
-    public SessionInactivityTimer(SessionManager sessionManager, Session session, Scheduler scheduler)
+    public SessionInactivityTimer(SessionManager sessionManager, ManagedSession session, Scheduler scheduler)
     {
         _sessionManager = sessionManager;
         _session = session;

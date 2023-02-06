@@ -94,7 +94,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     public static ContextHandler getContextHandler(Request request)
     {
         ContextRequest contextRequest = Request.as(request, ContextRequest.class);
-        return (contextRequest == null) ? null : contextRequest.getContext().getContextHandler();
+        if (contextRequest == null)
+            return null;
+        return contextRequest.getContext() instanceof ScopedContext scoped ? scoped.getContextHandler() : null;
     }
 
     public static String getServerInfo()

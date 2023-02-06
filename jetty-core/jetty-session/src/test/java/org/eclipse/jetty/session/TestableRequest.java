@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
 
 public class TestableRequest implements Request
@@ -174,5 +175,11 @@ public class TestableRequest implements Request
     @Override
     public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
     {
+    }
+
+    @Override
+    public Session getSession(boolean create)
+    {
+        return null;
     }
 }

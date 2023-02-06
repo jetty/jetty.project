@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.net.http.WebSocket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
@@ -192,6 +194,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
+    @Disabled //TODO glassfish-jstl not working in jpms
     @ParameterizedTest
     @ValueSource(strings = {"ee10"})
     public void testSimpleWebAppWithJSPOnModulePath(String env) throws Exception
@@ -210,6 +213,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             "resources", "server", "http", "jmx",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env),
+            toEnvironment("glassfish-jstl", env),
             toEnvironment("apache-jsp", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
@@ -230,6 +234,12 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
+
+                response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                System.err.println(response.getContentAsString());
+                assertThat(response.getContentAsString(), containsString("JSTL Example"));
+                assertThat(response.getContentAsString(), not(containsString("<c:")));
             }
         }
     }
@@ -462,6 +472,21 @@ public class DistributionTests extends AbstractJettyHomeTest
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-proxy-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "proxy");
 
+            Path loggingProps = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+
+            String loggingConfig = """
+                # Default for everything is INFO
+                org.eclipse.jetty.LEVEL=INFO
+                # to see full logger names 
+                # org.eclipse.jetty.logging.appender.NAME_CONDENSE=false
+                # to see CR LF as-is (not escaped) in output (useful for DEBUG of request/response headers)
+                org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE=false
+                # To enable DEBUG:oejepP.JavadocTransparentProxy
+                org.eclipse.jetty.%s.proxy.ProxyServlet$Transparent.JavadocTransparentProxy.LEVEL=DEBUG
+                """.formatted(env);
+
+            Files.writeString(loggingProps, loggingConfig, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
@@ -469,7 +494,16 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
                 ContentResponse response = client.GET("http://localhost:" + port + "/proxy/current/");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus(), () ->
+                {
+                    StringBuilder rawResponse = new StringBuilder();
+                    rawResponse.append(response.getVersion()).append(' ');
+                    rawResponse.append(response.getStatus()).append(' ');
+                    rawResponse.append(response.getReason()).append('\n');
+                    rawResponse.append(response.getHeaders());
+                    rawResponse.append(response.getContentAsString());
+                    return rawResponse.toString();
+                });
             }
         }
     }

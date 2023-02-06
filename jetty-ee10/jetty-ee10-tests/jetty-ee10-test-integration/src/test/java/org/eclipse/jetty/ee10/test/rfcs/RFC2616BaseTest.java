@@ -1421,6 +1421,7 @@ public abstract class RFC2616BaseTest
     @Test
     public void test1423IncompleteHostHeader() throws Exception
     {
+        //TODO this test is testing RFC9112 behaviour, an rfc2616 compatibility mode is not offered due to security concerns. Split this out to new RFC9112Test class.
         // HTTP/1.1 - Incomplete (empty) Host header
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
@@ -1431,7 +1432,7 @@ public abstract class RFC2616BaseTest
             req4.append("\n");
 
             HttpTester.Response response = http.request(req4);
-            assertThat("14.23 HTTP/1.1 - Empty Host", response.getStatus(), is(HttpStatus.OK_200));
+            assertThat("14.23 HTTP/1.1 - Empty Host", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         }
     }
 

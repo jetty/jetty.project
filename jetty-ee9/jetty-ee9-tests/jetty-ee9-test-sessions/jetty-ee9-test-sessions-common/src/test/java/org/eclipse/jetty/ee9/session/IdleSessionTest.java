@@ -28,8 +28,8 @@ import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
@@ -64,8 +64,8 @@ public class IdleSessionTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 10;
-        int scavengePeriod = 1;
+        int inactivePeriod = 5;
+        int scavengePeriod = 2;
         int evictionSec = 2; //evict from cache if idle for 2 sec
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
@@ -166,8 +166,8 @@ public class IdleSessionTest
         //test the NullSessionCache which does not support idle timeout
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 20;
-        int scavengePeriod = 3;
+        int inactivePeriod = 5;
+        int scavengePeriod = 2;
 
         NullSessionCacheFactory cacheFactory = new NullSessionCacheFactory();
         cacheFactory.setFlushOnResponseCommit(true);
@@ -262,8 +262,8 @@ public class IdleSessionTest
                 HttpSession session = request.getSession(true);
                 session.setAttribute("value", 1);
                 originalId = session.getId();
-                
-                Session s = ((org.eclipse.jetty.ee9.nested.Request)request).getCoreSession();
+
+                ManagedSession s = org.eclipse.jetty.ee9.nested.Request.getBaseRequest(request).getCoreRequest().getManagedSession();
                 try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());
@@ -275,7 +275,7 @@ public class IdleSessionTest
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
                 assertEquals(originalId, session.getId());
-                Session s = ((org.eclipse.jetty.ee9.nested.Request)request).getCoreSession();
+                ManagedSession s = org.eclipse.jetty.ee9.nested.Request.getBaseRequest(request).getCoreRequest().getManagedSession();
                 try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());

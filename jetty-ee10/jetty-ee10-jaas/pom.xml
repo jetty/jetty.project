@@ -14,6 +14,7 @@
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
     <apacheds.version>2.0.0.AM26</apacheds.version>
     <apache.directory.api.version>2.1.2</apache.directory.api.version>
+    <mina.core.version>2.2.1</mina.core.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.jaas.*</spotbugs.onlyAnalyze>
   </properties>
 
@@ -135,6 +136,11 @@
       <artifactId>api-asn1-api</artifactId>
       <version>${apache.directory.api.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.mina</groupId>
+      <artifactId>mina-core</artifactId>
+      <version>${mina.core.version}</version>
+    </dependency>
     <!-- because directory server do not have yet junit5 extensions -->
     <dependency>
       <groupId>org.junit.vintage</groupId>
@@ -143,5 +149,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
 </project>

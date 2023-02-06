@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.http3.client.internal;
 
-import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.HTTP3StreamConnection;
+import org.eclipse.jetty.http3.client.ClientHTTP3Session;
+import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 
 public class ClientHTTP3StreamConnection extends HTTP3StreamConnection
