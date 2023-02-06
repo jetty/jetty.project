@@ -285,6 +285,11 @@ public class StatisticsHandler extends Handler.Wrapper
         private final long _minimumReadRate;
         private final long _minimumWriteRate;
 
+        /**
+         * Creates a {@code MinimumDataRateHandler} with the specified read and write rates.
+         * @param minimumReadRate the minimum number of bytes to be read per second, or 0 for not checking the read rate.
+         * @param minimumWriteRate the minimum number of bytes to be written per second, or 0 for not checking the write rate.
+         */
         public MinimumDataRateHandler(long minimumReadRate, long minimumWriteRate)
         {
             _minimumReadRate = minimumReadRate;

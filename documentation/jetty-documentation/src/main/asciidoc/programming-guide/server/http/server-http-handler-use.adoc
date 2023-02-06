@@ -243,7 +243,7 @@ Server applications can read these values and use them internally, or expose the
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=statsHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=statisticsHandler]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -256,6 +256,14 @@ Server
         ├── ContextHandler 1
         :── ...
         └── ContextHandler N
+----
+
+It is possible to act on those statistics by subclassing `StatisticsHandler`. For instance, `StatisticsHandler.MinimumDataRateHandler`
+can be used to enforce a minimum read and write rates based of the figures collected by the `StatisticsHandler`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=dataRateHandler]
 ----
 
 [[pg-server-http-handler-use-util-secure-handler]]
