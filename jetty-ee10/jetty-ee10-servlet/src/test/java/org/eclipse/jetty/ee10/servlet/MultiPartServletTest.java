@@ -134,6 +134,7 @@ public class MultiPartServletTest
     @Test
     public void testLargePart() throws Exception
     {
+        // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
         RetainableByteBufferPool bufferPool = new RetainableByteBufferPool.NonPooling();
         start(new HttpServlet()
         {
