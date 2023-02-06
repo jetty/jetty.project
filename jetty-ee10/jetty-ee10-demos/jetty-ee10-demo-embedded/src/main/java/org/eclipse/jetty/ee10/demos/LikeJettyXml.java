@@ -36,7 +36,6 @@ import org.eclipse.jetty.rewrite.handler.InvalidURIRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.server.AsyncRequestLogWriter;
 import org.eclipse.jetty.server.CustomRequestLog;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LowResourceMonitor;
@@ -76,6 +75,7 @@ public class LikeJettyXml
 
         // Server
         Server server = new Server(threadPool);
+        server.setDefaultHandler(new DefaultHandler());
 
         // Scheduler
         server.addBean(new ScheduledExecutorScheduler(null, false, -1));
@@ -93,11 +93,7 @@ public class LikeJettyXml
 
         // Handler Structure
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        DefaultHandler defaultHandler = new DefaultHandler();
-
-        Handler.Collection handlers = new Handler.Collection();
-        handlers.setHandlers(contexts, defaultHandler);
-        server.setHandler(handlers);
+        server.setHandler(contexts);
 
         // === jetty-jmx.xml ===
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());

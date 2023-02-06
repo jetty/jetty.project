@@ -114,7 +114,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     @Override
     protected void startServer(Handler handler) throws Exception
     {
-        org.eclipse.jetty.server.Handler.Nested terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
+        org.eclipse.jetty.server.Handler.Wrapper terminateHandler = new org.eclipse.jetty.server.Handler.BaseWrapper()
         {
             @Override
             public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception

@@ -234,8 +234,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _apiContext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
-        if (parent != null)
-            parent.addHandler(this);
+        Handler.Container.setAsParent(parent, this.get());
     }
 
     @Override

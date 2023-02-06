@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionHandler extends AbstractSessionManager implements Handler.Nested
+public class SessionHandler extends AbstractSessionManager implements Handler.Wrapper
 {    
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
     
@@ -93,7 +93,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = Nested.updateHandler(this, handler);
+        _handler = Wrapper.updateHandler(this, handler);
     }
 
     @Override

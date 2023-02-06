@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Implementation of a {@link Handler} that supports HTTP CONNECT.</p>
  */
-public class ConnectHandler extends Handler.Wrapper
+public class ConnectHandler extends Handler.BaseWrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectHandler.class);
 

@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  * and the current thread name is updated with information that will link
  * to the details in that output.
  */
-public class DebugHandler extends Handler.Wrapper implements Connection.Listener
+public class DebugHandler extends Handler.BaseWrapper implements Connection.Listener
 {
     private final DateCache _date = new DateCache("HH:mm:ss", Locale.US);
     private OutputStream _out;

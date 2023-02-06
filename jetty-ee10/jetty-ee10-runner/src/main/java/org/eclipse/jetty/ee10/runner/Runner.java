@@ -319,6 +319,9 @@ public class Runner
                             _server = new Server();
                         }
 
+                        if (_server.getDefaultHandler() == null)
+                            _server.setDefaultHandler(new DefaultHandler());
+
                         //apply jetty config files if there are any
                         if (_configFiles != null)
                         {
@@ -331,10 +334,10 @@ public class Runner
                         }
 
                         //check that everything got configured, and if not, make the handlers
-                        Handler.Collection handlers = _server.getDescendant(Handler.Collection.class);
+                        Handler.Sequence handlers = _server.getDescendant(Handler.Sequence.class);
                         if (handlers == null)
                         {
-                            handlers = new Handler.Collection();
+                            handlers = new Handler.Sequence();
                             _server.setHandler(handlers);
                         }
 
@@ -502,7 +505,7 @@ public class Runner
         }
     }
 
-    protected void prependHandler(Handler handler, Handler.Collection handlers)
+    protected void prependHandler(Handler handler, Handler.Sequence handlers)
     {
         if (handler == null || handlers == null)
             return;

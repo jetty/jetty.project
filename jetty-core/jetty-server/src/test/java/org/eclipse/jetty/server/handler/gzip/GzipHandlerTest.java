@@ -1999,7 +1999,7 @@ public class GzipHandlerTest
         public int uncompressedSize;
     }
 
-    public static class CheckHandler extends Handler.Wrapper
+    public static class CheckHandler extends Handler.BaseWrapper
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

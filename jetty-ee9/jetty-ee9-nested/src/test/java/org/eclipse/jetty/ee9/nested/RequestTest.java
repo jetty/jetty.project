@@ -996,7 +996,7 @@ public class RequestTest
         });
         final InetSocketAddress remoteAddr = new InetSocketAddress(local, 32768);
 
-        org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.Wrapper()
+        org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.BaseWrapper()
         {
             @Override
             public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception

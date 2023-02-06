@@ -155,7 +155,7 @@ public class ShutdownHandlerTest
         }
     }
 
-    static class FakeRemoteAddressHandlerWrapper extends Handler.Wrapper
+    static class FakeRemoteAddressHandlerWrapper extends Handler.BaseWrapper
     {
         private final InetSocketAddress fakeRemoteAddress;
 

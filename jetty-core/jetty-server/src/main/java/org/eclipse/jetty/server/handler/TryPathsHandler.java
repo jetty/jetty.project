@@ -65,7 +65,7 @@ import org.eclipse.jetty.util.URIUtil;
  * under the names specified by {@link #setOriginalPathAttribute(String)}
  * and {@link #setOriginalQueryAttribute(String)}.</p>
  */
-public class TryPathsHandler extends Handler.Wrapper
+public class TryPathsHandler extends Handler.BaseWrapper
 {
     private String originalPathAttribute;
     private String originalQueryAttribute;

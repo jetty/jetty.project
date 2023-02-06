@@ -68,7 +68,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Server extends Handler.Wrapper implements Attributes
+public class Server extends Handler.BaseWrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();

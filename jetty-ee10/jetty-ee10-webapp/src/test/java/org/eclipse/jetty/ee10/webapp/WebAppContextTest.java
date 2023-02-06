@@ -247,7 +247,7 @@ public class WebAppContextTest
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         WebAppContext contextA = new WebAppContext(".", "/A");
 
         contextA.addServlet(ServletA.class, "/s");
@@ -319,14 +319,12 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -362,14 +360,12 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -395,14 +391,12 @@ public class WebAppContextTest
         server.addConnector(connector);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         server.start();
@@ -416,14 +410,12 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -441,7 +433,6 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
@@ -449,8 +440,7 @@ public class WebAppContextTest
 
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -672,7 +662,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         DefaultHandler handler = new DefaultHandler();
-        server.setHandler(new Handler.Collection(context, handler));
+        server.setHandler(new Handler.Sequence(context, handler));
 
         assertThat(handler.getServer(), sameInstance(server));
     }

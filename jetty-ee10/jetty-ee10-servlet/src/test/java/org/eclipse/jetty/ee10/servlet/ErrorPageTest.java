@@ -29,7 +29,6 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -104,7 +103,7 @@ public class ErrorPageTest
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
         _context.addServlet(ExceptionServlet.class, "/exception-servlet");
 
-        Handler.Wrapper noopHandler = new Handler.Wrapper()
+        Handler.Wrapper noopHandler = new Handler.BaseWrapper()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

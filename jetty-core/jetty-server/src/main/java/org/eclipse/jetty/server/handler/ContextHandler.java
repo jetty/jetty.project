@@ -63,7 +63,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful, AliasCheck
+public class ContextHandler extends Handler.BaseWrapper implements Attributes, Graceful, AliasCheck
 {
     // TODO where should the alias checking go?
     // TODO add protected paths to ServletContextHandler?
@@ -166,8 +166,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _context = newContext();
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent != null)
-            parent.addHandler(this);
+        Container.setAsParent(parent, this);
 
         if (File.separatorChar == '/')
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));

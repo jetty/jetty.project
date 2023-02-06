@@ -50,6 +50,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -222,8 +223,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
         setErrorProcessor(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
-        if (parent != null)
-            setParent(parent);
+        Handler.Container.setAsParent(parent, this);
     }
 
     @Override

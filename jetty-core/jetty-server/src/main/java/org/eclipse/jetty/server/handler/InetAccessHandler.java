@@ -41,7 +41,7 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  * the forwarded for headers, as this cannot be as easily forged.
  * </p>
  */
-public class InetAccessHandler extends Handler.Wrapper
+public class InetAccessHandler extends Handler.BaseWrapper
 {
     // TODO replace this handler with a general conditional handler wrapper.
 
