@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -291,7 +292,8 @@ public class StatisticsHandler extends Handler.Wrapper
 
             private long dataRatePerSecond(long dataCount)
             {
-                return (long)(dataCount / (NanoTime.since(getNanoTime()) / 1_000_000_000F));
+                long delay = NanoTime.since(getNanoTime());
+                return delay > 0 ? dataCount / TimeUnit.NANOSECONDS.toSeconds(delay) : Long.MAX_VALUE;
             }
 
             @Override
