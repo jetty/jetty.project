@@ -15,8 +15,11 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
@@ -34,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A {@link RetainableByteBuffer} pool where RetainableByteBuffers are held in {@link Pool}s that are
+ * <p>A {@link RetainableByteBuffer} pool where buffers are held in {@link Pool}s that are
  * held in array elements.</p>
  * <p>Given a capacity {@code factor} of 1024, the first array element holds a Pool of RetainableByteBuffers
  * each of capacity 1024, the second array element holds a Pool of RetainableByteBuffers each of capacity
@@ -124,6 +127,23 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      */
     protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
     {
+        this(minCapacity, factor, maxCapacity, maxBucketSize, -1, maxHeapMemory, maxDirectMemory, bucketIndexFor, bucketCapacity);
+    }
+
+    /**
+     * Creates a new ArrayByteBufferPool with the given configuration.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     * @param maxBucketSize the maximum number of ByteBuffers for each bucket
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param bucketIndexFor a {@link IntUnaryOperator} that takes a capacity and returns a bucket index
+     * @param bucketCapacity a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
+     */
+    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, int maxQueueSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
+    {
         if (minCapacity <= 0)
             minCapacity = 0;
         factor = factor <= 0 ? DEFAULT_FACTOR : factor;
@@ -144,8 +164,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         for (int i = 0; i < directArray.length; i++)
         {
             int capacity = Math.min(bucketCapacity.applyAsInt(i), maxCapacity);
-            directArray[i] = new RetainedBucket(capacity, maxBucketSize);
-            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
+            directArray[i] = new RetainedBucket(capacity, maxBucketSize, maxQueueSize);
+            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize, maxQueueSize);
         }
 
         _minCapacity = minCapacity;
@@ -184,15 +204,23 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
             return newRetainableByteBuffer(size, direct, this::removed);
-        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
 
-        RetainableByteBuffer buffer;
-        if (entry == null)
+        Pool<RetainableByteBuffer> pool = bucket.getPool();
+        if (pool != null)
         {
-            Pool.Entry<RetainableByteBuffer> reservedEntry = bucket.getPool().reserve();
+            Pool.Entry<RetainableByteBuffer> entry = pool.acquire();
+
+            if (entry != null)
+            {
+                RetainableByteBuffer buffer = entry.getPooled();
+                ((Buffer)buffer).acquire();
+                return buffer;
+            }
+
+            Pool.Entry<RetainableByteBuffer> reservedEntry = pool.reserve();
             if (reservedEntry != null)
             {
-                buffer = newRetainableByteBuffer(bucket._capacity, direct, retainedBuffer ->
+                RetainableByteBuffer buffer = newRetainableByteBuffer(bucket._capacity, direct, retainedBuffer ->
                 {
                     BufferUtil.reset(retainedBuffer.getByteBuffer());
                     reservedEntry.release();
@@ -203,18 +231,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 else
                     _currentHeapMemory.addAndGet(buffer.capacity());
                 releaseExcessMemory(direct);
-            }
-            else
-            {
-                buffer = newRetainableByteBuffer(size, direct, this::removed);
+                return buffer;
             }
         }
-        else
+
+        Queue<RetainableByteBuffer> queue = bucket.getQueue();
+        if (queue != null)
         {
-            buffer = entry.getPooled();
-            ((Buffer)buffer).acquire();
+            RetainableByteBuffer buffer = queue.poll();
+            if (buffer != null)
+                return buffer;
+            return newRetainableByteBuffer(size, direct, bucket::offer);
         }
-        return buffer;
+
+        return newRetainableByteBuffer(size, direct, this::removed);
     }
 
     protected ByteBuffer allocate(int capacity)
@@ -439,20 +469,33 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             .orElse(null);
     }
 
-    private static class RetainedBucket
+    private class RetainedBucket
     {
         private final Pool<RetainableByteBuffer> _pool;
+        private final Queue<RetainableByteBuffer> _queue;
         private final int _capacity;
 
-        private RetainedBucket(int capacity, int size)
+        private RetainedBucket(int capacity, int poolSize, int queueSize)
         {
-            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, size, true);
+            _pool = poolSize <= 0 ? null : new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, true);
+            _queue = queueSize < 0 ? new ConcurrentLinkedQueue<>() : queueSize > 0 ? new ArrayDeque<>(queueSize) : null;
             _capacity = capacity;
         }
 
         private Pool<RetainableByteBuffer> getPool()
         {
             return _pool;
+        }
+
+        private Queue<RetainableByteBuffer> getQueue()
+        {
+            return _queue;
+        }
+
+        public void offer(RetainableByteBuffer retainableByteBuffer)
+        {
+            if (!_queue.offer(retainableByteBuffer))
+                removed(retainableByteBuffer);
         }
 
         @Override

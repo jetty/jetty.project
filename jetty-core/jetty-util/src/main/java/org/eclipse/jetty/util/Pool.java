@@ -229,7 +229,7 @@ public interface Pool<P>
      *
      * @param <E> the type of the pooled objects
      */
-    public interface Entry<E>
+    interface Entry<E>
     {
         /**
          * <p>Enables this, previously {@link #reserve() reserved}, {@code Entry}.</p>
@@ -292,7 +292,7 @@ public interface Pool<P>
          *
          * @param <W> the type of the pooled objects
          */
-        public static class Wrapper<W> implements Entry<W>
+        class Wrapper<W> implements Entry<W>
         {
             private final Entry<W> wrapped;
 
@@ -361,7 +361,7 @@ public interface Pool<P>
      *
      * @param <F> the type of the pooled objects
      */
-    public interface Factory<F>
+    interface Factory<F>
     {
         /**
          * @return a new {@link Pool} instance
@@ -375,7 +375,7 @@ public interface Pool<P>
          * @return a possibly wrapped pool
          * @see Pool.Wrapper
          */
-        public default Pool<F> wrap(Pool<F> pool)
+        default Pool<F> wrap(Pool<F> pool)
         {
             return pool;
         }
