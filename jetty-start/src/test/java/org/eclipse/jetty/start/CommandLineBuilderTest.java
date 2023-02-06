@@ -45,7 +45,6 @@ public class CommandLineBuilderTest
         assertThat(cmd.toQuotedString(" "), is("java '-Djetty.home=/opt/jetty 10/home'"));
     }
 
-
     @Test
     public void testEscapedFormattingString()
     {
