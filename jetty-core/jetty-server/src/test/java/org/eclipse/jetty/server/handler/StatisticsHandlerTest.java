@@ -19,7 +19,9 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -42,8 +44,10 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -114,6 +118,13 @@ public class StatisticsHandlerTest
         });
 
         _latchHandler.setHandler(mdrh);
+        AtomicReference<String> messageRef = new AtomicReference<>();
+        _server.setErrorProcessor((request, response, callback) ->
+        {
+            messageRef.set((String)request.getAttribute(ErrorProcessor.ERROR_MESSAGE));
+            callback.succeeded();
+            return true;
+        });
         _server.start();
 
         String request = """
@@ -138,12 +149,14 @@ public class StatisticsHandlerTest
             AtomicInteger statusHolder = new AtomicInteger();
             endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
             assertThat(statusHolder.get(), is(500));
+            assertThat(messageRef.get(), startsWith("java.util.concurrent.TimeoutException: read rate is too low"));
         }
     }
 
     @Test
     public void testMinimumDataWriteRateHandler() throws Exception
     {
+        AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1100);
         int expectedContentLength = 1000;
@@ -165,6 +178,7 @@ public class StatisticsHandlerTest
                     public void failed(Throwable x)
                     {
                         callback.failed(x);
+                        exceptionRef.set(x);
                         latch.countDown();
                     }
                 });
@@ -222,6 +236,8 @@ public class StatisticsHandlerTest
         AtomicInteger statusHolder = new AtomicInteger();
         ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
         assertThat(statusHolder.get(), is(200));
+        assertThat(exceptionRef.get(), instanceOf(TimeoutException.class));
+        assertThat(exceptionRef.get().getMessage(), startsWith("write rate is too low"));
         assertThat(byteBuffer.remaining(), lessThan(expectedContentLength));
     }
 

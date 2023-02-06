@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -313,8 +312,16 @@ public class StatisticsHandler extends Handler.Wrapper
 
             private long dataRatePerSecond(long dataCount)
             {
-                long delay = NanoTime.since(getNanoTime());
-                return delay > 0 ? dataCount / TimeUnit.NANOSECONDS.toSeconds(delay) : Long.MAX_VALUE;
+                if (dataCount == 0L)
+                    return 0L;
+                long delayInNs = NanoTime.since(getNanoTime());
+                // If you read 1 byte or more in 0ns or less, you have infinite bandwidth.
+                if (delayInNs <= 0L)
+                    return Long.MAX_VALUE;
+                // The transformation of delayInNs to delayInSeconds must be done as floating
+                // point otherwise the result is going to be 0 for any delay below 1s.
+                float delayInSeconds = delayInNs / 1_000_000_000F;
+                return (long)(dataCount / delayInSeconds);
             }
 
             @Override
