@@ -58,7 +58,6 @@ public class DecoratedObjectFactory implements Iterable<Decorator>, Decorator
         return decoratorInfo.get();
     }
 
-
     private final List<Decorator> decorators = new ArrayList<>();
 
     public void addDecorator(Decorator decorator)
