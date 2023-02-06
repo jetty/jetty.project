@@ -17,7 +17,7 @@
 Jetty uses the link:http://slf4j.org/[SLF4J] API for its logging.
 SLF4J is a generic abstraction layer that is supported by many different logging frameworks (or SLF4J _bindings_).
 
-Jetty provides a default binding via the `jetty-slf4j-impl` Maven artifact, but you can plug Jetty into the logging framework (or SLF4J _binding_) xref:og-server-logging-server-custom[of your choice].
+Jetty provides a default binding via the `jetty-slf4j-impl` Maven artifact, but you can plug in the SLF4J _binding_ xref:og-server-logging-server-custom[of your choice] provided by other logging frameworks.
 
 Jetty's server logging is enabled by default with the `logging` Jetty module.
 You typically won't have to enable the `logging` module directly, since it is a transitive dependency of the `server` module, and thus pulled in by many of the most commonly used modules.
