@@ -38,10 +38,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
@@ -1766,7 +1766,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
 
-        RetainableByteBufferPool rbbp = _connector.getRetainableByteBufferPool();
+        ByteBufferPool rbbp = _connector.getByteBufferPool();
         if (rbbp instanceof ArrayRetainableByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();

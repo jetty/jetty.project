@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;
@@ -64,9 +64,9 @@ public abstract class AbstractSessionTest
         }
 
         @Override
-        public RetainableByteBufferPool getRetainableByteBufferPool()
+        public ByteBufferPool getByteBufferPool()
         {
-            return components.getRetainableByteBufferPool();
+            return components.getByteBufferPool();
         }
 
         public void waitForDemand(long timeout, TimeUnit timeUnit) throws InterruptedException

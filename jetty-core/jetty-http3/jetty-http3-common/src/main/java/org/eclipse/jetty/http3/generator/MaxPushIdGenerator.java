@@ -16,17 +16,17 @@ package org.eclipse.jetty.http3.generator;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public class MaxPushIdGenerator extends FrameGenerator
 {
-    public MaxPushIdGenerator(RetainableByteBufferPool bufferPool)
+    public MaxPushIdGenerator(ByteBufferPool bufferPool)
     {
         super(bufferPool);
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         return 0;
     }

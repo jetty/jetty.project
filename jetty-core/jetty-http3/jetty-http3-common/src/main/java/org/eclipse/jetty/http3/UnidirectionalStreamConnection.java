@@ -23,9 +23,9 @@ import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnidirectionalStreamConnection.class);
 
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
     private final ParserListener listener;
@@ -43,7 +43,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public UnidirectionalStreamConnection(QuicStreamEndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
+    public UnidirectionalStreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;

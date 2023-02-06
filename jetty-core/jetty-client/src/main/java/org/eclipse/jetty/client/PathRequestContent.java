@@ -16,14 +16,14 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.content.PathContentSource;
 
 /**
  * <p>A {@link Request.Content} for files using JDK 7's {@code java.nio.file} APIs.</p>
  * <p>It is possible to specify a buffer size used to read content from the stream,
  * by default 4096 bytes, whether the buffer should be direct or not, and a
- * {@link RetainableByteBufferPool} from which {@code ByteBuffer}s will be acquired
+ * {@link ByteBufferPool} from which {@code ByteBuffer}s will be acquired
  * to read from the {@code Path}.</p>
  */
 public class PathRequestContent extends PathContentSource implements Request.Content
@@ -51,7 +51,7 @@ public class PathRequestContent extends PathContentSource implements Request.Con
         setBufferSize(bufferSize);
     }
 
-    public PathRequestContent(String contentType, Path filePath, RetainableByteBufferPool bufferPool) throws IOException
+    public PathRequestContent(String contentType, Path filePath, ByteBufferPool bufferPool) throws IOException
     {
         super(filePath, bufferPool);
         this.contentType = contentType;

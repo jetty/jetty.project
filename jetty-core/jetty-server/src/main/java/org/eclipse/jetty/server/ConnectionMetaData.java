@@ -38,7 +38,7 @@ public interface ConnectionMetaData extends Attributes
     Connection getConnection();
 
     // TODO should this be only here or only on HttpChannel, should not be on both.
-    //      Currently mostly used to get stuff like RetainableByteBufferPool and Scheduler - maybe provide those directly?
+    //      Currently mostly used to get stuff like ByteBufferPool and Scheduler - maybe provide those directly?
     Connector getConnector();
 
     boolean isPersistent();

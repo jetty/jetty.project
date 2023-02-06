@@ -19,8 +19,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.internal.Flags;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class WindowUpdateGenerator extends FrameGenerator
@@ -31,13 +31,13 @@ public class WindowUpdateGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
+    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame)
     {
         WindowUpdateFrame windowUpdateFrame = (WindowUpdateFrame)frame;
         return generateWindowUpdate(accumulator, windowUpdateFrame.getStreamId(), windowUpdateFrame.getWindowDelta());
     }
 
-    public int generateWindowUpdate(RetainableByteBufferPool.Accumulator accumulator, int streamId, int windowUpdate)
+    public int generateWindowUpdate(ByteBufferPool.Accumulator accumulator, int streamId, int windowUpdate)
     {
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);

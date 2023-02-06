@@ -30,8 +30,8 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -50,7 +50,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Queue<HTTP2Session.Entry> pendingEntries = new ArrayDeque<>();
     private final Collection<HTTP2Session.Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
-    private final RetainableByteBufferPool.Accumulator accumulator;
+    private final ByteBufferPool.Accumulator accumulator;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
     private Throwable terminated;
     private HTTP2Session.Entry stalledEntry;
@@ -58,7 +58,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public HTTP2Flusher(HTTP2Session session)
     {
         this.session = session;
-        this.accumulator = new RetainableByteBufferPool.Accumulator();
+        this.accumulator = new ByteBufferPool.Accumulator();
     }
 
     @Override

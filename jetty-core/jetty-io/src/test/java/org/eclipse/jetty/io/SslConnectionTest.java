@@ -61,7 +61,7 @@ public class SslConnectionTest
     private static final int TIMEOUT = 1000000;
 
     // TODO: track leaks
-    private final RetainableByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
     private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill = true;

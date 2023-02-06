@@ -26,7 +26,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -240,9 +240,9 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     }
 
     @Override
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return components.getRetainableByteBufferPool();
+        return components.getByteBufferPool();
     }
 
     public void onEof()

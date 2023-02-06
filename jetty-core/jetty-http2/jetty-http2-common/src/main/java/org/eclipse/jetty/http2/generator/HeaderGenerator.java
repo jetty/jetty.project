@@ -17,28 +17,28 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class HeaderGenerator
 {
     private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 
-    public HeaderGenerator(RetainableByteBufferPool bufferPool)
+    public HeaderGenerator(ByteBufferPool bufferPool)
     {
         this(bufferPool, true);
     }
 
-    public HeaderGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public HeaderGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         this.bufferPool = bufferPool;
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }
@@ -50,7 +50,7 @@ public class HeaderGenerator
 
     public RetainableByteBuffer generate(FrameType frameType, int capacity, int length, int flags, int streamId)
     {
-        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
         ByteBuffer header = buffer.getByteBuffer();
         BufferUtil.clearToFill(header);
         header.put((byte)((length & 0x00_FF_00_00) >>> 16));

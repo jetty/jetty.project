@@ -26,8 +26,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -46,7 +46,7 @@ public class LocalConnector extends AbstractConnector
 {
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
 
-    public LocalConnector(Server server, Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
+    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories);
         setIdleTimeout(30000);

@@ -30,7 +30,7 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.internal.Flags;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +42,7 @@ public class ContinuationParseTest
     @Test
     public void testParseOneByteAtATime() throws Exception
     {
-        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
@@ -71,7 +71,7 @@ public class ContinuationParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
             List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();

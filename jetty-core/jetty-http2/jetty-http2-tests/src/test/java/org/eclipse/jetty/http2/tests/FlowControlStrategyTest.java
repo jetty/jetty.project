@@ -51,7 +51,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -844,7 +844,7 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
@@ -949,7 +949,7 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = accumulator.getByteBuffers();

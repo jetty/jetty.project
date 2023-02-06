@@ -20,8 +20,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,12 +33,12 @@ public class HeaderBlockParser
     private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final HpackDecoder hpackDecoder;
     private final BodyParser notifier;
     private RetainableByteBuffer blockBuffer;
 
-    public HeaderBlockParser(HeaderParser headerParser, RetainableByteBufferPool bufferPool, HpackDecoder hpackDecoder, BodyParser notifier)
+    public HeaderBlockParser(HeaderParser headerParser, ByteBufferPool bufferPool, HpackDecoder hpackDecoder, BodyParser notifier)
     {
         this.headerParser = headerParser;
         this.bufferPool = bufferPool;

@@ -15,7 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.InputStream;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 
 /**
@@ -51,7 +51,7 @@ public class InputStreamRequestContent extends InputStreamContentSource implemen
         this(contentType, stream, null);
     }
 
-    public InputStreamRequestContent(String contentType, InputStream stream, RetainableByteBufferPool bufferPool)
+    public InputStreamRequestContent(String contentType, InputStream stream, ByteBufferPool bufferPool)
     {
         super(stream, bufferPool);
         this.contentType = contentType;

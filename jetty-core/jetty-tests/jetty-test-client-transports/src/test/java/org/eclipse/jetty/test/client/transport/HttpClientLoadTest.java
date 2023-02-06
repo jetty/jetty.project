@@ -68,7 +68,7 @@ public class HttpClientLoadTest extends AbstractTest
         setStreamIdleTimeout(120000);
         client.stop();
         // TODO: restore leak tracking.
-        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool());
+        client.setByteBufferPool(new ArrayRetainableByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setIdleTimeout(120000);
@@ -118,7 +118,7 @@ public class HttpClientLoadTest extends AbstractTest
         start(transport, new LoadHandler());
         client.stop();
         // TODO: restore leak tracking.
-        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool());
+        client.setByteBufferPool(new ArrayRetainableByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.start();

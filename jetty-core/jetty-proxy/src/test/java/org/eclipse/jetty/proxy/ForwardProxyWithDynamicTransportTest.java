@@ -403,7 +403,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -417,7 +417,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -485,7 +485,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -499,7 +499,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)

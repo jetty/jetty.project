@@ -68,9 +68,9 @@ import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -111,7 +111,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertTrue(http2Client.isStarted());
         assertSame(httpClient.getExecutor(), http2Client.getExecutor());
         assertSame(httpClient.getScheduler(), http2Client.getScheduler());
-        assertSame(httpClient.getRetainableByteBufferPool(), http2Client.getRetainableByteBufferPool());
+        assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
         assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
         assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
         assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
@@ -541,8 +541,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         resultLatch.countDown();
                 });
 
-            RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())

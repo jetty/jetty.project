@@ -22,8 +22,8 @@ import org.eclipse.jetty.client.LeakTrackingConnectionPool;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -38,8 +38,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractHttpClientServerTest
 {
-    private RetainableByteBufferPool serverBufferPool;
-    protected RetainableByteBufferPool clientBufferPool;
+    private ByteBufferPool serverBufferPool;
+    protected ByteBufferPool clientBufferPool;
     private final AtomicLong connectionLeaks = new AtomicLong();
     protected Server server;
     protected ServerConnector connector;
@@ -68,7 +68,7 @@ public abstract class AbstractHttpClientServerTest
         // TODO: restore leak tracking.
         if (clientBufferPool == null)
             clientBufferPool = new ArrayRetainableByteBufferPool();
-        clientConnector.setRetainableByteBufferPool(clientBufferPool);
+        clientConnector.setByteBufferPool(clientBufferPool);
         HttpClientTransport transport = new HttpClientTransportOverFCGI(clientConnector, "");
         transport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination())
         {

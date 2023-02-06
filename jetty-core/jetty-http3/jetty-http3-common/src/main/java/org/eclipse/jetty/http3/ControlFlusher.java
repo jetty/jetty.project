@@ -23,8 +23,8 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.ControlGenerator;
 import org.eclipse.jetty.http3.internal.ControlStreamConnection;
 import org.eclipse.jetty.http3.internal.VarLenInt;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -42,7 +42,7 @@ public class ControlFlusher extends IteratingCallback
     private final Queue<Entry> queue = new ArrayDeque<>();
     private final QuicStreamEndPoint endPoint;
     private final ControlGenerator generator;
-    private final RetainableByteBufferPool.Accumulator accumulator;
+    private final ByteBufferPool.Accumulator accumulator;
     private boolean initialized;
     private Throwable terminated;
     private List<Entry> entries;
@@ -51,9 +51,9 @@ public class ControlFlusher extends IteratingCallback
     public ControlFlusher(QuicSession session, QuicStreamEndPoint endPoint, boolean useDirectByteBuffers)
     {
         this.endPoint = endPoint;
-        RetainableByteBufferPool bufferPool = session.getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = session.getByteBufferPool();
         this.generator = new ControlGenerator(bufferPool, useDirectByteBuffers);
-        this.accumulator = new RetainableByteBufferPool.Accumulator();
+        this.accumulator = new ByteBufferPool.Accumulator();
     }
 
     public boolean offer(Frame frame, Callback callback)
