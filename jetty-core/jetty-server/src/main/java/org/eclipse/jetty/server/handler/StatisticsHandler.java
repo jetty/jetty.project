@@ -54,12 +54,12 @@ public class StatisticsHandler extends Handler.Wrapper
         if (next == null)
             return false;
 
-        Request statisticsRequest = newStatisticsRequest(request);
+        StatisticsRequest statisticsRequest = newStatisticsRequest(request);
         try
         {
             if (next.process(statisticsRequest, response, callback))
                 return true;
-            _requestStats.decrement();
+            statisticsRequest.unProcessed();
             return false;
         }
         catch (Throwable t)
@@ -86,7 +86,7 @@ public class StatisticsHandler extends Handler.Wrapper
         );
     }
 
-    protected Request newStatisticsRequest(Request request)
+    protected StatisticsRequest newStatisticsRequest(Request request)
     {
         return new StatisticsRequest(request);
     }
@@ -196,11 +196,12 @@ public class StatisticsHandler extends Handler.Wrapper
         return _bytesWritten.longValue();
     }
 
-    private class StatisticsRequest extends Request.Wrapper
+    protected class StatisticsRequest extends Request.Wrapper
     {
         private StatisticsRequest(Request request)
         {
             super(request);
+            _requestStats.increment();
             addHttpStreamWrapper(this::asHttpStream);
         }
 
@@ -209,12 +210,22 @@ public class StatisticsHandler extends Handler.Wrapper
             return new StatisticsHttpStream(httpStream);
         }
 
+        /**
+         * Creating a {@link StatisticsRequest} increments the {@link #getRequests() request counter} before its gets a chance
+         * of figuring out if the request is going to be handled by the {@link StatisticsHandler#getHandler() wrapped handler}.
+         * In case the wrapped handler did not process the request, calling this method decrements the request counter to
+         * compensate for the unneeded increment.
+         */
+        protected void unProcessed()
+        {
+            _requestStats.decrement();
+        }
+
         protected class StatisticsHttpStream extends HttpStream.Wrapper
         {
             public StatisticsHttpStream(HttpStream httpStream)
             {
                 super(httpStream);
-                _requestStats.increment();
             }
 
             @Override
@@ -264,6 +275,11 @@ public class StatisticsHandler extends Handler.Wrapper
         }
     }
 
+    /**
+     * Checks that the wrapped handler can read/write at a minimal rate of N bytes per second.
+     * When reading or writing does not conform to the specified rates, this handler prevents
+     * further reads or writes by making them immediately fail.
+     */
     public static class MinimumDataRateHandler extends StatisticsHandler
     {
         private final long _minimumReadRate;
