@@ -17,7 +17,7 @@
 You can configure two types of logging in Jetty: _server logging_ and _request logging_.
 
 * xref:og-server-logging-server[Server logging] refers to the console output produced by Jetty itself.
-* xref:og-server-logging-request[Request logging] refers to the information that Jetty can capture about incoming HTTP requests and its responses to those requests.
+* xref:og-server-logging-request[Request logging] refers to the information that Jetty can capture about incoming HTTP requests and responses.
 
 include::server-logging-server.adoc[]
 include::server-logging-request.adoc[]

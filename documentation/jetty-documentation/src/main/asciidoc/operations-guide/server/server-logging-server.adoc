@@ -36,8 +36,8 @@ The default `StdErrAppender` format is:
 
 where `<datetime>` is a timestamp with the format `yyyy-MM-dd HH:mm:ss.SSS`.
 
-You can configure the appender via a file named `jetty-logging.properties`, which must be found in the xref:og-start-start-class-path[class-path].
-When you enable the `logging-jetty` module -- either directly or by transitive dependency, as in the following example -- Jetty automatically generates `jetty-logging.properties` for you in `$JETTY_BASE/resources/`:
+You can configure the appender via a file named `jetty-logging.properties`, which must be found in the server xref:og-start-start-class-path[class-path].
+When you enable the `logging-jetty` module -- either directly or by transitive dependency, as in the following example -- Jetty automatically generates a `jetty-logging.properties` file in `$JETTY_BASE/resources/`:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=http
@@ -51,8 +51,8 @@ include::jetty[args="--add-module=http",highlight="(logging-jetty *transitively 
 You can specify the following configuration options in `jetty-logging.properties`:
 
 `org.eclipse.jetty.LEVEL=`<logging level>::
-Sets the logging level used by Jetty globally.
-You can specify any of the usual SLF4J logging levels -- `TRACE`, `DEBUG`, `INFO` (default), `WARN` and `ERROR` -- plus two additional levels: `ALL` (an alias for `TRACE`) and `OFF` (disable logging entirely).
+Sets the logging level for the logger tree based at `org.eclipse.jetty`.
+You can specify any of the usual SLF4J logging levels -- `TRACE`, `DEBUG`, `INFO` (default), `WARN` and `ERROR` -- plus two additional levels: `ALL` (an alias for `TRACE`) and `OFF` (disables logging entirely).
 You can also configure a default logging level for specific loggers, or arbitrary logger trees:
 * `com.example.MyComponent.LEVEL=DEBUG` (sets logging level of logger `com.example.MyComponent` to `DEBUG`)
 * `com.example.LEVEL=DEBUG` (sets logging level of tree `+com.example.*+` to `DEBUG`)
@@ -79,9 +79,6 @@ Default value is the local timezone.
 `com.example.STACKS=`<boolean>::
 Specifies whether to hide stack traces for some arbitrary logger tree `+com.example.*+`.
 Default value is `true`
-
-`org.eclipse.jetty.logging.jmx.context=`<class name>::
-Configures the JMX context name, for use when xref:og-jmx[debugging via a JMX console].
 
 When using the Jetty SLF4J binding, the logging levels can be dynamically changed via JMX, see xref:og-troubleshooting-logging[the troubleshooting section] for more information.
 
@@ -121,7 +118,7 @@ To enable the `logging-logback` module, run:
 $ java -jar $JETTY_HOME/start.jar --add-modules=logging-logback,http
 ----
 
-Since LogBack is released under a license that is different from Jetty's, you will be prompted to accept the LogBack license:
+Since LogBack is released under a license that is different from Jetty's, you will be prompted to accept the LogBack license.
 Once you accept the LogBack license, your `$JETTY_BASE` directory will have the following structure:
 
 ----
@@ -177,11 +174,9 @@ When you use libraries that provide the features you need (for example, JDBC dri
 SLF4J provides link:http://www.slf4j.org/legacy.html[bridges for legacy logging APIs] that allows you to bridge logging from one of these legacy logging frameworks to SLF4J.
 Once the logging is bridged to SLF4J, you can use Jetty's xref:og-server-logging-server-default[default configuration] or a xref:og-server-logging-server-custom[custom configuration] so that your logging is centralized in one place.
 
-Jetty provides several modules out of the box for bridging older logging frameworks to SLF4J:
+Jetty provides the `logging-jul-capture` module for bridging from `java.util.logging` to SLF4J.
 
-* `logging-jul-capture` for bridging from `java.util.logging`
-* `logging-jcl-capture` for bridging from Jakarta Commons Logging (JCL)
-* `logging-log4j1-capture` for bridging from Apache Log4j
+IMPORTANT: The modules `logging-jcl-capture` and `logging-log4j1-capture` similarly provide bridges from Jakarta Commons Logging (JCL) and Apache Log4j, respectively; however, these modules are obsolete and should not be used anymore.
 
 [[og-server-logging-server-bridge-jul]]
 ====== Bridging from `java.util.logging`
