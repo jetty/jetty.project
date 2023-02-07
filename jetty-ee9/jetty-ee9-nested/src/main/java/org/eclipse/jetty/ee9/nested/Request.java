@@ -2008,7 +2008,7 @@ public class Request implements HttpServletRequest
                 if (p.getSubmittedFileName() == null)
                 {
                     formContentSize = Math.addExact(formContentSize, p.getSize());
-                    if (formContentSize > maxFormContentSize)
+                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
                         throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
 
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.

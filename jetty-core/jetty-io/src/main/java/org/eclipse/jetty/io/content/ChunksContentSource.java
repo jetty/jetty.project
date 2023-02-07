@@ -132,7 +132,6 @@ public class ChunksContentSource implements Content.Source
                 chunksToRelease = List.copyOf(chunks);
             }
         }
-
         chunksToRelease.forEach(Content.Chunk::release);
     }
 }

@@ -308,7 +308,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
      * <p>An ordered list of {@link MultiPart.Part}s that can
      * be accessed by index or by name, or iterated over.</p>
      */
-    public class Parts implements Iterable<MultiPart.Part>
+    public class Parts implements Iterable<MultiPart.Part>, Closeable
     {
         private final List<MultiPart.Part> parts;
 
@@ -378,6 +378,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             return parts.iterator();
         }
 
+        @Override
         public void close()
         {
             for (MultiPart.Part p : parts)
@@ -447,19 +448,28 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                     memoryFileSize += buffer.remaining();
                     if (memoryFileSize > maxMemoryFileSize)
                     {
-                        // Must save to disk.
-                        if (ensureFileChannel())
+                        try
                         {
-                            // Write existing memory chunks.
-                            for (Content.Chunk c : partChunks)
+                            // Must save to disk.
+                            if (ensureFileChannel())
                             {
-                                if (!write(c.getByteBuffer()))
-                                    return;
+                                // Write existing memory chunks.
+                                for (Content.Chunk c : partChunks)
+                                {
+                                    write(c.getByteBuffer());
+                                }
                             }
+                            write(buffer);
+                            if (chunk.isLast())
+                                close();
                         }
-                        write(buffer);
-                        if (chunk.isLast())
-                            close();
+                        catch (Throwable x)
+                        {
+                            onFailure(x);
+                        }
+
+                        partChunks.forEach(Content.Chunk::release);
+                        chunk.release();
                         return;
                     }
                 }
@@ -469,24 +479,15 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             partChunks.add(chunk);
         }
 
-        private boolean write(ByteBuffer buffer)
+        private void write(ByteBuffer buffer) throws Exception
         {
-            try
+            int remaining = buffer.remaining();
+            while (remaining > 0)
             {
-                int remaining = buffer.remaining();
-                while (remaining > 0)
-                {
-                    int written = fileChannel.write(buffer);
-                    if (written == 0)
-                        throw new NonWritableChannelException();
-                    remaining -= written;
-                }
-                return true;
-            }
-            catch (Throwable x)
-            {
-                onFailure(x);
-                return false;
+                int written = fileChannel.write(buffer);
+                if (written == 0)
+                    throw new NonWritableChannelException();
+                remaining -= written;
             }
         }
 

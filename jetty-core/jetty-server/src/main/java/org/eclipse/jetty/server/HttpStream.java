@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -22,6 +21,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StaticException;
 
 /**
  * A HttpStream is an abstraction that together with {@link MetaData.Request}, represents the
@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface HttpStream extends Callback
 {
+    Exception CONTENT_NOT_CONSUMED = new StaticException("Content Not Consumed");
+
     /**
      * <p>Attribute name to be used as a {@link Request} attribute to store/retrieve
      * the {@link Connection} created during the HTTP/1.1 upgrade mechanism or the
@@ -118,7 +120,7 @@ public interface HttpStream extends Callback
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
-                return new IOException("Content not consumed");
+                return CONTENT_NOT_CONSUMED;
 
             // Always release any returned content. This is a noop for EOF and Error content.
             content.release();
@@ -131,7 +133,7 @@ public interface HttpStream extends Callback
                 return null;
         }
 
-        return new IOException("Content not consumed");
+        return CONTENT_NOT_CONSUMED;
     }
 
     class Wrapper implements HttpStream

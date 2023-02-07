@@ -83,10 +83,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.INPUT_NONE;
-import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.NO_PARAMS;
-import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.__MULTIPART_CONFIG_ELEMENT;
-
 /**
  * The Jetty low level implementation of the ee10 {@link HttpServletRequest} object.
  *
@@ -101,7 +97,7 @@ public class ServletApiRequest implements HttpServletRequest
     //TODO review which fields should be in ServletContextRequest
     private AsyncContextState _async;
     private String _characterEncoding;
-    private int _inputState = INPUT_NONE;
+    private int _inputState = ServletContextRequest.INPUT_NONE;
     private BufferedReader _reader;
     private String _readerEncoding;
     private String _contentType;
@@ -487,7 +483,7 @@ public class ServletApiRequest implements HttpServletRequest
             if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
                 throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
 
-            MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
+            MultipartConfigElement config = (MultipartConfigElement)getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
@@ -532,7 +528,7 @@ public class ServletApiRequest implements HttpServletRequest
                 if (p.getSubmittedFileName() == null)
                 {
                     formContentSize = Math.addExact(formContentSize, p.getSize());
-                    if (formContentSize > maxFormContentSize)
+                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
                         throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
 
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
@@ -714,7 +710,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException
     {
-        if (_inputState != INPUT_NONE)
+        if (_inputState != ServletContextRequest.INPUT_NONE)
             return;
 
         _characterEncoding = encoding;
@@ -765,7 +761,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public ServletInputStream getInputStream() throws IOException
     {
-        if (_inputState != INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
+        if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = ServletContextRequest.INPUT_STREAM;
 
@@ -811,7 +807,7 @@ public class ServletApiRequest implements HttpServletRequest
     public void setContentParameters(Fields params)
     {
         if (params == null || params.getSize() == 0)
-            _contentParameters = NO_PARAMS;
+            _contentParameters = ServletContextRequest.NO_PARAMS;
         else
             _contentParameters = params;
     }
@@ -835,7 +831,7 @@ public class ServletApiRequest implements HttpServletRequest
         // protect against calls to recycled requests (which is illegal, but
         // this gives better failures
         Fields parameters = _parameters;
-        return parameters == null ? NO_PARAMS : parameters;
+        return parameters == null ? ServletContextRequest.NO_PARAMS : parameters;
     }
 
     private void extractContentParameters() throws BadMessageException
@@ -854,7 +850,7 @@ public class ServletApiRequest implements HttpServletRequest
                 try
                 {
                     int contentLength = getContentLength();
-                    if (contentLength != 0 && _inputState == INPUT_NONE)
+                    if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
                     {
                         String baseType = HttpField.valueParameters(getContentType(), null);
                         if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
@@ -874,7 +870,7 @@ public class ServletApiRequest implements HttpServletRequest
                             }
                         }
                         else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
-                            getAttribute(__MULTIPART_CONFIG_ELEMENT) != null)
+                            getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
                         {
                             try
                             {
@@ -891,7 +887,7 @@ public class ServletApiRequest implements HttpServletRequest
                     }
 
                     if (_contentParameters == null || _contentParameters.isEmpty())
-                        _contentParameters = NO_PARAMS;
+                        _contentParameters = ServletContextRequest.NO_PARAMS;
                 }
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
@@ -910,7 +906,7 @@ public class ServletApiRequest implements HttpServletRequest
         {
             HttpURI httpURI = _request.getHttpURI();
             if (httpURI == null || StringUtil.isEmpty(httpURI.getQuery()))
-                _queryParameters = NO_PARAMS;
+                _queryParameters = ServletContextRequest.NO_PARAMS;
             else
             {
                 try
@@ -1008,7 +1004,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public BufferedReader getReader() throws IOException
     {
-        if (_inputState != INPUT_NONE && _inputState != ServletContextRequest.INPUT_READER)
+        if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_READER)
             throw new IllegalStateException("STREAMED");
 
         if (_inputState == ServletContextRequest.INPUT_READER)

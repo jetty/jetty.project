@@ -93,7 +93,7 @@ public class ServletMultiPartFormData
 
     private Parts parse(ServletApiRequest request, int maxParts) throws IOException
     {
-        MultipartConfigElement config = (MultipartConfigElement)request.getAttribute(ServletContextRequest.__MULTIPART_CONFIG_ELEMENT);
+        MultipartConfigElement config = (MultipartConfigElement)request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
         if (config == null)
             throw new IllegalStateException("No multipart configuration element");
 
