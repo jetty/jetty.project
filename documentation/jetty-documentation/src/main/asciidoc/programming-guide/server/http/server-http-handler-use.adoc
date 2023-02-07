@@ -258,8 +258,8 @@ Server
         └── ContextHandler N
 ----
 
-It is possible to act on those statistics by subclassing `StatisticsHandler`. For instance, `StatisticsHandler.MinimumDataRateHandler`
-can be used to enforce a minimum read and write rates based of the figures collected by the `StatisticsHandler`:
+It is possible to act on those statistics by subclassing `StatisticsHandler`.
+For instance, `StatisticsHandler.MinimumDataRateHandler` can be used to enforce a minimum read rate and a minimum write rate based of the figures collected by the `StatisticsHandler`:
 
 [source,java,indent=0]
 ----

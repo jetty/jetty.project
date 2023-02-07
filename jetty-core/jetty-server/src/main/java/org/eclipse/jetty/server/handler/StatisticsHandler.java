@@ -58,7 +58,7 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             if (next.process(statisticsRequest, response, callback))
                 return true;
-            statisticsRequest.unProcessed();
+            statisticsRequest.notProcessed();
             return false;
         }
         catch (Throwable t)
@@ -195,9 +195,9 @@ public class StatisticsHandler extends Handler.Wrapper
         return _bytesWritten.longValue();
     }
 
-    protected class StatisticsRequest extends Request.Wrapper
+    public class StatisticsRequest extends Request.Wrapper
     {
-        private StatisticsRequest(Request request)
+        public StatisticsRequest(Request request)
         {
             super(request);
             _requestStats.increment();
@@ -215,12 +215,12 @@ public class StatisticsHandler extends Handler.Wrapper
          * In case the wrapped handler did not process the request, calling this method decrements the request counter to
          * compensate for the unneeded increment.
          */
-        protected void unProcessed()
+        protected void notProcessed()
         {
             _requestStats.decrement();
         }
 
-        protected class StatisticsHttpStream extends HttpStream.Wrapper
+        public class StatisticsHttpStream extends HttpStream.Wrapper
         {
             public StatisticsHttpStream(HttpStream httpStream)
             {
@@ -318,10 +318,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 // If you read 1 byte or more in 0ns or less, you have infinite bandwidth.
                 if (delayInNs <= 0L)
                     return Long.MAX_VALUE;
-                // The transformation of delayInNs to delayInSeconds must be done as floating
-                // point otherwise the result is going to be 0 for any delay below 1s.
-                float delayInSeconds = delayInNs / 1_000_000_000F;
-                return (long)(dataCount / delayInSeconds);
+                return dataCount * 1_000_000_000 / delayInNs;
             }
 
             @Override
