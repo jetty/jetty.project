@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.session;
 
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
@@ -172,7 +172,7 @@ public class SessionRenewTest
 
             //make a request to change the sessionid
             Request request = client.newRequest("http://localhost:" + port + contextPathA + servletMapping + "?action=renew");
-            request.cookie(new HttpCookie(SessionManager.__DefaultSessionCookie, "1234"));
+            request.cookie(HttpCookie.from(SessionManager.__DefaultSessionCookie, "1234"));
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
             String newSessionCookie = renewResponse.getHeaders().get("Set-Cookie");

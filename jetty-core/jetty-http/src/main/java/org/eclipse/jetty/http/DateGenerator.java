@@ -70,30 +70,6 @@ public class DateGenerator
         return formatDate(instant.toEpochMilli());
     }
 
-    /**
-     * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
-     *
-     * @param buf the buffer to put the formatted date into
-     * @param date the date in milliseconds
-     */
-    public static void formatCookieDate(StringBuilder buf, long date)
-    {
-        __dateGenerator.get().doFormatCookieDate(buf, date);
-    }
-
-    /**
-     * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
-     *
-     * @param date the date in milliseconds
-     * @return the formatted date
-     */
-    public static String formatCookieDate(long date)
-    {
-        StringBuilder buf = new StringBuilder(28);
-        formatCookieDate(buf, date);
-        return buf.toString();
-    }
-
     private final StringBuilder buf = new StringBuilder(32);
     private final GregorianCalendar gc = new GregorianCalendar(__GMT);
 

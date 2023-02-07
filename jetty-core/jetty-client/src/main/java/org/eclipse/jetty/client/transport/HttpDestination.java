@@ -32,6 +32,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -84,8 +85,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         this.requestTimeouts = new RequestTimeouts(client.getScheduler());
 
         String host = HostPort.normalizeHost(getHost());
-        if (!client.isDefaultPort(getScheme(), getPort()))
-            host += ":" + getPort();
+        int port = getPort();
+        if (port != HttpScheme.getDefaultPort(getScheme()))
+            host += ":" + port;
         hostField = new HttpField(HttpHeader.HOST, host);
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
@@ -199,7 +201,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     @Override
     public boolean isSecure()
     {
-        return HttpClient.isSchemeSecure(getScheme());
+        return HttpScheme.isSecure(getScheme());
     }
 
     @Override

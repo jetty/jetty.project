@@ -316,7 +316,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         // If the Host header is missing, add it.
         if (!proxyToServerRequest.getHeaders().contains(HttpHeader.HOST))
         {
-            if (!getHttpClient().isDefaultPort(scheme, serverPort))
+            if (serverPort != HttpScheme.getDefaultPort(scheme))
                 serverName += ":" + serverPort;
             String host = serverName;
             proxyToServerRequest.headers(headers -> headers

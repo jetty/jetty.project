@@ -86,4 +86,9 @@ public enum HttpScheme
         HttpScheme httpScheme = scheme == null ? null : CACHE.get(scheme);
         return httpScheme == null ? port : httpScheme.normalizePort(port);
     }
+
+    public static boolean isSecure(String scheme)
+    {
+        return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
+    }
 }

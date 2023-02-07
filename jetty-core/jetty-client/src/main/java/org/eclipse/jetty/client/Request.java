@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -30,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;

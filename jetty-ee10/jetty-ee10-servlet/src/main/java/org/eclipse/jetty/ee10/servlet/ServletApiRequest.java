@@ -67,6 +67,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
@@ -528,7 +529,7 @@ public class ServletApiRequest implements HttpServletRequest
                 pushCookies.append(cookies);
             for (String setCookie : setCookies)
             {
-                Map<String, String> cookieFields = HttpCookie.extractBasics(setCookie);
+                Map<String, String> cookieFields = HttpCookieUtils.extractBasics(setCookie);
                 String cookieName = cookieFields.get("name");
                 String cookieValue = cookieFields.get("value");
                 String cookieMaxAge = cookieFields.get("max-age");
