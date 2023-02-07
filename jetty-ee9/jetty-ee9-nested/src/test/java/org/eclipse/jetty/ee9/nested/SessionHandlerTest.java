@@ -31,6 +31,7 @@ import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -195,7 +196,7 @@ public class SessionHandlerTest
         assertEquals(99, cookie.getMaxAge());
         assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
 
-        String cookieStr = HttpCookie.getRFC6265SetCookie(cookie);
+        String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict"));
     }
 

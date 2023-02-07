@@ -38,9 +38,9 @@ public class HandlerTest
     public void testWrapperSetServer()
     {
         Server s = new Server();
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
-        Handler.Wrapper c = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
+        Handler.Singleton c = new Handler.Wrapper();
         a.setHandler(b);
         b.setHandler(c);
 
@@ -53,9 +53,9 @@ public class HandlerTest
     public void testWrapperServerSet()
     {
         Server s = new Server();
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
-        Handler.Wrapper c = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
+        Handler.Singleton c = new Handler.Wrapper();
         a.setServer(s);
         b.setHandler(c);
         a.setHandler(b);
@@ -67,7 +67,7 @@ public class HandlerTest
     @Test
     public void testWrapperThisLoop()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
 
         IllegalStateException e = assertThrows(IllegalStateException.class, () -> a.setHandler(a));
         assertThat(e.getMessage(), containsString("loop"));
@@ -76,8 +76,8 @@ public class HandlerTest
     @Test
     public void testWrapperSimpleLoop()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
 
         a.setHandler(b);
 
@@ -88,9 +88,9 @@ public class HandlerTest
     @Test
     public void testWrapperDeepLoop()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
-        Handler.Wrapper c = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
+        Handler.Singleton c = new Handler.Wrapper();
 
         a.setHandler(b);
         b.setHandler(c);
@@ -102,9 +102,9 @@ public class HandlerTest
     @Test
     public void testWrapperChainLoop()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
-        Handler.Wrapper c = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
+        Handler.Singleton c = new Handler.Wrapper();
 
         a.setHandler(b);
         c.setHandler(a);
@@ -217,8 +217,8 @@ public class HandlerTest
     @Test
     public void testInsertWrapperTail()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
 
         a.insertHandler(b);
         assertThat(a.getHandler(), equalTo(b));
@@ -228,9 +228,9 @@ public class HandlerTest
     @Test
     public void testInsertWrapper()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
-        Handler.Wrapper c = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
+        Handler.Singleton c = new Handler.Wrapper();
 
         a.insertHandler(c);
         a.insertHandler(b);
@@ -242,10 +242,10 @@ public class HandlerTest
     @Test
     public void testInsertWrapperChain()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
-        Handler.Wrapper c = new Handler.BaseWrapper();
-        Handler.Wrapper d = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
+        Handler.Singleton c = new Handler.Wrapper();
+        Handler.Singleton d = new Handler.Wrapper();
 
         a.insertHandler(d);
         b.insertHandler(c);
@@ -259,10 +259,10 @@ public class HandlerTest
     @Test
     public void testInsertWrapperBadChain()
     {
-        Handler.Wrapper a = new Handler.BaseWrapper();
-        Handler.Wrapper b = new Handler.BaseWrapper();
-        Handler.Wrapper c = new Handler.BaseWrapper();
-        Handler.Wrapper d = new Handler.BaseWrapper();
+        Handler.Singleton a = new Handler.Wrapper();
+        Handler.Singleton b = new Handler.Wrapper();
+        Handler.Singleton c = new Handler.Wrapper();
+        Handler.Singleton d = new Handler.Wrapper();
 
         a.insertHandler(d);
         b.insertHandler(c);
@@ -282,7 +282,7 @@ public class HandlerTest
     @Test
     public void testSetServerPropagation()
     {
-        Handler.Wrapper wrapper = new Handler.BaseWrapper();
+        Handler.Singleton wrapper = new Handler.Wrapper();
         Handler.Sequence collection = new Handler.Sequence();
         Handler handler = new Handler.Abstract()
         {
@@ -305,7 +305,7 @@ public class HandlerTest
     @Test
     public void testSetHandlerServerPropagation()
     {
-        Handler.Wrapper wrapper = new Handler.BaseWrapper();
+        Handler.Singleton wrapper = new Handler.Wrapper();
         Handler.Sequence collection = new Handler.Sequence();
         Handler handler = new Handler.Abstract()
         {

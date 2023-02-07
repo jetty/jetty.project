@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.Callback;
  * {@link PatternRule} subclasses), via regular expression matching (using
  * {@link RegexRule} subclasses), or by a custom implementation of {@code Rule}.</p>
  */
-public class RewriteHandler extends Handler.BaseWrapper
+public class RewriteHandler extends Handler.Wrapper
 {
     private final RuleContainer _rules;
 

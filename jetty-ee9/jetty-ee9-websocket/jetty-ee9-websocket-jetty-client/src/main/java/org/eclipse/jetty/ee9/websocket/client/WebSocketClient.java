@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.client;
 
 import java.io.IOException;
-import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Duration;
@@ -322,21 +321,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public void setConnectTimeout(long ms)
     {
         getHttpClient().setConnectTimeout(ms);
-    }
-
-    public CookieStore getCookieStore()
-    {
-        return getHttpClient().getCookieStore();
-    }
-
-    public void setCookieStore(CookieStore cookieStore)
-    {
-        getHttpClient().setCookieStore(cookieStore);
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return getHttpClient().getByteBufferPool();
     }
 
     @Override

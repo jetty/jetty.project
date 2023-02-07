@@ -272,7 +272,8 @@ public class HttpClientTransportDynamicTest
             public Origin newOrigin(org.eclipse.jetty.client.Request request)
             {
                 // Use prior-knowledge, i.e. negotiate==false.
-                boolean secure = HttpClient.isSchemeSecure(request.getScheme());
+                String scheme1 = request.getScheme();
+                boolean secure = HttpScheme.isSecure(scheme1);
                 List<String> protocols = HttpVersion.HTTP_2 == request.getVersion() ? http2.getProtocols(secure) : h1.getProtocols(secure);
                 return new Origin(request.getScheme(), request.getHost(), request.getPort(), request.getTag(), new Origin.Protocol(protocols, false));
             }

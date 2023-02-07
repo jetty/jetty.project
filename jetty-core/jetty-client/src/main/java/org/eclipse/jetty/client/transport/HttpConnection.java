@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client.transport;
 
-import java.net.CookieStore;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -30,13 +28,15 @@ import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -156,13 +156,17 @@ public abstract class HttpConnection implements IConnection, Attachable
         }
 
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()))
+        if (proxy instanceof HttpProxy)
         {
-            URI uri = request.getURI();
-            if (uri != null)
+            String scheme = request.getScheme();
+            if (!HttpScheme.isSecure(scheme))
             {
-                path = uri.toString();
-                request.path(path);
+                URI uri = request.getURI();
+                if (uri != null)
+                {
+                    path = uri.toString();
+                    request.path(path);
+                }
             }
         }
 
@@ -210,12 +214,12 @@ public abstract class HttpConnection implements IConnection, Attachable
 
         // Cookies
         StringBuilder cookies = convertCookies(request.getCookies(), null);
-        CookieStore cookieStore = getHttpClient().getCookieStore();
+        HttpCookieStore cookieStore = getHttpClient().getHttpCookieStore();
         if (cookieStore != null && cookieStore.getClass() != HttpCookieStore.Empty.class)
         {
             URI uri = request.getURI();
             if (uri != null)
-                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), cookies);
+                cookies = convertCookies(cookieStore.match(uri), cookies);
         }
         if (cookies != null)
         {

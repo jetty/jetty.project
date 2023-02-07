@@ -31,9 +31,7 @@ import java.util.Objects;
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.servlet.StatisticsServlet;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
@@ -361,7 +359,6 @@ public class Runner
                                 _server.setHandler(statsHandler);
 
                                 ServletContextHandler statsContext = new ServletContextHandler(_contexts, "/stats");
-                                statsContext.addServlet(new ServletHolder(new StatisticsServlet()), "/");
                                 statsContext.setSessionHandler(new SessionHandler());
                                 if (_statsPropFile != null)
                                 {

@@ -226,7 +226,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         {
             if (parent instanceof Collection collection)
                 collection.addHandler(handler);
-            else if (parent instanceof Wrapper wrapper)
+            else if (parent instanceof Singleton wrapper)
                 wrapper.setHandler(handler);
             else if (parent != null)
                 throw new IllegalArgumentException("Unknown parent type: " + parent);
@@ -256,16 +256,18 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
     /**
      * <p>A {@link Handler.Container} that can contain a single other {@code Handler}.</p>
-     * @see BaseWrapper for an implementation of {@link Wrapper}.
+     * <p>This is "singleton" in the sense of {@link Collections#singleton(Object)} and not
+     * in the sense of the singleton pattern of a single instance per JVM.</p>
+     * @see Wrapper for an implementation of {@link Singleton}.
      */
-    interface Wrapper extends Container
+    interface Singleton extends Container
     {
         Handler getHandler();
 
         /**
          * Set the nested handler.
          * Implementations should check for loops, set the server and update any {@link ContainerLifeCycle} beans, all
-         * of which can be done by using the utility method {@link #updateHandler(Wrapper, Handler)}
+         * of which can be done by using the utility method {@link #updateHandler(Singleton, Handler)}
          * @param handler The handler to set.
          */
         void setHandler(Handler handler);
@@ -286,12 +288,12 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             return (next == null) ? Collections.emptyList() : Collections.singletonList(next);
         }
 
-        default void insertHandler(Wrapper handler)
+        default void insertHandler(Singleton handler)
         {
-            Wrapper tail = handler;
-            while (tail.getHandler() instanceof BaseWrapper)
+            Singleton tail = handler;
+            while (tail.getHandler() instanceof Wrapper)
             {
-                tail = (BaseWrapper)tail.getHandler();
+                tail = (Wrapper)tail.getHandler();
             }
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
@@ -301,12 +303,12 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         }
 
         /**
-         * @return The tail {@link Wrapper} of a chain of {@link Wrapper}s
+         * @return The tail {@link Singleton} of a chain of {@link Singleton}s
          */
-        default Wrapper getTail()
+        default Singleton getTail()
         {
-            Wrapper tail = this;
-            while (tail.getHandler() instanceof Wrapper wrapped)
+            Singleton tail = this;
+            while (tail.getHandler() instanceof Singleton wrapped)
                 tail = wrapped;
             return tail;
         }
@@ -322,7 +324,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
          * @param handler The handle to set
          * @return The set handler.
          */
-        static Handler updateHandler(Wrapper wrapper, Handler handler)
+        static Handler updateHandler(Singleton wrapper, Handler handler)
         {
             // check state
             Server server = wrapper.getServer();
@@ -561,31 +563,31 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
     }
 
     /**
-     * An implementation of {@link Wrapper}, which is a {@link Handler.Container} that wraps a single other {@link Handler}.
+     * An implementation of {@link Singleton}, which is a {@link Handler.Container} that wraps a single other {@link Handler}.
      */
-    class BaseWrapper extends AbstractContainer implements Wrapper
+    class Wrapper extends AbstractContainer implements Singleton
     {
         private Handler _handler;
 
-        public BaseWrapper()
+        public Wrapper()
         {
             this(null);
         }
 
-        public BaseWrapper(boolean dynamic)
+        public Wrapper(boolean dynamic)
         {
             this(dynamic, null);
         }
 
-        public BaseWrapper(Handler handler)
+        public Wrapper(Handler handler)
         {
             this(false, handler);
         }
 
-        public BaseWrapper(boolean dynamic, Handler handler)
+        public Wrapper(boolean dynamic, Handler handler)
         {
             super(dynamic);
-            _handler = handler == null ? null : Wrapper.updateHandler(this, handler);
+            _handler = handler == null ? null : Singleton.updateHandler(this, handler);
         }
 
         @Override
@@ -599,7 +601,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         {
             if (!isDynamic() && isStarted())
                 throw new IllegalStateException(getState());
-            _handler = Wrapper.updateHandler(this, handler);
+            _handler = Singleton.updateHandler(this, handler);
         }
 
         @Override

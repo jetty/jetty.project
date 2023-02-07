@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * method must be called manually after start().
  */
 @ManagedObject("Servlet Handler")
-public class ServletHandler extends Handler.BaseWrapper
+public class ServletHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletHandler.class);
 

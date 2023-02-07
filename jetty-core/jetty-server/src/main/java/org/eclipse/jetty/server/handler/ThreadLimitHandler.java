@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * a thread is available.
  * <p>This is a simpler alternative to DosFilter</p>
  */
-public class ThreadLimitHandler extends Handler.BaseWrapper
+public class ThreadLimitHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadLimitHandler.class);
 

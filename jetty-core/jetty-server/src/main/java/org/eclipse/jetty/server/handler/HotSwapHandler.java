@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 /**
  * A <code>HandlerContainer</code> that allows a hot swap of a wrapped handler.
  */
-public class HotSwapHandler extends Handler.AbstractContainer implements Handler.Wrapper
+public class HotSwapHandler extends Handler.AbstractContainer implements Handler.Singleton
 {
     // TODO unit tests
 
@@ -51,7 +51,7 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     public void setHandler(Handler handler)
     {
         // check state
-        Server server1 = ((Wrapper)this).getServer();
+        Server server1 = ((Singleton)this).getServer();
         if (server1 != null && server1.isStarted() && handler != null &&
             server1.getInvocationType() != Invocable.combine(server1.getInvocationType(), handler.getInvocationType()))
             throw new IllegalArgumentException("Cannot change invocation type of started server");
