@@ -256,6 +256,8 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
     /**
      * <p>A {@link Handler.Container} that can contain a single other {@code Handler}.</p>
+     * <p>This is "singleton" in the sense of {@link Collections#singleton(Object)} and not
+     * in the sense of the singleton pattern of a single instance per JVM.</p>
      * @see Wrapper for an implementation of {@link Singleton}.
      */
     interface Singleton extends Container
