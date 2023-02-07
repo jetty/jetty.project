@@ -52,7 +52,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -201,8 +200,7 @@ public class HugeResourceTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setDetailedDump(true);
         serverThreads.setName("server");
-        // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
-        server = new Server(serverThreads, null, new ByteBufferPool.NonPooling());
+        server = new Server(serverThreads);
         httpConfig = new HttpConfiguration();
         ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig));
         connector.setPort(0);
@@ -249,8 +247,6 @@ public class HugeResourceTest
         connector.setSelectors(1);
         connector.setExecutor(clientThreads);
         client = new HttpClient(new HttpClientTransportOverHTTP(connector));
-        // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
-        client.setByteBufferPool(new ByteBufferPool.NonPooling());
         client.start();
     }
 
