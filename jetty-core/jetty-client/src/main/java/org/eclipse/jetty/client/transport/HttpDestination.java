@@ -85,10 +85,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         this.requestTimeouts = new RequestTimeouts(client.getScheduler());
 
         String host = HostPort.normalizeHost(getHost());
-        String scheme = getScheme();
         int port = getPort();
-        if (port != HttpScheme.getDefaultPort(scheme))
-            host += ":" + getPort();
+        if (port != HttpScheme.getDefaultPort(getScheme()))
+            host += ":" + port;
         hostField = new HttpField(HttpHeader.HOST, host);
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
@@ -202,8 +201,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     @Override
     public boolean isSecure()
     {
-        String scheme = getScheme();
-        return HttpScheme.isSecure(scheme);
+        return HttpScheme.isSecure(getScheme());
     }
 
     @Override
