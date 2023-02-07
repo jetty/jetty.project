@@ -19,8 +19,9 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -43,8 +44,10 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -78,141 +81,6 @@ public class StatisticsHandlerTest
     {
         _server.stop();
         _server.join();
-    }
-
-    @Test
-    public void testDataReadRate() throws Exception
-    {
-        AtomicLong readRate = new AtomicLong(-1L);
-
-        _statsHandler.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean process(Request request, Response response, Callback callback)
-            {
-                while (true)
-                {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
-                    {
-                        request.demand(() -> process(request, response, callback));
-                        return true;
-                    }
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        Long rr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
-                        readRate.set(rr);
-                        //System.err.println("over; read rate=" + rr + " b/s");
-                        callback.succeeded();
-                        return true;
-                    }
-                }
-            }
-        });
-        _server.start();
-
-        String request = """
-            POST / HTTP/1.1\r
-            Host: localhost\r
-            Content-Length: 1000\r
-            \r
-            """;
-
-        LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
-
-        // send 1 byte per ms -> should avg to ~1000 bytes/s
-        for (int i = 0; i < 1000; i++)
-        {
-            Thread.sleep(1);
-            endPoint.addInput(ByteBuffer.allocate(1));
-        }
-
-        _latchHandler.await();
-        assertThat(readRate.get(), allOf(greaterThan(600L), lessThan(1100L)));
-    }
-
-    @Test
-    public void testDataWriteRate() throws Exception
-    {
-        AtomicLong writeRate = new AtomicLong(-1L);
-        CountDownLatch latch = new CountDownLatch(1);
-
-        _statsHandler.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean process(Request request, Response response, Callback callback)
-            {
-                write(response, 0, new Callback()
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        Long wr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
-                        //System.err.println("over; write rate=" + wr + " b/s");
-                        writeRate.set(wr);
-
-                        callback.succeeded();
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        callback.failed(x);
-                        latch.countDown();
-                    }
-                });
-                return true;
-            }
-
-            private void write(Response response, int counter, Callback finalCallback)
-            {
-                try
-                {
-                    Thread.sleep(1);
-                }
-                catch (InterruptedException e)
-                {
-                    // ignore
-                }
-
-                if (counter < 1000)
-                {
-                    Callback cb = new Callback()
-                    {
-                        @Override
-                        public void succeeded()
-                        {
-                            write(response, counter + 1, finalCallback);
-                        }
-
-                        @Override
-                        public void failed(Throwable x)
-                        {
-                            finalCallback.failed(x);
-                        }
-                    };
-                    response.write(false, ByteBuffer.allocate(1), cb);
-                }
-                else
-                {
-                    response.write(true, ByteBuffer.allocate(1), finalCallback);
-                }
-            }
-        });
-        _server.start();
-
-        String request = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            \r
-            """;
-
-        _connector.executeRequest(request);
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        assertThat(writeRate.get(), allOf(greaterThan(600L), lessThan(1100L)));
     }
 
     @Test
@@ -250,6 +118,13 @@ public class StatisticsHandlerTest
         });
 
         _latchHandler.setHandler(mdrh);
+        AtomicReference<String> messageRef = new AtomicReference<>();
+        _server.setErrorProcessor((request, response, callback) ->
+        {
+            messageRef.set((String)request.getAttribute(ErrorProcessor.ERROR_MESSAGE));
+            callback.succeeded();
+            return true;
+        });
         _server.start();
 
         String request = """
@@ -274,12 +149,14 @@ public class StatisticsHandlerTest
             AtomicInteger statusHolder = new AtomicInteger();
             endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
             assertThat(statusHolder.get(), is(500));
+            assertThat(messageRef.get(), startsWith("java.util.concurrent.TimeoutException: read rate is too low"));
         }
     }
 
     @Test
     public void testMinimumDataWriteRateHandler() throws Exception
     {
+        AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1100);
         int expectedContentLength = 1000;
@@ -301,6 +178,7 @@ public class StatisticsHandlerTest
                     public void failed(Throwable x)
                     {
                         callback.failed(x);
+                        exceptionRef.set(x);
                         latch.countDown();
                     }
                 });
@@ -358,6 +236,8 @@ public class StatisticsHandlerTest
         AtomicInteger statusHolder = new AtomicInteger();
         ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
         assertThat(statusHolder.get(), is(200));
+        assertThat(exceptionRef.get(), instanceOf(TimeoutException.class));
+        assertThat(exceptionRef.get().getMessage(), startsWith("write rate is too low"));
         assertThat(byteBuffer.remaining(), lessThan(expectedContentLength));
     }
 
@@ -382,9 +262,6 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getProcessings());
-        assertEquals(1, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
         barrier[2].await();
@@ -393,9 +270,6 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
         assertEquals(1, _statsHandler.getResponses2xx());
 
         _latchHandler.reset();
@@ -411,9 +285,6 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getProcessings());
-        assertEquals(1, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
         barrier[2].await();
@@ -423,9 +294,6 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
         assertEquals(2, _statsHandler.getResponses2xx());
     }
 
@@ -451,9 +319,6 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getProcessings());
-        assertEquals(2, _statsHandler.getProcessingsActive());
-        assertEquals(2, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
         barrier[2].await();
@@ -462,9 +327,6 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(2, _statsHandler.getProcessingsMax());
         assertEquals(2, _statsHandler.getResponses2xx());
     }
 
@@ -503,18 +365,12 @@ public class StatisticsHandlerTest
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getProcessings());
-            assertEquals(1, _statsHandler.getProcessingsActive());
-            assertEquals(1, _statsHandler.getProcessingsMax());
             barrier[1].await();
             barrier[2].await();
 
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getProcessings());
-            assertEquals(1, _statsHandler.getProcessingsActive());
-            assertEquals(1, _statsHandler.getProcessingsMax());
             barrier[3].await();
             barrier[4].await();
 
@@ -525,9 +381,6 @@ public class StatisticsHandlerTest
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(0, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getProcessings());
-            assertEquals(0, _statsHandler.getProcessingsActive());
-            assertEquals(1, _statsHandler.getProcessingsMax());
         }
     }
 
@@ -683,62 +536,8 @@ public class StatisticsHandlerTest
                 lessThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 5 / 4)));
             assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
             assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
-
-            assertThat(_statsHandler.getProcessingTimeTotal(), allOf(
-                greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 3 / 4),
-                lessThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 5 / 4)));
-            assertTrue(_statsHandler.getProcessingTimeTotal() < _statsHandler.getRequestTimeTotal());
-            assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMax());
-            assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMean(), 1.0);
         }
     }
-//
-//    @Test
-//    public void testAsyncRequestWithShutdown() throws Exception
-//    {
-//        long delay = 500;
-//        CountDownLatch serverLatch = new CountDownLatch(1);
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-//            {
-//                AsyncContext asyncContext = request.startAsync();
-//                asyncContext.setTimeout(0);
-//                new Thread(() ->
-//                {
-//                    try
-//                    {
-//                        Thread.sleep(delay);
-//                        asyncContext.complete();
-//                    }
-//                    catch (InterruptedException e)
-//                    {
-//                        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-//                        asyncContext.complete();
-//                    }
-//                }).start();
-//                serverLatch.countDown();
-//            }
-//        });
-//        _server.start();
-//
-//        String request = "GET / HTTP/1.1\r\n" +
-//            "Host: localhost\r\n" +
-//            "\r\n";
-//        _connector.executeRequest(request);
-//
-//        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
-//
-//        Future<Void> shutdown = _statsHandler.shutdown();
-//        assertFalse(shutdown.isDone());
-//
-//        Thread.sleep(delay / 2);
-//        assertFalse(shutdown.isDone());
-//
-//        Thread.sleep(delay);
-//        assertTrue(shutdown.isDone());
-//    }
 
     // This handler is external to the statistics handler and it is used to ensure that statistics handler's
     // handle() is fully executed before asserting its values in the tests, to avoid race conditions with the
