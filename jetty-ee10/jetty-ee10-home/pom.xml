@@ -240,8 +240,8 @@
             </goals>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-el,apache-jsp,ecj</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp,jakart.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
+              <includeArtifactIds>jakart.servlet.jsp-api,jakarta.el-api,apache-el,apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
@@ -255,8 +255,8 @@
             </goals>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-el,apache-jsp,ecj</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp,jakarta.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
+              <includeArtifactIds>jakarta.servlet.jsp-api,jakarta.el-api,apache-el,apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
             </configuration>

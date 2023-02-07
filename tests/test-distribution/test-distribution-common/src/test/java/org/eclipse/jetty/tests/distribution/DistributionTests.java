@@ -194,7 +194,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled //TODO glassfish-jstl not working in jpms
     @ParameterizedTest
     @ValueSource(strings = {"ee10"})
     public void testSimpleWebAppWithJSPOnModulePath(String env) throws Exception
@@ -237,7 +236,6 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                System.err.println(response.getContentAsString());
                 assertThat(response.getContentAsString(), containsString("JSTL Example"));
                 assertThat(response.getContentAsString(), not(containsString("<c:")));
             }
