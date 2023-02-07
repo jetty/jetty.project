@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  * </ul>
  * Multiple handlers may be combined with:
  * <ul>
- * <li>{@link Handler.BaseWrapper} which will nest one handler inside another. In
+ * <li>{@link Handler.Wrapper} which will nest one handler inside another. In
  * this example, the HelloHandler is nested inside a HandlerWrapper that sets
  * the greeting as a request attribute.
  * <li>{@link Handler.Sequence} which will call a collection of handlers until the
@@ -78,7 +78,7 @@ public class ManyHandlers
     /**
      * Add a request attribute, but produce no output.
      */
-    public static class WelcomeWrapHandler extends Handler.BaseWrapper
+    public static class WelcomeWrapHandler extends Handler.Wrapper
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -98,7 +98,7 @@ public class ManyHandlers
 
         // create the handlers
         Handler param = new ParamHandler();
-        Handler.Wrapper wrapper = new WelcomeWrapHandler();
+        Handler.Singleton wrapper = new WelcomeWrapHandler();
         Handler hello = new HelloHandler();
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setMinGzipSize(10);

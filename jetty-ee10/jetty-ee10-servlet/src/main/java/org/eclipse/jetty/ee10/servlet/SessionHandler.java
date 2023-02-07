@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionHandler extends AbstractSessionManager implements Handler.Wrapper
+public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {    
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
     
@@ -93,7 +93,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Wr
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = Wrapper.updateHandler(this, handler);
+        _handler = Handler.Singleton.updateHandler(this, handler);
     }
 
     @Override

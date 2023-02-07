@@ -658,7 +658,7 @@ public class ContextHandlerTest
     public void testSetHandlerLoopDeepWrapper()
     {
         ContextHandler contextHandlerA = new ContextHandler();
-        Handler.Wrapper handlerWrapper = new Handler.BaseWrapper();
+        Handler.Singleton handlerWrapper = new Handler.Wrapper();
         contextHandlerA.setHandler(handlerWrapper);
         assertThrows(IllegalStateException.class, () -> handlerWrapper.setHandler(contextHandlerA));
     }

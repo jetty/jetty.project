@@ -97,7 +97,7 @@ public class SniSslConnectionFactoryTest
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
 
-        Handler.Wrapper xCertHandler = new Handler.BaseWrapper()
+        Handler.Singleton xCertHandler = new Handler.Wrapper()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

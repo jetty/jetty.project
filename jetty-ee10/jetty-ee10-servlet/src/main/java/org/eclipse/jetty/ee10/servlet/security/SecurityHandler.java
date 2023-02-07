@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
  */
-public abstract class SecurityHandler extends Handler.BaseWrapper implements Authenticator.AuthConfiguration
+public abstract class SecurityHandler extends Handler.Wrapper implements Authenticator.AuthConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class);
     private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();

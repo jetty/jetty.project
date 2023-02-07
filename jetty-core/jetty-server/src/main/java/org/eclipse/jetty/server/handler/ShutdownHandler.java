@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  */
-public class ShutdownHandler extends Handler.BaseWrapper
+public class ShutdownHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownHandler.class);
 
