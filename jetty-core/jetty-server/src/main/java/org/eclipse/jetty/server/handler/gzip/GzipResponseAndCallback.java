@@ -341,7 +341,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             // If we have no buffer
             if (_buffer == null)
             {
-                _buffer = getRequest().getComponents().getRetainableByteBufferPool().acquire(_bufferSize, false);
+                _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
                 ByteBuffer byteBuffer = _buffer.getByteBuffer();
                 // Per RFC-1952, GZIP is LITTLE_ENDIAN
                 byteBuffer.order(ByteOrder.LITTLE_ENDIAN);

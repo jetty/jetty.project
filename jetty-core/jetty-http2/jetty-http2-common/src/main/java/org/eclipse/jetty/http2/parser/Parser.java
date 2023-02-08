@@ -31,7 +31,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,7 @@ public class Parser
 {
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final Listener listener;
     private final HeaderParser headerParser;
     private final HpackDecoder hpackDecoder;
@@ -55,12 +55,12 @@ public class Parser
     private boolean continuation;
     private State state = State.HEADER;
 
-    public Parser(RetainableByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
+    public Parser(ByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
         this(bufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
     }
 
-    public Parser(RetainableByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    public Parser(ByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
     {
         this.bufferPool = bufferPool;
         this.listener = listener;

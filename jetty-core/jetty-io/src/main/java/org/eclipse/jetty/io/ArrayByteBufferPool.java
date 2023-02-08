@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
  * divided by 8.</p>
  */
 @ManagedObject
-public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, Dumpable
+public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ArrayRetainableByteBufferPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ArrayByteBufferPool.class);
     static final int DEFAULT_FACTOR = 4096;
     static final int DEFAULT_MAX_CAPACITY_BY_FACTOR = 16;
 
@@ -60,29 +60,29 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     private final IntUnaryOperator _bucketIndexFor;
 
     /**
-     * Creates a new ArrayRetainableByteBufferPool with a default configuration.
+     * Creates a new ArrayByteBufferPool with a default configuration.
      * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      */
-    public ArrayRetainableByteBufferPool()
+    public ArrayByteBufferPool()
     {
         this(0, -1, -1);
     }
 
     /**
-     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
+     * Creates a new ArrayByteBufferPool with the given configuration.
      * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
      * @param maxCapacity the maximum ByteBuffer capacity
      */
-    public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity)
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity)
     {
         this(minCapacity, factor, maxCapacity, Integer.MAX_VALUE);
     }
 
     /**
-     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
+     * Creates a new ArrayByteBufferPool with the given configuration.
      * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      *
      * @param minCapacity the minimum ByteBuffer capacity
@@ -90,13 +90,13 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
      * @param maxCapacity the maximum ByteBuffer capacity
      * @param maxBucketSize the maximum number of ByteBuffers for each bucket
      */
-    public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
         this(minCapacity, factor, maxCapacity, maxBucketSize, 0L, 0L);
     }
 
     /**
-     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
+     * Creates a new ArrayByteBufferPool with the given configuration.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -105,13 +105,13 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      */
-    public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
         this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null);
     }
 
     /**
-     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
+     * Creates a new ArrayByteBufferPool with the given configuration.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -122,7 +122,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
      * @param bucketIndexFor a {@link IntUnaryOperator} that takes a capacity and returns a bucket index
      * @param bucketCapacity a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
      */
-    protected ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
+    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
     {
         if (minCapacity <= 0)
             minCapacity = 0;
@@ -336,7 +336,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         return total;
     }
 
-    @ManagedOperation(value = "Clears this RetainableByteBufferPool", impact = "ACTION")
+    @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
     public void clear()
     {
         clearArray(_direct, _currentDirectMemory);
@@ -505,11 +505,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     }
 
     /**
-     * A variant of the {@link ArrayRetainableByteBufferPool} that
+     * A variant of the {@link ArrayByteBufferPool} that
      * uses buckets of buffers that increase in size by a power of
      * 2 (eg 1k, 2k, 4k, 8k, etc.).
      */
-    public static class Quadratic extends ArrayRetainableByteBufferPool
+    public static class Quadratic extends ArrayByteBufferPool
     {
         public Quadratic()
         {

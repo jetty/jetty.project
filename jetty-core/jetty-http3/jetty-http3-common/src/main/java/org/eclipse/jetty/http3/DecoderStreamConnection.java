@@ -18,8 +18,8 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class DecoderStreamConnection extends InstructionStreamConnection
 {
@@ -28,7 +28,7 @@ public class DecoderStreamConnection extends InstructionStreamConnection
 
     private final QpackEncoder encoder;
 
-    public DecoderStreamConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, QpackEncoder encoder)
+    public DecoderStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder)
     {
         super(endPoint, executor, bufferPool);
         this.encoder = encoder;

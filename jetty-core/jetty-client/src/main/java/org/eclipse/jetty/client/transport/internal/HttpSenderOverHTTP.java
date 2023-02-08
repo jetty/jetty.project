@@ -23,10 +23,10 @@ import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -158,7 +158,7 @@ public class HttpSenderOverHTTP extends HttpSender
         protected Action process() throws Exception
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
-            RetainableByteBufferPool bufferPool = httpClient.getRetainableByteBufferPool();
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -289,7 +289,7 @@ public class HttpSenderOverHTTP extends HttpSender
         protected Action process() throws Exception
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
-            RetainableByteBufferPool bufferPool = httpClient.getRetainableByteBufferPool();
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
             {

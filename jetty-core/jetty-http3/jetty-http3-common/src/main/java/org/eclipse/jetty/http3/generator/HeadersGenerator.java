@@ -22,8 +22,8 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersGenerator extends FrameGenerator
@@ -32,7 +32,7 @@ public class HeadersGenerator extends FrameGenerator
     private final int maxLength;
     private final boolean useDirectByteBuffers;
 
-    public HeadersGenerator(RetainableByteBufferPool bufferPool, QpackEncoder encoder, int maxLength, boolean useDirectByteBuffers)
+    public HeadersGenerator(ByteBufferPool bufferPool, QpackEncoder encoder, int maxLength, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.encoder = encoder;
@@ -41,13 +41,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeadersFrame(accumulator, streamId, headersFrame, fail);
     }
 
-    private int generateHeadersFrame(RetainableByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
+    private int generateHeadersFrame(ByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
         try
         {
@@ -55,7 +55,7 @@ public class HeadersGenerator extends FrameGenerator
             int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
             int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
             // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
-            RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+            RetainableByteBuffer buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
             byteBuffer.position(maxHeaderLength);

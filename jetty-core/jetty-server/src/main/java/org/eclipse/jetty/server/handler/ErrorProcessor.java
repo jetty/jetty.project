@@ -203,7 +203,7 @@ public class ErrorProcessor implements Request.Processor
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         bufferSize = Math.min(8192, bufferSize); // TODO ?
-        RetainableByteBuffer buffer = request.getComponents().getRetainableByteBufferPool().acquire(bufferSize, false);
+        RetainableByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
 
         try
         {

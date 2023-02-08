@@ -721,9 +721,15 @@ public class ServletApiResponse implements HttpServletResponse
         }
 
         @Override
-        public String asString()
+        public int hashCode()
         {
-            return HttpCookie.asString(this);
+            return HttpCookie.hashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            return HttpCookie.equals(this, obj);
         }
 
         @Override

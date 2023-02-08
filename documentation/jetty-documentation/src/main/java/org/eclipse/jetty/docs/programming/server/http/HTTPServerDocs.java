@@ -511,11 +511,11 @@ public class HTTPServerDocs
         GzipHandler gzipHandler = new GzipHandler();
         server.setHandler(gzipHandler);
 
-        Handler.Collection collection = new Handler.Collection();
-        gzipHandler.setHandler(collection);
+        Handler.Sequence sequence = new Handler.Sequence();
+        gzipHandler.setHandler(sequence);
 
-        collection.addHandler(new App1Handler());
-        collection.addHandler(new App2Handler());
+        sequence.addHandler(new App1Handler());
+        sequence.addHandler(new App2Handler());
         // end::handlerTree[]
     }
 
@@ -927,9 +927,9 @@ public class HTTPServerDocs
         // end::rewriteHandler[]
     }
 
-    public void statsHandler() throws Exception
+    public void statisticsHandler() throws Exception
     {
-        // tag::statsHandler[]
+        // tag::statisticsHandler[]
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -945,7 +945,29 @@ public class HTTPServerDocs
         statsHandler.setHandler(contextCollection);
 
         server.start();
-        // end::statsHandler[]
+        // end::statisticsHandler[]
+    }
+
+    public void dataRateHandler() throws Exception
+    {
+        // tag::dataRateHandler[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
+        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+
+        // Link the MinimumDataRateHandler to the Server.
+        server.setHandler(dataRateHandler);
+
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the MinimumDataRateHandler.
+        dataRateHandler.setHandler(contextCollection);
+
+        server.start();
+        // end::dataRateHandler[]
     }
 
     public void securedHandler() throws Exception

@@ -16,19 +16,19 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class HeaderBlockFragments
 {
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private PriorityFrame priorityFrame;
     private boolean endStream;
     private int streamId;
     private RetainableByteBuffer storage;
 
-    public HeaderBlockFragments(RetainableByteBufferPool bufferPool)
+    public HeaderBlockFragments(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
     }

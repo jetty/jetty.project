@@ -30,10 +30,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
-    private final RetainableByteBufferPool retainableByteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
     private boolean complete;
@@ -66,7 +66,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
-        retainableByteBufferPool = httpClient.getRetainableByteBufferPool();
+        byteBufferPool = httpClient.getByteBufferPool();
     }
 
     void receive()
@@ -197,7 +197,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         HttpClient client = getHttpDestination().getHttpClient();
         boolean direct = client.isUseInputDirectByteBuffers();
-        return retainableByteBufferPool.acquire(client.getResponseBufferSize(), direct);
+        return byteBufferPool.acquire(client.getResponseBufferSize(), direct);
     }
 
     private void releaseNetworkBuffer()

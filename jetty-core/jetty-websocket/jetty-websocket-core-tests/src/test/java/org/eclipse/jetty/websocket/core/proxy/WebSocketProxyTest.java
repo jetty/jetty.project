@@ -100,7 +100,7 @@ public class WebSocketProxyTest
         ServerConnector connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         testHandler = new TestHandler();
         handlers.addHandler(testHandler);
 

@@ -22,8 +22,8 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.internal.Flags;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class PushPromiseGenerator extends FrameGenerator
@@ -37,13 +37,13 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
+    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
         return generatePushPromise(accumulator, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public int generatePushPromise(RetainableByteBufferPool.Accumulator accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
+    public int generatePushPromise(ByteBufferPool.Accumulator accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);

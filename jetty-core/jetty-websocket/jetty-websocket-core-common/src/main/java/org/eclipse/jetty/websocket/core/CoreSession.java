@@ -19,7 +19,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -82,9 +82,9 @@ public interface CoreSession extends OutgoingFrames, Configuration
     WebSocketComponents getWebSocketComponents();
 
     /**
-     * @return The shared RetainableByteBufferPool
+     * @return The shared ByteBufferPool
      */
-    RetainableByteBufferPool getRetainableByteBufferPool();
+    ByteBufferPool getByteBufferPool();
 
     /**
      * The Local Socket Address for the connection
@@ -241,7 +241,7 @@ public interface CoreSession extends OutgoingFrames, Configuration
         }
 
         @Override
-        public RetainableByteBufferPool getRetainableByteBufferPool()
+        public ByteBufferPool getByteBufferPool()
         {
             return null;
         }

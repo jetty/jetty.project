@@ -22,9 +22,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.Request;
@@ -50,7 +50,7 @@ public class GzipRequest extends Request.Wrapper
         if (inflateBufferSize > 0)
         {
             Components components = getComponents();
-            _decoder = new Decoder(__inflaterPool, components.getRetainableByteBufferPool(), inflateBufferSize);
+            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), inflateBufferSize);
             _gzipTransformer = new GzipTransformer(getWrapped());
         }
     }
@@ -192,7 +192,7 @@ public class GzipRequest extends Request.Wrapper
     {
         private RetainableByteBuffer _decoded;
 
-        private Decoder(InflaterPool inflaterPool, RetainableByteBufferPool bufferPool, int bufferSize)
+        private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
         {
             super(inflaterPool, bufferPool, bufferSize);
         }

@@ -21,8 +21,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -189,7 +189,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
                 if (shouldBuffer(this, last))
                 {
                     ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
-                    RetainableByteBufferPool bufferPool = connectionMetaData.getConnector().getRetainableByteBufferPool();
+                    ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
                     boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
                     _accumulator = new CountingByteBufferAccumulator(bufferPool, useOutputDirectByteBuffers, getBufferSize());
                 }
@@ -267,7 +267,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         private final int _maxSize;
         private int _accumulatedCount;
 
-        private CountingByteBufferAccumulator(RetainableByteBufferPool bufferPool, boolean direct, int maxSize)
+        private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
         {
             if (maxSize <= 0)
                 throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);

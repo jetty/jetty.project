@@ -38,7 +38,7 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -90,7 +90,7 @@ public class QpackEncoder implements Dumpable
 
     private final AutoLock lock = new AutoLock();
     private final List<Instruction> _instructions = new ArrayList<>();
-    private final RetainableByteBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final Instruction.Handler _handler;
     private final QpackContext _context;
     private int _maxBlockedStreams;
@@ -100,7 +100,7 @@ public class QpackEncoder implements Dumpable
     private int _knownInsertCount = 0;
     private int _blockedStreams = 0;
 
-    public QpackEncoder(RetainableByteBufferPool bufferPool, Instruction.Handler handler, int maxBlockedStreams)
+    public QpackEncoder(ByteBufferPool bufferPool, Instruction.Handler handler, int maxBlockedStreams)
     {
         _bufferPool = bufferPool;
         _handler = handler;
@@ -109,7 +109,7 @@ public class QpackEncoder implements Dumpable
         _parser = new EncoderInstructionParser(_instructionHandler);
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
     }

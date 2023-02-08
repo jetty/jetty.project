@@ -24,10 +24,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
@@ -53,7 +53,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
     private final AutoLock lock = new AutoLock();
-    private final RetainableByteBufferPool retainableByteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketCoreSession coreSession;
@@ -78,10 +78,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public WebSocketConnection(EndPoint endp,
                                Executor executor,
                                Scheduler scheduler,
-                               RetainableByteBufferPool retainableByteBufferPool,
+                               ByteBufferPool byteBufferPool,
                                WebSocketCoreSession coreSession)
     {
-        this(endp, executor, scheduler, retainableByteBufferPool, coreSession, null);
+        this(endp, executor, scheduler, byteBufferPool, coreSession, null);
     }
 
     /**
@@ -93,14 +93,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * @param endp The endpoint ever which Websockot is sent/received
      * @param executor A thread executor to use for WS callbacks.
      * @param scheduler A scheduler to use for timeouts
-     * @param retainableByteBufferPool A pool of retainable buffers to use.
+     * @param byteBufferPool A pool of retainable buffers to use.
      * @param coreSession The WC core session to which frames are delivered.
      * @param randomMask A Random used to mask frames. If null then SecureRandom will be created if needed.
      */
     public WebSocketConnection(EndPoint endp,
                                Executor executor,
                                Scheduler scheduler,
-                               RetainableByteBufferPool retainableByteBufferPool,
+                               ByteBufferPool byteBufferPool,
                                WebSocketCoreSession coreSession,
                                Random randomMask)
     {
@@ -109,12 +109,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(endp, "EndPoint");
         Objects.requireNonNull(coreSession, "Session");
         Objects.requireNonNull(executor, "Executor");
-        Objects.requireNonNull(retainableByteBufferPool, "RetainableByteBufferPool");
+        Objects.requireNonNull(byteBufferPool, "ByteBufferPool");
 
-        this.retainableByteBufferPool = retainableByteBufferPool;
+        this.byteBufferPool = byteBufferPool;
         this.coreSession = coreSession;
         this.generator = new Generator();
-        this.parser = new Parser(retainableByteBufferPool, coreSession);
+        this.parser = new Parser(byteBufferPool, coreSession);
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());
 
@@ -303,7 +303,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private RetainableByteBuffer newNetworkBuffer(int capacity)
     {
-        return retainableByteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
+        return byteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()
@@ -626,7 +626,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         private Flusher(Scheduler scheduler, int bufferSize, Generator generator, EndPoint endpoint)
         {
-            super(retainableByteBufferPool, scheduler, generator, endpoint, bufferSize, 8);
+            super(byteBufferPool, scheduler, generator, endpoint, bufferSize, 8);
             setUseDirectByteBuffers(isUseOutputDirectByteBuffers());
         }
 

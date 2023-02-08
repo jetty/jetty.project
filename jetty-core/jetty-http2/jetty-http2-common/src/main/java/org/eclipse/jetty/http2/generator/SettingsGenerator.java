@@ -20,8 +20,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.Flags;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class SettingsGenerator extends FrameGenerator
@@ -32,13 +32,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
+    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame.getSettings(), settingsFrame.isReply());
     }
 
-    public int generateSettings(RetainableByteBufferPool.Accumulator accumulator, Map<Integer, Integer> settings, boolean reply)
+    public int generateSettings(ByteBufferPool.Accumulator accumulator, Map<Integer, Integer> settings, boolean reply)
     {
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;

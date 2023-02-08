@@ -48,7 +48,7 @@ public class DefaultHandlerTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(new Handler.Collection(contexts, new DefaultHandler(true, true)));
+        server.setHandler(new Handler.Sequence(contexts, new DefaultHandler(true, true)));
 
         contexts.addHandler(new ContextHandler("/foo"));
         contexts.addHandler(new ContextHandler("/bar"));

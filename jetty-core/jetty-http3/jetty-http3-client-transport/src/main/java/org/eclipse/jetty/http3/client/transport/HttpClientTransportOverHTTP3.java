@@ -69,7 +69,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
             ClientConnector clientConnector = this.client.getClientConnector();
             clientConnector.setExecutor(httpClient.getExecutor());
             clientConnector.setScheduler(httpClient.getScheduler());
-            clientConnector.setRetainableByteBufferPool(httpClient.getRetainableByteBufferPool());
+            clientConnector.setByteBufferPool(httpClient.getByteBufferPool());
             clientConnector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
             clientConnector.setConnectBlocking(httpClient.isConnectBlocking());
             clientConnector.setBindAddress(httpClient.getBindAddress());

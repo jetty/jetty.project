@@ -20,33 +20,33 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.internal.VarLenInt;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class DataGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public DataGenerator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public DataGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         DataFrame dataFrame = (DataFrame)frame;
         return generateDataFrame(accumulator, dataFrame);
     }
 
-    private int generateDataFrame(RetainableByteBufferPool.Accumulator accumulator, DataFrame frame)
+    private int generateDataFrame(ByteBufferPool.Accumulator accumulator, DataFrame frame)
     {
         ByteBuffer data = frame.getByteBuffer();
         int dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
-        RetainableByteBuffer header = getRetainableByteBufferPool().acquire(headerLength, useDirectByteBuffers);
+        RetainableByteBuffer header = getByteBufferPool().acquire(headerLength, useDirectByteBuffers);
         ByteBuffer byteBuffer = header.getByteBuffer();
         BufferUtil.clearToFill(byteBuffer);
         VarLenInt.encode(byteBuffer, FrameType.DATA.type());

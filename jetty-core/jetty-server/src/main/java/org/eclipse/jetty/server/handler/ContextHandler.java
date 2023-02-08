@@ -166,8 +166,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _context = newContext();
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent != null)
-            parent.addHandler(this);
+        Container.setAsParent(parent, this);
 
         if (File.separatorChar == '/')
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));

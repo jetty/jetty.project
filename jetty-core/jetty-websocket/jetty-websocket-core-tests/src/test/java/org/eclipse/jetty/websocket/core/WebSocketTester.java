@@ -24,9 +24,9 @@ import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -42,7 +42,7 @@ public class WebSocketTester
 {
     private static final String NON_RANDOM_KEY = Base64.getEncoder().encodeToString("0123456701234567".getBytes());
     private static SslContextFactory.Client sslContextFactory;
-    protected RetainableByteBufferPool bufferPool;
+    protected ByteBufferPool bufferPool;
     protected RetainableByteBuffer buffer;
     protected Parser parser;
 
@@ -63,7 +63,7 @@ public class WebSocketTester
     @BeforeEach
     public void before()
     {
-        bufferPool = new ArrayRetainableByteBufferPool();
+        bufferPool = new ArrayByteBufferPool();
         parser = new Parser(bufferPool);
     }
 

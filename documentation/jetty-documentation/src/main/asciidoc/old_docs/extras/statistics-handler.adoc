@@ -58,7 +58,7 @@ The following fragment shows how to configure a top level statistics handler:
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">
     <Arg>
-      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler"/>
+      <New id="StatisticsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler"/>
     </Arg>
   </Call>
 </Configure>

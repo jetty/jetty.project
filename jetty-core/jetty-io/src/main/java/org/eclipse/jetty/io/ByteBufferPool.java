@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * buffer returned by {@link #acquire(int, boolean)} must be wrapped, see
  * {@link RetainableByteBuffer.Wrapper}</p>
  */
-public interface RetainableByteBufferPool
+public interface ByteBufferPool
 {
     /**
      * <p>Acquires a {@link RetainableByteBuffer} from this pool.</p>
@@ -61,18 +61,18 @@ public interface RetainableByteBufferPool
     void clear();
 
     /**
-     * <p>A wrapper for {@link RetainableByteBufferPool} instances.</p>
+     * <p>A wrapper for {@link ByteBufferPool} instances.</p>
      */
-    class Wrapper implements RetainableByteBufferPool
+    class Wrapper implements ByteBufferPool
     {
-        private final RetainableByteBufferPool wrapped;
+        private final ByteBufferPool wrapped;
 
-        public Wrapper(RetainableByteBufferPool wrapped)
+        public Wrapper(ByteBufferPool wrapped)
         {
             this.wrapped = wrapped;
         }
 
-        public RetainableByteBufferPool getWrapped()
+        public ByteBufferPool getWrapped()
         {
             return wrapped;
         }
@@ -91,7 +91,7 @@ public interface RetainableByteBufferPool
     }
 
     /**
-     * <p>A {@link RetainableByteBufferPool} that does not pool its
+     * <p>A {@link ByteBufferPool} that does not pool its
      * {@link RetainableByteBuffer}s.</p>
      * <p>The returned {@code RetainableByteBuffer}s are reference
      * counted.</p>
@@ -102,7 +102,7 @@ public interface RetainableByteBufferPool
      *
      * @see RetainableByteBuffer#wrap(ByteBuffer)
      */
-    class NonPooling implements RetainableByteBufferPool
+    class NonPooling implements ByteBufferPool
     {
         @Override
         public RetainableByteBuffer acquire(int size, boolean direct)

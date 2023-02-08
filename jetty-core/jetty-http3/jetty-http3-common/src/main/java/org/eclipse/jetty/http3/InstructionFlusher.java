@@ -21,8 +21,8 @@ import java.util.Queue;
 
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.qpack.Instruction;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -41,8 +41,8 @@ public class InstructionFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
-    private final RetainableByteBufferPool bufferPool;
-    private final RetainableByteBufferPool.Accumulator accumulator;
+    private final ByteBufferPool bufferPool;
+    private final ByteBufferPool.Accumulator accumulator;
     private final QuicStreamEndPoint endPoint;
     private final long streamType;
     private boolean initialized;
@@ -50,8 +50,8 @@ public class InstructionFlusher extends IteratingCallback
 
     public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, long streamType)
     {
-        this.bufferPool = session.getRetainableByteBufferPool();
-        this.accumulator = new RetainableByteBufferPool.Accumulator();
+        this.bufferPool = session.getByteBufferPool();
+        this.accumulator = new ByteBufferPool.Accumulator();
         this.endPoint = endPoint;
         this.streamType = streamType;
     }

@@ -27,7 +27,7 @@ public class MockConnector extends AbstractConnector
 
     public MockConnector(Server server)
     {
-        super(server, server.getThreadPool(), server.getScheduler(), server.getRetainableByteBufferPool(), 0);
+        super(server, server.getThreadPool(), server.getScheduler(), server.getByteBufferPool(), 0);
     }
 
     @Override

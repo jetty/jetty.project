@@ -46,12 +46,12 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -96,7 +96,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final RequestHandler _requestHandler;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
-    private final RetainableByteBufferPool _retainableByteBufferPool;
+    private final ByteBufferPool _bufferPool;
     private final AtomicReference<HttpStreamOverHTTP1> _stream = new AtomicReference<>();
     private final Lazy _attributes = new Lazy();
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
@@ -140,7 +140,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         _id = __connectionIdGenerator.getAndIncrement();
         _configuration = configuration;
         _connector = connector;
-        _retainableByteBufferPool = _connector.getRetainableByteBufferPool();
+        _bufferPool = _connector.getByteBufferPool();
         _generator = newHttpGenerator();
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
@@ -402,7 +402,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private ByteBuffer getRequestBuffer()
     {
         if (_retainableByteBuffer == null)
-            _retainableByteBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            _retainableByteBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         return _retainableByteBuffer.getByteBuffer();
     }
 
@@ -548,7 +548,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
         {
             // TODO this is almost certainly wrong
-            RetainableByteBuffer newBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            RetainableByteBuffer newBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
                 LOG.debug("replace buffer {} <- {} in {}", _retainableByteBuffer, newBuffer, this);
             _retainableByteBuffer.release();
@@ -799,7 +799,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
                     case NEED_HEADER:
                     {
-                        _header = _retainableByteBufferPool.acquire(Math.min(_configuration.getResponseHeaderSize(), _configuration.getOutputBufferSize()), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(Math.min(_configuration.getResponseHeaderSize(), _configuration.getOutputBufferSize()), useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
@@ -807,18 +807,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         if (_header.capacity() >= _configuration.getResponseHeaderSize())
                             throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
-                        _header = _retainableByteBufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK:
                     {
-                        _chunk = _retainableByteBufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _retainableByteBufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:

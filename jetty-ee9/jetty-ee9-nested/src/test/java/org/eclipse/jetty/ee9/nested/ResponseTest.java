@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -1942,7 +1943,7 @@ public class ResponseTest
     @Test
     public void testAddCookieSameSiteByComment() throws Exception
     {
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
 
         Response response = getResponse();
         Cookie cookie = new Cookie("name", "value");
@@ -1960,7 +1961,7 @@ public class ResponseTest
     public void testAddCookieSameSiteDefault() throws Exception
     {
         Response response = getResponse();
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
         Cookie cookie = new Cookie("name", "value");
         cookie.setDomain("domain");
         cookie.setPath("/path");
@@ -1974,7 +1975,7 @@ public class ResponseTest
         response.getHttpFields().remove("Set-Cookie");
 
         //test bad default samesite value
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
 
         assertThrows(IllegalStateException.class,
             () -> response.addCookie(cookie));
@@ -1996,7 +1997,7 @@ public class ResponseTest
 
         String set = response.getHttpFields().get("Set-Cookie");
 
-        assertEquals("name=value;Version=1;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
+        assertEquals("name=value;Version=1;Domain=domain;Path=/path;Secure;HttpOnly;Comment=comment", set);
     }
 
     /**
@@ -2123,7 +2124,7 @@ public class ResponseTest
     public void testReplaceHttpCookieSameSite()
     {
         Response response = getResponse();
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
         //replace with no prior does an add
         response.replaceCookie(HttpCookie.from("Foo", "123456"));
         String set = response.getHttpFields().get("Set-Cookie");
@@ -2163,7 +2164,7 @@ public class ResponseTest
     public void testReplaceParsedHttpCookieSiteDefault()
     {
         Response response = getResponse();
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
 
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
         response.replaceCookie(HttpCookie.from("Foo", "value"));

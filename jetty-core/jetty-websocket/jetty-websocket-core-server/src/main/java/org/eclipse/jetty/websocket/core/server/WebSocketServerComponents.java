@@ -15,7 +15,7 @@ package org.eclipse.jetty.websocket.core.server;
 
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 /**
  * A collection of components which are the resources needed for websockets such as
- * {@link RetainableByteBufferPool}, {@link WebSocketExtensionRegistry}, and {@link DecoratedObjectFactory}.
+ * {@link ByteBufferPool}, {@link WebSocketExtensionRegistry}, and {@link DecoratedObjectFactory}.
  *
  * These components should be accessed through {@link WebSocketServerComponents#getWebSocketComponents} so that
  * the instance can be shared by being stored as a bean on the ContextHandler.
@@ -39,7 +39,7 @@ public class WebSocketServerComponents extends WebSocketComponents
     public static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
     public static final String WEBSOCKET_BUFFER_POOL_ATTRIBUTE = "jetty.websocket.bufferPool";
 
-    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, RetainableByteBufferPool bufferPool, DecoratedObjectFactory objectFactory, Executor executor)
+    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory, Executor executor)
     {
         super(null, objectFactory, bufferPool, inflaterPool, deflaterPool, executor);
     }
@@ -53,7 +53,7 @@ public class WebSocketServerComponents extends WebSocketComponents
      * </p>
      * <p>
      * Servlet context attributes can be set with {@link #WEBSOCKET_BUFFER_POOL_ATTRIBUTE}, {@link #WEBSOCKET_INFLATER_POOL_ATTRIBUTE}
-     * and {@link #WEBSOCKET_DEFLATER_POOL_ATTRIBUTE} to override the {@link RetainableByteBufferPool}, {@link DeflaterPool} or
+     * and {@link #WEBSOCKET_DEFLATER_POOL_ATTRIBUTE} to override the {@link ByteBufferPool}, {@link DeflaterPool} or
      * {@link InflaterPool} used by the components, otherwise this will try to use the pools shared on the {@link Server}.
      * </p>
      * @param server the server.
@@ -75,9 +75,9 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (deflaterPool == null)
             deflaterPool = DeflaterPool.ensurePool(server);
 
-        RetainableByteBufferPool bufferPool = (RetainableByteBufferPool)context.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
+        ByteBufferPool bufferPool = (ByteBufferPool)context.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
         if (bufferPool == null)
-            bufferPool = server.getRetainableByteBufferPool();
+            bufferPool = server.getByteBufferPool();
 
         Executor executor = (Executor)context.getAttribute("org.eclipse.jetty.server.Executor");
         if (executor == null)

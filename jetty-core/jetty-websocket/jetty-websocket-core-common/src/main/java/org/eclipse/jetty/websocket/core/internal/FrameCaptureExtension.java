@@ -106,7 +106,7 @@ public class FrameCaptureExtension extends AbstractExtension
             return;
         }
 
-        RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(BUFSIZE, false);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(BUFSIZE, false);
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         try
         {

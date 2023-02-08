@@ -16,24 +16,24 @@ package org.eclipse.jetty.fcgi.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class Generator
 {
     public static final int MAX_CONTENT_LENGTH = 0xFF_FF;
 
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 
-    public Generator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         this.bufferPool = bufferPool;
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }
@@ -43,7 +43,7 @@ public class Generator
         return useDirectByteBuffers;
     }
 
-    protected void generateContent(RetainableByteBufferPool.Accumulator accumulator, int id, ByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
+    protected void generateContent(ByteBufferPool.Accumulator accumulator, int id, ByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
     {
         id &= 0xFF_FF;
 
@@ -51,7 +51,7 @@ public class Generator
 
         while (contentLength > 0 || lastContent)
         {
-            RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(8, isUseDirectByteBuffers());
+            RetainableByteBuffer buffer = getByteBufferPool().acquire(8, isUseDirectByteBuffers());
             accumulator.append(buffer);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);

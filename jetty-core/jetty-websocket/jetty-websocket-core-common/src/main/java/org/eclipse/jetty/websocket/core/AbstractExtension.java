@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -27,7 +27,7 @@ public class AbstractExtension implements Extension
 {
     private final Logger log;
     private CoreSession coreSession;
-    private RetainableByteBufferPool bufferPool;
+    private ByteBufferPool bufferPool;
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
@@ -43,7 +43,7 @@ public class AbstractExtension implements Extension
     public void init(ExtensionConfig config, WebSocketComponents components)
     {
         this.config = config;
-        this.bufferPool = components.getRetainableByteBufferPool();
+        this.bufferPool = components.getByteBufferPool();
         this.deflaterPool = components.getDeflaterPool();
         this.inflaterPool = components.getInflaterPool();
     }
@@ -60,7 +60,7 @@ public class AbstractExtension implements Extension
         nextOutgoingFrame(frame, callback, batch);
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }

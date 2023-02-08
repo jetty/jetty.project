@@ -66,7 +66,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -79,6 +78,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.HttpCookieUtils;
+import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
@@ -316,10 +317,10 @@ public class Request implements HttpServletRequest
                 }
                 else
                 {
-                    Map<String, String> cookieFields = HttpCookie.extractBasics(field.getValue());
+                    Map<String, String> cookieFields = HttpCookieUtils.extractBasics(field.getValue());
                     cookieName = cookieFields.get("name");
                     cookieValue = cookieFields.get("value");
-                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.valueOf(cookieFields.get("max-age")) : -1;
+                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.parseLong(cookieFields.get("max-age")) : -1;
                 }
                 
                 if (cookieMaxAge > 0)
@@ -1521,9 +1522,7 @@ public class Request implements HttpServletRequest
         _uri = coreRequest.getHttpURI();
 
         String pathInContext = org.eclipse.jetty.server.Request.getPathInContext(coreRequest);
-        _pathInContext = _context.getContextHandler().isCanonicalEncodingURIs()
-            ? pathInContext
-            : URIUtil.decodePath(pathInContext);
+        _pathInContext = URIUtil.decodePath(pathInContext);
         _httpFields = coreRequest.getHeaders();
 
         setSecure(coreRequest.isSecure());

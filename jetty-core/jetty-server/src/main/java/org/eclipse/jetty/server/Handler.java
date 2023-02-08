@@ -134,13 +134,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
      */
     interface Container extends Handler
     {
-        void addHandler(Handler handler);
-
-        default void addHandler(Supplier<Handler> supplier)
-        {
-            addHandler(supplier.get());
-        }
-
         /**
          * @return an immutable collection of {@code Handler}s directly contained by this {@code Handler}.
          */
@@ -223,20 +216,58 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             }
             return null;
         }
+
+        /**
+         * <p>Make a {@link Container} the parent of a {@link Handler}</p>
+         * @param parent The {@link Container} that will be the parent
+         * @param handler The {@link Handler} that will be the child
+         */
+        static void setAsParent(Container parent, Handler handler)
+        {
+            if (parent instanceof Collection collection)
+                collection.addHandler(handler);
+            else if (parent instanceof Singleton wrapper)
+                wrapper.setHandler(handler);
+            else if (parent != null)
+                throw new IllegalArgumentException("Unknown parent type: " + parent);
+        }
     }
 
     /**
-     * <p>A {@link Handler.Container} that wraps a single other {@code Handler}.</p>
-     * @see Handler.Wrapper for an implementation of nested.
+     * <p>A {@link Handler.Container} that can contain multiple other {@link Handler}s.</p>
+     * @see Sequence for an implementation of {@link Collection}.
      */
-    interface Nested extends Container
+    interface Collection extends Container
+    {
+        void addHandler(Handler handler);
+
+        default void addHandler(Supplier<Handler> supplier)
+        {
+            addHandler(supplier.get());
+        }
+
+        void setHandlers(List<Handler> handlers);
+
+        default void setHandlers(Handler... handlers)
+        {
+            setHandlers(handlers.length == 0 ? null : List.of(handlers));
+        }
+    }
+
+    /**
+     * <p>A {@link Handler.Container} that can contain a single other {@code Handler}.</p>
+     * <p>This is "singleton" in the sense of {@link Collections#singleton(Object)} and not
+     * in the sense of the singleton pattern of a single instance per JVM.</p>
+     * @see Wrapper for an implementation of {@link Singleton}.
+     */
+    interface Singleton extends Container
     {
         Handler getHandler();
 
         /**
          * Set the nested handler.
          * Implementations should check for loops, set the server and update any {@link ContainerLifeCycle} beans, all
-         * of which can be done by using the utility method {@link #updateHandler(Nested, Handler)}
+         * of which can be done by using the utility method {@link #updateHandler(Singleton, Handler)}
          * @param handler The handler to set.
          */
         void setHandler(Handler handler);
@@ -253,27 +284,16 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         @Override
         default List<Handler> getHandlers()
         {
-            Handler h = getHandler();
-            if (h == null)
-                return Collections.emptyList();
-            return Collections.singletonList(h);
+            Handler next = getHandler();
+            return (next == null) ? Collections.emptyList() : Collections.singletonList(next);
         }
 
-        @Override
-        default void addHandler(Handler handler)
+        default void insertHandler(Singleton handler)
         {
-            Handler existing = getHandler();
-            setHandler(handler);
-            if (existing != null && handler instanceof Container container)
-                container.addHandler(existing);
-        }
-
-        default void insertHandler(Handler.Nested handler)
-        {
-            Handler.Nested tail = handler;
-            while (tail.getHandler() instanceof Handler.Wrapper)
+            Singleton tail = handler;
+            while (tail.getHandler() instanceof Wrapper)
             {
-                tail = (Handler.Wrapper)tail.getHandler();
+                tail = (Wrapper)tail.getHandler();
             }
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
@@ -283,20 +303,31 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         }
 
         /**
+         * @return The tail {@link Singleton} of a chain of {@link Singleton}s
+         */
+        default Singleton getTail()
+        {
+            Singleton tail = this;
+            while (tail.getHandler() instanceof Singleton wrapped)
+                tail = wrapped;
+            return tail;
+        }
+
+        /**
          * Utility method to: <ul>
          *     <li>Check the server state and invocation type</li>
          *     <li>Check for handler loops</li>
          *     <li>Set the server on the handler</li>
          *     <li>Update the beans on if the Nests is a {@link ContainerLifeCycle} </li>
          * </ul>
-         * @param nested The Nested implementation to update
+         * @param wrapper The Nested implementation to update
          * @param handler The handle to set
          * @return The set handler.
          */
-        static Handler updateHandler(Nested nested, Handler handler)
+        static Handler updateHandler(Singleton wrapper, Handler handler)
         {
             // check state
-            Server server = nested.getServer();
+            Server server = wrapper.getServer();
 
             // If the collection is changed whilst started, then the risk is that if we switch from NON_BLOCKING to BLOCKING
             // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
@@ -310,15 +341,15 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             }
 
             // Check for loops.
-            if (handler == nested || (handler instanceof Handler.Container container &&
-                container.getDescendants().contains(nested)))
+            if (handler == wrapper || (handler instanceof Handler.Container container &&
+                container.getDescendants().contains(wrapper)))
                 throw new IllegalStateException("setHandler loop");
 
             if (handler != null && server != null)
                 handler.setServer(server);
 
-            if (nested instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
-                container.updateBean(nested.getHandler(), handler);
+            if (wrapper instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
+                container.updateBean(wrapper.getHandler(), handler);
 
             return handler;
         }
@@ -532,9 +563,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
     }
 
     /**
-     * An implementation of {@link Nested}, which is a {@link Handler.Container} that wraps a single other {@link Handler}.
+     * An implementation of {@link Singleton}, which is a {@link Handler.Container} that wraps a single other {@link Handler}.
      */
-    class Wrapper extends AbstractContainer implements Nested
+    class Wrapper extends AbstractContainer implements Singleton
     {
         private Handler _handler;
 
@@ -556,26 +587,21 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         public Wrapper(boolean dynamic, Handler handler)
         {
             super(dynamic);
-            _handler = handler == null ? null : Nested.updateHandler(this, handler);
+            _handler = handler == null ? null : Singleton.updateHandler(this, handler);
         }
 
+        @Override
         public Handler getHandler()
         {
             return _handler;
         }
 
+        @Override
         public void setHandler(Handler handler)
         {
             if (!isDynamic() && isStarted())
                 throw new IllegalStateException(getState());
-            _handler = Nested.updateHandler(this, handler);
-        }
-
-        @Override
-        public List<Handler> getHandlers()
-        {
-            Handler next = getHandler();
-            return (next == null) ? Collections.emptyList() : Collections.singletonList(next);
+            _handler = Singleton.updateHandler(this, handler);
         }
 
         @Override
@@ -596,25 +622,24 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
     }
 
     /**
-     * <p>A {@link Handler.Container} that contains a list of other {@code Handler}s.</p>
-     * 
-     * TODO this should be called List instead
+     * <p>A {@link Handler.Container} that contains a list of other {@code Handler}s that are
+     * tried in sequence by {@link #process(Request, Response, Callback)}.</p>
      */
-    class Collection extends AbstractContainer
+    class Sequence extends AbstractContainer implements Collection
     {
         private volatile List<Handler> _handlers = new ArrayList<>();
 
-        public Collection(Handler... handlers)
+        public Sequence(Handler... handlers)
         {
             this(handlers.length == 0, List.of(handlers));
         }
 
-        public Collection(boolean dynamic)
+        public Sequence(boolean dynamic)
         {
             this(dynamic, Collections.emptyList());
         }
 
-        public Collection(List<Handler> handlers)
+        public Sequence(List<Handler> handlers)
         {
             this(handlers == null || handlers.size() == 0, handlers);
         }
@@ -626,7 +651,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
          *
          * @param handlers The handlers to add.
          */
-        public Collection(boolean dynamic, List<Handler> handlers)
+        public Sequence(boolean dynamic, List<Handler> handlers)
         {
             super(dynamic);
             setHandlers(handlers);
@@ -649,11 +674,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             return _handlers;
         }
 
-        public void setHandlers(Handler... handlers)
-        {
-            setHandlers(handlers.length == 0 ? null : List.of(handlers));
-        }
-
+        @Override
         public void setHandlers(List<Handler> handlers)
         {
             if (!isDynamic() && isStarted())

@@ -47,7 +47,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -208,7 +207,7 @@ public class HugeResourceTest
         DefaultHandler defaultHandler = new DefaultHandler();
         defaultHandler.setServer(server);
 
-        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), defaultHandler));
+        server.setHandler(context);
         server.start();
     }
 

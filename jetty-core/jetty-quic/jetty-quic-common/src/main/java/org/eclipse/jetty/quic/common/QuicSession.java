@@ -30,11 +30,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
@@ -65,7 +65,7 @@ public abstract class QuicSession extends ContainerLifeCycle
     private final ConcurrentMap<Long, QuicStreamEndPoint> endPoints = new ConcurrentHashMap<>();
     private final Executor executor;
     private final Scheduler scheduler;
-    private final RetainableByteBufferPool retainableByteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
     private final Flusher flusher;
@@ -74,11 +74,11 @@ public abstract class QuicSession extends ContainerLifeCycle
     private QuicheConnectionId quicheConnectionId;
     private long idleTimeout;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, RetainableByteBufferPool retainableByteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
     {
         this.executor = executor;
         this.scheduler = scheduler;
-        this.retainableByteBufferPool = retainableByteBufferPool;
+        this.byteBufferPool = byteBufferPool;
         this.quicheConnection = quicheConnection;
         this.connection = connection;
         this.flusher = new Flusher(scheduler);
@@ -149,9 +149,9 @@ public abstract class QuicSession extends ContainerLifeCycle
         return scheduler;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return retainableByteBufferPool;
+        return byteBufferPool;
     }
 
     public ProtocolSession getProtocolSession()
@@ -465,7 +465,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         @Override
         protected Action process() throws IOException
         {
-            cipherBuffer = retainableByteBufferPool.acquire(connection.getOutputBufferSize(), connection.isUseOutputDirectByteBuffers());
+            cipherBuffer = byteBufferPool.acquire(connection.getOutputBufferSize(), connection.isUseOutputDirectByteBuffers());
             ByteBuffer cipherByteBuffer = cipherBuffer.getByteBuffer();
             int pos = BufferUtil.flipToFill(cipherByteBuffer);
             int drained = quicheConnection.drainCipherBytes(cipherByteBuffer);

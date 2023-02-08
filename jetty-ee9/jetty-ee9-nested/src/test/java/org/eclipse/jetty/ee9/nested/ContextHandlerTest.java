@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -61,11 +60,9 @@ public class ContextHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        Handler.Collection handlers = new Handler.Collection();
-        _server.setHandler(handlers);
 
         _contextHandler = new ContextHandler();
-        handlers.setHandlers(_contextHandler.getCoreContextHandler());
+        _server.setHandler(_contextHandler);
     }
 
     @AfterEach

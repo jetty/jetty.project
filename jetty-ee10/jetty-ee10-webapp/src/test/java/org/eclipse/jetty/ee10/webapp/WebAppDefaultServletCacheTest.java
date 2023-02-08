@@ -42,7 +42,7 @@ public class WebAppDefaultServletCacheTest
 
         URI uri = getClass().getResource("/org/acme").toURI();
         resourcePath = Paths.get(uri);
-        server.addHandler(new WebAppContext(uri.toString(), "/"));
+        server.setHandler(new WebAppContext(uri.toString(), "/"));
 
         server.start();
     }

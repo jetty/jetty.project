@@ -35,7 +35,7 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -54,7 +54,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
-    private RetainableByteBufferPool _bufferPool;
+    private ByteBufferPool _bufferPool;
     Resource _baseResource;
     ContextHandler _context;
     Resource _defaultStyleSheet;
@@ -105,7 +105,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? MimeTypes.DEFAULTS : _context.getMimeTypes();
 
-        _bufferPool = getRetainableByteBufferPool(_context);
+        _bufferPool = getByteBufferPool(_context);
         if (_resourceService.getHttpContentFactory() == null)
             _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(this);
@@ -113,14 +113,14 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         super.doStart();
     }
 
-    private static RetainableByteBufferPool getRetainableByteBufferPool(ContextHandler contextHandler)
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new RetainableByteBufferPool.NonPooling();
+            return new ByteBufferPool.NonPooling();
         Server server = contextHandler.getServer();
         if (server == null)
-            return new RetainableByteBufferPool.NonPooling();
-        return server.getRetainableByteBufferPool();
+            return new ByteBufferPool.NonPooling();
+        return server.getByteBufferPool();
     }
 
     public HttpContent.Factory getHttpContentFactory()

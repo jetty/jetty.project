@@ -23,9 +23,9 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -40,7 +40,7 @@ public class PathContentSource implements Content.Source
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final Path path;
     private final long length;
-    private final RetainableByteBufferPool byteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private int bufferSize = 4096;
     private boolean useDirectByteBuffers = true;
     private SeekableByteChannel channel;
@@ -53,7 +53,7 @@ public class PathContentSource implements Content.Source
         this(path, null);
     }
 
-    public PathContentSource(Path path, RetainableByteBufferPool byteBufferPool)
+    public PathContentSource(Path path, ByteBufferPool byteBufferPool)
     {
         try
         {
@@ -63,7 +63,7 @@ public class PathContentSource implements Content.Source
                 throw new AccessDeniedException(path.toString());
             this.path = path;
             this.length = Files.size(path);
-            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : new RetainableByteBufferPool.NonPooling();
+            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : new ByteBufferPool.NonPooling();
         }
         catch (IOException x)
         {

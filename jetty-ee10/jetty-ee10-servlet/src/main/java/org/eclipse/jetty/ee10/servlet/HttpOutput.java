@@ -31,10 +31,10 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Response;
@@ -130,7 +130,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private final ConnectionMetaData _connectionMetaData;
     private final ServletChannel _servletChannel;
     private final Response _response;
-    private final RetainableByteBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final ServletRequestState _channelState;
     private final SharedBlockingCallback _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
@@ -151,7 +151,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _response = response;
         _servletChannel = channel;
         _connectionMetaData = _response.getRequest().getConnectionMetaData();
-        _bufferPool = _response.getRequest().getComponents().getRetainableByteBufferPool();
+        _bufferPool = _response.getRequest().getComponents().getByteBufferPool();
 
         _channelState = _servletChannel.getState();
         _writeBlocker = new WriteBlocker(_servletChannel);

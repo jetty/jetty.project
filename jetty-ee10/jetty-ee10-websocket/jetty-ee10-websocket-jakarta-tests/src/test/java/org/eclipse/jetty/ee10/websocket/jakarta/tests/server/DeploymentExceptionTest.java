@@ -68,13 +68,13 @@ public class DeploymentExceptionTest
     }
 
     private Server server;
-    private Handler.Collection contexts;
+    private Handler.Sequence contexts;
 
     @BeforeEach
     public void startServer() throws Exception
     {
         server = new Server(0);
-        contexts = new Handler.Collection();
+        contexts = new Handler.Sequence();
         server.setHandler(contexts);
         server.start();
     }

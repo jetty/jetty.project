@@ -13,8 +13,28 @@
 
 package org.eclipse.jetty.ee10.demos;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.ajax.JSON;
 
 /**
  * Frequently many handlers are combined together to handle different aspects of
@@ -31,120 +51,108 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
  * <li>{@link Handler.Wrapper} which will nest one handler inside another. In
  * this example, the HelloHandler is nested inside a HandlerWrapper that sets
  * the greeting as a request attribute.
- * <li>{@link Handler.Collection} which will call a collection of handlers until the
+ * <li>{@link Handler.Sequence} which will call a collection of handlers until the
  * request is marked as handled. In this example, a list is used to combine the
  * param handler (which only handles the request if there are parameters) and
  * the wrapper handler. Frequently handler lists are terminated with the
  * {@link DefaultHandler}, which will generate a suitable 404 response if the
  * request has not been handled.
- * <li>{@link Handler.Collection} which will call each handler regardless if the
+ * <li>{@link Handler.Sequence} which will call each handler regardless if the
  * request has been handled or not. Typically this is used to always pass a
  * request to the logging handler.
  * </ul>
  */
 public class ManyHandlers
 {
-    //TODO fix me
     /**
      * Produce output that lists all of the request parameters
      */
-    /*   public static class ParamHandler extends AbstractHandler
+    public static class ParamHandler extends Handler.Abstract
     {
         @Override
-        public void handle(String target,
-                           Request baseRequest,
-                           HttpServletRequest request,
-                           HttpServletResponse response) throws IOException,
-            ServletException
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            Map<String, String[]> params = request.getParameterMap();
-            if (!params.isEmpty())
-            {
-                response.setContentType("text/plain");
-                response.getWriter().println(new JSON().toJSON(params));
-                baseRequest.setHandled(true);
-            }
+            Fields queryFields = Request.extractQueryParameters(request);
+            Fields formFields = FormFields.from(request).get();
+
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_JSON.asString());
+            response.write(true,
+                ByteBuffer.wrap(new JSON().toJSON(List.of(queryFields, formFields)).getBytes(StandardCharsets.UTF_8)),
+                callback);
+
+            return true;
         }
     }
     
-    *//**
-       * Add a request attribute, but produce no output.
-       *//*
-          public static class WelcomeWrapHandler extends HandlerWrapper
-          {
-           @Override
-           public void handle(String target,
-                              Request baseRequest,
-                              HttpServletRequest request,
-                              HttpServletResponse response) throws IOException,
-               ServletException
-           {
-               response.setHeader("X-Welcome", "Greetings from WelcomeWrapHandler");
-               super.handle(target, baseRequest, request, response);
-           }
-          }
+    /**
+     * Add a request attribute, but produce no output.
+     */
+    public static class WelcomeWrapHandler extends Handler.Wrapper
+    {
+        @Override
+        public boolean process(Request request, Response response, Callback callback) throws Exception
+        {
+            response.getHeaders().add("X-Welcome", "Greetings from WelcomeWrapHandler");
+            return super.process(request, response, callback);
+        }
+    }
           
-          public static Server createServer(int port) throws IOException
-          {
-           Server server = new Server(port);
+    public static Server createServer(int port) throws IOException
+    {
+        Server server = new Server(port);
+        server.setDefaultHandler(new DefaultHandler());
+
+        // create the handlers
+        Handler param = new ParamHandler();
+        Handler.Singleton wrapper = new WelcomeWrapHandler();
+        Handler hello = new HelloHandler();
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setMinGzipSize(10);
+        gzipHandler.addIncludedMimeTypes("text/plain");
+        gzipHandler.addIncludedMimeTypes("text/html");
+
+        // configure request logging
+        Path requestLogFile = Files.createTempFile("demo", "log");
+        CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.toString());
+        server.setRequestLog(ncsaLog);
+
+        // wrap contexts around specific handlers
+        wrapper.setHandler(hello);
+        ContextHandler helloContext = new ContextHandler("/hello");
+        helloContext.setHandler(wrapper);
+
+        ContextHandler paramContext = new ContextHandler("/params");
+        paramContext.setHandler(param);
           
-           // create the handlers
-           Handler param = new ParamHandler();
-           Handler.Wrapper wrapper = new WelcomeWrapHandler();
-           Handler hello = new HelloHandler();
-           GzipHandler gzipHandler = new GzipHandler();
-           gzipHandler.setMinGzipSize(10);
-           gzipHandler.addIncludedMimeTypes("text/plain");
-           gzipHandler.addIncludedMimeTypes("text/html");
+        ContextHandlerCollection contexts = new ContextHandlerCollection(helloContext, paramContext);
           
-           // configure request logging
-           Path requestLogFile = Files.createTempFile("demo", "log");
-           CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.toString());
-           server.setRequestLog(ncsaLog);
-          
-           // create the handlers list
-           Handler.Collection handlers = new Handler.Collection();
-          
-           // wrap contexts around specific handlers
-           wrapper.setHandler(hello);
-           ContextHandler helloContext = new ContextHandler("/hello");
-           helloContext.setHandler(wrapper);
-          
-           ContextHandler paramContext = new ContextHandler("/params");
-           paramContext.setHandler(param);
-          
-           ContextHandlerCollection contexts = new ContextHandlerCollection(helloContext, paramContext);
-          
-           // Wrap Contexts with GZIP
-           gzipHandler.setHandler(contexts);
-          
-           // Set the top level Handler List
-           handlers.addHandler(gzipHandler);
-           handlers.addHandler(new DefaultHandler());
-           server.setHandler(handlers);
-          
-            At this point you have the following handler hierarchy.
-            *
-            * Server.handler:
-            * HandlerList
-            *    \- GzipHandler
-            *    |   \- ContextHandlerCollection
-            *    |       \- ContextHandler ("/hello")
-            *    |       |   \- WelcomeWrapHandler
-            *    |       |       \- HelloHandler
-            *    |       \- ContextHandler ("/params")
-            *    |           \- ParamHandler
-            *    \- DefaultHandler
-            
-          
-           return server;
-          }
-          
-          public static void main(String[] args) throws Exception
-          {
-           int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-           Server server = createServer(port);
-           server.start();
-           server.join();
-          }*/
+        // Wrap Contexts with GZIP
+        gzipHandler.setHandler(contexts);
+
+        // Set the top level Handler List
+        server.setHandler(gzipHandler);
+
+        /*
+         * At this point you have the following handler hierarchy:
+         * Server.handler:
+         *    \- GzipHandler
+         *    |   \- ContextHandlerCollection
+         *    |       \- ContextHandler ("/hello")
+         *    |       |   \- WelcomeWrapHandler
+         *    |       |       \- HelloHandler
+         *    |       \- ContextHandler ("/params")
+         *    |           \- ParamHandler
+         *    \- DefaultHandler
+         */
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
+        server.start();
+        server.join();
+    }
 }

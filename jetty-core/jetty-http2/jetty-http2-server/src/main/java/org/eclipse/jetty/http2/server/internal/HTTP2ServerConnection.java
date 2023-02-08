@@ -40,9 +40,9 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -69,9 +69,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private final String id;
 
-    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, HTTP2Session session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, HTTP2Session session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(retainableByteBufferPool, connector.getExecutor(), endPoint, parser, session, inputBufferSize);
+        super(byteBufferPool, connector.getExecutor(), endPoint, parser, session, inputBufferSize);
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;

@@ -20,8 +20,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.internal.Flags;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayGenerator extends FrameGenerator
@@ -32,13 +32,13 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
+    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAway(accumulator, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());
     }
 
-    public int generateGoAway(RetainableByteBufferPool.Accumulator accumulator, int lastStreamId, int error, byte[] payload)
+    public int generateGoAway(ByteBufferPool.Accumulator accumulator, int lastStreamId, int error, byte[] payload)
     {
         if (lastStreamId < 0)
             lastStreamId = 0;
