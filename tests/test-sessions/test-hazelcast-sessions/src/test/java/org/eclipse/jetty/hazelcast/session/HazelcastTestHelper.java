@@ -60,7 +60,7 @@ public class HazelcastTestHelper
         _serializerConfig = new SerializerConfig().setImplementation(new SessionDataSerializer()).setTypeClass(SessionData.class);
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName);
-        config.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().setAutoDetectionConfig(new AutoDetectionConfig().setEnabled(false)));
+        config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
         config.addMapConfig(new MapConfig().setName(_name)).setClassLoader(null);
         config.getSerializationConfig().addSerializerConfig(_serializerConfig);
         _instance = Hazelcast.getOrCreateHazelcastInstance(config);
