@@ -288,7 +288,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     private void notifyFailureComplete(Throwable failure)
     {
-        destination.getRequestNotifier().notifyFailure(request, failure);
+        request.notifyFailure(failure);
         ResponseListeners listeners = getConversation().getResponseListeners();
         listeners.notifyFailure(response, failure);
         listeners.notifyComplete(new Result(request, failure, response, failure));

@@ -802,14 +802,10 @@ public class ForwardProxyTLSServerTest
 
         try
         {
-            httpClient.getRequestListeners().add(new org.eclipse.jetty.client.Request.Listener()
+            httpClient.getRequestListeners().addSuccessListener(request ->
             {
-                @Override
-                public void onSuccess(org.eclipse.jetty.client.Request request)
-                {
-                    if (HttpMethod.CONNECT.is(request.getMethod()))
-                        sleep(250);
-                }
+                if (HttpMethod.CONNECT.is(request.getMethod()))
+                    sleep(250);
             });
 
             String body = "BODY";

@@ -115,14 +115,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scenario.getScheme() + "://" + proxyHost + ":" + proxyPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, user, password));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // ...and perform the request again => 407 + 204
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -216,14 +209,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scenario.getScheme() + "://" + proxyHost + ":" + proxyPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, user, password));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // ...and perform the request again => 407 + 302 + 204.
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -290,14 +276,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(serverURI, serverRealm, "serverUser", "serverPassword"));
         client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // Make a request, expect 407 + 401 + 204.
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -360,14 +339,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
         client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // Make a request, expect 407 + 204.
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())

@@ -60,7 +60,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     private final HttpClient client;
     private final Origin origin;
     private final Queue<HttpExchange> exchanges;
-    private final RequestNotifier requestNotifier;
     private final ProxyConfiguration.Proxy proxy;
     private final ClientConnectionFactory connectionFactory;
     private final HttpField hostField;
@@ -76,8 +75,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         this.origin = origin;
 
         this.exchanges = newExchangeQueue(client);
-
-        this.requestNotifier = new RequestNotifier(client);
 
         this.requestTimeouts = new RequestTimeouts(client.getScheduler());
 
@@ -218,11 +215,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return exchanges;
     }
 
-    public RequestNotifier getRequestNotifier()
-    {
-        return requestNotifier;
-    }
-
     @Override
     public ProxyConfiguration.Proxy getProxy()
     {
@@ -311,7 +303,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Queued {} for {}", request, this);
-                    requestNotifier.notifyQueued(request);
+                    request.notifyQueued();
                     send();
                 }
             }

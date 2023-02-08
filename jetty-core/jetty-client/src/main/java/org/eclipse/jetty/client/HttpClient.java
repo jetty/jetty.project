@@ -42,6 +42,7 @@ import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.RequestListeners;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
@@ -63,7 +64,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -117,7 +117,7 @@ public class HttpClient extends ContainerLifeCycle
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
-    private final List<Request.Listener> requestListeners = new ArrayList<>();
+    private final RequestListeners requestListeners = new RequestListeners.Internal(this);
     private final ContentDecoder.Factories decoderFactories = new ContentDecoder.Factories();
     private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
@@ -158,12 +158,6 @@ public class HttpClient extends ContainerLifeCycle
         this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
         addBean(handlers);
         addBean(decoderFactories);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpObjects(out, indent, new DumpableCollection("requestListeners", requestListeners));
     }
 
     public HttpClientTransport getTransport()
@@ -264,7 +258,7 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @return a list of {@link Request.Listener} that can be used to add and remove listeners
      */
-    public List<Request.Listener> getRequestListeners()
+    public RequestListeners getRequestListeners()
     {
         return requestListeners;
     }

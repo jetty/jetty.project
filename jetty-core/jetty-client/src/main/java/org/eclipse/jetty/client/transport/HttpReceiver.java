@@ -258,8 +258,6 @@ public abstract class HttpReceiver
                 return;
             }
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Switching to CONTENT state for {} on {}", response, this);
             responseState = ResponseState.CONTENT;
             if (contentSource != null)
                 throw new IllegalStateException();
@@ -285,6 +283,8 @@ public abstract class HttpReceiver
                 }
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response content {} {}", response, contentSource);
             responseListeners.notifyContentSource(response, contentSource);
         });
     }
