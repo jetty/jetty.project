@@ -27,7 +27,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install javadoc:javadoc -Perrorprone", "maven-3.9.x")
+              mavenBuild( "jdk17", "clean install -Perrorprone", "maven-3.9.x") // javadoc:javadoc
               // Collect up the jacoco execution results (only on main build)
               jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                      exclusionPattern: '' +
