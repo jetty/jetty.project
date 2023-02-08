@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -1360,7 +1359,7 @@ public class ProxyServletTest
 
         chunk1Latch.countDown();
 
-        assertThrows(EOFException.class, () ->
+        assertThrows(IOException.class, () ->
         {
             // Make sure the proxy does not receive chunk2.
             input.read();
