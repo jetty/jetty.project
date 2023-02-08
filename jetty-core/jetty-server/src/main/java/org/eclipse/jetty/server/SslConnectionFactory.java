@@ -157,9 +157,9 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
         configure(sslConnection, connector, endPoint);
 
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);
-        EndPoint decryptedEndPoint = sslConnection.getDecryptedEndPoint();
-        Connection connection = next.newConnection(connector, decryptedEndPoint);
-        decryptedEndPoint.setConnection(connection);
+        EndPoint sslEndPoint = sslConnection.getSslEndPoint();
+        Connection connection = next.newConnection(connector, sslEndPoint);
+        sslEndPoint.setConnection(connection);
 
         return sslConnection;
     }

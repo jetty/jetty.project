@@ -264,7 +264,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public boolean isSecure()
     {
-        return getEndPoint() instanceof SslConnection.DecryptedEndPoint;
+        return getEndPoint() instanceof SslConnection.SslEndPoint;
     }
 
     @Override
@@ -1233,7 +1233,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             // Set the scheme in the URI
             if (!_uri.isAbsolute())
-                _uri.scheme(getEndPoint() instanceof SslConnection.DecryptedEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
+                _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
             if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)

@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection.SslEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -217,7 +217,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
         EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-        if (endPoint instanceof DecryptedEndPoint sslEndPoint)
+        if (endPoint instanceof SslEndPoint sslEndPoint)
         {
             SslConnection sslConnection = sslEndPoint.getSslConnection();
             SSLEngine sslEngine = sslConnection.getSSLEngine();

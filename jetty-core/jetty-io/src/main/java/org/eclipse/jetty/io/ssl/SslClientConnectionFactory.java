@@ -121,7 +121,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
         SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
 
-        EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
+        EndPoint appEndPoint = sslConnection.getSslEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
 
         sslConnection.addHandshakeListener(new HTTPSHandshakeListener(context));
