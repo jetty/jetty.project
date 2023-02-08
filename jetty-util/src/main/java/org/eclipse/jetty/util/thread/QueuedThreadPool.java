@@ -292,9 +292,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             Runnable job = _jobs.poll();
             if (job == null)
-            {
                 break;
-            }
             if (job instanceof Closeable)
             {
                 try
