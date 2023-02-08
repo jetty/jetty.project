@@ -93,9 +93,9 @@ public class DemandTest
         }
 
         @Override
-        public boolean isDemanding()
+        public boolean isAutoDemanding()
         {
-            return true;
+            return false;
         }
     }
 
