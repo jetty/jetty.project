@@ -105,6 +105,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'), configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
+          sh "ls -alrt"
           sh "cp $MVN_BUILD_CACHE_CONFIG ./mvn/"
           sh "mvn -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -Dmaven.test.failure.ignore=true -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e $cmdline"
         }
