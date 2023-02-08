@@ -29,10 +29,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -119,7 +119,7 @@ public class ServletMultiPartFormData
         ConnectionMetaData connectionMetaData = request.getServletContextRequest().getConnectionMetaData();
         formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
-        RetainableByteBufferPool byteBufferPool = request.getServletContextRequest().getComponents().getRetainableByteBufferPool();
+        ByteBufferPool byteBufferPool = request.getServletContextRequest().getComponents().getByteBufferPool();
         Connection connection = connectionMetaData.getConnection();
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
         InputStream input = request.getInputStream();

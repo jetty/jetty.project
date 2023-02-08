@@ -291,7 +291,7 @@ public class DelayedHandler extends Handler.Wrapper
             {
                 // We must execute here as even though we have consumed all the input, we are probably
                 // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(this::process);
+                getRequest().getContext().execute(() -> process(parts, x));
             }
             else
             {
@@ -304,7 +304,7 @@ public class DelayedHandler extends Handler.Wrapper
         {
             if (_formData == null)
             {
-                super.process();
+                this.process();
             }
             else
             {
@@ -313,7 +313,22 @@ public class DelayedHandler extends Handler.Wrapper
                 // if we are done already, then we are still in the scope of the original process call and can
                 // process directly, otherwise we must execute a call to process as we are within a serialized
                 // demand callback.
-                _formData.whenComplete(_formData.isDone() ? this::process : this::executeProcess);
+                if (_formData.isDone())
+                {
+                    try
+                    {
+                        MultiPartFormData.Parts parts = _formData.join();
+                        process(parts, null);
+                    }
+                    catch (Throwable t)
+                    {
+                        process(null, t);
+                    }
+                }
+                else
+                {
+                    _formData.whenComplete(this::executeProcess);
+                }
             }
         }
 

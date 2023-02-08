@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.StaticException;
  */
 public interface HttpStream extends Callback
 {
-    Exception CONTENT_NOT_CONSUMED = new StaticException("Content Not Consumed");
+    Exception CONTENT_NOT_CONSUMED = new StaticException("Content not consumed");
 
     /**
      * <p>Attribute name to be used as a {@link Request} attribute to store/retrieve

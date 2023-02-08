@@ -48,9 +48,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -100,7 +100,7 @@ public class MultiPartServletTest
         start(servlet, config, null);
     }
 
-    private void start(HttpServlet servlet, MultipartConfigElement config, RetainableByteBufferPool bufferPool) throws Exception
+    private void start(HttpServlet servlet, MultipartConfigElement config, ByteBufferPool bufferPool) throws Exception
     {
         server = new Server(null, null, bufferPool);
         connector = new ServerConnector(server);
@@ -135,7 +135,7 @@ public class MultiPartServletTest
     public void testLargePart() throws Exception
     {
         // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
-        RetainableByteBufferPool bufferPool = new RetainableByteBufferPool.NonPooling();
+        ByteBufferPool bufferPool = new ByteBufferPool.NonPooling();
         start(new HttpServlet()
         {
             @Override

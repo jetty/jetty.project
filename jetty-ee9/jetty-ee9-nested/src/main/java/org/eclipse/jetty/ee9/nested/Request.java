@@ -1969,6 +1969,7 @@ public class Request implements HttpServletRequest
 
             _multiParts = newMultiParts(config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
+            setNonComplianceViolationsOnRequest();
 
             String formCharset = null;
             Part charsetPart = _multiParts.getPart("_charset_");

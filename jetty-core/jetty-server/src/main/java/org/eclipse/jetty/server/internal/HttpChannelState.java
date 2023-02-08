@@ -890,7 +890,7 @@ public class HttpChannelState implements HttpChannel, Components
                 stream = httpChannel._stream;
             }
 
-            return stream.consumeAvailable() != null;
+            return stream.consumeAvailable() == null;
         }
 
         @Override

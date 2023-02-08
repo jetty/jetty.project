@@ -228,7 +228,7 @@ public class MockHttpStream implements HttpStream
     @Override
     public Throwable consumeAvailable()
     {
-        return null;
+        return HttpStream.consumeAvailable(this, new HttpConfiguration());
     }
 
     public boolean isComplete()

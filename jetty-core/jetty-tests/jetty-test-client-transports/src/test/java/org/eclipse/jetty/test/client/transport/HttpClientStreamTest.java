@@ -286,7 +286,7 @@ public class HttpClientStreamTest extends AbstractTest
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(200, response.getStatus());
 
-        assertThrows(AsynchronousCloseException.class, stream::read);
+        assertThrows(IOException.class, stream::read);
     }
 
     @ParameterizedTest
@@ -329,7 +329,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertThrows(AsynchronousCloseException.class, input::read);
+        assertThrows(IOException.class, input::read);
     }
 
     @ParameterizedTest
