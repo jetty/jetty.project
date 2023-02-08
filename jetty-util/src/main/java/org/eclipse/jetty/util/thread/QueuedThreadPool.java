@@ -288,9 +288,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
 
         // Close any un-executed jobs
-        while (!_jobs.isEmpty())
+        while (true)
         {
             Runnable job = _jobs.poll();
+            if (job == null)
+                break;
             if (job instanceof Closeable)
             {
                 try
