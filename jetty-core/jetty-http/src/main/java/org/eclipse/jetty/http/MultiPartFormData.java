@@ -469,7 +469,6 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                         }
 
                         partChunks.forEach(Content.Chunk::release);
-                        chunk.release();
                         return;
                     }
                 }
