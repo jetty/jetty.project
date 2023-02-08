@@ -13,10 +13,7 @@
 
 package org.eclipse.jetty.client.transport;
 
-import java.util.List;
-
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Promise;
@@ -31,7 +28,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     private final AutoLock lock = new AutoLock();
     private final HttpDestination destination;
     private final HttpRequest request;
-    private final List<Response.ResponseListener> listeners;
+    private final ResponseListeners listeners;
     private final HttpResponse response;
     private State requestState = State.PENDING;
     private State responseState = State.PENDING;
@@ -39,7 +36,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     private Throwable requestFailure;
     private Throwable responseFailure;
 
-    public HttpExchange(HttpDestination destination, HttpRequest request, List<Response.ResponseListener> listeners)
+    public HttpExchange(HttpDestination destination, HttpRequest request, ResponseListeners listeners)
     {
         this.destination = destination;
         this.request = request;
@@ -73,7 +70,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         }
     }
 
-    public List<Response.ResponseListener> getResponseListeners()
+    public ResponseListeners getResponseListeners()
     {
         return listeners;
     }
@@ -292,10 +289,9 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     private void notifyFailureComplete(Throwable failure)
     {
         destination.getRequestNotifier().notifyFailure(request, failure);
-        List<Response.ResponseListener> listeners = getConversation().getResponseListeners();
-        ResponseNotifier responseNotifier = destination.getResponseNotifier();
-        responseNotifier.notifyFailure(listeners, response, failure);
-        responseNotifier.notifyComplete(listeners, new Result(request, failure, response, failure));
+        ResponseListeners listeners = getConversation().getResponseListeners();
+        listeners.notifyFailure(response, failure);
+        listeners.notifyComplete(new Result(request, failure, response, failure));
     }
 
     public void resetResponse()

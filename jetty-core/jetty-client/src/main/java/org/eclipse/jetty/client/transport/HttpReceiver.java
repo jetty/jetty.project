@@ -146,11 +146,10 @@ public abstract class HttpReceiver
             if (exchange.isResponseComplete())
                 return;
             responseState = ResponseState.BEGIN;
-            HttpConversation conversation = exchange.getConversation();
             HttpResponse response = exchange.getResponse();
+            HttpConversation conversation = exchange.getConversation();
             // Probe the protocol handlers
-            HttpDestination destination = getHttpDestination();
-            HttpClient client = destination.getHttpClient();
+            HttpClient client = getHttpDestination().getHttpClient();
             ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
             Response.Listener handlerListener = null;
             if (protocolHandler != null)
@@ -159,12 +158,11 @@ public abstract class HttpReceiver
                 if (LOG.isDebugEnabled())
                     LOG.debug("Response {} found protocol handler {}", response, protocolHandler);
             }
-            exchange.getConversation().updateResponseListeners(handlerListener);
+            conversation.updateResponseListeners(handlerListener);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Response begin {}", response);
-            ResponseNotifier notifier = destination.getResponseNotifier();
-            notifier.notifyBegin(conversation.getResponseListeners(), response);
+            conversation.getResponseListeners().notifyBegin(response);
         });
     }
 
@@ -193,10 +191,9 @@ public abstract class HttpReceiver
                 return;
             responseState = ResponseState.HEADER;
             HttpResponse response = exchange.getResponse();
-            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
             if (LOG.isDebugEnabled())
                 LOG.debug("Notifying header {}", field);
-            boolean process = notifier.notifyHeader(exchange.getConversation().getResponseListeners(), response, field);
+            boolean process = exchange.getConversation().getResponseListeners().notifyHeader(response, field);
             if (LOG.isDebugEnabled())
                 LOG.debug("Header {} notified, {}processing needed", field, (process ? "" : "no "));
             if (process)
@@ -247,9 +244,8 @@ public abstract class HttpReceiver
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
                 LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), response.getHeaders().toString().trim());
-            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-            List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
-            notifier.notifyHeaders(responseListeners, response);
+            ResponseListeners responseListeners = exchange.getConversation().getResponseListeners();
+            responseListeners.notifyHeaders(response);
 
             if (exchange.isResponseComplete())
                 return;
@@ -269,12 +265,7 @@ public abstract class HttpReceiver
                 throw new IllegalStateException();
             contentSource = new ContentSource();
 
-            List<Response.ContentSourceListener> contentListeners = responseListeners.stream()
-                    .filter(l -> l instanceof Response.ContentSourceListener)
-                    .map(Response.ContentSourceListener.class::cast)
-                    .toList();
-
-            if (!contentListeners.isEmpty())
+            if (responseListeners.hasContentSourceListeners())
             {
                 List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
                 if (contentEncodings != null && !contentEncodings.isEmpty())
@@ -294,7 +285,7 @@ public abstract class HttpReceiver
                 }
             }
 
-            notifier.notifyContent(response, contentSource, contentListeners);
+            responseListeners.notifyContentSource(response, contentSource);
         });
     }
 
@@ -343,9 +334,7 @@ public abstract class HttpReceiver
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
                 LOG.debug("Response success {}", response);
-            List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-            notifier.notifySuccess(listeners, response);
+            exchange.getConversation().getResponseListeners().notifySuccess(response);
 
             // Interim responses do not terminate the exchange.
             if (HttpStatus.isInterim(exchange.getResponse().getStatus()))
@@ -404,11 +393,9 @@ public abstract class HttpReceiver
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(exchange, result);
-            List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
             if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response {}: {}, notifying {}", failure == null ? "succeeded" : "failed", result, listeners);
-            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-            notifier.notifyComplete(listeners, result);
+                LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
+            exchange.getConversation().getResponseListeners().notifyComplete(result);
             if (ordered)
                 channel.exchangeTerminated(exchange, result);
         }
@@ -476,9 +463,7 @@ public abstract class HttpReceiver
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
                 LOG.debug("Response abort {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
-            List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-            notifier.notifyFailure(listeners, response, failure);
+            exchange.getConversation().getResponseListeners().notifyFailure(response, failure);
 
             // Mark atomically the response as terminated, with
             // respect to concurrency between request and response.
@@ -632,6 +617,7 @@ public abstract class HttpReceiver
 
         private final AtomicReference<Runnable> demandCallbackRef = new AtomicReference<>();
         private final AutoLock lock = new AutoLock();
+        private final Runnable processDemand = this::processDemand;
         private Content.Chunk currentChunk;
 
         @Override
@@ -686,7 +672,7 @@ public abstract class HttpReceiver
                 throw new IllegalStateException();
             // The processDemand method may call HttpReceiver.read(boolean)
             // so it must be called by the invoker.
-            invoker.run(this::processDemand);
+            invoker.run(processDemand);
         }
 
         private void processDemand()

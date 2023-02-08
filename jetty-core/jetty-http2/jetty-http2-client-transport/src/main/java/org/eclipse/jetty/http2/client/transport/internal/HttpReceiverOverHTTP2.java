@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpResponse;
+import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
@@ -186,7 +186,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             if (listener != null)
             {
                 HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
-                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, List.of(listener));
+                ResponseListeners listeners = new ResponseListeners();
+                listeners.addCompleteListener(listener);
+                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, listeners);
                 pushChannel.associate(pushExchange);
                 pushChannel.setStream(stream);
                 // TODO: idle timeout ?

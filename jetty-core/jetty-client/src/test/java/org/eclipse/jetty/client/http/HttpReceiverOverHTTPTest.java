@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.transport.internal.HttpReceiverOverHTTP;
@@ -89,16 +89,16 @@ public class HttpReceiverOverHTTPTest
         client.stop();
     }
 
-    protected HttpExchange newExchange()
+    protected FutureResponseListener startExchange()
     {
         HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
         FutureResponseListener listener = new FutureResponseListener(request);
-        HttpExchange exchange = new HttpExchange(destination, request, List.of(listener));
+        HttpExchange exchange = new HttpExchange(destination, request, new ResponseListeners(listener));
         boolean associated = connection.getHttpChannel().associate(exchange);
         assertTrue(associated);
         exchange.requestComplete(null);
         exchange.terminateRequest();
-        return exchange;
+        return listener;
     }
 
     @ParameterizedTest
@@ -110,8 +110,7 @@ public class HttpReceiverOverHTTPTest
             "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 0\r\n" +
                 "\r\n");
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = startExchange();
         connection.getHttpChannel().receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -136,8 +135,7 @@ public class HttpReceiverOverHTTPTest
                 "Content-length: " + content.length() + "\r\n" +
                 "\r\n" +
                 content);
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = startExchange();
         connection.getHttpChannel().receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -165,8 +163,7 @@ public class HttpReceiverOverHTTPTest
                 "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
                 content1);
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = startExchange();
         connection.getHttpChannel().receive();
         endPoint.addInputEOF();
         connection.getHttpChannel().receive();
@@ -184,8 +181,7 @@ public class HttpReceiverOverHTTPTest
             "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
                 "\r\n");
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = startExchange();
         connection.getHttpChannel().receive();
         // ByteArrayEndPoint has an idle timeout of 0 by default,
         // so to simulate an idle timeout is enough to wait a bit.
@@ -205,8 +201,7 @@ public class HttpReceiverOverHTTPTest
             "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
                 "\r\n");
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = startExchange();
         connection.getHttpChannel().receive();
 
         ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
@@ -255,8 +250,7 @@ public class HttpReceiverOverHTTPTest
                 "Content-Length: 1\r\n" +
                 "\r\n");
 
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+        FutureResponseListener listener = startExchange();
         connection.getHttpChannel().receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);

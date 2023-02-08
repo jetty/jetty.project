@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class RequestNotifier
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ResponseNotifier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RequestNotifier.class);
 
     private final HttpClient client;
 

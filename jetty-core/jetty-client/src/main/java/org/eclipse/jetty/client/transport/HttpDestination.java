@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -62,7 +61,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     private final Origin origin;
     private final Queue<HttpExchange> exchanges;
     private final RequestNotifier requestNotifier;
-    private final ResponseNotifier responseNotifier;
     private final ProxyConfiguration.Proxy proxy;
     private final ClientConnectionFactory connectionFactory;
     private final HttpField hostField;
@@ -80,7 +78,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         this.exchanges = newExchangeQueue(client);
 
         this.requestNotifier = new RequestNotifier(client);
-        this.responseNotifier = new ResponseNotifier();
 
         this.requestTimeouts = new RequestTimeouts(client.getScheduler());
 
@@ -226,11 +223,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return requestNotifier;
     }
 
-    public ResponseNotifier getResponseNotifier()
-    {
-        return responseNotifier;
-    }
-
     @Override
     public ProxyConfiguration.Proxy getProxy()
     {
@@ -297,7 +289,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         ((HttpRequest)request).sendAsync(this, listener);
     }
 
-    void send(HttpRequest request, List<Response.ResponseListener> listeners)
+    void send(HttpRequest request, ResponseListeners listeners)
     {
         send(new HttpExchange(this, request, listeners));
     }

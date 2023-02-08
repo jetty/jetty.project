@@ -46,7 +46,6 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -63,7 +62,7 @@ public class HttpRequest implements Request
 
     private final HttpFields.Mutable headers = HttpFields.build();
     private final Fields params = new Fields(true);
-    private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
+    private final ResponseListeners responseListeners = new ResponseListeners();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
@@ -489,114 +488,58 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request onResponseBegin(final Response.BeginListener listener)
+    public Request onResponseBegin(Response.BeginListener listener)
     {
-        this.responseListeners.add(new Response.BeginListener()
-        {
-            @Override
-            public void onBegin(Response response)
-            {
-                listener.onBegin(response);
-            }
-        });
+        responseListeners.addBeginListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseHeader(final Response.HeaderListener listener)
+    public Request onResponseHeader(Response.HeaderListener listener)
     {
-        this.responseListeners.add(new Response.HeaderListener()
-        {
-            @Override
-            public boolean onHeader(Response response, HttpField field)
-            {
-                return listener.onHeader(response, field);
-            }
-        });
+        responseListeners.addHeaderListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseHeaders(final Response.HeadersListener listener)
+    public Request onResponseHeaders(Response.HeadersListener listener)
     {
-        this.responseListeners.add(new Response.HeadersListener()
-        {
-            @Override
-            public void onHeaders(Response response)
-            {
-                listener.onHeaders(response);
-            }
-        });
+        responseListeners.addHeadersListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseContent(final Response.ContentListener listener)
+    public Request onResponseContent(Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.ContentListener()
-        {
-            @Override
-            public void onContent(Response response, ByteBuffer content)
-            {
-                listener.onContent(response, content);
-            }
-        });
+        responseListeners.addContentSourceListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseContentAsync(final Response.AsyncContentListener listener)
+    public Request onResponseContentAsync(Response.AsyncContentListener listener)
     {
-        this.responseListeners.add(new Response.AsyncContentListener()
-        {
-            @Override
-            public void onContent(Response response, org.eclipse.jetty.io.Content.Chunk chunk, Runnable demander)
-            {
-                listener.onContent(response, chunk, demander);
-            }
-        });
+        responseListeners.addContentSourceListener(listener);
         return this;
     }
 
     @Override
     public Request onResponseContentSource(Response.ContentSourceListener listener)
     {
-        this.responseListeners.add(new Response.ContentSourceListener()
-        {
-            @Override
-            public void onContentSource(Response response, org.eclipse.jetty.io.Content.Source contentSource)
-            {
-                listener.onContentSource(response, contentSource);
-            }
-        });
+        responseListeners.addContentSourceListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseSuccess(final Response.SuccessListener listener)
+    public Request onResponseSuccess(Response.SuccessListener listener)
     {
-        this.responseListeners.add(new Response.SuccessListener()
-        {
-            @Override
-            public void onSuccess(Response response)
-            {
-                listener.onSuccess(response);
-            }
-        });
+        responseListeners.addSuccessListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseFailure(final Response.FailureListener listener)
+    public Request onResponseFailure(Response.FailureListener listener)
     {
-        this.responseListeners.add(new Response.FailureListener()
-        {
-            @Override
-            public void onFailure(Response response, Throwable failure)
-            {
-                listener.onFailure(response, failure);
-            }
-        });
+        responseListeners.addFailureListener(listener);
         return this;
     }
 
@@ -608,16 +551,9 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request onComplete(final Response.CompleteListener listener)
+    public Request onComplete(Response.CompleteListener listener)
     {
-        this.responseListeners.add(new Response.CompleteListener()
-        {
-            @Override
-            public void onComplete(Result result)
-            {
-                listener.onComplete(result);
-            }
-        });
+        responseListeners.addCompleteListener(listener);
         return this;
     }
 
@@ -742,7 +678,7 @@ public class HttpRequest implements Request
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
     {
         if (listener != null)
-            responseListeners.add(listener);
+            responseListeners.addCompleteListener(listener);
         destination.send(this, responseListeners);
     }
 
@@ -765,7 +701,7 @@ public class HttpRequest implements Request
         return timeoutNanoTime;
     }
 
-    protected List<Response.ResponseListener> getResponseListeners()
+    public ResponseListeners getResponseListeners()
     {
         return responseListeners;
     }

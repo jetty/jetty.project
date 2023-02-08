@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,6 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.ResponseNotifier;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -71,12 +69,10 @@ public class HttpRedirector
     private static final String ATTRIBUTE = HttpRedirector.class.getName() + ".redirects";
 
     private final HttpClient client;
-    private final ResponseNotifier notifier;
 
     public HttpRedirector(HttpClient client)
     {
         this.client = client;
-        this.notifier = new ResponseNotifier();
     }
 
     /**
@@ -330,7 +326,7 @@ public class HttpRedirector
                     LOG.debug("Could not redirect to {}, request body is not reproducible", location);
                 HttpConversation conversation = httpRequest.getConversation();
                 conversation.updateResponseListeners(null);
-                notifier.forwardSuccessComplete(conversation.getResponseListeners(), httpRequest, response);
+                conversation.getResponseListeners().emitSuccessComplete(new Result(httpRequest, response));
                 return null;
             }
 
@@ -383,8 +379,6 @@ public class HttpRedirector
     {
         HttpConversation conversation = ((HttpRequest)request).getConversation();
         conversation.updateResponseListeners(null);
-        List<Response.ResponseListener> listeners = conversation.getResponseListeners();
-        notifier.notifyFailure(listeners, response, responseFailure);
-        notifier.notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+        conversation.getResponseListeners().emitFailureComplete(new Result(request, requestFailure, response, responseFailure));
     }
 }

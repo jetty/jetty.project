@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.transport;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -78,13 +77,13 @@ public abstract class HttpConnection implements IConnection, Attachable
     {
         HttpRequest httpRequest = (HttpRequest)request;
 
-        ArrayList<Response.ResponseListener> listeners = new ArrayList<>(httpRequest.getResponseListeners());
+        ResponseListeners responseListeners = httpRequest.getResponseListeners();
 
         httpRequest.sent();
         if (listener != null)
-            listeners.add(listener);
+            responseListeners.addCompleteListener(listener);
 
-        HttpExchange exchange = new HttpExchange(getHttpDestination(), httpRequest, listeners);
+        HttpExchange exchange = new HttpExchange(getHttpDestination(), httpRequest, responseListeners);
 
         SendFailure result = send(exchange);
         if (result != null)

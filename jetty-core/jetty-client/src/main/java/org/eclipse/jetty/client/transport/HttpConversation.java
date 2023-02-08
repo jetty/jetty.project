@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.client.transport;
 
-import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.AuthenticationProtocolHandler;
@@ -32,7 +30,7 @@ public class HttpConversation extends Attributes.Lazy
     private static final Logger LOG = LoggerFactory.getLogger(HttpConversation.class);
 
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
-    private volatile List<Response.ResponseListener> listeners;
+    private volatile ResponseListeners listeners;
 
     public Deque<HttpExchange> getExchanges()
     {
@@ -97,7 +95,7 @@ public class HttpConversation extends Attributes.Lazy
      *
      * @return the list of response listeners that needs to be notified of response events
      */
-    public List<Response.ResponseListener> getResponseListeners()
+    public ResponseListeners getResponseListeners()
     {
         return listeners;
     }
@@ -110,7 +108,7 @@ public class HttpConversation extends Attributes.Lazy
      *
      * @param overrideListener the override response listener
      */
-    public void updateResponseListeners(Response.ResponseListener overrideListener)
+    public void updateResponseListeners(Response.Listener overrideListener)
     {
         // Create a new instance to avoid that iterating over the listeners
         // will notify a listener that may send a new request and trigger
@@ -118,24 +116,25 @@ public class HttpConversation extends Attributes.Lazy
         // which may be iterated over when the iteration continues.
         HttpExchange firstExchange = exchanges.peekFirst();
         HttpExchange lastExchange = exchanges.peekLast();
-        List<Response.ResponseListener> listeners = new ArrayList<>(firstExchange.getResponseListeners().size() + lastExchange.getResponseListeners().size());
+
+        ResponseListeners listeners;
         if (firstExchange == lastExchange)
         {
             // We don't have a conversation, just a single request.
             if (overrideListener != null)
-                listeners.add(overrideListener);
+                listeners = new ResponseListeners(overrideListener);
             else
-                listeners.addAll(firstExchange.getResponseListeners());
+                listeners = new ResponseListeners(firstExchange.getResponseListeners());
         }
         else
         {
             // We have a conversation (e.g. redirect, authentication).
             // Order is important, we want to notify the last exchange first.
-            listeners.addAll(lastExchange.getResponseListeners());
+            listeners = new ResponseListeners(lastExchange.getResponseListeners());
             if (overrideListener != null)
-                listeners.add(overrideListener);
+                listeners.addListener(overrideListener);
             else
-                listeners.addAll(firstExchange.getResponseListeners());
+                listeners.add(firstExchange.getResponseListeners());
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Exchanges in conversation {}, override={}, listeners={}", exchanges.size(), overrideListener, listeners);

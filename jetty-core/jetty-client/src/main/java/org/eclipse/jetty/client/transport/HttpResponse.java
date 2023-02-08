@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client.transport;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -28,13 +26,13 @@ public class HttpResponse implements Response
 {
     private final HttpFields.Mutable headers = HttpFields.build();
     private final Request request;
-    private final List<ResponseListener> listeners;
+    private final ResponseListeners listeners;
     private HttpVersion version;
     private int status;
     private String reason;
     private HttpFields.Mutable trailers;
 
-    public HttpResponse(Request request, List<ResponseListener> listeners)
+    public HttpResponse(Request request, ResponseListeners listeners)
     {
         this.request = request;
         this.listeners = listeners;
@@ -103,18 +101,6 @@ public class HttpResponse implements Response
     {
         consumer.accept(headers);
         return this;
-    }
-
-    @Override
-    public <T extends ResponseListener> List<T> getListeners(Class<T> type)
-    {
-        ArrayList<T> result = new ArrayList<>();
-        for (ResponseListener listener : listeners)
-        {
-            if (type == null || type.isInstance(listener))
-                result.add((T)listener);
-        }
-        return result;
     }
 
     @Override
