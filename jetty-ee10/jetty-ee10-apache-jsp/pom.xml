@@ -79,10 +79,6 @@
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>jakarta.el</groupId>
-      <artifactId>jakarta.el-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http-tools</artifactId>
       <scope>test</scope>
