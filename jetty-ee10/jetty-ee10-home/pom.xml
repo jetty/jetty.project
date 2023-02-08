@@ -269,8 +269,8 @@
             </goals>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web,jakarta.el,jakarta.servlet.jsp,jakarta.el</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl,jakarta.el-api,jakarta.servlet.jsp-api,jakarta.el-api</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
@@ -284,8 +284,8 @@
             </goals>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web,jakarta.el,jakarta.servlet.jsp,jakarta.el</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl,jakarta.el-api,jakarta.servlet.jsp-api,jakarta.el-api</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
             </configuration>
