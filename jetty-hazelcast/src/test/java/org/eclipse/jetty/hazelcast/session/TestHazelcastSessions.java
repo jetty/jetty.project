@@ -108,6 +108,7 @@ public class TestHazelcastSessions
         SessionContext sessionContext = new SessionContext("foo", null);
 
         hazelcastSessionDataStoreFactory = new HazelcastSessionDataStoreFactory();
+        hazelcastSessionDataStoreFactory.setAutoDetectionConfigDisabled(true);
         hazelcastSessionDataStore = (HazelcastSessionDataStore)hazelcastSessionDataStoreFactory.getSessionDataStore(
             context.getSessionHandler());
         hazelcastSessionDataStore.initialize(sessionContext);
