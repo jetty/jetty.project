@@ -20,7 +20,7 @@ import org.eclipse.jetty.io.Connection.Listener;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection.SslEndPoint;
 
 /**
  * A Connection Lister for customization of SocketConnections.
@@ -57,15 +57,15 @@ public class SocketCustomizationListener implements Listener
         EndPoint endPoint = connection.getEndPoint();
         boolean ssl = false;
 
-        if (_ssl && endPoint instanceof DecryptedEndPoint)
+        if (_ssl && endPoint instanceof SslEndPoint sslEndPoint)
         {
-            endPoint = ((DecryptedEndPoint)endPoint).getSslConnection().getEndPoint();
+            endPoint = sslEndPoint.getSslConnection().getEndPoint();
             ssl = true;
         }
 
-        if (endPoint instanceof SocketChannelEndPoint)
+        if (endPoint instanceof SocketChannelEndPoint socketEndPoint)
         {
-            Socket socket = ((SocketChannelEndPoint)endPoint).getChannel().socket();
+            Socket socket = socketEndPoint.getChannel().socket();
             customize(socket, connection.getClass(), ssl);
         }
     }

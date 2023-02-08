@@ -24,7 +24,7 @@ import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection.SslEndPoint;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,8 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
         private ALPNCallback(ALPNServerConnection connection)
         {
             alpnConnection = connection;
-            ((DecryptedEndPoint)alpnConnection.getEndPoint()).getSslConnection().addHandshakeListener(this);
+            SslEndPoint sslEndPoint = (SslEndPoint)alpnConnection.getEndPoint();
+            sslEndPoint.getSslConnection().addHandshakeListener(this);
         }
 
         @Override

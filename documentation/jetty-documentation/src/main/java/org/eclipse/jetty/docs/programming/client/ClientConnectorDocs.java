@@ -402,7 +402,7 @@ public class ClientConnectorDocs
             if (failure == null)
             {
                 // Unwrap the SslConnection to access the "line" APIs in TelnetConnection.
-                TelnetConnection connection = (TelnetConnection)sslConnection.getDecryptedEndPoint().getConnection();
+                TelnetConnection connection = (TelnetConnection)sslConnection.getSslEndPoint().getConnection();
                 // Register a listener that receives string lines.
                 connection.onLine(line -> System.getLogger("app").log(INFO, "line: {0}", line));
 

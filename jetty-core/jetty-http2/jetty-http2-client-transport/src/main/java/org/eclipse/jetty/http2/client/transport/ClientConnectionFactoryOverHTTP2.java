@@ -114,8 +114,8 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                 // Avoid double TLS wrapping. We want to keep the existing
                 // SslConnection that has already performed the TLS handshake,
                 // and just upgrade the nested connection.
-                if (factory instanceof SslClientConnectionFactory && endPoint instanceof SslConnection.DecryptedEndPoint)
-                    factory = ((SslClientConnectionFactory)factory).getClientConnectionFactory();
+                if (factory instanceof SslClientConnectionFactory sslFactory && endPoint instanceof SslConnection.SslEndPoint)
+                    factory = sslFactory.getClientConnectionFactory();
                 var newConnection = factory.newConnection(endPoint, context);
                 endPoint.upgrade(newConnection);
             }

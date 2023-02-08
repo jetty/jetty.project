@@ -50,7 +50,7 @@ public class SslConnectionTest
         SSLEngine sslEngine = sslContextFactory.newSSLEngine();
         sslEngine.setUseClientMode(false);
         SslConnection sslConnection = new SslConnection(bufferPool, threadPool, endPoint, sslEngine);
-        EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
+        EndPoint sslEndPoint = sslConnection.getSslEndPoint();
         sslEndPoint.setConnection(new AbstractConnection(sslEndPoint, threadPool)
         {
             @Override

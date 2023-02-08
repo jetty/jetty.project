@@ -52,21 +52,21 @@ import org.slf4j.LoggerFactory;
  * wants unencrypted data.
  * <p>
  * The connector uses an {@link EndPoint} (typically SocketChannelEndPoint) as
- * it's source/sink of encrypted data.   It then provides an endpoint via {@link #getDecryptedEndPoint()} to
+ * it's source/sink of encrypted data.   It then provides an endpoint via {@link #getSslEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  * <p>
  * The design of this class is based on a clear separation between the passive methods, which do not block nor schedule any
  * asynchronous callbacks, and active methods that do schedule asynchronous callbacks.
  * <p>
- * The passive methods are {@link DecryptedEndPoint#fill(ByteBuffer)} and {@link DecryptedEndPoint#flush(ByteBuffer...)}. They make best
+ * The passive methods are {@link SslEndPoint#fill(ByteBuffer)} and {@link SslEndPoint#flush(ByteBuffer...)}. They make best
  * effort attempts to progress the connection using only calls to the encrypted {@link EndPoint#fill(ByteBuffer)} and {@link EndPoint#flush(ByteBuffer...)}
  * methods.  They will never block nor schedule any readInterest or write callbacks.   If a fill/flush cannot progress either because
  * of network congestion or waiting for an SSL handshake message, then the fill/flush will simply return with zero bytes filled/flushed.
  * Specifically, if a flush cannot proceed because it needs to receive a handshake message, then the flush will attempt to fill bytes from the
  * encrypted endpoint, but if insufficient bytes are read it will NOT call {@link EndPoint#fillInterested(Callback)}.
  * <p>
- * It is only the active methods : {@link DecryptedEndPoint#fillInterested(Callback)} and
- * {@link DecryptedEndPoint#write(Callback, ByteBuffer...)} that may schedule callbacks by calling the encrypted
+ * It is only the active methods : {@link SslEndPoint#fillInterested(Callback)} and
+ * {@link SslEndPoint#write(Callback, ByteBuffer...)} that may schedule callbacks by calling the encrypted
  * {@link EndPoint#fillInterested(Callback)} and {@link EndPoint#write(Callback, ByteBuffer...)}
  * methods.  For normal data handling, the decrypted fillInterest method will result in an encrypted fillInterest and a decrypted
  * write will result in an encrypted write. However, due to SSL handshaking requirements, it is also possible for a decrypted fill
@@ -110,7 +110,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private final AtomicLong _bytesOut = new AtomicLong();
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
-    private final DecryptedEndPoint _decryptedEndPoint;
+    private final SslEndPoint _sslEndPoint;
     private final boolean _encryptedDirectBuffers;
     private final boolean _decryptedDirectBuffers;
     private RetainableByteBuffer _decryptedInput;
@@ -128,13 +128,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public void run()
         {
-            _decryptedEndPoint.getFillInterest().fillable();
+            _sslEndPoint.getFillInterest().fillable();
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            return _decryptedEndPoint.getFillInterest().getCallbackInvocationType();
+            return _sslEndPoint.getFillInterest().getCallbackInvocationType();
         }
     };
     private final Callback _sslReadCallback = new Callback()
@@ -154,7 +154,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public InvocationType getInvocationType()
         {
-            return getDecryptedEndPoint().getFillInterest().getCallbackInvocationType();
+            return getSslEndPoint().getFillInterest().getCallbackInvocationType();
         }
 
         @Override
@@ -177,7 +177,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         super(endPoint, executor);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
-        this._decryptedEndPoint = newDecryptedEndPoint();
+        this._sslEndPoint = newSslEndPoint();
         this._encryptedDirectBuffers = useDirectBuffersForEncryption;
         this._decryptedDirectBuffers = useDirectBuffersForDecryption;
     }
@@ -204,9 +204,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         return handshakeListeners.remove(listener);
     }
 
-    protected DecryptedEndPoint newDecryptedEndPoint()
+    protected SslEndPoint newSslEndPoint()
     {
-        return new DecryptedEndPoint();
+        return new SslEndPoint();
     }
 
     public SSLEngine getSSLEngine()
@@ -214,9 +214,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         return _sslEngine;
     }
 
-    public DecryptedEndPoint getDecryptedEndPoint()
+    public SslEndPoint getSslEndPoint()
     {
-        return _decryptedEndPoint;
+        return _sslEndPoint;
     }
 
     public boolean isRenegotiationAllowed()
@@ -331,26 +331,26 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     public void onOpen()
     {
         super.onOpen();
-        getDecryptedEndPoint().getConnection().onOpen();
+        getSslEndPoint().getConnection().onOpen();
     }
 
     @Override
     public void onClose(Throwable cause)
     {
-        _decryptedEndPoint.getConnection().onClose(cause);
+        getSslEndPoint().getConnection().onClose(cause);
         super.onClose(cause);
     }
 
     @Override
     public void close()
     {
-        getDecryptedEndPoint().getConnection().close();
+        getSslEndPoint().getConnection().close();
     }
 
     @Override
     public boolean onIdleExpired()
     {
-        return getDecryptedEndPoint().getConnection().onIdleExpired();
+        return getSslEndPoint().getConnection().onIdleExpired();
     }
 
     @Override
@@ -366,10 +366,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             LOG.debug(">c.onFillable {}", SslConnection.this);
 
         // We have received a close handshake, close the end point to send FIN.
-        if (_decryptedEndPoint.isInputShutdown())
-            _decryptedEndPoint.close();
+        if (_sslEndPoint.isInputShutdown())
+            _sslEndPoint.close();
 
-        _decryptedEndPoint.onFillable();
+        _sslEndPoint.onFillable();
 
         if (LOG.isDebugEnabled())
             LOG.debug("<c.onFillable {}", SslConnection.this);
@@ -378,7 +378,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     @Override
     public void onFillInterestedFailed(Throwable cause)
     {
-        _decryptedEndPoint.onFillableFail(cause == null ? new IOException() : cause);
+        _sslEndPoint.onFillableFail(cause == null ? new IOException() : cause);
     }
 
     protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
@@ -401,14 +401,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         b = _decryptedInput == null ? null : _decryptedInput.getByteBuffer();
         int di = b == null ? -1 : b.remaining();
 
-        Connection connection = _decryptedEndPoint.getConnection();
+        Connection connection = _sslEndPoint.getConnection();
         return String.format("%s@%x{%s,eio=%d/%d,di=%d,fill=%s,flush=%s}~>%s=>%s",
             getClass().getSimpleName(),
             hashCode(),
             _sslEngine.getHandshakeStatus(),
             ei, eo, di,
             _fillState, _flushState,
-            _decryptedEndPoint.toEndPointString(),
+            _sslEndPoint.toEndPointString(),
             connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
     }
 
@@ -481,12 +481,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         return getEndPoint().flush(output);
     }
 
-    public class DecryptedEndPoint extends AbstractEndPoint implements EndPoint.Wrapper
+    public class SslEndPoint extends AbstractEndPoint implements EndPoint.Wrapper
     {
         private final Callback _incompleteWriteCallback = new IncompleteWriteCallback();
         private Throwable _failure;
 
-        public DecryptedEndPoint()
+        public SslEndPoint()
         {
             // Disable idle timeout checking: no scheduler and -1 timeout for this instance.
             super(null);
@@ -824,7 +824,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
-                            getExecutor().execute(() -> _decryptedEndPoint.getWriteFlusher().onFail(failure));
+                            getExecutor().execute(() -> _sslEndPoint.getWriteFlusher().onFail(failure));
                         }
                         throw failure;
                     }
@@ -835,7 +835,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
-                            getExecutor().execute(() -> _decryptedEndPoint.getWriteFlusher().completeWrite());
+                            getExecutor().execute(() -> _sslEndPoint.getWriteFlusher().completeWrite());
                         }
 
                         if (LOG.isDebugEnabled())
@@ -1579,9 +1579,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 if (interested)
                     ensureFillInterested();
                 else if (fillable)
-                    _decryptedEndPoint.getFillInterest().fillable();
+                    _sslEndPoint.getFillInterest().fillable();
 
-                _decryptedEndPoint.getWriteFlusher().completeWrite();
+                _sslEndPoint.getWriteFlusher().completeWrite();
             }
 
             @Override
@@ -1605,15 +1605,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 getExecutor().execute(() ->
                 {
                     if (failFillInterest)
-                        _decryptedEndPoint.getFillInterest().onFail(x);
-                    _decryptedEndPoint.getWriteFlusher().onFail(x);
+                        _sslEndPoint.getFillInterest().onFail(x);
+                    _sslEndPoint.getWriteFlusher().onFail(x);
                 });
             }
 
             @Override
             public InvocationType getInvocationType()
             {
-                return _decryptedEndPoint.getWriteFlusher().getCallbackInvocationType();
+                return _sslEndPoint.getWriteFlusher().getCallbackInvocationType();
             }
 
             @Override
