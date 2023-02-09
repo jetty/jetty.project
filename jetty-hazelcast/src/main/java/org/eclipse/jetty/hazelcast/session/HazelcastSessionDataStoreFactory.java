@@ -63,8 +63,6 @@ public class HazelcastSessionDataStoreFactory
 
     private Config serverConfig;
 
-    private boolean autoDetectionConfigDisabled;
-
     public boolean isUseQueries()
     {
         return useQueries;
@@ -173,7 +171,6 @@ public class HazelcastSessionDataStoreFactory
                             LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
                     config.setInstanceName(hazelcastInstanceName);
-                    if (autoDetectionConfigDisabled) config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
                     hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance(config);
                 }
             }
@@ -298,18 +295,5 @@ public class HazelcastSessionDataStoreFactory
     public void setServerConfig(Config serverConfig)
     {
         this.serverConfig = serverConfig;
-    }
-
-    public boolean isAutoDetectionConfigDisabled()
-    {
-        return autoDetectionConfigDisabled;
-    }
-
-    /**
-     * @param autoDetectionConfigDisabled will disable Hazelcast auto discovery strategy 
-     */
-    public void setAutoDetectionConfigDisabled(boolean autoDetectionConfigDisabled)
-    {
-        this.autoDetectionConfigDisabled = autoDetectionConfigDisabled;
     }
 }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<hazelcast xmlns="http://www.hazelcast.com/schema/config"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://www.hazelcast.com/schema/config
+           http://www.hazelcast.com/schema/config/hazelcast-config-5.2.xsd">
+
+
+  <!--
+      Specifies the cluster name. It allows creating separate sub-clusters with different names.
+      The name is also referenced in the WAN Replication configuration.
+  -->
+  <cluster-name>my-cluster</cluster-name>
+
+  <instance-name>hzInstance1</instance-name>
+
+  <network>
+    <join>
+      <auto-detection enabled="false"/>
+    </join>
+  </network>
+
+</hazelcast>
