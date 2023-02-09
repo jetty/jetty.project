@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,7 +302,7 @@ public class InputStreamResponseListener extends Listener.Adapter
                             break;
 
                         if (failure != null)
-                            throw toIOException(failure);
+                            throw new IOException(failure);
 
                         if (closed)
                             throw new AsynchronousCloseException();
@@ -325,14 +326,6 @@ public class InputStreamResponseListener extends Listener.Adapter
             {
                 throw new InterruptedIOException();
             }
-        }
-
-        private IOException toIOException(Throwable failure)
-        {
-            if (failure instanceof IOException)
-                return (IOException)failure;
-            else
-                return new IOException(failure);
         }
 
         @Override

@@ -28,6 +28,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -273,6 +275,22 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         this.maxLength = maxLength;
     }
 
+    /**
+     * @return the maximum number of parts that can be parsed from the multipart content.
+     */
+    public long getMaxParts()
+    {
+        return parser.getMaxParts();
+    }
+
+    /**
+     * @param maxParts the maximum number of parts that can be parsed from the multipart content.
+     */
+    public void setMaxParts(long maxParts)
+    {
+        parser.setMaxParts(maxParts);
+    }
+
     @Override
     public boolean completeExceptionally(Throwable failure)
     {
@@ -290,23 +308,18 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
      * <p>An ordered list of {@link MultiPart.Part}s that can
      * be accessed by index or by name, or iterated over.</p>
      */
-    public static class Parts implements Iterable<MultiPart.Part>
+    public class Parts implements Iterable<MultiPart.Part>, Closeable
     {
-        private final String boundary;
         private final List<MultiPart.Part> parts;
 
-        private Parts(String boundary, List<MultiPart.Part> parts)
+        private Parts(List<MultiPart.Part> parts)
         {
-            this.boundary = boundary;
             this.parts = parts;
         }
 
-        /**
-         * @return the boundary string
-         */
-        public String getBoundary()
+        public MultiPartFormData getMultiPartFormData()
         {
-            return boundary;
+            return MultiPartFormData.this;
         }
 
         /**
@@ -363,6 +376,15 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         public Iterator<MultiPart.Part> iterator()
         {
             return parts.iterator();
+        }
+
+        @Override
+        public void close()
+        {
+            for (MultiPart.Part p : parts)
+            {
+                IO.close(p);
+            }
         }
     }
 
@@ -426,19 +448,27 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                     memoryFileSize += buffer.remaining();
                     if (memoryFileSize > maxMemoryFileSize)
                     {
-                        // Must save to disk.
-                        if (ensureFileChannel())
+                        try
                         {
-                            // Write existing memory chunks.
-                            for (Content.Chunk c : partChunks)
+                            // Must save to disk.
+                            if (ensureFileChannel())
                             {
-                                if (!write(c.getByteBuffer()))
-                                    return;
+                                // Write existing memory chunks.
+                                for (Content.Chunk c : partChunks)
+                                {
+                                    write(c.getByteBuffer());
+                                }
                             }
+                            write(buffer);
+                            if (chunk.isLast())
+                                close();
                         }
-                        write(buffer);
-                        if (chunk.isLast())
-                            close();
+                        catch (Throwable x)
+                        {
+                            onFailure(x);
+                        }
+
+                        partChunks.forEach(Content.Chunk::release);
                         return;
                     }
                 }
@@ -448,24 +478,15 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             partChunks.add(chunk);
         }
 
-        private boolean write(ByteBuffer buffer)
+        private void write(ByteBuffer buffer) throws Exception
         {
-            try
+            int remaining = buffer.remaining();
+            while (remaining > 0)
             {
-                int remaining = buffer.remaining();
-                while (remaining > 0)
-                {
-                    int written = fileChannel.write(buffer);
-                    if (written == 0)
-                        throw new NonWritableChannelException();
-                    remaining -= written;
-                }
-                return true;
-            }
-            catch (Throwable x)
-            {
-                onFailure(x);
-                return false;
+                int written = fileChannel.write(buffer);
+                if (written == 0)
+                    throw new NonWritableChannelException();
+                remaining -= written;
             }
         }
 
@@ -496,6 +517,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             memoryFileSize = 0;
             filePath = null;
             fileChannel = null;
+            partChunks.forEach(Content.Chunk::release);
             partChunks.clear();
             // Store the new part.
             try (AutoLock ignored = lock.lock())
@@ -508,7 +530,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         public void onComplete()
         {
             super.onComplete();
-            complete(new Parts(getBoundary(), getParts()));
+            complete(new Parts(getParts()));
         }
 
         private List<MultiPart.Part> getParts()
@@ -528,22 +550,20 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
 
         private void fail(Throwable cause)
         {
-            List<MultiPart.Part> toFail;
+            List<MultiPart.Part> partsToFail;
+            List<Content.Chunk> partChunksToFail;
             try (AutoLock ignored = lock.lock())
             {
                 if (failure != null)
                     return;
                 failure = cause;
-                toFail = new ArrayList<>(parts);
+                partsToFail = new ArrayList<>(parts);
                 parts.clear();
+                partChunksToFail = new ArrayList<>(partChunks);
+                partChunks.clear();
             }
-            for (MultiPart.Part part : toFail)
-            {
-                if (part instanceof MultiPart.PathPart pathPart)
-                    pathPart.delete();
-                else
-                    part.getContent().fail(cause);
-            }
+            partsToFail.forEach(p -> p.fail(cause));
+            partChunksToFail.forEach(Retainable::release);
             close();
             delete();
         }

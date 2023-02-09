@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MultiPartFormData.Parts;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
@@ -647,6 +648,11 @@ public class HttpChannelState implements HttpChannel, Components
 
                     requestLog.log(_request.getLoggedRequest(), _request._response);
                 }
+
+                // Clean up any multipart tmp files and release any associated resources.
+                Parts parts = (Parts)_request.getAttribute(Parts.class.getName());
+                if (parts != null)
+                    parts.close();
             }
             finally
             {
@@ -872,6 +878,19 @@ public class HttpChannelState implements HttpChannel, Components
                 _trailers = trailers.getTrailers();
 
             return chunk;
+        }
+
+        @Override
+        public boolean consumeAvailable()
+        {
+            HttpStream stream;
+            try (AutoLock ignored = _lock.lock())
+            {
+                HttpChannelState httpChannel = lockedGetHttpChannel();
+                stream = httpChannel._stream;
+            }
+
+            return stream.consumeAvailable() == null;
         }
 
         @Override

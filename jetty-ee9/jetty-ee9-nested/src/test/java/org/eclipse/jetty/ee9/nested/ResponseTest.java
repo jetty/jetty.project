@@ -2368,6 +2368,12 @@ public class ResponseTest
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            return true;
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
             demandCallback.run();

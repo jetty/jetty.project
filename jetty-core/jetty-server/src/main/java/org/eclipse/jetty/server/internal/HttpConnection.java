@@ -52,6 +52,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -594,6 +595,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         if (LOG.isDebugEnabled())
             LOG.debug("{} parse {}", this, _retainableByteBuffer);
 
+        if (_parser.isTerminated())
+            throw new RuntimeIOException("Parser is terminated");
         boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
@@ -1134,6 +1137,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
                 _uri.path("/");
+        }
+
+        @Override
+        public Throwable consumeAvailable()
+        {
+            Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
+            if (result != null)
+                _generator.setPersistent(false);
+            return result;
         }
 
         public void parsedHeader(HttpField field)

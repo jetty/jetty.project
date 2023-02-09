@@ -167,6 +167,8 @@ public class TestOSGiUtil
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         // END - slf4j 2.x
+        
+        res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
 
         res.add(mavenBundle().groupId("jakarta.servlet").artifactId("jakarta.servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
@@ -195,11 +197,10 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.inject").artifactId("jakarta.inject-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.cdi-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.lang-model").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.interceptor").artifactId("jakarta.interceptor-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.lang-model").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.cdi-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-io").versionAsInProject().start());
@@ -237,26 +238,8 @@ public class TestOSGiUtil
     public static void coreJspDependencies(List<Option> res)
     {
         //jetty jsp bundles
-
-        /* The coreJettyDependencies() method needs to configure jakarta.el-api to satisfy the jakarta.transaction-api bundle.
-         * However, as we are now configuring the full jsp bundle set, we need to remove the jakarta.el-api
-         * bundle because the org.mortbay.jasper.apache-el bundle will be providing both the api and the impl.
-         */
-        MavenArtifactProvisionOption option = mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject();
-        
-        ListIterator<Option> iter = res.listIterator();
-        while (iter.hasNext())
-        {
-            Option o = iter.next();
-            if (o instanceof MavenArtifactProvisionOption)
-            {
-                if (((MavenArtifactProvisionOption)o).getURL().contains("jakarta.el-api"))
-                {
-                    iter.remove();
-                }
-            }
-        }
-
+        res.add(systemProperty("jakarta.el.ExpressionFactory").value("org.apache.el.ExpressionFactoryImpl"));
+        res.add(mavenBundle().groupId("jakarta.servlet.jsp").artifactId("jakarta.servlet.jsp-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-ee10-apache-jsp").versionAsInProject().start());

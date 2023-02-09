@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 public class ServletContextRequest extends ContextRequest
 {
-    public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
+    public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
     static final int INPUT_NONE = 0;
     static final int INPUT_STREAM = 1;
