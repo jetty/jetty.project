@@ -851,7 +851,7 @@ public class ServletRequestState
         request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
 
         // Set Jetty specific attributes.
-        request.setAttribute(ErrorProcessor.ERROR_EXCEPTION, null);
+        request.setAttribute(ErrorProcessor.ERROR_EXCEPTION, th);
 
         // Ensure any async lifecycle is ended!
         _requestState = RequestState.BLOCKING;

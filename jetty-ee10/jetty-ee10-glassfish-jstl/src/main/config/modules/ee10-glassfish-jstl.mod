@@ -6,5 +6,8 @@ Enables the glassfish version of JSTL for all webapps.
 [environment]
 ee10
 
+[depends]
+ee10-apache-jsp
+
 [lib]
 lib/ee10-glassfish-jstl/*.jar

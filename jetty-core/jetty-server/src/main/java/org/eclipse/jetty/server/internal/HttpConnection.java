@@ -52,6 +52,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -263,7 +264,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public boolean isSecure()
     {
-        return getEndPoint() instanceof SslConnection.DecryptedEndPoint;
+        return getEndPoint() instanceof SslConnection.SslEndPoint;
     }
 
     @Override
@@ -594,6 +595,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         if (LOG.isDebugEnabled())
             LOG.debug("{} parse {}", this, _retainableByteBuffer);
 
+        if (_parser.isTerminated())
+            throw new RuntimeIOException("Parser is terminated");
         boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
@@ -1136,6 +1139,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.path("/");
         }
 
+        @Override
+        public Throwable consumeAvailable()
+        {
+            Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
+            if (result != null)
+                _generator.setPersistent(false);
+            return result;
+        }
+
         public void parsedHeader(HttpField field)
         {
             HttpHeader header = field.getHeader();
@@ -1221,7 +1233,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             // Set the scheme in the URI
             if (!_uri.isAbsolute())
-                _uri.scheme(getEndPoint() instanceof SslConnection.DecryptedEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
+                _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
             if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)

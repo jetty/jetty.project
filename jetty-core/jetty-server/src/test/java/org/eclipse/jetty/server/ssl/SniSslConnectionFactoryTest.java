@@ -103,7 +103,7 @@ public class SniSslConnectionFactoryTest
             public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-                SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
+                SslConnection.SslEndPoint sslEndPoint = (SslConnection.SslEndPoint)endPoint;
                 SslConnection sslConnection = sslEndPoint.getSslConnection();
                 SSLEngine sslEngine = sslConnection.getSSLEngine();
                 SSLSession session = sslEngine.getSession();

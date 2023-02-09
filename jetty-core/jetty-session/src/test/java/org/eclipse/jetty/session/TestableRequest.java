@@ -145,6 +145,12 @@ public class TestableRequest implements Request
     }
 
     @Override
+    public boolean consumeAvailable()
+    {
+        return false;
+    }
+
+    @Override
     public void demand(Runnable demandCallback)
     {
     }

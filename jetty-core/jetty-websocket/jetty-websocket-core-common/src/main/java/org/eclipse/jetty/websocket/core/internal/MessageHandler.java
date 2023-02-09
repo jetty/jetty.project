@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
  * A utility implementation of FrameHandler that defragments
  * text frames into a String message before calling {@link #onText(String, Callback)}.
  * Flow control is by default automatic, but an implementation
- * may extend {@link #isDemanding()} to return true and then explicityly control
- * demand with calls to {@link CoreSession#demand(long)}
+ * may extend {@link #isAutoDemanding()} to return false and then explicitly control
+ * demand with calls to {@link CoreSession#demand(long)}.
  */
 public class MessageHandler implements FrameHandler
 {

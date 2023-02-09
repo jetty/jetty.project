@@ -2348,6 +2348,12 @@ public class RequestTest
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            return false;
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
         }

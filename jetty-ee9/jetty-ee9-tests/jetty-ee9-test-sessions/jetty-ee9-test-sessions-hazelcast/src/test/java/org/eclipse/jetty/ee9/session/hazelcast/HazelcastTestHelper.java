@@ -19,10 +19,7 @@ import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MulticastConfig;
-import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -47,9 +44,6 @@ public class HazelcastTestHelper
 
     static
     {
-        // Wire up hazelcast logging to slf4j
-        System.setProperty("hazelcast.logging.class", "com.hazelcast.logging.Slf4jFactory");
-
         // Wire up java.util.logging (used by hazelcast libs) to slf4j.
         if (!org.slf4j.bridge.SLF4JBridgeHandler.isInstalled())
         {
@@ -59,7 +53,7 @@ public class HazelcastTestHelper
         _serializerConfig = new SerializerConfig().setImplementation(new SessionDataSerializer()).setTypeClass(SessionData.class);
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName);
-        config.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().setMulticastConfig(new MulticastConfig().setEnabled(false))));
+        config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
         config.addMapConfig(new MapConfig().setName(_name)).setClassLoader(null);
         config.getSerializationConfig().addSerializerConfig(_serializerConfig);
         _instance = Hazelcast.getOrCreateHazelcastInstance(config);

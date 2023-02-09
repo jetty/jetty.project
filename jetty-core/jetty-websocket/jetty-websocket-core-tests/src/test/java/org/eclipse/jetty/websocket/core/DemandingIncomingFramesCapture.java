@@ -34,7 +34,7 @@ public class DemandingIncomingFramesCapture extends IncomingFramesCapture
         }
         finally
         {
-            if (!_coreSession.isDemanding())
+            if (_coreSession.isAutoDemanding())
                 _coreSession.autoDemand();
         }
     }

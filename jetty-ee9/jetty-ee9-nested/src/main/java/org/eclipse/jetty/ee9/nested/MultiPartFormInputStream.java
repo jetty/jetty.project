@@ -47,6 +47,8 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.ee9.nested.ContextHandler.DEFAULT_MAX_FORM_KEYS;
+
 /**
  * MultiPartInputStream
  * <p>
@@ -97,6 +99,8 @@ public class MultiPartFormInputStream
     private final MultipartConfigElement _config;
     private final File _contextTmpDir;
     private final String _contentType;
+    private final int _maxParts;
+    private int _numParts = 0;
     private volatile Throwable _err;
     private volatile Path _tmpDir;
     private volatile boolean _deleteOnExit;
@@ -380,9 +384,20 @@ public class MultiPartFormInputStream
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir jakarta.servlet.context.tempdir
+     * @param contextTmpDir javax.servlet.context.tempdir
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
+    {
+        this(in, contentType, config, contextTmpDir, DEFAULT_MAX_FORM_KEYS);
+    }
+
+    /**
+     * @param in Request input stream
+     * @param contentType Content-Type header
+     * @param config MultipartConfigElement
+     * @param contextTmpDir javax.servlet.context.tempdir
+     */
+    public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
     {
         // Must be a multipart request.
         _contentType = contentType;
@@ -391,6 +406,7 @@ public class MultiPartFormInputStream
 
         _contextTmpDir =  (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
         _config = (config != null) ? config : new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
+        _maxParts = maxParts;
 
         if (in instanceof ServletInputStream)
         {
@@ -809,6 +825,9 @@ public class MultiPartFormInputStream
         public void startPart()
         {
             reset();
+            _numParts++;
+            if (_maxParts >= 0 && _numParts > _maxParts)
+                throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", _numParts, _maxParts));
         }
 
         @Override

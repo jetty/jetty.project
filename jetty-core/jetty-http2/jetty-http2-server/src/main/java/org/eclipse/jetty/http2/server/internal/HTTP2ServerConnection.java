@@ -390,7 +390,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public boolean isSecure()
     {
-        return getEndPoint() instanceof SslConnection.DecryptedEndPoint;
+        return getEndPoint() instanceof SslConnection.SslEndPoint;
     }
 
     @Override

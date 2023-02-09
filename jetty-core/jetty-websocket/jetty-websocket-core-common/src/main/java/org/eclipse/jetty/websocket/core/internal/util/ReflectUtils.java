@@ -27,11 +27,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
-import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 
 public class ReflectUtils
 {
-
+    private static final Pattern JAVAX_CLASSNAME_PATTERN = Pattern.compile("^javax*\\..*");
     private static final Pattern JAKARTA_CLASSNAME_PATTERN = Pattern.compile("^jakarta*\\..*");
 
     private static class GenericRef
@@ -61,37 +60,27 @@ public class ReflectUtils
 
         public void setGenericFromType(Type type, int index)
         {
-            // debug("setGenericFromType(%s,%d)",toShortName(type),index);
             this.genericType = type;
             this.genericIndex = index;
             if (type instanceof Class)
-            {
                 this.genericClass = (Class<?>)type;
-            }
         }
 
         @Override
         public String toString()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.append("GenericRef [baseClass=");
-            builder.append(baseClass);
-            builder.append(", ifaceClass=");
-            builder.append(ifaceClass);
-            builder.append(", genericType=");
-            builder.append(genericType);
-            builder.append(", genericClass=");
-            builder.append(genericClass);
-            builder.append("]");
-            return builder.toString();
+            return "GenericRef [baseClass=" + baseClass +
+                ", ifaceClass=" + ifaceClass +
+                ", genericType=" + genericType +
+                ", genericClass=" + genericClass +
+                "]";
         }
     }
 
     private static StringBuilder appendTypeName(StringBuilder sb, Type type, boolean ellipses)
     {
-        if (type instanceof Class<?>)
+        if (type instanceof Class<?> ctype)
         {
-            Class<?> ctype = (Class<?>)type;
             if (ctype.isArray())
             {
                 try
@@ -106,13 +95,9 @@ public class ReflectUtils
                     for (int i = 0; i < dimensions; i++)
                     {
                         if (ellipses)
-                        {
                             sb.append("...");
-                        }
                         else
-                        {
                             sb.append("[]");
-                        }
                     }
                     return sb;
                 }
@@ -132,63 +117,6 @@ public class ReflectUtils
         return sb;
     }
 
-    public static void assertIsAnnotated(Method method, Class<? extends Annotation> annoClass)
-    {
-        if (method.getAnnotation(annoClass) == null)
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("Method does not declare required @");
-            err.append(annoClass.getName());
-            err.append(" annotation: ");
-            err.append(method);
-
-            throw new InvalidWebSocketException(err.toString());
-        }
-    }
-
-    public static void assertIsPublicNonStatic(Method method)
-    {
-        int mods = method.getModifiers();
-        if (!Modifier.isPublic(mods))
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("Invalid declaration of ");
-            err.append(method);
-            err.append(System.lineSeparator());
-
-            err.append("Method modifier must be public");
-
-            throw new InvalidWebSocketException(err.toString());
-        }
-
-        if (Modifier.isStatic(mods))
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("Invalid declaration of ");
-            err.append(method);
-            err.append(System.lineSeparator());
-
-            err.append("Method modifier must not be static");
-
-            throw new InvalidWebSocketException(err.toString());
-        }
-    }
-
-    public static void assertIsReturn(Method method, Class<?> type)
-    {
-        if (!type.equals(method.getReturnType()))
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("Invalid declaration of ");
-            err.append(method);
-            err.append(System.lineSeparator());
-
-            err.append("Return type must be ").append(type);
-
-            throw new InvalidWebSocketException(err.toString());
-        }
-    }
-
     public static Method findMethod(Class<?> pojo, String methodName, Class<?>... params)
     {
         try
@@ -205,15 +133,9 @@ public class ReflectUtils
     {
         Method[] methods = findAnnotatedMethods(pojo, anno);
         if (methods == null)
-        {
             return null;
-        }
-
         if (methods.length > 1)
-        {
             throw DuplicateAnnotationException.build(pojo, anno, methods);
-        }
-
         return methods[0];
     }
 
@@ -245,28 +167,20 @@ public class ReflectUtils
     {
         GenericRef ref = new GenericRef(baseClass, ifaceClass);
         if (resolveGenericRef(ref, baseClass))
-        {
-            // debug("Generic Found: %s",ref.genericClass);
             return ref.genericClass;
-        }
 
-        // debug("Generic not found: %s",ref);
         return null;
     }
 
     private static int findTypeParameterIndex(Class<?> clazz, TypeVariable<?> needVar)
     {
-        // debug("findTypeParameterIndex(%s, [%s])",toShortName(clazz),toShortName(needVar));
         TypeVariable<?>[] params = clazz.getTypeParameters();
         for (int i = 0; i < params.length; i++)
         {
             if (params[i].getName().equals(needVar.getName()))
-            {
-                // debug("Type Parameter found at index: [%d]",i);
                 return i;
-            }
         }
-        // debug("Type Parameter NOT found");
+
         return -1;
     }
 
@@ -293,26 +207,6 @@ public class ReflectUtils
         }
     }
 
-    public static boolean isSameParameters(Class<?>[] actual, Class<?>[] params)
-    {
-        if (actual.length != params.length)
-        {
-            // skip
-            return false;
-        }
-
-        int len = params.length;
-        for (int i = 0; i < len; i++)
-        {
-            if (!actual[i].equals(params[i]))
-            {
-                return false; // not valid
-            }
-        }
-
-        return true;
-    }
-
     private static boolean resolveGenericRef(GenericRef ref, Class<?> clazz, Type type)
     {
         if (type instanceof Class)
@@ -320,7 +214,6 @@ public class ReflectUtils
             if (type == ref.ifaceClass)
             {
                 // is this a straight ref or a TypeVariable?
-                // debug("Found ref (as class): %s",toShortName(type));
                 ref.setGenericFromType(type, 0);
                 return true;
             }
@@ -331,13 +224,11 @@ public class ReflectUtils
             }
         }
 
-        if (type instanceof ParameterizedType)
+        if (type instanceof ParameterizedType ptype)
         {
-            ParameterizedType ptype = (ParameterizedType)type;
             Type rawType = ptype.getRawType();
             if (rawType == ref.ifaceClass)
             {
-                // debug("Found ref on [%s] as ParameterizedType [%s]",toShortName(clazz),toShortName(ptype));
                 // Always get the raw type parameter, let unwrap() solve for what it is
                 ref.setGenericFromType(ptype.getActualTypeArguments()[0], 0);
                 return true;
@@ -354,45 +245,31 @@ public class ReflectUtils
     private static boolean resolveGenericRef(GenericRef ref, Type type)
     {
         if ((type == null) || (type == Object.class))
-        {
             return false;
-        }
 
-        if (type instanceof Class)
+        if (type instanceof Class<?> clazz)
         {
-            Class<?> clazz = (Class<?>)type;
-            // prevent spinning off into Serialization and other parts of the
-            // standard tree that we could care less about
-            if (JAKARTA_CLASSNAME_PATTERN.matcher(clazz.getName()).matches())
-            {
+            // Prevent spinning off into Serialization and other parts of the standard tree that we couldn't care less about.
+            if (JAKARTA_CLASSNAME_PATTERN.matcher(clazz.getName()).matches() || JAVAX_CLASSNAME_PATTERN.matcher(clazz.getName()).matches())
                 return false;
-            }
 
             Type[] ifaces = clazz.getGenericInterfaces();
             for (Type iface : ifaces)
             {
-                // debug("resolve %s interface[]: %s",toShortName(clazz),toShortName(iface));
                 if (resolveGenericRef(ref, clazz, iface))
                 {
                     if (ref.needsUnwrap())
                     {
-                        // debug("## Unwrap class %s::%s",toShortName(clazz),toShortName(iface));
                         TypeVariable<?> needVar = (TypeVariable<?>)ref.genericType;
-                        // debug("needs unwrap of type var [%s] - index [%d]",toShortName(needVar),ref.genericIndex);
 
                         // attempt to find typeParameter on class itself
                         int typeParamIdx = findTypeParameterIndex(clazz, needVar);
-                        // debug("type param index for %s[%s] is [%d]",toShortName(clazz),toShortName(needVar),typeParamIdx);
-
                         if (typeParamIdx >= 0)
                         {
                             // found a type parameter, use it
-                            // debug("unwrap from class [%s] - typeParameters[%d]",toShortName(clazz),typeParamIdx);
                             TypeVariable<?>[] params = clazz.getTypeParameters();
                             if (params.length >= typeParamIdx)
-                            {
                                 ref.setGenericFromType(params[typeParamIdx], typeParamIdx);
-                            }
                         }
                         else if (iface instanceof ParameterizedType)
                         {
@@ -409,19 +286,15 @@ public class ReflectUtils
             return resolveGenericRef(ref, type);
         }
 
-        if (type instanceof ParameterizedType)
+        if (type instanceof ParameterizedType ptype)
         {
-            ParameterizedType ptype = (ParameterizedType)type;
             Class<?> rawClass = (Class<?>)ptype.getRawType();
             if (resolveGenericRef(ref, rawClass))
             {
                 if (ref.needsUnwrap())
                 {
-                    // debug("## Unwrap ParameterizedType %s::%s",toShortName(type),toShortName(rawClass));
                     TypeVariable<?> needVar = (TypeVariable<?>)ref.genericType;
-                    // debug("needs unwrap of type var [%s] - index [%d]",toShortName(needVar),ref.genericIndex);
                     int typeParamIdx = findTypeParameterIndex(rawClass, needVar);
-                    // debug("type paramIdx of %s::%s is index [%d]",toShortName(rawClass),toShortName(needVar),typeParamIdx);
 
                     Type arg = ptype.getActualTypeArguments()[typeParamIdx];
                     ref.setGenericFromType(arg, typeParamIdx);
@@ -433,60 +306,11 @@ public class ReflectUtils
         return false;
     }
 
-    public static String toShortName(Type type)
-    {
-        if (type == null)
-        {
-            return "<null>";
-        }
-
-        if (type instanceof Class)
-        {
-            String name = ((Class<?>)type).getName();
-            return trimClassName(name);
-        }
-
-        if (type instanceof ParameterizedType)
-        {
-            ParameterizedType ptype = (ParameterizedType)type;
-            StringBuilder str = new StringBuilder();
-            str.append(trimClassName(((Class<?>)ptype.getRawType()).getName()));
-            str.append("<");
-            Type[] args = ptype.getActualTypeArguments();
-            for (int i = 0; i < args.length; i++)
-            {
-                if (i > 0)
-                {
-                    str.append(",");
-                }
-                str.append(args[i]);
-            }
-            str.append(">");
-            return str.toString();
-        }
-
-        return type.toString();
-    }
-
     public static String toString(Class<?> pojo, Method method)
     {
         StringBuilder str = new StringBuilder();
-
         append(str, pojo, method);
-
         return str.toString();
-    }
-
-    public static String trimClassName(String name)
-    {
-        int idx = name.lastIndexOf('.');
-        name = name.substring(idx + 1);
-        idx = name.lastIndexOf('$');
-        if (idx >= 0)
-        {
-            name = name.substring(idx + 1);
-        }
-        return name;
     }
 
     public static void append(StringBuilder str, Class<?> pojo, Method method)
@@ -494,9 +318,7 @@ public class ReflectUtils
         // method modifiers
         int mod = method.getModifiers() & Modifier.methodModifiers();
         if (mod != 0)
-        {
             str.append(Modifier.toString(mod)).append(' ');
-        }
 
         // return type
         Type retType = method.getGenericReturnType();
@@ -525,8 +347,6 @@ public class ReflectUtils
             }
         }
         str.append(')');
-
-        // TODO: show exceptions?
     }
 
     public static void append(StringBuilder str, Method method)

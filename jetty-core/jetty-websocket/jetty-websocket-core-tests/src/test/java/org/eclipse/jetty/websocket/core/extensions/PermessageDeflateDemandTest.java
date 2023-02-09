@@ -187,9 +187,9 @@ public class PermessageDeflateDemandTest
         }
 
         @Override
-        public boolean isDemanding()
+        public boolean isAutoDemanding()
         {
-            return true;
+            return false;
         }
     }
 }

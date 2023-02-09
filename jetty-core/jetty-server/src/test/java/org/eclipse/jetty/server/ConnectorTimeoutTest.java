@@ -184,8 +184,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // Get the server side endpoint
         EndPoint endPoint = exchanger.exchange(null, 10, TimeUnit.SECONDS);
-        if (endPoint instanceof SslConnection.DecryptedEndPoint)
-            endPoint = ((SslConnection.DecryptedEndPoint)endPoint).getSslConnection().getEndPoint();
+        if (endPoint instanceof SslConnection.SslEndPoint sslEndPoint)
+            endPoint = sslEndPoint.getSslConnection().getEndPoint();
 
         // read the response
         String result = IO.toString(is);
@@ -247,8 +247,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // Get the server side endpoint
         EndPoint endPoint = exchanger.exchange(null, 10, TimeUnit.SECONDS);
-        if (endPoint instanceof SslConnection.DecryptedEndPoint)
-            endPoint = ((SslConnection.DecryptedEndPoint)endPoint).getSslConnection().getEndPoint();
+        if (endPoint instanceof SslConnection.SslEndPoint sslEndPoint)
+            endPoint = sslEndPoint.getSslConnection().getEndPoint();
 
         // read the response
         IO.toString(is);
