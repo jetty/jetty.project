@@ -2305,7 +2305,21 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiParts = newMultiParts(config);
+            int maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+            int maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
+            if (_context != null)
+            {
+                ContextHandler contextHandler = _context.getContextHandler();
+                maxFormContentSize = contextHandler.getMaxFormContentSize();
+                maxFormKeys = contextHandler.getMaxFormKeys();
+            }
+            else
+            {
+                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+            }
+
+            _multiParts = newMultiParts(config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
 
             String formCharset = null;
@@ -2316,7 +2330,7 @@ public class Request implements HttpServletRequest
                 {
                     ByteArrayOutputStream os = new ByteArrayOutputStream();
                     IO.copy(is, os);
-                    formCharset = new String(os.toByteArray(), StandardCharsets.UTF_8);
+                    formCharset = os.toString(StandardCharsets.UTF_8);
                 }
             }
 
@@ -2338,11 +2352,16 @@ public class Request implements HttpServletRequest
             else
                 defaultCharset = StandardCharsets.UTF_8;
 
+            long formContentSize = 0;
             ByteArrayOutputStream os = null;
             for (Part p : parts)
             {
                 if (p.getSubmittedFileName() == null)
                 {
+                    formContentSize = Math.addExact(formContentSize, p.getSize());
+                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
+                        throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
+
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
                     if (p.getContentType() != null)
@@ -2354,7 +2373,7 @@ public class Request implements HttpServletRequest
                             os = new ByteArrayOutputStream();
                         IO.copy(is, os);
 
-                        String content = new String(os.toByteArray(), charset == null ? defaultCharset : Charset.forName(charset));
+                        String content = os.toString(charset == null ? defaultCharset : Charset.forName(charset));
                         if (_contentParameters == null)
                             _contentParameters = params == null ? new MultiMap<>() : params;
                         _contentParameters.add(p.getName(), content);
@@ -2367,7 +2386,7 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    private MultiParts newMultiParts(MultipartConfigElement config) throws IOException
+    private MultiParts newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
     {
         MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
         if (LOG.isDebugEnabled())
@@ -2377,12 +2396,12 @@ public class Request implements HttpServletRequest
         {
             case RFC7578:
                 return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
+                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this, maxParts);
 
             case LEGACY:
             default:
                 return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
+                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this, maxParts);
         }
     }
 
