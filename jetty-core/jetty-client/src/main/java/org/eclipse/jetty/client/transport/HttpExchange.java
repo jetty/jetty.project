@@ -28,6 +28,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     private final AutoLock lock = new AutoLock();
     private final HttpDestination destination;
     private final HttpRequest request;
+    private final ResponseListeners listeners;
     private final HttpResponse response;
     private State requestState = State.PENDING;
     private State responseState = State.PENDING;
@@ -37,8 +38,14 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public HttpExchange(HttpDestination destination, HttpRequest request)
     {
+        this(destination, request, request.getResponseListeners());
+    }
+
+    public HttpExchange(HttpDestination destination, HttpRequest request, ResponseListeners listeners)
+    {
         this.destination = destination;
         this.request = request;
+        this.listeners = listeners;
         this.response = new HttpResponse(request);
         HttpConversation conversation = request.getConversation();
         conversation.getExchanges().offer(this);
@@ -70,7 +77,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public ResponseListeners getResponseListeners()
     {
-        return request.getResponseListeners();
+        return listeners;
     }
 
     public HttpResponse getResponse()
