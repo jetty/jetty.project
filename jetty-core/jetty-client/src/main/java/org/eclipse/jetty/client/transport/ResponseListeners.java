@@ -454,13 +454,13 @@ public class ResponseListeners
                 long encoded = counters.get();
                 int failures = AtomicBiInteger.getHi(encoded) + 1;
                 int demands = AtomicBiInteger.getLo(encoded);
-                if (demands == contentSources.size() - failures)
+                if (demands == listeners.size() - failures)
                     demands = 0;
                 if (counters.compareAndSet(encoded, failures, demands))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Registered failure; failures={} demands={}", failures, demands);
-                    if (failures == contentSources.size())
+                    if (failures == listeners.size())
                         originalContentSource.fail(failure);
                     else if (demands == 0)
                         originalContentSource.demand(this::onDemandCallback);
@@ -476,7 +476,7 @@ public class ResponseListeners
                 long encoded = counters.get();
                 int failures = AtomicBiInteger.getHi(encoded);
                 int demands = AtomicBiInteger.getLo(encoded) + 1;
-                if (demands == contentSources.size() - failures)
+                if (demands == listeners.size() - failures)
                     demands = 0;
                 if (counters.compareAndSet(encoded, failures, demands))
                 {
