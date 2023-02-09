@@ -119,7 +119,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=logging-logback,http
 ----
 
 Since LogBack is released under a license that is different from Jetty's, you will be prompted to accept the LogBack license.
-Once you accept the LogBack license, your `$JETTY_BASE` directory will have the following structure:
+Once you accept the LogBack license, your `$JETTY_BASE` directory will have the following structure.
 
 ----
 $JETTY_BASE
