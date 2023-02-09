@@ -18,39 +18,19 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class CookieCutterTest
 {
-    private Cookie[] parseCookieHeaders(CookieCompliance compliance, String... headers)
-    {
-        TestCutter cutter = new TestCutter(compliance, null);
-        for (String header : headers)
-        {
-            cutter.parseFields(header);
-        }
-        return cutter.cookies.toArray(new Cookie[cutter.cookies.size()]);
-    }
-
-    private void assertCookie(String prefix, Cookie cookie,
-                              String expectedName,
-                              String expectedValue,
-                              int expectedVersion,
-                              String expectedPath)
-    {
-        assertThat(prefix + ".name", cookie.getName(), is(expectedName));
-        assertThat(prefix + ".value", cookie.getValue(), is(expectedValue));
-        assertThat(prefix + ".version", cookie.getVersion(), is(expectedVersion));
-        assertThat(prefix + ".path", cookie.getPath(), is(expectedPath));
-    }
-
     /**
      * Example from RFC2109 and RFC2965
      */
     @Test
-    public void testRFCSingle()
+    public void testRFC2965Single()
     {
         String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
 
@@ -64,7 +44,7 @@ public class CookieCutterTest
      * Example from RFC2109 and RFC2965
      */
     @Test
-    public void testRFCDouble()
+    public void testRFC2965Double()
     {
         String rawCookie = "$Version=\"1\"; " +
             "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
@@ -147,7 +127,7 @@ public class CookieCutterTest
 
         cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
         assertThat("Cookies.length", cookies.length, is(2));
-        assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
+        assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 0, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
     }
 
@@ -226,7 +206,7 @@ public class CookieCutterTest
     {
         char[] excessive = new char[65535];
         Arrays.fill(excessive, ';');
-        String rawCookie = "foo=bar; " + excessive + "; xyz=pdq";
+        String rawCookie = "foo=bar; " + new String(excessive) + "; xyz=pdq";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
 
@@ -285,11 +265,33 @@ public class CookieCutterTest
         }
     }
 
-    class TestCutter extends CookieCutter
+    private Cookie[] parseCookieHeaders(CookieCompliance compliance, String... headers)
     {
-        List<Cookie> cookies = new ArrayList<>();
+        TestCookieParser cutter = new TestCookieParser(compliance, null);
+        for (String header : headers)
+        {
+            cutter.parseFields(header);
+        }
+        return cutter.cookies.toArray(new Cookie[cutter.cookies.size()]);
+    }
 
-        public TestCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    private void assertCookie(String prefix, Cookie cookie,
+                              String expectedName,
+                              String expectedValue,
+                              int expectedVersion,
+                              String expectedPath)
+    {
+        assertThat(prefix + ".name", cookie.getName(), is(expectedName));
+        assertThat(prefix + ".value", cookie.getValue(), is(expectedValue));
+        assertThat(prefix + ".version", cookie.getVersion(), is(expectedVersion));
+        assertThat(prefix + ".path", cookie.getPath(), is(expectedPath));
+    }
+
+    private static class TestCookieParser extends CookieCutter
+    {
+        private final List<Cookie> cookies = new ArrayList<>();
+
+        private TestCookieParser(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
         {
             super(compliance, complianceListener);
         }
@@ -300,7 +302,7 @@ public class CookieCutterTest
             cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
         }
 
-        public void parseFields(String... fields)
+        private void parseFields(String... fields)
         {
             super.parseFields(Arrays.asList(fields));
         }

@@ -27,6 +27,7 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.copyOf;
 import static java.util.EnumSet.noneOf;
+import static java.util.EnumSet.of;
 
 /**
  * The compliance mode for Cookie handling.
@@ -39,13 +40,23 @@ public class CookieCompliance implements ComplianceViolation.Mode
     {
         /**
          * Allow a comma as part of a cookie value
+         * @deprecated Use SPECIAL_CHARS_IN_QUOTES
          */
+        @Deprecated
         COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
+
+        COMMA_SEPARATOR("https://www.rfc-editor.org/rfc/rfc2965.html", "Comma cookie separator"),
 
         /**
          * Allow cookies to have $ prefixed reserved parameters
          */
-        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix");
+        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix"),
+
+        SPECIAL_CHARS_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1", "Special characters cannot be quoted"),
+
+        ESCAPE_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc2616#section-2.2", "Escaped characters in quotes"),
+
+        IGNORED_BAD_COOKIES("https://tools.ietf.org/html/rfc6265", "Non compliant cookies are ignored");
 
         private final String url;
         private final String description;
@@ -78,7 +89,12 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", noneOf(Violation.class));
+    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.IGNORED_BAD_COOKIES));
+
+    /**
+     * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
+     */
+    public static final CookieCompliance RFC6265_STRICT = new CookieCompliance("RFC6265", noneOf(Violation.class));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
