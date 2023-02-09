@@ -163,7 +163,7 @@ public interface CoreSession extends OutgoingFrames, Configuration
      * Manage flow control by indicating demand for handling Frames.  A call to
      * {@link FrameHandler#onFrame(Frame, Callback)} will only be made if a
      * corresponding demand has been signaled.   It is an error to call this method
-     * if {@link FrameHandler#isDemanding()} returns false.
+     * if {@link FrameHandler#isAutoDemanding()} returns true.
      *
      * @param n The number of frames that can be handled (in sequential calls to
      * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.

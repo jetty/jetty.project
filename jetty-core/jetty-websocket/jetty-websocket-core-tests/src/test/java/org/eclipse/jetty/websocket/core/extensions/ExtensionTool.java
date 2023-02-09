@@ -102,7 +102,7 @@ public class ExtensionTool
                         public void succeeded()
                         {
                             super.succeeded();
-                            if (!coreSession.isDemanding())
+                            if (coreSession.isAutoDemanding())
                                 coreSession.autoDemand();
                         }
                     };

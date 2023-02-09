@@ -423,9 +423,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public boolean isDemanding()
+    public boolean isAutoDemanding()
     {
-        return true;
+        return false;
     }
 
     public void suspend()

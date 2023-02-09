@@ -94,9 +94,9 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
         };
 
@@ -153,9 +153,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override
@@ -260,9 +260,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override
@@ -326,9 +326,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override
@@ -393,9 +393,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override

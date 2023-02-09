@@ -323,9 +323,9 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public boolean isDemanding()
+    public boolean isAutoDemanding()
     {
-        return true;
+        return false;
     }
 
     public Set<MessageHandler> getMessageHandlers()
