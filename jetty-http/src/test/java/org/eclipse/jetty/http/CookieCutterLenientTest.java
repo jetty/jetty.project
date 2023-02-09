@@ -63,6 +63,8 @@ public class CookieCutterLenientTest
 
             // lenient with spaces and EOF
             Arguments.of("abc=", "abc", ""),
+            Arguments.of("abc= ", "abc", ""),
+            Arguments.of("abc= x", "abc", "x"),
             Arguments.of("abc = ", "abc", ""),
             Arguments.of("abc = ;", "abc", ""),
             Arguments.of("abc = ; ", "abc", ""),

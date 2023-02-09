@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_SEPARATOR;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.IGNORABLE_WHITE_SPACE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
 
@@ -46,6 +47,7 @@ public abstract class CookieCutter
     {
         START,
         IN_NAME,
+        AFTER_NAME,
         VALUE,
         IN_VALUE,
         IN_QUOTED_VALUE,
@@ -87,7 +89,7 @@ public abstract class CookieCutter
             switch (state)
             {
                 case START:
-                    if (c == ' ' || c == ';')
+                    if (c == ' ' || c == '\t' || c == ';')
                         continue;
 
                     string.setLength(0);
@@ -130,6 +132,17 @@ public abstract class CookieCutter
                         continue;
                     }
 
+                    if ((c == ' ' || c == '\t') && _complianceMode.allows(IGNORABLE_WHITE_SPACE))
+                    {
+                        reportComplianceViolation(IGNORABLE_WHITE_SPACE, field);
+                        if (string.charAt(0) == '$')
+                            attributeName = string.toString();
+                        else
+                            cookieName = string.toString();
+                        state = State.AFTER_NAME;
+                        continue;
+                    }
+
                     if (token.isRfc2616Token())
                     {
                         string.append(c);
@@ -145,7 +158,36 @@ public abstract class CookieCutter
                     }
                     break;
 
+                case AFTER_NAME:
+                    if (c == '=')
+                    {
+                        state = State.VALUE;
+                        continue;
+                    }
+                    if (c == ';' || c == ',')
+                    {
+                        state = State.START;
+                        continue;
+                    }
+
+                    if (_complianceMode.allows(INVALID_COOKIE))
+                    {
+                        reportComplianceViolation(INVALID_COOKIE, field);
+                        state = State.INVALID_COOKIE;
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException("Bad Cookie");
+                    }
+                    break;
+
                 case VALUE:
+                    if (c == ' ' && _complianceMode.allows(IGNORABLE_WHITE_SPACE))
+                    {
+                        reportComplianceViolation(IGNORABLE_WHITE_SPACE, field);
+                        continue;
+                    }
+
                     string.setLength(0);
                     if (c == '"')
                     {
@@ -174,7 +216,7 @@ public abstract class CookieCutter
                     break;
 
                 case IN_VALUE:
-                    if (c == ';')
+                    if (c == ';' || c == ',' || c == ' ' || c == '\t')
                     {
                         value = string.toString();
                         i--;
@@ -241,7 +283,7 @@ public abstract class CookieCutter
                     break;
 
                 case AFTER_QUOTED_VALUE:
-                    if (c == ';' || c == ',')
+                    if (c == ';' || c == ',' || c == ' ' || c == '\t')
                     {
                         i--;
                         state = cookieInvalid ? State.INVALID_COOKIE : State.END;
@@ -258,6 +300,34 @@ public abstract class CookieCutter
                     break;
 
                 case END:
+                    if (c == ';')
+                    {
+                        state = State.START;
+                    }
+                    else if (c == ',')
+                    {
+                        if (_complianceMode.allows(COMMA_SEPARATOR))
+                        {
+                            reportComplianceViolation(COMMA_SEPARATOR, field);
+                            state = State.START;
+                        }
+                        else if (_complianceMode.allows(INVALID_COOKIE))
+                        {
+                            reportComplianceViolation(INVALID_COOKIE, field);
+                            state = State.INVALID_COOKIE;
+                            continue;
+                        }
+                        else
+                        {
+                            throw new IllegalStateException("Comma cookie separator");
+                        }
+                    }
+                    else if ((c == ' ' || c == '\t') && _complianceMode.allows(IGNORABLE_WHITE_SPACE))
+                    {
+                        reportComplianceViolation(IGNORABLE_WHITE_SPACE, field);
+                        continue;
+                    }
+
                     boolean knownAttribute = true;
                     if (StringUtil.isBlank(attributeName))
                     {
@@ -295,6 +365,7 @@ public abstract class CookieCutter
                         attributeName = null;
                     }
                     value = null;
+
                     if (!knownAttribute)
                     {
                         CookieCompliance.Violation violation = CookieCompliance.Violation.INVALID_COOKIE;
@@ -304,33 +375,9 @@ public abstract class CookieCutter
                         state = State.INVALID_COOKIE;
                         continue;
                     }
-                    if (c == ';')
-                    {
-                        state = State.START;
-                    }
-                    else if (c == ',')
-                    {
-                        if (_complianceMode.allows(COMMA_SEPARATOR))
-                        {
-                            reportComplianceViolation(COMMA_SEPARATOR, field);
-                            state = State.START;
-                        }
-                        else if (_complianceMode.allows(INVALID_COOKIE))
-                        {
-                            reportComplianceViolation(INVALID_COOKIE, field);
-                            if (!StringUtil.isBlank(cookieName))
-                                addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-                            state = State.INVALID_COOKIE;
-                        }
-                        else
-                        {
-                            throw new IllegalStateException("Comma cookie separator");
-                        }
-                    }
-                    else
-                    {
+
+                    if (state == State.END)
                         throw new IllegalStateException("Invalid cookie");
-                    }
                     break;
 
                 case INVALID_COOKIE:

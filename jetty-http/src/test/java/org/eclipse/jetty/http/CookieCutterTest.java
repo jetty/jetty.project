@@ -144,9 +144,8 @@ public class CookieCutterTest
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
 
         cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
-        assertThat("Cookies.length", cookies.length, is(2));
-        assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 0, null);
-        assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[1]", cookies[0], "session_id", "1111", 0, null);
     }
 
     /**
@@ -257,22 +256,21 @@ public class CookieCutterTest
     //  $X; N=V
     //  $X=Y; N=V
 
-
     public static List<Param> parameters()
     {
         return Arrays.asList(
             new Param("A=1; B=2; C=3", "A=1", "B=2", "C=3"),
             new Param("A=\"1\"; B=2; C=3", "A=1", "B=2", "C=3"),
-            new Param("A=1 ; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1 ; B=2; C=3", "A=1", "B=2", "C=3"),
             new Param("A=\"1; B=2\"; C=3", "C=3"),
             new Param("A=\"1; B=2; C=3"),
             new Param("A=\"1 B=2\"; C=3", "C=3"),
             new Param("A=\"\"1; B=2; C=3", "B=2", "C=3"),
-            new Param("A=\"\" ; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"\" ; B=2; C=3", "A=", "B=2", "C=3"),
             new Param("A=1\"\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=1\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=1\"1; B=2; C=3", "B=2", "C=3"),
-            new Param("A= 1; B=2; C=3", "B=2", "C=3"),
+            new Param("A= 1; B=2; C=3", "A=1", "B=2", "C=3"),
             new Param("A=\" 1\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=\"1 \"; B=2; C=3", "B=2", "C=3"),
             new Param("A=1,; B=2; C=3", "B=2", "C=3"),
@@ -281,7 +279,7 @@ public class CookieCutterTest
             new Param("A=\"\\1\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=1\u0007; B=2; C=3", "B=2", "C=3"),
             new Param("A=\"1\u0007\"; B=2; C=3", "B=2", "C=3"),
-            new Param("\u20AC"),
+            new Param("€"),
             new Param("@={}"),
             new Param("$X=Y; N=V", "N=V"),
             new Param("N=V; $X=Y", "N=V")
