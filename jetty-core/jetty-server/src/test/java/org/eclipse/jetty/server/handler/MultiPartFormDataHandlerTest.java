@@ -80,7 +80,7 @@ public class MultiPartFormDataHandlerTest
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
-                            Content.copy(parts.get(0).getContent(), response, callback);
+                            Content.copy(parts.get(0).getContentSource(), response, callback);
                         else
                             Response.writeError(request, response, callback, failure);
                     });
@@ -126,10 +126,10 @@ public class MultiPartFormDataHandlerTest
             public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 processLatch.countDown();
-                MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
-                assertNotNull(formData);
-                MultiPart.Part part = formData.get().get(0);
-                Content.copy(part.getContent(), response, callback);
+                MultiPartFormData.Parts parts = (MultiPartFormData.Parts)request.getAttribute(MultiPartFormData.Parts.class.getName());
+                assertNotNull(parts);
+                MultiPart.Part part = parts.get(0);
+                Content.copy(part.getContentSource(), response, callback);
                 return true;
             }
         });
@@ -195,8 +195,8 @@ public class MultiPartFormDataHandlerTest
                     {
                         if (parts != null)
                         {
-                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(parts.getBoundary()));
-                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(parts.getBoundary());
+                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(parts.getMultiPartFormData().getBoundary()));
+                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(parts.getMultiPartFormData().getBoundary());
                             source.setPartHeadersMaxLength(1024);
                             parts.forEach(source::addPart);
                             source.close();
@@ -321,7 +321,7 @@ public class MultiPartFormDataHandlerTest
             HttpFields headers2 = part2.getHeaders();
             assertEquals(2, headers2.size());
             assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
-            assertEquals(32, part2.getContent().getLength());
+            assertEquals(32, part2.getContentSource().getLength());
         }
     }
 }

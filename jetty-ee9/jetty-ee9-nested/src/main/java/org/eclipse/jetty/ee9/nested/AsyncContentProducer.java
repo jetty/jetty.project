@@ -189,18 +189,8 @@ class AsyncContentProducer implements ContentProducer
             LOG.trace("consumeAll {}", this, x);
         }
         failCurrentContent(x);
-        // A specific HttpChannel mechanism must be used as the following code
-        // does not guarantee that the channel will synchronously deliver all
-        // content it already contains:
-        //   while (true)
-        //   {
-        //       HttpInput.Content content = _httpChannel.produceContent();
-        //       ...
-        //   }
-        // as the HttpChannel's produceContent() contract makes no such promise;
-        // for instance the H2 implementation calls Stream.demand() that may
-        // deliver the content asynchronously. Tests in StreamResetTest cover this.
-        boolean atEof = _httpChannel.failAllContent(x);
+
+        boolean atEof = _httpChannel.getRequest().getCoreRequest().consumeAvailable();
         if (LOG.isDebugEnabled())
             LOG.debug("failed all content of http channel EOF={} {}", atEof, this);
         return atEof;

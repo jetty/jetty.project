@@ -229,6 +229,16 @@ public interface Request extends Attributes, Content.Source
     Content.Chunk read();
 
     /**
+     * Consume any available content. This bypasses any request wrappers to process the content in
+     * {@link Request#read()} and reads directly from the {@link HttpStream}. This reads until
+     * there is no content currently available or it reaches EOF.
+     * The {@link HttpConfiguration#setMaxUnconsumedRequestContentReads(int)} configuration can be used
+     * to configure how many reads will be attempted by this method.
+     * @return true if the content was fully consumed.
+     */
+    boolean consumeAvailable();
+
+    /**
      * <p>Pushes the given {@code resource} to the client.</p>
      *
      * @param resource the resource to push
@@ -614,6 +624,12 @@ public interface Request extends Attributes, Content.Source
         public Content.Chunk read()
         {
             return getWrapped().read();
+        }
+
+        @Override
+        public boolean consumeAvailable()
+        {
+            return getWrapped().consumeAvailable();
         }
 
         @Override

@@ -564,7 +564,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (tunnelSupport != null)
             return null;
-        return HttpStream.super.consumeAvailable();
+        return HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
     }
 
     @Override

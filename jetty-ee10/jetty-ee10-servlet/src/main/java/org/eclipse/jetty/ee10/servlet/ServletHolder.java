@@ -715,7 +715,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         {
             MultipartConfigElement mpce = ((Registration)_registration).getMultipartConfig();
             if (mpce != null)
-                request.setAttribute(ServletContextRequest.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, mpce);
         }
     }
 

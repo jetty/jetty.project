@@ -40,6 +40,7 @@ public class ChunksContentSource implements Content.Source
 
     public ChunksContentSource(Collection<Content.Chunk> chunks)
     {
+        chunks.forEach(Content.Chunk::retain);
         this.chunks = chunks;
         this.length = chunks.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
     }
