@@ -106,8 +106,8 @@ public interface FrameHandler extends IncomingFrames
     /**
      * Does the FrameHandler manage it's own demand?
      *
-     * @return true if demand will be managed by an automatic call to demand(1) after every * succeeded callback passed to
-     * {@link #onFrame(Frame, Callback)}. If false the FrameHandler will need to manage its own flow control by calling
+     * @return true if demand will be managed by an automatic call to demand(1) after every succeeded callback passed to
+     * {@link #onFrame(Frame, Callback)}. If false the FrameHandler will need to manage its own demand by calling
      * {@link CoreSession#demand(long)} when it is willing to receive new Frames.
      */
     default boolean isAutoDemanding()
