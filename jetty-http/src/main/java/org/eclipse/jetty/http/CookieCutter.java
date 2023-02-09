@@ -151,6 +151,12 @@ public abstract class CookieCutter
                     {
                         state = State.IN_QUOTED_VALUE;
                     }
+                    else if (c == ';')
+                    {
+                        value = "";
+                        i--;
+                        state = State.END;
+                    }
                     else if (token.isRfc6265CookieOctet())
                     {
                         string.append(c);
@@ -252,81 +258,78 @@ public abstract class CookieCutter
                     break;
 
                 case END:
-                    if (!StringUtil.isBlank(value))
+                    boolean knownAttribute = true;
+                    if (StringUtil.isBlank(attributeName))
                     {
-                        boolean knownAttribute = true;
-                        if (StringUtil.isBlank(attributeName))
+                        cookieValue = value;
+                    }
+                    else
+                    {
+                        // We have an attribute.
+                        CookieCompliance.Violation violation = CookieCompliance.Violation.ATTRIBUTE_PRESENCE;
+                        if (!_complianceMode.allows(violation))
+                            throw new IllegalArgumentException("Invalid Cookie with attributes");
+                        reportComplianceViolation(violation, field);
+                        // Only RFC 2965 supports attributes.
+                        if (_complianceMode == CookieCompliance.RFC2965)
                         {
-                            cookieValue = value;
-                        }
-                        else
-                        {
-                            // We have an attribute.
-                            CookieCompliance.Violation violation = CookieCompliance.Violation.ATTRIBUTE_PRESENCE;
-                            if (!_complianceMode.allows(violation))
-                                throw new IllegalArgumentException("Invalid Cookie with attributes");
-                            reportComplianceViolation(violation, field);
-                            // Only RFC 2965 supports attributes.
-                            if (_complianceMode == CookieCompliance.RFC2965)
+                            switch (attributeName.toLowerCase(Locale.ENGLISH))
                             {
-                                switch (attributeName.toLowerCase(Locale.ENGLISH))
-                                {
-                                    case "$path":
-                                        cookiePath = value;
-                                        break;
-                                    case "$domain":
-                                        cookieDomain = value;
-                                        break;
-                                    case "$port":
-                                        cookieComment = "$port=" + value;
-                                        break;
-                                    case "$version":
-                                        cookieVersion = Integer.parseInt(value);
-                                        break;
-                                    default:
-                                        knownAttribute = false;
-                                        break;
-                                }
+                                case "$path":
+                                    cookiePath = value;
+                                    break;
+                                case "$domain":
+                                    cookieDomain = value;
+                                    break;
+                                case "$port":
+                                    cookieComment = "$port=" + value;
+                                    break;
+                                case "$version":
+                                    cookieVersion = Integer.parseInt(value);
+                                    break;
+                                default:
+                                    knownAttribute = false;
+                                    break;
                             }
-                            attributeName = null;
                         }
-                        value = null;
-                        if (!knownAttribute)
+                        attributeName = null;
+                    }
+                    value = null;
+                    if (!knownAttribute)
+                    {
+                        CookieCompliance.Violation violation = CookieCompliance.Violation.INVALID_COOKIE;
+                        if (!_complianceMode.allows(violation))
+                            throw new IllegalArgumentException("Invalid Cookie attribute");
+                        reportComplianceViolation(violation, field);
+                        state = State.INVALID_COOKIE;
+                        continue;
+                    }
+                    if (c == ';')
+                    {
+                        state = State.START;
+                    }
+                    else if (c == ',')
+                    {
+                        if (_complianceMode.allows(COMMA_SEPARATOR))
                         {
-                            CookieCompliance.Violation violation = CookieCompliance.Violation.INVALID_COOKIE;
-                            if (!_complianceMode.allows(violation))
-                                throw new IllegalArgumentException("Invalid Cookie attribute");
-                            reportComplianceViolation(violation, field);
-                            state = State.INVALID_COOKIE;
-                            continue;
-                        }
-                        if (c == ';')
-                        {
+                            reportComplianceViolation(COMMA_SEPARATOR, field);
                             state = State.START;
                         }
-                        else if (c == ',')
+                        else if (_complianceMode.allows(INVALID_COOKIE))
                         {
-                            if (_complianceMode.allows(COMMA_SEPARATOR))
-                            {
-                                reportComplianceViolation(COMMA_SEPARATOR, field);
-                                state = State.START;
-                            }
-                            else if (_complianceMode.allows(INVALID_COOKIE))
-                            {
-                                reportComplianceViolation(INVALID_COOKIE, field);
-                                if (!StringUtil.isBlank(cookieName) && !StringUtil.isBlank(cookieValue))
-                                    addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-                                state = State.INVALID_COOKIE;
-                            }
-                            else
-                            {
-                                throw new IllegalStateException("Comma cookie separator");
-                            }
+                            reportComplianceViolation(INVALID_COOKIE, field);
+                            if (!StringUtil.isBlank(cookieName))
+                                addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
+                            state = State.INVALID_COOKIE;
                         }
                         else
                         {
-                            throw new IllegalStateException("Invalid cookie");
+                            throw new IllegalStateException("Comma cookie separator");
                         }
+                    }
+                    else
+                    {
+                        throw new IllegalStateException("Invalid cookie");
                     }
                     break;
 
@@ -345,7 +348,7 @@ public abstract class CookieCutter
             }
         }
 
-        if (!StringUtil.isBlank(cookieName) && !StringUtil.isBlank(cookieValue))
+        if (!cookieInvalid && !StringUtil.isBlank(cookieName))
             addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
     }
 
