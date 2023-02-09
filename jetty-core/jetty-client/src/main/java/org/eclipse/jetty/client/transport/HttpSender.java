@@ -507,7 +507,7 @@ public abstract class HttpSender
                 throw error.getCause();
 
             ByteBuffer buffer = chunk.getByteBuffer();
-            contentBuffer = buffer.slice();
+            contentBuffer = buffer.asReadOnlyBuffer();
             boolean last = chunk.isLast();
             if (committed)
                 sendContent(exchange, buffer, last, this);

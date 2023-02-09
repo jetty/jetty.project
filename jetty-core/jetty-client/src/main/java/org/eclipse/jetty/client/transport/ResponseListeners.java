@@ -289,18 +289,26 @@ public class ResponseListeners
 
     public void addCompleteListener(Response.CompleteListener listener)
     {
-        if (listener instanceof Response.BeginListener l)
-            addBeginListener(l);
-        if (listener instanceof Response.HeaderListener l)
-            addHeaderListener(l);
-        if (listener instanceof Response.HeadersListener l)
-            addHeadersListener(l);
-        if (listener instanceof Response.ContentSourceListener l)
-            addContentSourceListener(l);
-        if (listener instanceof Response.SuccessListener l)
-            addSuccessListener(l);
-        if (listener instanceof Response.FailureListener l)
-            addFailureListener(l);
+        addCompleteListener(listener, true);
+    }
+
+    private void addCompleteListener(Response.CompleteListener listener, boolean includeOtherEvents)
+    {
+        if (includeOtherEvents)
+        {
+            if (listener instanceof Response.BeginListener l)
+                addBeginListener(l);
+            if (listener instanceof Response.HeaderListener l)
+                addHeaderListener(l);
+            if (listener instanceof Response.HeadersListener l)
+                addHeadersListener(l);
+            if (listener instanceof Response.ContentSourceListener l)
+                addContentSourceListener(l);
+            if (listener instanceof Response.SuccessListener l)
+                addSuccessListener(l);
+            if (listener instanceof Response.FailureListener l)
+                addFailureListener(l);
+        }
         Response.CompleteListener existing = completeListener;
         completeListener = existing == null ? listener : result ->
         {
@@ -335,7 +343,7 @@ public class ResponseListeners
         addContentSourceListener(listener);
         addSuccessListener(listener);
         addFailureListener(listener);
-        addCompleteListener(listener);
+        addCompleteListener(listener, false);
     }
 
     public void add(ResponseListeners listeners)
@@ -346,7 +354,7 @@ public class ResponseListeners
         addContentSourceListener(listeners.contentSourceListener);
         addSuccessListener(listeners.successListener);
         addFailureListener(listeners.failureListener);
-        addCompleteListener(listeners.completeListener);
+        addCompleteListener(listeners.completeListener, false);
     }
 
     private void emitEvents(Response response)

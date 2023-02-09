@@ -281,9 +281,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         ((HttpRequest)request).sendAsync(this, listener);
     }
 
-    void send(HttpRequest request, ResponseListeners listeners)
+    void send(HttpRequest request)
     {
-        send(new HttpExchange(this, request, listeners));
+        send(new HttpExchange(this, request));
     }
 
     public void send(HttpExchange exchange)

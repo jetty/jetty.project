@@ -28,7 +28,6 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.transport.internal.HttpReceiverOverHTTP;
@@ -93,7 +92,8 @@ public class HttpReceiverOverHTTPTest
     {
         HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
         FutureResponseListener listener = new FutureResponseListener(request);
-        HttpExchange exchange = new HttpExchange(destination, request, new ResponseListeners(listener));
+        request.getResponseListeners().addListener(listener);
+        HttpExchange exchange = new HttpExchange(destination, request);
         boolean associated = connection.getHttpChannel().associate(exchange);
         assertTrue(associated);
         exchange.requestComplete(null);

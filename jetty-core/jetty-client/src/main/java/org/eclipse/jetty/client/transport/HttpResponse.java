@@ -26,16 +26,14 @@ public class HttpResponse implements Response
 {
     private final HttpFields.Mutable headers = HttpFields.build();
     private final Request request;
-    private final ResponseListeners listeners;
     private HttpVersion version;
     private int status;
     private String reason;
     private HttpFields.Mutable trailers;
 
-    public HttpResponse(Request request, ResponseListeners listeners)
+    public HttpResponse(Request request)
     {
         this.request = request;
-        this.listeners = listeners;
     }
 
     @Override

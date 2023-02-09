@@ -156,7 +156,12 @@ public class RequestListeners
         try
         {
             if (listener != null)
+            {
+                // The same ByteBuffer instance may be passed to multiple listeners
+                // that may modify the position and limit, so clear it every time.
+                byteBuffer.clear();
                 listener.onContent(request, byteBuffer);
+            }
         }
         catch (Throwable x)
         {
@@ -231,43 +236,36 @@ public class RequestListeners
         public void notifyQueued(Request request)
         {
             RequestListeners.notifyQueued(queuedListener, request);
-            RequestListeners.notifyQueued(httpClient.getRequestListeners().queuedListener, request);
         }
 
         public void notifyBegin(Request request)
         {
             RequestListeners.notifyBegin(beginListener, request);
-            RequestListeners.notifyBegin(httpClient.getRequestListeners().beginListener, request);
         }
 
         public void notifyHeaders(Request request)
         {
             RequestListeners.notifyHeaders(headersListener, request);
-            RequestListeners.notifyHeaders(httpClient.getRequestListeners().headersListener, request);
         }
 
         public void notifyCommit(Request request)
         {
             RequestListeners.notifyCommit(commitListener, request);
-            RequestListeners.notifyCommit(httpClient.getRequestListeners().commitListener, request);
         }
 
         public void notifyContent(Request request, ByteBuffer byteBuffer)
         {
             RequestListeners.notifyContent(contentListener, request, byteBuffer);
-            RequestListeners.notifyContent(httpClient.getRequestListeners().contentListener, request, byteBuffer);
         }
 
         public void notifySuccess(Request request)
         {
             RequestListeners.notifySuccess(successListener, request);
-            RequestListeners.notifySuccess(httpClient.getRequestListeners().successListener, request);
         }
 
         public void notifyFailure(Request request, Throwable failure)
         {
             RequestListeners.notifyFailure(failureListener, request, failure);
-            RequestListeners.notifyFailure(httpClient.getRequestListeners().failureListener, request, failure);
         }
     }
 }

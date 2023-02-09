@@ -32,7 +32,6 @@ import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpResponse;
-import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -116,7 +115,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         HttpExchange exchange = request.getConversation().getExchanges().peekLast();
         HttpChannelOverHTTP2 http2Channel = acquireHttpChannel();
         activeChannels.add(http2Channel);
-        HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), exchange.getRequest(), new ResponseListeners());
+        HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), exchange.getRequest());
         http2Channel.associate(newExchange);
 
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.

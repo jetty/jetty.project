@@ -371,6 +371,11 @@ public class HttpRequest implements Request
         return requestListeners;
     }
 
+    private RequestListeners.Internal getHttpClientRequestListeners()
+    {
+        return (RequestListeners.Internal)client.getRequestListeners();
+    }
+
     @Override
     public Request listener(Request.Listener listener)
     {
@@ -389,6 +394,7 @@ public class HttpRequest implements Request
     {
         if (requestListeners != null)
             requestListeners.notifyQueued(this);
+        getHttpClientRequestListeners().notifyQueued(this);
     }
 
     @Override
@@ -402,6 +408,7 @@ public class HttpRequest implements Request
     {
         if (requestListeners != null)
             requestListeners.notifyBegin(this);
+        getHttpClientRequestListeners().notifyBegin(this);
     }
 
     @Override
@@ -415,6 +422,7 @@ public class HttpRequest implements Request
     {
         if (requestListeners != null)
             requestListeners.notifyHeaders(this);
+        getHttpClientRequestListeners().notifyHeaders(this);
     }
 
     @Override
@@ -428,6 +436,7 @@ public class HttpRequest implements Request
     {
         if (requestListeners != null)
             requestListeners.notifyCommit(this);
+        getHttpClientRequestListeners().notifyCommit(this);
     }
 
     @Override
@@ -441,6 +450,7 @@ public class HttpRequest implements Request
     {
         if (requestListeners != null)
             requestListeners.notifyContent(this, byteBuffer);
+        getHttpClientRequestListeners().notifyContent(this, byteBuffer);
     }
 
     @Override
@@ -454,6 +464,7 @@ public class HttpRequest implements Request
     {
         if (requestListeners != null)
             requestListeners.notifySuccess(this);
+        getHttpClientRequestListeners().notifySuccess(this);
     }
 
     @Override
@@ -467,6 +478,7 @@ public class HttpRequest implements Request
     {
         if (requestListeners != null)
             requestListeners.notifyFailure(this, failure);
+        getHttpClientRequestListeners().notifyFailure(this, failure);
     }
 
     @Override
@@ -661,7 +673,7 @@ public class HttpRequest implements Request
     {
         if (listener != null)
             responseListeners.addCompleteListener(listener);
-        destination.send(this, responseListeners);
+        destination.send(this);
     }
 
     void sent()
