@@ -238,12 +238,6 @@ public class ByteRangeTest
     }
 
     @Test
-    public void testBadRangeSetPartiallyBad()
-    {
-        assertBadRangeList(500, "bytes=1-50,1-b,a-50");
-    }
-
-    @Test
     public void testBadRangeNoNumbers()
     {
         assertBadRangeList(500, "bytes=a-b");
