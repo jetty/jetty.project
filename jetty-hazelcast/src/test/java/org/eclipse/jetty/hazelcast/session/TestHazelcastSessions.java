@@ -108,6 +108,7 @@ public class TestHazelcastSessions
         SessionContext sessionContext = new SessionContext("foo", null);
 
         hazelcastSessionDataStoreFactory = new HazelcastSessionDataStoreFactory();
+        hazelcastSessionDataStoreFactory.setConfigurationLocation("target/test-classes/hazelcast-test-config.xml");
         hazelcastSessionDataStore = (HazelcastSessionDataStore)hazelcastSessionDataStoreFactory.getSessionDataStore(
             context.getSessionHandler());
         hazelcastSessionDataStore.initialize(sessionContext);
