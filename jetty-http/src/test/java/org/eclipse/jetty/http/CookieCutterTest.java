@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CookieCutterTest
 {
@@ -34,10 +35,27 @@ public class CookieCutterTest
     {
         String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+        // Test with RFC 2965.
+        TestCookieParser parser = new TestCookieParser(CookieCompliance.RFC2965);
+        List<Cookie> cookies = parser.parseFields(rawCookie);
 
-        assertThat("Cookies.length", cookies.length, is(1));
-        assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
+        assertThat("Cookies.length", cookies.size(), is(1));
+        assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 1, "/acme");
+        // There are 2 attributes, so 2 violations.
+        assertThat(parser.violations.size(), is(2));
+
+        // Same test with RFC 6265.
+        parser = new TestCookieParser(CookieCompliance.RFC6265);
+        cookies = parser.parseFields(rawCookie);
+
+        assertThat("Cookies.length", cookies.size(), is(1));
+        assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 0, null);
+        // There are 2 attributes, so 2 violations.
+        assertThat(parser.violations.size(), is(2));
+
+        // Same test with RFC 6265 strict should throw.
+        TestCookieParser strictParser = new TestCookieParser(CookieCompliance.RFC6265_STRICT);
+        assertThrows(IllegalArgumentException.class, () -> strictParser.parseFields(rawCookie));
     }
 
     /**
@@ -215,6 +233,75 @@ public class CookieCutterTest
         assertCookie("Cookies[1]", cookies[1], "xyz", "pdq", 0, null);
     }
 
+    @Test
+    public void testRFC2965QuotedEscape()
+    {
+        String rawCookie = "A=\"double\\\"quote\"";
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "A", "double\"quote", 0, null);
+    }
+
+    @Test
+    public void testRFC2965QuotedSpecial()
+    {
+        String rawCookie = "A=\", ;\"";
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "A", ", ;", 0, null);
+    }
+
+    // TODO:
+    //  $X; N=V
+    //  $X=Y; N=V
+
+
+    public static List<Param> parameters()
+    {
+        return Arrays.asList(
+            new Param("A=1; B=2; C=3", "A=1", "B=2", "C=3"),
+            new Param("A=\"1\"; B=2; C=3", "A=1", "B=2", "C=3"),
+            new Param("A=1 ; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1; B=2\"; C=3", "C=3"),
+            new Param("A=\"1; B=2; C=3"),
+            new Param("A=\"1 B=2\"; C=3", "C=3"),
+            new Param("A=\"\"1; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"\" ; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\"\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\"1; B=2; C=3", "B=2", "C=3"),
+            new Param("A= 1; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\" 1\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1 \"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1,; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1,\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\\1; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"\\1\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\u0007; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1\u0007\"; B=2; C=3", "B=2", "C=3"),
+            new Param("\u20AC"),
+            new Param("@={}"),
+            new Param("$X=Y; N=V", "N=V"),
+            new Param("N=V; $X=Y", "N=V")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("parameters")
+    public void testRFC6265Cookie(Param param)
+    {
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, param.input);
+
+        assertThat("Cookies.length", cookies.length, is(param.expected.size()));
+        for (int i = 0; i < cookies.length; i++)
+        {
+            Cookie cookie = cookies[i];
+            assertThat(cookie.getName() + "=" + cookie.getValue(), is(param.expected.get(i)));
+        }
+    }
+
     static class Cookie
     {
         String name;
@@ -267,12 +354,12 @@ public class CookieCutterTest
 
     private Cookie[] parseCookieHeaders(CookieCompliance compliance, String... headers)
     {
-        TestCookieParser cutter = new TestCookieParser(compliance, null);
+        TestCookieParser cutter = new TestCookieParser(compliance);
         for (String header : headers)
         {
             cutter.parseFields(header);
         }
-        return cutter.cookies.toArray(new Cookie[cutter.cookies.size()]);
+        return cutter.cookies.toArray(Cookie[]::new);
     }
 
     private void assertCookie(String prefix, Cookie cookie,
@@ -287,24 +374,52 @@ public class CookieCutterTest
         assertThat(prefix + ".path", cookie.getPath(), is(expectedPath));
     }
 
-    private static class TestCookieParser extends CookieCutter
+    private static class TestCookieParser implements ComplianceViolation.Listener
     {
+        private final CookieCutter cookieCutter;
         private final List<Cookie> cookies = new ArrayList<>();
+        private final List<CookieCompliance.Violation> violations = new ArrayList<>();
 
-        private TestCookieParser(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+        private TestCookieParser(CookieCompliance compliance)
         {
-            super(compliance, complianceListener);
+            cookieCutter = new CookieCutter(compliance, this)
+            {
+                @Override
+                protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
+                {
+                    cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
+                }
+            };
         }
 
         @Override
-        protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
+        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
         {
-            cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
+            violations.add((CookieCompliance.Violation)violation);
         }
 
-        private void parseFields(String... fields)
+        private List<Cookie> parseFields(String... fields)
         {
-            super.parseFields(Arrays.asList(fields));
+            cookieCutter.parseFields(Arrays.asList(fields));
+            return cookies;
+        }
+    }
+
+    private static class Param
+    {
+        private final String input;
+        private final List<String> expected;
+
+        public Param(String input, String... expected)
+        {
+            this.input = input;
+            this.expected = Arrays.asList(expected);
+        }
+
+        @Override
+        public String toString()
+        {
+            return input + " -> " + expected.toString();
         }
     }
 }

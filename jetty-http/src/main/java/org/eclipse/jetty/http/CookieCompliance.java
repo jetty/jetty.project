@@ -39,24 +39,43 @@ public class CookieCompliance implements ComplianceViolation.Mode
     public enum Violation implements ComplianceViolation
     {
         /**
-         * Allow a comma as part of a cookie value
+         * A comma was found in a cookie value.
+         *
          * @deprecated Use SPECIAL_CHARS_IN_QUOTES
          */
         @Deprecated
         COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
 
+        /**
+         * A comma was found as separator between cookies.
+         */
         COMMA_SEPARATOR("https://www.rfc-editor.org/rfc/rfc2965.html", "Comma cookie separator"),
 
         /**
-         * Allow cookies to have $ prefixed reserved parameters
+         * @deprecated no replacement because was mistakenly considered a violation
          */
+        @Deprecated
         RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix"),
 
+        /**
+         * Special characters were found in a quoted cookie value.
+         */
         SPECIAL_CHARS_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1", "Special characters cannot be quoted"),
 
+        /**
+         * A backslash was found in a quoted cookie value.
+         */
         ESCAPE_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc2616#section-2.2", "Escaped characters in quotes"),
 
-        IGNORED_BAD_COOKIES("https://tools.ietf.org/html/rfc6265", "Non compliant cookies are ignored");
+        /**
+         * An invalid cookie was found.
+         */
+        INVALID_COOKIE("https://tools.ietf.org/html/rfc6265", "Non compliant cookies are ignored"),
+
+        /**
+         * A cookie attribute was found.
+         */
+        ATTRIBUTE_PRESENCE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present");
 
         private final String url;
         private final String description;
@@ -89,7 +108,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.IGNORED_BAD_COOKIES));
+    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.ATTRIBUTE_PRESENCE));
 
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -189,12 +188,5 @@ public class CookieCutterLenientTest
             names.add(cookieName);
             values.add(cookieValue);
         }
-
-        public void parseField(String field)
-        {
-            super.parseFields(Collections.singletonList(field));
-        }
     }
-
-    ;
 }

@@ -23,8 +23,7 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_SEPARATOR;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.IGNORED_BAD_COOKIES;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
 
 /**
@@ -53,7 +52,7 @@ public abstract class CookieCutter
         ESCAPED_VALUE,
         AFTER_QUOTED_VALUE,
         END,
-        SKIP_BAD_COOKIE
+        INVALID_COOKIE
     }
 
     protected void parseField(String field)
@@ -68,6 +67,7 @@ public abstract class CookieCutter
         String cookieDomain = null;
         String cookieComment = null;
         int cookieVersion = 0;
+        boolean cookieInvalid = false;
 
         int length = field.length();
         StringBuilder string = new StringBuilder();
@@ -78,9 +78,9 @@ public abstract class CookieCutter
 
             if (token == null)
             {
-                if (!_complianceMode.allows(IGNORED_BAD_COOKIES))
-                     throw new IllegalArgumentException("Bad Cookie character");
-                state = State.SKIP_BAD_COOKIE;
+                if (!_complianceMode.allows(INVALID_COOKIE))
+                     throw new IllegalArgumentException("Invalid Cookie character");
+                state = State.INVALID_COOKIE;
                 continue;
             }
 
@@ -107,10 +107,10 @@ public abstract class CookieCutter
                         string.append(c);
                         state = State.IN_NAME;
                     }
-                    else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
+                    else if (_complianceMode.allows(INVALID_COOKIE))
                     {
-                        reportComplianceViolation(IGNORED_BAD_COOKIES, field);
-                        state = State.SKIP_BAD_COOKIE;
+                        reportComplianceViolation(INVALID_COOKIE, field);
+                        state = State.INVALID_COOKIE;
                     }
                     else
                     {
@@ -134,10 +134,10 @@ public abstract class CookieCutter
                     {
                         string.append(c);
                     }
-                    else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
+                    else if (_complianceMode.allows(INVALID_COOKIE))
                     {
-                        reportComplianceViolation(IGNORED_BAD_COOKIES, field);
-                        state = c == ';' ? State.START : State.SKIP_BAD_COOKIE;
+                        reportComplianceViolation(INVALID_COOKIE, field);
+                        state = c == ';' ? State.START : State.INVALID_COOKIE;
                     }
                     else
                     {
@@ -156,10 +156,10 @@ public abstract class CookieCutter
                         string.append(c);
                         state = State.IN_VALUE;
                     }
-                    else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
+                    else if (_complianceMode.allows(INVALID_COOKIE))
                     {
-                        reportComplianceViolation(IGNORED_BAD_COOKIES, field);
-                        state = State.SKIP_BAD_COOKIE;
+                        reportComplianceViolation(INVALID_COOKIE, field);
+                        state = State.INVALID_COOKIE;
                     }
                     else
                     {
@@ -168,7 +168,7 @@ public abstract class CookieCutter
                     break;
 
                 case IN_VALUE:
-                    if (c == ';' || c == ',')
+                    if (c == ';')
                     {
                         value = string.toString();
                         i--;
@@ -178,10 +178,10 @@ public abstract class CookieCutter
                     {
                         string.append(c);
                     }
-                    else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
+                    else if (_complianceMode.allows(INVALID_COOKIE))
                     {
-                        reportComplianceViolation(IGNORED_BAD_COOKIES, field);
-                        state = State.SKIP_BAD_COOKIE;
+                        reportComplianceViolation(INVALID_COOKIE, field);
+                        state = State.INVALID_COOKIE;
                     }
                     else
                     {
@@ -213,10 +213,15 @@ public abstract class CookieCutter
                         reportComplianceViolation(COMMA_NOT_VALID_OCTET, field);
                         string.append(c);
                     }
-                    else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
+                    else if (_complianceMode.allows(INVALID_COOKIE))
                     {
-                        reportComplianceViolation(IGNORED_BAD_COOKIES, field);
-                        state = State.SKIP_BAD_COOKIE;
+                        string.append(c);
+                        if (!cookieInvalid)
+                        {
+                            cookieInvalid = true;
+                            reportComplianceViolation(INVALID_COOKIE, field);
+                        }
+                        // Try to find the closing double quote by staying in the current state.
                     }
                     else
                     {
@@ -233,12 +238,12 @@ public abstract class CookieCutter
                     if (c == ';' || c == ',')
                     {
                         i--;
-                        state = State.END;
+                        state = cookieInvalid ? State.INVALID_COOKIE : State.END;
                     }
-                    else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
+                    else if (_complianceMode.allows(INVALID_COOKIE))
                     {
-                        reportComplianceViolation(IGNORED_BAD_COOKIES, field);
-                        state = State.SKIP_BAD_COOKIE;
+                        reportComplianceViolation(INVALID_COOKIE, field);
+                        state = State.INVALID_COOKIE;
                     }
                     else
                     {
@@ -249,15 +254,21 @@ public abstract class CookieCutter
                 case END:
                     if (!StringUtil.isBlank(value))
                     {
+                        boolean knownAttribute = true;
                         if (StringUtil.isBlank(attributeName))
                         {
                             cookieValue = value;
                         }
                         else
                         {
-                            if (_complianceMode.allows(RESERVED_NAMES_NOT_DOLLAR_PREFIXED))
+                            // We have an attribute.
+                            CookieCompliance.Violation violation = CookieCompliance.Violation.ATTRIBUTE_PRESENCE;
+                            if (!_complianceMode.allows(violation))
+                                throw new IllegalArgumentException("Invalid Cookie with attributes");
+                            reportComplianceViolation(violation, field);
+                            // Only RFC 2965 supports attributes.
+                            if (_complianceMode == CookieCompliance.RFC2965)
                             {
-                                reportComplianceViolation(RESERVED_NAMES_NOT_DOLLAR_PREFIXED, field);
                                 switch (attributeName.toLowerCase(Locale.ENGLISH))
                                 {
                                     case "$path":
@@ -273,23 +284,26 @@ public abstract class CookieCutter
                                         cookieVersion = Integer.parseInt(value);
                                         break;
                                     default:
+                                        knownAttribute = false;
                                         break;
                                 }
-                            }
-                            else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
-                            {
-                                reportComplianceViolation(IGNORED_BAD_COOKIES, field);
-                                state = State.SKIP_BAD_COOKIE;
-                            }
-                            else
-                            {
-                                throw new IllegalArgumentException("Bad Cookie name");
                             }
                             attributeName = null;
                         }
                         value = null;
+                        if (!knownAttribute)
+                        {
+                            CookieCompliance.Violation violation = CookieCompliance.Violation.INVALID_COOKIE;
+                            if (!_complianceMode.allows(violation))
+                                throw new IllegalArgumentException("Invalid Cookie attribute");
+                            reportComplianceViolation(violation, field);
+                            state = State.INVALID_COOKIE;
+                            continue;
+                        }
                         if (c == ';')
+                        {
                             state = State.START;
+                        }
                         else if (c == ',')
                         {
                             if (_complianceMode.allows(COMMA_SEPARATOR))
@@ -297,22 +311,26 @@ public abstract class CookieCutter
                                 reportComplianceViolation(COMMA_SEPARATOR, field);
                                 state = State.START;
                             }
-                            else if (_complianceMode.allows(IGNORED_BAD_COOKIES))
+                            else if (_complianceMode.allows(INVALID_COOKIE))
                             {
-                                reportComplianceViolation(IGNORED_BAD_COOKIES, field);
+                                reportComplianceViolation(INVALID_COOKIE, field);
                                 if (!StringUtil.isBlank(cookieName) && !StringUtil.isBlank(cookieValue))
                                     addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-                                state = State.SKIP_BAD_COOKIE;
+                                state = State.INVALID_COOKIE;
                             }
                             else
+                            {
                                 throw new IllegalStateException("Comma cookie separator");
+                            }
                         }
                         else
-                            throw new IllegalStateException();
+                        {
+                            throw new IllegalStateException("Invalid cookie");
+                        }
                     }
                     break;
 
-                case SKIP_BAD_COOKIE:
+                case INVALID_COOKIE:
                     attributeName = null;
                     value = null;
                     cookieName = null;
@@ -320,6 +338,7 @@ public abstract class CookieCutter
                     cookiePath = null;
                     cookieDomain = null;
                     cookieComment = null;
+                    cookieInvalid = false;
                     if (c == ';')
                         state = State.START;
                     break;
@@ -340,11 +359,8 @@ public abstract class CookieCutter
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
-        {
             _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
-        }
     }
 
     protected abstract void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment);
-
 }
