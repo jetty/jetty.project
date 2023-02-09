@@ -14,6 +14,20 @@
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-reads org.eclipse.jetty.fcgi.server=org.eclipse.jetty.logging
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -48,17 +62,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.fcgi.server=org.eclipse.jetty.logging
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

@@ -19,19 +19,19 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.internal.HTTP2ClientSession;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Connection;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -48,7 +48,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
-        RetainableByteBufferPool bufferPool = client.getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = client.getByteBufferPool();
         Executor executor = client.getExecutor();
         Scheduler scheduler = client.getScheduler();
         Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
@@ -81,9 +81,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endpoint, Parser parser, HTTP2Session session, int bufferSize, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, HTTP2Session session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
-            super(retainableByteBufferPool, executor, endpoint, parser, session, bufferSize);
+            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
             this.promise = promise;
             this.listener = listener;

@@ -116,7 +116,7 @@ public class DeploymentErrorTest
         server.addBean(deploymentManager);
 
         // Server handlers
-        server.setHandler(new Handler.Collection(contexts, new DefaultHandler()));
+        server.setHandler(new Handler.Sequence(contexts, new DefaultHandler()));
 
         // Setup Configurations
         Configurations.setServerDefault(server)

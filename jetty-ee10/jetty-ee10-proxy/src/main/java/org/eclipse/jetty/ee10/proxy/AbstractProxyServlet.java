@@ -40,6 +40,7 @@ import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -276,7 +276,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         client.setFollowRedirects(false);
 
         // Must not store cookies, otherwise cookies of different clients will mix.
-        client.setCookieStore(new HttpCookieStore.Empty());
+        client.setHttpCookieStore(new HttpCookieStore.Empty());
 
         Executor executor;
         String value = config.getInitParameter("maxThreads");

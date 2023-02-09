@@ -31,7 +31,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -117,7 +117,7 @@ public class DetectorConnectionTest
 
     private void start(ConnectionFactory... connectionFactories) throws Exception
     {
-        _server = new Server(null, null, new ArrayRetainableByteBufferPool()
+        _server = new Server(null, null, new ArrayByteBufferPool()
         {
 
             @Override

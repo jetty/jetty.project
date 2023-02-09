@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Configures the RetainableByteBufferPool used by ServerConnectors.
+Configures the ByteBufferPool used by ServerConnectors.
 The bucket sizes increase quadratically instead of linearly.
 
 [tags]

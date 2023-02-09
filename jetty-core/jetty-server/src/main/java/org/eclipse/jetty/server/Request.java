@@ -229,6 +229,16 @@ public interface Request extends Attributes, Content.Source
     Content.Chunk read();
 
     /**
+     * Consume any available content. This bypasses any request wrappers to process the content in
+     * {@link Request#read()} and reads directly from the {@link HttpStream}. This reads until
+     * there is no content currently available or it reaches EOF.
+     * The {@link HttpConfiguration#setMaxUnconsumedRequestContentReads(int)} configuration can be used
+     * to configure how many reads will be attempted by this method.
+     * @return true if the content was fully consumed.
+     */
+    boolean consumeAvailable();
+
+    /**
      * <p>Pushes the given {@code resource} to the client.</p>
      *
      * @param resource the resource to push
@@ -257,6 +267,15 @@ public interface Request extends Attributes, Content.Source
     TunnelSupport getTunnelSupport();
 
     void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
+
+    /**
+     * <p>Get a {@link Session} associated with the request.
+     * Sessions may not be supported by a given configuration, in which case
+     * {@code null} will be returned.</p>
+     * @param create True if the session should be created for the request.
+     * @return The session associated with the request or {@code null}.
+     */
+    Session getSession(boolean create);
 
     static String getLocalAddr(Request request)
     {
@@ -608,6 +627,12 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            return getWrapped().consumeAvailable();
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
             getWrapped().demand(demandCallback);
@@ -641,6 +666,12 @@ public interface Request extends Attributes, Content.Source
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getWrapped().addHttpStreamWrapper(wrapper);
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            return getWrapped().getSession(create);
         }
 
         @Override

@@ -298,7 +298,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             // Get a buffer for the deflated payload.
             long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? deflateBufferSize : (int)Math.min(maxFrameSize, deflateBufferSize);
-            RetainableByteBuffer buffer = getRetainableByteBufferPool().acquire(bufferSize, false);
+            RetainableByteBuffer buffer = getByteBufferPool().acquire(bufferSize, false);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             callback = Callback.from(callback, buffer::release);
             buffer.clear();
@@ -425,7 +425,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             // Get a buffer for the inflated payload.
             long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? inflateBufferSize : (int)Math.min(maxFrameSize, inflateBufferSize);
-            RetainableByteBuffer payload = getRetainableByteBufferPool().acquire(bufferSize, false);
+            RetainableByteBuffer payload = getByteBufferPool().acquire(bufferSize, false);
             _payloadRef = new AtomicReference<>(payload);
             ByteBuffer byteBuffer = payload.getByteBuffer();
             payload.clear();

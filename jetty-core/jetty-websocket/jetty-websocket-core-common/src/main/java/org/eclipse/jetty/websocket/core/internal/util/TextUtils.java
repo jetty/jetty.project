@@ -83,7 +83,7 @@ public final class TextUtils
 
         StringBuilder ret = new StringBuilder();
         int startLen = (int)Math.round((double)max / (double)3);
-        ret.append(raw.substring(0, startLen));
+        ret.append(raw, 0, startLen);
         ret.append("...");
         ret.append(raw.substring(length - (max - startLen - 3)));
 

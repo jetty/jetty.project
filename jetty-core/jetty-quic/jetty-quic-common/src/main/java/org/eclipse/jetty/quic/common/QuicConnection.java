@@ -27,12 +27,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
-import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -60,7 +59,7 @@ public abstract class QuicConnection extends AbstractConnection
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Scheduler scheduler;
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final AdaptiveExecutionStrategy strategy;
     private final Flusher flusher = new Flusher();
     private final Callback fillableCallback = new FillableCallback();
@@ -68,7 +67,7 @@ public abstract class QuicConnection extends AbstractConnection
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
 
-    protected QuicConnection(Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, EndPoint endPoint)
+    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
         if (!(endPoint instanceof DatagramChannelEndPoint))
@@ -89,7 +88,7 @@ public abstract class QuicConnection extends AbstractConnection
         return scheduler;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }

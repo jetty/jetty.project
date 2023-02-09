@@ -180,18 +180,7 @@ class AsyncContentProducer implements ContentProducer
 
     private boolean consumeAvailableChunks()
     {
-        ServletContextRequest request = _servletChannel.getServletContextRequest();
-        while (true)
-        {
-            Content.Chunk chunk = request.read();
-            if (chunk == null)
-                return false;
-
-            chunk.release();
-
-            if (chunk.isLast())
-                return true;
-        }
+        return _servletChannel.getServletContextRequest().consumeAvailable();
     }
 
     @Override

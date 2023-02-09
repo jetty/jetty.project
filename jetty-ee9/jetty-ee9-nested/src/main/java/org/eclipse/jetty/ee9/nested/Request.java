@@ -66,7 +66,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -79,8 +78,12 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.HttpCookieUtils;
+import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
@@ -153,7 +156,7 @@ public class Request implements HttpServletRequest
     private final ContextHandler.APIContext _context;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
-    private org.eclipse.jetty.server.Request _coreRequest;
+    private ContextHandler.CoreContextRequest _coreRequest;
     private MetaData.Request _metaData;
     private HttpFields _httpFields;
     private HttpFields _trailers;
@@ -166,7 +169,6 @@ public class Request implements HttpServletRequest
     private boolean _cookiesExtracted = false;
     private boolean _handled = false;
     private boolean _contentParamsExtracted;
-    private boolean _requestedSessionIdFromCookie = false;
     private Attributes _attributes;
     private Authentication _authentication;
     private String _contentType;
@@ -180,10 +182,7 @@ public class Request implements HttpServletRequest
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
     private Charset _queryEncoding;
-    private String _requestedSessionId;
     private UserIdentity.Scope _scope;
-    private Session _coreSession;
-    private SessionManager _sessionManager;
     private long _timeStamp;
     private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
@@ -318,10 +317,10 @@ public class Request implements HttpServletRequest
                 }
                 else
                 {
-                    Map<String, String> cookieFields = HttpCookie.extractBasics(field.getValue());
+                    Map<String, String> cookieFields = HttpCookieUtils.extractBasics(field.getValue());
                     cookieName = cookieFields.get("name");
                     cookieValue = cookieFields.get("value");
-                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.valueOf(cookieFields.get("max-age")) : -1;
+                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.parseLong(cookieFields.get("max-age")) : -1;
                 }
                 
                 if (cookieMaxAge > 0)
@@ -368,13 +367,13 @@ public class Request implements HttpServletRequest
      *
      * @param session the session
      */
-    private void commitSession(Session session)
+    private void commitSession(ManagedSession session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Response {} committing for session {}", this, session);
 
         //try and scope to a request and context before committing the session
-        HttpSession httpSession = session.getAPISession();
+        HttpSession httpSession = session.getApi();
         ServletContext ctx = httpSession.getServletContext();
         ContextHandler handler = ContextHandler.getContextHandler(ctx);
         if (handler == null)
@@ -1168,7 +1167,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        return _requestedSessionId;
+        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        return requestedSession == null ? null : requestedSession.sessionId();
     }
 
     @Override
@@ -1279,23 +1279,10 @@ public class Request implements HttpServletRequest
     @Override
     public String changeSessionId()
     {
-        if (_coreSession == null)
-            return null;
-        if (_coreSession.isInvalid())
-            return _coreSession.getId();
-
-        HttpSession httpSession = _coreSession.getAPISession();
-        if (httpSession == null)
-            throw new IllegalStateException("No session");
-
-        Session session = _coreSession;
-        session.renewId(getCoreRequest());
-        if (getRemoteUser() != null)
-            session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-        if (session.isSetCookieNeeded())
-            _channel.getResponse().replaceCookie(_sessionManager.getSessionCookie(session, isSecure()));
-
-        return httpSession.getId();
+        String newId = _coreRequest.changeSessionId();
+        if (newId != null && getRemoteUser() != null)
+            _coreRequest.getManagedSession().setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
+        return newId;
     }
 
     /**
@@ -1340,8 +1327,9 @@ public class Request implements HttpServletRequest
      */
     public HttpSession getSession(SessionManager sessionManager)
     {
-        if (_coreSession != null && _coreSession.getSessionManager() == sessionManager)
-            return _coreSession.getAPISession();
+        ManagedSession managedSession = _coreRequest.getManagedSession();
+        if (managedSession != null && managedSession.getSessionManager() == sessionManager)
+            return managedSession.getApi();
         return null;
     }
 
@@ -1354,41 +1342,10 @@ public class Request implements HttpServletRequest
     @Override
     public HttpSession getSession(boolean create)
     {
-        if (_coreSession != null)
-        {
-            if (_sessionManager != null && !_coreSession.isValid())
-                _coreSession = null;
-            else
-                return _coreSession.getAPISession();
-        }
-
-        if (!create)
-            return null;
-
-        if (getResponse().isCommitted())
-            throw new IllegalStateException("Response is committed");
-
-        if (_sessionManager == null)
-            throw new IllegalStateException("No SessionManager");
-
-        _sessionManager.newSession(getCoreRequest(), getRequestedSessionId(), this::setCoreSession);
-
-        if (_coreSession == null)
-            throw new IllegalStateException("Create session failed");
-
-        HttpCookie cookie = _sessionManager.getSessionCookie(_coreSession, isSecure());
-        if (cookie != null)
-            _channel.getResponse().replaceCookie(cookie);
-
-        return _coreSession.getAPISession();
-    }
-
-    /**
-     * @return Returns the sessionManager.
-     */
-    public SessionManager getSessionManager()
-    {
-        return _sessionManager;
+        Session session = _coreRequest.getSession(create);
+        if (session != null && session.isNew() && getAuthentication() instanceof Authentication.User)
+            session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
+        return session == null ? null : session.getApi();
     }
 
     /**
@@ -1490,29 +1447,37 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        return _requestedSessionId != null && _requestedSessionIdFromCookie;
+        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
     }
 
     @Override
     @Deprecated(since = "Servlet API 2.1")
     public boolean isRequestedSessionIdFromUrl()
     {
-        return _requestedSessionId != null && !_requestedSessionIdFromCookie;
+        return isRequestedSessionIdFromURL();
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        return _requestedSessionId != null && !_requestedSessionIdFromCookie;
+        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
     }
 
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        if (getRequestedSessionId() == null || _coreSession == null)
-            return false;
-
-        return (_coreSession.isValid() &&  _sessionManager.getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId()));
+        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        SessionManager sessionManager = _coreRequest.getSessionManager();
+        ManagedSession managedSession = _coreRequest.getManagedSession();
+        return requestedSession != null &&
+            sessionManager != null &&
+            managedSession != null &&
+            requestedSession.sessionId() != null &&
+            requestedSession.session() != null &&
+            requestedSession.session().isValid() &&
+            sessionManager.getSessionIdManager().getId(requestedSession.sessionId()).equals(managedSession.getId());
     }
 
     @Override
@@ -1537,7 +1502,7 @@ public class Request implements HttpServletRequest
         return false;
     }
 
-    void onRequest(org.eclipse.jetty.server.Request coreRequest)
+    void onRequest(ContextHandler.CoreContextRequest coreRequest)
     {
         _input.reopen();
         _channel.getResponse().getHttpOutput().reopen();
@@ -1557,15 +1522,13 @@ public class Request implements HttpServletRequest
         _uri = coreRequest.getHttpURI();
 
         String pathInContext = org.eclipse.jetty.server.Request.getPathInContext(coreRequest);
-        _pathInContext = _context.getContextHandler().isCanonicalEncodingURIs()
-            ? pathInContext
-            : URIUtil.decodePath(pathInContext);
+        _pathInContext = URIUtil.decodePath(pathInContext);
         _httpFields = coreRequest.getHeaders();
 
         setSecure(coreRequest.isSecure());
     }
 
-    public org.eclipse.jetty.server.Request getCoreRequest()
+    public ContextHandler.CoreContextRequest getCoreRequest()
     {
         return _coreRequest;
     }
@@ -1616,7 +1579,6 @@ public class Request implements HttpServletRequest
         _cookiesExtracted = false;
         _handled = false;
         _contentParamsExtracted = false;
-        _requestedSessionIdFromCookie = false;
         _attributes = null;
         setAuthentication(Authentication.NOT_CHECKED);
         _contentType = null;
@@ -1631,10 +1593,7 @@ public class Request implements HttpServletRequest
         _contentParameters = null;
         _parameters = null;
         _queryEncoding = null;
-        _requestedSessionId = null;
         _scope = null;
-        _coreSession = null;
-        _sessionManager = null;
         _timeStamp = 0;
         _multiParts = null;
         if (_async != null)
@@ -1878,43 +1837,6 @@ public class Request implements HttpServletRequest
         _queryEncoding = Charset.forName(queryEncoding);
     }
 
-    /**
-     * @param requestedSessionId The requestedSessionId to set.
-     */
-    public void setRequestedSessionId(String requestedSessionId)
-    {
-        _requestedSessionId = requestedSessionId;
-    }
-
-    /**
-     * @param requestedSessionIdCookie The requestedSessionIdCookie to set.
-     */
-    public void setRequestedSessionIdFromCookie(boolean requestedSessionIdCookie)
-    {
-        _requestedSessionIdFromCookie = requestedSessionIdCookie;
-    }
-
-    /**
-     * @param coreSession The session to set.
-     */
-    public void setCoreSession(Session coreSession)
-    {
-        _coreSession = coreSession;
-    }
-
-    public Session getCoreSession()
-    {
-        return _coreSession;
-    }
-
-    /**
-     * @param sessionManager The SessionHandler to set.
-     */
-    public void setSessionManager(SessionManager sessionManager)
-    {
-        _sessionManager = sessionManager;
-    }
-
     public void setTimeStamp(long ts)
     {
         _timeStamp = ts;
@@ -2031,7 +1953,21 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiParts = newMultiParts(config);
+            int maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+            int maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
+            if (_context != null)
+            {
+                ContextHandler contextHandler = _context.getContextHandler();
+                maxFormContentSize = contextHandler.getMaxFormContentSize();
+                maxFormKeys = contextHandler.getMaxFormKeys();
+            }
+            else
+            {
+                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+            }
+
+            _multiParts = newMultiParts(config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
             setNonComplianceViolationsOnRequest();
 
@@ -2065,11 +2001,16 @@ public class Request implements HttpServletRequest
             else
                 defaultCharset = StandardCharsets.UTF_8;
 
+            long formContentSize = 0;
             ByteArrayOutputStream os = null;
             for (Part p : parts)
             {
                 if (p.getSubmittedFileName() == null)
                 {
+                    formContentSize = Math.addExact(formContentSize, p.getSize());
+                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
+                        throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
+
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
                     if (p.getContentType() != null)
@@ -2110,10 +2051,10 @@ public class Request implements HttpServletRequest
         setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
     }
 
-    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config) throws IOException
+    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
     {
         return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null));
+            (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null), maxParts);
     }
 
     @Override

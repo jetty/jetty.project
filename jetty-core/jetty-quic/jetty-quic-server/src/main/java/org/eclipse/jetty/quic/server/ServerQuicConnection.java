@@ -19,10 +19,10 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -46,7 +46,7 @@ public class ServerQuicConnection extends QuicConnection
 
     protected ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getRetainableByteBufferPool(), endPoint);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
     }
@@ -61,7 +61,7 @@ public class ServerQuicConnection extends QuicConnection
     @Override
     protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
-        RetainableByteBufferPool bufferPool = getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = getByteBufferPool();
         // TODO make the token validator configurable
         QuicheConnection quicheConnection = QuicheConnection.tryAccept(connector.newQuicheConfig(), new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, getEndPoint().getLocalAddress(), remoteAddress);
         if (quicheConnection == null)

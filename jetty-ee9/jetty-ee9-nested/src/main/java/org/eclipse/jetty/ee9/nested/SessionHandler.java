@@ -40,8 +40,9 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionIdManager;
@@ -395,7 +396,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     {
         if (baseRequest.getDispatcherType() == DispatcherType.REQUEST)
         {
-            org.eclipse.jetty.server.Request coreRequest = baseRequest.getHttpChannel().getCoreRequest();
+            ContextHandler.CoreContextRequest coreRequest = baseRequest.getHttpChannel().getCoreRequest();
 
             // TODO should we use the Stream wrapper? Could use the HttpChannel#onCompleted mechanism instead.
             _sessionManager.addSessionStreamWrapper(coreRequest);
@@ -403,10 +404,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             // find and set the session if one exists
             AbstractSessionManager.RequestedSession requestedSession = _sessionManager.resolveRequestedSessionId(coreRequest);
 
-            baseRequest.setCoreSession(requestedSession.session());
-            baseRequest.setSessionManager(_sessionManager);
-            baseRequest.setRequestedSessionId(requestedSession.sessionId());
-            baseRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
+            coreRequest.setSessionManager(_sessionManager);
+            coreRequest.setRequestedSession(requestedSession);
 
             HttpCookie cookie = _sessionManager.access(requestedSession.session(), coreRequest.getConnectionMetaData().isSecure());
 
@@ -549,16 +548,16 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         }
 
         @Override
-        public Session getSession(org.eclipse.jetty.server.Request request)
+        public ManagedSession getManagedSession(org.eclipse.jetty.server.Request request)
         {
             return org.eclipse.jetty.server.Request.get(request, ContextHandler.CoreContextRequest.class, ContextHandler.CoreContextRequest::getHttpChannel)
-                .getRequest().getCoreSession();
+                .getCoreRequest().getManagedSession();
         }
 
         @Override
-        public Session.APISession newSessionAPIWrapper(Session session)
+        public Session.API newSessionAPIWrapper(ManagedSession session)
         {
-            return new ServletAPISession(session);
+            return new ServletSessionApi(session);
         }
 
         @Override
@@ -572,7 +571,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             if (!_sessionAttributeListeners.isEmpty())
             {
-                HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getAPISession(), name, old == null ? value : old);
+                HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
 
                 for (HttpSessionAttributeListener l : _sessionAttributeListeners)
                 {
@@ -598,7 +597,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             if (session == null)
                 return;
 
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (HttpSessionListener  l : _sessionListeners)
                 l.sessionCreated(event);
         }
@@ -620,7 +619,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             //come from the scavenger, rather than a request thread
             Runnable r = () ->
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 for (int i = _sessionListeners.size() - 1; i >= 0; i--)
                 {
                     _sessionListeners.get(i).sessionDestroyed(event);
@@ -635,7 +634,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             //inform the listeners
             if (!_sessionIdListeners.isEmpty())
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 for (HttpSessionIdListener l : _sessionIdListeners)
                 {
                     l.sessionIdChanged(event, oldId);
@@ -647,14 +646,14 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         public void callUnboundBindingListener(Session session, String name, Object value)
         {
             if (value instanceof HttpSessionBindingListener)
-                ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getAPISession(), name));
+                ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
         }
 
         @Override
         public void callBoundBindingListener(Session session, String name, Object value)
         {
             if (value instanceof HttpSessionBindingListener)
-                ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name));
+                ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getApi(), name));
         }
 
         @Override
@@ -662,7 +661,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             if (value instanceof HttpSessionActivationListener listener)
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 listener.sessionDidActivate(event);
             }
 
@@ -673,23 +672,23 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             if (value instanceof HttpSessionActivationListener listener)
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
                 listener.sessionWillPassivate(event);
             }
         }
     }
 
-    public class ServletAPISession implements HttpSession, Session.APISession
+    public class ServletSessionApi implements HttpSession, Session.API
     {
-        private final Session _session;
+        private final ManagedSession _session;
 
-        private ServletAPISession(Session session)
+        private ServletSessionApi(ManagedSession session)
         {
             _session = session;
         }
 
         @Override
-        public Session getCoreSession()
+        public ManagedSession getSession()
         {
             return _session;
         }
@@ -739,7 +738,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            return Collections.enumeration(_session.getNames());
+            return Collections.enumeration(_session.getAttributeNameSet());
         }
 
         @Override
@@ -781,7 +780,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         @Override
         public String[] getValueNames()
         {
-            return _session.getNames().toArray(new String[0]);
+            return _session.getAttributeNameSet().toArray(new String[0]);
         }
 
         @Override

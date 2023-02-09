@@ -32,11 +32,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
@@ -63,7 +63,7 @@ public class ConnectHandler extends Handler.Wrapper
     private final Set<String> blackList = new HashSet<>();
     private Executor executor;
     private Scheduler scheduler;
-    private RetainableByteBufferPool bufferPool;
+    private ByteBufferPool bufferPool;
     private SelectorManager selector;
     private long connectTimeout = 15000;
     private long idleTimeout = 30000;
@@ -100,12 +100,12 @@ public class ConnectHandler extends Handler.Wrapper
         this.scheduler = scheduler;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }
 
-    public void setRetainableByteBufferPool(RetainableByteBufferPool bufferPool)
+    public void setByteBufferPool(ByteBufferPool bufferPool)
     {
         updateBean(this.bufferPool, bufferPool);
         this.bufferPool = bufferPool;
@@ -167,7 +167,7 @@ public class ConnectHandler extends Handler.Wrapper
 
         if (bufferPool == null)
         {
-            bufferPool = getServer().getRetainableByteBufferPool();
+            bufferPool = getServer().getByteBufferPool();
             addBean(bufferPool);
         }
 
@@ -382,12 +382,12 @@ public class ConnectHandler extends Handler.Wrapper
 
     protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
     {
-        return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context);
+        return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context);
     }
 
     protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
     {
-        return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext);
+        return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext);
     }
 
     protected void prepareContext(Request request, ConcurrentMap<String, Object> context)
@@ -553,7 +553,7 @@ public class ConnectHandler extends Handler.Wrapper
     {
         private final ConnectContext connectContext;
 
-        public UpstreamConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ConnectContext connectContext)
+        public UpstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectContext connectContext)
         {
             super(endPoint, executor, bufferPool, connectContext.getContext());
             this.connectContext = connectContext;
@@ -589,7 +589,7 @@ public class ConnectHandler extends Handler.Wrapper
     {
         private ByteBuffer buffer;
 
-        public DownstreamConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
+        public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor, bufferPool, context);
         }
@@ -656,18 +656,18 @@ public class ConnectHandler extends Handler.Wrapper
     private abstract static class TunnelConnection extends AbstractConnection
     {
         private final IteratingCallback pipe = new ProxyIteratingCallback();
-        private final RetainableByteBufferPool bufferPool;
+        private final ByteBufferPool bufferPool;
         private final ConcurrentMap<String, Object> context;
         private TunnelConnection connection;
 
-        protected TunnelConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
+        protected TunnelConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor);
             this.bufferPool = bufferPool;
             this.context = context;
         }
 
-        public RetainableByteBufferPool getRetainableByteBufferPool()
+        public ByteBufferPool getByteBufferPool()
         {
             return bufferPool;
         }

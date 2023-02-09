@@ -29,10 +29,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -485,6 +485,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public boolean isCommitted()
     {
         return committed;
+    }
+
+    @Override
+    public Throwable consumeAvailable()
+    {
+        if (getTunnelSupport() != null)
+            return null;
+        return HttpStream.consumeAvailable(this, httpChannel.getConnectionMetaData().getHttpConfiguration());
     }
 
     public boolean isIdle()

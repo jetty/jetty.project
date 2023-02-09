@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
@@ -36,6 +37,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.MultiPartRequestContent;
+import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
@@ -46,7 +48,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -54,15 +58,20 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class MultiPartServletTest
 {
@@ -72,17 +81,30 @@ public class MultiPartServletTest
     private ServerConnector connector;
     private HttpClient client;
     private Path tmpDir;
+    private String tmpDirString;
+
+    @BeforeEach
+    public void before() throws Exception
+    {
+        tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
+        tmpDirString = tmpDir.toAbsolutePath().toString();
+    }
 
     private void start(HttpServlet servlet) throws Exception
     {
-        tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
+        start(servlet, new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0));
+    }
 
-        server = new Server();
+    private void start(HttpServlet servlet, MultipartConfigElement config) throws Exception
+    {
+        start(servlet, config, null);
+    }
+
+    private void start(HttpServlet servlet, MultipartConfigElement config, ByteBufferPool bufferPool) throws Exception
+    {
+        server = new Server(null, null, bufferPool);
         connector = new ServerConnector(server);
         server.addConnector(connector);
-
-        MultipartConfigElement config = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
-            MAX_FILE_SIZE, -1, 0);
 
         ServletContextHandler contextHandler = new ServletContextHandler(server, "/");
         ServletHolder servletHolder = new ServletHolder(servlet);
@@ -107,6 +129,136 @@ public class MultiPartServletTest
         LifeCycle.stop(client);
         LifeCycle.stop(server);
         IO.delete(tmpDir.toFile());
+    }
+
+    @Test
+    public void testLargePart() throws Exception
+    {
+        // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
+        ByteBufferPool bufferPool = new ByteBufferPool.NonPooling();
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getParameterMap();
+            }
+        }, new MultipartConfigElement(tmpDirString), bufferPool);
+
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send(listener);
+
+        // Write large amount of content to the part.
+        byte[] byteArray = new byte[1024 * 1024];
+        Arrays.fill(byteArray, (byte)1);
+        for (int i = 0; i < 1024 * 2; i++)
+        {
+            content.getOutputStream().write(byteArray);
+        }
+        content.close();
+
+        Response response = listener.get(30, TimeUnit.MINUTES);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("Form is larger than max length"));
+    }
+
+    @Test
+    public void testManyParts() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getParameterMap();
+            }
+        }, new MultipartConfigElement(tmpDirString));
+
+        byte[] byteArray = new byte[1024];
+        Arrays.fill(byteArray, (byte)1);
+
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        for (int i = 0; i < 1024 * 1024; i++)
+        {
+            BytesRequestContent content = new BytesRequestContent(byteArray);
+            multiPart.addPart(new MultiPart.ContentSourcePart("part" + i, null, null, content));
+        }
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send(listener);
+
+        Response response = listener.get(30, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("Form with too many keys"));
+    }
+
+    @Test
+    public void testMaxRequestSize() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getParameterMap();
+            }
+        }, new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8));
+
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/requestSizeLimit")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send(listener);
+
+        Throwable writeError = null;
+        try
+        {
+            // Write large amount of content to the part.
+            byte[] byteArray = new byte[1024 * 1024];
+            Arrays.fill(byteArray, (byte)1);
+            for (int i = 0; i < 1024 * 1024; i++)
+            {
+                content.getOutputStream().write(byteArray);
+            }
+            fail("We should never be able to write all the content.");
+        }
+        catch (Exception e)
+        {
+            writeError = e;
+        }
+
+        assertThat(writeError, instanceOf(EofException.class));
+
+        // We should get 400 response, for some reason reading the content throws EofException.
+        Response response = listener.get(30, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
     }
 
     @Test
@@ -237,6 +389,7 @@ public class MultiPartServletTest
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
         String boundary = MultiPart.extractBoundary(contentType);
         MultiPartFormData formData = new MultiPartFormData(boundary);
+        formData.setMaxParts(1);
 
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
         formData.parse(Content.Chunk.from(ByteBuffer.wrap(IO.readBytes(inputStream)), true));
@@ -244,5 +397,81 @@ public class MultiPartServletTest
 
         assertThat(parts.size(), is(1));
         assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
+    }
+
+    @Test
+    public void testDoubleReadFromPart() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setContentType("text/plain");
+                for (Part part : req.getParts())
+                {
+                    resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
+                    resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
+                }
+            }
+        });
+
+        String contentString = "the quick brown fox jumps over the lazy dog, " +
+            "the quick brown fox jumps over the lazy dog";
+        StringRequestContent content = new StringRequestContent(contentString);
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("myPart", null, HttpFields.EMPTY, content));
+        multiPart.close();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.getContentAsString(), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
+            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
+    }
+
+    @Test
+    public void testPartAsParameter() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setContentType("text/plain");
+                Map<String, String[]> parameterMap = req.getParameterMap();
+                for (Map.Entry<String, String[]> entry : parameterMap.entrySet())
+                {
+                    assertThat(entry.getValue().length, equalTo(1));
+                    resp.getWriter().println("Parameter: " + entry.getKey() + "=" + entry.getValue()[0]);
+                }
+            }
+        });
+
+        String contentString = "the quick brown fox jumps over the lazy dog, " +
+            "the quick brown fox jumps over the lazy dog";
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("part1", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart("part2", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart("part3", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart("partFileName", "myFile", HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.close();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        String responseContent = response.getContentAsString();
+        assertThat(responseContent, containsString("Parameter: part1=" + contentString));
+        assertThat(responseContent, containsString("Parameter: part2=" + contentString));
+        assertThat(responseContent, containsString("Parameter: part3=" + contentString));
+        assertThat(responseContent, not(containsString("Parameter: partFileName=" + contentString)));
     }
 }

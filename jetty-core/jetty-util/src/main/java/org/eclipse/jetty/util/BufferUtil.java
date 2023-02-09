@@ -648,6 +648,43 @@ public class BufferUtil
         }
     }
 
+    public static int readFrom(InputStream is, ByteBuffer buffer) throws IOException
+    {
+        if (buffer.hasArray())
+        {
+            int read = is.read(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
+            buffer.limit(buffer.limit() + read);
+            return read;
+        }
+        else
+        {
+            int totalRead = 0;
+            ByteBuffer tmp = allocate(8192);
+            while (BufferUtil.space(tmp) > 0 && BufferUtil.space(buffer) > 0)
+            {
+                int read = is.read(tmp.array(), 0, Math.min(BufferUtil.space(tmp), BufferUtil.space(buffer)));
+                if (read == 0)
+                {
+                    break;
+                }
+                else if (read < 0)
+                {
+                    if (totalRead == 0)
+                        return -1;
+                    break;
+                }
+                totalRead += read;
+                tmp.position(0);
+                tmp.limit(read);
+
+                int pos = BufferUtil.flipToFill(buffer);
+                BufferUtil.put(tmp, buffer);
+                BufferUtil.flipToFlush(buffer, pos);
+            }
+            return totalRead;
+        }
+    }
+
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())

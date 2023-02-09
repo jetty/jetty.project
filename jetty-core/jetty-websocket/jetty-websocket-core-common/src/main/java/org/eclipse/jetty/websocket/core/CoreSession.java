@@ -19,7 +19,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -82,9 +82,9 @@ public interface CoreSession extends OutgoingFrames, Configuration
     WebSocketComponents getWebSocketComponents();
 
     /**
-     * @return The shared RetainableByteBufferPool
+     * @return The shared ByteBufferPool
      */
-    RetainableByteBufferPool getRetainableByteBufferPool();
+    ByteBufferPool getByteBufferPool();
 
     /**
      * The Local Socket Address for the connection
@@ -163,7 +163,7 @@ public interface CoreSession extends OutgoingFrames, Configuration
      * Manage flow control by indicating demand for handling Frames.  A call to
      * {@link FrameHandler#onFrame(Frame, Callback)} will only be made if a
      * corresponding demand has been signaled.   It is an error to call this method
-     * if {@link FrameHandler#isDemanding()} returns false.
+     * if {@link FrameHandler#isAutoDemanding()} returns true.
      *
      * @param n The number of frames that can be handled (in sequential calls to
      * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
@@ -241,7 +241,7 @@ public interface CoreSession extends OutgoingFrames, Configuration
         }
 
         @Override
-        public RetainableByteBufferPool getRetainableByteBufferPool()
+        public ByteBufferPool getByteBufferPool()
         {
             return null;
         }

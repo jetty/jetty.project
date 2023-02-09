@@ -27,13 +27,13 @@ import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpConnection;
-import org.eclipse.jetty.client.internal.HttpDestination;
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpRequest;
-import org.eclipse.jetty.client.internal.IConnection;
-import org.eclipse.jetty.client.internal.SendFailure;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpConnection;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.IConnection;
+import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.parser.ClientParser;
@@ -42,10 +42,10 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
@@ -57,7 +57,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
-    private final RetainableByteBufferPool networkByteBufferPool;
+    private final ByteBufferPool networkByteBufferPool;
     private final AutoLock lock = new AutoLock();
     private final LinkedList<Integer> requests = new LinkedList<>();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -81,7 +81,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.parser = new ClientParser(new ResponseListener());
         requests.addLast(0);
         HttpClient client = destination.getHttpClient();
-        this.networkByteBufferPool = client.getRetainableByteBufferPool();
+        this.networkByteBufferPool = client.getByteBufferPool();
     }
 
     public HttpDestination getHttpDestination()

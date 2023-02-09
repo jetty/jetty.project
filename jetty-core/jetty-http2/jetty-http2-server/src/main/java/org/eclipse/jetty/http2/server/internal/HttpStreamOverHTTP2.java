@@ -27,14 +27,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -564,7 +564,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (tunnelSupport != null)
             return null;
-        return HttpStream.super.consumeAvailable();
+        return HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
     }
 
     @Override

@@ -26,7 +26,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -65,7 +65,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private final WebSocketSessionState sessionState = new WebSocketSessionState();
     private final FrameHandler handler;
     private final Negotiated negotiated;
-    private final boolean demanding;
+    private final boolean autoDemanding;
     private final Flusher flusher = new Flusher(this);
     private final ExtensionStack extensionStack;
 
@@ -90,7 +90,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         this.handler = handler;
         this.behavior = behavior;
         this.negotiated = negotiated;
-        this.demanding = handler.isDemanding();
+        this.autoDemanding = handler.isAutoDemanding();
         extensionStack = negotiated.getExtensions();
         extensionStack.initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
     }
@@ -126,9 +126,9 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     /**
      * @return True if the sessions handling is demanding.
      */
-    public boolean isDemanding()
+    public boolean isAutoDemanding()
     {
-        return demanding;
+        return autoDemanding;
     }
 
     public ExtensionStack getExtensionStack()
@@ -240,9 +240,9 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     }
 
     @Override
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return components.getRetainableByteBufferPool();
+        return components.getByteBufferPool();
     }
 
     public void onEof()
@@ -395,7 +395,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 sessionState.onOpen();
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
-                if (!demanding)
+                if (autoDemanding)
                     autoDemand();
             },
             x ->
@@ -424,7 +424,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     @Override
     public void demand(long n)
     {
-        if (!demanding)
+        if (autoDemanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
         getExtensionStack().demand(n);
     }
@@ -662,7 +662,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    Callback handlerCallback = isDemanding() ? callback : Callback.from(() ->
+                    Callback handlerCallback = !isAutoDemanding() ? callback : Callback.from(() ->
                     {
                         callback.succeeded();
                         autoDemand();

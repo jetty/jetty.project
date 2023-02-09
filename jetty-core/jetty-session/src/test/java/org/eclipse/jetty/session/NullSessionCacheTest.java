@@ -16,6 +16,7 @@ package org.eclipse.jetty.session;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,7 +89,7 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
-        Session session = cache.newSession(data); //mimic a request making a session
+        ManagedSession session = cache.newSession(data); //mimic a request making a session
         cache.add("1234", session);
         assertFalse(cache.contains("1234")); //null cache doesn't actually retain the session
         
@@ -132,7 +133,7 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         //test one that exists
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.add("1234", session);
         assertFalse(cache.contains("1234"));
     }

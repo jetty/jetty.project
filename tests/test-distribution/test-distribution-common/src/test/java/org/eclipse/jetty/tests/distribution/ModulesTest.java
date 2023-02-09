@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.logging.JettyLevel;
 import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
@@ -86,6 +87,31 @@ public class ModulesTest
 
         // Add module.
         try (JettyHomeTester.Run run = distribution.start("--add-modules=" + module))
+        {
+            run.awaitFor(5, TimeUnit.SECONDS);
+            assertThat(run.getExitValue(), is(0));
+        }
+
+        // Verify that Jetty starts.
+        try (JettyHomeTester.Run run = distribution.start())
+        {
+            assertThat(run.awaitConsoleLogsFor("Started oejs.Server", 5, TimeUnit.SECONDS), is(true));
+            run.stop();
+            assertThat(run.awaitFor(5, TimeUnit.SECONDS), is(true));
+        }
+    }
+
+    @Test
+    public void testStatistics() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        // Add module.
+        try (JettyHomeTester.Run run = distribution.start("--add-modules=statistics"))
         {
             run.awaitFor(5, TimeUnit.SECONDS);
             assertThat(run.getExitValue(), is(0));

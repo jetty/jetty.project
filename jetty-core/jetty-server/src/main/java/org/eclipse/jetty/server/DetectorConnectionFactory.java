@@ -146,7 +146,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         {
             super(endp, connector.getExecutor());
             _connector = connector;
-            _buffer = connector.getRetainableByteBufferPool().acquire(getInputBufferSize(), true);
+            _buffer = connector.getByteBufferPool().acquire(getInputBufferSize(), true);
         }
 
         @Override

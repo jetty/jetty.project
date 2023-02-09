@@ -38,20 +38,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
-import org.eclipse.jetty.client.internal.HttpConversation;
-import org.eclipse.jetty.client.internal.HttpDestination;
-import org.eclipse.jetty.client.internal.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -81,7 +83,7 @@ import org.slf4j.LoggerFactory;
  * and HTTP parameters (such as whether to follow redirects).</p>
  * <p>HttpClient transparently pools connections to servers, but allows direct control of connections
  * for cases where this is needed.</p>
- * <p>HttpClient also acts as a central configuration point for cookies, via {@link #getCookieStore()}.</p>
+ * <p>HttpClient also acts as a central configuration point for cookies, via {@link #getHttpCookieStore()}.</p>
  * <p>Typical usage:</p>
  * <pre>
  * HttpClient httpClient = new HttpClient();
@@ -121,8 +123,8 @@ public class HttpClient extends ContainerLifeCycle
     private final HttpClientTransport transport;
     private final ClientConnector connector;
     private AuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    private CookieManager cookieManager;
-    private CookieStore cookieStore;
+    private HttpCookieStore cookieStore;
+    private HttpCookieParser cookieParser;
     private SocketAddressResolver resolver;
     private HttpField agentField = new HttpField(HttpHeader.USER_AGENT, USER_AGENT);
     private boolean followRedirects = true;
@@ -199,9 +201,9 @@ public class HttpClient extends ContainerLifeCycle
         int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
             ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
             : ProcessorUtils.availableProcessors() * 2;
-        RetainableByteBufferPool retainableByteBufferPool = getRetainableByteBufferPool();
-        if (retainableByteBufferPool == null)
-            setRetainableByteBufferPool(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
+        ByteBufferPool byteBufferPool = getByteBufferPool();
+        if (byteBufferPool == null)
+            setByteBufferPool(new ArrayByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
         {
@@ -220,10 +222,11 @@ public class HttpClient extends ContainerLifeCycle
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
         handlers.put(new UpgradeProtocolHandler());
 
-        decoderFactories.put(new GZIPContentDecoder.Factory(retainableByteBufferPool));
+        decoderFactories.put(new GZIPContentDecoder.Factory(byteBufferPool));
 
-        cookieManager = newCookieManager();
-        cookieStore = cookieManager.getCookieStore();
+        if (cookieStore == null)
+            cookieStore = new HttpCookieStore.Default();
+        cookieParser = new HttpCookieParser();
 
         transport.setHttpClient(this);
 
@@ -234,11 +237,6 @@ public class HttpClient extends ContainerLifeCycle
             destinationSweeper = new Sweeper(scheduler, 1000L);
             destinationSweeper.start();
         }
-    }
-
-    private CookieManager newCookieManager()
-    {
-        return new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
     }
 
     @Override
@@ -274,7 +272,7 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @return the cookie store associated with this instance
      */
-    public CookieStore getCookieStore()
+    public HttpCookieStore getHttpCookieStore()
     {
         return cookieStore;
     }
@@ -282,25 +280,20 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @param cookieStore the cookie store associated with this instance
      */
-    public void setCookieStore(CookieStore cookieStore)
+    public void setHttpCookieStore(HttpCookieStore cookieStore)
     {
         if (isStarted())
             throw new IllegalStateException();
         this.cookieStore = Objects.requireNonNull(cookieStore);
-        this.cookieManager = newCookieManager();
     }
 
     public void putCookie(URI uri, HttpField field)
     {
         try
         {
-            String value = field.getValue();
-            if (value != null)
-            {
-                Map<String, List<String>> header = new HashMap<>(1);
-                header.put(field.getHeader().asString(), List.of(value));
-                cookieManager.put(uri, header);
-            }
+            HttpCookie cookie = cookieParser.parse(uri, field);
+            if (cookie != null)
+                cookieStore.add(uri, cookie);
         }
         catch (IOException x)
         {
@@ -646,19 +639,19 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link RetainableByteBufferPool} of this HttpClient
+     * @return the {@link ByteBufferPool} of this HttpClient
      */
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return connector.getRetainableByteBufferPool();
+        return connector.getByteBufferPool();
     }
 
     /**
-     * @param retainableByteBufferPool the {@link RetainableByteBufferPool} of this HttpClient
+     * @param byteBufferPool the {@link ByteBufferPool} of this HttpClient
      */
-    public void setRetainableByteBufferPool(RetainableByteBufferPool retainableByteBufferPool)
+    public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
-        connector.setRetainableByteBufferPool(retainableByteBufferPool);
+        connector.setByteBufferPool(byteBufferPool);
     }
 
     /**
@@ -1138,20 +1131,77 @@ public class HttpClient extends ContainerLifeCycle
         return HttpScheme.getDefaultPort(scheme);
     }
 
-    public boolean isDefaultPort(String scheme, int port)
-    {
-        return HttpScheme.getDefaultPort(scheme) == port;
-    }
-
-    public static boolean isSchemeSecure(String scheme)
-    {
-        return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
-    }
-
     public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
-        return new SslClientConnectionFactory(sslContextFactory, getRetainableByteBufferPool(), getExecutor(), connectionFactory);
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
+    }
+
+    private static class HttpCookieParser extends CookieManager
+    {
+        public HttpCookieParser()
+        {
+            super(new Store(), CookiePolicy.ACCEPT_ALL);
+        }
+
+        public HttpCookie parse(URI uri, HttpField field) throws IOException
+        {
+            // TODO: hacky implementation waiting for a real HttpCookie parser.
+            String value = field.getValue();
+            if (value == null)
+                return null;
+            Map<String, List<String>> header = new HashMap<>(1);
+            header.put(field.getHeader().asString(), List.of(value));
+            put(uri, header);
+            Store store = (Store)getCookieStore();
+            HttpCookie cookie = store.cookie;
+            store.cookie = null;
+            return cookie;
+        }
+
+        private static class Store implements CookieStore
+        {
+            private HttpCookie cookie;
+
+            @Override
+            public void add(URI uri, java.net.HttpCookie cookie)
+            {
+                String domain = cookie.getDomain();
+                if ("localhost.local".equals(domain))
+                    cookie.setDomain("localhost");
+                this.cookie = HttpCookie.from(cookie);
+            }
+
+            @Override
+            public List<java.net.HttpCookie> get(URI uri)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<java.net.HttpCookie> getCookies()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<URI> getURIs()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean remove(URI uri, java.net.HttpCookie cookie)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean removeAll()
+            {
+                throw new UnsupportedOperationException();
+            }
+        }
     }
 }

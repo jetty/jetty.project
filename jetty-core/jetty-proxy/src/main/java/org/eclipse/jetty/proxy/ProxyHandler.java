@@ -35,6 +35,7 @@ import org.eclipse.jetty.client.ProcessingProtocolHandler;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -203,7 +203,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     protected void configureHttpClient(HttpClient httpClient)
     {
         httpClient.setFollowRedirects(false);
-        httpClient.setCookieStore(new HttpCookieStore.Empty());
+        httpClient.setHttpCookieStore(new HttpCookieStore.Empty());
     }
 
     protected static String requestId(Request clientToProxyRequest)

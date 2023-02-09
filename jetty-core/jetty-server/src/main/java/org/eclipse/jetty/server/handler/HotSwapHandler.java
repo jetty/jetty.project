@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -26,7 +23,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 /**
  * A <code>HandlerContainer</code> that allows a hot swap of a wrapped handler.
  */
-public class HotSwapHandler extends Handler.AbstractContainer implements Handler.Nested
+public class HotSwapHandler extends Handler.AbstractContainer implements Handler.Singleton
 {
     // TODO unit tests
 
@@ -49,22 +46,12 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     }
 
     /**
-     * @return Returns the handlers.
-     */
-    @Override
-    public List<Handler> getHandlers()
-    {
-        Handler next = _handler;
-        return (next == null) ? Collections.emptyList() : Collections.singletonList(next);
-    }
-
-    /**
      * @param handler Set the {@link Handler} which should be wrapped.
      */
     public void setHandler(Handler handler)
     {
         // check state
-        Server server1 = ((Nested)this).getServer();
+        Server server1 = ((Singleton)this).getServer();
         if (server1 != null && server1.isStarted() && handler != null &&
             server1.getInvocationType() != Invocable.combine(server1.getInvocationType(), handler.getInvocationType()))
             throw new IllegalArgumentException("Cannot change invocation type of started server");

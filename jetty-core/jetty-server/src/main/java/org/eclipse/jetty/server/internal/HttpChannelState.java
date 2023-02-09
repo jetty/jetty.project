@@ -34,13 +34,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MultiPartFormData.Parts;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -53,6 +54,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
@@ -220,9 +222,9 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     @Override
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return getConnectionMetaData().getConnector().getRetainableByteBufferPool();
+        return getConnectionMetaData().getConnector().getByteBufferPool();
     }
 
     @Override
@@ -646,6 +648,11 @@ public class HttpChannelState implements HttpChannel, Components
 
                     requestLog.log(_request.getLoggedRequest(), _request._response);
                 }
+
+                // Clean up any multipart tmp files and release any associated resources.
+                Parts parts = (Parts)_request.getAttribute(Parts.class.getName());
+                if (parts != null)
+                    parts.close();
             }
             finally
             {
@@ -874,6 +881,19 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            HttpStream stream;
+            try (AutoLock ignored = _lock.lock())
+            {
+                HttpChannelState httpChannel = lockedGetHttpChannel();
+                stream = httpChannel._stream;
+            }
+
+            return stream.consumeAvailable() == null;
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
             boolean error;
@@ -953,6 +973,12 @@ public class HttpChannelState implements HttpChannel, Components
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getHttpChannel().addHttpStreamWrapper(wrapper);
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            return null;
         }
 
         @Override

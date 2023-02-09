@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;

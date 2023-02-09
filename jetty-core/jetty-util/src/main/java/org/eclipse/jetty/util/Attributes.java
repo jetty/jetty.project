@@ -128,7 +128,11 @@ public interface Attributes
     /**
      * Clear all attribute names
      */
-    void clearAttributes();
+    default void clearAttributes()
+    {
+        for (String name : getAttributeNameSet())
+            removeAttribute(name);
+    }
 
     /** Unwrap all  {@link Wrapper}s of the attributes
      * @param attributes The attributes to unwrap, which may be a  {@link Wrapper}.

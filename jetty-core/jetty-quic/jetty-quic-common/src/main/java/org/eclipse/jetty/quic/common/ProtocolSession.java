@@ -21,7 +21,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -215,25 +214,32 @@ public abstract class ProtocolSession extends ContainerLifeCycle
             if (task != null)
                 return task;
 
-            while (true)
+            try
             {
-                processWritableStreams();
-                boolean loop = processReadableStreams();
+                while (true)
+                {
+                    processWritableStreams();
+                    boolean loop = processReadableStreams();
 
-                task = poll();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("dequeued produced stream task {} on {}", task, ProtocolSession.this);
-                if (task != null)
-                    return task;
+                    task = poll();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("dequeued produced stream task {} on {}", task, ProtocolSession.this);
+                    if (task != null)
+                        return task;
 
-                if (!loop)
-                    break;
+                    if (!loop)
+                        break;
+                }
+
+                CloseInfo closeInfo = session.getRemoteCloseInfo();
+                if (closeInfo != null)
+                    onClose(closeInfo.error(), closeInfo.reason());
             }
-
-            CloseInfo closeInfo = session.getRemoteCloseInfo();
-            if (closeInfo != null)
-                onClose(closeInfo.error(), closeInfo.reason());
-
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Caught error while producing, returning null", x);
+            }
             return null;
         }
     }

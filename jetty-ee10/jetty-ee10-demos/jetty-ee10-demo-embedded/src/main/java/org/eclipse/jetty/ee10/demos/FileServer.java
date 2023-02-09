@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -36,6 +35,7 @@ public class FileServer
         // then a randomly available port will be assigned that you can either look in the logs for the port,
         // or programmatically obtain it for use in test cases.
         Server server = new Server(port);
+        server.setDefaultHandler(new DefaultHandler());
 
         // Create the ResourceHandler. It is the object that will actually handle the request for a given file. It is
         // a Jetty Handler object so it is suitable for chaining with other handlers as you will see in other examples.
@@ -48,7 +48,7 @@ public class FileServer
         resourceHandler.setBaseResource(baseResource);
 
         // Add the ResourceHandler to the server.
-        server.setHandler(new Handler.Collection(resourceHandler, new DefaultHandler()));
+        server.setHandler(resourceHandler);
 
         return server;
     }

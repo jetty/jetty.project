@@ -73,6 +73,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -996,7 +997,7 @@ public class RequestTest
         });
         final InetSocketAddress remoteAddr = new InetSocketAddress(local, 32768);
 
-        org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.Wrapper()
+        org.eclipse.jetty.server.Handler.Singleton handler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
             public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -1870,10 +1871,10 @@ public class RequestTest
         String uri = "http://host/foo/something";
         HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, HttpCookie.getSetCookie(HttpCookie.from("ugly", "duckling", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265)));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, HttpCookieUtils.getSetCookie(HttpCookie.from("ugly", "duckling", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265)));
         request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, "flow=away; Max-Age=0; Secure; HttpOnly; SameSite=None"));
         HttpFields.Mutable fields = HttpFields.build();
         fields.add(HttpHeader.AUTHORIZATION, "Basic foo");
@@ -2253,7 +2254,7 @@ public class RequestTest
         }
     }
 
-    private static class TestCoreRequest implements org.eclipse.jetty.server.Request
+    private static class TestCoreRequest extends ContextHandler.CoreContextRequest
     {
         private final Server _server = new Server();
         private final ConnectionMetaData _connectionMetaData;
@@ -2262,6 +2263,7 @@ public class RequestTest
 
         public TestCoreRequest(String uri, HttpFields.Mutable fields)
         {
+            super(null, null, null);
             _uri = uri;
             _fields = fields;
             _connectionMetaData = new MockConnectionMetaData();
@@ -2343,6 +2345,12 @@ public class RequestTest
         public Content.Chunk read()
         {
             return null;
+        }
+
+        @Override
+        public boolean consumeAvailable()
+        {
+            return false;
         }
 
         @Override

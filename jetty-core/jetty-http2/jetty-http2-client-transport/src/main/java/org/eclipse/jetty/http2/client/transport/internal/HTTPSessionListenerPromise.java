@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 

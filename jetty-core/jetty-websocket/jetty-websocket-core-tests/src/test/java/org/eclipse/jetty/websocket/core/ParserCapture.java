@@ -55,7 +55,7 @@ public class ParserCapture
         this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack), components);
         coreSession.setAutoFragment(false);
         coreSession.setMaxFrameSize(0);
-        this.parser = new Parser(components.getRetainableByteBufferPool(), coreSession);
+        this.parser = new Parser(components.getByteBufferPool(), coreSession);
     }
 
     public void parse(ByteBuffer buffer)

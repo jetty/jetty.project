@@ -180,7 +180,7 @@ public interface Response extends Content.Sink
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        response.getHeaders().add(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()),
+        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()),
             request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
 
         // Expire responses with set-cookie headers so they do not get cached.
@@ -202,18 +202,18 @@ public interface Response extends Content.Sink
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
                 CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-                if (field instanceof HttpCookie.SetCookieHttpField)
+                if (field instanceof HttpCookieUtils.SetCookieHttpField)
                 {
-                    if (!HttpCookie.match(((HttpCookie.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
                 else
                 {
-                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
 
-                i.set(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()), compliance));
+                i.set(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
                 return;
             }
         }
@@ -317,12 +317,16 @@ public interface Response extends Content.Sink
 
     static void ensureConsumeAvailableOrNotPersistent(Request request, Response response)
     {
+        if (request.consumeAvailable())
+            return;
+        ensureNotPersistent(request, response);
+    }
+
+    static void ensureNotPersistent(Request request, Response response)
+    {
         switch (request.getConnectionMetaData().getHttpVersion())
         {
             case HTTP_1_0:
-                if (consumeAvailable(request))
-                    return;
-
                 // Remove any keep-alive value in Connection headers
                 response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
                 {
@@ -339,9 +343,6 @@ public interface Response extends Content.Sink
                 break;
 
             case HTTP_1_1:
-                if (consumeAvailable(request))
-                    return;
-
                 // Add close value to Connection headers
                 response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
                 {
@@ -372,19 +373,6 @@ public interface Response extends Content.Sink
 
             default:
                 break;
-        }
-    }
-
-    static boolean consumeAvailable(Request request)
-    {
-        while (true)
-        {
-            Content.Chunk chunk = request.read();
-            if (chunk == null)
-                return false;
-            chunk.release();
-            if (chunk.isLast())
-                return true;
         }
     }
 

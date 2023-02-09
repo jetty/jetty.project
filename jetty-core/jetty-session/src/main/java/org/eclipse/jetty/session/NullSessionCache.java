@@ -15,6 +15,7 @@ package org.eclipse.jetty.session;
 
 import java.util.function.Function;
 
+import org.eclipse.jetty.server.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,34 +41,34 @@ public class NullSessionCache extends AbstractSessionCache
     }
 
     @Override
-    public Session newSession(SessionData data)
+    public ManagedSession newSession(SessionData data)
     {
-        return new Session(getSessionManager(), data);
+        return new ManagedSession(getSessionManager(), data);
     }
 
     @Override
-    public Session doGet(String id)
+    public ManagedSession doGet(String id)
     {
         //do not cache anything
         return null;
     }
 
     @Override
-    public Session doPutIfAbsent(String id, Session session)
+    public Session doPutIfAbsent(String id, ManagedSession session)
     {
         //nothing was stored previously
         return null;
     }
 
     @Override
-    public boolean doReplace(String id, Session oldValue, Session newValue)
+    public boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
     {
         //always accept new value
         return true;
     }
 
     @Override
-    public Session doDelete(String id)
+    public ManagedSession doDelete(String id)
     {
         return null;
     }
@@ -80,7 +81,7 @@ public class NullSessionCache extends AbstractSessionCache
     }
 
     @Override
-    protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+    protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
     {
         return mappingFunction.apply(id);
     }

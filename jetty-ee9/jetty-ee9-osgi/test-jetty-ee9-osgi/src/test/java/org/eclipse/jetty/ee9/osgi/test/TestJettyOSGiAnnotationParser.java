@@ -41,7 +41,6 @@ import org.osgi.framework.BundleContext;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
-
 /**
  * TestJettyOSGiAnnotationParser
  *

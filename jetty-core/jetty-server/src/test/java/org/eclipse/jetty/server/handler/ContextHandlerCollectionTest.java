@@ -122,7 +122,7 @@ public class ContextHandlerCollectionTest
         c.addHandler(contextG);
         c.addHandler(contextH);
 
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         handlers.addHandler(contextE);
         handlers.addHandler(contextF);
         handlers.addHandler(contextD);
@@ -320,7 +320,7 @@ public class ContextHandlerCollectionTest
 
         ContextHandler contextB = new ContextHandler("/b");
         IsHandledHandler handlerB = new IsHandledHandler("B");
-        Handler.Wrapper wrapperB = new Handler.Wrapper();
+        Handler.Singleton wrapperB = new Handler.Wrapper();
         wrapperB.setHandler(handlerB);
         contextB.setHandler(wrapperB);
 
@@ -334,7 +334,7 @@ public class ContextHandlerCollectionTest
         collection.addHandler(contextB);
         collection.addHandler(contextC);
 
-        Handler.Wrapper wrapper = new Handler.Wrapper();
+        Handler.Singleton wrapper = new Handler.Wrapper();
         wrapper.setHandler(collection);
         server.setHandler(wrapper);
 
@@ -359,7 +359,7 @@ public class ContextHandlerCollectionTest
         ContextHandler left = new ContextHandler("/left");
         left.setHandler(new IsHandledHandler("left"));
 
-        Handler.Collection centre = new Handler.Collection();
+        Handler.Sequence centre = new Handler.Sequence();
         ContextHandler centreLeft = new ContextHandler("/leftcentre");
         centreLeft.setHandler(new IsHandledHandler("left of centre"));
         ContextHandler centreRight = new ContextHandler("/rightcentre");

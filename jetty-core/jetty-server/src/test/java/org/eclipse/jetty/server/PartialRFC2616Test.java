@@ -60,7 +60,7 @@ public class PartialRFC2616Test
         context.setContextPath("/");
         context.setHandler(new DumpHandler());
 
-        server.setHandler(new Handler.Collection(vcontext, context));
+        server.setHandler(new Handler.Sequence(vcontext, context));
 
         server.start();
     }

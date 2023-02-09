@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -21,7 +20,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.ConnectException;
-import java.net.HttpCookie;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -75,6 +73,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -1193,7 +1192,7 @@ public class ProxyServletTest
             .send();
         assertEquals(200, response1.getStatus());
         assertTrue(response1.getHeaders().contains(PROXIED_HEADER));
-        List<HttpCookie> cookies = client.getCookieStore().getCookies();
+        List<HttpCookie> cookies = client.getHttpCookieStore().all();
         assertEquals(1, cookies.size());
         assertEquals(name, cookies.get(0).getName());
         assertEquals(value1, cookies.get(0).getValue());
@@ -1208,7 +1207,7 @@ public class ProxyServletTest
                 .send();
             assertEquals(200, response2.getStatus());
             assertTrue(response2.getHeaders().contains(PROXIED_HEADER));
-            cookies = client2.getCookieStore().getCookies();
+            cookies = client2.getHttpCookieStore().all();
             assertEquals(1, cookies.size());
             assertEquals(name, cookies.get(0).getName());
             assertEquals(value2, cookies.get(0).getValue());
@@ -1359,7 +1358,7 @@ public class ProxyServletTest
 
         chunk1Latch.countDown();
 
-        assertThrows(EOFException.class, () ->
+        assertThrows(IOException.class, () ->
         {
             // Make sure the proxy does not receive chunk2.
             input.read();

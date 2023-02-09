@@ -30,10 +30,10 @@ import java.util.EventListener;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.IO;
@@ -204,7 +204,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("server") Server server,
         @Name("executor") Executor executor,
         @Name("scheduler") Scheduler scheduler,
-        @Name("bufferPool") RetainableByteBufferPool bufferPool,
+        @Name("bufferPool") ByteBufferPool bufferPool,
         @Name("acceptors") int acceptors,
         @Name("selectors") int selectors,
         @Name("factories") ConnectionFactory... factories)

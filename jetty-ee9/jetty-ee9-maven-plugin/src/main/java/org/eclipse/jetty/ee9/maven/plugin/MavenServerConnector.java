@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -149,9 +149,9 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     }
 
     @Override
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return checkDelegate().getRetainableByteBufferPool();
+        return checkDelegate().getByteBufferPool();
     }
 
     @Override

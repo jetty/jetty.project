@@ -141,7 +141,7 @@ public class DigestPostTest
 
             security.setConstraintMappings(Collections.singletonList(mapping));
 
-            _server.setHandler(new Handler.Collection(context, new DefaultHandler()));
+            _server.setHandler(new Handler.Sequence(context, new DefaultHandler()));
 
             _server.start();
         }

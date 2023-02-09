@@ -26,11 +26,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSession;
@@ -74,7 +74,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         this(server, null, null, null, sslContextFactory, factories);
     }
 
-    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
         this.selectorManager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);

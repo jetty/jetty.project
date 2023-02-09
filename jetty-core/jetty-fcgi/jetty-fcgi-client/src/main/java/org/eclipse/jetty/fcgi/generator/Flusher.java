@@ -18,8 +18,8 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -40,7 +40,7 @@ public class Flusher
         this.endPoint = endPoint;
     }
 
-    public void flush(RetainableByteBufferPool.Accumulator accumulator, Callback callback)
+    public void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
     {
         offer(new Entry(accumulator, callback));
         flushCallback.iterate();
@@ -126,7 +126,7 @@ public class Flusher
         }
     }
 
-    private record Entry(RetainableByteBufferPool.Accumulator accumulator, Callback callback) implements Callback
+    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback) implements Callback
     {
         @Override
         public void succeeded()

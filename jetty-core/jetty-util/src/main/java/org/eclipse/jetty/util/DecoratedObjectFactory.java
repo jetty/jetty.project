@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Can be found in the ServletContext Attributes at the {@link #ATTR DecoratedObjectFactory.ATTR} key.
  */
-public class DecoratedObjectFactory implements Iterable<Decorator>
+public class DecoratedObjectFactory implements Iterable<Decorator>, Decorator
 {
     private static final Logger LOG = LoggerFactory.getLogger(DecoratedObjectFactory.class);
 
@@ -42,8 +42,6 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
     public static final String ATTR = DecoratedObjectFactory.class.getName();
 
     private static final ThreadLocal<Object> decoratorInfo = new ThreadLocal<>();
-
-    private List<Decorator> decorators = new ArrayList<>();
 
     public static void associateInfo(Object info)
     {
@@ -59,6 +57,8 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
     {
         return decoratorInfo.get();
     }
+
+    private final List<Decorator> decorators = new ArrayList<>();
 
     public void addDecorator(Decorator decorator)
     {

@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
 /**
  * This class implements an output stream in which the data is written into a list of ByteBuffer,
  * the buffer list automatically grows as data is written to it, the buffers are taken from the
- * supplied {@link RetainableByteBufferPool} or freshly allocated if one is not supplied.
+ * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
  *
  * Designed to mimic {@link java.io.ByteArrayOutputStream} but with better memory usage, and less copying.
  */
@@ -34,9 +34,9 @@ public class ByteBufferOutputStream2 extends OutputStream
         this(null, false);
     }
 
-    public ByteBufferOutputStream2(RetainableByteBufferPool bufferPool, boolean direct)
+    public ByteBufferOutputStream2(ByteBufferPool bufferPool, boolean direct)
     {
-        _accumulator = new ByteBufferAccumulator(bufferPool == null ? new RetainableByteBufferPool.NonPooling() : bufferPool, direct);
+        _accumulator = new ByteBufferAccumulator(bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool, direct);
     }
 
     /**

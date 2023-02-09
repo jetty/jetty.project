@@ -125,7 +125,7 @@ public class AliasCheckerSymlinkTest
         _context.setContextPath("/");
         _context.setBaseResourceAsPath(webRootPath);
         _context.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
-        _context.addHandler(new ResourceHandler());
+        _context.setHandler(new ResourceHandler());
 
         _server.setHandler(_context);
         _context.clearAliasChecks();

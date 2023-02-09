@@ -19,7 +19,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -38,7 +38,7 @@ public class MessageWriter extends Writer
         .onUnmappableCharacter(CodingErrorAction.REPORT)
         .onMalformedInput(CodingErrorAction.REPORT);
 
-    public MessageWriter(CoreSession coreSession, RetainableByteBufferPool bufferPool)
+    public MessageWriter(CoreSession coreSession, ByteBufferPool bufferPool)
     {
         this.outputStream = new MessageOutputStream(coreSession, bufferPool);
         this.outputStream.setMessageType(OpCode.TEXT);

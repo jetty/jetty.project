@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -46,7 +46,7 @@ public class MessageOutputStream extends OutputStream
     private boolean closed;
     private byte messageOpCode = OpCode.BINARY;
 
-    public MessageOutputStream(CoreSession coreSession, RetainableByteBufferPool bufferPool)
+    public MessageOutputStream(CoreSession coreSession, ByteBufferPool bufferPool)
     {
         this.coreSession = coreSession;
         this.bufferSize = coreSession.getOutputBufferSize();

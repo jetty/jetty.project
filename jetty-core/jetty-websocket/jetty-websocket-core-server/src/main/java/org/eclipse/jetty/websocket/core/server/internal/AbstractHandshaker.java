@@ -20,8 +20,8 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -188,9 +188,9 @@ public abstract class AbstractHandshaker implements Handshaker
 
     protected abstract WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession);
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, RetainableByteBufferPool retainableByteBufferPool, WebSocketCoreSession coreSession)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
     {
-        return new WebSocketConnection(endPoint, executor, scheduler, retainableByteBufferPool, coreSession);
+        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
     }
 
     protected abstract void prepareResponse(Response response, WebSocketNegotiation negotiation);

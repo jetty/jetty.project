@@ -23,7 +23,6 @@ import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;

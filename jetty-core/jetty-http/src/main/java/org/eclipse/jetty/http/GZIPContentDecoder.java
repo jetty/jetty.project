@@ -20,8 +20,8 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -37,7 +37,7 @@ public class GZIPContentDecoder implements Destroyable
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final List<RetainableByteBuffer> _inflateds = new ArrayList<>();
-    private final RetainableByteBufferPool _pool;
+    private final ByteBufferPool _pool;
     private final int _bufferSize;
     private InflaterPool.Entry _inflaterEntry;
     private Inflater _inflater;
@@ -57,17 +57,17 @@ public class GZIPContentDecoder implements Destroyable
         this(null, bufferSize);
     }
 
-    public GZIPContentDecoder(RetainableByteBufferPool retainableByteBufferPool, int bufferSize)
+    public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)
     {
-        this(new InflaterPool(0, true), retainableByteBufferPool, bufferSize);
+        this(new InflaterPool(0, true), byteBufferPool, bufferSize);
     }
 
-    public GZIPContentDecoder(InflaterPool inflaterPool, RetainableByteBufferPool retainableByteBufferPool, int bufferSize)
+    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool byteBufferPool, int bufferSize)
     {
         _inflaterEntry = inflaterPool.acquire();
         _inflater = _inflaterEntry.get();
         _bufferSize = bufferSize;
-        _pool = retainableByteBufferPool != null ? retainableByteBufferPool : new RetainableByteBufferPool.NonPooling();
+        _pool = byteBufferPool != null ? byteBufferPool : new ByteBufferPool.NonPooling();
         reset();
     }
 

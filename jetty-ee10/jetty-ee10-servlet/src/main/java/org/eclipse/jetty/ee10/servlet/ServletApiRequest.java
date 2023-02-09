@@ -15,9 +15,11 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContext;
@@ -65,14 +68,17 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -100,26 +106,14 @@ public class ServletApiRequest implements HttpServletRequest
     private Fields _contentParameters;
     private Fields _parameters;
     private Fields _queryParameters;
-    private SessionManager _sessionManager;
-    private Session _coreSession;
-    private String _requestedSessionId;
-    private boolean _requestedSessionIdFromCookie;
     private Authentication _authentication;
     private String _method;
     private ServletMultiPartFormData.Parts _parts;
-    private ServletPathMapping _servletPathMapping;
     private boolean _asyncSupported = true;
 
     protected ServletApiRequest(ServletContextRequest servletContextRequest)
     {
-        this._request = servletContextRequest;
-    }
-
-    public static Session getSession(HttpSession httpSession)
-    {
-        if (httpSession instanceof Session.APISession apiSession)
-            return apiSession.getCoreSession();
-        return null;
+        _request = servletContextRequest;
     }
 
     public Fields getQueryParams()
@@ -148,7 +142,7 @@ public class ServletApiRequest implements HttpServletRequest
     public String getMethod()
     {
         if (_method == null)
-            return getRequest().getMethod();
+            return getServletContextRequest().getMethod();
         else
             return _method;
     }
@@ -159,27 +153,7 @@ public class ServletApiRequest implements HttpServletRequest
         _method = method;
     }
 
-    void setCoreSession(Session session)
-    {
-        _coreSession = session;
-    }
-
-    Session getCoreSession()
-    {
-        return _coreSession;
-    }
-
-    public SessionManager getSessionManager()
-    {
-        return _sessionManager;
-    }
-
-    protected void setSessionManager(SessionManager sessionManager)
-    {
-        _sessionManager = sessionManager;
-    }
-
-    public ServletContextRequest getRequest()
+    public ServletContextRequest getServletContextRequest()
     {
         return _request;
     }
@@ -251,7 +225,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        List<HttpCookie> httpCookies = Request.getCookies(getRequest());
+        List<HttpCookie> httpCookies = Request.getCookies(getServletContextRequest());
         if (httpCookies.isEmpty())
             return null;
         return httpCookies.stream()
@@ -263,7 +237,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         Cookie result = new Cookie(cookie.getName(), cookie.getValue());
         //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
-        if (CookieCompliance.RFC2965.equals(getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance()))
+        if (CookieCompliance.RFC2965.equals(getServletContextRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance()))
         {
             result.setPath(cookie.getPath());
             result.setDomain(cookie.getDomain());
@@ -370,12 +344,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        return _requestedSessionId;
-    }
-
-    protected void setRequestedSessionId(String requestedSessionId)
-    {
-        _requestedSessionId = requestedSessionId;
+        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        return requestedSession == null ? null : requestedSession.sessionId();
     }
 
     @Override
@@ -400,33 +370,12 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public HttpSession getSession(boolean create)
     {
-        if (_coreSession != null)
-        {
-            if (!_coreSession.isValid())
-                _coreSession = null;
-            else
-                return _coreSession.getAPISession();
-        }
-
-        if (!create)
+        Session session = _request.getSession(create);
+        if (session == null)
             return null;
-
-        if (_request.getResponse().isCommitted())
-            throw new IllegalStateException("Response is committed");
-
-        if (_sessionManager == null)
-            throw new IllegalStateException("No SessionManager");
-
-        _sessionManager.newSession(_request, getRequestedSessionId(), this::setCoreSession);
-        if (_coreSession == null)
-            throw new IllegalStateException("Create session failed");
-
-        var cookie = _sessionManager.getSessionCookie(_coreSession, isSecure());
-
-        if (cookie != null)
-            Response.replaceCookie(_request.getResponse(), cookie);
-
-        return _coreSession.getAPISession();
+        if (session.isNew() && getAuthentication() instanceof Authentication.User)
+            session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
+        return session.getApi();
     }
 
     @Override
@@ -438,24 +387,14 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String changeSessionId()
     {
-        HttpSession httpSession = getSession(false);
-        if (httpSession == null)
+        Session session = _request.getSession(false);
+        if (session == null)
             throw new IllegalStateException("No session");
 
-        Session session = SessionHandler.ServletAPISession.getSession(httpSession);
-        if (session == null)
-            throw new IllegalStateException("!org.eclipse.jetty.session.Session");
-
-        if (getSessionManager() == null)
-            throw new IllegalStateException("No SessionManager.");
-
-        session.renewId(_request);
+        session.renewId(_request, _request.getResponse());
 
         if (getRemoteUser() != null)
-            session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-
-        if (getSessionManager().isUsingCookies())
-            Response.replaceCookie(_request.getResponse(), getSessionManager().getSessionCookie(session, isSecure()));
+            session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
 
         return session.getId();
     }
@@ -463,27 +402,22 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        if (getRequestedSessionId() == null || _coreSession == null)
-            return false;
-        //check requestedId (which may have worker suffix) against the actual session id
-        return _coreSession.isValid() && getSessionManager().getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId());
+        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
     }
 
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        return _requestedSessionIdFromCookie;
-    }
-
-    protected void setRequestedSessionIdFromCookie(boolean requestedSessionIdFromCookie)
-    {
-        _requestedSessionIdFromCookie = requestedSessionIdFromCookie;
+        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        return getRequestedSessionId() != null && !isRequestedSessionIdFromCookie();
+        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
     }
 
     @Override
@@ -500,7 +434,7 @@ public class ServletApiRequest implements HttpServletRequest
         if (_authentication instanceof Authentication.Deferred)
         {
             setAuthentication(((Authentication.Deferred)_authentication)
-                .authenticate(_request, _request.getResponse(), getRequest().getServletChannel().getCallback()));
+                .authenticate(_request, _request.getResponse(), getServletContextRequest().getServletChannel().getCallback()));
         }
 
         //if the authentication did not succeed
@@ -544,11 +478,76 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        String contentType = getContentType();
-        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
-            throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
         if (_parts == null)
-            _parts = ServletMultiPartFormData.from(this);
+        {
+            String contentType = getContentType();
+            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
+                throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
+
+            MultipartConfigElement config = (MultipartConfigElement)getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+            if (config == null)
+                throw new IllegalStateException("No multipart config for servlet");
+
+            ServletContextHandler contextHandler = _request.getContext().getServletContextHandler();
+            int maxFormContentSize = contextHandler.getMaxFormContentSize();
+            int maxFormKeys = contextHandler.getMaxFormKeys();
+
+            _parts = ServletMultiPartFormData.from(this, maxFormKeys);
+            Collection<Part> parts = _parts.getParts();
+
+            String formCharset = null;
+            Part charsetPart = _parts.getPart("_charset_");
+            if (charsetPart != null)
+            {
+                try (InputStream is = charsetPart.getInputStream())
+                {
+                    formCharset = IO.toString(is, StandardCharsets.UTF_8);
+                }
+            }
+
+            /*
+            Select Charset to use for this part. (NOTE: charset behavior is for the part value only and not the part header/field names)
+                1. Use the part specific charset as provided in that part's Content-Type header; else
+                2. Use the overall default charset. Determined by:
+                    a. if part name _charset_ exists, use that part's value.
+                    b. if the request.getCharacterEncoding() returns a value, use that.
+                        (note, this can be either from the charset field on the request Content-Type
+                        header, or from a manual call to request.setCharacterEncoding())
+                    c. use utf-8.
+             */
+            Charset defaultCharset;
+            if (formCharset != null)
+                defaultCharset = Charset.forName(formCharset);
+            else if (getCharacterEncoding() != null)
+                defaultCharset = Charset.forName(getCharacterEncoding());
+            else
+                defaultCharset = StandardCharsets.UTF_8;
+
+            long formContentSize = 0;
+            for (Part p : parts)
+            {
+                if (p.getSubmittedFileName() == null)
+                {
+                    formContentSize = Math.addExact(formContentSize, p.getSize());
+                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
+                        throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
+
+                    // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
+                    String charset = null;
+                    if (p.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(p.getContentType());
+
+                    try (InputStream is = p.getInputStream())
+                    {
+                        String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
+                        if (_contentParameters == null)
+                            _contentParameters = new Fields();
+                        _contentParameters.add(p.getName(), content);
+                    }
+                }
+            }
+        }
+
         return _parts.getParts();
     }
 
@@ -600,7 +599,7 @@ public class ServletApiRequest implements HttpServletRequest
                 pushCookies.append(cookies);
             for (String setCookie : setCookies)
             {
-                Map<String, String> cookieFields = HttpCookie.extractBasics(setCookie);
+                Map<String, String> cookieFields = HttpCookieUtils.extractBasics(setCookie);
                 String cookieName = cookieFields.get("name");
                 String cookieValue = cookieFields.get("value");
                 String cookieMaxAge = cookieFields.get("max-age");
@@ -851,13 +850,47 @@ public class ServletApiRequest implements HttpServletRequest
             {
                 try
                 {
-                    int maxKeys = _request.getServletRequestState().getContextHandler().getMaxFormKeys();
-                    int maxContentSize = _request.getServletRequestState().getContextHandler().getMaxFormContentSize();
-                    _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
+                    int contentLength = getContentLength();
+                    if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
+                    {
+                        String baseType = HttpField.valueParameters(getContentType(), null);
+                        if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
+                            _request.getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                        {
+                            try
+                            {
+                                int maxKeys = _request.getServletRequestState().getContextHandler().getMaxFormKeys();
+                                int maxContentSize = _request.getServletRequestState().getContextHandler().getMaxFormContentSize();
+                                _contentParameters = FormFields.from(getServletContextRequest(), maxKeys, maxContentSize).get();
+                            }
+                            catch (IllegalStateException | IllegalArgumentException | ExecutionException |
+                                   InterruptedException e)
+                            {
+                                LOG.warn(e.toString());
+                                throw new BadMessageException("Unable to parse form content", e);
+                            }
+                        }
+                        else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
+                            getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
+                        {
+                            try
+                            {
+                                getParts();
+                            }
+                            catch (IOException | ServletException e)
+                            {
+                                String msg = "Unable to extract content parameters";
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug(msg, e);
+                                throw new RuntimeIOException(msg, e);
+                            }
+                        }
+                    }
+
                     if (_contentParameters == null || _contentParameters.isEmpty())
                         _contentParameters = ServletContextRequest.NO_PARAMS;
                 }
-                catch (IllegalStateException | IllegalArgumentException | ExecutionException | InterruptedException e)
+                catch (IllegalStateException | IllegalArgumentException e)
                 {
                     LOG.warn(e.toString());
                     throw new BadMessageException("Unable to parse form content", e);

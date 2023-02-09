@@ -97,13 +97,13 @@ public class SniSslConnectionFactoryTest
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
 
-        Handler.Wrapper xCertHandler = new Handler.Wrapper()
+        Handler.Singleton xCertHandler = new Handler.Wrapper()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-                SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
+                SslConnection.SslEndPoint sslEndPoint = (SslConnection.SslEndPoint)endPoint;
                 SslConnection sslConnection = sslEndPoint.getSslConnection();
                 SSLEngine sslEngine = sslConnection.getSSLEngine();
                 SSLSession session = sslEngine.getSession();

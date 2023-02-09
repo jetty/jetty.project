@@ -31,9 +31,7 @@ import java.util.Objects;
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.servlet.StatisticsServlet;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
@@ -319,6 +317,9 @@ public class Runner
                             _server = new Server();
                         }
 
+                        if (_server.getDefaultHandler() == null)
+                            _server.setDefaultHandler(new DefaultHandler());
+
                         //apply jetty config files if there are any
                         if (_configFiles != null)
                         {
@@ -331,10 +332,10 @@ public class Runner
                         }
 
                         //check that everything got configured, and if not, make the handlers
-                        Handler.Collection handlers = _server.getDescendant(Handler.Collection.class);
+                        Handler.Sequence handlers = _server.getDescendant(Handler.Sequence.class);
                         if (handlers == null)
                         {
-                            handlers = new Handler.Collection();
+                            handlers = new Handler.Sequence();
                             _server.setHandler(handlers);
                         }
 
@@ -358,7 +359,6 @@ public class Runner
                                 _server.setHandler(statsHandler);
 
                                 ServletContextHandler statsContext = new ServletContextHandler(_contexts, "/stats");
-                                statsContext.addServlet(new ServletHolder(new StatisticsServlet()), "/");
                                 statsContext.setSessionHandler(new SessionHandler());
                                 if (_statsPropFile != null)
                                 {
@@ -502,7 +502,7 @@ public class Runner
         }
     }
 
-    protected void prependHandler(Handler handler, Handler.Collection handlers)
+    protected void prependHandler(Handler handler, Handler.Sequence handlers)
     {
         if (handler == null || handlers == null)
             return;
