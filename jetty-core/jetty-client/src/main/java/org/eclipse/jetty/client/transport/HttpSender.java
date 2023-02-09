@@ -519,20 +519,24 @@ public abstract class HttpSender
         @Override
         public void succeeded()
         {
-            boolean proceed = false;
+            boolean proceed = true;
             if (committed)
             {
-                proceed = someToContent(exchange, contentBuffer);
+                if (contentBuffer.hasRemaining())
+                    proceed = someToContent(exchange, contentBuffer);
             }
             else
             {
                 committed = true;
                 if (headersToCommit(exchange))
                 {
-                    proceed = true;
                     // Was any content sent while committing?
                     if (contentBuffer.hasRemaining())
                         proceed = someToContent(exchange, contentBuffer);
+                }
+                else
+                {
+                    proceed = false;
                 }
             }
 
