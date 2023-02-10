@@ -198,6 +198,10 @@ public class CookieCutter
                             i--;
                             continue;
 
+                        case ';':
+                            reject = true;
+                            continue;
+
                         default:
                             unquoted.append(c);
                     }
@@ -419,7 +423,6 @@ public class CookieCutter
          */
         return c > 127 ||  // 8-bit characters
             Character.isISOControl(c) || // control characters
-            c == ' ' || // whitespace
             c == ',' || // comma
             c == '\\';  // backslash
     }
