@@ -19,10 +19,13 @@
 package org.eclipse.jetty.server;
 
 import java.util.Arrays;
+import java.util.List;
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -162,15 +165,13 @@ public class CookieCutterTest
             "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
-
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
 
         cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
-        assertThat("Cookies.length", cookies.length, is(2));
-        assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
-        assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "session_id", "1111", 0, null);
     }
 
     /**
@@ -266,12 +267,85 @@ public class CookieCutterTest
     {
         char[] excessive = new char[65535];
         Arrays.fill(excessive, ';');
-        String rawCookie = "foo=bar; " + excessive + "; xyz=pdq";
+        String rawCookie = "foo=bar; " + new String(excessive) + "; xyz=pdq";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "foo", "bar", 0, null);
         assertCookie("Cookies[1]", cookies[1], "xyz", "pdq", 0, null);
+    }
+
+    @ParameterizedTest
+    @MethodSource("rfc6265Cookies")
+    public void testRFC6265CookieParsing(Param param)
+    {
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, param.input);
+
+        assertThat("Cookies.length (" + dump(cookies) + ")", cookies.length, is(param.expected.size()));
+        for (int i = 0; i < cookies.length; i++)
+        {
+            Cookie cookie = cookies[i];
+            assertThat("Cookies[" + i + "] (" + dump(cookies) + ")", cookie.getName() + "=" + cookie.getValue(), is(param.expected.get(i)));
+        }
+    }
+
+    public static List<Param> rfc6265Cookies()
+    {
+        return Arrays.asList(
+            new Param("A=1; B=2; C=3", "A=1", "B=2", "C=3"),
+            new Param("A=\"1\"; B=2; C=3", "A=1", "B=2", "C=3"),
+            new Param("A=\"1\"; B=\"2\"; C=\"3\"", "A=1", "B=2", "C=3"),
+            new Param("A=1; B=2; C=\"3", "A=1", "B=2"),
+            new Param("A=1 ; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1; B=2\"; C=3", "C=3"),
+            new Param("A=\"1; B=2; C=3"),
+            new Param("A=\"1 B=2\"; C=3", "C=3"),
+            new Param("A=\"\"1; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"\"; B=2; C=3", "A=", "B=2", "C=3"),
+            new Param("A=\"\" ; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\"\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\"1; B=2; C=3", "B=2", "C=3"),
+            new Param("A= 1; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\" 1\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1 \"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1,; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1,\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\\1; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"\\1\"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1\u0007; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"1\u0007\"; B=2; C=3", "B=2", "C=3")
+        );
+    }
+
+    private static String dump(Cookie[] cookies)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (Cookie cookie : cookies)
+        {
+            sb.append("<").append(cookie.getName()).append(">=<").append(cookie.getValue()).append("> | ");
+        }
+        if (sb.length() > 0)
+            sb.delete(sb.length() - 2, sb.length() - 1);
+        return sb.toString();
+    }
+
+    private static class Param
+    {
+        private final String input;
+        private final List<String> expected;
+
+        public Param(String input, String... expected)
+        {
+            this.input = input;
+            this.expected = Arrays.asList(expected);
+        }
+
+        @Override
+        public String toString()
+        {
+            return input + " -> " + expected.toString();
+        }
     }
 }
