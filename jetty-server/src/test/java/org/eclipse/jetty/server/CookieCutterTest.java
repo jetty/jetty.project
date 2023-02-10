@@ -297,25 +297,31 @@ public class CookieCutterTest
             new Param("A=\"1\"; B=2; C=3", "A=1", "B=2", "C=3"),
             new Param("A=\"1\"; B=\"2\"; C=\"3\"", "A=1", "B=2", "C=3"),
             new Param("A=1; B=2; C=\"3", "A=1", "B=2"),
-            new Param("A=1 ; B=2; C=3", "B=2", "C=3"),
+            new Param("A=1 ; B=2; C=3", "A=1", "B=2", "C=3"),
+            new Param("A= 1; B=2; C=3", "A=1", "B=2", "C=3"),
             new Param("A=\"1; B=2\"; C=3", "C=3"),
             new Param("A=\"1; B=2; C=3"),
-            new Param("A=\"1 B=2\"; C=3", "C=3"),
+            new Param("A=\"1 B=2\"; C=3", "A=1 B=2", "C=3"), // Why should A be rejected? Shouldn't it be A=<1 B=2>?
             new Param("A=\"\"1; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\"\" ; B=2; C=3", "A=", "B=2", "C=3"),
             new Param("A=\"\"; B=2; C=3", "A=", "B=2", "C=3"),
-            new Param("A=\"\" ; B=2; C=3", "B=2", "C=3"),
             new Param("A=1\"\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=1\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=1\"1; B=2; C=3", "B=2", "C=3"),
-            new Param("A= 1; B=2; C=3", "B=2", "C=3"),
-            new Param("A=\" 1\"; B=2; C=3", "B=2", "C=3"),
-            new Param("A=\"1 \"; B=2; C=3", "B=2", "C=3"),
+            new Param("A=\" 1\"; B=2; C=3", "A=1", "B=2", "C=3"), // Why should the whitespaces be trimmed? They were not in the prev impl.
+            new Param("A=\"1 \"; B=2; C=3", "A=1", "B=2", "C=3"), // ditto
+            new Param("A=\" 1 \"; B=2; C=3", "A=1", "B=2", "C=3"), // ditto
+            new Param("A=\" 1 1 \"; B=2; C=3", "A=1 1", "B=2", "C=3"), // ditto
             new Param("A=1,; B=2; C=3", "B=2", "C=3"),
             new Param("A=\"1,\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=\\1; B=2; C=3", "B=2", "C=3"),
             new Param("A=\"\\1\"; B=2; C=3", "B=2", "C=3"),
             new Param("A=1\u0007; B=2; C=3", "B=2", "C=3"),
-            new Param("A=\"1\u0007\"; B=2; C=3", "B=2", "C=3")
+            new Param("A=\"1\u0007\"; B=2; C=3", "B=2", "C=3"),
+            new Param("€"),
+            new Param("@={}"),
+            new Param("$X=Y; N=V", "N=V"),
+            new Param("N=V; $X=Y", "N=V")
         );
     }
 
