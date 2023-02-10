@@ -57,6 +57,11 @@ You can also configure a default logging level for specific loggers, or arbitrar
 * `com.example.MyComponent.LEVEL=DEBUG` (sets logging level of logger `com.example.MyComponent` to `DEBUG`)
 * `com.example.LEVEL=DEBUG` (sets logging level of tree `+com.example.*+` to `DEBUG`)
 
+`com.example.STACKS=`<boolean>::
+Specifies whether to hide stack traces for some arbitrary logger tree `+com.example.*+`.
+The exception type and message are logged normally; only stack traces are hidden.
+Default value is `false`
+
 `org.eclipse.jetty.logging.appender.NAME_CONDENSE=`<boolean>::
 Specifies whether to condense logger names, so that for example `org.eclipse.jetty.util.QueuedThreadPool` becomes `oeju.QueuedThreadPool`.
 Default value is `true`.
@@ -75,10 +80,6 @@ Default value is `false`.
 Specifies the timezone ID (such as `PST`, or `America/Los_Angeles` or `GMT-8:00`) for the `<datetime>` part of the logging line.
 The empty string specifies the `UTC` timezone.
 Default value is the local timezone.
-
-`com.example.STACKS=`<boolean>::
-Specifies whether to hide stack traces for some arbitrary logger tree `+com.example.*+`.
-Default value is `true`
 
 When using the Jetty SLF4J binding, the logging levels can be dynamically changed via JMX, see xref:og-troubleshooting-logging[the troubleshooting section] for more information.
 
