@@ -372,22 +372,15 @@ public class CookieCutterTest
         assertThat(prefix + ".path", cookie.getPath(), is(expectedPath));
     }
 
-    private static class TestCookieParser implements ComplianceViolation.Listener
+    private static class TestCookieParser implements ComplianceViolation.Listener, CookieParser.Handler
     {
-        private final CookieCutter cookieCutter;
+        private final CookieParser parser;
         private final List<Cookie> cookies = new ArrayList<>();
         private final List<CookieCompliance.Violation> violations = new ArrayList<>();
 
         private TestCookieParser(CookieCompliance compliance)
         {
-            cookieCutter = new CookieCutter(compliance, this)
-            {
-                @Override
-                protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
-                {
-                    cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
-                }
-            };
+            parser = CookieParser.newParser(compliance, this);
         }
 
         @Override
@@ -398,8 +391,14 @@ public class CookieCutterTest
 
         private List<Cookie> parseFields(String... fields)
         {
-            cookieCutter.parseFields(Arrays.asList(fields));
+            parser.parseFields(this, Arrays.asList(fields));
             return cookies;
+        }
+
+        @Override
+        public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
+        {
+            cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
         }
     }
 

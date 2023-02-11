@@ -13,404 +13,349 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_SEPARATOR;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.IGNORABLE_WHITE_SPACE;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIE;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
 
 /**
  * Cookie parser
  */
-public abstract class CookieCutter
+@Deprecated
+public class CookieCutter implements CookieParser
 {
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCutter.class);
 
     protected final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
 
-    protected CookieCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    public CookieCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
         _complianceMode = compliance;
         _complianceListener = complianceListener;
     }
 
-    private enum State
+    @Override
+    public void parseField(CookieParser.Handler handler, String field)
     {
-        START,
-        IN_NAME,
-        AFTER_NAME,
-        VALUE,
-        IN_VALUE,
-        IN_QUOTED_VALUE,
-        ESCAPED_VALUE,
-        AFTER_QUOTED_VALUE,
-        END,
-        INVALID_COOKIE
+        parseFields(handler, Collections.singletonList(field));
     }
 
-    protected void parseField(String field)
+    @Override
+    public void parseFields(CookieParser.Handler handler, List<String> rawFields)
     {
-        State state = State.START;
+        StringBuilder unquoted = null;
 
-        String attributeName = null;
-        String value = null;
-        String cookieName = null;
-        String cookieValue = null;
-        String cookiePath = null;
-        String cookieDomain = null;
-        String cookieComment = null;
-        int cookieVersion = 0;
-        boolean cookieInvalid = false;
-
-        int length = field.length();
-        StringBuilder string = new StringBuilder();
-        for (int i = 0; i <= length; i++)
-        {
-            char c = i == length ? ';' : field.charAt(i);
-            HttpTokens.Token token = HttpTokens.getToken(c);
-
-            if (token == null)
-            {
-                if (!_complianceMode.allows(INVALID_COOKIE))
-                     throw new IllegalArgumentException("Invalid Cookie character");
-                state = State.INVALID_COOKIE;
-                continue;
-            }
-
-            switch (state)
-            {
-                case START:
-                    if (c == ' ' || c == '\t' || c == ';')
-                        continue;
-
-                    string.setLength(0);
-
-                    if (token.isRfc2616Token())
-                    {
-                        if (!StringUtil.isBlank(cookieName) && c != '$')
-                        {
-                            addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-                            cookieName = null;
-                            cookieValue = null;
-                            cookieDomain = null;
-                            cookiePath = null;
-                            cookieComment = null;
-                        }
-
-                        string.append(c);
-                        state = State.IN_NAME;
-                    }
-                    else if (_complianceMode.allows(INVALID_COOKIE))
-                    {
-                        reportComplianceViolation(INVALID_COOKIE, field);
-                        state = State.INVALID_COOKIE;
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Bad Cookie name");
-                    }
-
-                    break;
-
-                case IN_NAME:
-                    if (c == '=')
-                    {
-                        if (string.charAt(0) == '$')
-                            attributeName = string.toString();
-                        else
-                            cookieName = string.toString();
-                        state = State.VALUE;
-                        continue;
-                    }
-
-                    if ((c == ' ' || c == '\t') && _complianceMode.allows(IGNORABLE_WHITE_SPACE))
-                    {
-                        reportComplianceViolation(IGNORABLE_WHITE_SPACE, field);
-                        if (string.charAt(0) == '$')
-                            attributeName = string.toString();
-                        else
-                            cookieName = string.toString();
-                        state = State.AFTER_NAME;
-                        continue;
-                    }
-
-                    if (token.isRfc2616Token())
-                    {
-                        string.append(c);
-                    }
-                    else if (_complianceMode.allows(INVALID_COOKIE))
-                    {
-                        reportComplianceViolation(INVALID_COOKIE, field);
-                        state = c == ';' ? State.START : State.INVALID_COOKIE;
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Bad Cookie name");
-                    }
-                    break;
-
-                case AFTER_NAME:
-                    if (c == '=')
-                    {
-                        state = State.VALUE;
-                        continue;
-                    }
-                    if (c == ';' || c == ',')
-                    {
-                        state = State.START;
-                        continue;
-                    }
-
-                    if (_complianceMode.allows(INVALID_COOKIE))
-                    {
-                        reportComplianceViolation(INVALID_COOKIE, field);
-                        state = State.INVALID_COOKIE;
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Bad Cookie");
-                    }
-                    break;
-
-                case VALUE:
-                    if (c == ' ' && _complianceMode.allows(IGNORABLE_WHITE_SPACE))
-                    {
-                        reportComplianceViolation(IGNORABLE_WHITE_SPACE, field);
-                        continue;
-                    }
-
-                    string.setLength(0);
-                    if (c == '"')
-                    {
-                        state = State.IN_QUOTED_VALUE;
-                    }
-                    else if (c == ';')
-                    {
-                        value = "";
-                        i--;
-                        state = State.END;
-                    }
-                    else if (token.isRfc6265CookieOctet())
-                    {
-                        string.append(c);
-                        state = State.IN_VALUE;
-                    }
-                    else if (_complianceMode.allows(INVALID_COOKIE))
-                    {
-                        reportComplianceViolation(INVALID_COOKIE, field);
-                        state = State.INVALID_COOKIE;
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Bad Cookie value");
-                    }
-                    break;
-
-                case IN_VALUE:
-                    if (c == ';' || c == ',' || c == ' ' || c == '\t')
-                    {
-                        value = string.toString();
-                        i--;
-                        state = State.END;
-                    }
-                    else if (token.isRfc6265CookieOctet())
-                    {
-                        string.append(c);
-                    }
-                    else if (_complianceMode.allows(INVALID_COOKIE))
-                    {
-                        reportComplianceViolation(INVALID_COOKIE, field);
-                        state = State.INVALID_COOKIE;
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Bad Cookie value");
-                    }
-                    break;
-
-                case IN_QUOTED_VALUE:
-                    if (c == '"')
-                    {
-                        value = string.toString();
-                        state = State.AFTER_QUOTED_VALUE;
-                    }
-                    else if (c == '\\' && _complianceMode.allows(ESCAPE_IN_QUOTES))
-                    {
-                        state = State.ESCAPED_VALUE;
-                    }
-                    else if (token.isRfc6265CookieOctet())
-                    {
-                        string.append(c);
-                    }
-                    else if (_complianceMode.allows(SPECIAL_CHARS_IN_QUOTES))
-                    {
-                        reportComplianceViolation(SPECIAL_CHARS_IN_QUOTES, field);
-                        string.append(c);
-                    }
-                    else if (c == ',' && _complianceMode.allows(COMMA_NOT_VALID_OCTET))
-                    {
-                        reportComplianceViolation(COMMA_NOT_VALID_OCTET, field);
-                        string.append(c);
-                    }
-                    else if (_complianceMode.allows(INVALID_COOKIE))
-                    {
-                        string.append(c);
-                        if (!cookieInvalid)
-                        {
-                            cookieInvalid = true;
-                            reportComplianceViolation(INVALID_COOKIE, field);
-                        }
-                        // Try to find the closing double quote by staying in the current state.
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Bad Cookie quoted value");
-                    }
-                    break;
-
-                case ESCAPED_VALUE:
-                    string.append(c);
-                    state = State.IN_QUOTED_VALUE;
-                    break;
-
-                case AFTER_QUOTED_VALUE:
-                    if (c == ';' || c == ',' || c == ' ' || c == '\t')
-                    {
-                        i--;
-                        state = cookieInvalid ? State.INVALID_COOKIE : State.END;
-                    }
-                    else if (_complianceMode.allows(INVALID_COOKIE))
-                    {
-                        reportComplianceViolation(INVALID_COOKIE, field);
-                        state = State.INVALID_COOKIE;
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Bad Cookie quoted value");
-                    }
-                    break;
-
-                case END:
-                    if (c == ';')
-                    {
-                        state = State.START;
-                    }
-                    else if (c == ',')
-                    {
-                        if (_complianceMode.allows(COMMA_SEPARATOR))
-                        {
-                            reportComplianceViolation(COMMA_SEPARATOR, field);
-                            state = State.START;
-                        }
-                        else if (_complianceMode.allows(INVALID_COOKIE))
-                        {
-                            reportComplianceViolation(INVALID_COOKIE, field);
-                            state = State.INVALID_COOKIE;
-                            continue;
-                        }
-                        else
-                        {
-                            throw new IllegalStateException("Comma cookie separator");
-                        }
-                    }
-                    else if ((c == ' ' || c == '\t') && _complianceMode.allows(IGNORABLE_WHITE_SPACE))
-                    {
-                        reportComplianceViolation(IGNORABLE_WHITE_SPACE, field);
-                        continue;
-                    }
-
-                    boolean knownAttribute = true;
-                    if (StringUtil.isBlank(attributeName))
-                    {
-                        cookieValue = value;
-                    }
-                    else
-                    {
-                        // We have an attribute.
-                        CookieCompliance.Violation violation = CookieCompliance.Violation.ATTRIBUTE_PRESENCE;
-                        if (!_complianceMode.allows(violation))
-                            throw new IllegalArgumentException("Invalid Cookie with attributes");
-                        reportComplianceViolation(violation, field);
-                        // Only RFC 2965 supports attributes.
-                        if (_complianceMode == CookieCompliance.RFC2965)
-                        {
-                            switch (attributeName.toLowerCase(Locale.ENGLISH))
-                            {
-                                case "$path":
-                                    cookiePath = value;
-                                    break;
-                                case "$domain":
-                                    cookieDomain = value;
-                                    break;
-                                case "$port":
-                                    cookieComment = "$port=" + value;
-                                    break;
-                                case "$version":
-                                    cookieVersion = Integer.parseInt(value);
-                                    break;
-                                default:
-                                    knownAttribute = false;
-                                    break;
-                            }
-                        }
-                        attributeName = null;
-                    }
-                    value = null;
-
-                    if (!knownAttribute)
-                    {
-                        CookieCompliance.Violation violation = CookieCompliance.Violation.INVALID_COOKIE;
-                        if (!_complianceMode.allows(violation))
-                            throw new IllegalArgumentException("Invalid Cookie attribute");
-                        reportComplianceViolation(violation, field);
-                        state = State.INVALID_COOKIE;
-                        continue;
-                    }
-
-                    if (state == State.END)
-                        throw new IllegalStateException("Invalid cookie");
-                    break;
-
-                case INVALID_COOKIE:
-                    attributeName = null;
-                    value = null;
-                    cookieName = null;
-                    cookieValue = null;
-                    cookiePath = null;
-                    cookieDomain = null;
-                    cookieComment = null;
-                    cookieInvalid = false;
-                    if (c == ';')
-                        state = State.START;
-                    break;
-            }
-        }
-
-        if (!cookieInvalid && !StringUtil.isBlank(cookieName))
-            addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-    }
-
-    protected void parseFields(List<String> rawFields)
-    {
         // For each cookie field
-        for (String field : rawFields)
-            parseField(field);
+        for (String hdr : rawFields)
+        {
+            // Parse the header
+            String name = null;
+
+            String cookieName = null;
+            String cookieValue = null;
+            String cookiePath = null;
+            String cookieDomain = null;
+            String cookieComment = null;
+            int cookieVersion = 0;
+
+            boolean invalue = false;
+            boolean inQuoted = false;
+            boolean quoted = false;
+            boolean escaped = false;
+            boolean reject = false;
+            int tokenstart = -1;
+            int tokenend = -1;
+            for (int i = 0, length = hdr.length(); i <= length; i++)
+            {
+                char c = i == length ? 0 : hdr.charAt(i);
+
+                // Handle quoted values for value
+                if (inQuoted)
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                        if (c > 0)
+                            unquoted.append(c);
+                        else
+                        {
+                            unquoted.setLength(0);
+                            inQuoted = false;
+                            i--;
+                        }
+                        continue;
+                    }
+
+                    switch (c)
+                    {
+                        case '"':
+                            inQuoted = false;
+                            quoted = true;
+                            tokenstart = i;
+                            tokenend = -1;
+                            break;
+
+                        case '\\':
+                            escaped = true;
+                            continue;
+
+                        case 0:
+                            // unterminated quote, let's ignore quotes
+                            unquoted.setLength(0);
+                            inQuoted = false;
+                            i--;
+                            continue;
+
+                        default:
+                            unquoted.append(c);
+                            continue;
+                    }
+                }
+                else
+                {
+                    // Handle name and value state machines
+                    if (invalue)
+                    {
+                        // parse the cookie-value
+                        switch (c)
+                        {
+                            case ' ':
+                            case '\t':
+                                break;
+
+                            case ',':
+                                if (COMMA_NOT_VALID_OCTET.isAllowedBy(_complianceMode))
+                                    reportComplianceViolation(COMMA_NOT_VALID_OCTET, "Cookie " + cookieName);
+                                else
+                                {
+                                    if (quoted)
+                                    {
+                                        // must have been a bad internal quote. let's fix as best we can
+                                        unquoted.append(hdr, tokenstart, i--);
+                                        inQuoted = true;
+                                        quoted = false;
+                                        continue;
+                                    }
+                                    if (tokenstart < 0)
+                                        tokenstart = i;
+                                    tokenend = i;
+                                    continue;
+                                }
+                                // fall through
+                            case 0:
+                            case ';':
+                            {
+                                String value;
+
+                                if (quoted)
+                                {
+                                    value = unquoted.toString();
+                                    unquoted.setLength(0);
+                                    quoted = false;
+                                }
+                                else if (tokenstart >= 0)
+                                    value = tokenend >= tokenstart ? hdr.substring(tokenstart, tokenend + 1) : hdr.substring(tokenstart);
+                                else
+                                    value = "";
+
+                                try
+                                {
+                                    if (name.startsWith("$"))
+                                    {
+                                        if (RESERVED_NAMES_NOT_DOLLAR_PREFIXED.isAllowedBy(_complianceMode))
+                                        {
+                                            reportComplianceViolation(RESERVED_NAMES_NOT_DOLLAR_PREFIXED, "Cookie " + cookieName + " field " + name);
+                                            String lowercaseName = name.toLowerCase(Locale.ENGLISH);
+                                            switch (lowercaseName)
+                                            {
+                                                case "$path":
+                                                    cookiePath = value;
+                                                    break;
+                                                case "$domain":
+                                                    cookieDomain = value;
+                                                    break;
+                                                case "$port":
+                                                    cookieComment = "$port=" + value;
+                                                    break;
+                                                case "$version":
+                                                    cookieVersion = Integer.parseInt(value);
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // This is a new cookie, so add the completed last cookie if we have one
+                                        if (cookieName != null)
+                                        {
+                                            if (!reject)
+                                            {
+                                                handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                                                reject = false;
+                                            }
+                                            cookieDomain = null;
+                                            cookiePath = null;
+                                            cookieComment = null;
+                                        }
+                                        cookieName = name;
+                                        cookieValue = value;
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    LOG.debug("Unable to process Cookie", e);
+                                }
+
+                                name = null;
+                                tokenstart = -1;
+                                invalue = false;
+
+                                break;
+                            }
+
+                            case '"':
+                                if (tokenstart < 0)
+                                {
+                                    tokenstart = i;
+                                    inQuoted = true;
+                                    if (unquoted == null)
+                                        unquoted = new StringBuilder();
+                                    break;
+                                }
+                                // fall through to default case
+
+                            default:
+                                if (quoted)
+                                {
+                                    // must have been a bad internal quote. let's fix as best we can
+                                    unquoted.append(hdr, tokenstart, i--);
+                                    inQuoted = true;
+                                    quoted = false;
+                                    continue;
+                                }
+
+                                if (_complianceMode == CookieCompliance.RFC6265)
+                                {
+                                    if (isRFC6265RejectedCharacter(inQuoted, c))
+                                    {
+                                        reject = true;
+                                    }
+                                }
+
+                                if (tokenstart < 0)
+                                    tokenstart = i;
+                                tokenend = i;
+                                continue;
+                        }
+                    }
+                    else
+                    {
+                        // parse the cookie-name
+                        switch (c)
+                        {
+                            case 0:
+                            case ' ':
+                            case '\t':
+                                continue;
+
+                            case '"':
+                                // Quoted name is not allowed in any version of the Cookie spec
+                                reject = true;
+                                break;
+
+                            case ';':
+                                // a cookie terminated with no '=' sign.
+                                tokenstart = -1;
+                                invalue = false;
+                                reject = false;
+                                continue;
+
+                            case '=':
+                                if (quoted)
+                                {
+                                    name = unquoted.toString();
+                                    unquoted.setLength(0);
+                                    quoted = false;
+                                }
+                                else if (tokenstart >= 0)
+                                    name = tokenend >= tokenstart ? hdr.substring(tokenstart, tokenend + 1) : hdr.substring(tokenstart);
+
+                                tokenstart = -1;
+                                invalue = true;
+                                break;
+
+                            default:
+                                if (quoted)
+                                {
+                                    // must have been a bad internal quote. let's fix as best we can
+                                    unquoted.append(hdr, tokenstart, i--);
+                                    inQuoted = true;
+                                    quoted = false;
+                                    continue;
+                                }
+
+                                if (_complianceMode == CookieCompliance.RFC6265)
+                                {
+                                    if (isRFC6265RejectedCharacter(inQuoted, c))
+                                    {
+                                        reject = true;
+                                    }
+                                }
+
+                                if (tokenstart < 0)
+                                    tokenstart = i;
+                                tokenend = i;
+                                continue;
+                        }
+                    }
+                }
+            }
+
+            if (cookieName != null && !reject)
+                handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+        }
     }
 
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
+        {
             _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
+        }
     }
 
-    protected abstract void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment);
+    protected boolean isRFC6265RejectedCharacter(boolean inQuoted, char c)
+    {
+        if (inQuoted)
+        {
+            // We only reject if a Control Character is encountered
+            if (Character.isISOControl(c))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            /* From RFC6265 - Section 4.1.1 - Syntax
+             *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+             *                  ; US-ASCII characters excluding CTLs,
+             *                  ; whitespace DQUOTE, comma, semicolon,
+             *                  ; and backslash
+             */
+            return Character.isISOControl(c) || // control characters
+                c > 127 || // 8-bit characters
+                c == ',' || // comma
+                c == ';'; // semicolon
+        }
+
+        return false;
+    }
 }

@@ -174,7 +174,7 @@ public class CookieCutterLenientTest
         }
     }
 
-    class TestCutter extends CookieCutter
+    class TestCutter extends CookieCutter implements CookieParser.Handler
     {
         List<String> names = new ArrayList<>();
         List<String> values = new ArrayList<>();
@@ -184,8 +184,13 @@ public class CookieCutterLenientTest
             super(CookieCompliance.RFC6265, null);
         }
 
+        public void parseField(String field)
+        {
+            parseField(this, field);
+        }
+
         @Override
-        protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
+        public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
         {
             names.add(cookieName);
             values.add(cookieValue);

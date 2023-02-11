@@ -19,7 +19,7 @@ import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.http.CookieCutter;
+import org.eclipse.jetty.http.CookieParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * If the added fields are identical to those last added (as strings), then the
  * cookies are not re parsed.
  */
-public class Cookies extends CookieCutter
+public class Cookies implements CookieParser.Handler
 {
     protected static final Logger LOG = LoggerFactory.getLogger(Cookies.class);
     protected final List<String> _rawFields = new ArrayList<>();
@@ -41,6 +41,8 @@ public class Cookies extends CookieCutter
     private Cookie[] _cookies;
     private boolean _set = false;
 
+    private final CookieParser _parser;
+
     public Cookies()
     {
         this(CookieCompliance.RFC6265, null);
@@ -48,7 +50,7 @@ public class Cookies extends CookieCutter
 
     public Cookies(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
-        super(compliance, complianceListener);
+        _parser = CookieParser.newParser(compliance, complianceListener);
     }
 
     public void addCookieField(String rawField)
@@ -93,7 +95,7 @@ public class Cookies extends CookieCutter
         if (_parsed)
             return _cookies;
 
-        parseFields(_rawFields);
+        _parser.parseFields(this, _rawFields);
         _cookies = (Cookie[])_cookieList.toArray(new Cookie[_cookieList.size()]);
         _cookieList.clear();
         _parsed = true;
@@ -115,7 +117,7 @@ public class Cookies extends CookieCutter
     }
 
     @Override
-    protected void addCookie(String name, String value, String domain, String path, int version, String comment)
+    public void addCookie(String name, String value, int version, String domain, String path, String comment)
     {
         try
         {
