@@ -68,6 +68,11 @@ public class CookieCompliance implements ComplianceViolation.Mode
         ESCAPE_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc2616#section-2.2", "Escaped characters in quotes"),
 
         /**
+         * Quotes are not balanced or are embedded in value.
+         */
+        BAD_QUOTES("https://www.rfc-editor.org/rfc/rfc2616#section-2.2", "Bad quotes"),
+
+        /**
          * An invalid cookie was found.
          */
         INVALID_COOKIE("https://tools.ietf.org/html/rfc6265", "Non compliant cookies are ignored"),
@@ -116,6 +121,11 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
     public static final CookieCompliance RFC6265_STRICT = new CookieCompliance("RFC6265", noneOf(Violation.class));
+
+    /**
+     * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
+     */
+    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.ATTRIBUTE_PRESENCE, Violation.IGNORABLE_WHITE_SPACE, Violation.BAD_QUOTES));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
