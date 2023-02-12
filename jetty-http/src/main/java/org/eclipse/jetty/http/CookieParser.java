@@ -33,7 +33,11 @@ public interface CookieParser
      */
     static CookieParser newParser(CookieCompliance compliance, Listener complianceListener)
     {
-        if (compliance == CookieCompliance.RFC6265_LEGACY || compliance.allows(BAD_QUOTES))
+        // The RFC6265CookieParser is primarily a RFC6265 parser, but it can handle most
+        // defined "violations" so that it effectively becomes a RFC2965 parser. However, it
+        // cannot forgive bad quotes.  Thus, we use the legacy CookieCutter parser only if
+        // the compliance mode requires BAD QUOTES.
+        if (compliance.allows(BAD_QUOTES))
             return new CookieCutter(compliance, complianceListener);
         return new RFC6265CookieParser(compliance, complianceListener);
     }

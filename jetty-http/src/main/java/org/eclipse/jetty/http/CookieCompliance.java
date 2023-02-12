@@ -56,17 +56,17 @@ public class CookieCompliance implements ComplianceViolation.Mode
          * @deprecated no replacement because was mistakenly considered a violation
          */
         @Deprecated
-        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix"),
+        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved name no longer use '$' prefix"),
 
         /**
          * Special characters were found in a quoted cookie value.
          */
-        SPECIAL_CHARS_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1", "Special characters cannot be quoted"),
+        SPECIAL_CHARS_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1", "Special character cannot be quoted"),
 
         /**
          * A backslash was found in a quoted cookie value.
          */
-        ESCAPE_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc2616#section-2.2", "Escaped characters in quotes"),
+        ESCAPE_IN_QUOTES("https://www.rfc-editor.org/rfc/rfc2616#section-2.2", "Escaped character in quotes"),
 
         /**
          * Quotes are not balanced or are embedded in value.
@@ -74,21 +74,21 @@ public class CookieCompliance implements ComplianceViolation.Mode
         BAD_QUOTES("https://www.rfc-editor.org/rfc/rfc2616#section-2.2", "Bad quotes"),
 
         /**
-         * An invalid cookie was found.
+         * Allow an invalid cookie, without applicable violation, to be ignored rather than an exception generated.
          */
-        INVALID_COOKIE("https://tools.ietf.org/html/rfc6265", "Non compliant cookies are ignored"),
+        IGNORED_INVALID_COOKIE("https://tools.ietf.org/html/rfc6265", "Non compliant cookie is ignored"),
 
         /**
-         * A cookie attribute was found and will be interpreted
+         * A cookie attribute(s) was found and will be interpreted, unless #IGNORED_ATTRIBUTE is also allowed.
          */
         ATTRIBUTE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present"),
 
         /**
-         * A cookie attribute was found and will be ignored
+         * A cookie attribute was found, but will be ignored
          */
         IGNORED_ATTRIBUTE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present, but ignored"),
 
-        IGNORABLE_WHITE_SPACE("", "Allow ignorable white space");
+        OPTIONAL_WHITE_SPACE("https://www.rfc-editor.org/rfc/rfc6265#section-5.2", "Permissive optional white space");
 
         private final String url;
         private final String description;
@@ -121,7 +121,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.IGNORABLE_WHITE_SPACE, Violation.IGNORED_ATTRIBUTE));
+    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.IGNORED_INVALID_COOKIE, Violation.OPTIONAL_WHITE_SPACE, Violation.IGNORED_ATTRIBUTE));
 
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
@@ -131,7 +131,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.IGNORED_ATTRIBUTE, Violation.IGNORABLE_WHITE_SPACE, Violation.BAD_QUOTES));
+    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.IGNORED_INVALID_COOKIE, Violation.IGNORED_ATTRIBUTE, Violation.OPTIONAL_WHITE_SPACE, Violation.BAD_QUOTES));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
