@@ -19,10 +19,18 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.BAD_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.Listener;
 
 /**
- * Cookie parser
+ * <p>Cookie parser.</p>
+ * <p>An interface for variations of a cookie parser.</p>
+ *
  */
 public interface CookieParser
 {
+    /**
+     * <p>A factory method to create a new parser suitable for the compliance mode.</p>
+     * @param compliance The compliance mode to use for parsing.
+     * @param complianceListener A listener for compliance violations or null.
+     * @return A CookieParser instance.
+     */
     static CookieParser newParser(CookieCompliance compliance, Listener complianceListener)
     {
         if (compliance == CookieCompliance.RFC6265_LEGACY || compliance.allows(BAD_QUOTES))
@@ -39,6 +47,9 @@ public interface CookieParser
             parseField(handler, field);
     }
 
+    /**
+     * The handler of parsed cookies.
+     */
     interface Handler
     {
         void addCookie(String name, String value, int version, String domain, String path, String comment);
