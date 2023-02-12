@@ -181,7 +181,7 @@ public class CookieCutterLenientTest
 
         protected TestCutter()
         {
-            super(CookieCompliance.RFC6265, null);
+            super(CookieCompliance.RFC6265_LEGACY, null);
         }
 
         public void parseField(String field)

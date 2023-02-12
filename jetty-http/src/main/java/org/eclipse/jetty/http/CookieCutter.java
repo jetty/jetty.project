@@ -20,6 +20,7 @@ import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http.CookieCompliance.Violation.BAD_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
 
@@ -107,6 +108,10 @@ public class CookieCutter implements CookieParser
 
                         case 0:
                             // unterminated quote, let's ignore quotes
+                            if (_complianceMode.allows(BAD_QUOTES))
+                                reportComplianceViolation(BAD_QUOTES, hdr);
+                            else
+                                reject = true;
                             unquoted.setLength(0);
                             inQuoted = false;
                             i--;
@@ -137,6 +142,10 @@ public class CookieCutter implements CookieParser
                                     if (quoted)
                                     {
                                         // must have been a bad internal quote. let's fix as best we can
+                                        if (_complianceMode.allows(BAD_QUOTES))
+                                            reportComplianceViolation(BAD_QUOTES, hdr);
+                                        else
+                                            reject = true;
                                         unquoted.append(hdr, tokenstart, i--);
                                         inQuoted = true;
                                         quoted = false;
@@ -236,13 +245,17 @@ public class CookieCutter implements CookieParser
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
+                                    if (_complianceMode.allows(BAD_QUOTES))
+                                        reportComplianceViolation(BAD_QUOTES, hdr);
+                                    else
+                                        reject = true;
                                     unquoted.append(hdr, tokenstart, i--);
                                     inQuoted = true;
                                     quoted = false;
                                     continue;
                                 }
 
-                                if (_complianceMode == CookieCompliance.RFC6265)
+                                if (CookieCompliance.RFC6265_LEGACY.compliesWith(_complianceMode))
                                 {
                                     if (isRFC6265RejectedCharacter(inQuoted, c))
                                     {
@@ -296,13 +309,17 @@ public class CookieCutter implements CookieParser
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
+                                    if (_complianceMode.allows(BAD_QUOTES))
+                                        reportComplianceViolation(BAD_QUOTES, hdr);
+                                    else
+                                        reject = true;
                                     unquoted.append(hdr, tokenstart, i--);
                                     inQuoted = true;
                                     quoted = false;
                                     continue;
                                 }
 
-                                if (_complianceMode == CookieCompliance.RFC6265)
+                                if (CookieCompliance.RFC6265_LEGACY.compliesWith(_complianceMode))
                                 {
                                     if (isRFC6265RejectedCharacter(inQuoted, c))
                                     {

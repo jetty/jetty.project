@@ -19,10 +19,12 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_SEPARATOR;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.IGNORABLE_WHITE_SPACE;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.IGNORED_ATTRIBUTE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
 
@@ -336,13 +338,13 @@ public class RFC6265CookieParser implements CookieParser
                     else
                     {
                         // We have an attribute.
-                        CookieCompliance.Violation violation = CookieCompliance.Violation.ATTRIBUTE_PRESENCE;
-                        if (!_complianceMode.allows(violation))
-                            throw new IllegalArgumentException("Invalid Cookie with attributes");
-                        reportComplianceViolation(violation, field);
-                        // Only RFC 2965 supports attributes.
-                        if (_complianceMode == CookieCompliance.RFC2965)
+                        if (_complianceMode.allows(IGNORED_ATTRIBUTE))
                         {
+                            reportComplianceViolation(IGNORED_ATTRIBUTE, field);
+                        }
+                        else if (_complianceMode.allows(ATTRIBUTE))
+                        {
+                            reportComplianceViolation(ATTRIBUTE, field);
                             switch (attributeName.toLowerCase(Locale.ENGLISH))
                             {
                                 case "$path":
@@ -361,6 +363,16 @@ public class RFC6265CookieParser implements CookieParser
                                     knownAttribute = false;
                                     break;
                             }
+                        }
+                        else if (_complianceMode.allows(INVALID_COOKIE))
+                        {
+                            reportComplianceViolation(INVALID_COOKIE, field);
+                            state = State.INVALID_COOKIE;
+                            continue;
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException("Invalid Cookie with attributes");
                         }
                         attributeName = null;
                     }

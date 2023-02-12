@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.util.List;
 
+import static org.eclipse.jetty.http.CookieCompliance.Violation.BAD_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.Listener;
 
 /**
@@ -24,12 +25,8 @@ public interface CookieParser
 {
     static CookieParser newParser(CookieCompliance compliance, Listener complianceListener)
     {
-        if (compliance != CookieCompliance.RFC6265)
-        {
-            for (CookieCompliance.Violation violation : compliance.getAllowed())
-                if (!CookieCompliance.RFC6265.allows(violation))
-                    return new CookieCutter(compliance, complianceListener);
-        }
+        if (compliance == CookieCompliance.RFC6265_LEGACY || compliance.allows(BAD_QUOTES))
+            return new CookieCutter(compliance, complianceListener);
         return new RFC6265CookieParser(compliance, complianceListener);
     }
 

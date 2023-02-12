@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
+import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.copyOf;
 import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
@@ -78,9 +79,14 @@ public class CookieCompliance implements ComplianceViolation.Mode
         INVALID_COOKIE("https://tools.ietf.org/html/rfc6265", "Non compliant cookies are ignored"),
 
         /**
-         * A cookie attribute was found.
+         * A cookie attribute was found and will be interpreted
          */
-        ATTRIBUTE_PRESENCE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present"),
+        ATTRIBUTE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present"),
+
+        /**
+         * A cookie attribute was found and will be ignored
+         */
+        IGNORED_ATTRIBUTE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present, but ignored"),
 
         IGNORABLE_WHITE_SPACE("", "Allow ignorable white space");
 
@@ -115,7 +121,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.ATTRIBUTE_PRESENCE, Violation.IGNORABLE_WHITE_SPACE));
+    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.IGNORABLE_WHITE_SPACE, Violation.IGNORED_ATTRIBUTE));
 
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
@@ -125,14 +131,19 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.ATTRIBUTE_PRESENCE, Violation.IGNORABLE_WHITE_SPACE, Violation.BAD_QUOTES));
+    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIE, Violation.IGNORED_ATTRIBUTE, Violation.IGNORABLE_WHITE_SPACE, Violation.BAD_QUOTES));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
      */
-    public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", allOf(Violation.class));
+    public static final CookieCompliance RFC2965_LEGACY = new CookieCompliance("RFC2965", complementOf(of(Violation.IGNORED_ATTRIBUTE)));
 
-    private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965);
+    /**
+     * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance, but without bad quotes.
+     */
+    public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(Violation.BAD_QUOTES, Violation.IGNORED_ATTRIBUTE)));
+
+    private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     public static CookieCompliance valueOf(String name)
@@ -213,7 +224,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     private final String _name;
     private final Set<Violation> _violations;
 
-    private CookieCompliance(String name, Set<Violation> violations)
+    public CookieCompliance(String name, Set<Violation> violations)
     {
         _name = name;
         _violations = unmodifiableSet(copyOf(Objects.requireNonNull(violations)));
@@ -242,4 +253,10 @@ public class CookieCompliance implements ComplianceViolation.Mode
     {
         return _violations;
     }
+
+    public boolean compliesWith(CookieCompliance mode)
+    {
+        return this == mode || getAllowed().containsAll(mode.getAllowed());
+    }
+
 }
