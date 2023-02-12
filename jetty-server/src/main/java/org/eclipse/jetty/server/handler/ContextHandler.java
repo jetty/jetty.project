@@ -61,6 +61,8 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -1213,10 +1215,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // context request must end with /
             baseRequest.setHandled(true);
             String queryString = baseRequest.getQueryString();
-            baseRequest.getResponse().sendRedirect(
-                HttpServletResponse.SC_MOVED_TEMPORARILY,
-                baseRequest.getRequestURI() + (queryString == null ? "/" : ("/?" + queryString)),
-                true);
+            // If there is request content, close the connection rather than try to consume it.
+            if (baseRequest.getContentType() != null || baseRequest.getContentLengthLong() > 0)
+                response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+            response.sendRedirect(baseRequest.getRequestURI() + (queryString == null ? "/" : ("/?" + queryString)));
             return false;
         }
 
