@@ -36,7 +36,6 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.DUPLICATE_HOST_HEADERS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
-import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
@@ -1038,32 +1037,22 @@ public class HttpParser
                                 LOG.warn("Encountered multiple `Host` headers.  Previous `Host` header already seen as `{}`, new `Host` header has appeared as `{}`", _parsedHost, _valueString);
                             checkViolation(DUPLICATE_HOST_HEADERS);
                         }
-                        if (!MISMATCHED_AUTHORITY.isAllowedBy(_complianceMode))
-                        {
-                            HttpURI httpURI = HttpURI.build().uri(_method == null ? null : _method.toString(), _uri.toString());
-                            if (httpURI.isAbsolute())
-                            {
-                                if (!httpURI.getAuthority().equalsIgnoreCase(_valueString))
-                                {
-                                    if (LOG.isWarnEnabled())
-                                        LOG.warn("Mismatched Authority: request-line authority is [{}], Host header is [{}]", httpURI.getHost(), _valueString);
-                                    throw new BadMessageException(MISMATCHED_AUTHORITY.getDescription());
-                                }
-                            }
-                        }
                         _parsedHost = _valueString;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
                         {
                             HostPort hostPort;
                             if (UNSAFE_HOST_HEADER.isAllowedBy(_complianceMode))
-                                hostPort = HostPort.unsafe(_valueString);
+                            {
+                                _field = new HostPortHttpField(_header,
+                                    CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
+                                    HostPort.unsafe(_valueString));
+                            }
                             else
-                                hostPort = new HostPort(_valueString);
-
-                            _field = new HostPortHttpField(_header,
-                                CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
-                                hostPort);
-
+                            {
+                                _field = new HostPortHttpField(_header,
+                                    CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
+                                    _valueString);
+                            }
                             addToFieldCache = _fieldCache.isEnabled();
                         }
                         break;

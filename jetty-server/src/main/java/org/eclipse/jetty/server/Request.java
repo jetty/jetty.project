@@ -97,6 +97,8 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
+
 /**
  * Jetty Request.
  * <p>
@@ -1740,9 +1742,26 @@ public class Request implements HttpServletRequest
                 throw new BadMessageException(badMessage);
         }
 
+        HttpField host = getHttpFields().getField(HttpHeader.HOST);
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
         {
             _uri = uri;
+            if (host instanceof HostPortHttpField && !((HostPortHttpField)host).getHostPort().toString().equals(uri.getAuthority()))
+            {
+                HttpConfiguration httpConfiguration = getHttpChannel().getHttpConfiguration();
+                if (httpConfiguration != null)
+                {
+                    if (httpConfiguration.getHttpCompliance().allows(MISMATCHED_AUTHORITY))
+                    {
+                        if (getHttpChannel() instanceof ComplianceViolation.Listener)
+                            ((ComplianceViolation.Listener)getHttpChannel()).onComplianceViolation(httpConfiguration.getHttpCompliance(), MISMATCHED_AUTHORITY, _uri.toString());
+                    }
+                    else
+                    {
+                        throw new BadMessageException(400, "Mismatched Authority");
+                    }
+                }
+            }
         }
         else
         {
@@ -1756,10 +1775,9 @@ public class Request implements HttpServletRequest
 
             if (!uri.hasAuthority())
             {
-                HttpField field = getHttpFields().getField(HttpHeader.HOST);
-                if (field instanceof HostPortHttpField)
+                if (host instanceof HostPortHttpField)
                 {
-                    HostPortHttpField authority = (HostPortHttpField)field;
+                    HostPortHttpField authority = (HostPortHttpField)host;
 
                     builder.host(authority.getHost()).port(authority.getPort());
                 }

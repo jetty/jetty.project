@@ -42,7 +42,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1958,41 +1957,6 @@ public class HttpParserTest
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
-        parser.parseNext(buffer);
-        assertNull(_bad);
-        assertEquals("http://host/", _uriOrStatus);
-        assertEquals(0, _port);
-    }
-
-    @Test
-    public void testUriHost11MismatchDeny()
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET http://host/ HTTP/1.1\r\n" +
-                "Host: foo\r\n" + // different authority
-                "Connection: close\r\n" +
-                "\r\n");
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
-        parser.parseNext(buffer);
-        assertEquals("Mismatched Authority", _bad);
-        assertEquals("http://host/", _uriOrStatus);
-        assertEquals(0, _port);
-    }
-
-    @Test
-    public void testUriHost11MismatchAllow()
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET http://host/ HTTP/1.1\r\n" +
-                "Host: foo\r\n" + // different authority
-                "Connection: close\r\n" +
-                "\r\n");
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpCompliance httpCompliance = HttpCompliance.from("RFC7230,MISMATCHED_AUTHORITY");
-        HttpParser parser = new HttpParser(handler, httpCompliance);
         parser.parseNext(buffer);
         assertNull(_bad);
         assertEquals("http://host/", _uriOrStatus);
