@@ -27,7 +27,7 @@ import org.eclipse.jetty.client.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.ResponseNotifier;
+import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -44,13 +44,11 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
     private final HttpClient client;
     private final int maxContentLength;
-    private final ResponseNotifier notifier;
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
         this.client = client;
         this.maxContentLength = maxContentLength;
-        this.notifier = new ResponseNotifier();
     }
 
     protected HttpClient getHttpClient()
@@ -274,19 +272,20 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
-            notifier.forwardSuccessComplete(conversation.getResponseListeners(), request, response);
+            ResponseListeners responseListeners = conversation.getResponseListeners();
+            responseListeners.emitSuccessComplete(new Result(request, response));
         }
 
         private void forwardFailureComplete(HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
-            List<Response.ResponseListener> responseListeners = conversation.getResponseListeners();
+            ResponseListeners responseListeners = conversation.getResponseListeners();
             if (responseFailure == null)
-                notifier.forwardSuccess(responseListeners, response);
+                responseListeners.emitSuccess(response);
             else
-                notifier.forwardFailure(responseListeners, response, responseFailure);
-            notifier.notifyComplete(responseListeners, new Result(request, requestFailure, response, responseFailure));
+                responseListeners.emitFailure(response, responseFailure);
+            responseListeners.notifyComplete(new Result(request, requestFailure, response, responseFailure));
         }
 
         private List<Authentication.HeaderInfo> parseAuthenticateHeader(Response response, HttpHeader header)

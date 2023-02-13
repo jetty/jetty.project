@@ -18,7 +18,7 @@ import java.util.List;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpResponse;
-import org.eclipse.jetty.client.transport.ResponseNotifier;
+import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -98,9 +98,7 @@ public class UpgradeProtocolHandler implements ProtocolHandler
     {
         HttpConversation conversation = request.getConversation();
         conversation.updateResponseListeners(null);
-        List<Response.ResponseListener> responseListeners = conversation.getResponseListeners();
-        ResponseNotifier notifier = new ResponseNotifier();
-        notifier.forwardFailure(responseListeners, response, responseFailure);
-        notifier.notifyComplete(responseListeners, new Result(request, requestFailure, response, responseFailure));
+        ResponseListeners responseListeners = conversation.getResponseListeners();
+        responseListeners.emitFailureComplete(new Result(request, requestFailure, response, responseFailure));
     }
 }

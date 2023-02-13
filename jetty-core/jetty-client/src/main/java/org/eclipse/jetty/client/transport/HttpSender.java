@@ -95,11 +95,10 @@ public abstract class HttpSender
         if (!updateRequestState(RequestState.QUEUED, RequestState.TRANSIENT))
             return false;
 
-        Request request = exchange.getRequest();
+        HttpRequest request = exchange.getRequest();
         if (LOG.isDebugEnabled())
             LOG.debug("Request begin {}", request);
-        RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
-        notifier.notifyBegin(request);
+        request.notifyBegin();
 
         contentSender.exchange = exchange;
         contentSender.expect100 = expects100Continue(request);
@@ -116,11 +115,10 @@ public abstract class HttpSender
         if (!updateRequestState(RequestState.BEGIN, RequestState.TRANSIENT))
             return false;
 
-        Request request = exchange.getRequest();
+        HttpRequest request = exchange.getRequest();
         if (LOG.isDebugEnabled())
             LOG.debug("Request headers {}{}{}", request, System.lineSeparator(), request.getHeaders().toString().trim());
-        RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
-        notifier.notifyHeaders(request);
+        request.notifyHeaders();
 
         if (updateRequestState(RequestState.TRANSIENT, RequestState.HEADERS))
             return true;
@@ -134,11 +132,10 @@ public abstract class HttpSender
         if (!updateRequestState(RequestState.HEADERS, RequestState.TRANSIENT))
             return false;
 
-        Request request = exchange.getRequest();
+        HttpRequest request = exchange.getRequest();
         if (LOG.isDebugEnabled())
             LOG.debug("Request committed {}", request);
-        RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
-        notifier.notifyCommit(request);
+        request.notifyCommit();
 
         if (updateRequestState(RequestState.TRANSIENT, RequestState.COMMIT))
             return true;
@@ -157,11 +154,10 @@ public abstract class HttpSender
                 if (!updateRequestState(current, RequestState.TRANSIENT))
                     yield false;
 
-                Request request = exchange.getRequest();
+                HttpRequest request = exchange.getRequest();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Request content {}{}{}", request, System.lineSeparator(), BufferUtil.toDetailString(content));
-                RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
-                notifier.notifyContent(request, content);
+                request.notifyContent(content);
 
                 if (updateRequestState(RequestState.TRANSIENT, RequestState.CONTENT))
                     yield true;
@@ -190,11 +186,10 @@ public abstract class HttpSender
                 // Reset to be ready for another request.
                 reset();
 
-                Request request = exchange.getRequest();
+                HttpRequest request = exchange.getRequest();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Request success {}", request);
-                HttpDestination destination = getHttpChannel().getHttpDestination();
-                destination.getRequestNotifier().notifySuccess(exchange.getRequest());
+                request.notifySuccess();
 
                 // Mark atomically the request as terminated, with
                 // respect to concurrency between request and response.
@@ -240,7 +235,7 @@ public abstract class HttpSender
     {
         Throwable failure = this.failure.get();
 
-        Request request = exchange.getRequest();
+        HttpRequest request = exchange.getRequest();
         Content.Source content = request.getBody();
         if (content != null)
             content.fail(failure);
@@ -249,8 +244,7 @@ public abstract class HttpSender
 
         if (LOG.isDebugEnabled())
             LOG.debug("Request abort {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
-        HttpDestination destination = getHttpChannel().getHttpDestination();
-        destination.getRequestNotifier().notifyFailure(request, failure);
+        request.notifyFailure(failure);
 
         // Mark atomically the request as terminated, with
         // respect to concurrency between request and response.
@@ -260,7 +254,7 @@ public abstract class HttpSender
 
     private void terminateRequest(HttpExchange exchange, Throwable failure, Result result)
     {
-        Request request = exchange.getRequest();
+        HttpRequest request = exchange.getRequest();
 
         if (LOG.isDebugEnabled())
             LOG.debug("Terminating request {}", request);
@@ -286,8 +280,7 @@ public abstract class HttpSender
                 channel.exchangeTerminated(exchange, result);
             if (LOG.isDebugEnabled())
                 LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
-            HttpConversation conversation = exchange.getConversation();
-            destination.getResponseNotifier().notifyComplete(conversation.getResponseListeners(), result);
+            exchange.getConversation().getResponseListeners().notifyComplete(result);
             if (ordered)
                 channel.exchangeTerminated(exchange, result);
         }
@@ -514,7 +507,7 @@ public abstract class HttpSender
                 throw error.getCause();
 
             ByteBuffer buffer = chunk.getByteBuffer();
-            contentBuffer = buffer.slice();
+            contentBuffer = buffer.asReadOnlyBuffer();
             boolean last = chunk.isLast();
             if (committed)
                 sendContent(exchange, buffer, last, this);
@@ -526,20 +519,24 @@ public abstract class HttpSender
         @Override
         public void succeeded()
         {
-            boolean proceed = false;
+            boolean proceed = true;
             if (committed)
             {
-                proceed = someToContent(exchange, contentBuffer);
+                if (contentBuffer.hasRemaining())
+                    proceed = someToContent(exchange, contentBuffer);
             }
             else
             {
                 committed = true;
                 if (headersToCommit(exchange))
                 {
-                    proceed = true;
                     // Was any content sent while committing?
                     if (contentBuffer.hasRemaining())
                         proceed = someToContent(exchange, contentBuffer);
+                }
+                else
+                {
+                    proceed = false;
                 }
             }
 

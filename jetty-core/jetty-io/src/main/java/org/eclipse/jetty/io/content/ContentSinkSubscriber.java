@@ -49,7 +49,8 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     {
         // Retain the chunk because the write may not complete immediately.
         chunk.retain();
-        sink.write(chunk.isLast(), chunk.getByteBuffer(), Callback.from(() -> succeeded(chunk), x -> failed(chunk, x)));
+        // Always set last=false because we do the last write from onComplete().
+        sink.write(false, chunk.getByteBuffer(), Callback.from(() -> succeeded(chunk), x -> failed(chunk, x)));
     }
 
     private void succeeded(Content.Chunk chunk)
