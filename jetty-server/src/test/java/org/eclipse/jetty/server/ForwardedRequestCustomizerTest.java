@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -38,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ForwardedRequestCustomizerTest
 {
     private Server server;
-    private RequestHandler handler;
     private LocalConnector connector;
     private LocalConnector connectorAlt;
     private LocalConnector connectorConfigured;
@@ -68,6 +68,8 @@ public class ForwardedRequestCustomizerTest
 
         // Default behavior Connector
         HttpConnectionFactory http = new HttpConnectionFactory();
+        HttpCompliance mismatchedAuthorityHttpCompliance = HttpCompliance.RFC7230.with("Mismatched_Authority", HttpCompliance.Violation.MISMATCHED_AUTHORITY);
+        http.getHttpConfiguration().setHttpCompliance(mismatchedAuthorityHttpCompliance);
         http.getHttpConfiguration().setSecurePort(443);
         customizer = new ForwardedRequestCustomizer();
         http.getHttpConfiguration().addCustomizer(customizer);
@@ -77,6 +79,7 @@ public class ForwardedRequestCustomizerTest
         // Alternate behavior Connector
         HttpConnectionFactory httpAlt = new HttpConnectionFactory();
         httpAlt.getHttpConfiguration().setSecurePort(8443);
+        httpAlt.getHttpConfiguration().setHttpCompliance(mismatchedAuthorityHttpCompliance);
         customizerAlt = new ForwardedRequestCustomizer();
         httpAlt.getHttpConfiguration().addCustomizer(customizerAlt);
         connectorAlt = new LocalConnector(server, httpAlt);
@@ -97,9 +100,10 @@ public class ForwardedRequestCustomizerTest
 
         http.getHttpConfiguration().addCustomizer(customizerConfigured);
         connectorConfigured = new LocalConnector(server, http);
+        connectorConfigured.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(mismatchedAuthorityHttpCompliance);
         server.addConnector(connectorConfigured);
 
-        handler = new RequestHandler();
+        RequestHandler handler = new RequestHandler();
         server.setHandler(handler);
 
         handler.requestTester = (request, response) ->
