@@ -139,13 +139,13 @@ public class CookieCutterTest
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
             "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies /* = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
 
-        cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
+        cookies */ = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);

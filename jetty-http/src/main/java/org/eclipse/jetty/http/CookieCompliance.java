@@ -127,24 +127,24 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265_STRICT = new CookieCompliance("RFC6265", noneOf(Violation.class));
+    public static final CookieCompliance RFC6265_STRICT = new CookieCompliance("RFC6265_STRICT", noneOf(Violation.class));
 
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIES, Violation.ATTRIBUTES, Violation.OPTIONAL_WHITE_SPACE, Violation.BAD_QUOTES));
+    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265_LEGACY", of(Violation.BAD_QUOTES, Violation.ESCAPE_IN_QUOTES, Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPECIAL_CHARS_IN_QUOTES));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
      */
-    public static final CookieCompliance RFC2965_LEGACY = new CookieCompliance("RFC2965", allOf(Violation.class));
+    public static final CookieCompliance RFC2965_LEGACY = new CookieCompliance("RFC2965_LEGACY", allOf(Violation.class));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance, but without bad quotes.
      */
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(Violation.BAD_QUOTES)));
 
-    private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965_LEGACY);
+    private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC6265_STRICT, RFC6265_LEGACY, RFC2965, RFC2965_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     public static CookieCompliance valueOf(String name)
