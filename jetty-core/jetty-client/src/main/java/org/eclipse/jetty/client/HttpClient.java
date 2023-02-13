@@ -38,11 +38,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
+import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.RequestListeners;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
@@ -117,7 +117,7 @@ public class HttpClient extends ContainerLifeCycle
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
-    private final RequestListeners requestListeners = new RequestListeners.Internal(this);
+    private final RequestListeners requestListeners = new NotifyingRequestListeners();
     private final ContentDecoder.Factories decoderFactories = new ContentDecoder.Factories();
     private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
@@ -156,6 +156,7 @@ public class HttpClient extends ContainerLifeCycle
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
         this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
+        addBean(requestListeners);
         addBean(handlers);
         addBean(decoderFactories);
     }
@@ -253,10 +254,10 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Returns a <em>non</em> thread-safe list of {@link Request.Listener}s that can be modified before
-     * performing requests.
+     * Returns a <em>non</em> thread-safe container of {@link Request.Listener}s
+     * that allows to add request listeners before performing requests.
      *
-     * @return a list of {@link Request.Listener} that can be used to add and remove listeners
+     * @return a {@link RequestListeners} instance that can be used to add request listeners
      */
     public RequestListeners getRequestListeners()
     {

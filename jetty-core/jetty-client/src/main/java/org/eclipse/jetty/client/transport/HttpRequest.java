@@ -45,7 +45,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.RequestListeners;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -82,7 +84,7 @@ public class HttpRequest implements Request
     private boolean followRedirects;
     private List<HttpCookie> cookies;
     private Map<String, Object> attributes;
-    private RequestListeners.Internal requestListeners;
+    private NotifyingRequestListeners requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushHandler;
     private Supplier<HttpFields> trailers;
     private Object tag;
@@ -367,13 +369,13 @@ public class HttpRequest implements Request
     private RequestListeners requestListeners()
     {
         if (requestListeners == null)
-            requestListeners = new RequestListeners.Internal(client);
+            requestListeners = new NotifyingRequestListeners();
         return requestListeners;
     }
 
-    private RequestListeners.Internal getHttpClientRequestListeners()
+    private NotifyingRequestListeners getHttpClientRequestListeners()
     {
-        return (RequestListeners.Internal)client.getRequestListeners();
+        return (NotifyingRequestListeners)client.getRequestListeners();
     }
 
     @Override

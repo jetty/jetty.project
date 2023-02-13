@@ -11,32 +11,29 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.transport;
+package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RequestListeners
+/**
+ * <p>A specialized container for request listeners.</p>
+ */
+public class RequestListeners implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestListeners.class);
 
-    final HttpClient httpClient;
-    Request.QueuedListener queuedListener;
-    Request.BeginListener beginListener;
-    Request.HeadersListener headersListener;
-    Request.CommitListener commitListener;
-    Request.ContentListener contentListener;
-    Request.SuccessListener successListener;
-    Request.FailureListener failureListener;
-
-    public RequestListeners(HttpClient httpClient)
-    {
-        this.httpClient = httpClient;
-    }
+    private Request.QueuedListener queuedListener;
+    private Request.BeginListener beginListener;
+    private Request.HeadersListener headersListener;
+    private Request.CommitListener commitListener;
+    private Request.ContentListener contentListener;
+    private Request.SuccessListener successListener;
+    private Request.FailureListener failureListener;
 
     public void addListener(Request.Listener listener)
     {
@@ -59,7 +56,7 @@ public class RequestListeners
         };
     }
 
-    private static void notifyQueued(Request.QueuedListener listener, Request request)
+    protected static void notifyQueued(Request.QueuedListener listener, Request request)
     {
         try
         {
@@ -82,7 +79,7 @@ public class RequestListeners
         };
     }
 
-    private static void notifyBegin(Request.BeginListener listener, Request request)
+    protected static void notifyBegin(Request.BeginListener listener, Request request)
     {
         try
         {
@@ -105,7 +102,7 @@ public class RequestListeners
         };
     }
 
-    private static void notifyHeaders(Request.HeadersListener listener, Request request)
+    protected static void notifyHeaders(Request.HeadersListener listener, Request request)
     {
         try
         {
@@ -128,7 +125,7 @@ public class RequestListeners
         };
     }
 
-    private static void notifyCommit(Request.CommitListener listener, Request request)
+    protected static void notifyCommit(Request.CommitListener listener, Request request)
     {
         try
         {
@@ -151,7 +148,7 @@ public class RequestListeners
         };
     }
 
-    private static void notifyContent(Request.ContentListener listener, Request request, ByteBuffer byteBuffer)
+    protected static void notifyContent(Request.ContentListener listener, Request request, ByteBuffer byteBuffer)
     {
         try
         {
@@ -179,7 +176,7 @@ public class RequestListeners
         };
     }
 
-    private static void notifySuccess(Request.SuccessListener listener, Request request)
+    protected static void notifySuccess(Request.SuccessListener listener, Request request)
     {
         try
         {
@@ -202,7 +199,7 @@ public class RequestListeners
         };
     }
 
-    private static void notifyFailure(Request.FailureListener listener, Request request, Throwable failure)
+    protected static void notifyFailure(Request.FailureListener listener, Request request, Throwable failure)
     {
         try
         {
@@ -226,46 +223,61 @@ public class RequestListeners
         failureListener = null;
     }
 
-    public static class Internal extends RequestListeners
+    protected Request.QueuedListener getQueuedListener()
     {
-        public Internal(HttpClient httpClient)
-        {
-            super(httpClient);
-        }
+        return queuedListener;
+    }
 
-        public void notifyQueued(Request request)
-        {
-            RequestListeners.notifyQueued(queuedListener, request);
-        }
+    protected Request.BeginListener getBeginListener()
+    {
+        return beginListener;
+    }
 
-        public void notifyBegin(Request request)
-        {
-            RequestListeners.notifyBegin(beginListener, request);
-        }
+    protected Request.HeadersListener getHeadersListener()
+    {
+        return headersListener;
+    }
 
-        public void notifyHeaders(Request request)
-        {
-            RequestListeners.notifyHeaders(headersListener, request);
-        }
+    protected Request.CommitListener getCommitListener()
+    {
+        return commitListener;
+    }
 
-        public void notifyCommit(Request request)
-        {
-            RequestListeners.notifyCommit(commitListener, request);
-        }
+    protected Request.ContentListener getContentListener()
+    {
+        return contentListener;
+    }
 
-        public void notifyContent(Request request, ByteBuffer byteBuffer)
-        {
-            RequestListeners.notifyContent(contentListener, request, byteBuffer);
-        }
+    protected Request.SuccessListener getSuccessListener()
+    {
+        return successListener;
+    }
 
-        public void notifySuccess(Request request)
-        {
-            RequestListeners.notifySuccess(successListener, request);
-        }
+    protected Request.FailureListener getFailureListener()
+    {
+        return failureListener;
+    }
 
-        public void notifyFailure(Request request, Throwable failure)
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this,
+            new ListenerDump("queued", getQueuedListener()),
+            new ListenerDump("begin", getBeginListener()),
+            new ListenerDump("headers", getHeadersListener()),
+            new ListenerDump("commit", getCommitListener()),
+            new ListenerDump("content", getContentListener()),
+            new ListenerDump("success", getSuccessListener()),
+            new ListenerDump("failure", getFailureListener())
+        );
+    }
+
+    private record ListenerDump(String name, Object listener)
+    {
+        @Override
+        public String toString()
         {
-            RequestListeners.notifyFailure(failureListener, request, failure);
+            return name + " = " + listener;
         }
     }
 }

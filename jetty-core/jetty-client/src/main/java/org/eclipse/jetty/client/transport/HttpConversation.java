@@ -134,7 +134,7 @@ public class HttpConversation extends Attributes.Lazy
             if (overrideListener != null)
                 listeners.addListener(overrideListener);
             else
-                listeners.add(firstExchange.getResponseListeners());
+                listeners.addResponseListeners(firstExchange.getResponseListeners());
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Exchanges in conversation {}, override={}, listeners={}", exchanges.size(), overrideListener, listeners);

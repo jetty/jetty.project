@@ -30,6 +30,9 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>A specialized container for response listeners.</p>
+ */
 public class ResponseListeners
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseListeners.class);
@@ -346,7 +349,7 @@ public class ResponseListeners
         addCompleteListener(listener, false);
     }
 
-    public void add(ResponseListeners listeners)
+    public void addResponseListeners(ResponseListeners listeners)
     {
         addBeginListener(listeners.beginListener);
         addHeaderListener(listeners.headerListener);
