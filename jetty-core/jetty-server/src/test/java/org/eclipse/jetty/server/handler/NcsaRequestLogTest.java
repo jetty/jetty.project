@@ -163,7 +163,7 @@ public class NcsaRequestLogTest
 
         _connector.getResponse(
             "GET http://hostname:8888/foo?name=value HTTP/1.1\n" +
-                "Host: servername\n" +
+                "Host: hostname:8888\n" +
                 "\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET http://hostname:8888/foo?name=value"));

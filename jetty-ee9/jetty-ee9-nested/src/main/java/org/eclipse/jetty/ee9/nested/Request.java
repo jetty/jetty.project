@@ -322,7 +322,7 @@ public class Request implements HttpServletRequest
                     cookieValue = cookieFields.get("value");
                     cookieMaxAge = cookieFields.get("max-age") != null ? Long.parseLong(cookieFields.get("max-age")) : -1;
                 }
-                
+
                 if (cookieMaxAge > 0)
                     cookies.put(cookieName, cookieValue);
                 else
