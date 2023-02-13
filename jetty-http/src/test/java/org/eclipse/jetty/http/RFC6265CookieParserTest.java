@@ -380,7 +380,7 @@ public class RFC6265CookieParserTest
 
         private TestCookieParser(CookieCompliance compliance)
         {
-            parser = new RFC6265CookieParser(compliance, this);
+            parser = new RFC6265CookieParser(this, compliance, this);
         }
 
         @Override
@@ -391,7 +391,7 @@ public class RFC6265CookieParserTest
 
         private List<Cookie> parseFields(String... fields)
         {
-            parser.parseFields(this, Arrays.asList(fields));
+            parser.parseFields(Arrays.asList(fields));
             return cookies;
         }
 

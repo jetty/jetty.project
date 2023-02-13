@@ -50,7 +50,7 @@ public class Cookies implements CookieParser.Handler
 
     public Cookies(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
-        _parser = CookieParser.newParser(compliance, complianceListener);
+        _parser = CookieParser.newParser(this, compliance, complianceListener);
     }
 
     public void addCookieField(String rawField)
@@ -95,7 +95,7 @@ public class Cookies implements CookieParser.Handler
         if (_parsed)
             return _cookies;
 
-        _parser.parseFields(this, _rawFields);
+        _parser.parseFields(_rawFields);
         _cookies = (Cookie[])_cookieList.toArray(new Cookie[_cookieList.size()]);
         _cookieList.clear();
         _parsed = true;

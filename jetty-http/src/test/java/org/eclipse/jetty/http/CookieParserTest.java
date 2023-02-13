@@ -25,13 +25,13 @@ public class CookieParserTest
     @Test
     public void testNewCookieParser()
     {
-        assertThat(CookieParser.newParser(CookieCompliance.RFC2965_LEGACY, null), instanceOf(CookieCutter.class));
-        assertThat(CookieParser.newParser(CookieCompliance.RFC6265_LEGACY, null), instanceOf(CookieCutter.class));
-        assertThat(CookieParser.newParser(new CookieCompliance("custom", EnumSet.of(CookieCompliance.Violation.COMMA_SEPARATOR, CookieCompliance.Violation.BAD_QUOTES)), null), instanceOf(CookieCutter.class));
+        assertThat(CookieParser.newParser(null, CookieCompliance.RFC2965_LEGACY, null), instanceOf(CookieCutter.class));
+        assertThat(CookieParser.newParser(null, CookieCompliance.RFC6265_LEGACY, null), instanceOf(CookieCutter.class));
+        assertThat(CookieParser.newParser(null, new CookieCompliance("custom", EnumSet.of(CookieCompliance.Violation.COMMA_SEPARATOR, CookieCompliance.Violation.BAD_QUOTES)), null), instanceOf(CookieCutter.class));
 
-        assertThat(CookieParser.newParser(CookieCompliance.RFC2965, null), instanceOf(RFC6265CookieParser.class));
-        assertThat(CookieParser.newParser(CookieCompliance.RFC6265, null), instanceOf(RFC6265CookieParser.class));
-        assertThat(CookieParser.newParser(CookieCompliance.RFC6265_STRICT, null), instanceOf(RFC6265CookieParser.class));
-        assertThat(CookieParser.newParser(new CookieCompliance("custom", EnumSet.of(CookieCompliance.Violation.COMMA_SEPARATOR)), null), instanceOf(RFC6265CookieParser.class));
+        assertThat(CookieParser.newParser(null, CookieCompliance.RFC2965, null), instanceOf(RFC6265CookieParser.class));
+        assertThat(CookieParser.newParser(null, CookieCompliance.RFC6265, null), instanceOf(RFC6265CookieParser.class));
+        assertThat(CookieParser.newParser(null, CookieCompliance.RFC6265_STRICT, null), instanceOf(RFC6265CookieParser.class));
+        assertThat(CookieParser.newParser(null, new CookieCompliance("custom", EnumSet.of(CookieCompliance.Violation.COMMA_SEPARATOR)), null), instanceOf(RFC6265CookieParser.class));
     }
 }

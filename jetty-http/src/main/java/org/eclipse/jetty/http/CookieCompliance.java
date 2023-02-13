@@ -76,17 +76,18 @@ public class CookieCompliance implements ComplianceViolation.Mode
         /**
          * Allow an invalid cookie, without applicable violation, to be ignored rather than an exception generated.
          */
-        IGNORED_INVALID_COOKIE("https://tools.ietf.org/html/rfc6265", "Non compliant cookie is ignored"),
+        INVALID_COOKIES("https://tools.ietf.org/html/rfc6265", "Non compliant cookie is ignored"),
 
         /**
-         * A cookie attribute(s) was found and will be interpreted, unless #IGNORED_ATTRIBUTE is also allowed.
+         * Allow cookie attributes, but their values may be ignored if {@link #ATTRIBUTE_VALUES} is not allowed.
          */
-        ATTRIBUTE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present"),
+        ATTRIBUTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present"),
 
         /**
-         * A cookie attribute was found, but will be ignored
+         * Allow a cookie attribute to have a value that is not ignored. Allowing {@code ATTRIBUTE_VALUE} implies allowing
+         * {@link #ATTRIBUTES}.
          */
-        IGNORED_ATTRIBUTE("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present, but ignored"),
+        ATTRIBUTE_VALUES("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "A cookie attribute is present"),
 
         OPTIONAL_WHITE_SPACE("https://www.rfc-editor.org/rfc/rfc6265#section-5.2", "Permissive optional white space");
 
@@ -119,9 +120,9 @@ public class CookieCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
+     * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance, but allows more optional white space and ignores bad cookies.
      */
-    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.IGNORED_INVALID_COOKIE, Violation.OPTIONAL_WHITE_SPACE, Violation.IGNORED_ATTRIBUTE));
+    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIES, Violation.ATTRIBUTES, Violation.OPTIONAL_WHITE_SPACE));
 
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
@@ -131,17 +132,17 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.IGNORED_INVALID_COOKIE, Violation.IGNORED_ATTRIBUTE, Violation.OPTIONAL_WHITE_SPACE, Violation.BAD_QUOTES));
+    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265", of(Violation.INVALID_COOKIES, Violation.ATTRIBUTES, Violation.OPTIONAL_WHITE_SPACE, Violation.BAD_QUOTES));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
      */
-    public static final CookieCompliance RFC2965_LEGACY = new CookieCompliance("RFC2965", complementOf(of(Violation.IGNORED_ATTRIBUTE)));
+    public static final CookieCompliance RFC2965_LEGACY = new CookieCompliance("RFC2965", allOf(Violation.class));
 
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance, but without bad quotes.
      */
-    public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(Violation.BAD_QUOTES, Violation.IGNORED_ATTRIBUTE)));
+    public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(Violation.BAD_QUOTES)));
 
     private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();

@@ -32,23 +32,25 @@ public class CookieCutter implements CookieParser
 {
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCutter.class);
 
-    protected final CookieCompliance _complianceMode;
+    private final CookieParser.Handler _handler;
+    private final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
 
-    public CookieCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    public CookieCutter(CookieParser.Handler handler, CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
+        _handler = handler;
         _complianceMode = compliance;
         _complianceListener = complianceListener;
     }
 
     @Override
-    public void parseField(CookieParser.Handler handler, String field)
+    public void parseField(String field)
     {
-        parseFields(handler, Collections.singletonList(field));
+        parseFields(Collections.singletonList(field));
     }
 
     @Override
-    public void parseFields(CookieParser.Handler handler, List<String> rawFields)
+    public void parseFields(List<String> rawFields)
     {
         StringBuilder unquoted = null;
 
@@ -207,7 +209,7 @@ public class CookieCutter implements CookieParser
                                         {
                                             if (!reject)
                                             {
-                                                handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                                                _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                                                 reject = false;
                                             }
                                             cookieDomain = null;
@@ -337,7 +339,7 @@ public class CookieCutter implements CookieParser
             }
 
             if (cookieName != null && !reject)
-                handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
         }
     }
 

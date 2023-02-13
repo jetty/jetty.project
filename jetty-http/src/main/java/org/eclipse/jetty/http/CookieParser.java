@@ -21,7 +21,6 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.Listener;
 /**
  * <p>Cookie parser.</p>
  * <p>An interface for variations of a cookie parser.</p>
- *
  */
 public interface CookieParser
 {
@@ -31,24 +30,24 @@ public interface CookieParser
      * @param complianceListener A listener for compliance violations or null.
      * @return A CookieParser instance.
      */
-    static CookieParser newParser(CookieCompliance compliance, Listener complianceListener)
+    static CookieParser newParser(Handler handler, CookieCompliance compliance, Listener complianceListener)
     {
         // The RFC6265CookieParser is primarily a RFC6265 parser, but it can handle most
         // defined "violations" so that it effectively becomes a RFC2965 parser. However, it
         // cannot forgive bad quotes.  Thus, we use the legacy CookieCutter parser only if
         // the compliance mode requires BAD QUOTES.
         if (compliance.allows(BAD_QUOTES))
-            return new CookieCutter(compliance, complianceListener);
-        return new RFC6265CookieParser(compliance, complianceListener);
+            return new CookieCutter(handler, compliance, complianceListener);
+        return new RFC6265CookieParser(handler, compliance, complianceListener);
     }
 
-    void parseField(Handler handler, String field);
+    void parseField(String field);
 
-    default  void parseFields(Handler handler, List<String> rawFields)
+    default void parseFields(List<String> rawFields)
     {
         // For each cookie field
         for (String field : rawFields)
-            parseField(handler, field);
+            parseField(field);
     }
 
     /**

@@ -19,12 +19,12 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTE;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTES;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTE_VALUES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_SEPARATOR;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.IGNORED_ATTRIBUTE;
-import static org.eclipse.jetty.http.CookieCompliance.Violation.IGNORED_INVALID_COOKIE;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.OPTIONAL_WHITE_SPACE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
 
@@ -35,11 +35,13 @@ public class RFC6265CookieParser implements CookieParser
 {
     protected static final Logger LOG = LoggerFactory.getLogger(RFC6265CookieParser.class);
 
-    protected final CookieCompliance _complianceMode;
+    private final CookieParser.Handler _handler;
+    private final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
 
-    protected RFC6265CookieParser(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    protected RFC6265CookieParser(CookieParser.Handler handler, CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
+        _handler = handler;
         _complianceMode = compliance;
         _complianceListener = complianceListener;
     }
@@ -59,7 +61,7 @@ public class RFC6265CookieParser implements CookieParser
     }
 
     @Override
-    public void parseField(CookieParser.Handler handler, String field)
+    public void parseField(String field)
     {
         State state = State.START;
 
@@ -82,7 +84,7 @@ public class RFC6265CookieParser implements CookieParser
 
             if (token == null)
             {
-                if (!_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                if (!_complianceMode.allows(INVALID_COOKIES))
                      throw new IllegalArgumentException("Invalid Cookie character");
                 state = State.INVALID_COOKIE;
                 continue;
@@ -100,7 +102,7 @@ public class RFC6265CookieParser implements CookieParser
                     {
                         if (!StringUtil.isBlank(cookieName) && c != '$')
                         {
-                            handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                            _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                             cookieName = null;
                             cookieValue = null;
                             cookieDomain = null;
@@ -111,9 +113,9 @@ public class RFC6265CookieParser implements CookieParser
                         string.append(c);
                         state = State.IN_NAME;
                     }
-                    else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                    else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                        reportComplianceViolation(INVALID_COOKIES, field);
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -149,9 +151,9 @@ public class RFC6265CookieParser implements CookieParser
                     {
                         string.append(c);
                     }
-                    else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                    else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                        reportComplianceViolation(INVALID_COOKIES, field);
                         state = c == ';' ? State.START : State.INVALID_COOKIE;
                     }
                     else
@@ -172,9 +174,9 @@ public class RFC6265CookieParser implements CookieParser
                         continue;
                     }
 
-                    if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                    if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                        reportComplianceViolation(INVALID_COOKIES, field);
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -206,9 +208,9 @@ public class RFC6265CookieParser implements CookieParser
                         string.append(c);
                         state = State.IN_VALUE;
                     }
-                    else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                    else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                        reportComplianceViolation(INVALID_COOKIES, field);
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -228,9 +230,9 @@ public class RFC6265CookieParser implements CookieParser
                     {
                         string.append(c);
                     }
-                    else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                    else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                        reportComplianceViolation(INVALID_COOKIES, field);
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -263,13 +265,13 @@ public class RFC6265CookieParser implements CookieParser
                         reportComplianceViolation(COMMA_NOT_VALID_OCTET, field);
                         string.append(c);
                     }
-                    else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                    else if (_complianceMode.allows(INVALID_COOKIES))
                     {
                         string.append(c);
                         if (!cookieInvalid)
                         {
                             cookieInvalid = true;
-                            reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                            reportComplianceViolation(INVALID_COOKIES, field);
                         }
                         // Try to find the closing double quote by staying in the current state.
                     }
@@ -290,9 +292,9 @@ public class RFC6265CookieParser implements CookieParser
                         i--;
                         state = cookieInvalid ? State.INVALID_COOKIE : State.END;
                     }
-                    else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                    else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                        reportComplianceViolation(INVALID_COOKIES, field);
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -313,9 +315,9 @@ public class RFC6265CookieParser implements CookieParser
                             reportComplianceViolation(COMMA_SEPARATOR, field);
                             state = State.START;
                         }
-                        else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                        else if (_complianceMode.allows(INVALID_COOKIES))
                         {
-                            reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                            reportComplianceViolation(INVALID_COOKIES, field);
                             state = State.INVALID_COOKIE;
                             continue;
                         }
@@ -338,13 +340,9 @@ public class RFC6265CookieParser implements CookieParser
                     else
                     {
                         // We have an attribute.
-                        if (_complianceMode.allows(IGNORED_ATTRIBUTE))
+                        if (_complianceMode.allows(ATTRIBUTE_VALUES))
                         {
-                            reportComplianceViolation(IGNORED_ATTRIBUTE, field);
-                        }
-                        else if (_complianceMode.allows(ATTRIBUTE))
-                        {
-                            reportComplianceViolation(ATTRIBUTE, field);
+                            reportComplianceViolation(ATTRIBUTES, field);
                             switch (attributeName.toLowerCase(Locale.ENGLISH))
                             {
                                 case "$path":
@@ -364,9 +362,13 @@ public class RFC6265CookieParser implements CookieParser
                                     break;
                             }
                         }
-                        else if (_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                        else if (_complianceMode.allows(ATTRIBUTES))
                         {
-                            reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                            reportComplianceViolation(ATTRIBUTES, field);
+                        }
+                        else if (_complianceMode.allows(INVALID_COOKIES))
+                        {
+                            reportComplianceViolation(INVALID_COOKIES, field);
                             state = State.INVALID_COOKIE;
                             continue;
                         }
@@ -380,9 +382,9 @@ public class RFC6265CookieParser implements CookieParser
 
                     if (!knownAttribute)
                     {
-                        if (!_complianceMode.allows(IGNORED_INVALID_COOKIE))
+                        if (!_complianceMode.allows(INVALID_COOKIES))
                             throw new IllegalArgumentException("Invalid Cookie attribute");
-                        reportComplianceViolation(IGNORED_INVALID_COOKIE, field);
+                        reportComplianceViolation(INVALID_COOKIES, field);
                         state = State.INVALID_COOKIE;
                         continue;
                     }
@@ -407,7 +409,7 @@ public class RFC6265CookieParser implements CookieParser
         }
 
         if (!cookieInvalid && !StringUtil.isBlank(cookieName))
-            handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+            _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
     }
 
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)

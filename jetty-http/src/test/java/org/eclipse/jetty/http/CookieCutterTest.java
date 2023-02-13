@@ -292,7 +292,7 @@ public class CookieCutterTest
 
         public TestCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
         {
-            cutter = new CookieCutter(compliance, complianceListener);
+            cutter = new CookieCutter(this, compliance, complianceListener);
         }
 
         @Override
@@ -303,7 +303,7 @@ public class CookieCutterTest
 
         public void parseFields(String... fields)
         {
-            cutter.parseFields(this, Arrays.asList(fields));
+            cutter.parseFields(Arrays.asList(fields));
         }
     }
 }
