@@ -66,6 +66,7 @@ import javax.servlet.http.WebConnection;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -1748,13 +1749,15 @@ public class Request implements HttpServletRequest
             _uri = uri;
             if (host instanceof HostPortHttpField && !((HostPortHttpField)host).getHostPort().toString().equals(uri.getAuthority()))
             {
-                HttpConfiguration httpConfiguration = getHttpChannel().getHttpConfiguration();
+                HttpChannel httpChannel = getHttpChannel();
+                HttpConfiguration httpConfiguration = httpChannel.getHttpConfiguration();
                 if (httpConfiguration != null)
                 {
-                    if (httpConfiguration.getHttpCompliance().allows(MISMATCHED_AUTHORITY))
+                    HttpCompliance httpCompliance = httpConfiguration.getHttpCompliance();
+                    if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                     {
-                        if (getHttpChannel() instanceof ComplianceViolation.Listener)
-                            ((ComplianceViolation.Listener)getHttpChannel()).onComplianceViolation(httpConfiguration.getHttpCompliance(), MISMATCHED_AUTHORITY, _uri.toString());
+                        if (httpChannel instanceof ComplianceViolation.Listener)
+                            ((ComplianceViolation.Listener)httpChannel).onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.toString());
                     }
                     else
                     {

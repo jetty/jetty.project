@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -38,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ForwardedRequestCustomizerTest
 {
     private Server server;
-    private RequestHandler handler;
     private LocalConnector connector;
     private LocalConnector connectorAlt;
     private LocalConnector connectorConfigured;
@@ -68,6 +68,8 @@ public class ForwardedRequestCustomizerTest
 
         // Default behavior Connector
         HttpConnectionFactory http = new HttpConnectionFactory();
+        HttpCompliance mismatchedAuthorityHttpCompliance = HttpCompliance.RFC7230.with("Mismatched_Authority", HttpCompliance.Violation.MISMATCHED_AUTHORITY);
+        http.getHttpConfiguration().setHttpCompliance(mismatchedAuthorityHttpCompliance);
         http.getHttpConfiguration().setSecurePort(443);
         customizer = new ForwardedRequestCustomizer();
         http.getHttpConfiguration().addCustomizer(customizer);
@@ -77,6 +79,7 @@ public class ForwardedRequestCustomizerTest
         // Alternate behavior Connector
         HttpConnectionFactory httpAlt = new HttpConnectionFactory();
         httpAlt.getHttpConfiguration().setSecurePort(8443);
+        httpAlt.getHttpConfiguration().setHttpCompliance(mismatchedAuthorityHttpCompliance);
         customizerAlt = new ForwardedRequestCustomizer();
         httpAlt.getHttpConfiguration().addCustomizer(customizerAlt);
         connectorAlt = new LocalConnector(server, httpAlt);
@@ -97,9 +100,10 @@ public class ForwardedRequestCustomizerTest
 
         http.getHttpConfiguration().addCustomizer(customizerConfigured);
         connectorConfigured = new LocalConnector(server, http);
+        connectorConfigured.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(mismatchedAuthorityHttpCompliance);
         server.addConnector(connectorConfigured);
 
-        handler = new RequestHandler();
+        RequestHandler handler = new RequestHandler();
         server.setHandler(handler);
 
         handler.requestTester = (request, response) ->
@@ -155,24 +159,24 @@ public class ForwardedRequestCustomizerTest
                 new Request("HTTP/1.0 - No Host header, with X-Forwarded-Host")
                     .headers(
                         "GET /example HTTP/1.0",
-                        "X-Forwarded-Host: alt.example.org:7070"
+                        "X-Forwarded-Host: alt.example.net:7070"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(7070)
+                    .scheme("http").serverName("alt.example.net").serverPort(7070)
                     .secure(false)
-                    .requestURL("http://alt.example.org:7070/example")
+                    .requestURL("http://alt.example.net:7070/example")
             ),
             Arguments.of(
                 new Request("HTTP/1.0 - Empty Host header, with X-Forwarded-Host")
                     .headers(
                         "GET /example HTTP/1.0",
                         "Host:",
-                        "X-Forwarded-Host: alt.example.org:7070"
+                        "X-Forwarded-Host: alt.example.net:7070"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(7070)
+                    .scheme("http").serverName("alt.example.net").serverPort(7070)
                     .secure(false)
-                    .requestURL("http://alt.example.org:7070/example")
+                    .requestURL("http://alt.example.net:7070/example")
             ),
             // Host IPv4
             Arguments.of(
@@ -199,7 +203,7 @@ public class ForwardedRequestCustomizerTest
             Arguments.of(new Request("IPv4 in Request Line")
                     .headers(
                         "GET https://1.2.3.4:2222/ HTTP/1.1",
-                        "Host: 1.2.3.4:2222"
+                        "Host: wrong"
                     ),
                 new Expectations()
                     .scheme("https").serverName("1.2.3.4").serverPort(2222)
@@ -209,7 +213,7 @@ public class ForwardedRequestCustomizerTest
             Arguments.of(new Request("IPv6 in Request Line")
                     .headers(
                         "GET http://[::1]:2222/ HTTP/1.1",
-                        "Host: [::1]:2222"
+                        "Host: wrong"
                     ),
                 new Expectations()
                     .scheme("http").serverName("[::1]").serverPort(2222)
@@ -749,12 +753,12 @@ public class ForwardedRequestCustomizerTest
                 new Request("RFC7239 - mixed with HTTP/1.0 - No Host header")
                     .headers(
                         "GET /example HTTP/1.0",
-                        "Forwarded: for=1.1.1.1:6060,proto=http;host=alt.example.org:7070"
+                        "Forwarded: for=1.1.1.1:6060,proto=http;host=alt.example.net:7070"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(7070)
+                    .scheme("http").serverName("alt.example.net").serverPort(7070)
                     .secure(false)
-                    .requestURL("http://alt.example.org:7070/example")
+                    .requestURL("http://alt.example.net:7070/example")
                     .remoteAddr("1.1.1.1").remotePort(6060)
             ),
             Arguments.of(
@@ -762,12 +766,12 @@ public class ForwardedRequestCustomizerTest
                     .headers(
                         "GET /example HTTP/1.0",
                         "Host:",
-                        "Forwarded: for=1.1.1.1:6060,proto=http;host=alt.example.org:7070"
+                        "Forwarded: for=1.1.1.1:6060,proto=http;host=alt.example.net:7070"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(7070)
+                    .scheme("http").serverName("alt.example.net").serverPort(7070)
                     .secure(false)
-                    .requestURL("http://alt.example.org:7070/example")
+                    .requestURL("http://alt.example.net:7070/example")
                     .remoteAddr("1.1.1.1").remotePort(6060)
             ),
             // =================================================================
@@ -890,15 +894,15 @@ public class ForwardedRequestCustomizerTest
             Arguments.of(new Request("https initial authority, X-Forwarded-Proto on http, Proxy-Ssl-Id exists (setSslIsSecure==false)")
                     .configureCustomizer((customizer) -> customizer.setSslIsSecure(false))
                     .headers(
-                        "GET https://alt.example.org/foo HTTP/1.1",
-                        "Host: alt.example.org",
+                        "GET https://alt.example.net/foo HTTP/1.1",
+                        "Host: myhost",
                         "X-Forwarded-Proto: http",
                         "Proxy-Ssl-Id: Wibble"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(80)
+                    .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
-                    .requestURL("http://alt.example.org/foo")
+                    .requestURL("http://alt.example.net/foo")
                     .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
@@ -920,46 +924,46 @@ public class ForwardedRequestCustomizerTest
             Arguments.of(new Request("Https initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==true)")
                     .configureCustomizer((customizer) -> customizer.setSslIsSecure(true))
                     .headers(
-                        "GET https://alt.example.org/foo HTTP/1.1",
-                        "Host: alt.example.org",
+                        "GET https://alt.example.net/foo HTTP/1.1",
+                        "Host: myhost",
                         "X-Proxied-Https: off", // this wins for scheme and secure
                         "Proxy-Ssl-Id: Wibble"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(80)
+                    .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
-                    .requestURL("http://alt.example.org/foo")
+                    .requestURL("http://alt.example.net/foo")
                     .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new Request("Https initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==true) (alt order)")
                     .configureCustomizer((customizer) -> customizer.setSslIsSecure(true))
                     .headers(
-                        "GET https://alt.example.org/foo HTTP/1.1",
-                        "Host: alt.example.org",
+                        "GET https://alt.example.net/foo HTTP/1.1",
+                        "Host: myhost",
                         "Proxy-Ssl-Id: Wibble",
                         "X-Proxied-Https: off" // this wins for scheme and secure
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(80)
+                    .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
-                    .requestURL("http://alt.example.org/foo")
+                    .requestURL("http://alt.example.net/foo")
                     .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new Request("Http initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==false)")
                     .configureCustomizer((customizer) -> customizer.setSslIsSecure(false))
                     .headers(
-                        "GET https://alt.example.org/foo HTTP/1.1",
-                        "Host: alt.example.org",
+                        "GET https://alt.example.net/foo HTTP/1.1",
+                        "Host: myhost",
                         "X-Proxied-Https: off",
                         "Proxy-Ssl-Id: Wibble",
                         "Proxy-auth-cert: 0123456789abcdef"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(80)
+                    .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
-                    .requestURL("http://alt.example.org/foo")
+                    .requestURL("http://alt.example.net/foo")
                     .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
                     .sslCertificate("0123456789abcdef")
@@ -967,16 +971,16 @@ public class ForwardedRequestCustomizerTest
             Arguments.of(new Request("Http initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==false) (alt)")
                     .configureCustomizer((customizer) -> customizer.setSslIsSecure(false))
                     .headers(
-                        "GET https://alt.example.org/foo HTTP/1.1",
-                        "Host: alt.example.org",
+                        "GET https://alt.example.net/foo HTTP/1.1",
+                        "Host: myhost",
                         "Proxy-Ssl-Id: Wibble",
                         "Proxy-auth-cert: 0123456789abcdef",
                         "X-Proxied-Https: off"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("alt.example.org").serverPort(80)
+                    .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
-                    .requestURL("http://alt.example.org/foo")
+                    .requestURL("http://alt.example.net/foo")
                     .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
                     .sslCertificate("0123456789abcdef")
@@ -1026,38 +1030,38 @@ public class ForwardedRequestCustomizerTest
             Arguments.of(new Request("RFC7239 with https and h2")
                     .headers(
                         "GET /test/forwarded.jsp HTTP/1.1",
-                        "Host: web.example.org",
-                        "Forwarded: for=192.168.2.6;host=web.example.org;proto=https;proto-version=h2"
+                        "Host: web.example.net",
+                        "Forwarded: for=192.168.2.6;host=web.example.net;proto=https;proto-version=h2"
                     ),
                 new Expectations()
-                    .scheme("https").serverName("web.example.org").serverPort(443)
-                    .requestURL("https://web.example.org/test/forwarded.jsp")
+                    .scheme("https").serverName("web.example.net").serverPort(443)
+                    .requestURL("https://web.example.net/test/forwarded.jsp")
                     .remoteAddr("192.168.2.6").remotePort(0)
             ),
             // RFC7239 Tests with https and proxy provided port
             Arguments.of(new Request("RFC7239 with proxy provided port on https and h2")
                     .headers(
                         "GET /test/forwarded.jsp HTTP/1.1",
-                        "Host: web.example.org:9443",
-                        "Forwarded: for=192.168.2.6;host=web.example.org:9443;proto=https;proto-version=h2"
+                        "Host: web.example.net:9443",
+                        "Forwarded: for=192.168.2.6;host=web.example.net:9443;proto=https;proto-version=h2"
                     ),
                 new Expectations()
-                    .scheme("https").serverName("web.example.org").serverPort(9443)
-                    .requestURL("https://web.example.org:9443/test/forwarded.jsp")
+                    .scheme("https").serverName("web.example.net").serverPort(9443)
+                    .requestURL("https://web.example.net:9443/test/forwarded.jsp")
                     .remoteAddr("192.168.2.6").remotePort(0)
             ),
             // RFC7239 Tests with https, no port in Host, but proxy provided port
             Arguments.of(new Request("RFC7239 with client provided host and different proxy provided port on https and h2")
                     .headers(
                         "GET /test/forwarded.jsp HTTP/1.1",
-                        "Host: web.example.org",
-                        "Forwarded: for=192.168.2.6;host=new.example.org:7443;proto=https;proto-version=h2"
-                        // Client: https://web.example.org/test/forwarded.jsp
-                        // Proxy Requests: https://new.example.org/test/forwarded.jsp
+                        "Host: web.example.net",
+                        "Forwarded: for=192.168.2.6;host=new.example.net:7443;proto=https;proto-version=h2"
+                        // Client: https://web.example.net/test/forwarded.jsp
+                        // Proxy Requests: https://new.example.net/test/forwarded.jsp
                     ),
                 new Expectations()
-                    .scheme("https").serverName("new.example.org").serverPort(7443)
-                    .requestURL("https://new.example.org:7443/test/forwarded.jsp")
+                    .scheme("https").serverName("new.example.net").serverPort(7443)
+                    .requestURL("https://new.example.net:7443/test/forwarded.jsp")
                     .remoteAddr("192.168.2.6").remotePort(0)
             )
         );
