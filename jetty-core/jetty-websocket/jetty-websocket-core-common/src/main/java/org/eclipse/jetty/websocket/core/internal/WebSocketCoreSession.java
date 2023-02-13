@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
-import org.eclipse.jetty.websocket.core.internal.util.FrameValidation;
+import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

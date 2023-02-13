@@ -11,22 +11,23 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal.messages;
+package org.eclipse.jetty.websocket.core.messages;
 
-import org.eclipse.jetty.util.Callback;
+import java.lang.invoke.MethodHandle;
+
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
-/**
- * Sink consumer for messages (used for multiple frames with continuations,
- * and also to allow for streaming APIs)
- */
-public interface MessageSink
+public class ReaderMessageSink extends DispatchedMessageSink
 {
-    /**
-     * Consume the frame payload to the message.
-     *
-     * @param frame the frame, its payload (and fin state) to append
-     * @param callback the callback for how the frame was consumed
-     */
-    void accept(Frame frame, Callback callback);
+    public ReaderMessageSink(CoreSession session, MethodHandle methodHandle)
+    {
+        super(session, methodHandle);
+    }
+
+    @Override
+    public MessageReader newSink(Frame frame)
+    {
+        return new MessageReader(session.getInputBufferSize());
+    }
 }

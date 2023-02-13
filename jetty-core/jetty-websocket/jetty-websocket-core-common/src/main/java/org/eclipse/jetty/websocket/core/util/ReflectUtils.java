@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal.util;
+package org.eclipse.jetty.websocket.core.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;

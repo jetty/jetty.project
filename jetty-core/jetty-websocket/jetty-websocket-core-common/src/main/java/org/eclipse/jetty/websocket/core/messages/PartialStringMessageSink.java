@@ -11,19 +11,24 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal.messages;
+package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
-public class PartialByteBufferMessageSink extends AbstractMessageSink
+public class PartialStringMessageSink extends AbstractMessageSink
 {
-    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
+    private Utf8StringBuilder out;
+
+    public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
+        Objects.requireNonNull(methodHandle, "MethodHandle");
     }
 
     @Override
@@ -31,8 +36,19 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
-            if (frame.hasPayload() || frame.isFin())
-                methodHandle.invoke(frame.getPayload(), frame.isFin());
+            if (out == null)
+                out = new Utf8StringBuilder(session.getInputBufferSize());
+
+            out.append(frame.getPayload());
+            if (frame.isFin())
+            {
+                methodHandle.invoke(out.toString(), true);
+                out = null;
+            }
+            else
+            {
+                methodHandle.invoke(out.takePartialString(), false);
+            }
 
             callback.succeeded();
             session.demand(1);

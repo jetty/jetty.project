@@ -18,7 +18,7 @@ import java.lang.invoke.MethodHandle;
 import org.eclipse.jetty.ee10.websocket.api.BatchMode;
 import org.eclipse.jetty.ee10.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
 
 public class JettyWebSocketFrameHandlerMetadata extends Configuration.ConfigurationCustomizer
 {

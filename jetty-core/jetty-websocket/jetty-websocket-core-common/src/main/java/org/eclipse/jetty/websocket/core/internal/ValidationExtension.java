@@ -21,7 +21,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
-import org.eclipse.jetty.websocket.core.internal.util.FrameValidation;
+import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

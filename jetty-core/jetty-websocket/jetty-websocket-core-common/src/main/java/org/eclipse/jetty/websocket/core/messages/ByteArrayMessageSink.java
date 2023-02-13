@@ -11,16 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal.messages;
+package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -28,18 +25,19 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
-public class ByteBufferMessageSink extends AbstractMessageSink
+public class ByteArrayMessageSink extends AbstractMessageSink
 {
+    private static final byte[] EMPTY_BUFFER = new byte[0];
     private ByteBufferCallbackAccumulator out;
 
-    public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
+    public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
 
-        // Validate onMessageMethod
-        Objects.requireNonNull(methodHandle, "MethodHandle");
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
-        if (methodHandle.type() != onMessageType)
+        // This uses the offset length byte array signature not supported by jakarta websocket.
+        // The jakarta layer instead uses decoders for whole byte array messages instead of this message sink.
+        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
+        if (methodHandle.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
         {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
         }
@@ -54,17 +52,20 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
             if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
             {
-                throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d",
-                    size, maxBinaryMessageSize));
+                throw new MessageTooLargeException(
+                    String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize));
             }
 
             // If we are fin and no OutputStream has been created we don't need to aggregate.
             if (frame.isFin() && (out == null))
             {
                 if (frame.hasPayload())
-                    methodHandle.invoke(frame.getPayload());
+                {
+                    byte[] buf = BufferUtil.toArray(frame.getPayload());
+                    methodHandle.invoke(buf, 0, buf.length);
+                }
                 else
-                    methodHandle.invoke(BufferUtil.EMPTY_BUFFER);
+                    methodHandle.invoke(EMPTY_BUFFER, 0, 0);
 
                 callback.succeeded();
                 session.demand(1);
@@ -84,19 +85,8 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             callback = Callback.NOOP;
             if (frame.isFin())
             {
-                ByteBufferPool bufferPool = session.getByteBufferPool();
-                RetainableByteBuffer buffer = bufferPool.acquire(out.getLength(), false);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                out.writeTo(byteBuffer);
-
-                try
-                {
-                    methodHandle.invoke(byteBuffer);
-                }
-                finally
-                {
-                    buffer.release();
-                }
+                byte[] buf = out.takeByteArray();
+                methodHandle.invoke(buf, 0, buf.length);
             }
 
             session.demand(1);
@@ -111,6 +101,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         {
             if (frame.isFin())
             {
+                // reset
                 out = null;
             }
         }

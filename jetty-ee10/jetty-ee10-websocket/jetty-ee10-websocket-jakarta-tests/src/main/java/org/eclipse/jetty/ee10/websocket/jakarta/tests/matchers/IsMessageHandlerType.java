@@ -19,7 +19,7 @@ import jakarta.websocket.PongMessage;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.MessageType;
-import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 

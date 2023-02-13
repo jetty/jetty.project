@@ -17,7 +17,7 @@ import java.lang.invoke.MethodHandle;
 import java.util.List;
 
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
 
 public class JakartaWebSocketMessageMetadata
 {
