@@ -66,6 +66,7 @@ import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -96,6 +97,8 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
 
 /**
  * Jetty Request.
@@ -1737,9 +1740,28 @@ public class Request implements HttpServletRequest
                 throw new BadMessageException(badMessage);
         }
 
+        HttpField host = getHttpFields().getField(HttpHeader.HOST);
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
         {
             _uri = uri;
+            if (host instanceof HostPortHttpField && !((HostPortHttpField)host).getHostPort().toString().equals(uri.getAuthority()))
+            {
+                HttpChannel httpChannel = getHttpChannel();
+                HttpConfiguration httpConfiguration = httpChannel.getHttpConfiguration();
+                if (httpConfiguration != null)
+                {
+                    HttpCompliance httpCompliance = httpConfiguration.getHttpCompliance();
+                    if (httpCompliance.allows(MISMATCHED_AUTHORITY))
+                    {
+                        if (httpChannel instanceof ComplianceViolation.Listener)
+                            ((ComplianceViolation.Listener)httpChannel).onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.toString());
+                    }
+                    else
+                    {
+                        throw new BadMessageException(400, "Mismatched Authority");
+                    }
+                }
+            }
         }
         else
         {
@@ -1753,10 +1775,9 @@ public class Request implements HttpServletRequest
 
             if (!uri.hasAuthority())
             {
-                HttpField field = getHttpFields().getField(HttpHeader.HOST);
-                if (field instanceof HostPortHttpField)
+                if (host instanceof HostPortHttpField)
                 {
-                    HostPortHttpField authority = (HostPortHttpField)field;
+                    HostPortHttpField authority = (HostPortHttpField)host;
 
                     builder.host(authority.getHost()).port(authority.getPort());
                 }

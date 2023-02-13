@@ -117,7 +117,14 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * should reject a request if the Host headers contains an invalid / unsafe authority.
          * A deployment may include this violation to allow unsafe host headesr on a received request.
          */
-        UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority");
+        UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority"),
+
+        /**
+         * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-5.4">RFC 7230: Section 5.4</a>, the HTTP protocol
+         * must reject a request if the target URI has an authority that is different than a provided Host header.
+         * A deployment may include this violation to allow different values on the target URI and the Host header on a received request.
+         */
+        MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority");
 
         private final String url;
         private final String description;
@@ -162,7 +169,11 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
      * with only the violations that differ from {@link #RFC7230}.
      */
-    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
+    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(
+        Violation.HTTP_0_9,
+        Violation.MULTILINE_FIELD_VALUE,
+        Violation.MISMATCHED_AUTHORITY
+    ));
 
     /**
      * A legacy HttpCompliance mode that allows all violations except case-insensitive methods.
