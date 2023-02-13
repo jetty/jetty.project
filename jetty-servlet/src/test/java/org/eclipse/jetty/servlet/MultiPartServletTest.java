@@ -263,7 +263,7 @@ public class MultiPartServletTest
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         String responseContent = IO.toString(listener.getInputStream());
         assertThat(responseContent, containsString("Unable to parse form content"));
-        assertThat(responseContent, containsString("Form with too many keys"));
+        assertThat(responseContent, containsString("Form with too many parts"));
     }
 
     @ParameterizedTest
