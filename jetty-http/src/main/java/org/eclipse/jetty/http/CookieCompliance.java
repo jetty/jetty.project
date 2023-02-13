@@ -142,7 +142,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     /**
      * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance, but without bad quotes.
      */
-    public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(Violation.BAD_QUOTES)));
+    public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(Violation.BAD_QUOTES, Violation.COMMA_NOT_VALID_OCTET, Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED)));
 
     private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC6265_STRICT, RFC6265_LEGACY, RFC2965, RFC2965_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
