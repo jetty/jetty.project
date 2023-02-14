@@ -130,16 +130,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return super.getExecutor();
     }
 
-    public Generator getGenerator()
-    {
-        return generator;
-    }
-
-    public Parser getParser()
-    {
-        return parser;
-    }
-
     /**
      * @return the local InetSocketAddress
      * @deprecated use {@link #getLocalSocketAddress()} instead
@@ -179,6 +169,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public boolean isUseInputDirectByteBuffers()
     {
         return useInputDirectByteBuffers;
+    }
+
+    public void setWriteTimeout(long writeTimeout)
+    {
+        flusher.setIdleTimeout(writeTimeout);
     }
 
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
@@ -240,7 +235,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return false;
     }
 
-    protected void onFrame(Parser.ParsedFrame frame)
+    protected void onFrame(Frame.Parsed frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
@@ -428,7 +423,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 // Parse and handle frames
                 while (networkBuffer.hasRemaining())
                 {
-                    Parser.ParsedFrame frame = parser.parse(networkBuffer.getByteBuffer());
+                    Frame.Parsed frame = parser.parse(networkBuffer.getByteBuffer());
                     if (frame == null)
                         break;
 
@@ -572,11 +567,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(buffer));
         setInitialBuffer(buffer);
-    }
-
-    public FrameFlusher getFrameFlusher()
-    {
-        return flusher;
     }
 
     @Override

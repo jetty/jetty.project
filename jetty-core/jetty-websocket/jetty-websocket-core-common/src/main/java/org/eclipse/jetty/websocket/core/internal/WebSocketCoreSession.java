@@ -175,7 +175,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     {
         writeTimeout = timeout;
         if (getConnection() != null)
-            getConnection().getFrameFlusher().setIdleTimeout(timeout.toMillis());
+            getConnection().setWriteTimeout(timeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -208,7 +208,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
-        connection.getFrameFlusher().setIdleTimeout(writeTimeout.toMillis());
+        connection.setWriteTimeout(writeTimeout.toMillis());
         extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }

@@ -79,7 +79,7 @@ public class JettyWebSocketWebApp extends WebAppContext
 
     public void copyWebXml(Path webXml) throws IOException
     {
-        IO.copy(webXml.toFile(), webInf.resolve("web.xml").toFile());
+        IO.copy(webXml, webInf.resolve("web.xml"));
     }
 
     public void copyClass(Class<?> clazz) throws Exception
@@ -91,6 +91,6 @@ public class JettyWebSocketWebApp extends WebAppContext
         Path destFile = classesDir.resolve(endpointPath);
         FS.ensureDirExists(destFile.getParent());
         File srcFile = new File(classUrl.toURI());
-        IO.copy(srcFile, destFile.toFile());
+        IO.copy(srcFile.toPath(), destFile);
     }
 }

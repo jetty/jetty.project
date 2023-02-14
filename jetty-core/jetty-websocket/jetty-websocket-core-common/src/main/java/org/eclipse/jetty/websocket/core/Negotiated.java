@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
@@ -54,11 +54,11 @@ public class Negotiated
         else
         {
             map = new HashMap<>();
-            MultiMap<String> params = new MultiMap<>();
-            UrlEncoded.decodeUtf8To(rawQuery, params);
-            for (String p : params.keySet())
+            Fields fields = new Fields();
+            UrlEncoded.decodeUtf8To(rawQuery, fields);
+            for (Fields.Field field : fields)
             {
-                map.put(p, Collections.unmodifiableList(params.getValues(p)));
+                map.put(field.getValue(), Collections.unmodifiableList(field.getValues()));
             }
         }
         this.parameterMap = Collections.unmodifiableMap(map);

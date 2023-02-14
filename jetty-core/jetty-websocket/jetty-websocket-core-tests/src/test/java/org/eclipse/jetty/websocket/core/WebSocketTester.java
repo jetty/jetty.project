@@ -154,7 +154,7 @@ public class WebSocketTester
         return client;
     }
 
-    protected Parser.ParsedFrame receiveFrame(InputStream in) throws IOException
+    protected Frame.Parsed receiveFrame(InputStream in) throws IOException
     {
         if (buffer == null)
             buffer = bufferPool.acquire(4096, false);
@@ -162,7 +162,7 @@ public class WebSocketTester
         while (true)
         {
             ByteBuffer byteBuffer = buffer.getByteBuffer();
-            Parser.ParsedFrame frame = parser.parse(byteBuffer);
+            Frame.Parsed frame = parser.parse(byteBuffer);
             if (!byteBuffer.hasRemaining())
                 BufferUtil.clear(byteBuffer);
             if (frame != null)

@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.DemandChain;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -253,7 +252,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         outgoing.sendFrame(frame, callback, batch);
     }
 
-    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketCoreSession coreSession)
+    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, CoreSession coreSession)
     {
         if (extensions == null)
             throw new IllegalStateException();

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -508,6 +509,56 @@ public class Frame
         public Frame asReadOnly()
         {
             return this;
+        }
+    }
+
+    public static class Parsed extends Frame implements Closeable, CloseStatus.Supplier
+    {
+        final CloseStatus closeStatus;
+        final Runnable releaser;
+
+        public Parsed(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
+        {
+            super(firstByte, mask, payload);
+            demask();
+            this.releaser = releaser;
+            if (getOpCode() == OpCode.CLOSE)
+            {
+                if (hasPayload())
+                    closeStatus = new CloseStatus(payload.duplicate());
+                else
+                    closeStatus = CloseStatus.NO_CODE_STATUS;
+            }
+            else
+            {
+                closeStatus = null;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            if (releaser != null)
+                releaser.run();
+        }
+
+        @Override
+        public CloseStatus getCloseStatus()
+        {
+            return closeStatus;
+        }
+
+        public boolean isReleaseable()
+        {
+            return releaser != null;
+        }
+
+        @Override
+        public String toString()
+        {
+            if (closeStatus == null)
+                return super.toString();
+            return super.toString() + ":" + closeStatus;
         }
     }
 }
