@@ -11,13 +11,7 @@
 // ========================================================================
 //
 
-[[configuring-logging]]
-== Jetty Logging
+[[maven]]
+== Maven Plugin
 
-This chapter discusses various options for configuring logging.
-
-include::configuring-jetty-logging.adoc[]
-include::default-logging-with-stderrlog.adoc[]
-include::configuring-logging-modules.adoc[]
-include::example-logback-centralized-logging.adoc[]
-include::example-logback-sifting.adoc[]
+include::jetty-maven-scanning.adoc[]

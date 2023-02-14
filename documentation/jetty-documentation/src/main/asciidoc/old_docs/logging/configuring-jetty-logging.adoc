@@ -61,6 +61,5 @@ A typical jetty-logging.properties file will include at least the declaration of
 Examples for various logging frameworks can be found later in this documentation.
 
 * Default Logging with link:#default-logging-with-stderrlog[Jetty's StdErrLog]
-* Using link:#example-logging-java-util-logging[Java Util Logging via SLF4J]
 * Using link:#example-logging-java-commons-logging[Java Commons Logging via SLF4J]
 * link:#example-logging-logback-centralized[Centralized Logging with Logback and Sfl4jLog]
