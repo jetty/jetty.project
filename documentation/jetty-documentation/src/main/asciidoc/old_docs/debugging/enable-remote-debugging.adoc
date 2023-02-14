@@ -35,10 +35,10 @@ Via command line::
 +
 [source, screen, subs="{sub-order}"]
 ....
-                            
+
 $ java -Xdebug -agentlib:jdwp=transport=dt_socket,address=9999,server=y,suspend=n -jar start.jar
 
-                        
+
 ....
 
 Via `start.ini`::
@@ -74,7 +74,7 @@ Via `start.ini`::
 # -XX:+PrintCommandLineFlags
 # -XX:+DisableExplicitGC
 
-                                    
+
 ----
 +
 Uncomment any other jvm environmental options you so desire for your debugging session.
@@ -86,10 +86,3 @@ Uncomment any other jvm environmental options you so desire for your debugging s
 Listening for transport dt_socket at address: 9999
 
 ----
-
-===== Linking with your IDE
-
-Refer to the documentation for your ide:
-
-* xref:debugging-with-intellij[]
-* xref:debugging-with-eclipse[]
