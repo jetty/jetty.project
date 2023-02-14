@@ -174,7 +174,7 @@ public class CookieCutterLenientTest
         }
     }
 
-    class TestCutter implements CookieParser.Handler
+    static class TestCutter implements CookieParser.Handler
     {
         CookieCutter cutter;
         List<String> names = new ArrayList<>();

@@ -135,7 +135,6 @@ public class CookieCutter implements CookieParser
                                     reject = true;
                             }
                             unquoted.append(c);
-                            continue;
                     }
                 }
                 else
@@ -289,7 +288,6 @@ public class CookieCutter implements CookieParser
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
-                                continue;
                         }
                     }
                     else
@@ -353,7 +351,6 @@ public class CookieCutter implements CookieParser
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
-                                continue;
                         }
                     }
                 }
@@ -379,9 +376,7 @@ public class CookieCutter implements CookieParser
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
-        {
             _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
-        }
     }
 
     protected boolean isRFC6265RejectedCharacter(char c)
@@ -394,11 +389,10 @@ public class CookieCutter implements CookieParser
          */
         return Character.isISOControl(c) || // control characters
             c > 127 || // 8-bit characters
-            c == ' ' || c == '\t' || // whitespace
+            c == ' ' || // whitespace
             c == '"' || // DQUOTE
             c == ',' || // comma
             c == ';' || // semicolon
             c == '\\';  // backslash
-
     }
 }
