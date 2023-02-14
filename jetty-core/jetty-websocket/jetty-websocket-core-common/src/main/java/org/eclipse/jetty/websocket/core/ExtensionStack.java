@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.websocket.core;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,14 +26,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.Extension;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.IncomingFrames;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.internal.DemandChain;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

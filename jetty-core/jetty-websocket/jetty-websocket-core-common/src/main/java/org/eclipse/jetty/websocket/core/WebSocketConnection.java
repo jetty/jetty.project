@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.websocket.core;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,9 +34,10 @@ import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.internal.FrameFlusher;
+import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final ByteBufferPool byteBufferPool;
     private final Generator generator;
     private final Parser parser;
-    private final WebSocketCoreSession coreSession;
+    private final CoreSession coreSession;
     private final Flusher flusher;
     private final Random random;
     private long demand;
@@ -79,7 +80,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool byteBufferPool,
-                               WebSocketCoreSession coreSession)
+                               CoreSession coreSession)
     {
         this(endp, executor, scheduler, byteBufferPool, coreSession, null);
     }
@@ -101,7 +102,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool byteBufferPool,
-                               WebSocketCoreSession coreSession,
+                               CoreSession coreSession,
                                Random randomMask)
     {
         super(endp, executor);
@@ -609,7 +610,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * @param callback The callback to call once the frame is sent
      * @param batch True if batch mode is to be used
      */
-    void enqueueFrame(Frame frame, Callback callback, boolean batch)
+    public void enqueueFrame(Frame frame, Callback callback, boolean batch)
     {
         if (coreSession.getBehavior() == Behavior.CLIENT)
         {

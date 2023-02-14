@@ -32,15 +32,15 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Negotiated;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
-import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
@@ -108,7 +108,7 @@ public abstract class AbstractHandshaker implements Handshaker
         Negotiated negotiated = new Negotiated(request.getHttpURI().toURI(), protocol, request.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Session
-        WebSocketCoreSession coreSession = newWebSocketCoreSession(request, handler, negotiated, components);
+        CoreSession coreSession = newWebSocketCoreSession(request, handler, negotiated, components);
         if (defaultCustomizer != null)
             defaultCustomizer.customize(coreSession);
         negotiator.customize(coreSession);
@@ -173,22 +173,15 @@ public abstract class AbstractHandshaker implements Handshaker
         return true;
     }
 
-    protected WebSocketCoreSession newWebSocketCoreSession(Request request, FrameHandler handler, Negotiated negotiated, WebSocketComponents components)
+    protected CoreSession newWebSocketCoreSession(Request request, FrameHandler handler, Negotiated negotiated, WebSocketComponents components)
     {
         Context context = request.getContext();
-        return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated, components)
-        {
-            @Override
-            protected void handle(Runnable runnable)
-            {
-                context.run(runnable);
-            }
-        };
+        return CoreSession.from(handler, Behavior.SERVER, negotiated, components, context::run);
     }
 
-    protected abstract WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession);
+    protected abstract WebSocketConnection createWebSocketConnection(Request baseRequest, CoreSession coreSession);
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, CoreSession coreSession)
     {
         return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
     }

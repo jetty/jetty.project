@@ -35,12 +35,15 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.Negotiated;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -55,7 +58,7 @@ import static org.eclipse.jetty.util.Callback.NOOP;
 /**
  * The Core WebSocket Session.
  */
-public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpable
+public class WebSocketCoreSession implements CoreSession, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreSession.class);
     private static final CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);

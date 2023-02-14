@@ -47,16 +47,15 @@ import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Negotiated;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP;
 import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP2;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
-import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -473,7 +472,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
+        CoreSession coreSession = CoreSession.from(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
         coreSession.setClassLoader(wsClient.getClassLoader());
         customizer.customize(coreSession);
 

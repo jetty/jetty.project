@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.websocket.core.Extension;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 
 /**
  * This is extended by an {@link Extension} so it can intercept demand calls.

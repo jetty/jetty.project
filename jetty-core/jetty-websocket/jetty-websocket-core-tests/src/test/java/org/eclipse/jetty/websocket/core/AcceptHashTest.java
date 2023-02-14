@@ -17,7 +17,7 @@ import java.util.Base64;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,7 +53,7 @@ public class AcceptHashTest
     @MethodSource("data")
     public void testHashKey(String clientKey, String expectedHash)
     {
-        String serverAccept = WebSocketCore.hashKey(clientKey);
+        String serverAccept = WebSocketUtil.hashKey(clientKey);
         assertThat("Hashed Key", serverAccept, is(expectedHash));
     }
 }

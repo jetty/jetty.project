@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.websocket.core;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,8 +26,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class Negotiated
 {

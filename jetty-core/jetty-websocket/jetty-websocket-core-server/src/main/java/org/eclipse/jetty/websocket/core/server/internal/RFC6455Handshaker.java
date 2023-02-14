@@ -27,10 +27,10 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtil;
 
 public final class RFC6455Handshaker extends AbstractHandshaker
 {
@@ -75,7 +75,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession)
+    protected WebSocketConnection createWebSocketConnection(Request baseRequest, CoreSession coreSession)
     {
         ConnectionMetaData connectionMetaData = baseRequest.getConnectionMetaData();
         Connector connector = connectionMetaData.getConnector();
@@ -90,6 +90,6 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         HttpFields.Mutable responseFields = response.getHeaders();
         responseFields.put(UPGRADE_WEBSOCKET);
         responseFields.put(CONNECTION_UPGRADE);
-        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketCore.hashKey(((RFC6455Negotiation)negotiation).getKey()));
+        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketUtil.hashKey(((RFC6455Negotiation)negotiation).getKey()));
     }
 }

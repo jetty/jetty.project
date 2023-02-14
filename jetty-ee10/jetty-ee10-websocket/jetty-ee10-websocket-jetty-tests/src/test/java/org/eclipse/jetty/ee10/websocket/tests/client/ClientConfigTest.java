@@ -34,7 +34,7 @@ import org.eclipse.jetty.ee10.websocket.tests.EventSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

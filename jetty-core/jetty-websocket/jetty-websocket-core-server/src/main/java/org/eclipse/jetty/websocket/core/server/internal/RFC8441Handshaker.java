@@ -23,9 +23,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 
 public class RFC8441Handshaker extends AbstractHandshaker
 {
@@ -56,7 +56,7 @@ public class RFC8441Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected WebSocketConnection createWebSocketConnection(Request request, WebSocketCoreSession coreSession)
+    protected WebSocketConnection createWebSocketConnection(Request request, CoreSession coreSession)
     {
         Connector connector = request.getConnectionMetaData().getConnector();
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();

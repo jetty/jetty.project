@@ -18,20 +18,34 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 /**
  * Represents the outgoing Frames.
  */
-public interface CoreSession extends OutgoingFrames, Configuration
+public interface CoreSession extends OutgoingFrames, IncomingFrames, Configuration
 {
-    /**
-     * The negotiated WebSocket Sub-Protocol for this session.
-     *
-     * @return the negotiated WebSocket Sub-Protocol for this session.
-     */
+    static CoreSession from(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
+    {
+        return new WebSocketCoreSession(handler, behavior, negotiated, components);
+    }
+
+    static CoreSession from(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components, Consumer<Runnable> handle)
+    {
+        return new WebSocketCoreSession(handler, behavior, negotiated, components)
+        {
+            @Override
+            protected void handle(Runnable runnable)
+            {
+                handle.accept(runnable);
+            }
+        };
+    }
+
     String getNegotiatedSubProtocol();
 
     /**
@@ -120,11 +134,8 @@ public interface CoreSession extends OutgoingFrames, Configuration
      */
     boolean isOutputOpen();
 
-    /**
-     * If using BatchMode.ON or BatchMode.AUTO, trigger a flush of enqueued / batched frames.
-     *
-     * @param callback the callback to track close frame sent (or failed)
-     */
+    boolean isClosed();
+
     void flush(Callback callback);
 
     /**
@@ -184,6 +195,47 @@ public interface CoreSession extends OutgoingFrames, Configuration
      * @return true if an extension has been negotiated which uses the RSV3 bit.
      */
     boolean isRsv3Used();
+
+    /**
+     * Used to notify the {@link CoreSession} that EOF has been read or the connection has been closed.
+     */
+    void onEof();
+
+    /**
+     * Used to notify the {@link CoreSession} that the connection has been opened.
+     */
+    void onOpen();
+
+    /**
+     * Process an Error that originated from the connection.
+     * For protocol causes, send and abnormal close frame
+     * otherwise just close the connection.
+     *
+     * @param cause the cause
+     * @param callback the callback on completion of error handling
+     */
+    void processConnectionError(Throwable cause, Callback callback);
+
+    /**
+     * Process an Error that originated from the handler.
+     * Send an abnormal close frame to ensure connection is closed.
+     *
+     * @param cause the cause
+     * @param callback the callback on completion of error handling
+     */
+    void processHandlerError(Throwable cause, Callback callback);
+
+    /**
+     * Set the class loader to be used by this {@link CoreSession}.
+     * @param classLoader the ClassLoader.
+     */
+    void setClassLoader(ClassLoader classLoader);
+
+    /**
+     * Used to set the WebSocketConnection on this {@link CoreSession}.
+     * @param connection the websocket connection.
+     */
+    void setWebSocketConnection(WebSocketConnection connection);
 
     class Empty extends ConfigurationCustomizer implements CoreSession
     {
@@ -271,6 +323,12 @@ public interface CoreSession extends OutgoingFrames, Configuration
         }
 
         @Override
+        public boolean isClosed()
+        {
+            return false;
+        }
+
+        @Override
         public void flush(Callback callback)
         {
             callback.succeeded();
@@ -291,6 +349,12 @@ public interface CoreSession extends OutgoingFrames, Configuration
         @Override
         public void demand(long n)
         {
+        }
+
+        @Override
+        public void onFrame(Frame frame, Callback callback)
+        {
+            callback.succeeded();
         }
 
         @Override
@@ -315,6 +379,38 @@ public interface CoreSession extends OutgoingFrames, Configuration
         public boolean isRsv3Used()
         {
             return false;
+        }
+
+        @Override
+        public void onEof()
+        {
+        }
+
+        @Override
+        public void onOpen()
+        {
+        }
+
+        @Override
+        public void processConnectionError(Throwable cause, Callback callback)
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void processHandlerError(Throwable cause, Callback callback)
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void setClassLoader(ClassLoader classLoader)
+        {
+        }
+
+        @Override
+        public void setWebSocketConnection(WebSocketConnection connection)
+        {
         }
     }
 }

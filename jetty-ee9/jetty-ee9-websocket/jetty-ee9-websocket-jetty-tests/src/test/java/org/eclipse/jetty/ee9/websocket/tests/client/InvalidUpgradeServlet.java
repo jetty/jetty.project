@@ -17,7 +17,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtil;
 
 public class InvalidUpgradeServlet extends HttpServlet
 {
@@ -30,7 +30,7 @@ public class InvalidUpgradeServlet extends HttpServlet
             // Force 200 response, no response body content, incomplete websocket response headers, no actual upgrade for this test
             resp.setStatus(HttpServletResponse.SC_OK);
             String key = req.getHeader(HttpHeader.SEC_WEBSOCKET_KEY.toString());
-            resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketCore.hashKey(key));
+            resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketUtil.hashKey(key));
         }
         else if (pathInfo.contains("close-connection"))
         {
@@ -38,7 +38,7 @@ public class InvalidUpgradeServlet extends HttpServlet
             resp.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
             String key = req.getHeader(HttpHeader.SEC_WEBSOCKET_KEY.toString());
             resp.setHeader(HttpHeader.CONNECTION.toString(), "close");
-            resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketCore.hashKey(key));
+            resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketUtil.hashKey(key));
         }
         else if (pathInfo.contains("missing-connection"))
         {
@@ -46,7 +46,7 @@ public class InvalidUpgradeServlet extends HttpServlet
             resp.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
             String key = req.getHeader(HttpHeader.SEC_WEBSOCKET_KEY.toString());
             // Intentionally leave out Connection header
-            resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketCore.hashKey(key));
+            resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketUtil.hashKey(key));
         }
         else if (pathInfo.contains("rubbish-accept"))
         {

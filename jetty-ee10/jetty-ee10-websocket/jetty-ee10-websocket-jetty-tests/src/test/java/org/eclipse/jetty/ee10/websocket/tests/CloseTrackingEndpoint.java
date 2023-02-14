@@ -24,7 +24,7 @@ import org.eclipse.jetty.ee10.websocket.api.Session;
 import org.eclipse.jetty.ee10.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.ee10.websocket.common.WebSocketSession;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
