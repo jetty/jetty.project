@@ -102,6 +102,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private final ThreadFactory _threadFactory;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
+    private int _idleTimeoutDecay = 1;
+    private long _shrinkInterval = -1;
     private int _maxThreads;
     private int _minThreads;
     private int _reservedThreads = -1;
@@ -364,9 +366,51 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public void setIdleTimeout(int idleTimeout)
     {
         _idleTimeout = idleTimeout;
+        if (_idleTimeoutDecay > 1) {
+            // if non-default idleTimeoutDecay is configured, we must recompute _shrinkInterval
+            _shrinkInterval = computeShrinkIntervalNanos(idleTimeout, _idleTimeoutDecay);
+        }
         ReservedThreadExecutor reserved = getBean(ReservedThreadExecutor.class);
         if (reserved != null)
             reserved.setIdleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * @return the number of idle threads that are allowed to expire
+     * per idleTimeout interval.
+     */
+    @ManagedAttribute("number of idle threads allowed to die per idleTimeout interval")
+    public float getIdleTimeoutDecay()
+    {
+        return _idleTimeoutDecay;
+    }
+
+    /**
+     * <p>Set the number of idle threads that will be allowed to expire per idleTimeout
+     * interval</p>
+     *
+     * @param expireCount the number of idle threads that may be allowed to die for
+     *                    every idleTimeout interval.
+     */
+    public void setIdleTimeoutDecay(int expireCount)
+    {
+        if (expireCount < 1) {
+            throw new IllegalArgumentException("idleTimeoutDecay expireCount must be >= 1; found: " + expireCount);
+        }
+        _idleTimeoutDecay = expireCount;
+        _shrinkInterval = computeShrinkIntervalNanos(_idleTimeout, expireCount);
+        // TODO: do we need to pass idleTimeoutDecay along to reserved pool?
+//        ReservedThreadExecutor reserved = getBean(ReservedThreadExecutor.class);
+//        if (reserved != null)
+//            reserved.setIdleTimeoutDecay(expireCount);
+    }
+
+    private long getShrinkInterval() {
+        return _shrinkInterval < 0 ? TimeUnit.MILLISECONDS.toNanos(_idleTimeout) : _shrinkInterval;
+    }
+
+    static long computeShrinkIntervalNanos(int idleTimeout, int idleTimeoutDecay) {
+        return TimeUnit.MILLISECONDS.toNanos(idleTimeout) / idleTimeoutDecay;
     }
 
     /**
@@ -1006,6 +1050,16 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             _tryExecutor);
     }
 
+    private boolean doShrink(long last, final long now, final long itNanos, final long siNanos) {
+        final long baseline = now - itNanos;
+        boolean ret;
+        while (!(ret = _lastShrink.compareAndSet(last, Math.max(last, baseline) + siNanos)) &&
+            (now - (last = _lastShrink.get())) > siNanos) {
+            // keep trying to update.
+        }
+        return ret;
+    }
+
     private class Runner implements Runnable
     {
         private Runnable idleJobPoll(long idleTimeout) throws InterruptedException
@@ -1025,6 +1079,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             try
             {
                 Runnable job = null;
+                long idleBaseline = NanoTime.now();
                 while (true)
                 {
                     // If we had a job,
@@ -1051,9 +1106,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             long idleTimeout = getIdleTimeout();
                             if (idleTimeout > 0 && getThreads() > _minThreads)
                             {
-                                long last = _lastShrink.get();
+                                long last;
                                 long now = NanoTime.now();
-                                if (NanoTime.millisElapsed(last, now) > idleTimeout && _lastShrink.compareAndSet(last, now))
+                                long itNanos = TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+                                long siNanos;
+                                if (now - idleBaseline > itNanos &&
+                                    (now - (last = _lastShrink.get())) > (siNanos = getShrinkInterval()) &&
+                                    doShrink(last, now, itNanos, siNanos))
                                 {
                                     if (LOG.isDebugEnabled())
                                         LOG.debug("shrinking {}", QueuedThreadPool.this);
@@ -1076,6 +1135,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                         if (LOG.isDebugEnabled())
                             LOG.debug("run {} in {}", job, QueuedThreadPool.this);
                         runJob(job);
+                        idleBaseline = NanoTime.now();
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
                     }
