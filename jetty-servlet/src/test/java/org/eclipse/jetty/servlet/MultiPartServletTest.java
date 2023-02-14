@@ -41,13 +41,16 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartContentProvider;
+import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MultiPartFormDataCompliance;
@@ -67,6 +70,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,11 +87,25 @@ public class MultiPartServletTest
     private Path tmpDir;
 
     private static final int MAX_FILE_SIZE = 512 * 1024;
+    private static final int MAX_REQUEST_SIZE = 1024 * 1024 * 8;
     private static final int LARGE_MESSAGE_SIZE = 1024 * 1024;
 
     public static Stream<Arguments> data()
     {
         return Arrays.asList(MultiPartFormDataCompliance.values()).stream().map(Arguments::of);
+    }
+
+    public static class RequestParameterServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            req.getParameterMap();
+            req.getParts();
+            resp.setStatus(200);
+            resp.getWriter().print("success");
+            resp.getWriter().close();
+        }
     }
 
     public static class MultiPartServlet extends HttpServlet
@@ -130,6 +149,7 @@ public class MultiPartServletTest
     public void start() throws Exception
     {
         tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
+        Files.deleteIfExists(tmpDir);
         assertNotNull(tmpDir);
 
         server = new Server();
@@ -138,11 +158,19 @@ public class MultiPartServletTest
 
         MultipartConfigElement config = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
             MAX_FILE_SIZE, -1, 1);
+        MultipartConfigElement requestSizedConfig = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
+            -1, MAX_REQUEST_SIZE, 1);
+        MultipartConfigElement defaultConfig = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
+            -1, -1, 1);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         ServletHolder servletHolder = contextHandler.addServlet(MultiPartServlet.class, "/");
         servletHolder.getRegistration().setMultipartConfig(config);
+        servletHolder = contextHandler.addServlet(RequestParameterServlet.class, "/defaultConfig");
+        servletHolder.getRegistration().setMultipartConfig(defaultConfig);
+        servletHolder = contextHandler.addServlet(RequestParameterServlet.class, "/requestSizeLimit");
+        servletHolder.getRegistration().setMultipartConfig(requestSizedConfig);
         servletHolder = contextHandler.addServlet(MultiPartEchoServlet.class, "/echo");
         servletHolder.getRegistration().setMultipartConfig(config);
 
@@ -167,6 +195,119 @@ public class MultiPartServletTest
         server.stop();
 
         IO.delete(tmpDir.toFile());
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLargePart(MultiPartFormDataCompliance compliance) throws Exception
+    {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setMultiPartFormDataCompliance(compliance);
+
+        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        multiPart.addFieldPart("param", content, null);
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send(listener);
+
+        // Write large amount of content to the part.
+        byte[] byteArray = new byte[1024 * 1024];
+        Arrays.fill(byteArray, (byte)1);
+        for (int i = 0; i < 128 * 2; i++)
+        {
+            content.getOutputStream().write(byteArray);
+        }
+        content.close();
+
+        Response response = listener.get(2, TimeUnit.MINUTES);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("Form is larger than max length"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testManyParts(MultiPartFormDataCompliance compliance) throws Exception
+    {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setMultiPartFormDataCompliance(compliance);
+
+        byte[] byteArray = new byte[1024];
+        Arrays.fill(byteArray, (byte)1);
+
+        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        for (int i = 0; i < 1024 * 1024; i++)
+        {
+            BytesContentProvider content = new BytesContentProvider(byteArray);
+            multiPart.addFieldPart("part" + i, content, null);
+        }
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send(listener);
+
+        Response response = listener.get(30, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("Form with too many parts"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMaxRequestSize(MultiPartFormDataCompliance compliance) throws Exception
+    {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setMultiPartFormDataCompliance(compliance);
+
+        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        multiPart.addFieldPart("param", content, null);
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/requestSizeLimit")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send(listener);
+
+        Throwable writeError = null;
+        try
+        {
+            // Write large amount of content to the part.
+            byte[] byteArray = new byte[1024 * 1024];
+            Arrays.fill(byteArray, (byte)1);
+            for (int i = 0; i < 512; i++)
+            {
+                content.getOutputStream().write(byteArray);
+            }
+        }
+        catch (Exception e)
+        {
+            writeError = e;
+        }
+
+        if (writeError != null)
+            assertThat(writeError, instanceOf(EofException.class));
+
+        // We should get 400 response.
+        Response response = listener.get(30, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
     }
 
     @ParameterizedTest
