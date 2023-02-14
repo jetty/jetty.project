@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+<Configure id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
   <Call name="addHandler">
     <New class="org.eclipse.jetty.ee10.webapp.WebAppContext">
       <Set name="contextPath">/test-jetty-webapp</Set>

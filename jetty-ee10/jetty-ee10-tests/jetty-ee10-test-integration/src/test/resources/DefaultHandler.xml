@@ -20,7 +20,7 @@
   <!-- Set handler Collection Structure                            -->
   <!-- =========================================================== -->
   <Set name="handler">
-    <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+    <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
       <Call name="addHandler">
         <Arg>
           <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
