@@ -317,13 +317,6 @@ public interface Request
     Request followRedirects(boolean follow);
 
     /**
-     * @param listenerClass the class of the listener, or null for all listeners classes
-     * @param <T> the type of listener class
-     * @return the listeners for request events of the given class
-     */
-    <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
-
-    /**
      * @param listener a listener for request events
      * @return this request object
      */
@@ -402,6 +395,12 @@ public interface Request
     Request onResponseContentAsync(Response.AsyncContentListener listener);
 
     /**
+     * @param listener a listener for driving {@link org.eclipse.jetty.io.Content.Source}
+     * @return this request object
+     */
+    Request onResponseContentSource(Response.ContentSourceListener listener);
+
+    /**
      * @param listener a listener for response success event
      * @return this request object
      */
@@ -412,12 +411,6 @@ public interface Request
      * @return this request object
      */
     Request onResponseFailure(Response.FailureListener listener);
-
-    /**
-     * @param listener a listener for driving {@link org.eclipse.jetty.io.Content.Source}
-     * @return this request object
-     */
-    Request onResponseContentSource(Response.ContentSourceListener listener);
 
     /**
      * <p>Sets a handler for pushed resources.</p>

@@ -75,6 +75,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
 /**
@@ -357,6 +358,30 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     {
         // TODO why is this not on HttpConfiguration?
         _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    protected void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    {
+        //TODO configure this somewhere else
+        //TODO what about cookie compliance
+        //TODO what about http2 & 3
+        //TODO test this in core
+        if (isRecordHttpComplianceViolations())
+        {
+            HttpStreamOverHTTP1 stream = _stream.get();
+            if (stream != null)
+            {
+                if (stream._complianceViolations == null)
+                {
+                    stream._complianceViolations = new ArrayList<>();
+                }
+                String record = String.format("%s (see %s) in mode %s for %s in %s",
+                    violation.getDescription(), violation.getURL(), mode, details, HttpConnection.this);
+                stream._complianceViolations.add(record);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(record);
+            }
+        }
     }
 
     @Override
@@ -1086,26 +1111,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
         {
-            //TODO configure this somewhere else
-            //TODO what about cookie compliance
-            //TODO what about http2 & 3
-            //TODO test this in core
-            if (isRecordHttpComplianceViolations())
-            {
-                HttpStreamOverHTTP1 stream = _stream.get();
-                if (stream != null)
-                {
-                    if (stream._complianceViolations == null)
-                    {
-                        stream._complianceViolations = new ArrayList<>();
-                    }
-                    String record = String.format("%s (see %s) in mode %s for %s in %s",
-                        violation.getDescription(), violation.getURL(), mode, details, HttpConnection.this);
-                    stream._complianceViolations.add(record);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug(record);
-                }
-            }
+            HttpConnection.this.onComplianceViolation(mode, violation, details);
         }
     }
 
@@ -1222,7 +1228,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 if (_uri.isAbsolute())
                 {
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
-                        throw new BadMessageException("Authority!=Host");
+                    {
+                        HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
+                        if (httpCompliance.allows(MISMATCHED_AUTHORITY))
+                            onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString());
+                        else
+                            throw new BadMessageException("Authority!=Host");
+                    }
                 }
                 else
                 {

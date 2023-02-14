@@ -14,13 +14,13 @@
 package org.eclipse.jetty.client.transport;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
@@ -30,24 +30,68 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ResponseNotifier
+/**
+ * <p>A specialized container for response listeners.</p>
+ */
+public class ResponseListeners
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ResponseNotifier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseListeners.class);
 
-    public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
+    private Response.BeginListener beginListener;
+    private Response.HeaderListener headerListener;
+    private Response.HeadersListener headersListener;
+    private Response.ContentSourceListener contentSourceListener;
+    private Response.SuccessListener successListener;
+    private Response.FailureListener failureListener;
+    private Response.CompleteListener completeListener;
+
+    public ResponseListeners()
     {
-        for (Response.ResponseListener listener : listeners)
-        {
-            if (listener instanceof Response.BeginListener)
-                notifyBegin((Response.BeginListener)listener, response);
-        }
     }
 
-    private void notifyBegin(Response.BeginListener listener, Response response)
+    public ResponseListeners(Response.Listener listener)
+    {
+        beginListener = listener;
+        headerListener = listener;
+        headersListener = listener;
+        contentSourceListener = listener;
+        successListener = listener;
+        failureListener = listener;
+        completeListener = listener;
+    }
+
+    public ResponseListeners(ResponseListeners that)
+    {
+        beginListener = that.beginListener;
+        headerListener = that.headerListener;
+        headersListener = that.headersListener;
+        contentSourceListener = that.contentSourceListener;
+        successListener = that.successListener;
+        failureListener = that.failureListener;
+        completeListener = that.completeListener;
+    }
+
+    public void addBeginListener(Response.BeginListener listener)
+    {
+        Response.BeginListener existing = beginListener;
+        beginListener = existing == null ? listener : response ->
+        {
+            notifyBegin(existing, response);
+            notifyBegin(listener, response);
+        };
+    }
+
+    public void notifyBegin(Response response)
+    {
+        notifyBegin(beginListener, response);
+    }
+
+    private static void notifyBegin(Response.BeginListener listener, Response response)
     {
         try
         {
-            listener.onBegin(response);
+            if (listener != null)
+                listener.onBegin(response);
         }
         catch (Throwable x)
         {
@@ -55,22 +99,29 @@ public class ResponseNotifier
         }
     }
 
-    public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
+    public void addHeaderListener(Response.HeaderListener listener)
     {
-        boolean result = true;
-        for (Response.ResponseListener listener : listeners)
+        Response.HeaderListener existing = headerListener;
+        headerListener = existing == null ? listener : (response, field) ->
         {
-            if (listener instanceof Response.HeaderListener)
-                result &= notifyHeader((Response.HeaderListener)listener, response, field);
-        }
-        return result;
+            boolean r1 = notifyHeader(existing, response, field);
+            boolean r2 = notifyHeader(listener, response, field);
+            return r1 && r2;
+        };
     }
 
-    private boolean notifyHeader(Response.HeaderListener listener, Response response, HttpField field)
+    public boolean notifyHeader(Response response, HttpField field)
+    {
+        return notifyHeader(headerListener, response, field);
+    }
+
+    private static boolean notifyHeader(Response.HeaderListener listener, Response response, HttpField field)
     {
         try
         {
-            return listener.onHeader(response, field);
+            if (listener != null)
+                return listener.onHeader(response, field);
+            return true;
         }
         catch (Throwable x)
         {
@@ -79,20 +130,27 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
+    public void addHeadersListener(Response.HeadersListener listener)
     {
-        for (Response.ResponseListener listener : listeners)
+        Response.HeadersListener existing = headersListener;
+        headersListener = existing == null ? listener : response ->
         {
-            if (listener instanceof Response.HeadersListener)
-                notifyHeaders((Response.HeadersListener)listener, response);
-        }
+            notifyHeaders(existing, response);
+            notifyHeaders(listener, response);
+        };
     }
 
-    private void notifyHeaders(Response.HeadersListener listener, Response response)
+    public void notifyHeaders(Response response)
+    {
+        notifyHeaders(headersListener, response);
+    }
+
+    private static void notifyHeaders(Response.HeadersListener listener, Response response)
     {
         try
         {
-            listener.onHeaders(response);
+            if (listener != null)
+                listener.onHeaders(response);
         }
         catch (Throwable x)
         {
@@ -100,35 +158,57 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyContent(Response response, Content.Source contentSource, List<Response.ContentSourceListener> contentListeners)
+    public void addContentSourceListener(Response.ContentSourceListener listener)
     {
-        int count = contentListeners.size();
-        if (count == 0)
+        Response.ContentSourceListener existing = contentSourceListener;
+        if (existing == null)
         {
-            // Exactly 0 ContentSourceListener -> drive the read/demand loop from here
-            // with a loop that does not use while (true).
-            consumeAll(contentSource);
-        }
-        else if (count == 1)
-        {
-            // Exactly 1 ContentSourceListener -> notify it so that it drives the read/demand loop.
-            Response.ContentSourceListener listener = contentListeners.get(0);
-            notifyContent(listener, response, contentSource);
+            contentSourceListener = listener;
         }
         else
         {
-            // 2+ ContentSourceListeners -> create a multiplexed content source and notify all listeners so that
-            // they drive each a read/demand loop.
-            ContentSourceDemultiplexer demultiplexer = new ContentSourceDemultiplexer(contentSource, contentListeners.size());
-            for (int i = 0; i < contentListeners.size(); i++)
+            if (existing instanceof ContentSourceDemultiplexer demultiplexer)
             {
-                Response.ContentSourceListener listener = contentListeners.get(i);
-                notifyContent(listener, response, demultiplexer.contentSource(i));
+                demultiplexer.addContentSourceListener(listener);
+            }
+            else
+            {
+                ContentSourceDemultiplexer demultiplexer = new ContentSourceDemultiplexer();
+                demultiplexer.addContentSourceListener(existing);
+                demultiplexer.addContentSourceListener(listener);
+                contentSourceListener = demultiplexer;
             }
         }
     }
 
-    private static void consumeAll(Content.Source contentSource)
+    public boolean hasContentSourceListeners()
+    {
+        return contentSourceListener != null;
+    }
+
+    public void notifyContentSource(Response response, Content.Source contentSource)
+    {
+        if (hasContentSourceListeners())
+        {
+            if (contentSourceListener instanceof ContentSourceDemultiplexer demultiplexer)
+            {
+                // More than 1 ContentSourceListeners -> notify the demultiplexer.
+                notifyContentSource(demultiplexer, response, contentSource);
+            }
+            else
+            {
+                // Exactly 1 ContentSourceListener -> notify it directly.
+                notifyContentSource(contentSourceListener, response, contentSource);
+            }
+        }
+        else
+        {
+            // No ContentSourceListener -> consume the content.
+            notifyContentSource((r, c) -> consume(c), response, contentSource);
+        }
+    }
+
+    private static void consume(Content.Source contentSource)
     {
         // This method must drive the read/demand loop by alternating read and demand calls
         // otherwise if reads are always satisfied with content, and a large amount of data
@@ -138,14 +218,15 @@ public class ResponseNotifier
         if (chunk != null)
             chunk.release();
         if (chunk == null || !chunk.isLast())
-            contentSource.demand(() -> consumeAll(contentSource));
+            contentSource.demand(() -> consume(contentSource));
     }
 
-    private void notifyContent(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
+    private static void notifyContentSource(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
     {
         try
         {
-            listener.onContentSource(response, contentSource);
+            if (listener != null)
+                listener.onContentSource(response, contentSource);
         }
         catch (Throwable x)
         {
@@ -153,20 +234,27 @@ public class ResponseNotifier
         }
     }
 
-    public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
+    public void addSuccessListener(Response.SuccessListener listener)
     {
-        for (Response.ResponseListener listener : listeners)
+        Response.SuccessListener existing = successListener;
+        successListener = existing == null ? listener : response ->
         {
-            if (listener instanceof Response.SuccessListener)
-                notifySuccess((Response.SuccessListener)listener, response);
-        }
+            notifySuccess(existing, response);
+            notifySuccess(listener, response);
+        };
     }
 
-    private void notifySuccess(Response.SuccessListener listener, Response response)
+    public void notifySuccess(Response response)
+    {
+        notifySuccess(successListener, response);
+    }
+
+    private static void notifySuccess(Response.SuccessListener listener, Response response)
     {
         try
         {
-            listener.onSuccess(response);
+            if (listener != null)
+                listener.onSuccess(response);
         }
         catch (Throwable x)
         {
@@ -174,20 +262,27 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
+    public void addFailureListener(Response.FailureListener listener)
     {
-        for (Response.ResponseListener listener : listeners)
+        Response.FailureListener existing = failureListener;
+        failureListener = existing == null ? listener : (response, failure) ->
         {
-            if (listener instanceof Response.FailureListener)
-                notifyFailure((Response.FailureListener)listener, response, failure);
-        }
+            notifyFailure(existing, response, failure);
+            notifyFailure(listener, response, failure);
+        };
     }
 
-    private void notifyFailure(Response.FailureListener listener, Response response, Throwable failure)
+    public void notifyFailure(Response response, Throwable failure)
+    {
+        notifyFailure(failureListener, response, failure);
+    }
+
+    private static void notifyFailure(Response.FailureListener listener, Response response, Throwable failure)
     {
         try
         {
-            listener.onFailure(response, failure);
+            if (listener != null)
+                listener.onFailure(response, failure);
         }
         catch (Throwable x)
         {
@@ -195,20 +290,47 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
+    public void addCompleteListener(Response.CompleteListener listener)
     {
-        for (Response.ResponseListener listener : listeners)
-        {
-            if (listener instanceof Response.CompleteListener)
-                notifyComplete((Response.CompleteListener)listener, result);
-        }
+        addCompleteListener(listener, true);
     }
 
-    private void notifyComplete(Response.CompleteListener listener, Result result)
+    private void addCompleteListener(Response.CompleteListener listener, boolean includeOtherEvents)
+    {
+        if (includeOtherEvents)
+        {
+            if (listener instanceof Response.BeginListener l)
+                addBeginListener(l);
+            if (listener instanceof Response.HeaderListener l)
+                addHeaderListener(l);
+            if (listener instanceof Response.HeadersListener l)
+                addHeadersListener(l);
+            if (listener instanceof Response.ContentSourceListener l)
+                addContentSourceListener(l);
+            if (listener instanceof Response.SuccessListener l)
+                addSuccessListener(l);
+            if (listener instanceof Response.FailureListener l)
+                addFailureListener(l);
+        }
+        Response.CompleteListener existing = completeListener;
+        completeListener = existing == null ? listener : result ->
+        {
+            notifyComplete(existing, result);
+            notifyComplete(listener, result);
+        };
+    }
+
+    public void notifyComplete(Result result)
+    {
+        notifyComplete(completeListener, result);
+    }
+
+    private static void notifyComplete(Response.CompleteListener listener, Result result)
     {
         try
         {
-            listener.onComplete(result);
+            if (listener != null)
+                listener.onComplete(result);
         }
         catch (Throwable x)
         {
@@ -216,82 +338,99 @@ public class ResponseNotifier
         }
     }
 
-    public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
+    public void addListener(Response.Listener listener)
     {
-        forwardEvents(listeners, response);
-        notifySuccess(listeners, response);
+        addBeginListener(listener);
+        addHeaderListener(listener);
+        addHeadersListener(listener);
+        addContentSourceListener(listener);
+        addSuccessListener(listener);
+        addFailureListener(listener);
+        addCompleteListener(listener, false);
     }
 
-    public void forwardSuccessComplete(List<Response.ResponseListener> listeners, Request request, Response response)
+    public void addResponseListeners(ResponseListeners listeners)
     {
-        forwardSuccess(listeners, response);
-        notifyComplete(listeners, new Result(request, response));
+        addBeginListener(listeners.beginListener);
+        addHeaderListener(listeners.headerListener);
+        addHeadersListener(listeners.headersListener);
+        addContentSourceListener(listeners.contentSourceListener);
+        addSuccessListener(listeners.successListener);
+        addFailureListener(listeners.failureListener);
+        addCompleteListener(listeners.completeListener, false);
     }
 
-    public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
+    private void emitEvents(Response response)
     {
-        forwardEvents(listeners, response);
-        notifyFailure(listeners, response, failure);
-    }
-
-    private void forwardEvents(List<Response.ResponseListener> listeners, Response response)
-    {
-        notifyBegin(listeners, response);
+        notifyBegin(beginListener, response);
         Iterator<HttpField> iterator = response.getHeaders().iterator();
         while (iterator.hasNext())
         {
             HttpField field = iterator.next();
-            if (!notifyHeader(listeners, response, field))
+            if (!notifyHeader(headerListener, response, field))
                 iterator.remove();
         }
-        notifyHeaders(listeners, response);
-        if (response instanceof ContentResponse)
+        notifyHeaders(headersListener, response);
+        if (response instanceof ContentResponse contentResponse)
         {
-            byte[] content = ((ContentResponse)response).getContent();
+            byte[] content = contentResponse.getContent();
             if (content != null && content.length > 0)
             {
-                List<Response.ContentSourceListener> contentListeners = listeners.stream()
-                    .filter(Response.ContentSourceListener.class::isInstance)
-                    .map(Response.ContentSourceListener.class::cast)
-                    .toList();
                 ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(content));
-                notifyContent(response, byteBufferContentSource, contentListeners);
+                notifyContentSource(contentSourceListener, response, byteBufferContentSource);
             }
         }
     }
 
-    public void forwardFailureComplete(List<Response.ResponseListener> listeners, Request request, Throwable requestFailure, Response response, Throwable responseFailure)
+    public void emitSuccess(Response response)
     {
-        forwardFailure(listeners, response, responseFailure);
-        notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+        emitEvents(response);
+        notifySuccess(successListener, response);
     }
 
-    private static class ContentSourceDemultiplexer
+    public void emitFailure(Response response, Throwable failure)
+    {
+        emitEvents(response);
+        notifyFailure(failureListener, response, failure);
+    }
+
+    public void emitSuccessComplete(Result result)
+    {
+        emitSuccess(result.getResponse());
+        notifyComplete(completeListener, result);
+    }
+
+    public void emitFailureComplete(Result result)
+    {
+        emitFailure(result.getResponse(), result.getFailure());
+        notifyComplete(completeListener, result);
+    }
+
+    private static class ContentSourceDemultiplexer implements Response.ContentSourceListener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ContentSourceDemultiplexer.class);
 
-        private final Content.Source originalContentSource;
-        private final ContentSource[] demultiplexerContentSources;
         private final AtomicBiInteger counters = new AtomicBiInteger(); // HI = failures; LO = demands
+        private final List<Response.ContentSourceListener> listeners = new ArrayList<>(2);
+        private final List<ContentSource> contentSources = new ArrayList<>(2);
+        private Content.Source originalContentSource;
 
-        private ContentSourceDemultiplexer(Content.Source originalContentSource, int size)
+        private void addContentSourceListener(Response.ContentSourceListener listener)
         {
-            if (size < 2)
-                throw new IllegalArgumentException("Demultiplexer can only be used with a size >= 2");
-
-            this.originalContentSource = originalContentSource;
-            demultiplexerContentSources = new ContentSource[size];
-            for (int i = 0; i < size; i++)
-            {
-                demultiplexerContentSources[i] = new ContentSource(i);
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug("Using demultiplexer with a size of {}", size);
+            listeners.add(listener);
         }
 
-        public Content.Source contentSource(int index)
+        @Override
+        public void onContentSource(Response response, Content.Source contentSource)
         {
-            return demultiplexerContentSources[index];
+            originalContentSource = contentSource;
+            for (int i = 0; i < listeners.size(); ++i)
+            {
+                Response.ContentSourceListener listener = listeners.get(i);
+                ContentSource cs = new ContentSource(i);
+                contentSources.add(cs);
+                notifyContentSource(listener, response, cs);
+            }
         }
 
         private void onDemandCallback()
@@ -304,7 +443,7 @@ public class ResponseNotifier
             // applications can parallelize from the listeners they register if needed.
             if (LOG.isDebugEnabled())
                 LOG.debug("Read from original content source {}", chunk);
-            for (ContentSource demultiplexerContentSource : demultiplexerContentSources)
+            for (ContentSource demultiplexerContentSource : contentSources)
             {
                 demultiplexerContentSource.onChunk(chunk);
             }
@@ -318,13 +457,13 @@ public class ResponseNotifier
                 long encoded = counters.get();
                 int failures = AtomicBiInteger.getHi(encoded) + 1;
                 int demands = AtomicBiInteger.getLo(encoded);
-                if (demands == demultiplexerContentSources.length - failures)
+                if (demands == listeners.size() - failures)
                     demands = 0;
                 if (counters.compareAndSet(encoded, failures, demands))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Registered failure; failures={} demands={}", failures, demands);
-                    if (failures == demultiplexerContentSources.length)
+                    if (failures == listeners.size())
                         originalContentSource.fail(failure);
                     else if (demands == 0)
                         originalContentSource.demand(this::onDemandCallback);
@@ -340,7 +479,7 @@ public class ResponseNotifier
                 long encoded = counters.get();
                 int failures = AtomicBiInteger.getHi(encoded);
                 int demands = AtomicBiInteger.getLo(encoded) + 1;
-                if (demands == demultiplexerContentSources.length - failures)
+                if (demands == listeners.size() - failures)
                     demands = 0;
                 if (counters.compareAndSet(encoded, failures, demands))
                 {

@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
+import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpDestination;
@@ -63,7 +64,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -117,7 +117,7 @@ public class HttpClient extends ContainerLifeCycle
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
-    private final List<Request.Listener> requestListeners = new ArrayList<>();
+    private final RequestListeners requestListeners = new NotifyingRequestListeners();
     private final ContentDecoder.Factories decoderFactories = new ContentDecoder.Factories();
     private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
@@ -156,14 +156,9 @@ public class HttpClient extends ContainerLifeCycle
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
         this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
+        addBean(requestListeners);
         addBean(handlers);
         addBean(decoderFactories);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpObjects(out, indent, new DumpableCollection("requestListeners", requestListeners));
     }
 
     public HttpClientTransport getTransport()
@@ -259,12 +254,12 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Returns a <em>non</em> thread-safe list of {@link Request.Listener}s that can be modified before
-     * performing requests.
+     * Returns a <em>non</em> thread-safe container of {@link Request.Listener}s
+     * that allows to add request listeners before performing requests.
      *
-     * @return a list of {@link Request.Listener} that can be used to add and remove listeners
+     * @return a {@link RequestListeners} instance that can be used to add request listeners
      */
-    public List<Request.Listener> getRequestListeners()
+    public RequestListeners getRequestListeners()
     {
         return requestListeners;
     }

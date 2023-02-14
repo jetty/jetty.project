@@ -280,7 +280,7 @@ public class LowResourceMonitor extends ContainerLifeCycle
         {
             if (lowResourceCheck.isLowOnResources())
             {
-                reasons = lowResourceCheck.toString();
+                reasons = lowResourceCheck.getReason();
                 break;
             }
         }

@@ -903,6 +903,19 @@ public class RequestTest
 
         results.clear();
         response = _connector.getResponse(
+            "GET http://myhost:8888/ HTTP/1.1\n" +
+                "Host: myhost:8888\n" +
+                "Connection: close\n" +
+                "\n");
+        i = 0;
+        assertThat(response, containsString("200 OK"));
+        assertEquals("http://myhost:8888/", results.get(i++));
+        assertEquals("0.0.0.0", results.get(i++));
+        assertEquals("myhost", results.get(i++));
+        assertEquals("8888", results.get(i));
+
+        results.clear();
+        response = _connector.getResponse(
             "GET / HTTP/1.1\n" +
                 "Host: 1.2.3.4\n" +
                 "Connection: close\n" +

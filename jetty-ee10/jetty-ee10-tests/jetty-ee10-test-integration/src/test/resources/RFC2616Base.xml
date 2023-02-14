@@ -22,6 +22,12 @@
       <Set name="sendDateHeader">true</Set>
       <Set name="headerCacheSize">1024</Set>
 
+      <Set name="httpCompliance">
+        <Call class="org.eclipse.jetty.http.HttpCompliance" name="from">
+          <Arg>RFC2616</Arg>
+        </Call>
+      </Set>
+
       <!-- Uncomment to enable handling of X-Forwarded- style headers
       <Call name="addCustomizer">
         <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>

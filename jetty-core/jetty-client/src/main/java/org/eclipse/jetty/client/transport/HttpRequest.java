@@ -45,8 +45,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.RequestListeners;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -63,7 +64,7 @@ public class HttpRequest implements Request
 
     private final HttpFields.Mutable headers = HttpFields.build();
     private final Fields params = new Fields(true);
-    private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
+    private final ResponseListeners responseListeners = new ResponseListeners();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
@@ -83,7 +84,7 @@ public class HttpRequest implements Request
     private boolean followRedirects;
     private List<HttpCookie> cookies;
     private Map<String, Object> attributes;
-    private List<RequestListener> requestListeners;
+    private NotifyingRequestListeners requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushHandler;
     private Supplier<HttpFields> trailers;
     private Object tag;
@@ -365,238 +366,176 @@ public class HttpRequest implements Request
         return this;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
+    private RequestListeners requestListeners()
     {
-        // This method is invoked often in a request/response conversation,
-        // so we avoid allocation if there is no need to filter.
-        if (type == null || requestListeners == null)
-            return requestListeners != null ? (List<T>)requestListeners : Collections.emptyList();
+        if (requestListeners == null)
+            requestListeners = new NotifyingRequestListeners();
+        return requestListeners;
+    }
 
-        ArrayList<T> result = new ArrayList<>();
-        for (RequestListener listener : requestListeners)
-        {
-            if (type.isInstance(listener))
-                result.add((T)listener);
-        }
-        return result;
+    private NotifyingRequestListeners getHttpClientRequestListeners()
+    {
+        return (NotifyingRequestListeners)client.getRequestListeners();
     }
 
     @Override
     public Request listener(Request.Listener listener)
     {
-        return requestListener(listener);
-    }
-
-    @Override
-    public Request onRequestQueued(final QueuedListener listener)
-    {
-        return requestListener(new QueuedListener()
-        {
-            @Override
-            public void onQueued(Request request)
-            {
-                listener.onQueued(request);
-            }
-        });
-    }
-
-    @Override
-    public Request onRequestBegin(final BeginListener listener)
-    {
-        return requestListener(new BeginListener()
-        {
-            @Override
-            public void onBegin(Request request)
-            {
-                listener.onBegin(request);
-            }
-        });
-    }
-
-    @Override
-    public Request onRequestHeaders(final HeadersListener listener)
-    {
-        return requestListener(new HeadersListener()
-        {
-            @Override
-            public void onHeaders(Request request)
-            {
-                listener.onHeaders(request);
-            }
-        });
-    }
-
-    @Override
-    public Request onRequestCommit(final CommitListener listener)
-    {
-        return requestListener(new CommitListener()
-        {
-            @Override
-            public void onCommit(Request request)
-            {
-                listener.onCommit(request);
-            }
-        });
-    }
-
-    @Override
-    public Request onRequestContent(final ContentListener listener)
-    {
-        return requestListener(new ContentListener()
-        {
-            @Override
-            public void onContent(Request request, ByteBuffer content)
-            {
-                listener.onContent(request, content);
-            }
-        });
-    }
-
-    @Override
-    public Request onRequestSuccess(final SuccessListener listener)
-    {
-        return requestListener(new SuccessListener()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                listener.onSuccess(request);
-            }
-        });
-    }
-
-    @Override
-    public Request onRequestFailure(final FailureListener listener)
-    {
-        return requestListener(new FailureListener()
-        {
-            @Override
-            public void onFailure(Request request, Throwable failure)
-            {
-                listener.onFailure(request, failure);
-            }
-        });
-    }
-
-    private Request requestListener(RequestListener listener)
-    {
-        if (requestListeners == null)
-            requestListeners = new ArrayList<>();
-        requestListeners.add(listener);
+        requestListeners().addListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseBegin(final Response.BeginListener listener)
+    public Request onRequestQueued(QueuedListener listener)
     {
-        this.responseListeners.add(new Response.BeginListener()
-        {
-            @Override
-            public void onBegin(Response response)
-            {
-                listener.onBegin(response);
-            }
-        });
+        requestListeners().addQueuedListener(listener);
+        return this;
+    }
+
+    public void notifyQueued()
+    {
+        if (requestListeners != null)
+            requestListeners.notifyQueued(this);
+        getHttpClientRequestListeners().notifyQueued(this);
+    }
+
+    @Override
+    public Request onRequestBegin(BeginListener listener)
+    {
+        requestListeners().addBeginListener(listener);
+        return this;
+    }
+
+    public void notifyBegin()
+    {
+        if (requestListeners != null)
+            requestListeners.notifyBegin(this);
+        getHttpClientRequestListeners().notifyBegin(this);
+    }
+
+    @Override
+    public Request onRequestHeaders(HeadersListener listener)
+    {
+        requestListeners().addHeadersListener(listener);
+        return this;
+    }
+
+    public void notifyHeaders()
+    {
+        if (requestListeners != null)
+            requestListeners.notifyHeaders(this);
+        getHttpClientRequestListeners().notifyHeaders(this);
+    }
+
+    @Override
+    public Request onRequestCommit(CommitListener listener)
+    {
+        requestListeners().addCommitListener(listener);
+        return this;
+    }
+
+    public void notifyCommit()
+    {
+        if (requestListeners != null)
+            requestListeners.notifyCommit(this);
+        getHttpClientRequestListeners().notifyCommit(this);
+    }
+
+    @Override
+    public Request onRequestContent(ContentListener listener)
+    {
+        requestListeners().addContentListener(listener);
+        return this;
+    }
+
+    public void notifyContent(ByteBuffer byteBuffer)
+    {
+        if (requestListeners != null)
+            requestListeners.notifyContent(this, byteBuffer);
+        getHttpClientRequestListeners().notifyContent(this, byteBuffer);
+    }
+
+    @Override
+    public Request onRequestSuccess(SuccessListener listener)
+    {
+        requestListeners().addSuccessListener(listener);
+        return this;
+    }
+
+    public void notifySuccess()
+    {
+        if (requestListeners != null)
+            requestListeners.notifySuccess(this);
+        getHttpClientRequestListeners().notifySuccess(this);
+    }
+
+    @Override
+    public Request onRequestFailure(FailureListener listener)
+    {
+        requestListeners().addFailureListener(listener);
+        return this;
+    }
+
+    public void notifyFailure(Throwable failure)
+    {
+        if (requestListeners != null)
+            requestListeners.notifyFailure(this, failure);
+        getHttpClientRequestListeners().notifyFailure(this, failure);
+    }
+
+    @Override
+    public Request onResponseBegin(Response.BeginListener listener)
+    {
+        responseListeners.addBeginListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseHeader(final Response.HeaderListener listener)
+    public Request onResponseHeader(Response.HeaderListener listener)
     {
-        this.responseListeners.add(new Response.HeaderListener()
-        {
-            @Override
-            public boolean onHeader(Response response, HttpField field)
-            {
-                return listener.onHeader(response, field);
-            }
-        });
+        responseListeners.addHeaderListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseHeaders(final Response.HeadersListener listener)
+    public Request onResponseHeaders(Response.HeadersListener listener)
     {
-        this.responseListeners.add(new Response.HeadersListener()
-        {
-            @Override
-            public void onHeaders(Response response)
-            {
-                listener.onHeaders(response);
-            }
-        });
+        responseListeners.addHeadersListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseContent(final Response.ContentListener listener)
+    public Request onResponseContent(Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.ContentListener()
-        {
-            @Override
-            public void onContent(Response response, ByteBuffer content)
-            {
-                listener.onContent(response, content);
-            }
-        });
+        responseListeners.addContentSourceListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseContentAsync(final Response.AsyncContentListener listener)
+    public Request onResponseContentAsync(Response.AsyncContentListener listener)
     {
-        this.responseListeners.add(new Response.AsyncContentListener()
-        {
-            @Override
-            public void onContent(Response response, org.eclipse.jetty.io.Content.Chunk chunk, Runnable demander)
-            {
-                listener.onContent(response, chunk, demander);
-            }
-        });
+        responseListeners.addContentSourceListener(listener);
         return this;
     }
 
     @Override
     public Request onResponseContentSource(Response.ContentSourceListener listener)
     {
-        this.responseListeners.add(new Response.ContentSourceListener()
-        {
-            @Override
-            public void onContentSource(Response response, org.eclipse.jetty.io.Content.Source contentSource)
-            {
-                listener.onContentSource(response, contentSource);
-            }
-        });
+        responseListeners.addContentSourceListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseSuccess(final Response.SuccessListener listener)
+    public Request onResponseSuccess(Response.SuccessListener listener)
     {
-        this.responseListeners.add(new Response.SuccessListener()
-        {
-            @Override
-            public void onSuccess(Response response)
-            {
-                listener.onSuccess(response);
-            }
-        });
+        responseListeners.addSuccessListener(listener);
         return this;
     }
 
     @Override
-    public Request onResponseFailure(final Response.FailureListener listener)
+    public Request onResponseFailure(Response.FailureListener listener)
     {
-        this.responseListeners.add(new Response.FailureListener()
-        {
-            @Override
-            public void onFailure(Response response, Throwable failure)
-            {
-                listener.onFailure(response, failure);
-            }
-        });
+        responseListeners.addFailureListener(listener);
         return this;
     }
 
@@ -608,16 +547,9 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request onComplete(final Response.CompleteListener listener)
+    public Request onComplete(Response.CompleteListener listener)
     {
-        this.responseListeners.add(new Response.CompleteListener()
-        {
-            @Override
-            public void onComplete(Result result)
-            {
-                listener.onComplete(result);
-            }
-        });
+        responseListeners.addCompleteListener(listener);
         return this;
     }
 
@@ -742,8 +674,8 @@ public class HttpRequest implements Request
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
     {
         if (listener != null)
-            responseListeners.add(listener);
-        destination.send(this, responseListeners);
+            responseListeners.addCompleteListener(listener);
+        destination.send(this);
     }
 
     void sent()
@@ -765,7 +697,7 @@ public class HttpRequest implements Request
         return timeoutNanoTime;
     }
 
-    protected List<Response.ResponseListener> getResponseListeners()
+    public ResponseListeners getResponseListeners()
     {
         return responseListeners;
     }

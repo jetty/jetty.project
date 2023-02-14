@@ -674,26 +674,22 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         final AtomicInteger passes = new AtomicInteger();
-        client.getRequestListeners().add(new org.eclipse.jetty.client.Request.Listener.Adapter()
+        client.getRequestListeners().addBeginListener(request ->
         {
-            @Override
-            public void onBegin(org.eclipse.jetty.client.Request request)
+            int pass = passes.incrementAndGet();
+            if (pass == 1)
             {
-                int pass = passes.incrementAndGet();
-                if (pass == 1)
-                {
-                    if (!requestMethod.is(request.getMethod()))
-                        request.abort(new Exception());
-                }
-                else if (pass == 2)
-                {
-                    if (!redirectMethod.is(request.getMethod()))
-                        request.abort(new Exception());
-                }
-                else
-                {
+                if (!requestMethod.is(request.getMethod()))
                     request.abort(new Exception());
-                }
+            }
+            else if (pass == 2)
+            {
+                if (!redirectMethod.is(request.getMethod()))
+                    request.abort(new Exception());
+            }
+            else
+            {
+                request.abort(new Exception());
             }
         });
 

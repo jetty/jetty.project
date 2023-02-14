@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
-import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
@@ -1944,7 +1943,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     private void assertCopyRequest(Request original)
     {
-        Request copy = client.copyRequest((HttpRequest)original, original.getURI());
+        Request copy = client.copyRequest(original, original.getURI());
         assertEquals(original.getURI(), copy.getURI());
         assertEquals(original.getMethod(), copy.getMethod());
         assertEquals(original.getVersion(), copy.getVersion());
