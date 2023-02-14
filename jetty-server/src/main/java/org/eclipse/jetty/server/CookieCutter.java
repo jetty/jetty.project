@@ -155,7 +155,7 @@ public class CookieCutter
                 if (inQuoted)
                 {
                     boolean eol = c == 0 && i == hdr.length();
-                    if (!eol && _compliance == CookieCompliance.RFC6265 && isRFC6265RejectedCharacter(inQuoted, c))
+                    if (!eol && _compliance != CookieCompliance.RFC2965 && isRFC6265RejectedCharacter(inQuoted, c))
                     {
                         reject = true;
                         continue;
@@ -199,7 +199,10 @@ public class CookieCutter
                             continue;
 
                         case ';':
-                            reject = true;
+                            if (_compliance == CookieCompliance.RFC6265)
+                                reject = true;
+                            else
+                                unquoted.append(c);
                             continue;
 
                         default:
@@ -343,6 +346,9 @@ public class CookieCutter
                                     continue;
                                 }
 
+                                if (_compliance == CookieCompliance.RFC6265_LEGACY && isRFC6265RejectedCharacter(inQuoted, c))
+                                    reject = true;
+
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
@@ -388,13 +394,8 @@ public class CookieCutter
                                     continue;
                                 }
 
-                                if (_compliance == CookieCompliance.RFC6265)
-                                {
-                                    if (isRFC6265RejectedCharacter(inQuoted, c))
-                                    {
-                                        reject = true;
-                                    }
-                                }
+                                if (_compliance != CookieCompliance.RFC2965 && isRFC6265RejectedCharacter(inQuoted, c))
+                                    reject = true;
 
                                 if (tokenstart < 0)
                                     tokenstart = i;
@@ -412,6 +413,31 @@ public class CookieCutter
 
     protected boolean isRFC6265RejectedCharacter(boolean inQuoted, char c)
     {
+        // LEGACY test
+        if (_compliance == CookieCompliance.RFC6265_LEGACY)
+        {
+            if (inQuoted)
+            {
+                // We only reject if a Control Character is encountered
+                if (Character.isISOControl(c))
+                    return true;
+            }
+            else
+            {
+                /* From RFC6265 - Section 4.1.1 - Syntax
+                 *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+                 *                  ; US-ASCII characters excluding CTLs,
+                 *                  ; whitespace DQUOTE, comma, semicolon,
+                 *                  ; and backslash
+                 */
+                return Character.isISOControl(c) || // control characters
+                    c > 127 || // 8-bit characters
+                    c == ',' || // comma
+                    c == ';'; // semicolon
+            }
+            return false;
+        }
+
         /* From RFC6265 - Section 4.1.1 - Syntax
          *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
          *                  ; US-ASCII characters excluding CTLs,
