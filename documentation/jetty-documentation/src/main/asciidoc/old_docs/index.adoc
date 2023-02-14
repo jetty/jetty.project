@@ -28,7 +28,6 @@ Please be patient if you find incorrect documentation for the current Jetty vers
 
 include::alpn/chapter.adoc[]
 include::annotations/chapter.adoc[]
-include::ant/chapter.adoc[]
 include::architecture/chapter.adoc[]
 include::connectors/chapter.adoc[]
 include::contexts/chapter.adoc[]
