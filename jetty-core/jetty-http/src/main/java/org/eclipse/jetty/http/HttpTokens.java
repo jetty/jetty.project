@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -47,12 +47,26 @@ public class HttpTokens
         OTEXT    // Obsolete text
     }
 
+    public static Token getToken(byte b)
+    {
+        return TOKENS[0xFF & b];
+    }
+
+    public static Token getToken(char c)
+    {
+        return c <= 0xFF ? TOKENS[c] : null;
+    }
+
     public static class Token
     {
         private final Type _type;
         private final byte _b;
         private final char _c;
         private final int _x;
+
+        private final boolean _rfc2616Token;
+
+        private final boolean _rfc6265CookieOctet;
 
         private Token(byte b, Type type)
         {
@@ -61,6 +75,30 @@ public class HttpTokens
             _c = (char)(0xff & b);
             char lc = (_c >= 'A' & _c <= 'Z') ? ((char)(_c - 'A' + 'a')) : _c;
             _x = (_type == Type.DIGIT || _type == Type.ALPHA && lc >= 'a' && lc <= 'f') ? TypeUtil.convertHexDigit(b) : -1;
+
+            // token          = 1*<any CHAR except CTLs or separators>
+            // separators     = "(" | ")" | "<" | ">" | "@"
+            //                | "," | ";" | ":" | "\" | <">
+            //                | "/" | "[" | "]" | "?" | "="
+            //                | "{" | "}" | SP | HT
+            // CTL            = <any US-ASCII control character
+            //                  (octets 0 - 31) and DEL (127)>
+            _rfc2616Token = b >= 32 && b < 127 &&
+                b != '(' && b !=  ')' && b !=  '<' && b !=  '>' && b !=  '@' &&
+                b !=  ',' && b !=  ';' && b !=  ':' && b !=  '\\' && b !=  '"' &&
+                b !=  '/' && b !=  '[' && b !=  ']' && b !=  '?' && b !=  '=' &&
+                b !=  '{' && b !=  '}' && b !=  ' ';
+
+            // cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+            //                     ; US-ASCII characters excluding CTLs,
+            //                     ; whitespace DQUOTE, comma, semicolon,
+            //                     ; and backslash
+            _rfc6265CookieOctet =
+                b == 0x21 ||
+                b >= 0x23 && b <= 0x2B ||
+                b >= 0x2D && b <= 0x3A ||
+                b >= 0x3C && b <= 0x5B ||
+                b >= 0x5D && b <= 0x7E;
         }
 
         public Type getType()
@@ -81,6 +119,16 @@ public class HttpTokens
         public boolean isHexDigit()
         {
             return _x >= 0;
+        }
+
+        public boolean isRfc2616Token()
+        {
+            return _rfc2616Token;
+        }
+
+        public boolean isRfc6265CookieOctet()
+        {
+            return _rfc6265CookieOctet;
         }
 
         public int getHexDigit()

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,6 +20,7 @@ import java.io.FileReader;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AuthenticationStore;
@@ -51,7 +52,7 @@ public class JdbcLoginServiceTest
     private static String _content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
-    private static File __docRoot;
+    private static Path __docRoot;
     private static String __realm = "JdbcRealm";
     private static URI __baseUri;
     private static DatabaseLoginServiceTestServer __testServer;
@@ -61,25 +62,26 @@ public class JdbcLoginServiceTest
     @BeforeAll
     public static void setUp() throws Exception
     {
-        File dir = MavenTestingUtils.getTargetTestingDir("jdbcloginservice-test");
+        DatabaseLoginServiceTestServer.beforeAll();
+        Path dir = MavenTestingUtils.getTargetTestingPath("jdbcloginservice-test");
         FS.ensureDirExists(dir);
 
         //create the realm properties file based on dynamic + static info
-        File skeletonFile = MavenTestingUtils.getTestResourceFile("jdbcrealm.properties");
-        File realmFile = new File(dir, "realm.properties");
+        Path skeleton = MavenTestingUtils.getTestResourcePath("jdbcrealm.properties");
+        File realmFile = dir.resolve("realm.properties").toFile();
         try (PrintWriter writer = new PrintWriter(new FileOutputStream(realmFile)))
         {
             writer.println("jdbcdriver = " + DatabaseLoginServiceTestServer.MARIA_DB_DRIVER_CLASS);
             writer.println("url = " + DatabaseLoginServiceTestServer.MARIA_DB_URL);
             writer.println("username = " + DatabaseLoginServiceTestServer.MARIA_DB_USER);
             writer.println("password = " + DatabaseLoginServiceTestServer.MARIA_DB_PASSWORD);
-            IO.copy(new FileReader(skeletonFile), writer);
+            IO.copy(new FileReader(skeleton.toFile()), writer);
         }
 
         //make some static content
-        __docRoot = new File(dir, "docroot");
+        __docRoot = dir.resolve("docroot");
         FS.ensureDirExists(__docRoot);
-        File content = new File(__docRoot, "input.txt");
+        File content = __docRoot.resolve("input.txt").toFile();
         try (FileOutputStream out = new FileOutputStream(content))
         {
             out.write(_content.getBytes(StandardCharsets.UTF_8));
@@ -88,7 +90,7 @@ public class JdbcLoginServiceTest
         LoginService loginService = new JDBCLoginService(__realm, realmFile.getAbsolutePath());
         
         __testServer = new DatabaseLoginServiceTestServer();
-        __testServer.setResourceBase(__docRoot.toPath());
+        __testServer.setResourceBase(__docRoot);
         __testServer.setLoginService(loginService);
         __testServer.start();
         
@@ -99,6 +101,7 @@ public class JdbcLoginServiceTest
     public static void tearDown()
         throws Exception
     {
+        DatabaseLoginServiceTestServer.afterAll();
         if (__testServer != null)
         {
             __testServer.stop();
@@ -136,7 +139,7 @@ public class JdbcLoginServiceTest
         int responseStatus = response.getStatus();
         boolean statusOk = (responseStatus == 200 || responseStatus == 201);
         assertTrue(statusOk);
-        String content = IO.toString(new FileInputStream(new File(__docRoot, "output.txt")));
+        String content = IO.toString(new FileInputStream(__docRoot.resolve("output.txt").toFile()));
         assertEquals(_content, content);
     }
 

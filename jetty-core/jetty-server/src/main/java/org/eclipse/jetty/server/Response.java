@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -155,14 +155,16 @@ public interface Response extends Content.Sink
         if (response.isCommitted())
             throw new IllegalStateException("Committed");
 
-        // TODO: can we remove this?
         if (consumeAvailable)
         {
             while (true)
             {
                 Content.Chunk chunk = response.getRequest().read();
                 if (chunk == null)
-                    break; // TODO really? shouldn't we just asynchronously wait?
+                {
+                    response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                    break;
+                }
                 chunk.release();
                 if (chunk.isLast())
                     break;
