@@ -86,15 +86,18 @@ public record ByteRange(long first, long last)
         String prefix = "bytes=";
         for (String header : headers)
         {
-            try
+            String value = header.trim();
+            if (!value.startsWith(prefix))
+                continue;
+            value = value.substring(prefix.length());
+            for (String range : value.split(","))
             {
-                String value = header.trim();
-                if (!value.startsWith(prefix))
-                    continue;
-                value = value.substring(prefix.length());
-                for (String range : value.split(","))
+                try
                 {
                     range = range.trim();
+                    if (range.startsWith(prefix))
+                        range = range.substring(prefix.length());
+
                     long first = -1;
                     long last = -1;
                     int dash = range.indexOf('-');
@@ -148,12 +151,11 @@ public record ByteRange(long first, long last)
                         ranges = new ArrayList<>();
                     ranges.add(byteRange);
                 }
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("could not parse range {}", header, x);
-                return List.of();
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("could not parse range {}", header, x);
+                }
             }
         }
 

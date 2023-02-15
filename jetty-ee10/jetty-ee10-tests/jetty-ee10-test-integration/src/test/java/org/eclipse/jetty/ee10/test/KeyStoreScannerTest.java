@@ -105,7 +105,7 @@ public class KeyStoreScannerTest
         server.addConnector(connector);
 
         // Configure Keystore Reload.
-        keyStoreScanner = new KeyStoreScanner(sslContextFactory, resolveAlias);
+        keyStoreScanner = new KeyStoreScanner(sslContextFactory);
         keyStoreScanner.setScanInterval(0);
         server.addBean(keyStoreScanner);
 
