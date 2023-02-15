@@ -1999,7 +1999,6 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("rangeScenarios")
-    @Disabled
     public void testRangeRequests(Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);
