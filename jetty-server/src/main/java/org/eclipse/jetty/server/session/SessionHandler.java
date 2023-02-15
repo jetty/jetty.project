@@ -1727,33 +1727,36 @@ public class SessionHandler extends ScopedHandler
         if (isUsingURLs() && (requestedSessionId == null))
         {
             String uri = request.getRequestURI();
-            String prefix = getSessionIdPathParameterNamePrefix();
-            if (prefix != null)
+            if (uri != null)
             {
-                int s = uri.indexOf(prefix);
-                if (s >= 0)
+                String prefix = getSessionIdPathParameterNamePrefix();
+                if (prefix != null)
                 {
-                    s += prefix.length();
-                    int i = s;
-                    while (i < uri.length())
+                    int s = uri.indexOf(prefix);
+                    if (s >= 0)
                     {
-                        char c = uri.charAt(i);
-                        if (c == ';' || c == '#' || c == '?' || c == '/')
-                            break;
-                        i++;
-                    }
+                        s += prefix.length();
+                        int i = s;
+                        while (i < uri.length())
+                        {
+                            char c = uri.charAt(i);
+                            if (c == ';' || c == '#' || c == '?' || c == '/')
+                                break;
+                            i++;
+                        }
 
-                    requestedSessionId = uri.substring(s, i);
-                    requestedSessionIdFromCookie = false;
+                        requestedSessionId = uri.substring(s, i);
+                        requestedSessionIdFromCookie = false;
 
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Got Session ID {} from URL", requestedSessionId);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Got Session ID {} from URL", requestedSessionId);
 
-                    session = getHttpSession(requestedSessionId);
-                    if (session != null && isValid(session))
-                    {
-                        baseRequest.enterSession(session); //request enters this session for first time
-                        baseRequest.setSession(session);  //associate the session with the request
+                        session = getHttpSession(requestedSessionId);
+                        if (session != null && isValid(session))
+                        {
+                            baseRequest.enterSession(session); //request enters this session for first time
+                            baseRequest.setSession(session);  //associate the session with the request
+                        }
                     }
                 }
             }
