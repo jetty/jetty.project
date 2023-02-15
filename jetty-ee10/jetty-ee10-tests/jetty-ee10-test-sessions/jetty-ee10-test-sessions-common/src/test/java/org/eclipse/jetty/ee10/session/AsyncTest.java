@@ -44,8 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * Tests async handling wrt sessions.
  */
-//TODO not working
-@Disabled
 public class AsyncTest
 {
     @Test
@@ -138,6 +136,7 @@ public class AsyncTest
         }
     }
 
+    @Disabled //TODO cross context not supported
     @Test
     public void testSessionWithCrossContextAsync() throws Exception
     {
@@ -233,6 +232,7 @@ public class AsyncTest
         }   
     }
 
+    @Disabled //TODO cross context not supported
     @Test
     public void testSessionWithCrossContextAsyncComplete() throws Exception
     {
