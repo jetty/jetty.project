@@ -60,7 +60,6 @@ import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1086,7 +1085,6 @@ public class ConstraintTest
         assertThat(response, containsString("!role"));
     }
 
-    @Disabled
     @Test
     public void testNonFormPostRedirectHttp10() throws Exception
     {
@@ -1116,7 +1114,6 @@ public class ConstraintTest
         assertThat(response, not(containsString("Connection: keep-alive")));
     }
 
-    @Disabled
     @Test
     public void testNonFormPostRedirectHttp11() throws Exception
     {
@@ -1124,23 +1121,22 @@ public class ConstraintTest
         _server.start();
 
         String response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
-            "Host: test\r\n" +
+            "Host: localhost\r\n" +
             "Content-Type: text/plain\r\n" +
             "Content-Length: 10\r\n" +
             "\r\n" +
             "0123456789\r\n");
-        assertThat(response, containsString(" 303 See Other"));
+        assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, not(containsString("Connection: close")));
 
         response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
-            "Host: test\r\n" +
             "Host: localhost\r\n" +
             "Content-Type: text/plain\r\n" +
             "Content-Length: 10\r\n" +
             "\r\n" +
             "012345\r\n");
-        assertThat(response, containsString(" 303 See Other"));
+        assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("Connection: close"));
     }

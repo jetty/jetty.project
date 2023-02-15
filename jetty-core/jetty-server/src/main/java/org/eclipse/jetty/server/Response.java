@@ -155,14 +155,16 @@ public interface Response extends Content.Sink
         if (response.isCommitted())
             throw new IllegalStateException("Committed");
 
-        // TODO: can we remove this?
         if (consumeAvailable)
         {
             while (true)
             {
                 Content.Chunk chunk = response.getRequest().read();
                 if (chunk == null)
-                    break; // TODO really? shouldn't we just asynchronously wait?
+                {
+                    response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                    break;
+                }
                 chunk.release();
                 if (chunk.isLast())
                     break;
