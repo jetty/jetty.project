@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.test.support;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -30,8 +29,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,14 +98,14 @@ public class XmlBasedJettyServer
         _xmlConfigurations.add(xmlConfig);
     }
 
-    public void addXmlConfiguration(File xmlConfigFile)
+    public void addXmlConfiguration(Path xmlConfigFile)
     {
-        _xmlConfigurations.add(new PathResource(xmlConfigFile));
+        _xmlConfigurations.add(ResourceFactory.root().newResource(xmlConfigFile));
     }
 
     public void addXmlConfiguration(String testConfigName)
     {
-        addXmlConfiguration(MavenTestingUtils.getTestResourceFile(testConfigName));
+        addXmlConfiguration(MavenTestingUtils.getTestResourcePathFile(testConfigName));
     }
 
     public void setProperty(String key, String value)
@@ -175,6 +174,8 @@ public class XmlBasedJettyServer
     public void start() throws Exception
     {
         assertNotNull(_server, "Server should not be null (failed load?)");
+        
+        _server.setDumpAfterStart(false);
 
         _server.start();
 
