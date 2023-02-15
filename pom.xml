@@ -1617,7 +1617,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.4.0</cbi-plugins.version>
+        <cbi-plugins.version>1.4.2</cbi-plugins.version>
       </properties>
       <build>
         <plugins>
