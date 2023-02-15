@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee9.websocket.jakarta.client;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,6 +33,10 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Extension;
 import jakarta.websocket.Session;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.AnnotatedClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaClientUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JsrUpgradeListener;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketExtensionConfig;

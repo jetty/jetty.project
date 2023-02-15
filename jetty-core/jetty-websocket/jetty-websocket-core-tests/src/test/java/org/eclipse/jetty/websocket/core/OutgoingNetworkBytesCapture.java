@@ -20,7 +20,7 @@ import java.util.Locale;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +45,7 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     {
         assertThat("Capture index does not exist", idx, lessThan(captured.size()));
         ByteBuffer buf = captured.get(idx);
-        String actualHex = TypeUtil.toHexString(BufferUtil.toArray(buf)).toUpperCase(Locale.ENGLISH);
+        String actualHex = StringUtil.toHexString(BufferUtil.toArray(buf)).toUpperCase(Locale.ENGLISH);
         assertThat("captured[" + idx + "]", actualHex, is(expectedHex.toUpperCase(Locale.ENGLISH)));
     }
 

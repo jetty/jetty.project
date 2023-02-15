@@ -11,10 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee10.websocket.jakarta.client;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.EndpointConfig;
+import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;

@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
+import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;

@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import jakarta.websocket.ClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequestAdapter;

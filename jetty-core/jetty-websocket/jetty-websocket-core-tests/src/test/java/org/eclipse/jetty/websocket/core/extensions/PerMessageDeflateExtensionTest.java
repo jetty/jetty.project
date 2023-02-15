@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer;
 import org.eclipse.jetty.websocket.core.DemandingIncomingFramesCapture;
@@ -60,7 +60,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
-        ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(hexStr));
+        ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString(hexStr));
         assertThat("endsWithTail([" + hexStr + "])", PerMessageDeflateExtension.endsWithTail(buf), is(expectedResult));
     }
 

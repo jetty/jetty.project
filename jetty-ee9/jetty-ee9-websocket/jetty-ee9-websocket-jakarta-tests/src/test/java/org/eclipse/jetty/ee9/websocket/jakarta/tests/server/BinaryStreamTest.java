@@ -33,7 +33,7 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.DataUtils;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;

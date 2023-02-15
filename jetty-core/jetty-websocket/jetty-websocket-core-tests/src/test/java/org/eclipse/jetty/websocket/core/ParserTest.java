@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
@@ -1496,7 +1495,7 @@ public class ParserTest
     @Test
     public void testParseAutobahn793() throws Exception
     {
-        ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("8882c2887e61c164"));
+        ByteBuffer buf = BufferUtil.toBuffer(StringUtil.fromHexString("8882c2887e61c164"));
         Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true));
         assertThat(e.getMessage(), Matchers.containsString("Invalid CLOSE Code: "));
     }
@@ -1504,7 +1503,7 @@ public class ParserTest
     @Test
     public void testParseAutobahn796() throws Exception
     {
-        ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("88824c49cb474fbf"));
+        ByteBuffer buf = BufferUtil.toBuffer(StringUtil.fromHexString("88824c49cb474fbf"));
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
 
         capture.assertHasFrame(OpCode.CLOSE, 1);

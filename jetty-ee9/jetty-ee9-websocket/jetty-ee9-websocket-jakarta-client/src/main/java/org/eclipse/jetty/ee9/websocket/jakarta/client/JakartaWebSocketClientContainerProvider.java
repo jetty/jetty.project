@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.websocket.jakarta.client;
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
