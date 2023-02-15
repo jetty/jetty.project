@@ -451,8 +451,7 @@ public class HttpParser
     private HttpTokens.Token next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
-
-        HttpTokens.Token t = HttpTokens.TOKENS[0xff & ch];
+        HttpTokens.Token t = HttpTokens.getToken(ch);
 
         switch (t.getType())
         {
