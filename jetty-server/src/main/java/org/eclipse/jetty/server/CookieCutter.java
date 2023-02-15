@@ -154,6 +154,13 @@ public class CookieCutter
                 // Handle quoted values for name or value
                 if (inQuoted)
                 {
+                    boolean eol = c == 0 && i == hdr.length();
+                    if (!eol && _compliance != CookieCompliance.RFC2965 && isRFC6265RejectedCharacter(inQuoted, c))
+                    {
+                        reject = true;
+                        continue;
+                    }
+
                     if (escaped)
                     {
                         escaped = false;
@@ -182,15 +189,24 @@ public class CookieCutter
                             continue;
 
                         case 0:
-                            // unterminated quote, let's ignore quotes
+                            // unterminated quote
+                            if (_compliance == CookieCompliance.RFC6265)
+                                continue;
+                            // let's ignore quotes
                             unquoted.setLength(0);
                             inQuoted = false;
                             i--;
                             continue;
 
+                        case ';':
+                            if (_compliance == CookieCompliance.RFC6265)
+                                reject = true;
+                            else
+                                unquoted.append(c);
+                            continue;
+
                         default:
                             unquoted.append(c);
-                            continue;
                     }
                 }
                 else
@@ -198,6 +214,13 @@ public class CookieCutter
                     // Handle name and value state machines
                     if (invalue)
                     {
+                        boolean eol = c == 0 && i == hdr.length();
+                        if (!eol && _compliance == CookieCompliance.RFC6265 && isRFC6265RejectedCharacter(inQuoted, c))
+                        {
+                            reject = true;
+                            continue;
+                        }
+
                         // parse the cookie-value
                         switch (c)
                         {
@@ -300,9 +323,20 @@ public class CookieCutter
                                         unquoted = new StringBuilder();
                                     break;
                                 }
+                                else if (_compliance == CookieCompliance.RFC6265)
+                                {
+                                    reject = true;
+                                    continue;
+                                }
                                 // fall through to default case
 
                             default:
+                                if (_compliance == CookieCompliance.RFC6265 && quoted)
+                                {
+                                    reject = true;
+                                    continue;
+                                }
+
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
@@ -312,18 +346,12 @@ public class CookieCutter
                                     continue;
                                 }
 
-                                if (_compliance == CookieCompliance.RFC6265)
-                                {
-                                    if (isRFC6265RejectedCharacter(inQuoted, c))
-                                    {
-                                        reject = true;
-                                    }
-                                }
+                                if (_compliance == CookieCompliance.RFC6265_LEGACY && isRFC6265RejectedCharacter(inQuoted, c))
+                                    reject = true;
 
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
-                                continue;
                         }
                     }
                     else
@@ -366,13 +394,8 @@ public class CookieCutter
                                     continue;
                                 }
 
-                                if (_compliance == CookieCompliance.RFC6265)
-                                {
-                                    if (isRFC6265RejectedCharacter(inQuoted, c))
-                                    {
-                                        reject = true;
-                                    }
-                                }
+                                if (_compliance != CookieCompliance.RFC2965 && isRFC6265RejectedCharacter(inQuoted, c))
+                                    reject = true;
 
                                 if (tokenstart < 0)
                                     tokenstart = i;
@@ -390,28 +413,37 @@ public class CookieCutter
 
     protected boolean isRFC6265RejectedCharacter(boolean inQuoted, char c)
     {
-        if (inQuoted)
+        // LEGACY test
+        if (_compliance == CookieCompliance.RFC6265_LEGACY)
         {
-            // We only reject if a Control Character is encountered
-            if (Character.isISOControl(c))
+            if (inQuoted)
             {
-                return true;
+                // We only reject if a Control Character is encountered
+                if (Character.isISOControl(c))
+                    return true;
             }
-        }
-        else
-        {
-            /* From RFC6265 - Section 4.1.1 - Syntax
-             *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
-             *                  ; US-ASCII characters excluding CTLs,
-             *                  ; whitespace DQUOTE, comma, semicolon,
-             *                  ; and backslash
-             */
-            return Character.isISOControl(c) || // control characters
-                c > 127 || // 8-bit characters
-                c == ',' || // comma
-                c == ';'; // semicolon
+            else
+            {
+                return Character.isISOControl(c) || // control characters
+                    c > 127 || // 8-bit characters
+                    c == ',' || // comma
+                    c == ';'; // semicolon
+            }
+            return false;
         }
 
-        return false;
+        /* From RFC6265 - Section 4.1.1 - Syntax
+         *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+         *                  ; US-ASCII characters excluding CTLs,
+         *                  ; whitespace DQUOTE, comma, semicolon,
+         *                  ; and backslash
+         *
+         * Note: DQUOTE and semicolon are used as separator by the parser,
+         * so we can consider them authorized.
+         */
+        return c > 127 ||  // 8-bit characters
+            Character.isISOControl(c) || // control characters
+            c == ',' || // comma
+            c == '\\';  // backslash
     }
 }

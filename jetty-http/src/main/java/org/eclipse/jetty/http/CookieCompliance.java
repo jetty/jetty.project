@@ -24,5 +24,6 @@ package org.eclipse.jetty.http;
 public enum CookieCompliance
 {
     RFC6265,
+    RFC6265_LEGACY, // Forgiving of bad quotes.
     RFC2965
 }

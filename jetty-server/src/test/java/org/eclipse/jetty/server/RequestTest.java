@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpStatus;
@@ -140,6 +141,7 @@ public class RequestTest
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
+        http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
