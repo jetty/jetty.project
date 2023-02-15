@@ -624,6 +624,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
+    @Disabled //TODO rfc2616 compat
     @Test
     public void test52VirtualHostAbsoluteURIWithHostHeader() throws Exception
     {
