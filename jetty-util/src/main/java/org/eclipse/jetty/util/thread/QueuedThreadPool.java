@@ -380,7 +380,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * per idleTimeout interval.
      */
     @ManagedAttribute("number of idle threads allowed to die per idleTimeout interval")
-    public float getIdleTimeoutDecay()
+    public int getIdleTimeoutDecay()
     {
         return _idleTimeoutDecay;
     }
