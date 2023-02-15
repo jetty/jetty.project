@@ -41,7 +41,8 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(WorkDirExtension.class)
 public class RolloverFileOutputStreamTest
 {
-    public WorkDir testingDir;
+
+    public WorkDir workDir;
 
     private static ZoneId toZoneId(String timezoneId)
     {
@@ -184,8 +185,7 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testFileHandling() throws Exception
     {
-        Path testPath = testingDir.getEmptyPathDir();
-
+        Path testPath = workDir.getEmptyPathDir();
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime now = toDateTime("2016.04.10-08:30:12.3 AM AEDT", zone);
 
@@ -287,8 +287,7 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testRollover() throws Exception
     {
-        Path testPath = testingDir.getEmptyPathDir();
-
+        Path testPath = workDir.getEmptyPathDir();
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM AEDT", zone);
 
@@ -327,8 +326,7 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testRolloverBackup() throws Exception
     {
-        Path testPath = testingDir.getEmptyPathDir();
-
+        Path testPath = workDir.getEmptyPathDir();
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM AEDT", zone);
 

@@ -56,7 +56,6 @@ public class ForcedServletTest
     @BeforeEach
     public void setup() throws Exception
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -84,12 +83,6 @@ public class ForcedServletTest
         server.start();
     }
 
-    @AfterEach
-    public void afterEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-    
     private void copyClass(Class<?> clazz, Path destClasses) throws IOException
     {
         String classRelativeFilename = clazz.getName().replace('.', '/') + ".class";

@@ -24,7 +24,7 @@ public final class StartMatchers
 {
     public static Matcher<Path> pathExists()
     {
-        return new BaseMatcher<Path>()
+        return new BaseMatcher<>()
         {
             @Override
             public boolean matches(Object item)
@@ -49,7 +49,7 @@ public final class StartMatchers
 
     public static Matcher<Path> notPathExists()
     {
-        return new BaseMatcher<Path>()
+        return new BaseMatcher<>()
         {
             @Override
             public boolean matches(Object item)
@@ -74,7 +74,7 @@ public final class StartMatchers
 
     public static Matcher<Path> fileExists()
     {
-        return new BaseMatcher<Path>()
+        return new BaseMatcher<>()
         {
             @Override
             public boolean matches(Object item)

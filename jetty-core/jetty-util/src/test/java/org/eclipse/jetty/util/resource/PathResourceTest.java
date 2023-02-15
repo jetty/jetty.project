@@ -29,11 +29,13 @@ import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class PathResourceTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResourceTest.class);
@@ -143,7 +146,8 @@ public class PathResourceTest
     @Test
     public void testJarFileIsAliasFile(WorkDir workDir) throws IOException
     {
-        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testJar = tmpPath.resolve("test.jar");
 
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
@@ -186,8 +190,9 @@ public class PathResourceTest
     @Test
     public void testJarFileIsAliasDirectory(WorkDir workDir) throws IOException
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         boolean supportsUtf8Dir = false;
-        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path testJar = tmpPath.resolve("test.jar");
 
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
@@ -268,7 +273,8 @@ public class PathResourceTest
     @Test
     public void testNullCharEndingFilename(WorkDir workDir) throws Exception
     {
-        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testJar = tmpPath.resolve("test.jar");
 
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
@@ -344,7 +350,8 @@ public class PathResourceTest
     @Test
     public void testSymlink(WorkDir workDir) throws Exception
     {
-        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testJar = tmpPath.resolve("test.jar");
         Path foo = null;
         Path bar = null;
 
@@ -453,7 +460,6 @@ public class PathResourceTest
     public void testResolveNavigation(WorkDir workDir) throws Exception
     {
         Path docroot = workDir.getEmptyPathDir();
-
         Path dir = docroot.resolve("dir");
         Files.createDirectory(dir);
 
@@ -480,7 +486,6 @@ public class PathResourceTest
     public void testUnicodeResolve(WorkDir workDir) throws Exception
     {
         Path docroot = workDir.getEmptyPathDir();
-
         Path dir = docroot.resolve("dir");
         Files.createDirectory(dir);
 

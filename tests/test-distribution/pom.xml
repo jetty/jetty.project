@@ -12,7 +12,6 @@
 
   <properties>
     <distribution.debug.port>-1</distribution.debug.port>
-    <home.start.timeout>10</home.start.timeout>
     <environmentsToTest>ee8,ee9,ee10</environmentsToTest>
     <sessionLogLevel>INFO</sessionLogLevel>
   </properties>

@@ -46,18 +46,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * ReloadedSessionMissingClassTest
  */
-@ExtendWith(WorkDirExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
+@ExtendWith(WorkDirExtension.class)
 public class ReloadedSessionMissingClassTest
 {
-    public WorkDir testdir;
 
     @Test
-    public void testSessionReloadWithMissingClass() throws Exception
+    public void testSessionReloadWithMissingClass(WorkDir workDir) throws Exception
     {
         String contextPath = "/foo";
 
-        File unpackedWarDir = testdir.getEmptyPathDir().toFile();
+        File unpackedWarDir = workDir.getEmptyPathDir().toFile();
 
         File webInfDir = new File(unpackedWarDir, "WEB-INF");
         webInfDir.mkdir();

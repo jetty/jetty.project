@@ -25,11 +25,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.opentest4j.AssertionFailedError;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,7 +37,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-@ExtendWith(WorkDirExtension.class)
 public class OneServletContextJmxStatsTest extends AbstractEmbeddedTest
 {
     private Server server;

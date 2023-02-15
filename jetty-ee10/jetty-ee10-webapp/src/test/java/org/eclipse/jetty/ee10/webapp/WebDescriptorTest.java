@@ -27,13 +27,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class WebDescriptorTest
 {
-    public WorkDir workDir;
 
     /**
      * Test to ensure that the XMLParser XML entity mapping is functioning properly.
      */
     @Test
-    public void testXmlWithXsd() throws Exception
+    public void testXmlWithXsd(WorkDir workDir) throws Exception
     {
         Path xml = workDir.getEmptyPathDir().resolve("test.xml");
         Files.writeString(xml, """

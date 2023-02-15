@@ -20,18 +20,21 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestRunAsAnnotation
 {
-    public WorkDir workDir;
 
     @Test
-    public void testRunAsAnnotation() throws Exception
+    public void testRunAsAnnotation(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         WebAppContext wac = new WebAppContext();
         
         //pre-add a servlet but not by descriptor
@@ -47,7 +50,7 @@ public class TestRunAsAnnotation
         holder2.setHeldClass(ServletC.class);
         holder2.setInitOrder(1);
         wac.getServletHandler().addServletWithMapping(holder2, "/foo2/*");
-        Path fakeXml = workDir.getEmptyPathDir().resolve("fake.xml");
+        Path fakeXml = tmpPath.resolve("fake.xml");
         Files.createFile(fakeXml);
         wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(wac.getResourceFactory().newResource(fakeXml)));
         

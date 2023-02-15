@@ -32,13 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class TestSelectiveJarResource
 {
-    public WorkDir workDir;
 
     @Test
-    public void testIncludesNoExcludes() throws Exception
+    public void testIncludesNoExcludes(WorkDir workDir) throws Exception
     {
         Path unpackDir = workDir.getEmptyPathDir();
-
         Path testJar = MavenTestingUtils.getTargetPath("test-classes/selective-jar-test.jar");
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -61,10 +59,9 @@ public class TestSelectiveJarResource
     }
 
     @Test
-    public void testExcludesNoIncludes() throws Exception
+    public void testExcludesNoIncludes(WorkDir workDir) throws Exception
     {
         Path unpackDir = workDir.getEmptyPathDir();
-
         Path testJar = MavenTestingUtils.getTargetPath("test-classes/selective-jar-test.jar");
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -87,10 +84,9 @@ public class TestSelectiveJarResource
     }
     
     @Test
-    public void testIncludesExcludes() throws Exception
+    public void testIncludesExcludes(WorkDir workDir) throws Exception
     {
         Path unpackDir = workDir.getEmptyPathDir();
-
         Path testJar = MavenTestingUtils.getTargetPath("test-classes/selective-jar-test.jar");
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {

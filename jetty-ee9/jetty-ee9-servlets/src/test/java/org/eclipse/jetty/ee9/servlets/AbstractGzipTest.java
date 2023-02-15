@@ -32,24 +32,20 @@ import java.util.zip.InflaterInputStream;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@ExtendWith(WorkDirExtension.class)
 public abstract class AbstractGzipTest
 {
     protected static final int DEFAULT_OUTPUT_BUFFER_SIZE = new HttpConfiguration().getOutputBufferSize();
 
-    protected Path workDir;
-
-    public AbstractGzipTest()
-    {
-        workDir = MavenTestingUtils.getTargetTestingPath(this.getClass().getName());
-        FS.ensureEmpty(workDir);
-    }
+    protected WorkDir workDir;
 
     protected FilterInputStream newContentEncodingFilterInputStream(String contentEncoding, InputStream inputStream) throws IOException
     {

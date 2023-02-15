@@ -69,7 +69,7 @@ public class ModulesTest
         try (LogDisabler ignored = new LogDisabler(JettyHomeTester.class);
             JettyHomeTester.Run run = distribution.start())
         {
-            assertThat(run.awaitConsoleLogsFor("Issuer was not configured", 5, TimeUnit.SECONDS), is(true));
+            assertThat(run.awaitConsoleLogsFor("Issuer was not configured", AbstractJettyHomeTest.START_TIMEOUT, TimeUnit.SECONDS), is(true));
             run.stop();
             assertThat(run.awaitFor(5, TimeUnit.SECONDS), is(true));
         }
@@ -95,7 +95,7 @@ public class ModulesTest
         // Verify that Jetty starts.
         try (JettyHomeTester.Run run = distribution.start())
         {
-            assertThat(run.awaitConsoleLogsFor("Started oejs.Server", 5, TimeUnit.SECONDS), is(true));
+            assertThat(run.awaitConsoleLogsFor("Started oejs.Server", AbstractJettyHomeTest.START_TIMEOUT, TimeUnit.SECONDS), is(true));
             run.stop();
             assertThat(run.awaitFor(5, TimeUnit.SECONDS), is(true));
         }
@@ -120,7 +120,7 @@ public class ModulesTest
         // Verify that Jetty starts.
         try (JettyHomeTester.Run run = distribution.start())
         {
-            assertThat(run.awaitConsoleLogsFor("Started oejs.Server", 5, TimeUnit.SECONDS), is(true));
+            assertThat(run.awaitConsoleLogsFor("Started oejs.Server", AbstractJettyHomeTest.START_TIMEOUT, TimeUnit.SECONDS), is(true));
             run.stop();
             assertThat(run.awaitFor(5, TimeUnit.SECONDS), is(true));
         }

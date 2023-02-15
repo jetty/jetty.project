@@ -38,14 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class ModuleGraphWriterTest
 {
-    public WorkDir testdir;
 
     @Test
-    public void testGenerateNothingEnabled() throws IOException
+    public void testGenerateNothingEnabled(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -75,7 +74,7 @@ public class ModuleGraphWriterTest
         {
             if (execDotCmd("dot", "-V"))
             {
-                Path outputPng = testdir.getPath().resolve("output.png");
+                Path outputPng = baseDir.resolve("output.png");
                 assertTrue(execDotCmd("dot", "-Tpng", "-o" + outputPng, dotFile.toString()));
 
                 assertThat("PNG File does not exist", FS.exists(outputPng));

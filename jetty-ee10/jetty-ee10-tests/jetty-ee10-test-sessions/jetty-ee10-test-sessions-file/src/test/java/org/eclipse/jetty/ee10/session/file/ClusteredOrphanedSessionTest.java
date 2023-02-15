@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.session.file;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 import org.eclipse.jetty.ee10.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.FileSessionDataStoreFactory;
@@ -40,7 +39,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     @BeforeEach
     public void before() throws Exception
     {
-        _storeDir = Objects.requireNonNull(workDir.getEmptyPathDir());
+        _storeDir = workDir.getEmptyPathDir();
         assertTrue(Files.exists(_storeDir), "Path must exist: " + _storeDir);
         assertTrue(Files.isDirectory(_storeDir), "Path must be a directory: " + _storeDir);
     }

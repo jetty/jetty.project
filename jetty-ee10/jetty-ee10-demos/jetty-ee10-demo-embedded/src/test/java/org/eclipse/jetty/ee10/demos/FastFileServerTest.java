@@ -40,22 +40,21 @@ public class FastFileServerTest extends AbstractEmbeddedTest
 {
     private static final String TEXT_CONTENT = "I am an old man and I have known a great " +
         "many troubles, but most of them never happened. - Mark Twain";
-    public WorkDir workDir;
+
+    private WorkDir workDir;
     private Server server;
 
     @BeforeEach
     public void startServer() throws Exception
     {
-        Path baseDir = workDir.getEmptyPathDir();
-
-        Path textFile = baseDir.resolve("simple.txt");
+        Path textFile = workDir.getEmptyPathDir().resolve("simple.txt");
         try (BufferedWriter writer = Files.newBufferedWriter(textFile, UTF_8))
         {
             writer.write(TEXT_CONTENT);
         }
 
         //TODO fix me
-        // server = FastFileServer.createServer(0, baseDir.toFile());
+        //server = FastFileServer.createServer(0, baseDir.toFile());
         server.start();
     }
 

@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -32,18 +31,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DynamicListenerTests extends AbstractJettyHomeTest
 {
-    private Path jettyBase;
-
-    @BeforeEach
-    public void setUp() throws IOException
-    {
-        jettyBase = newTestJettyBaseDirectory();
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"ee8", "ee9", "ee10"})
     public void testSimpleWebAppWithJSP(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyBase(jettyBase)
@@ -65,7 +58,7 @@ public class DynamicListenerTests extends AbstractJettyHomeTest
         int port = distribution.freePort();
         try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
         {
-            assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+            assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response = client.GET("http://localhost:" + port + "/" + env + "-test/testservlet/foo");

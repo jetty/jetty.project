@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -72,9 +73,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testStartStop() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -86,7 +89,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port);
@@ -102,9 +105,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @ValueSource(strings = {"ee9", "ee10"})
     public void testQuickStartGenerationAndRun(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -126,7 +131,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start("jetty.quickstart.mode=GENERATE"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("QuickStartGeneratorConfiguration:main: Generated", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("QuickStartGeneratorConfiguration:main: Generated", START_TIMEOUT, TimeUnit.SECONDS));
                 Path unpackedWebapp = distribution.getJettyBase().resolve("webapps").resolve("test");
                 assertTrue(Files.exists(unpackedWebapp));
                 Path webInf = unpackedWebapp.resolve("WEB-INF");
@@ -139,7 +144,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.quickstart.mode=QUICKSTART"))
                 {
-                    assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                    assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                     startHttpClient();
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -155,9 +160,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @ValueSource(strings = {"ee9", "ee10"})
     public void testSimpleWebAppWithJSPandJSTL(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -182,7 +189,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
@@ -200,10 +207,11 @@ public class DistributionTests extends AbstractJettyHomeTest
         // Testing with env=ee9 is not possible because jakarta.transaction:1.x
         // does not have a proper module-info.java, so JPMS resolution will fail.
         // For env=ee10, jakarta.transaction:2.x has a proper module-info.java.
-
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -225,7 +233,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -245,21 +253,24 @@ public class DistributionTests extends AbstractJettyHomeTest
     @ValueSource(strings = {"ee9", "ee10"})
     public void testSimpleWebAppWithJSPOverH2C(String env) throws Exception
     {
-        testSimpleWebAppWithJSPOverHTTP2(env, false);
+        Path jettyBase = newTestJettyBaseDirectory();
+        testSimpleWebAppWithJSPOverHTTP2(env, false, jettyBase);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"ee9", "ee10"})
     public void testSimpleWebAppWithJSPOverH2(String env) throws Exception
     {
-        testSimpleWebAppWithJSPOverHTTP2(env, true);
+        Path jettyBase = newTestJettyBaseDirectory();
+        testSimpleWebAppWithJSPOverHTTP2(env, true, jettyBase);
     }
 
-    private void testSimpleWebAppWithJSPOverHTTP2(String env, boolean ssl) throws Exception
+    private void testSimpleWebAppWithJSPOverHTTP2(String env, boolean ssl, Path jettyBase) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -280,7 +291,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             String portProp = ssl ? "jetty.ssl.port" : "jetty.http.port";
             try (JettyHomeTester.Run run2 = distribution.start(portProp + "=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 ClientConnector connector = new ClientConnector();
                 connector.setSslContextFactory(new SslContextFactory.Client(true));
@@ -298,9 +309,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @ValueSource(strings = {"ee9", "ee10"})
     public void testLog4j2ModuleWithSimpleWebAppWithJSP(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -323,7 +336,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -339,9 +352,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @CsvSource({"http,ee9", "https,ee9", "http,ee10", "https,ee10"})
     public void testWebsocketClientInWebappProvidedByServer(String scheme, String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -366,7 +381,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(ssl ? "jetty.ssl.port=" + port : "jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
                 startHttpClient(ssl);
@@ -384,9 +399,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @CsvSource({"http,ee9", "https,ee9", "http,ee10", "https,ee10"})
     public void testWebsocketClientInWebapp(String scheme, String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -410,7 +427,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(ssl ? "jetty.ssl.port=" + port : "jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
                 startHttpClient(scheme.equals("https"));
@@ -428,7 +445,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Tag("external")
     public void testDownload() throws Exception
     {
-        Path jettyBase = Files.createTempDirectory("jetty_base");
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
@@ -440,7 +457,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         String outPath = "etc/maven-metadata.xml";
         try (JettyHomeTester.Run run = distribution.start("--download=" + downloadURI + "|" + outPath))
         {
-            assertTrue(run.awaitConsoleLogsFor("Base directory was modified", 110, TimeUnit.SECONDS));
+            assertTrue(run.awaitConsoleLogsFor("Base directory was modified", 120, TimeUnit.SECONDS));
             Path target = jettyBase.resolve(outPath);
             assertTrue(Files.exists(target), "could not create " + target);
         }
@@ -450,9 +467,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @ValueSource(strings = {"ee9", "ee10"})
     public void testWebAppWithProxyAndJPMS(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -487,7 +506,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
                 ContentResponse response = client.GET("http://localhost:" + port + "/proxy/current/");
@@ -511,10 +530,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     {
         // Testing ee9 with JPMS won't work because ee9 jakarta.* jars
         // do not have a proper module-info.java so JPMS resolution fails.
-
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -541,7 +561,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 args2.add("--jpms");
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 URI serverUri = URI.create("ws://localhost:" + port + "/test1/");
                 WsListener webSocketListener = new WsListener();
@@ -594,9 +614,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testStartStopLog4j2Modules() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -629,9 +651,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testJavaUtilLogging() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -647,7 +671,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertThat(run2.getLogs().stream()
                     // Check that the level formatting is that of the j.u.l. configuration file.
                     .filter(log -> log.contains("[FINE]"))
@@ -663,9 +687,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testJavaUtilLoggingBridge() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -674,7 +700,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path jettyBase = run1.getConfig().getJettyBase();
+            //Path jettyBase = run1.getConfig().getJettyBase();
 
             Path julConfig = jettyBase.resolve("resources/java-util-logging.properties");
             assertTrue(Files.exists(julConfig));
@@ -708,7 +734,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(1, run2.getLogs().stream()
                     // Check that the level formatting is that of the j.u.l. configuration file.
                     .filter(log -> log.contains(message))
@@ -724,9 +750,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testBeforeDirectiveInModule() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -735,7 +763,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path jettyBase = run1.getConfig().getJettyBase();
+            //Path jettyBase = run1.getConfig().getJettyBase();
 
             Path jettyBaseEtc = jettyBase.resolve("etc");
             Files.createDirectories(jettyBaseEtc);
@@ -791,7 +819,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 int port = distribution.freePort();
                 try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port))
                 {
-                    assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                    assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                     // Check for the protocol order: fcgi must be after ssl and before http.
                     assertTrue(run3.getLogs().stream()
@@ -809,9 +837,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testDefaultLoggingProviderNotActiveWhenExplicitProviderIsPresent() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution1 = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -820,7 +850,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path jettyBase = run1.getConfig().getJettyBase();
+            //Path jettyBase = run1.getConfig().getJettyBase();
 
             assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
             // The jetty-logging.properties should be absent.
@@ -838,7 +868,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run2.getExitValue());
 
-            Path jettyBase = run2.getConfig().getJettyBase();
+            //Path jettyBase = run2.getConfig().getJettyBase();
 
             assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
             // The jetty-logging.properties should be absent.
@@ -850,9 +880,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @EnabledForJreRange(min = JRE.JAVA_16)
     public void testUnixDomain() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -868,7 +900,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(Files.deleteIfExists(path));
             try (JettyHomeTester.Run run2 = distribution.start("jetty.unixdomain.path=" + path))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 ClientConnector connector = ClientConnector.forUnixDomain(path);
                 client = new HttpClient(new HttpClientTransportDynamic(connector));
@@ -882,13 +914,14 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testModuleWithExecEmitsWarning() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        Path jettyBase = distribution.getJettyBase();
         Path jettyBaseModules = jettyBase.resolve("modules");
         Files.createDirectories(jettyBaseModules);
         Path execModule = jettyBaseModules.resolve("exec.mod");
@@ -905,7 +938,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertTrue(run2.getLogs().stream()
                     .anyMatch(log -> log.contains("WARN") && log.contains("Forking")));
             }
@@ -915,13 +948,14 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testIniSectionPropertyOverriddenByCommandLine() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        Path jettyBase = distribution.getJettyBase();
         Path jettyBaseModules = jettyBase.resolve("modules");
         Files.createDirectories(jettyBaseModules);
         String pathProperty = "jetty.sslContext.keyStorePath";
@@ -954,9 +988,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testWellKnownModule() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -982,7 +1018,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 // Test we can access the file in the .well-known directory.
                 startHttpClient();
@@ -996,13 +1032,14 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testDeprecatedModule() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        Path jettyBase = distribution.getJettyBase();
         Path jettyBaseModules = jettyBase.resolve("modules");
         Files.createDirectories(jettyBaseModules);
         Path deprecatedModule = jettyBaseModules.resolve("deprecated.mod");
@@ -1036,7 +1073,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertTrue(run2.getLogs().stream()
                     .anyMatch(log -> log.contains("WARN") && log.contains(reason)));
             }
@@ -1047,9 +1084,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Tag("flaky")
     public void testH3() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -1062,7 +1101,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int h3Port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + h2Port, "jetty.quic.port=" + h3Port)))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 HTTP3Client http3Client = new HTTP3Client();
                 http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
@@ -1081,9 +1120,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testDryRunProperties() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -1134,7 +1175,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 startHttpClient(false);
 
                 String uri = "http://localhost:" + port + "/test";
@@ -1158,9 +1199,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testFastCGIProxying() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -1171,7 +1214,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             // Add a FastCGI connector to simulate, for example, php-fpm.
             int fcgiPort = distribution.freePort();
-            Path jettyBase = distribution.getJettyBase();
+            //Path jettyBase = distribution.getJettyBase();
             Path jettyBaseEtc = jettyBase.resolve("etc");
             Files.createDirectories(jettyBaseEtc);
             Path fcgiConnectorXML = jettyBaseEtc.resolve("fcgi-connector.xml");
@@ -1245,7 +1288,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int httpPort = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort, "etc/fcgi-connector.xml"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 // Make a request to the /proxy context on the httpPort; it should be converted to FastCGI
@@ -1262,9 +1305,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Tag("flaky")
     public void testVirtualThreadPool() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -1276,7 +1321,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int httpPort = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.selectors=1", "jetty.http.port=" + httpPort)))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.newRequest("localhost", httpPort)

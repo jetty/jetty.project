@@ -29,11 +29,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
 
-    public WorkDir workDir;
     public InfinispanTestSupport testSupport;
 
     @BeforeEach
-    public void setup() throws Exception
+    public void setup(WorkDir workDir) throws Exception
     {
         testSupport = new InfinispanTestSupport();
         testSupport.setup(workDir.getEmptyPathDir());

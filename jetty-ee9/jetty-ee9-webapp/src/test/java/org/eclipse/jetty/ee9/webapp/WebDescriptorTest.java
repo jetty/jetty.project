@@ -31,13 +31,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class WebDescriptorTest
 {
-    public WorkDir workDir;
 
     /**
      * Test to ensure that the XMLParser XML entity mapping is functioning properly.
      */
     @Test
-    public void testXmlWithXsd() throws Exception
+    public void testXmlWithXsd(WorkDir workDir) throws Exception
     {
         // TODO: need to address ee8 issues with missing jsp-configType from the <xsd:include schemaLocation="jsp_2_3.xsd"/> that seems to be a missing resource
         // org.xml.sax.SAXParseException; systemId: jar:file:///path/to/jetty-servlet-api-4.0.6.jar!/javax/servlet/resources/web-common_4_0.xsd; lineNumber: 142; columnNumber: 50;

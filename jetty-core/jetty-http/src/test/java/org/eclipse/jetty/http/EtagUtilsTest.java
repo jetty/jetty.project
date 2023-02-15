@@ -38,13 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class EtagUtilsTest
 {
-    public WorkDir workDir;
 
     @Test
-    public void testCalcWeakETag() throws IOException
+    public void testCalcWeakETag(WorkDir workDir) throws IOException
     {
-        Path root = workDir.getEmptyPathDir();
-        Path testFile = root.resolve("test.dat");
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testFile = tmpPath.resolve("test.dat");
+        System.out.println("testFile" + testFile.toString());
         Files.writeString(testFile, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
         String weakEtag = EtagUtils.computeWeakEtag(testFile);
@@ -53,13 +53,13 @@ public class EtagUtilsTest
     }
 
     @Test
-    public void testCalcWeakETagSameFileDifferentLocations() throws IOException
+    public void testCalcWeakETagSameFileDifferentLocations(WorkDir workDir) throws IOException
     {
-        Path root = workDir.getEmptyPathDir();
-        Path testFile = root.resolve("test.dat");
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testFile = tmpPath.resolve("test.dat");
         Files.writeString(testFile, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
-        Path altDir = root.resolve("alt");
+        Path altDir = tmpPath.resolve("alt");
         FS.ensureDirExists(altDir);
         Path altFile = altDir.resolve("test.dat");
         Files.copy(testFile, altFile);

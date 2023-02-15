@@ -52,12 +52,10 @@ public class LargeAnnotatedTest
         }
     }
 
-    public WorkDir testdir;
-
     @Test
-    public void testEcho() throws Exception
+    public void testEcho(WorkDir workDir) throws Exception
     {
-        WSServer wsb = new WSServer(testdir.getPath());
+        WSServer wsb = new WSServer(workDir.getEmptyPathDir());
         WSServer.WebApp app = wsb.createWebApp("app");
         app.createWebInf();
         app.copyClass(LargeEchoConfiguredSocket.class);

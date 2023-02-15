@@ -9,6 +9,7 @@
   <artifactId>jetty-ee9-test-sessions-jdbc</artifactId>
   <name>EE9 :: Tests :: Sessions :: JDBC</name>
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.sessions.jdbc</bundle-symbolic-name>
   </properties>
   <build>

@@ -65,14 +65,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
 {
-    public WorkDir workDir;
 
     private StacklessLogging stacklessLogging;
     private Server server;
     private DeploymentManager deploymentManager;
     private ContextHandlerCollection contexts;
 
-    public Path startServer(Consumer<Path> docrootSetupConsumer) throws Exception
+    public Path startServer(Consumer<Path> docrootSetupConsumer, Path docroots) throws Exception
     {
         stacklessLogging = new StacklessLogging(WebAppContext.class, DeploymentManager.class, NoClassDefFoundError.class);
 
@@ -95,9 +94,6 @@ public class DeploymentErrorTest
         deploymentManager.setContexts(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
-
-        Path docroots = workDir.getPath();
-        FS.ensureEmpty(docroots);
 
         if (docrootSetupConsumer != null)
         {
@@ -158,12 +154,10 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=true;}.
      */
     @Test
-    public void testInitialBadAppUnavailableTrue()
+    public void testInitialBadAppUnavailableTrue(WorkDir workDir)
     {
         assertThrows(NoClassDefFoundError.class, () ->
-        {
-            startServer(docroots -> copyBadApp("badapp.xml", docroots));
-        });
+                startServer(docroots -> copyBadApp("badapp.xml", docroots), workDir.getEmptyPathDir()));
 
         // The above should have prevented the server from starting.
         assertThat("server.isRunning", server.isRunning(), is(false));
@@ -175,9 +169,9 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=false;}.
      */
     @Test
-    public void testInitialBadAppUnavailableFalse() throws Exception
+    public void testInitialBadAppUnavailableFalse(WorkDir workDir) throws Exception
     {
-        startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots));
+        startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots), workDir.getEmptyPathDir());
 
         List<App> apps = new ArrayList<>();
         apps.addAll(deploymentManager.getApps());
@@ -218,9 +212,9 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=true;}.
      */
     @Test
-    public void testDelayedAddBadAppUnavailableTrue() throws Exception
+    public void testDelayedAddBadAppUnavailableTrue(WorkDir workDir) throws Exception
     {
-        Path docroots = startServer(null);
+        Path docroots = startServer(null, workDir.getEmptyPathDir());
 
         String contextPath = "/badapp";
         AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);
@@ -271,9 +265,9 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=false;}.
      */
     @Test
-    public void testDelayedAddBadAppUnavailableFalse() throws Exception
+    public void testDelayedAddBadAppUnavailableFalse(WorkDir workDir) throws Exception
     {
-        Path docroots = startServer(null);
+        Path docroots = startServer(null, workDir.getEmptyPathDir());
 
         String contextPath = "/badapp-uaf";
         AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);

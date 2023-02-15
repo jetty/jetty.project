@@ -36,7 +36,6 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(WorkDirExtension.class)
 public class WebInfConfigurationTest
 {
-    public WorkDir workDir;
 
     public static Stream<Arguments> fileBaseResourceNames()
     {
@@ -60,9 +59,9 @@ public class WebInfConfigurationTest
 
     @ParameterizedTest
     @MethodSource("fileBaseResourceNames")
-    public void testPathGetResourceBaseName(String basePath, String expectedName) throws IOException
+    public void testPathGetResourceBaseName(String basePath, String expectedName, WorkDir workDir) throws IOException
     {
-        Path root = workDir.getPath();
+        Path root = workDir.getEmptyPathDir();
         Path base = root.resolve(basePath);
         if (basePath.endsWith("/"))
         {

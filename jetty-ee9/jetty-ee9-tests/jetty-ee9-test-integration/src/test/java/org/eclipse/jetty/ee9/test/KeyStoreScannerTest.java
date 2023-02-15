@@ -59,16 +59,9 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 @ExtendWith(WorkDirExtension.class)
 public class KeyStoreScannerTest
 {
-    public WorkDir testdir;
     private Server server;
     private Path keystoreDir;
     private KeyStoreScanner keyStoreScanner;
-
-    @BeforeEach
-    public void before()
-    {
-        keystoreDir = testdir.getEmptyPathDir();
-    }
 
     @FunctionalInterface
     public interface Configuration
@@ -106,6 +99,12 @@ public class KeyStoreScannerTest
         server.addBean(keyStoreScanner);
 
         server.start();
+    }
+
+    @BeforeEach
+    public void setup(WorkDir workDir)
+    {
+        keystoreDir = workDir.getEmptyPathDir();
     }
 
     @AfterEach

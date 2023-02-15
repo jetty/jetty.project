@@ -32,13 +32,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class ContextProviderStartupTest
 {
-    public WorkDir testdir;
+    public WorkDir workDir;
+    public Path testdir;
     private static XmlConfiguredJetty jetty;
 
     @BeforeEach
     public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+        testdir = workDir.getEmptyPathDir();
+        jetty = new XmlConfiguredJetty(testdir);
 
         Path resourceBase = jetty.getJettyBasePath().resolve("resourceBase");
         FS.ensureDirExists(resourceBase);

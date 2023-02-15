@@ -44,15 +44,13 @@ public class ContextProviderRuntimeUpdatesTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextProviderRuntimeUpdatesTest.class);
 
-    public WorkDir testdir;
     private static XmlConfiguredJetty jetty;
     private final AtomicInteger _scans = new AtomicInteger();
     private int _providerCount;
 
-    public void createJettyBase() throws Exception
+    public void createJettyBase(Path testdir) throws Exception
     {
-        testdir.ensureEmpty();
-        jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+        jetty = new XmlConfiguredJetty(testdir);
 
         Path resourceBase = jetty.getJettyBasePath().resolve("resourceBase");
         FS.ensureDirExists(resourceBase);
@@ -118,9 +116,10 @@ public class ContextProviderRuntimeUpdatesTest
      * @throws IOException on test failure
      */
     @Test
-    public void testAfterStartupContext() throws Exception
+    public void testAfterStartupContext(WorkDir workDir) throws Exception
     {
-        createJettyBase();
+        Path testdir = workDir.getEmptyPathDir();
+        createJettyBase(testdir);
         startJetty();
 
         jetty.copyWebapp("bar-core-context.xml", "bar.xml");
@@ -134,9 +133,10 @@ public class ContextProviderRuntimeUpdatesTest
      * @throws IOException on test failure
      */
     @Test
-    public void testAfterStartupThenRemoveContext() throws Exception
+    public void testAfterStartupThenRemoveContext(WorkDir workDir) throws Exception
     {
-        createJettyBase();
+        Path testdir = workDir.getEmptyPathDir();
+        createJettyBase(testdir);
         startJetty();
 
         jetty.copyWebapp("bar-core-context.xml", "bar.xml");
@@ -154,9 +154,10 @@ public class ContextProviderRuntimeUpdatesTest
      * @throws Exception on test failure
      */
     @Test
-    public void testAfterStartupThenUpdateContext() throws Exception
+    public void testAfterStartupThenUpdateContext(WorkDir workDir) throws Exception
     {
-        createJettyBase();
+        Path testdir = workDir.getEmptyPathDir();
+        createJettyBase(testdir);
 
         startJetty();
 
