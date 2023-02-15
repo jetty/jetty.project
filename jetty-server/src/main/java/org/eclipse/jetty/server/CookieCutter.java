@@ -424,12 +424,6 @@ public class CookieCutter
             }
             else
             {
-                /* From RFC6265 - Section 4.1.1 - Syntax
-                 *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
-                 *                  ; US-ASCII characters excluding CTLs,
-                 *                  ; whitespace DQUOTE, comma, semicolon,
-                 *                  ; and backslash
-                 */
                 return Character.isISOControl(c) || // control characters
                     c > 127 || // 8-bit characters
                     c == ',' || // comma
