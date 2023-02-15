@@ -150,7 +150,7 @@
     <maven.invoker.plugin.version>3.4.0</maven.invoker.plugin.version>
     <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
+    <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.7.1</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.7.1</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
