@@ -429,9 +429,6 @@
           <failIfMissing>true</failIfMissing>
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
-          <properties>
-            <copyright-range>${project.inceptionYear}-2022</copyright-range>
-          </properties>
         </configuration>
         <executions>
           <execution>
