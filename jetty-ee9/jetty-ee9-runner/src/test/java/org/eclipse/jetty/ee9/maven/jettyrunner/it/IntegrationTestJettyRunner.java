@@ -18,8 +18,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,7 @@ public class IntegrationTestJettyRunner
             httpClient.start();
             ContentResponse response = httpClient.newRequest(serverUri).send();
             String res = response.getContentAsString();
-            assertThat(res, Matchers.containsString("Hello World!"));
+            assertThat(res, Matchers.containsString("Hello World EE9!"));
         }
         finally
         {
@@ -62,5 +62,4 @@ public class IntegrationTestJettyRunner
 
         throw new Exception("cannot find started Jetty");
     }
-
 }
