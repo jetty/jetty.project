@@ -506,7 +506,7 @@ public interface Request extends Attributes, Content.Source
          * completing the passed callback. The handling may be asynchronous, i.e. this method may return true and
          * complete the given callback later, possibly from a different thread.  If this method returns false,
          * then the callback must not be invoked and any mutation on the response reversed.</p>
-         * <p>Exceptions thrown by this method may be subsequently handled by an {@link ErrorHandler},
+         * <p>Exceptions thrown by this method may be subsequently handled by an error {@link Request.Handler},
          * if present, otherwise a default HTTP 500 error is generated and the
          * callback completed while writing the error response.</p>
          * <p>The simplest implementation is:</p>

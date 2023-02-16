@@ -40,44 +40,98 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An asynchronous HTTP response.
- * TODO Javadoc
+ * <p>The representation of an HTTP response, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
  */
 public interface Response extends Content.Sink
 {
-    // This is needed so that response methods can access the wrapped Request#getContext method
+    /**
+     * @return the {@link Request} associated with this {@code Response}
+     */
     Request getRequest();
 
+    /**
+     * @return the response HTTP status code
+     */
     int getStatus();
 
+    /**
+     * @param code the response HTTP status code
+     */
     void setStatus(int code);
 
+    /**
+     * @return the response HTTP headers
+     */
     HttpFields.Mutable getHeaders();
 
+    /**
+     * @return a supplier for the HTTP trailers
+     */
     Supplier<HttpFields> getTrailersSupplier();
 
+    /**
+     * @param trailers a supplier for the HTTP trailers
+     */
     void setTrailersSupplier(Supplier<HttpFields> trailers);
 
+    /**
+     * <p>Returns whether this response has already been committed.</p>
+     * <p>Committing a response means that the HTTP status code and HTTP headers
+     * cannot be modified anymore, typically because they have already been
+     * serialized and sent over the network.</p>
+     *
+     * @return whether this response has already been committed
+     */
     boolean isCommitted();
 
+    /**
+     * <p>Returns whether the response completed successfully.</p>
+     * <p>The response HTTP status code, HTTP headers and content
+     * have been successfully serialized and sent over the network
+     * without errors.</p>
+     *
+     * @return whether the response completed successfully
+     */
     boolean isCompletedSuccessfully();
 
+    /**
+     * <p>Resets this response, clearing the HTTP status code, HTTP headers
+     * and HTTP trailers.</p>
+     *
+     * @throws IllegalStateException if the response is already
+     * {@link #isCommitted() committed}
+     */
     void reset();
 
+    /**
+     * <p>Writes an {@link HttpStatus#isInterim(int) HTTP interim response},
+     * with the given HTTP status code and HTTP headers.</p>
+     * <p>It is possible to write more than one interim response, for example
+     * in case of {@link HttpStatus#EARLY_HINT_103}.</p>
+     * <p>The returned {@link CompletableFuture} is notified of the result
+     * of this write, whether it succeeded or failed.</p>
+     *
+     * @param status the interim HTTP status code
+     * @param headers the HTTP headers
+     * @return a {@link CompletableFuture} with the result of the write
+     */
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
     /**
      * {@inheritDoc}
-     * <p>Invocations of the passed {@code Callback} are serialized and a callback for a completed {@code write} call is
-     * not invoked until any previous {@code write} callback has returned.
-     * Thus the {@code Callback} should not block waiting for a callback of a future write call.</p>
+     * <p>The invocation of the passed {@code Callback} is serialized
+     * with previous calls of this method, so that it is not invoked until
+     * any invocation of the callback of a previous call to this method
+     * has returned.</p>
+     * <p>Thus a {@code Callback} should not block waiting for a callback
+     * of a future call to this method.</p>
+     * <p>Furthermore, the invocation of the passed callback is serialized
+     * with invocations of the {@link Runnable} demand callback passed to
+     * {@link Request#demand(Runnable)}.</p>
+     *
      * @param last whether the ByteBuffer is the last to write
      * @param byteBuffer the ByteBuffer to write
      * @param callback the callback to notify when the write operation is complete
-     *                 In addition to the invocation guarantees of {@link Content.Sink#write(boolean, ByteBuffer, Callback)},
-     *                 this implementation serializes the invocation of the {@code Callback} with
-     *                 invocations of any {@link Request#demand(Runnable)} {@code Runnable} invocations.
-     * @see Content.Sink#write(boolean, ByteBuffer, Callback)
      */
     @Override
     void write(boolean last, ByteBuffer byteBuffer, Callback callback);
@@ -127,6 +181,16 @@ public interface Response extends Content.Sink
         };
     }
 
+    /**
+     * <p>Unwraps the given response, recursively, until the wrapped instance
+     * is an instance of the given type, otherwise returns {@code null}.</p>
+     *
+     * @param response the response to unwrap
+     * @param type the response type to find
+     * @return the response as the given type, or {@code null}
+     * @param <T> the response type
+     * @see Wrapper
+     */
     @SuppressWarnings("unchecked")
     static <T extends Response.Wrapper> T as(Response response, Class<T> type)
     {
@@ -139,11 +203,34 @@ public interface Response extends Content.Sink
         return null;
     }
 
+    /**
+     * <p>Sends a {@code 302} HTTP redirect status code to the given location,
+     * without consuming the available request content.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param location the redirect location
+     * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
+     */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
     {
         sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, false);
     }
 
+    /**
+     * <p>Sends a {@code 302} HTTP redirect status code to the given location.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param code the redirect HTTP status code
+     * @param location the redirect location
+     * @param consumeAvailable whether to consumer the available request content
+     * @see Request#toRedirectURI(Request, String)
+     * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
+     * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
+     */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
         if (!HttpStatus.isRedirection(code))
@@ -176,6 +263,12 @@ public interface Response extends Content.Sink
         response.write(true, null, callback);
     }
 
+    /**
+     * <p>Adds an HTTP cookie to the response.</p>
+     *
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to add
+     */
     static void addCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
@@ -189,6 +282,12 @@ public interface Response extends Content.Sink
         response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
     }
 
+    /**
+     * <p>Replaces (if already exists, otherwise adds) an HTTP cookie to the response.</p>
+     *
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to replace or add
+     */
     static void replaceCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
@@ -224,6 +323,16 @@ public interface Response extends Content.Sink
         addCookie(response, cookie);
     }
 
+    /**
+     * <p>Writes an error response with HTTP status code {@code 500}.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param cause the cause of the error
+     */
     static void writeError(Request request, Response response, Callback callback, Throwable cause)
     {
         if (cause == null)
@@ -238,16 +347,51 @@ public interface Response extends Content.Sink
         writeError(request, response, callback, status, message, cause);
     }
 
+    /**
+     * <p>Writes an error response with the given HTTP status code.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param status the error HTTP status code
+     */
     static void writeError(Request request, Response response, Callback callback, int status)
     {
         writeError(request, response, callback, status, null, null);
     }
 
+    /**
+     * <p>Writes an error response with the given HTTP status code,
+     * and the given message in the response content.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param status the error HTTP status code
+     * @param message the error message to write in the response content
+     */
     static void writeError(Request request, Response response, Callback callback, int status, String message)
     {
         writeError(request, response, callback, status, message, null);
     }
 
+    /**
+     * <p>Writes an error response with the given HTTP status code,
+     * and the given message in the response content.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param status the error HTTP status code
+     * @param message the error message to write in the response content
+     * @param cause the cause of the error
+     */
     static void writeError(Request request, Response response, Callback callback, int status, String message, Throwable cause)
     {
         // Retrieve the Logger instance here, rather than having a
@@ -300,6 +444,13 @@ public interface Response extends Content.Sink
         response.write(true, null, callback);
     }
 
+    /**
+     * <p>Unwraps the given response until the innermost wrapped response instance.</p>
+     *
+     * @param response the response to unwrap
+     * @return the innermost wrapped response instance
+     * @see Wrapper
+     */
     static Response getOriginalResponse(Response response)
     {
         while (response instanceof Response.Wrapper wrapped)
@@ -309,6 +460,11 @@ public interface Response extends Content.Sink
         return response;
     }
 
+    /**
+     * @param response the HTTP response
+     * @return the number of response content bytes written so far,
+     * or {@code -1} if the number is unknown
+     */
     static long getContentBytesWritten(Response response)
     {
         Response originalResponse = getOriginalResponse(response);
@@ -378,6 +534,9 @@ public interface Response extends Content.Sink
         }
     }
 
+    /**
+     * <p>A wrapper for {@code Response} instances.</p>
+     */
     class Wrapper implements Response
     {
         private final Request _request;
@@ -389,15 +548,15 @@ public interface Response extends Content.Sink
             _wrapped = wrapped;
         }
 
+        public Response getWrapped()
+        {
+            return _wrapped;
+        }
+
         @Override
         public Request getRequest()
         {
             return _request;
-        }
-
-        public Response getWrapped()
-        {
-            return _wrapped;
         }
 
         @Override
@@ -431,12 +590,6 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            getWrapped().write(last, byteBuffer, callback);
-        }
-
-        @Override
         public boolean isCommitted()
         {
             return getWrapped().isCommitted();
@@ -458,6 +611,12 @@ public interface Response extends Content.Sink
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
             return getWrapped().writeInterim(status, headers);
+        }
+
+        @Override
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+            getWrapped().write(last, byteBuffer, callback);
         }
     }
 }
