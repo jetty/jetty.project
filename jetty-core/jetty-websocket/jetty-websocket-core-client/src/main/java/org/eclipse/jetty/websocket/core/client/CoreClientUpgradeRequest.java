@@ -472,8 +472,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        CoreSession coreSession = CoreSession.from(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
-        coreSession.setClassLoader(wsClient.getClassLoader());
+        CoreSession coreSession = CoreSession.from(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents(), wsClient.getClassLoader());
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();

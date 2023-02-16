@@ -29,9 +29,11 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
  */
 public interface CoreSession extends OutgoingFrames, IncomingFrames, Configuration
 {
-    static CoreSession from(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
+    static CoreSession from(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components, ClassLoader classLoader)
     {
-        return new WebSocketCoreSession(handler, behavior, negotiated, components);
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(handler, behavior, negotiated, components);
+        coreSession.setClassLoader(classLoader);
+        return coreSession;
     }
 
     static CoreSession from(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components, Consumer<Runnable> handle)
@@ -226,12 +228,6 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
     void processHandlerError(Throwable cause, Callback callback);
 
     /**
-     * Set the class loader to be used by this {@link CoreSession}.
-     * @param classLoader the ClassLoader.
-     */
-    void setClassLoader(ClassLoader classLoader);
-
-    /**
      * Used to set the WebSocketConnection on this {@link CoreSession}.
      * @param connection the websocket connection.
      */
@@ -401,11 +397,6 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         public void processHandlerError(Throwable cause, Callback callback)
         {
             callback.succeeded();
-        }
-
-        @Override
-        public void setClassLoader(ClassLoader classLoader)
-        {
         }
 
         @Override
