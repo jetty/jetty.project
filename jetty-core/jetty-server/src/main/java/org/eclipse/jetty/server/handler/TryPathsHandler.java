@@ -132,7 +132,7 @@ public class TryPathsHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -141,7 +141,7 @@ public class TryPathsHandler extends Handler.Wrapper
             return false;
         if (paths.size() == 1)
         {
-            if (!super.process(new TryPathsRequest(request, interpolate(request, paths.get(0))), response, callback))
+            if (!super.handle(new TryPathsRequest(request, interpolate(request, paths.get(0))), response, callback))
                 Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
         }
         else
@@ -190,7 +190,7 @@ public class TryPathsHandler extends Handler.Wrapper
                 TryPathsRequest tryRequest = new TryPathsRequest(request, interpolated);
                 TryPathsResponse tryResponse = new TryPathsResponse(tryRequest, response);
                 trying = true;
-                if (TryPathsHandler.super.process(tryRequest, tryResponse, this))
+                if (TryPathsHandler.super.handle(tryRequest, tryResponse, this))
                     return Action.SCHEDULED;
                 trying = false;
             }

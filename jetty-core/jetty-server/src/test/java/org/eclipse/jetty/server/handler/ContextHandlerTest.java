@@ -270,7 +270,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -306,7 +306,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -389,7 +389,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demand(() ->
@@ -443,7 +443,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -548,17 +548,17 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testThrownUsesContextErrorProcessor() throws Exception
+    public void testThrownUsesContextErrorHandler() throws Exception
     {
         _contextHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }
         });
-        _contextHandler.setErrorProcessor(new ErrorProcessor()
+        _contextHandler.setErrorHandler(new ErrorHandler()
         {
             @Override
             protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
@@ -620,7 +620,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, null, callback);

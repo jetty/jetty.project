@@ -124,7 +124,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -138,7 +138,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by method {}", this, request);
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
 
         // If not a supported path this URI is always excluded.
@@ -147,7 +147,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by path {}", this, request);
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
 
         // If the mime type is known from the path then apply mime type filtering.
@@ -161,12 +161,12 @@ public class BufferedResponseHandler extends Handler.Wrapper
                     LOG.debug("{} excluded by path suffix mime type {}", this, request);
 
                 // handle normally
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }
 
         BufferedResponse bufferedResponse = new BufferedResponse(request, response, callback);
-        return next.process(request, bufferedResponse, bufferedResponse);
+        return next.handle(request, bufferedResponse, bufferedResponse);
     }
 
     private class BufferedResponse extends Response.Wrapper implements Callback

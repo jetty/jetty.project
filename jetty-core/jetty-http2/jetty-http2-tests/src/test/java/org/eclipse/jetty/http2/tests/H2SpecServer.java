@@ -51,7 +51,7 @@ public class H2SpecServer
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, Callback.NOOP);
                 response.write(true, UTF_8.encode("hello"), callback);

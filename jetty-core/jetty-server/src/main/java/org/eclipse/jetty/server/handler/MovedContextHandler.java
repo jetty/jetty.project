@@ -150,7 +150,7 @@ public class MovedContextHandler extends ContextHandler
     private class Redirector extends Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String redirectURI = getRedirectURI();
             if (redirectURI == null)

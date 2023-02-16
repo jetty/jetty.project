@@ -76,7 +76,7 @@ public class MultiPartByteRangesTest
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertTrue(request.getHeaders().contains(HttpHeader.ACCEPT_RANGES));
                 assertTrue(request.getHeaders().contains(HttpHeader.RANGE));

@@ -57,7 +57,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, request.getHttpURI().getPathQuery(), callback);
                 return true;

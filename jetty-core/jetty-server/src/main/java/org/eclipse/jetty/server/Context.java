@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * A Context for handling/processing a request.
+ * A Context for handling a request.
  * Every request will always have a non-null context, which may initially be the Server context, or
  * a context provided by a ContextHandler.
  * <p>
@@ -45,7 +45,7 @@ public interface Context extends Attributes, Decorator, Executor
 
     Resource getBaseResource();
 
-    Request.Processor getErrorProcessor();
+    Request.Handler getErrorHandler();
 
     List<String> getVirtualHosts();
 

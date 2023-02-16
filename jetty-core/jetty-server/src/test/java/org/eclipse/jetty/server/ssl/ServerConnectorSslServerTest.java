@@ -212,7 +212,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             StringBuilder out = new StringBuilder();

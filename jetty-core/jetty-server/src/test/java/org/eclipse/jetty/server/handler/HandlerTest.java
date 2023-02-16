@@ -269,7 +269,7 @@ public class HandlerTest
         c.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 return false;
             }
@@ -287,7 +287,7 @@ public class HandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 return false;
             }
@@ -310,7 +310,7 @@ public class HandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 return false;
             }

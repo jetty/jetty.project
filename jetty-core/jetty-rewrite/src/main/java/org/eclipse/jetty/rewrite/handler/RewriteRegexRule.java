@@ -48,13 +48,13 @@ public class RewriteRegexRule extends RegexRule
     }
 
     @Override
-    public Processor apply(Processor input, Matcher matcher) throws IOException
+    public Handler apply(Handler input, Matcher matcher) throws IOException
     {
         HttpURI httpURI = input.getHttpURI();
         String replacedPath = matcher.replaceAll(replacement);
 
         HttpURI newURI = HttpURI.build(httpURI, replacedPath);
-        return new HttpURIProcessor(input, newURI);
+        return new HttpURIHandler(input, newURI);
     }
 
     @Override

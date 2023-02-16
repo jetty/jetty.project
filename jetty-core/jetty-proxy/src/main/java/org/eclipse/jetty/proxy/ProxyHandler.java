@@ -212,7 +212,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     @Override
-    public boolean process(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    public boolean handle(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("""

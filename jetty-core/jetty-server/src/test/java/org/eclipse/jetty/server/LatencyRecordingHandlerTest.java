@@ -50,7 +50,7 @@ public class LatencyRecordingHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String path = request.getHttpURI().getPath();
                 if (path.endsWith("/fail"))

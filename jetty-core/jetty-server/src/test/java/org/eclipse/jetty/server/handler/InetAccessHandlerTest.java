@@ -61,7 +61,7 @@ public class InetAccessHandlerTest
         _handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 callback.succeeded();

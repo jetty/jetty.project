@@ -504,12 +504,11 @@ public class ResourceService
         if (welcomeAction == null)
             return false;
 
-        welcomeActionProcess(request, response, callback, welcomeAction);
+        handleWelcomeAction(request, response, callback, welcomeAction);
         return true;
     }
 
-    // TODO: could use a better name
-    protected void welcomeActionProcess(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws IOException
+    protected void handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws IOException
     {
         switch (welcomeAction.type)
         {

@@ -166,7 +166,7 @@ public class AsyncListenerTest
                 super.writeErrorPageMessage(request, writer, code, message, uri);
             }
         };
-        server.setErrorProcessor(errorHandler);
+        server.setErrorHandler(errorHandler);
 
         String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
@@ -320,7 +320,7 @@ public class AsyncListenerTest
                 super.writeErrorPageMessage(request, writer, code, message, uri);
             }
         };
-        server.setErrorProcessor(errorHandler);
+        server.setErrorHandler(errorHandler);
 
         String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +

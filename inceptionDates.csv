@@ -2929,7 +2929,7 @@ jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/RequestTest.java,
 jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/ResourceListingTest.java, 2022-09-27
 jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/LatencyRecordingHandlerTest.java, 2023-01-19
 jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/GracefulHandlerTest.java, 2023-01-23
-jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/ErrorProcessorTest.java, 2016-07-18
+jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/ErrorHandlerTest.java, 2016-07-18
 jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/HttpServerTestFixture.java, 2010-07-13
 jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/HttpServerTestBase.java, 2009-03-24
 jetty-core/jetty-server/src/test/java/org/eclipse/jetty/server/ForwardedRequestCustomizerTest.java, 2016-08-11
@@ -2997,7 +2997,7 @@ jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/ForwardedRequestC
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/ResourceListing.java, 2022-08-02
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/DelayedHandler.java, 2022-05-03
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/GracefulHandler.java, 2023-01-23
-jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/ReHandlingErrorProcessor.java, 2022-10-24
+jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/ReHandlingErrorHandler.java, 2022-10-24
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/jmx/ContextHandlerMBean.java, 2009-03-24
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/jmx/AbstractHandlerMBean.java, 2009-06-30
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/jmx/package-info.java, 2012-11-02
@@ -3031,7 +3031,7 @@ jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/ContextHa
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/package-info.java, 2012-11-02
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/ContextResponse.java, 2022-05-03
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/ContextHandler.java, 2009-03-24
-jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/ErrorProcessor.java, 2022-05-03
+jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/ErrorHandler.java, 2022-05-03
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/IdleTimeoutHandler.java, 2013-11-08
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/StatisticsHandler.java, 2009-03-24
 jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/handler/SecuredRedirectHandler.java, 2014-09-30

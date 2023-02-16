@@ -339,7 +339,7 @@ public class IdleTimeoutTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 sleep(2 * idleTimeout);
 
@@ -589,7 +589,7 @@ public class IdleTimeoutTest extends AbstractTest
             private Callback _callback;
 
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 _request = request;
                 _callback = callback;
@@ -675,7 +675,7 @@ public class IdleTimeoutTest extends AbstractTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 System.err.println("processing request " + request.getHttpURI().getPath());
                 requests.incrementAndGet();

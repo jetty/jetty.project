@@ -467,7 +467,7 @@ public class ServletRequestLogTest
         // Add error page mapping
         ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
         errorMapper.addErrorPage(500, "/errorpage");
-        app.setErrorProcessor(errorMapper);
+        app.setErrorHandler(errorMapper);
 
         try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
@@ -547,7 +547,7 @@ public class ServletRequestLogTest
         // Add error page mapping
         ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
         errorMapper.addErrorPage(500, "/errorpage");
-        app.setErrorProcessor(errorMapper);
+        app.setErrorHandler(errorMapper);
 
         try
         {

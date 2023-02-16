@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.Callback;
 public class HelloHandler extends Handler.Abstract
 {
     @Override
-    public boolean process(Request request, Response response, Callback callback)
+    public boolean handle(Request request, Response response, Callback callback)
     {
         response.setStatus(200);
         response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");

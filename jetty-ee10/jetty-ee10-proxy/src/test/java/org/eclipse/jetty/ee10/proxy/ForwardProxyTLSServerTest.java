@@ -514,7 +514,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -524,7 +524,7 @@ public class ForwardProxyTLSServerTest
                     callback.succeeded();
                     return true;
                 }
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }, realm);
     }
@@ -537,7 +537,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -547,7 +547,7 @@ public class ForwardProxyTLSServerTest
                     response.write(true, ByteBuffer.allocate(4096), callback);
                     return true;
                 }
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }, realm);
     }
@@ -560,7 +560,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -570,7 +570,7 @@ public class ForwardProxyTLSServerTest
                     response.write(true, ByteBuffer.allocate(1024), callback);
                     return true;
                 }
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }, realm, true);
     }
@@ -834,10 +834,10 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new EmptyServerHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 sleep(3 * timeout);
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         });
         startProxy(proxyTLS);
@@ -870,10 +870,10 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new EmptyServerHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 sleep(3 * timeout);
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         });
         startProxy(proxyTLS);
@@ -998,7 +998,7 @@ public class ForwardProxyTLSServerTest
     private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))

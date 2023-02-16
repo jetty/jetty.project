@@ -63,7 +63,7 @@ public class ProxyProtocolTest
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
                 if (addr instanceof InetSocketAddress iAddr)
@@ -132,7 +132,7 @@ public class ProxyProtocolTest
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 if (validateEndPoint(request) &&
                     remoteAddr.equals(Request.getRemoteAddr(request)) &&
@@ -231,7 +231,7 @@ public class ProxyProtocolTest
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;

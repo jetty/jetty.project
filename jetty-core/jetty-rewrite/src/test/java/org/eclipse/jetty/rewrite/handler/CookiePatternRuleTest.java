@@ -40,7 +40,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 Content.Sink.write(response, false, "pathInContext=%s%n".formatted(Request.getPathInContext(request)), Callback.NOOP);

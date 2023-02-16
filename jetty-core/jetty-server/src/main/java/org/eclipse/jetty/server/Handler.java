@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>A Jetty component that handles HTTP requests, of any version (HTTP/1.1, HTTP/2 or HTTP/3).
- * A {@code Handler} is a {@link Request.Processor} with the addition of {@link LifeCycle}
+ * A {@code Handler} is a {@link Request.Handler} with the addition of {@link LifeCycle}
  * behaviours, plus variants that allow organizing {@code Handler}s as a tree structure.</p>
  * <p>{@code Handler}s may wrap the {@link Request}, {@link Response} and/or {@link Callback} and
  * then forward the wrapped instances to their children, so that they see a modified request;
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * response; and/or to intercept the completion of the callback.
  * <p>A {@code Handler} is an {@link Invocable} and implementations must respect
  * the {@link InvocationType} they declare within calls to
- * {@link #process(Request, Response, Callback)}.</p>
+ * {@link #handle(Request, Response, Callback)}.</p>
  * <p>A minimal tree structure could be:</p>
  * <pre>
  * Server
@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * class SimpleHandler extends Handler.Abstract.NonBlocking
  * {
  *     @Override
- *     public boolean process(Request request, Response response, Callback callback)
+ *     public boolean handle(Request request, Response response, Callback callback)
  *     {
  *         // Implicitly sends a 200 OK response with no content.
  *         callback.succeeded();
@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * class YourHelloHandler extends Handler.Abstract.NonBlocking
  * {
  *     @Override
- *     public boolean process(Request request, Response response, Callback callback)
+ *     public boolean handle(Request request, Response response, Callback callback)
  *     {
  *         if (request.getHttpURI().getPath().startsWith("/yourPath"))
  *         {
@@ -96,10 +96,10 @@ import org.slf4j.LoggerFactory;
  * class ConditionalHandler extends Handler.Wrapper
  * {
  *     @Override
- *     public boolean process(Request request, Response response, Callback callback)
+ *     public boolean handle(Request request, Response response, Callback callback)
  *     {
  *         if (request.getHttpURI().getPath().startsWith("/yourPath")
- *             return super.process(request, response, callback);
+ *             return super.handle(request, response, callback);
  *         if (request.getHttpURI().getPath().startsWith("/wrong"))
  *         {
  *             Response.writeError(request, response, callback, 400);
@@ -110,10 +110,10 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  *
- * @see Request.Processor
+ * @see Request.Handler
  */
 @ManagedObject("Handler")
-public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Processor
+public interface Handler extends LifeCycle, Destroyable, Request.Handler
 {
     /**
      * @return the {@code Server} associated with this {@code Handler}
@@ -605,10 +605,10 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Handler next = getHandler();
-            return next != null && next.process(request, response, callback);
+            return next != null && next.handle(request, response, callback);
         }
 
         @Override
@@ -623,7 +623,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
     /**
      * <p>A {@link Handler.Container} that contains a list of other {@code Handler}s that are
-     * tried in sequence by {@link #process(Request, Response, Callback)}.</p>
+     * tried in sequence by {@link #handle(Request, Response, Callback)}.</p>
      */
     class Sequence extends AbstractContainer implements Collection
     {
@@ -658,11 +658,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             for (Handler h : _handlers)
             {
-                if (h.process(request, response, callback))
+                if (h.handle(request, response, callback))
                     return true;
             }
             return false;

@@ -367,7 +367,7 @@ public class SSLEngineTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)

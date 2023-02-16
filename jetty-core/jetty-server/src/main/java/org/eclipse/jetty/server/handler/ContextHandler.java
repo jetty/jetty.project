@@ -121,7 +121,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private boolean _rootContext = true;
     private Resource _baseResource;
     private ClassLoader _classLoader;
-    private Request.Processor _errorProcessor;
+    private Request.Handler _errorHandler;
     private boolean _allowNullPathInContext;
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
@@ -763,7 +763,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler handler = getHandler();
         if (handler == null || !isStarted())
@@ -780,13 +780,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         if (!isAvailable())
         {
-            processUnavailable(request, response, callback);
+            handleUnavailable(request, response, callback);
             return true;
         }
 
         if (pathInContext.length() == 0 && !getAllowNullPathInContext())
         {
-            processMovedPermanently(request, response, callback);
+            handleMovedPermanently(request, response, callback);
             return true;
         }
 
@@ -796,7 +796,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (contextRequest == null)
             return false;
 
-        if (processByContextHandler(pathInContext, contextRequest, response, callback))
+        if (handleByContextHandler(pathInContext, contextRequest, response, callback))
             return true;
 
         // Past this point we are calling the downstream handler in scope.
@@ -804,7 +804,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         ContextResponse contextResponse = wrapResponse(contextRequest, response);
         try
         {
-            return handler.process(contextRequest, contextResponse, callback);
+            return handler.handle(contextRequest, contextResponse, callback);
         }
         catch (Throwable t)
         {
@@ -813,18 +813,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
         finally
         {
-            // We exit scope here, even though process is asynchronous, as we have wrapped
-            // all our callbacks to re-enter the scope.
+            // We exit scope here, even though handle() is asynchronous,
+            // as we have wrapped all our callbacks to re-enter the scope.
             exitScope(contextRequest, request.getContext(), lastLoader);
         }
     }
 
-    protected boolean processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         return false;
     }
 
-    protected void processMovedPermanently(Request request, Response response, Callback callback)
+    protected void handleMovedPermanently(Request request, Response response, Callback callback)
     {
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)
@@ -837,7 +837,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         callback.succeeded();
     }
 
-    protected void processUnavailable(Request request, Response response, Callback callback)
+    protected void handleUnavailable(Request request, Response response, Callback callback)
     {
         Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, null);
     }
@@ -923,21 +923,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     /**
      * @return Returns the errorHandler.
      */
-    @ManagedAttribute("The error processor to use for the context")
-    public Request.Processor getErrorProcessor()
+    @ManagedAttribute("The error handler to use for the context")
+    public Request.Handler getErrorHandler()
     {
         // TODO, do we need to wrap this so that we can establish the context
         //       Classloader?  Or will the caller already do that?
-        return _errorProcessor;
+        return _errorHandler;
     }
 
     /**
-     * @param errorProcessor The error processor to set.
+     * @param errorHandler The error handler to set.
      */
-    public void setErrorProcessor(Request.Processor errorProcessor)
+    public void setErrorHandler(Request.Handler errorHandler)
     {
-        updateBean(_errorProcessor, errorProcessor, true);
-        _errorProcessor = errorProcessor;
+        updateBean(_errorHandler, errorHandler, true);
+        _errorHandler = errorHandler;
     }
 
     protected ContextRequest wrapRequest(Request request, Response response)
@@ -1149,12 +1149,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public Request.Processor getErrorProcessor()
+        public Request.Handler getErrorHandler()
         {
-            Request.Processor processor = ContextHandler.this.getErrorProcessor();
-            if (processor == null)
-                processor = getServer().getErrorProcessor();
-            return processor;
+            Request.Handler handler = ContextHandler.this.getErrorHandler();
+            if (handler == null)
+                handler = getServer().getErrorHandler();
+            return handler;
         }
 
         @Override

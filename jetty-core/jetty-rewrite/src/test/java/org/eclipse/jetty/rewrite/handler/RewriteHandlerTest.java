@@ -40,7 +40,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().put("X-Path", request.getHttpURI().getPath());

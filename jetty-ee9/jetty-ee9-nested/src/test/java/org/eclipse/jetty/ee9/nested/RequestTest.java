@@ -1014,7 +1014,7 @@ public class RequestTest
         org.eclipse.jetty.server.Handler.Singleton handler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
                 {
@@ -1034,7 +1034,7 @@ public class RequestTest
                     }
                 };
 
-                return super.process(wrapper, response, callback);
+                return super.handle(wrapper, response, callback);
             }
         };
 

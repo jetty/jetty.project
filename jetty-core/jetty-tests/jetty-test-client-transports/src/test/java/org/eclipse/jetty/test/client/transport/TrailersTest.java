@@ -43,7 +43,7 @@ public class TrailersTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Read slowly.
                 try (InputStream input = Content.Source.asInputStream(request))

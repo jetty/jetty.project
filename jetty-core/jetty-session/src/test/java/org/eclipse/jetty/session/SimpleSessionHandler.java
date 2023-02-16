@@ -57,7 +57,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -137,7 +137,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
                     Response.replaceCookie(_response, cookie);
             }
 
-            return handler.process(this, _response, callback);
+            return handler.handle(this, _response, callback);
         }
     }
 

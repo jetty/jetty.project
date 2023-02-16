@@ -70,7 +70,7 @@ public class ManyHandlers
     public static class ParamHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Fields queryFields = Request.extractQueryParameters(request);
             Fields formFields = FormFields.from(request).get();
@@ -90,10 +90,10 @@ public class ManyHandlers
     public static class WelcomeWrapHandler extends Handler.Wrapper
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().add("X-Welcome", "Greetings from WelcomeWrapHandler");
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
     }
           

@@ -431,7 +431,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
     private abstract static class AbstractMultiPartHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             // TODO use the DelayedHandler.UntilMultiPartFormData
 

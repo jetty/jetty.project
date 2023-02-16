@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.URIUtil;
 public class CompactPathRule extends Rule
 {
     @Override
-    public Processor matchAndApply(Processor input) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
         String path = input.getHttpURI().getCanonicalPath();
         String compacted = URIUtil.compactPath(path);
@@ -36,6 +36,6 @@ public class CompactPathRule extends Rule
 
         HttpURI uri = Request.newHttpURIFrom(input, compacted);
 
-        return new HttpURIProcessor(input, uri);
+        return new HttpURIHandler(input, uri);
     }
 }

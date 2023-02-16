@@ -1356,7 +1356,7 @@ public class ForwardedRequestCustomizerTest
         private RequestTester requestTester;
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (requestTester != null && requestTester.check(request, response))
             {

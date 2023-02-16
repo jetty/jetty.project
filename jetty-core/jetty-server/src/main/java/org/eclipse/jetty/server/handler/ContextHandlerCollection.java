@@ -132,7 +132,7 @@ public class ContextHandlerCollection extends Handler.Sequence
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         List<Handler> handlers = getHandlers();
 
@@ -140,13 +140,13 @@ public class ContextHandlerCollection extends Handler.Sequence
             return false;
 
         if (!(handlers instanceof Mapping))
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-            return handlers.get(0).process(request, response, callback);
+            return handlers.get(0).handle(request, response, callback);
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
@@ -156,7 +156,7 @@ public class ContextHandlerCollection extends Handler.Sequence
         String path = Request.getPathInContext(request);
         if (!path.startsWith("/"))
         {
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
 
         int limit = path.length() - 1;
@@ -176,7 +176,7 @@ public class ContextHandlerCollection extends Handler.Sequence
                 {
                     try
                     {
-                        if (branch.getHandler().process(request, response, callback))
+                        if (branch.getHandler().handle(request, response, callback))
                             return true;
                     }
                     catch (Throwable t)

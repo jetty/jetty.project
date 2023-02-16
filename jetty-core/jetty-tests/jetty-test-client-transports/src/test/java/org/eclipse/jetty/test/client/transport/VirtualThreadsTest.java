@@ -49,7 +49,7 @@ public class VirtualThreadsTest extends AbstractTest
         prepareServer(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 if (!VirtualThreads.isVirtualThread())
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);

@@ -115,7 +115,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
 
@@ -202,7 +202,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.

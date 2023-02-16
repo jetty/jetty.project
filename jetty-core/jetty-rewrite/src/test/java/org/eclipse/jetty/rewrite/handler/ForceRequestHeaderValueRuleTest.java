@@ -37,7 +37,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 for (HttpField httpField : request.getHeaders())

@@ -72,7 +72,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -131,7 +131,7 @@ public class HttpClientDemandTest extends AbstractTest
         startServer(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
@@ -218,7 +218,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -313,7 +313,7 @@ public class HttpClientDemandTest extends AbstractTest
         startServer(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, bytes.length);
                 response.write(true, ByteBuffer.wrap(bytes), callback);
@@ -391,7 +391,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response)))
@@ -437,7 +437,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
@@ -569,7 +569,7 @@ public class HttpClientDemandTest extends AbstractTest
     public void testReadDemandInSpawnedThread(Transport transport) throws Exception
     {
         int totalBytes = 1024;
-        start(transport, new TestProcessor(totalBytes));
+        start(transport, new TestHandler(totalBytes));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -621,17 +621,17 @@ public class HttpClientDemandTest extends AbstractTest
         }
     }
 
-    private static class TestProcessor extends Handler.Abstract
+    private static class TestHandler extends Handler.Abstract
     {
         private final int totalBytes;
 
-        private TestProcessor(int totalBytes)
+        private TestHandler(int totalBytes)
         {
             this.totalBytes = totalBytes;
         }
 
         @Override
-        public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 

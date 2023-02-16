@@ -113,7 +113,7 @@ public class TrailersTest extends AbstractTest
             private Callback _callback;
 
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 _request = request;
                 _callback = callback;
@@ -263,7 +263,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);
@@ -325,7 +325,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -364,7 +364,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -417,7 +417,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);

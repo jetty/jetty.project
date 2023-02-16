@@ -1927,7 +1927,7 @@ public class ServletContextHandlerTest
         list.addHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Response.writeError(request, response, callback, 404, "Fell Through");
                 return true;

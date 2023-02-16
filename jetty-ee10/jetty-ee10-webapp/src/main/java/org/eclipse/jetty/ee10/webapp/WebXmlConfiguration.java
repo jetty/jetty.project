@@ -130,8 +130,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
     {
         context.setWelcomeFiles(null);
 
-        //TODO: ErrorPageErrorHandler is not an ErrorProcessor
-        if (context.getErrorProcessor() instanceof ErrorPageErrorHandler errorPageErrorHandler) 
+        //TODO: ErrorPageErrorHandler is not an ErrorHandler
+        if (context.getErrorHandler() instanceof ErrorPageErrorHandler errorPageErrorHandler)
             errorPageErrorHandler.setErrorPages(null);
 
         IO.close(_resourceFactory);

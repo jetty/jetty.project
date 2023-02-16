@@ -434,7 +434,7 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
