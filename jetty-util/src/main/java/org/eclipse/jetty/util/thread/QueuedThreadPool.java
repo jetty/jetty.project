@@ -1050,14 +1050,26 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             _tryExecutor);
     }
 
-    private boolean doShrink(long last, final long now, final long itNanos, final long siNanos) {
+    /**
+     * <p>Attempts to reserve the right for the calling thread to die and remove itself from the
+     * pool.</p>
+     *
+     * <p>Under the hood this works very similarly to {@link AtomicLong#getAndAdd(long)},
+     * but with the ability to shortcircuit in the event that the value being updated
+     * (in this case {@link #_lastShrink}) has increased beyond a certain threshold.</p>
+     *
+     * <p>In the vast majority of cases we expect this to immediately return <code>true</code></p>
+     */
+    private boolean doShrink(long now, long itNanos) {
+        final long siNanos = getShrinkInterval();
         final long baseline = now - itNanos;
-        boolean ret;
-        while (!(ret = _lastShrink.compareAndSet(last, Math.max(last, baseline) + siNanos)) &&
-            (now - (last = _lastShrink.get())) > siNanos) {
-            // keep trying to update.
+        long last;
+        while (NanoTime.elapsed(last = _lastShrink.get(), now) > siNanos) {
+            if (_lastShrink.compareAndSet(last, Math.max(last, baseline) + siNanos)) {
+                return true;
+            }
         }
-        return ret;
+        return false;
     }
 
     private class Runner implements Runnable
@@ -1106,13 +1118,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             long idleTimeout = getIdleTimeout();
                             if (idleTimeout > 0 && getThreads() > _minThreads)
                             {
-                                long last;
                                 long now = NanoTime.now();
                                 long itNanos = TimeUnit.MILLISECONDS.toNanos(idleTimeout);
-                                long siNanos;
-                                if (now - idleBaseline > itNanos &&
-                                    (now - (last = _lastShrink.get())) > (siNanos = getShrinkInterval()) &&
-                                    doShrink(last, now, itNanos, siNanos))
+                                if (NanoTime.elapsed(idleBaseline, now) > itNanos && doShrink(now, itNanos))
                                 {
                                     if (LOG.isDebugEnabled())
                                         LOG.debug("shrinking {}", QueuedThreadPool.this);
