@@ -50,7 +50,7 @@ public class ServerQuicConnectorTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, """
                         <html>
@@ -92,7 +92,7 @@ public class ServerQuicConnectorTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 int contentLength = 16 * 1024 * 1024;
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);

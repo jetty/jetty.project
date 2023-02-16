@@ -75,7 +75,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -165,7 +165,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, true, ByteBuffer.wrap(content));
                 return true;
@@ -216,7 +216,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
                 return true;
@@ -254,7 +254,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
@@ -301,7 +301,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
@@ -337,7 +337,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertEquals(host, Request.getServerName(request));
                 assertEquals(port, Request.getServerPort(request));
@@ -752,7 +752,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -777,7 +777,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(":custom", "special");
                 callback.succeeded();
@@ -813,7 +813,7 @@ public class HTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(":custom", "special");
                 try

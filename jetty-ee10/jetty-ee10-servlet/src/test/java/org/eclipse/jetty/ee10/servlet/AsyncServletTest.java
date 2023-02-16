@@ -98,7 +98,7 @@ public class AsyncServletTest
         context.addEventListener(new DebugListener());
 
         _errorHandler = new ErrorPageErrorHandler();
-        context.setErrorProcessor(_errorHandler);
+        context.setErrorHandler(_errorHandler);
         _errorHandler.addErrorPage(300, 599, "/error/custom");
 
         _servletHandler = context.getServletHandler();

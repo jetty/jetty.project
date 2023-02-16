@@ -953,7 +953,7 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected void welcomeActionProcess(Request coreRequest, Response coreResponse, Callback callback, WelcomeAction welcomeAction) throws IOException
+        protected void handleWelcomeAction(Request coreRequest, Response coreResponse, Callback callback, WelcomeAction welcomeAction) throws IOException
         {
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);

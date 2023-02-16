@@ -32,7 +32,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -277,15 +277,15 @@ public interface Response extends Content.Sink
 
         response.setStatus(status);
 
-        // TODO: detect recursion when an ErrorProcessor calls this method, otherwise StackOverflowError.
+        // TODO: detect recursion when an ErrorHandler calls this method, otherwise StackOverflowError.
         Context context = request.getContext();
-        Request.Processor errorProcessor = context.getErrorProcessor();
-        if (errorProcessor != null)
+        Request.Handler errorHandler = context.getErrorHandler();
+        if (errorHandler != null)
         {
-            Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
+            Request errorRequest = new ErrorHandler.ErrorRequest(request, status, message, cause);
             try
             {
-                if (errorProcessor.process(errorRequest, response, callback))
+                if (errorHandler.handle(errorRequest, response, callback))
                     return;
             }
             catch (Exception e)
@@ -296,7 +296,7 @@ public interface Response extends Content.Sink
         }
 
         // fall back to very empty error page
-        response.getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
+        response.getHeaders().put(ErrorHandler.ERROR_CACHE_CONTROL);
         response.write(true, null, callback);
     }
 

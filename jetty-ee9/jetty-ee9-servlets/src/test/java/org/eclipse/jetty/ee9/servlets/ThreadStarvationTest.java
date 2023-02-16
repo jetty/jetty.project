@@ -228,7 +228,7 @@ public class ThreadStarvationTest
             _server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public boolean process(Request request, Response response, Callback callback) throws Exception
+                public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
                     int c = count.getAndIncrement();
                     if (c < parties)

@@ -55,7 +55,7 @@ public class HTTP2CServer extends Server
     private static class SimpleHandler extends NonBlocking
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Fields fields = Request.extractQueryParameters(request);
 

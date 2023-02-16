@@ -153,7 +153,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))

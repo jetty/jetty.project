@@ -83,7 +83,7 @@ public class ProxyCustomizerTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add("preexisting.attribute", request.getAttribute("some.attribute").toString());
                 ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNameSet());

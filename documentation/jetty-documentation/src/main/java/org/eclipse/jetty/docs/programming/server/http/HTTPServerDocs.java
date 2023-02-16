@@ -97,7 +97,7 @@ public class HTTPServerDocs
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Succeed the callback to write the response.
                 callback.succeeded();
@@ -478,7 +478,7 @@ public class HTTPServerDocs
         class LoggingHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;
@@ -488,7 +488,7 @@ public class HTTPServerDocs
         class App1Handler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;
@@ -498,7 +498,7 @@ public class HTTPServerDocs
         class App2Handler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;
@@ -525,7 +525,7 @@ public class HTTPServerDocs
         {
             @Override
             // tag::handlerAPI[]
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 return true;
             }
@@ -539,7 +539,7 @@ public class HTTPServerDocs
         class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
@@ -576,7 +576,7 @@ public class HTTPServerDocs
         class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 return true;
             }
@@ -586,7 +586,7 @@ public class HTTPServerDocs
         class FilterHandler extends Handler.Wrapper
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String path = Request.getPathInContext(request);
                 if (path.startsWith("/old_path/"))
@@ -608,7 +608,7 @@ public class HTTPServerDocs
                 }
 
                 // Forward to the next Handler.
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }
 
@@ -631,7 +631,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -660,7 +660,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -670,7 +670,7 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
                 return true;
@@ -849,7 +849,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -859,7 +859,7 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
                 return true;

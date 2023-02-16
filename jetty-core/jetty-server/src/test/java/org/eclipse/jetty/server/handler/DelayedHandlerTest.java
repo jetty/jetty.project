@@ -129,10 +129,10 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         });
         _server.start();
@@ -175,7 +175,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Check that we are not called via any demand callback
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
@@ -187,7 +187,7 @@ public class DelayedHandlerTest
                     DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
 
                 processing.countDown();
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         });
         _server.start();
@@ -232,7 +232,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Check that we are not called via any demand callback
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
@@ -250,7 +250,7 @@ public class DelayedHandlerTest
                 assertThat(request.getContext(), sameInstance(context.getContext()));
 
                 processing.countDown();
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         });
         _server.start();
@@ -292,20 +292,20 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Check that we are called directly from HttpConnection.onFillable
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
-                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.process"));
+                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
 
                 // Check the content is available
                 String content = Content.Source.asString(request);
                 assertThat(content, equalTo("1234567890"));
 
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         });
         _server.start();
@@ -355,7 +355,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 return false;
             }
@@ -393,7 +393,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
                 Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);
@@ -463,14 +463,14 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                // Check that we are called directly from HttpConnection.onFillable via DelayedHandler.process
+                // Check that we are called directly from HttpConnection.onFillable via DelayedHandler.handle().
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
-                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.process"));
+                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
 
                 Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);
                 Content.Sink.write(response, true, String.valueOf(fields), callback);

@@ -1192,7 +1192,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected boolean processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
@@ -1202,7 +1202,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return true;
         }
 
-        return super.processByContextHandler(pathInContext, request, response, callback);
+        return super.handleByContextHandler(pathInContext, request, response, callback);
     }
 
     @Override

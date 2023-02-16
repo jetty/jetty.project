@@ -117,7 +117,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         org.eclipse.jetty.server.Handler.Singleton terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -135,7 +135,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         super.failed(x);
                     }
                 });
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         };
         _server.insertHandler(terminateHandler);

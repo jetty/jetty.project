@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>An abstract rule that, upon matching a certain condition, may wrap
- * the {@code Request} or the {@code Processor} to execute custom logic.</p>
+ * the {@code Request} or the {@code Handler} to execute custom logic.</p>
  */
 public abstract class Rule
 {
@@ -31,14 +31,14 @@ public abstract class Rule
     /**
      * <p>Tests whether the given {@code Request} should apply, and if so the rule logic is triggered.</p>
      *
-     * @param input the input {@code Request} and {@code Processor}
-     * @return the possibly wrapped {@code Request} and {@code Processor}, or {@code null} if the rule did not match
+     * @param input the input {@code Request} and {@code Handler}
+     * @return the possibly wrapped {@code Request} and {@code Handler}, or {@code null} if the rule did not match
      * @throws IOException if applying the rule failed
      */
-    public abstract Processor matchAndApply(Processor input) throws IOException;
+    public abstract Handler matchAndApply(Handler input) throws IOException;
 
     /**
-     * @return when {@code true}, rules after this one are not processed
+     * @return when {@code true}, rules after this one are not invoked
      */
     public boolean isTerminating()
     {
@@ -60,61 +60,61 @@ public abstract class Rule
     }
 
     /**
-     * <p>A {@link Request.Wrapper} that is also a {@link org.eclipse.jetty.server.Request.Processor},
+     * <p>A {@link Request.Wrapper} that is also a {@link Handler},
      * used to chain a sequence of {@link Rule}s together.
-     * The rule processor is initialized with the initial request, then it is
+     * The rule handler is initialized with the initial request, then it is
      * passed to a chain of rules before the child {@code Handler} is
-     * passed in {@link #setProcessor(Processor)}. Finally, the response
-     * and callback are provided in a call to {@link #process(Request, Response, Callback)},
-     * which calls the {@link #process(Response, Callback)}.</p>
+     * passed in {@link #setHandler(Handler)}. Finally, the response
+     * and callback are provided in a call to {@link #handle(Request, Response, Callback)},
+     * which calls the {@link #handle(Response, Callback)}.</p>
      */
-    public static class Processor extends Request.Wrapper implements Request.Processor
+    public static class Handler extends Request.Wrapper implements Request.Handler
     {
-        private volatile Processor _processor;
+        private volatile Handler _handler;
 
-        public Processor(Request request)
+        public Handler(Request request)
         {
             super(request);
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            return process(response, callback);
+            return handle(response, callback);
         }
 
         /**
-         * <p>Processes this wrapped request together with the passed response and
-         * callback, using the processor set in {@link #setProcessor(Processor)}.
-         * This method should be extended if additional processing of the wrapped
+         * <p>Handles this wrapped request together with the passed response and
+         * callback, using the handler set in {@link #setHandler(Handler)}.
+         * This method should be extended if additional handling of the wrapped
          * request is required.</p>
          * @param response The response
          * @param callback The callback
-         * @throws Exception If there is a problem processing
-         * @see #setProcessor(Processor)
+         * @throws Exception If there is a problem handling
+         * @see #setHandler(Handler)
          */
-        protected boolean process(Response response, Callback callback) throws Exception
+        protected boolean handle(Response response, Callback callback) throws Exception
         {
-            Processor processor = _processor;
-            return processor != null && processor.process(this, response, callback);
+            Handler handler = _handler;
+            return handler != null && handler.handle(this, response, callback);
         }
 
         /**
-         * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
+         * <p>Wraps the given {@code Handler} within this instance and returns this instance.</p>
          *
-         * @param processor the {@code Processor} to wrap
+         * @param handler the {@code Handler} to wrap
          */
-        public void setProcessor(Processor processor)
+        public void setHandler(Handler handler)
         {
-            _processor = processor;
+            _handler = handler;
         }
     }
 
-    public static class HttpURIProcessor extends Processor
+    public static class HttpURIHandler extends Handler
     {
         private final HttpURI _uri;
 
-        public HttpURIProcessor(Request request, HttpURI uri)
+        public HttpURIHandler(Request request, HttpURI uri)
         {
             super(request);
             _uri = uri;

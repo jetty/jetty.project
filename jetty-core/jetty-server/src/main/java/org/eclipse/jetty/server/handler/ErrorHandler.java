@@ -54,14 +54,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handler for Error pages
- * An ErrorHandler is registered with {@link Server#setErrorProcessor(Request.Processor)}.
+ * An ErrorHandler is registered with {@link Server#setErrorHandler(Request.Handler)}.
  * It is called by the {@link Response#writeError(Request, Response, Callback, int, String)}
  * to generate an error page.
  */
-public class ErrorProcessor implements Request.Processor
+public class ErrorHandler implements Request.Handler
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
-    private static final Logger LOG = LoggerFactory.getLogger(ErrorProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_STATUS = "org.eclipse.jetty.server.error_status";
     public static final String ERROR_MESSAGE = "org.eclipse.jetty.server.error_message";
     public static final String ERROR_EXCEPTION = "org.eclipse.jetty.server.error_exception";
@@ -74,7 +74,7 @@ public class ErrorProcessor implements Request.Processor
     boolean _showMessageInTitle = true;
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
-    public ErrorProcessor()
+    public ErrorHandler()
     {
     }
 
@@ -84,7 +84,7 @@ public class ErrorProcessor implements Request.Processor
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback)
+    public boolean handle(Request request, Response response, Callback callback)
     {
         if (_cacheControl != null)
             response.getHeaders().put(_cacheControl);
@@ -516,14 +516,14 @@ public class ErrorProcessor implements Request.Processor
         writer.write(StringUtil.sanitizeXmlString(string));
     }
 
-    public static Request.Processor getErrorProcessor(Server server, ContextHandler context)
+    public static Request.Handler getErrorHandler(Server server, ContextHandler context)
     {
-        Request.Processor errorProcessor = null;
+        Request.Handler errorHandler = null;
         if (context != null)
-            errorProcessor = context.getErrorProcessor();
-        if (errorProcessor == null && server != null)
-            errorProcessor = server.getErrorProcessor();
-        return errorProcessor;
+            errorHandler = context.getErrorHandler();
+        if (errorHandler == null && server != null)
+            errorHandler = server.getErrorHandler();
+        return errorHandler;
     }
 
     public static class ErrorRequest extends Request.Wrapper

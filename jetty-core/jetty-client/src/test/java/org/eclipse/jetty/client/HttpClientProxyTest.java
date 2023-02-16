@@ -151,7 +151,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 String target = org.eclipse.jetty.server.Request.getPathInContext(request);
                 if (target.startsWith("/proxy"))

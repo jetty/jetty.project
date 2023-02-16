@@ -86,10 +86,10 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = _handler;
-        return next != null && next.process(request, response, callback);
+        return next != null && next.handle(request, response, callback);
     }
 
     @Override

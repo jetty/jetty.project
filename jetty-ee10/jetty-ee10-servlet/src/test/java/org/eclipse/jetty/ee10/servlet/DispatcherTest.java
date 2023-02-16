@@ -751,7 +751,7 @@ public class DispatcherTest
         _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatchTestServlet.class), "/DispatchServlet");
 
         ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
-        _contextHandler.setErrorProcessor(errorPageErrorHandler);
+        _contextHandler.setErrorHandler(errorPageErrorHandler);
         errorPageErrorHandler.addErrorPage(404, "/TestServlet");
 
         HttpTester.Response response;

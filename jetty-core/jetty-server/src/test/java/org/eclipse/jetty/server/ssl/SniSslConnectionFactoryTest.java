@@ -100,7 +100,7 @@ public class SniSslConnectionFactoryTest
         Handler.Singleton xCertHandler = new Handler.Wrapper()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 SslConnection.SslEndPoint sslEndPoint = (SslConnection.SslEndPoint)endPoint;
@@ -109,7 +109,7 @@ public class SniSslConnectionFactoryTest
                 SSLSession session = sslEngine.getSession();
                 for (Certificate c : session.getLocalCertificates())
                     response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
-                return getHandler().process(request, response, callback);
+                return getHandler().handle(request, response, callback);
             }
         };
 
@@ -130,7 +130,7 @@ public class SniSslConnectionFactoryTest
         xCertHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put("X-URL", Request.getPathInContext(request));

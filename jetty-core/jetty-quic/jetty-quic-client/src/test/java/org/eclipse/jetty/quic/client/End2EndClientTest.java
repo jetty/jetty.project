@@ -76,7 +76,7 @@ public class End2EndClientTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, responseContent, callback);
                 return true;

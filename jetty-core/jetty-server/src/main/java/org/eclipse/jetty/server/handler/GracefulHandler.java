@@ -63,7 +63,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler handler = getHandler();
         if (handler == null || !isStarted())
@@ -84,7 +84,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
 
         try
         {
-            boolean handled = super.process(request, response, shutdownCallback);
+            boolean handled = super.handle(request, response, shutdownCallback);
             if (!handled)
                 shutdownCallback.decrement();
             return handled;

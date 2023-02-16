@@ -243,7 +243,7 @@ public class ThreadStarvationTest
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             /* TODO
@@ -348,7 +348,7 @@ public class ThreadStarvationTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);

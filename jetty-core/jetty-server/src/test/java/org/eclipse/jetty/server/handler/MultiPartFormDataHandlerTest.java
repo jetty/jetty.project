@@ -73,7 +73,7 @@ public class MultiPartFormDataHandlerTest
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -123,7 +123,7 @@ public class MultiPartFormDataHandlerTest
         delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 processLatch.countDown();
                 MultiPartFormData.Parts parts = (MultiPartFormData.Parts)request.getAttribute(MultiPartFormData.Parts.class.getName());
@@ -160,18 +160,18 @@ public class MultiPartFormDataHandlerTest
             client.write(UTF_8.encode(header));
             client.write(UTF_8.encode(contentBegin));
 
-            // Verify that the processor has not been called yet.
+            // Verify that the handler has not been called yet.
             assertFalse(processLatch.await(1, TimeUnit.SECONDS));
 
             client.write(UTF_8.encode(contentMiddle));
 
-            // Verify that the processor has not been called yet.
+            // Verify that the handler has not been called yet.
             assertFalse(processLatch.await(1, TimeUnit.SECONDS));
 
             // Finish to send the content.
             client.write(UTF_8.encode(contentEnd));
 
-            // Verify that the processor has been called.
+            // Verify that the handler has been called.
             assertTrue(processLatch.await(5, TimeUnit.SECONDS));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
@@ -187,7 +187,7 @@ public class MultiPartFormDataHandlerTest
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -251,7 +251,7 @@ public class MultiPartFormDataHandlerTest
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = "A1B2C3";
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));

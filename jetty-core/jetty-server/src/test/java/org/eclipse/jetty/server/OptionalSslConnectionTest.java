@@ -242,7 +242,7 @@ public class OptionalSslConnectionTest
     private static class EmptyServerHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             callback.succeeded();
             return true;

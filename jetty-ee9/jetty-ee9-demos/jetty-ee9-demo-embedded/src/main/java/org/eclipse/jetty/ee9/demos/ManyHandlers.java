@@ -66,7 +66,7 @@ public class ManyHandlers
     public static class ParamHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             response.setStatus(HttpServletResponse.SC_OK);
@@ -81,13 +81,13 @@ public class ManyHandlers
     public static class WelcomeWrapHandler extends Handler.Wrapper
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Handler next = getHandler();
             if (next == null)
                 return false;
             response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
         }
     }
 

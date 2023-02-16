@@ -64,12 +64,12 @@ public class SecuredRedirectHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (request.isSecure())
         {
             // Nothing to do here.
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
 
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();

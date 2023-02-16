@@ -268,7 +268,7 @@ public class NotAcceptingTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             // TODO see below
             return true;

@@ -40,7 +40,7 @@ public class TerminatingRegexRule extends RegexRule
     }
 
     @Override
-    public Processor apply(Processor input, Matcher matcher) throws IOException
+    public Handler apply(Handler input, Matcher matcher) throws IOException
     {
         return input;
     }

@@ -192,7 +192,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
     private static class LoadHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             switch (HttpMethod.fromString(request.getMethod()))
             {

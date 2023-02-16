@@ -190,7 +190,7 @@ public class NetworkTrafficListenerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, UTF_8.encode(responseContent), callback);
                 return true;
@@ -329,7 +329,7 @@ public class NetworkTrafficListenerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, location);
                 return true;

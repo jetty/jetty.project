@@ -481,7 +481,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 if ("/done".equals(org.eclipse.jetty.server.Request.getPathInContext(request)))
                     callback.succeeded();

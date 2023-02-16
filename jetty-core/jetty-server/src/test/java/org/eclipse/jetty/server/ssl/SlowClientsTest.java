@@ -96,7 +96,7 @@ public class SlowClientsTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer(contentLength), callback);
                 return true;

@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.Callback;
 public class HelloWorld extends Handler.Abstract
 {
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
 
         // Declare response encoding and types

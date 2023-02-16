@@ -98,12 +98,12 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     /**
      * <p>Processes the rules.</p>
      *
-     * @param input the input {@code Request} and {@code Processor}
-     * @return a {@code Request} and {@code Processor}, possibly wrapped by rules to implement the rule's logic,
+     * @param input the input {@code Request} and {@code Handler}
+     * @return a {@code Request} and {@code Handler}, possibly wrapped by rules to implement the rule's logic,
      * or {@code null} if no rule matched
      */
     @Override
-    public Processor matchAndApply(Processor input) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
         String originalPathAttribute = getOriginalPathAttribute();
         if (originalPathAttribute != null)
@@ -120,7 +120,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("applying {}", rule);
-            Processor output = rule.matchAndApply(input);
+            Handler output = rule.matchAndApply(input);
             if (output == null)
             {
                 if (LOG.isDebugEnabled())

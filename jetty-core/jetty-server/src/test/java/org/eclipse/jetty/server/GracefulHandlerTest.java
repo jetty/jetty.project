@@ -111,7 +111,7 @@ public class GracefulHandlerTest
     }
 
     /**
-     * Test for when a Handler throws an unhandled Exception from {@link Handler#process(Request, Response, Callback)}
+     * Test for when a Handler throws an unhandled Exception from {@link Handler#handle(Request, Response, Callback)}
      * when in normal mode (not during graceful mode).  This test exists to ensure that the Callback management of
      * the {@link GracefulHandler} doesn't mess with normal operations of requests.
      */
@@ -122,7 +122,7 @@ public class GracefulHandlerTest
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 throw new RuntimeException("Intentional Exception");
             }
@@ -168,7 +168,7 @@ public class GracefulHandlerTest
     }
 
     /**
-     * Test for when a Handler throws an unhandled Exception {@link Handler#process(Request, Response, Callback)}
+     * Test for when a Handler throws an unhandled Exception {@link Handler#handle(Request, Response, Callback)}
      * when in graceful mode.
      */
     @Test
@@ -179,7 +179,7 @@ public class GracefulHandlerTest
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 LOG.info("process: request={}", request);
                 // let main thread know that we've reach this handler
@@ -244,7 +244,7 @@ public class GracefulHandlerTest
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.failed(new RuntimeException("Intentional Failure"));
                 return true;
@@ -302,7 +302,7 @@ public class GracefulHandlerTest
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 dispatchLatch.countDown();
                 // wait for graceful to kick in
@@ -355,19 +355,19 @@ public class GracefulHandlerTest
     }
 
     /**
-     * Test for when a Handler returns false from {@link Handler#process(Request, Response, Callback)}
+     * Test for when a Handler returns false from {@link Handler#handle(Request, Response, Callback)}
      * when in normal mode (not during graceful mode).
      * This test exists to ensure that the Callback management of the {@link GracefulHandler} doesn't
      * mess with normal operations of requests.
      */
     @Test
-    public void testHandlerNormalProcessingFalse() throws Exception
+    public void testHandlerNormalHandleReturnsFalse() throws Exception
     {
         GracefulHandler gracefulHandler = new GracefulHandler();
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 return false;
             }
@@ -409,18 +409,18 @@ public class GracefulHandlerTest
     }
 
     /**
-     * Test for when a Handler returns false from {@link Handler#process(Request, Response, Callback)}
+     * Test for when a Handler returns false from {@link Handler#handle(Request, Response, Callback)}
      * when in graceful mode.
      */
     @Test
-    public void testHandlerGracefulProcessingFalse() throws Exception
+    public void testHandlerGracefulHandleReturnsFalse() throws Exception
     {
         AtomicReference<CompletableFuture<Long>> stopFuture = new AtomicReference<>();
         GracefulHandler gracefulHandler = new GracefulHandler();
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 stopFuture.set(runAsyncServerStop());
                 await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
@@ -688,7 +688,7 @@ public class GracefulHandlerTest
         private static final Logger LOG = LoggerFactory.getLogger(BlockingReadHandler.class);
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             LOG.debug("process: request={}", request);
             onBeforeRead(request, response);

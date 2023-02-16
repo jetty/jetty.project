@@ -45,8 +45,6 @@
     <module>jetty-ee10-apache-jsp</module>
     <module>jetty-ee10-glassfish-jstl</module>
     <module>jetty-ee10-annotations</module>
-    <!-- TODO -->
-    <!-- module>jetty-ee10-ant</module -->
     <module>jetty-ee10-cdi</module>
     <module>jetty-ee10-jaas</module>
     <module>jetty-ee10-jaspi</module>

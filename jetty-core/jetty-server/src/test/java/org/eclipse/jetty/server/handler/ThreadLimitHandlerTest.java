@@ -83,7 +83,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -122,7 +122,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -165,7 +165,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -205,7 +205,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(HttpStatus.OK_200);
                 if (!"/other".equals(Request.getPathInContext(request)))
@@ -263,7 +263,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 processed.countDown();
                 Runnable onContent = new Runnable()

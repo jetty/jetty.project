@@ -166,10 +166,10 @@ public class ShutdownHandlerTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Request fakedRequest = FakeRemoteAddressRequest.from(request, this.fakeRemoteAddress);
-            return super.process(fakedRequest, response, callback);
+            return super.handle(fakedRequest, response, callback);
         }
     }
 

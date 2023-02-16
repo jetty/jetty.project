@@ -108,7 +108,7 @@ public abstract class AbstractHttpTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (throwException)
                 throw new TestCommitException();

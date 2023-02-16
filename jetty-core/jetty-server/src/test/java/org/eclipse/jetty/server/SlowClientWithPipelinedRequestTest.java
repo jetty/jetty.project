@@ -82,7 +82,7 @@ public class SlowClientWithPipelinedRequestTest
         startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 if ("/content".equals(Request.getPathInContext(request)))
                 {

@@ -106,17 +106,17 @@ public class ErrorPageTest
         Handler.Singleton noopHandler = new Handler.Wrapper()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/noop"))
                     return false;
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         };
         _context.insertHandler(noopHandler);
 
         _errorPageErrorHandler = new ErrorPageErrorHandler();
-        _context.setErrorProcessor(_errorPageErrorHandler);
+        _context.setErrorHandler(_errorPageErrorHandler);
         _errorPageErrorHandler.addErrorPage(595, "/error/595");
         _errorPageErrorHandler.addErrorPage(597, "/sync");
         _errorPageErrorHandler.addErrorPage(599, "/error/599");
@@ -455,7 +455,7 @@ public class ErrorPageTest
     @Test
     public void testNoop() throws Exception
     {
-        // The ServletContextHandler does not handle so should go to the servers ErrorProcessor.
+        // The ServletContextHandler does not handle so should go to the servers ErrorHandler.
         String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, not(Matchers.containsString("DISPATCH: ERROR")));

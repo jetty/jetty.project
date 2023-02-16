@@ -65,7 +65,7 @@ public class ConnectionPoolMaxUsageTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
@@ -108,7 +108,7 @@ public class ConnectionPoolMaxUsageTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);

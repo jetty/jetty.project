@@ -47,7 +47,7 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
         startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;
@@ -92,7 +92,7 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
         startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;

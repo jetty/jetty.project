@@ -27,7 +27,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -643,7 +643,7 @@ public class HttpConfigurationAuthorityOverrideTest
         handlers.addHandler(new ErrorMsgHandler());
         server.setHandler(handlers);
 
-        server.setErrorProcessor(new RedirectErrorProcessor());
+        server.setErrorHandler(new RedirectErrorHandler());
         server.start();
 
         return new CloseableServer(server, connector);
@@ -652,7 +652,7 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/dump"))
                 return false;
@@ -675,7 +675,7 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class RedirectHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/redirect"))
                 return false;
@@ -690,7 +690,7 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class ErrorMsgHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/error"))
                 return false;
@@ -701,13 +701,13 @@ public class HttpConfigurationAuthorityOverrideTest
         }
     }
 
-    public static class RedirectErrorProcessor extends ErrorProcessor
+    public static class RedirectErrorHandler extends ErrorHandler
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
-            response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
+            response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
             String scheme = request.getHttpURI().getScheme();
             if (scheme == null)

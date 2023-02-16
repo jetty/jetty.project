@@ -634,7 +634,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -655,6 +655,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             Response.replaceCookie(servletContextResponse, cookie);
         }
 
-        return next.process(request, response, callback);
+        return next.handle(request, response, callback);
     }
 }

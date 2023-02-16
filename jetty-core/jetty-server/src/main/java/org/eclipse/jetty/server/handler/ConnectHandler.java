@@ -183,7 +183,7 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
@@ -204,7 +204,7 @@ public class ConnectHandler extends Handler.Wrapper
                 return true;
             }
         }
-        return super.process(request, response, callback);
+        return super.handle(request, response, callback);
     }
 
     /**

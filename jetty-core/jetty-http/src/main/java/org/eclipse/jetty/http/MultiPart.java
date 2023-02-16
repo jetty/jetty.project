@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +121,7 @@ public class MultiPart
      */
     public abstract static class Part implements Closeable
     {
-        private static final Throwable CLOSE_EXCEPTION = new StaticException("Closed");
+        static final Throwable CLOSE_EXCEPTION = new StaticException("Closed");
 
         private final String name;
         private final String fileName;
@@ -347,6 +348,9 @@ public class MultiPart
     public static class ChunksPart extends Part
     {
         private final List<Content.Chunk> content;
+        private final List<Content.Source> contentSources = new ArrayList<>();
+        private final AutoLock lock = new AutoLock();
+        private boolean closed = false;
 
         public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
@@ -358,17 +362,36 @@ public class MultiPart
         @Override
         public Content.Source newContentSource()
         {
-            List<Content.Chunk> newChunks = content.stream()
-                .map(chunk -> Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast()))
-                .toList();
-            return new ChunksContentSource(newChunks);
+            try (AutoLock l = lock.lock())
+            {
+                if (closed)
+                    return null;
+                ChunksContentSource newContentSource = new ChunksContentSource(content.stream()
+                    .map(chunk -> Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast()))
+                    .toList());
+                contentSources.add(newContentSource);
+                return newContentSource;
+            }
         }
 
         @Override
         public void close()
         {
+            List<Content.Source> contentSourcesToFail = null;
+            try (AutoLock l = lock.lock())
+            {
+                closed = true;
+                if (!contentSources.isEmpty())
+                {
+                    contentSourcesToFail = new ArrayList<>(contentSources);
+                    contentSources.clear();
+                }
+            }
+
             super.close();
             content.forEach(Content.Chunk::release);
+            if (contentSourcesToFail != null)
+                contentSourcesToFail.forEach(cs -> cs.fail(CLOSE_EXCEPTION));
         }
 
         @Override

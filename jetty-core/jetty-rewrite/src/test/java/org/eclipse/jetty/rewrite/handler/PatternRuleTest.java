@@ -104,7 +104,7 @@ public class PatternRuleTest extends AbstractRuleTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -158,7 +158,7 @@ public class PatternRuleTest extends AbstractRuleTest
         }
 
         @Override
-        public Processor apply(Processor input)
+        public Handler apply(Handler input)
         {
             _applied = true;
             return input;
