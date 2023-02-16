@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An ErrorProcessor that can re-handle a request at an error page location.
+ * An {@link ErrorHandler} that can re-handle a request at an error page location.
  */
 public abstract class ReHandlingErrorHandler extends ErrorHandler
 {
@@ -81,7 +81,7 @@ public abstract class ReHandlingErrorHandler extends ErrorHandler
     protected abstract String getReHandlePathInContext(Request request, int code, Throwable cause);
 
     /**
-     * An ErrorPageErrorProcessor that uses a map of error codes to select a page.
+     * An {@link ReHandlingErrorHandler} that uses a map of error codes to select a page.
      */
     public static class ByHttpStatus extends ReHandlingErrorHandler
     {

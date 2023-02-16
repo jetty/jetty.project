@@ -178,9 +178,9 @@ public class ThreadLimitHandler extends Handler.Wrapper
             return next.handle(request, response, callback);
         }
 
-        // We accept the request and will always process it.
+        // We accept the request and will always handle it.
         LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
-        limitedRequest.process();
+        limitedRequest.handle();
         return true;
     }
 
@@ -298,7 +298,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             return _callback;
         }
 
-        protected void process() throws Exception
+        protected void handle() throws Exception
         {
             Permit permit = _remote.acquire();
 
@@ -307,17 +307,17 @@ public class ThreadLimitHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Thread permitted {} {} {}", _remote, getWrapped(), _handler);
-                process(permit);
+                handle(permit);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Thread limited {} {} {}", _remote, getWrapped(), _handler);
-                permit.whenAllocated(this::process);
+                permit.whenAllocated(this::handle);
             }
         }
 
-        protected void process(Permit permit)
+        protected void handle(Permit permit)
         {
             try
             {
@@ -588,8 +588,8 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
             if (pending != null)
             {
-                // We cannot complete the pending in this thread, as we may be in a process, demand or write callback
-                // that is serialized and other actions are waiting for the return.  Thus, we must execute.
+                // We cannot complete the pending in this thread, as we may be in handle(), demand() or write
+                // callback that is serialized and other actions are waiting for the return. Thus, we must execute.
                 _executor.execute(pending::complete);
             }
         }

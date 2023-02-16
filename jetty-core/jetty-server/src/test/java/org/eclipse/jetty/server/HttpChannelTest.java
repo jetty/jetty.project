@@ -1329,7 +1329,7 @@ public class HttpChannelTest
 
     @ParameterizedTest
     @MethodSource("completionEvents")
-    public void testCompletionNoWriteErrorProcessor(List<CompletionTestEvent> events) throws Exception
+    public void testCompletionNoWriteErrorHandler(List<CompletionTestEvent> events) throws Exception
     {
         Request.Handler errorHandler = (request, response, callback) ->
         {
@@ -1341,7 +1341,7 @@ public class HttpChannelTest
 
     @ParameterizedTest
     @MethodSource("completionEvents")
-    public void testCompletionFailedErrorProcessor(List<CompletionTestEvent> events) throws Exception
+    public void testCompletionFailedErrorHandler(List<CompletionTestEvent> events) throws Exception
     {
         Request.Handler errorHandler = (request, response, callback) ->
         {

@@ -455,7 +455,7 @@ public class ErrorPageTest
     @Test
     public void testNoop() throws Exception
     {
-        // The ServletContextHandler does not handle so should go to the servers ErrorProcessor.
+        // The ServletContextHandler does not handle so should go to the servers ErrorHandler.
         String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, not(Matchers.containsString("DISPATCH: ERROR")));

@@ -710,7 +710,7 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testRootReHandlingErrorProcessor() throws Exception
+    public void testRootReHandlingErrorHandler() throws Exception
     {
         ReHandlingErrorHandler.ByHttpStatus errorHandler = new ReHandlingErrorHandler.ByHttpStatus(server);
         errorHandler.put(400, "/ok/badMessage");
@@ -729,7 +729,7 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testRootReHandlingErrorProcessorLoop() throws Exception
+    public void testRootReHandlingErrorHandlerLoop() throws Exception
     {
         ReHandlingErrorHandler.ByHttpStatus errorHandler = new ReHandlingErrorHandler.ByHttpStatus(server);
         errorHandler.put(404, "/not/found");
@@ -749,7 +749,7 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testRootReHandlingErrorProcessorExceptionLoop() throws Exception
+    public void testRootReHandlingErrorHandlerExceptionLoop() throws Exception
     {
         ReHandlingErrorHandler.ByHttpStatus errorHandler = new ReHandlingErrorHandler.ByHttpStatus(server);
         errorHandler.put(444, "/badmessage/444");
@@ -769,7 +769,7 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testContextReHandlingErrorProcessor() throws Exception
+    public void testContextReHandlingErrorHandler() throws Exception
     {
         server.stop();
 

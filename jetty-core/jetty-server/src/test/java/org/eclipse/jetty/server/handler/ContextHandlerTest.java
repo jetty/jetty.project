@@ -548,7 +548,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testThrownUsesContextErrorProcessor() throws Exception
+    public void testThrownUsesContextErrorHandler() throws Exception
     {
         _contextHandler.setHandler(new Handler.Abstract.NonBlocking()
         {

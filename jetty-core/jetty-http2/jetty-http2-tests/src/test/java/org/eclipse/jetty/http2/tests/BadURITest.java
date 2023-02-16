@@ -69,7 +69,7 @@ public class BadURITest
     }
 
     @Test
-    @Disabled("TODO: need to fix ErrorProcessor")
+    @Disabled("TODO: need to fix ErrorHandler")
     public void testBadURI() throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);

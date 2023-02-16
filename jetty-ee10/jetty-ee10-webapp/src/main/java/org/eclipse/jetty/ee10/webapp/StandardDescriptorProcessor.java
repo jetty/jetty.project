@@ -964,7 +964,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String location = node.getString("location", false, true);
         if (!location.startsWith("/"))
             throw new IllegalStateException("Missing leading '/' for location: " + location);
-        //TODO is the ErrorProcessor always going to be an ErrorPageErrorHandler?
+        //TODO is the ErrorHandler always going to be an ErrorPageErrorHandler?
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
         String originName = "error." + error;
         Origin origin = context.getMetaData().getOrigin(originName);

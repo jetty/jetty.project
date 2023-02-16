@@ -573,7 +573,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             response.getHeaders().ensureField(_vary);
         }
 
-        // Call the process with the possibly wrapped request, response and callback
+        // Call handle() with the possibly wrapped request, response and callback
         if (next.handle(request, response, callback))
             return true;
 

@@ -277,7 +277,7 @@ public interface Response extends Content.Sink
 
         response.setStatus(status);
 
-        // TODO: detect recursion when an ErrorProcessor calls this method, otherwise StackOverflowError.
+        // TODO: detect recursion when an ErrorHandler calls this method, otherwise StackOverflowError.
         Context context = request.getContext();
         Request.Handler errorHandler = context.getErrorHandler();
         if (errorHandler != null)

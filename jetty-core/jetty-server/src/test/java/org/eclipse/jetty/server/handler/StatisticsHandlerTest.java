@@ -418,7 +418,7 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(1, _statsHandler.getResponses5xx());
-        assertEquals(1, _statsHandler.getProcessingErrors());
+        assertEquals(1, _statsHandler.getHandlingFailures());
     }
 
     @Test
@@ -457,7 +457,7 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(0, _statsHandler.getResponses5xx());
-        assertEquals(1, _statsHandler.getProcessingErrors());
+        assertEquals(1, _statsHandler.getHandlingFailures());
     }
 
     @Test

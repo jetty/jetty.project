@@ -163,7 +163,7 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorHandler errorProcessor = new ErrorHandler()
+        ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
             protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
@@ -172,7 +172,7 @@ public class AsyncListenerTest
                 super.writeErrorPlain(request, writer, code, message, cause, showStacks);
             }
         };
-        server.setErrorHandler(errorProcessor);
+        server.setErrorHandler(errorHandler);
 
         String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
@@ -318,7 +318,7 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorHandler errorProcessor = new ErrorHandler()
+        ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
             protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
@@ -326,7 +326,7 @@ public class AsyncListenerTest
                 writer.write("CUSTOM\n");
             }
         };
-        server.setErrorHandler(errorProcessor);
+        server.setErrorHandler(errorHandler);
 
         String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +

@@ -780,13 +780,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         if (!isAvailable())
         {
-            processUnavailable(request, response, callback);
+            handleUnavailable(request, response, callback);
             return true;
         }
 
         if (pathInContext.length() == 0 && !getAllowNullPathInContext())
         {
-            processMovedPermanently(request, response, callback);
+            handleMovedPermanently(request, response, callback);
             return true;
         }
 
@@ -796,7 +796,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (contextRequest == null)
             return false;
 
-        if (processByContextHandler(pathInContext, contextRequest, response, callback))
+        if (handleByContextHandler(pathInContext, contextRequest, response, callback))
             return true;
 
         // Past this point we are calling the downstream handler in scope.
@@ -813,18 +813,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
         finally
         {
-            // We exit scope here, even though process is asynchronous, as we have wrapped
-            // all our callbacks to re-enter the scope.
+            // We exit scope here, even though handle() is asynchronous,
+            // as we have wrapped all our callbacks to re-enter the scope.
             exitScope(contextRequest, request.getContext(), lastLoader);
         }
     }
 
-    protected boolean processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         return false;
     }
 
-    protected void processMovedPermanently(Request request, Response response, Callback callback)
+    protected void handleMovedPermanently(Request request, Response response, Callback callback)
     {
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)
@@ -837,7 +837,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         callback.succeeded();
     }
 
-    protected void processUnavailable(Request request, Response response, Callback callback)
+    protected void handleUnavailable(Request request, Response response, Callback callback)
     {
         Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, null);
     }

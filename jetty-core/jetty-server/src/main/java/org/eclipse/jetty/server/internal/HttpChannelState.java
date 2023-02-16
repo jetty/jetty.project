@@ -1453,7 +1453,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 httpChannel = _request.getHttpChannel();
 
-                // Did the errorProcessor do the last write?
+                // Did the ErrorHandler do the last write?
                 needLastWrite = httpChannel._writeState.ordinal() <= WriteState.LAST_WRITTEN.ordinal();
                 if (needLastWrite && httpChannel._responseHeaders.commit())
                     responseMetaData = _request._response.lockedPrepareResponse(httpChannel, true);
