@@ -43,7 +43,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
@@ -490,7 +490,7 @@ public class ServletChannel
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
                             if (!_httpInput.consumeAvailable())
-                                Response.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
 
                             ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
@@ -574,7 +574,7 @@ public class ServletChannel
 
                             // Indicate Connection:close if we can't consume all.
                             if (getResponse().getStatus() >= 200)
-                                Response.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
                         }
 
 
