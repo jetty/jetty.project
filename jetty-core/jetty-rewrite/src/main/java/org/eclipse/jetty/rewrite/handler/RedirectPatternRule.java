@@ -77,12 +77,12 @@ public class RedirectPatternRule extends PatternRule
     }
 
     @Override
-    public Processor apply(Processor input) throws IOException
+    public Handler apply(Handler input) throws IOException
     {
-        return new Processor(input)
+        return new Handler(input)
         {
             @Override
-            public boolean process(Response response, Callback callback)
+            public boolean handle(Response response, Callback callback)
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());

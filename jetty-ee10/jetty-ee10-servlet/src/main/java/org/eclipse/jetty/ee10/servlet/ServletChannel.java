@@ -493,10 +493,10 @@ public class ServletChannel
                                 Response.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
 
                             ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
+                            Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no processor, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorProcessor == null)
+                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
                             {
                                 sendResponseAndComplete();
                             }
@@ -507,7 +507,7 @@ public class ServletChannel
                                 // _state.completing();
                                 try (Blocker.Callback blocker = Blocker.callback())
                                 {
-                                    dispatch(() -> errorProcessor.process(_servletContextRequest, getResponse(), blocker));
+                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
                                     blocker.block();
                                 }
                             }

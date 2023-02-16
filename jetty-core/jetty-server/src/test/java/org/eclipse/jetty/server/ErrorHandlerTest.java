@@ -31,8 +31,8 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
-import org.eclipse.jetty.server.handler.ReHandlingErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.ReHandlingErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -55,7 +55,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ErrorProcessorTest
+public class ErrorHandlerTest
 {
     StacklessLogging stacklessLogging;
     Server server;
@@ -72,7 +72,7 @@ public class ErrorProcessorTest
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String pathInContext = Request.getPathInContext(request);
                 if (pathInContext.startsWith("/badmessage/"))
@@ -121,7 +121,7 @@ public class ErrorProcessorTest
                     Content.Sink.write(
                         response,
                         true,
-                        "%s Error %s : %s%n".formatted(pathInContext, request.getAttribute(ErrorProcessor.ERROR_STATUS), request.getAttribute(ErrorProcessor.ERROR_MESSAGE)),
+                        "%s Error %s : %s%n".formatted(pathInContext, request.getAttribute(ErrorHandler.ERROR_STATUS), request.getAttribute(ErrorHandler.ERROR_MESSAGE)),
                         callback);
                     return true;
                 }
@@ -457,10 +457,10 @@ public class ErrorProcessorTest
     @Test
     public void testNoBodyErrorHandler() throws Exception
     {
-        server.setErrorProcessor((request, response, callback) ->
+        server.setErrorHandler((request, response, callback) ->
         {
             response.getHeaders().put(HttpHeader.LOCATION, "/error");
-            response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
+            response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
             response.write(true, null, callback);
@@ -659,10 +659,10 @@ public class ErrorProcessorTest
         server.setHandler(contexts);
         ContextHandler context = new ContextHandler("/foo");
         contexts.addHandler(context);
-        context.setErrorProcessor(new ErrorProcessor()
+        context.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer("Context Error"), callback);
                 return true;
@@ -671,17 +671,17 @@ public class ErrorProcessorTest
         context.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.writeError(request, response, callback, 444);
                 return true;
             }
         });
 
-        server.setErrorProcessor(new ErrorProcessor()
+        server.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer("Server Error"), callback);
                 return true;
@@ -712,9 +712,9 @@ public class ErrorProcessorTest
     @Test
     public void testRootReHandlingErrorProcessor() throws Exception
     {
-        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
-        errorProcessor.put(400, "/ok/badMessage");
-        server.setErrorProcessor(errorProcessor);
+        ReHandlingErrorHandler.ByHttpStatus errorHandler = new ReHandlingErrorHandler.ByHttpStatus(server);
+        errorHandler.put(400, "/ok/badMessage");
+        server.setErrorHandler(errorHandler);
 
         String rawResponse = connector.getResponse("""
                 GET /no/host HTTP/1.1
@@ -731,9 +731,9 @@ public class ErrorProcessorTest
     @Test
     public void testRootReHandlingErrorProcessorLoop() throws Exception
     {
-        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
-        errorProcessor.put(404, "/not/found");
-        server.setErrorProcessor(errorProcessor);
+        ReHandlingErrorHandler.ByHttpStatus errorHandler = new ReHandlingErrorHandler.ByHttpStatus(server);
+        errorHandler.put(404, "/not/found");
+        server.setErrorHandler(errorHandler);
 
         String rawResponse = connector.getResponse("""
                 GET /not/found HTTP/1.1
@@ -751,9 +751,9 @@ public class ErrorProcessorTest
     @Test
     public void testRootReHandlingErrorProcessorExceptionLoop() throws Exception
     {
-        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
-        errorProcessor.put(444, "/badmessage/444");
-        server.setErrorProcessor(errorProcessor);
+        ReHandlingErrorHandler.ByHttpStatus errorHandler = new ReHandlingErrorHandler.ByHttpStatus(server);
+        errorHandler.put(444, "/badmessage/444");
+        server.setErrorHandler(errorHandler);
 
         String rawResponse = connector.getResponse("""
                 GET /badmessage/444 HTTP/1.1
@@ -780,19 +780,19 @@ public class ErrorProcessorTest
         contexts.addHandler(context);
         server.setHandler(contexts);
 
-        server.setErrorProcessor(new ErrorProcessor()
+        server.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                throw new UnsupportedOperationException();
             }
         });
 
         server.start();
-        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(context);
-        errorProcessor.put(444, "/ok/badMessage");
-        context.setErrorProcessor(errorProcessor);
+        ReHandlingErrorHandler.ByHttpStatus errorHandler = new ReHandlingErrorHandler.ByHttpStatus(context);
+        errorHandler.put(444, "/ok/badMessage");
+        context.setErrorHandler(errorHandler);
 
         String rawResponse = connector.getResponse("""
                 GET /ctx/badmessage/444 HTTP/1.1

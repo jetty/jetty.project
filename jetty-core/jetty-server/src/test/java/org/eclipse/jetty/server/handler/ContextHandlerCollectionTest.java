@@ -418,10 +418,10 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put("Wrapped", tag);
-            if (super.process(request, response, callback))
+            if (super.handle(request, response, callback))
                 return true;
             response.getHeaders().remove("Wrapped");
             return false;
@@ -444,7 +444,7 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             this.handled = true;
             response.getHeaders().put("X-IsHandled-Name", name);

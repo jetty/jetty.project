@@ -221,7 +221,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
         super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
-        setErrorProcessor(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
+        setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
         Handler.Container.setAsParent(parent, this);
     }

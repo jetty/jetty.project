@@ -111,7 +111,7 @@ public class UnixDomainTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Verify the URI is preserved.
                 assertEquals(uri, request.getHttpURI().asString());
@@ -162,7 +162,7 @@ public class UnixDomainTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Proxied requests must have an absolute URI.
                 HttpURI uri = request.getHttpURI();
@@ -201,7 +201,7 @@ public class UnixDomainTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));

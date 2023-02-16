@@ -45,7 +45,7 @@ public interface Context extends Attributes, Decorator, Executor
 
     Resource getBaseResource();
 
-    Request.Processor getErrorProcessor();
+    Request.Handler getErrorHandler();
 
     List<String> getVirtualHosts();
 

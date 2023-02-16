@@ -150,7 +150,7 @@ public class HttpChannelTest
         _server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
@@ -399,7 +399,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 return false;
             }
@@ -430,7 +430,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 throw new UnsupportedOperationException("testing");
             }
@@ -464,7 +464,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 Content.Sink.write(response, true, "Before throw", Callback.from(callback, () ->
@@ -502,7 +502,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
@@ -540,7 +540,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer("12345"), callback);
                 return true;
@@ -572,7 +572,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(true, BufferUtil.toBuffer("12345"), callback);
@@ -608,7 +608,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
@@ -642,7 +642,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(true, BufferUtil.toBuffer("1234567890"), callback);
@@ -678,7 +678,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, BufferUtil.toBuffer("1234"), Callback.from(() -> response.write(true, BufferUtil.toBuffer("567890"), callback)));
@@ -744,7 +744,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
@@ -787,7 +787,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
@@ -1070,7 +1070,7 @@ public class HttpChannelTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 LongAdder contentSize = new LongAdder();
                 CountDownLatch latch = new CountDownLatch(1);
@@ -1151,7 +1151,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 handling.set(response);
                 request.addErrorListener(t -> false);
@@ -1236,7 +1236,7 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -1247,7 +1247,7 @@ public class HttpChannelTest
                         super.succeeded();
                     }
                 });
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         };
         _server.setHandler(echoHandler);
@@ -1331,27 +1331,27 @@ public class HttpChannelTest
     @MethodSource("completionEvents")
     public void testCompletionNoWriteErrorProcessor(List<CompletionTestEvent> events) throws Exception
     {
-        Request.Processor errorProcessor = (request, response, callback) ->
+        Request.Handler errorHandler = (request, response, callback) ->
         {
             callback.succeeded();
             return true;
         };
-        testCompletion(events, errorProcessor, true);
+        testCompletion(events, errorHandler, true);
     }
 
     @ParameterizedTest
     @MethodSource("completionEvents")
     public void testCompletionFailedErrorProcessor(List<CompletionTestEvent> events) throws Exception
     {
-        Request.Processor errorProcessor = (request, response, callback) ->
+        Request.Handler errorHandler = (request, response, callback) ->
         {
-            callback.failed(new QuietException.Exception("Error processor failed"));
+            callback.failed(new QuietException.Exception("Error handler failed"));
             return true;
         };
-        testCompletion(events, errorProcessor, false);
+        testCompletion(events, errorHandler, false);
     }
 
-    private void testCompletion(List<CompletionTestEvent> events, Request.Processor errorProcessor, boolean expectErrorResponse) throws Exception
+    private void testCompletion(List<CompletionTestEvent> events, Request.Handler errorHandler, boolean expectErrorResponse) throws Exception
     {
         CountDownLatch processing = new CountDownLatch(1);
         CountDownLatch processed = new CountDownLatch(1);
@@ -1361,7 +1361,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put("Test", "Value");
@@ -1374,8 +1374,8 @@ public class HttpChannelTest
         };
 
         _server.setHandler(handler);
-        if (errorProcessor != null)
-            _server.setErrorProcessor(errorProcessor);
+        if (errorHandler != null)
+            _server.setErrorHandler(errorHandler);
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));

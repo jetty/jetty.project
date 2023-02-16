@@ -396,7 +396,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::proxyH1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
@@ -492,7 +492,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -568,7 +568,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -608,7 +608,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::sslH1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -642,7 +642,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
                 return true;
@@ -710,7 +710,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 request.getConnectionMetaData().getConnection().getEndPoint().close();
                 callback.succeeded();

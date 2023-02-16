@@ -2439,7 +2439,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    public class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler implements org.eclipse.jetty.server.Request.Processor
+    public class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler implements org.eclipse.jetty.server.Request.Handler
     {
         CoreContextHandler()
         {
@@ -2585,7 +2585,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
             {
                 HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
                 httpChannel.onProcess(response, callback);

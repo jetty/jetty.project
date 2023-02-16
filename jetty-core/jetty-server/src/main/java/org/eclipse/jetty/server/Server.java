@@ -39,7 +39,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -86,7 +86,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
     private Handler _defaultHandler;
-    private Request.Processor _errorProcessor;
+    private Request.Handler _errorHandler;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private volatile DateField _dateField;
@@ -167,10 +167,10 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // Handle either with normal handler or default handler
-        return super.process(request, response, callback) || _defaultHandler != null && _defaultHandler.process(request, response, callback);
+        return super.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
     }
 
     public String getServerInfo()
@@ -271,9 +271,9 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public Request.Processor getErrorProcessor()
+    public Request.Handler getErrorHandler()
     {
-        return _errorProcessor;
+        return _errorHandler;
     }
 
     public void setRequestLog(RequestLog requestLog)
@@ -282,10 +282,10 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorProcessor(Request.Processor errorProcessor)
+    public void setErrorHandler(Request.Handler errorHandler)
     {
-        updateBean(_errorProcessor, errorProcessor);
-        _errorProcessor = errorProcessor;
+        updateBean(_errorHandler, errorHandler);
+        _errorHandler = errorHandler;
     }
 
     @ManagedAttribute("version of this server")
@@ -498,8 +498,8 @@ public class Server extends Handler.Wrapper implements Attributes
             //Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
 
-            if (_errorProcessor == null)
-                setErrorProcessor(new DynamicErrorProcessor());
+            if (_errorHandler == null)
+                setErrorHandler(new DynamicErrorHandler());
 
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
@@ -648,8 +648,8 @@ public class Server extends Handler.Wrapper implements Attributes
             multiException = ExceptionUtil.combine(multiException, e);
         }
 
-        if (getErrorProcessor() instanceof DynamicErrorProcessor)
-            setErrorProcessor(null);
+        if (getErrorHandler() instanceof DynamicErrorHandler)
+            setErrorHandler(null);
 
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
@@ -825,7 +825,7 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private static class DynamicErrorProcessor extends ErrorProcessor {}
+    private static class DynamicErrorHandler extends ErrorHandler {}
 
     class ServerContext extends Attributes.Wrapper implements Context
     {
@@ -887,9 +887,9 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public Request.Processor getErrorProcessor()
+        public Request.Handler getErrorHandler()
         {
-            return Server.this.getErrorProcessor();
+            return Server.this.getErrorHandler();
         }
 
         @Override

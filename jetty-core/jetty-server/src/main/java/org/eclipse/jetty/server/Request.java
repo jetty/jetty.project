@@ -36,7 +36,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
  * <p>The typical idiom to read request content is the following:</p>
  * <pre>{@code
- * public boolean process(Request request, Response response, Callback callback)
+ * public boolean handle(Request request, Response response, Callback callback)
  * {
  *     // Reject requests not appropriate for this handler.
  *     if (!request.getHttpURI().getPath().startsWith("/yourPath"))
@@ -63,7 +63,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *         if (chunk == null)
  *         {
  *             // The chunk is not currently available, demand to be called back.
- *             request.demand(() -> process(request, response, callback));
+ *             request.demand(() -> handle(request, response, callback));
  *             return true;
  *         }
  *
@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             Throwable failure = error.getCause();
  *
  *             // Handle errors.
- *             // Mark the processing as complete, either generating a custom
+ *             // Mark the handling as complete, either generating a custom
  *             // response and succeeding the callback, or failing the callback.
  *             callback.failed(failure);
  *             return true;
@@ -86,7 +86,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *
  *             // Generate a response.
  *
- *             // Mark the processing as complete.
+ *             // Mark the handling as complete.
  *             callback.succeeded();
  *
  *             return true;
@@ -102,7 +102,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *         {
  *             // Generate a response.
  *
- *             // Mark the processing as complete.
+ *             // Mark the handling as complete.
  *             callback.succeeded();
  *
  *             return true;
@@ -254,7 +254,7 @@ public interface Request extends Attributes, Content.Source
      * <p>Adds a listener for asynchronous errors.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
      * that the function has completed (either successfully or with a failure) the callback
-     * received from {@link Handler#process(Request, Response, Callback)}, or
+     * received from {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}, or
      * {@code false} otherwise.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}
      * stops the processing of subsequent listeners, which are therefore not invoked.</p>
@@ -494,24 +494,24 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * <p>A processor for an HTTP request and response.</p>
+     * <p>A handler for an HTTP request and response.</p>
      * <p>The processing typically involves reading the request content (if any) and producing a response.</p>
      */
     @FunctionalInterface
-    interface Processor extends Invocable
+    interface Handler extends Invocable
     {
         /**
-         * <p>Invoked to process the passed HTTP request and response.</p>
-         * <p>The request is accepted by returning true, then processing <em>must</em> be concluded by
+         * <p>Invoked to handle the passed HTTP request and response.</p>
+         * <p>The request is accepted by returning true, then handling <em>must</em> be concluded by
          * completing the passed callback. The processing may be asynchronous, i.e. this method may return true and
          * complete the given callback later, possibly from a different thread.  If this method returns false,
          * then the callback must not be invoked and any mutation on the response reversed.</p>
-         * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
+         * <p>Exceptions thrown by this method may be subsequently handled by an {@link ErrorHandler},
          * if present, otherwise a default HTTP 500 error is generated and the
          * callback completed while writing the error response.</p>
          * <p>The simplest implementation is:</p>
          * <pre>
-         * public boolean process(Request request, Response response, Callback callback)
+         * public boolean handle(Request request, Response response, Callback callback)
          * {
          *     callback.succeeded();
          *     return true;
@@ -519,23 +519,23 @@ public interface Request extends Attributes, Content.Source
          * </pre>
          * <p>A HelloWorld implementation is:</p>
          * <pre>
-         * public boolean process(Request request, Response response, Callback callback)
+         * public boolean handle(Request request, Response response, Callback callback)
          * {
          *     response.write(true, ByteBuffer.wrap("Hello World\n".getBytes(StandardCharsets.UTF_8)), callback);
          *     return true;
          * }
          * </pre>
          *
-         * @param request the HTTP request to process
-         * @param response the HTTP response to process
-         * @param callback the callback to complete when the processing is complete
-         * @return True if an only if the request will be processed, a response generated and the callback eventually called.
+         * @param request the HTTP request to handle
+         * @param response the HTTP response to handle
+         * @param callback the callback to complete when the handling is complete
+         * @return True if an only if the request will be handled, a response generated and the callback eventually called.
          *         This may occur within the scope of the call to this method, or asynchronously some time later. If false
          *         is returned, then this method must not generate a response, nor complete the callback.
-         * @throws Exception if there is a failure during the processing. Catchers cannot assume that the callback will be
+         * @throws Exception if there is a failure during the handling. Catchers cannot assume that the callback will be
          *                   called and thus should attempt to complete the request as if a false had been returned.
          */
-        boolean process(Request request, Response response, Callback callback) throws Exception;
+        boolean handle(Request request, Response response, Callback callback) throws Exception;
     }
 
     /**

@@ -39,7 +39,7 @@ public class HandlerDocs
     public static class HelloHandler0 extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -51,7 +51,7 @@ public class HandlerDocs
     public static class HelloHandler1 extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -63,7 +63,7 @@ public class HandlerDocs
     public static class HelloHandler2 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -75,7 +75,7 @@ public class HandlerDocs
     public static class HelloHandler3 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws IOException
+        public boolean handle(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -98,7 +98,7 @@ public class HandlerDocs
     public static class HelloHandler4 extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws IOException
+        public boolean handle(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -119,7 +119,7 @@ public class HandlerDocs
     public static class HelloHandler5 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws IOException
+        public boolean handle(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -160,7 +160,7 @@ public class HandlerDocs
     public static class DiscriminatingGreeterHandler extends Handler.Abstract.NonBlocking
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             if (!HttpMethod.GET.is(request.getMethod()) || !"greeting".equals(Request.getPathInContext(request)))
                 return false;
@@ -175,7 +175,7 @@ public class HandlerDocs
     public static class EchoHandler extends Handler.Abstract.NonBlocking
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
@@ -192,7 +192,7 @@ public class HandlerDocs
     public static class RootHandler extends Handler.Sequence
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             final StringBuilder index = new StringBuilder();
             index.append("<h2>Handler Demos</h2>\n<ul>\n");
@@ -202,7 +202,7 @@ public class HandlerDocs
                 String name = handler.getClass().getSimpleName().replace("Handler", "");
                 String path = "/" + name;
                 if (Request.getPathInContext(request).equals(name))
-                    return handler.process(request, response, callback);
+                    return handler.handle(request, response, callback);
 
                 index.append("<li><a href=\"")
                     .append(URIUtil.addPaths(request.getContext().getContextPath(), path))

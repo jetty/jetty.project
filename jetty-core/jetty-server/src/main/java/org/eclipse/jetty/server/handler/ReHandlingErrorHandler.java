@@ -29,13 +29,13 @@ import org.slf4j.LoggerFactory;
 /**
  * An ErrorProcessor that can re-handle a request at an error page location.
  */
-public abstract class ReHandlingErrorProcessor extends ErrorProcessor
+public abstract class ReHandlingErrorHandler extends ErrorHandler
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ReHandlingErrorProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReHandlingErrorHandler.class);
 
     private final Handler _handler;
 
-    protected ReHandlingErrorProcessor(Handler handler)
+    protected ReHandlingErrorHandler(Handler handler)
     {
         _handler = handler;
     }
@@ -49,20 +49,20 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
     @Override
     protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
     {
-        if (request.getAttribute(ReHandlingErrorProcessor.class.getName()) == null)
+        if (request.getAttribute(ReHandlingErrorHandler.class.getName()) == null)
         {
             String pathInContext = getReHandlePathInContext(request, code, cause);
 
             if (pathInContext != null)
             {
-                request.setAttribute(ReHandlingErrorProcessor.class.getName(), pathInContext);
+                request.setAttribute(ReHandlingErrorHandler.class.getName(), pathInContext);
                 HttpURI uri = Request.newHttpURIFrom(request, pathInContext);
                 ReHandleRequestWrapper reRequest = new ReHandleRequestWrapper(request, uri);
 
                 try
                 {
                     response.setStatus(200);
-                    if (_handler.process(reRequest, response, callback))
+                    if (_handler.handle(reRequest, response, callback))
                         return;
                 }
                 catch (Exception e)
@@ -83,7 +83,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
     /**
      * An ErrorPageErrorProcessor that uses a map of error codes to select a page.
      */
-    public static class ByHttpStatus extends ReHandlingErrorProcessor
+    public static class ByHttpStatus extends ReHandlingErrorHandler
     {
         private final Map<Integer, String> _statusMap = new ConcurrentHashMap<>();
 

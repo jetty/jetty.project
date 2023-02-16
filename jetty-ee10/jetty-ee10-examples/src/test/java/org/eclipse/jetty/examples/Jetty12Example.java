@@ -42,7 +42,7 @@ public class Jetty12Example
         embedded.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request,
+            public boolean handle(org.eclipse.jetty.server.Request request,
                                   org.eclipse.jetty.server.Response response,
                                   Callback callback) throws Exception
             {

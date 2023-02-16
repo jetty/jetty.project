@@ -43,7 +43,7 @@ public class HelloHandler extends Handler.Abstract
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);

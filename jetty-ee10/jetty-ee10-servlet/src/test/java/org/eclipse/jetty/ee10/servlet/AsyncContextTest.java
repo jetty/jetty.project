@@ -86,7 +86,7 @@ public class AsyncContextTest
 
         ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
         errorHandler.setUnwrapServletException(false);
-        _contextHandler.setErrorProcessor(errorHandler);
+        _contextHandler.setErrorHandler(errorHandler);
         errorHandler.addErrorPage(500, "/error/500");
         errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
 

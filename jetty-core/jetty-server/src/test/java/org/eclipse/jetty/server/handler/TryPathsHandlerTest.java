@@ -110,7 +110,7 @@ public class TryPathsHandlerTest
         resourceHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 if (!Request.getPathInContext(request).startsWith("/forward"))
                     return false;
@@ -182,7 +182,7 @@ public class TryPathsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
@@ -194,7 +194,7 @@ public class TryPathsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 assertThat(Request.getPathInContext(request), equalTo("/forward"));
                 assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
@@ -271,7 +271,7 @@ public class TryPathsHandlerTest
         resourceHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 if (Request.getPathInContext(request).endsWith("/notFound"))
                 {
@@ -348,7 +348,7 @@ public class TryPathsHandlerTest
         start(List.of("$path"), new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals("https", httpURI.getScheme());

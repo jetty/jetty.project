@@ -35,9 +35,9 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 public class StatisticsHandler extends Handler.Wrapper
 {
-    private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being processed (full lifecycle)
+    private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being handled (full lifecycle)
     private final SampleStatistic _requestTimeStats = new SampleStatistic(); // latencies of requests (full lifecycle)
-    private final LongAdder _processingErrors = new LongAdder();
+    private final LongAdder _handlingErrors = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -47,7 +47,7 @@ public class StatisticsHandler extends Handler.Wrapper
     private final LongAdder _bytesWritten = new LongAdder();
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -56,14 +56,14 @@ public class StatisticsHandler extends Handler.Wrapper
         StatisticsRequest statisticsRequest = newStatisticsRequest(request);
         try
         {
-            if (next.process(statisticsRequest, response, callback))
+            if (next.handle(statisticsRequest, response, callback))
                 return true;
-            statisticsRequest.notProcessed();
+            statisticsRequest.notHandled();
             return false;
         }
         catch (Throwable t)
         {
-            _processingErrors.increment();
+            _handlingErrors.increment();
             throw t;
         }
     }
@@ -74,7 +74,7 @@ public class StatisticsHandler extends Handler.Wrapper
         dumpObjects(out, indent,
             Dumpable.named("requestStats", _requestStats),
             Dumpable.named("requestTimeStats", _requestTimeStats),
-            Dumpable.named("processingErrors", _processingErrors),
+            Dumpable.named("handlingErrors", _handlingErrors),
             Dumpable.named("1xxResponses", _responses1xx),
             Dumpable.named("2xxResponses", _responses2xx),
             Dumpable.named("3xxResponses", _responses3xx),
@@ -95,7 +95,7 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         _requestStats.reset();
         _requestTimeStats.reset();
-        _processingErrors.reset();
+        _handlingErrors.reset();
         _responses1xx.reset();
         _responses2xx.reset();
         _responses3xx.reset();
@@ -153,10 +153,10 @@ public class StatisticsHandler extends Handler.Wrapper
         return _responses5xx.intValue();
     }
 
-    @ManagedAttribute("number of requests that threw an exception during processing")
+    @ManagedAttribute("number of requests that threw an exception during handling")
     public int getProcessingErrors()
     {
-        return _processingErrors.intValue();
+        return _handlingErrors.intValue();
     }
 
     @ManagedAttribute("total time spend in all request execution (in ns)")
@@ -212,10 +212,10 @@ public class StatisticsHandler extends Handler.Wrapper
         /**
          * Creating a {@link StatisticsRequest} increments the {@link #getRequests() request counter} before its gets a chance
          * of figuring out if the request is going to be handled by the {@link StatisticsHandler#getHandler() wrapped handler}.
-         * In case the wrapped handler did not process the request, calling this method decrements the request counter to
+         * In case the wrapped handler did not handle the request, calling this method decrements the request counter to
          * compensate for the unneeded increment.
          */
-        protected void notProcessed()
+        protected void notHandled()
         {
             _requestStats.decrement();
         }

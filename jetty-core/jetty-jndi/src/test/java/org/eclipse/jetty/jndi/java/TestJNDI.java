@@ -94,7 +94,7 @@ public class TestJNDI
             private Object testObj = new Object();
 
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 return false;
             }
@@ -148,7 +148,7 @@ public class TestJNDI
             private Object testObj = new Object();
 
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 return false;
             }

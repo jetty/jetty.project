@@ -266,7 +266,7 @@ public class PathMappingsHandlerTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             assertTrue(isStarted());
             response.setStatus(HttpStatus.OK_200);

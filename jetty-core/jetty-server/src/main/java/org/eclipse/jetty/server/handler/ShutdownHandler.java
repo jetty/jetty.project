@@ -120,7 +120,7 @@ public class ShutdownHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         String fullPath = request.getHttpURI().getCanonicalPath();
         ContextHandler contextHandler = ContextHandler.getContextHandler(request);
@@ -130,7 +130,7 @@ public class ShutdownHandler extends Handler.Wrapper
             String pathInContext = contextHandler.getContext().getPathInContext(fullPath);
             if (!pathInContext.startsWith(this._shutdownPath))
             {
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }
         else
@@ -138,7 +138,7 @@ public class ShutdownHandler extends Handler.Wrapper
             // We are standalone
             if (!fullPath.startsWith(this._shutdownPath))
             {
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }
 

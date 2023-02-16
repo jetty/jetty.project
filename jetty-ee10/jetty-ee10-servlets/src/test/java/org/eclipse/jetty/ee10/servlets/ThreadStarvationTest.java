@@ -262,7 +262,7 @@ public class ThreadStarvationTest
             class TheHandler extends Handler.Processor
             {
                 @Override
-                public void process(Request request, Response response, Callback callback) throws Exception
+                public void handle(request request, Response response, Callback callback) throws Exception
                 {
                     int c = count.getAndIncrement();
                     try

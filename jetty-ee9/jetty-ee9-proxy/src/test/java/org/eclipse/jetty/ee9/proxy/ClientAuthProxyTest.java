@@ -137,7 +137,7 @@ public class ClientAuthProxyTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
                 Assertions.assertNotNull(certificates);

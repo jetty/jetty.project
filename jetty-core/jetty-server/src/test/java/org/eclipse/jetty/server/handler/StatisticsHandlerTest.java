@@ -90,14 +90,14 @@ public class StatisticsHandlerTest
         mdrh.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        request.demand(() -> process(request, response, callback));
+                        request.demand(() -> handle(request, response, callback));
                         return true;
                     }
 
@@ -119,9 +119,9 @@ public class StatisticsHandlerTest
 
         _latchHandler.setHandler(mdrh);
         AtomicReference<String> messageRef = new AtomicReference<>();
-        _server.setErrorProcessor((request, response, callback) ->
+        _server.setErrorHandler((request, response, callback) ->
         {
-            messageRef.set((String)request.getAttribute(ErrorProcessor.ERROR_MESSAGE));
+            messageRef.set((String)request.getAttribute(ErrorHandler.ERROR_MESSAGE));
             callback.succeeded();
             return true;
         });
@@ -163,7 +163,7 @@ public class StatisticsHandlerTest
         mdrh.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -245,7 +245,7 @@ public class StatisticsHandlerTest
     public void testTwoRequestsSerially() throws Exception
     {
         CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
-        _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
+        _statsHandler.setHandler(new TripleBarrierHandler(barrier));
         _server.start();
 
         String request = """
@@ -302,7 +302,7 @@ public class StatisticsHandlerTest
     {
         CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
-        _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
+        _statsHandler.setHandler(new TripleBarrierHandler(barrier));
         _server.start();
 
         String request = """
@@ -337,7 +337,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 barrier[0].await();
                 barrier[1].await();
@@ -390,7 +390,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 throw new IllegalStateException("expected");
             }
@@ -427,7 +427,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 throw new IllegalStateException("expected");
@@ -467,13 +467,13 @@ public class StatisticsHandlerTest
         final long acceptedTime = 500;
         final long wastedTime = 250;
         final long requestTime = acceptingTime + acceptedTime;
-        final long processTime = acceptingTime + acceptedTime + wastedTime;
+        final long handleTime = acceptingTime + acceptedTime + wastedTime;
         final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
 
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 barrier[0].await();
                 Thread.sleep(acceptingTime);
@@ -528,7 +528,7 @@ public class StatisticsHandlerTest
 
             // TODO currently the wasted time is included in the request time and the accepted time, because those
             //      timers are stopped in the stream completion (rather than the callback completion), which is
-            //      serialized on the return of the call to process.   Perhaps we should wrap the callback for
+            //      serialized on the return of the call to handle.   Perhaps we should wrap the callback for
             //      those times?
 
             assertThat(_statsHandler.getRequestTimeTotal(), allOf(
@@ -547,12 +547,12 @@ public class StatisticsHandlerTest
         private volatile CountDownLatch _latch = new CountDownLatch(1);
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             CountDownLatch latch = _latch;
             try
             {
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
             finally
             {
@@ -577,15 +577,15 @@ public class StatisticsHandlerTest
     }
 
     /**
-     * when the first barrier is reached, process() has been entered;
+     * when the first barrier is reached, handle() has been entered;
      * when the second barrier is reached, the callback is succeeded;
-     * when the third barrier is reached, process() is returning
+     * when the third barrier is reached, handle() is returning
      */
-    private static class TripleBarrierHandlerProcessor extends Handler.Abstract
+    private static class TripleBarrierHandler extends Handler.Abstract
     {
         private final CyclicBarrier[] _barriers;
 
-        public TripleBarrierHandlerProcessor(CyclicBarrier[] barriers)
+        public TripleBarrierHandler(CyclicBarrier[] barriers)
         {
             if (barriers.length != 3)
                 throw new IllegalArgumentException();
@@ -593,7 +593,7 @@ public class StatisticsHandlerTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             try
             {

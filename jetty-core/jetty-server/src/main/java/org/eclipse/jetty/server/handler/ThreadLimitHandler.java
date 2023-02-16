@@ -161,21 +161,21 @@ public class ThreadLimitHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
             return false;
 
         if (!_enabled)
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
 
         // Get the remote address of the request
         Remote remote = getRemote(request);
         if (remote == null)
         {
             // if remote is not known, handle normally
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
         }
 
         // We accept the request and will always process it.
@@ -321,7 +321,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         {
             try
             {
-                if (!_handler.process(this, _response, _callback))
+                if (!_handler.handle(this, _response, _callback))
                     Response.writeError(this, _response, _callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable x)

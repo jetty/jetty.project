@@ -24,7 +24,7 @@ public class EmptyServerHandler extends Handler.Abstract
     protected Blocker.Shared _blocking = new Blocker.Shared();
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         try
         {

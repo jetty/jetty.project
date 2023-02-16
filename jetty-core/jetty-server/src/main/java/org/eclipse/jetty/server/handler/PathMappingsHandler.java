@@ -80,7 +80,7 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         String pathInContext = Request.getPathInContext(request);
         MatchedResource<Handler> matchedResource = mappings.getMatched(pathInContext);
@@ -92,6 +92,6 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Matched pathInContext of {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), matchedResource.getResource());
-        return matchedResource.getResource().process(request, response, callback);
+        return matchedResource.getResource().handle(request, response, callback);
     }
 }

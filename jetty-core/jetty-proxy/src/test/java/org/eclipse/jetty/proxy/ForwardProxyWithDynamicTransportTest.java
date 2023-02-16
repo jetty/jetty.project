@@ -246,7 +246,7 @@ public class ForwardProxyWithDynamicTransportTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
@@ -576,7 +576,7 @@ public class ForwardProxyWithDynamicTransportTest
     private static class EmptyServerHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             callback.succeeded();
             return true;

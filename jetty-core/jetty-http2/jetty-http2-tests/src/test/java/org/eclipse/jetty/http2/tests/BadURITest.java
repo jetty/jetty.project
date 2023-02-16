@@ -38,7 +38,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -76,7 +76,7 @@ public class BadURITest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 handlerLatch.countDown();
                 callback.succeeded();
@@ -85,9 +85,9 @@ public class BadURITest
         });
 
         // Remove existing ErrorHandlers.
-        server.getBeans(ErrorProcessor.class).forEach(server::removeBean);
+        server.getBeans(ErrorHandler.class).forEach(server::removeBean);
 
-        server.addBean(new ErrorProcessor()
+        server.addBean(new ErrorHandler()
         {
             @Override
             public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)

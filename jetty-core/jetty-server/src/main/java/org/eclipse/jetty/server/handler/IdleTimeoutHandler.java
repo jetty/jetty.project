@@ -65,11 +65,11 @@ public class IdleTimeoutHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         long idleTimeout = 0; // TODO rq.getHttpChannel().getIdleTimeout();
         // TODO rq.getHttpChannel().setIdleTimeout(_idleTimeoutMs);
-        return super.process(request, response, Callback.from(callback, () ->
+        return super.handle(request, response, Callback.from(callback, () ->
         {
             // TODO rq.getHttpChannel().setIdleTimeout(idleTimeout)
         }));

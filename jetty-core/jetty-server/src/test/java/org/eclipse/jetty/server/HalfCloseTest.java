@@ -144,7 +144,7 @@ public class HalfCloseTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             handled++;
             response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
@@ -168,7 +168,7 @@ public class HalfCloseTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             handled++;
 

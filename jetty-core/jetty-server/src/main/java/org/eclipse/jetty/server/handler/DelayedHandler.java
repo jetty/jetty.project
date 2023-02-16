@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class DelayedHandler extends Handler.Wrapper
 {
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -81,7 +81,7 @@ public class DelayedHandler extends Handler.Wrapper
         MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
         DelayedProcess delayed = newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
         if (delayed == null)
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
 
         delayed.delay();
         return true;
@@ -149,7 +149,7 @@ public class DelayedHandler extends Handler.Wrapper
         {
             try
             {
-                if (!getHandler().process(getRequest(), getResponse(), getCallback()))
+                if (!getHandler().handle(getRequest(), getResponse(), getCallback()))
                     Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
@@ -181,7 +181,7 @@ public class DelayedHandler extends Handler.Wrapper
                 RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
                 try
                 {
-                    getHandler().process(request, getResponse(), getCallback());
+                    getHandler().handle(request, getResponse(), getCallback());
                 }
                 catch (Throwable x)
                 {

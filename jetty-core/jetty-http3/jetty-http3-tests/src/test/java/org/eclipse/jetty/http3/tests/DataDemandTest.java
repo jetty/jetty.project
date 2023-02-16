@@ -623,7 +623,7 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, "hello", callback);
                 return true;

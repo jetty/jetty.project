@@ -48,7 +48,7 @@ public abstract class HeaderRule extends Rule
     }
 
     @Override
-    public Processor matchAndApply(Processor input) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
         String value = input.getHeaders().get(getHeaderName());
         if (value == null)
@@ -67,7 +67,7 @@ public abstract class HeaderRule extends Rule
      * @return the possibly wrapped {@code Request} and {@code Processor}
      * @throws IOException if applying the rule failed
      */
-    protected abstract Processor apply(Processor input, String value) throws IOException;
+    protected abstract Handler apply(Handler input, String value) throws IOException;
 
     @Override
     public String toString()

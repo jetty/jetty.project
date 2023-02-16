@@ -42,7 +42,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     private PrintStream _print;
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Thread thread = Thread.currentThread();
         String name = thread.getName() + ":" + request.getHttpURI();
@@ -56,7 +56,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
                 "; " + request.getHeaders().get("User-Agent"));
             thread.setName(name);
 
-            return getHandler().process(request, response, callback);
+            return getHandler().handle(request, response, callback);
         }
         catch (Throwable x)
         {

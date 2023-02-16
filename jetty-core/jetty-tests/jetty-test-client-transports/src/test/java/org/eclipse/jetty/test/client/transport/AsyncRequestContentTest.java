@@ -208,7 +208,7 @@ public class AsyncRequestContentTest extends AbstractTest
     private static class ConsumeInputHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Content.Source.consumeAll(request);
             response.setStatus(HttpStatus.OK_200);

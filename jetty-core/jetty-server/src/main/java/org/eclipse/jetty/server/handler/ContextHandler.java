@@ -121,7 +121,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private boolean _rootContext = true;
     private Resource _baseResource;
     private ClassLoader _classLoader;
-    private Request.Processor _errorProcessor;
+    private Request.Handler _errorHandler;
     private boolean _allowNullPathInContext;
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
@@ -763,7 +763,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler handler = getHandler();
         if (handler == null || !isStarted())
@@ -804,7 +804,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         ContextResponse contextResponse = wrapResponse(contextRequest, response);
         try
         {
-            return handler.process(contextRequest, contextResponse, callback);
+            return handler.handle(contextRequest, contextResponse, callback);
         }
         catch (Throwable t)
         {
@@ -923,21 +923,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     /**
      * @return Returns the errorHandler.
      */
-    @ManagedAttribute("The error processor to use for the context")
-    public Request.Processor getErrorProcessor()
+    @ManagedAttribute("The error handler to use for the context")
+    public Request.Handler getErrorHandler()
     {
         // TODO, do we need to wrap this so that we can establish the context
         //       Classloader?  Or will the caller already do that?
-        return _errorProcessor;
+        return _errorHandler;
     }
 
     /**
-     * @param errorProcessor The error processor to set.
+     * @param errorHandler The error handler to set.
      */
-    public void setErrorProcessor(Request.Processor errorProcessor)
+    public void setErrorHandler(Request.Handler errorHandler)
     {
-        updateBean(_errorProcessor, errorProcessor, true);
-        _errorProcessor = errorProcessor;
+        updateBean(_errorHandler, errorHandler, true);
+        _errorHandler = errorHandler;
     }
 
     protected ContextRequest wrapRequest(Request request, Response response)
@@ -1149,12 +1149,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public Request.Processor getErrorProcessor()
+        public Request.Handler getErrorHandler()
         {
-            Request.Processor processor = ContextHandler.this.getErrorProcessor();
-            if (processor == null)
-                processor = getServer().getErrorProcessor();
-            return processor;
+            Request.Handler handler = ContextHandler.this.getErrorHandler();
+            if (handler == null)
+                handler = getServer().getErrorHandler();
+            return handler;
         }
 
         @Override

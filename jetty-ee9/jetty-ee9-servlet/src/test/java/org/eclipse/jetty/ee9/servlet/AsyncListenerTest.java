@@ -32,7 +32,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -163,7 +163,7 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorProcessor errorProcessor = new ErrorProcessor()
+        ErrorHandler errorProcessor = new ErrorHandler()
         {
             @Override
             protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
@@ -172,7 +172,7 @@ public class AsyncListenerTest
                 super.writeErrorPlain(request, writer, code, message, cause, showStacks);
             }
         };
-        server.setErrorProcessor(errorProcessor);
+        server.setErrorHandler(errorProcessor);
 
         String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
@@ -318,7 +318,7 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorProcessor errorProcessor = new ErrorProcessor()
+        ErrorHandler errorProcessor = new ErrorHandler()
         {
             @Override
             protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
@@ -326,7 +326,7 @@ public class AsyncListenerTest
                 writer.write("CUSTOM\n");
             }
         };
-        server.setErrorProcessor(errorProcessor);
+        server.setErrorHandler(errorProcessor);
 
         String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +

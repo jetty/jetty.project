@@ -133,18 +133,18 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
             // try another handler
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
 
         HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
         {
-            return super.process(request, response, callback); // no content - try other handlers
+            return super.handle(request, response, callback); // no content - try other handlers
         }
 
         _resourceService.doGet(request, response, callback, content);

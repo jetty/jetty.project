@@ -466,7 +466,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //error-pages
-        Map<String, String> errorPages = ((ErrorPageErrorHandler)context.getErrorProcessor()).getErrorPages();
+        Map<String, String> errorPages = ((ErrorPageErrorHandler)context.getErrorHandler()).getErrorPages();
         if (errorPages != null)
         {
             for (Map.Entry<String, String> entry : errorPages.entrySet())

@@ -74,18 +74,18 @@ public class HeaderRegexRule extends RegexRule
     }
 
     @Override
-    protected Processor apply(Processor input, Matcher matcher) throws IOException
+    protected Handler apply(Handler input, Matcher matcher) throws IOException
     {
-        return new Processor(input)
+        return new Handler(input)
         {
             @Override
-            public boolean process(Response response, Callback callback) throws Exception
+            public boolean handle(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), matcher.replaceAll(getHeaderValue()));
                 else
                     response.getHeaders().put(getHeaderName(), matcher.replaceAll(getHeaderValue()));
-                return super.process(response, callback);
+                return super.handle(response, callback);
             }
         };
     }

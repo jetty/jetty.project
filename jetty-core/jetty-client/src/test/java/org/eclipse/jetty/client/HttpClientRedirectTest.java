@@ -482,7 +482,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/redirect"))
                 {
