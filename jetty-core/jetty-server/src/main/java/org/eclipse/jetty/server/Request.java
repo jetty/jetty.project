@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -112,6 +113,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface Request extends Attributes, Content.Source
 {
+    List<Locale> __defaultLocale = Collections.singletonList(Locale.getDefault());
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
 
@@ -380,13 +382,13 @@ public interface Request extends Attributes, Content.Source
     {
         HttpFields fields = request.getHeaders();
         if (fields == null)
-            return List.of(Locale.getDefault());
+            return __defaultLocale;
 
         List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
         // handle no locale
         if (acceptable.isEmpty())
-            return List.of(Locale.getDefault());
+            return __defaultLocale;
 
         return acceptable.stream().map(language ->
         {
