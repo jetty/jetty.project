@@ -495,7 +495,7 @@ public class ServletChannel
                             ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
-                            // If we can't have a body or have no processor, then create a minimal error response.
+                            // If we can't have a body or have no ErrorHandler, then create a minimal error response.
                             if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
                             {
                                 sendResponseAndComplete();

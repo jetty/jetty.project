@@ -465,7 +465,7 @@ public class DelayedHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                // Check that we are called directly from HttpConnection.onFillable via DelayedHandler.process
+                // Check that we are called directly from HttpConnection.onFillable via DelayedHandler.handle().
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);

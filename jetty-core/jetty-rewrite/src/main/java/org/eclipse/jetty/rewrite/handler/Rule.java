@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>An abstract rule that, upon matching a certain condition, may wrap
- * the {@code Request} or the {@code Processor} to execute custom logic.</p>
+ * the {@code Request} or the {@code Handler} to execute custom logic.</p>
  */
 public abstract class Rule
 {
@@ -31,14 +31,14 @@ public abstract class Rule
     /**
      * <p>Tests whether the given {@code Request} should apply, and if so the rule logic is triggered.</p>
      *
-     * @param input the input {@code Request} and {@code Processor}
-     * @return the possibly wrapped {@code Request} and {@code Processor}, or {@code null} if the rule did not match
+     * @param input the input {@code Request} and {@code Handler}
+     * @return the possibly wrapped {@code Request} and {@code Handler}, or {@code null} if the rule did not match
      * @throws IOException if applying the rule failed
      */
     public abstract Handler matchAndApply(Handler input) throws IOException;
 
     /**
-     * @return when {@code true}, rules after this one are not processed
+     * @return when {@code true}, rules after this one are not invoked
      */
     public boolean isTerminating()
     {
@@ -86,11 +86,11 @@ public abstract class Rule
         /**
          * <p>Handles this wrapped request together with the passed response and
          * callback, using the handler set in {@link #setHandler(Handler)}.
-         * This method should be extended if additional processing of the wrapped
+         * This method should be extended if additional handling of the wrapped
          * request is required.</p>
          * @param response The response
          * @param callback The callback
-         * @throws Exception If there is a problem processing
+         * @throws Exception If there is a problem handling
          * @see #setHandler(Handler)
          */
         protected boolean handle(Response response, Callback callback) throws Exception
@@ -100,9 +100,9 @@ public abstract class Rule
         }
 
         /**
-         * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
+         * <p>Wraps the given {@code Handler} within this instance and returns this instance.</p>
          *
-         * @param handler the {@code Processor} to wrap
+         * @param handler the {@code Handler} to wrap
          */
         public void setHandler(Handler handler)
         {

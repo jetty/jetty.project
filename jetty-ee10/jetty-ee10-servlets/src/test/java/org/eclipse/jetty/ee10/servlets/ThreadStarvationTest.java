@@ -259,10 +259,10 @@ public class ThreadStarvationTest
             _server.addConnector(connector);
     
             final AtomicInteger count = new AtomicInteger(0);
-            class TheHandler extends Handler.Processor
+            class TheHandler extends Handler.Abstract
             {
                 @Override
-                public void handle(request request, Response response, Callback callback) throws Exception
+                public boolean handle(request request, Response response, Callback callback) throws Exception
                 {
                     int c = count.getAndIncrement();
                     try
@@ -280,6 +280,7 @@ public class ThreadStarvationTest
                     response.setStatus(200);
                     response.setContentLength(13);
                     response.write(true, callback, "Hello World!\n");
+                    return true;
                 }
             }
             

@@ -98,8 +98,8 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     /**
      * <p>Processes the rules.</p>
      *
-     * @param input the input {@code Request} and {@code Processor}
-     * @return a {@code Request} and {@code Processor}, possibly wrapped by rules to implement the rule's logic,
+     * @param input the input {@code Request} and {@code Handler}
+     * @return a {@code Request} and {@code Handler}, possibly wrapped by rules to implement the rule's logic,
      * or {@code null} if no rule matched
      */
     @Override

@@ -392,7 +392,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (handling)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("already processed, skipping failing callback in {}", HttpChannelState.this);
+                        LOG.debug("already handled, skipping failing callback in {}", HttpChannelState.this);
                 }
                 else
                 {
@@ -484,7 +484,7 @@ public class HttpChannelState implements HttpChannel, Components
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return String.format("%s@%x{processing=%s, processed=%b, writeState=%s, completed=%b, writeCallback=%s, request=%s}",
+            return String.format("%s@%x{handling=%s, handled=%b, writeState=%s, completed=%b, writeCallback=%s, request=%s}",
                 this.getClass().getSimpleName(),
                 hashCode(),
                 _handling,

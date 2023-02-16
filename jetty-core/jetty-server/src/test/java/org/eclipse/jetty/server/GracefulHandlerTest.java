@@ -361,7 +361,7 @@ public class GracefulHandlerTest
      * mess with normal operations of requests.
      */
     @Test
-    public void testHandlerNormalProcessingFalse() throws Exception
+    public void testHandlerNormalHandleReturnsFalse() throws Exception
     {
         GracefulHandler gracefulHandler = new GracefulHandler();
         gracefulHandler.setHandler(new Handler.Abstract()
@@ -413,7 +413,7 @@ public class GracefulHandlerTest
      * when in graceful mode.
      */
     @Test
-    public void testHandlerGracefulProcessingFalse() throws Exception
+    public void testHandlerGracefulHandleReturnsFalse() throws Exception
     {
         AtomicReference<CompletableFuture<Long>> stopFuture = new AtomicReference<>();
         GracefulHandler gracefulHandler = new GracefulHandler();
