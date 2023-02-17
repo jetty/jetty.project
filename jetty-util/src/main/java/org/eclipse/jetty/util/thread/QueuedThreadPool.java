@@ -1050,28 +1050,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             _tryExecutor);
     }
 
-    /**
-     * <p>Attempts to reserve the right for the calling thread to die and remove itself from the
-     * pool.</p>
-     *
-     * <p>Under the hood this works very similarly to {@link AtomicLong#getAndAdd(long)},
-     * but with the ability to shortcircuit in the event that the value being updated
-     * (in this case {@link #_lastShrink}) has increased beyond a certain threshold.</p>
-     *
-     * <p>In the vast majority of cases we expect this to immediately return <code>true</code></p>
-     */
-    private boolean doShrink(long now, long itNanos) {
-        final long siNanos = getShrinkInterval();
-        final long baseline = now - itNanos;
-        long last;
-        while (NanoTime.elapsed(last = _lastShrink.get(), now) > siNanos) {
-            if (_lastShrink.compareAndSet(last, Math.max(last, baseline) + siNanos)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private class Runner implements Runnable
     {
         private Runnable idleJobPoll(long idleTimeout) throws InterruptedException
@@ -1118,10 +1096,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             long idleTimeout = getIdleTimeout();
                             if (idleTimeout > 0 && getThreads() > _minThreads)
                             {
+                                long last;
+                                long siNanos;
                                 long now = NanoTime.now();
                                 long itNanos = TimeUnit.MILLISECONDS.toNanos(idleTimeout);
-                                if (NanoTime.elapsed(idleBaseline, now) > itNanos && doShrink(now, itNanos))
+                                if (NanoTime.elapsed(idleBaseline, now) > itNanos &&
+                                    NanoTime.elapsed(last = _lastShrink.get(), now) > (siNanos = getShrinkInterval()) &&
+                                    _lastShrink.compareAndSet(last, Math.max(last, now - itNanos) + siNanos))
                                 {
+                                    // NOTE: CaS may fail, _very_ infrequently. If it does, that's fine -- this is a
+                                    // "best effort" approach to shrinking, and even if our CaS fails, the missed
+                                    // "shrink reservation" will very likely simply be picked up by another thread.
                                     if (LOG.isDebugEnabled())
                                         LOG.debug("shrinking {}", QueuedThreadPool.this);
                                     break;
