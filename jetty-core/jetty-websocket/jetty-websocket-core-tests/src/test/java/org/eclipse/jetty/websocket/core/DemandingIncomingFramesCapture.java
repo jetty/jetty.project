@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 public class DemandingIncomingFramesCapture extends IncomingFramesCapture
 {

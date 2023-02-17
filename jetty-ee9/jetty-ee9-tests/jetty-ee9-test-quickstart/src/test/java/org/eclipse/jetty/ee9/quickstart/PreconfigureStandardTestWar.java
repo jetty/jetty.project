@@ -52,9 +52,9 @@ public class PreconfigureStandardTestWar
         System.setProperty("jetty.home", "target");
 
         PreconfigureQuickStartWar.main(
-            MavenTestingUtils.getTargetFile("test-standard.war").toString(),
+            MavenTestingUtils.getTargetPath("test-standard.war").toString(),
             target.toString(),
-            MavenTestingUtils.getTestResourceFile("test-spec.xml").toString());
+            MavenTestingUtils.getTargetPath("test-spec.xml").toString());
 
         LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 

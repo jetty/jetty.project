@@ -250,7 +250,7 @@ public class FrameFlusherTest
             {
                 for (ByteBuffer buffer : buffers)
                 {
-                    Parser.ParsedFrame frame = parser.parse(buffer);
+                    Frame.Parsed frame = parser.parse(buffer);
                     if (frame != null)
                     {
                         incomingFrames.offer(frame);

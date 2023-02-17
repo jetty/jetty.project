@@ -29,7 +29,7 @@ import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
 {

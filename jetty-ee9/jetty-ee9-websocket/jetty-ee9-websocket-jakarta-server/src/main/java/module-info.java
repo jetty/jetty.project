@@ -14,7 +14,6 @@
 module org.eclipse.jetty.ee9.websocket.jakarta.server
 {
     requires org.eclipse.jetty.websocket.core.server;
-    requires org.eclipse.jetty.ee9.websocket.jakarta.common;
     requires org.eclipse.jetty.ee9.websocket.servlet;
     requires org.slf4j;
 
