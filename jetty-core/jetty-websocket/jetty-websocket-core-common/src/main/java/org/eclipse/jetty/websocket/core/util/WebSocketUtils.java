@@ -19,7 +19,7 @@ import java.util.Base64;
 
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
-public final class WebSocketUtil
+public final class WebSocketUtils
 {
 
     /**

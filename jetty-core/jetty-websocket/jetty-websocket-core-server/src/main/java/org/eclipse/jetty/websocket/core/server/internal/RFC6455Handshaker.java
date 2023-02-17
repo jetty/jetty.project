@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.util.WebSocketUtil;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 
 public final class RFC6455Handshaker extends AbstractHandshaker
 {
@@ -90,6 +90,6 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         HttpFields.Mutable responseFields = response.getHeaders();
         responseFields.put(UPGRADE_WEBSOCKET);
         responseFields.put(CONNECTION_UPGRADE);
-        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketUtil.hashKey(((RFC6455Negotiation)negotiation).getKey()));
+        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketUtils.hashKey(((RFC6455Negotiation)negotiation).getKey()));
     }
 }

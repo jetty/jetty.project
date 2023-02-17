@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.util.WebSocketUtil;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 
 public class HttpUpgraderOverHTTP implements HttpUpgrader
 {
@@ -85,7 +85,7 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
             {
                 // Check the Accept hash
                 String reqKey = requestHeaders.get(HttpHeader.SEC_WEBSOCKET_KEY);
-                String expectedHash = WebSocketUtil.hashKey(reqKey);
+                String expectedHash = WebSocketUtils.hashKey(reqKey);
                 String respHash = responseHeaders.get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
                 if (expectedHash.equalsIgnoreCase(respHash))
                 {
