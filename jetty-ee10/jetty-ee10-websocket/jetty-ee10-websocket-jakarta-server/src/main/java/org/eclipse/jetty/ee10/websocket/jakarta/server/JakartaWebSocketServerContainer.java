@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee10.websocket.jakarta.server;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -28,16 +28,17 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee9.nested.ContextHandler;
-import org.eclipse.jetty.ee9.nested.HttpChannel;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultConfigurator;
-import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
+import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.internal.AnnotatedServerEndpointConfig;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.internal.JakartaWebSocketCreator;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -56,7 +57,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("JSR356 Server Container")
 public class JakartaWebSocketServerContainer extends JakartaWebSocketClientContainer implements jakarta.websocket.server.ServerContainer, LifeCycle.Listener
 {
-    public static final String PATH_PARAM_ATTRIBUTE = "javax.websocket.server.pathParams";
+    public static final String PATH_PARAM_ATTRIBUTE = "jakarta.websocket.server.pathParams";
 
     public static final String JAKARTA_WEBSOCKET_CONTAINER_ATTRIBUTE = jakarta.websocket.server.ServerContainer.class.getName();
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketServerContainer.class);
@@ -102,8 +103,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
         // Create the Jetty ServerContainer implementation
         JakartaWebSocketServerContainer container = new JakartaWebSocketServerContainer(
-            WebSocketMappings.ensureMappings(contextHandler.getCoreContextHandler()),
-            WebSocketServerComponents.getWebSocketComponents(contextHandler.getCoreContextHandler()),
+            WebSocketMappings.ensureMappings(contextHandler),
+            WebSocketServerComponents.getWebSocketComponents(contextHandler),
             coreClientSupplier);
 
         // Manage the lifecycle of the Container.
@@ -144,7 +145,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
      * @param components the {@link WebSocketComponents} instance to use
      * @param coreClientSupplier the supplier of the {@link WebSocketCoreClient} instance to use
      */
-    public JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
+    JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
     {
         super(components, coreClientSupplier);
         this.webSocketMappings = webSocketMappings;
@@ -273,6 +274,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         }
     }
 
+    @Override
     public void upgradeHttpToWebSocket(Object httpServletRequest, Object httpServletResponse, ServerEndpointConfig sec,
                                        Map<String, String> pathParameters) throws IOException, DeploymentException
     {
@@ -300,27 +302,26 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
-        HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
-        Request baseRequest = httpChannel.getCoreRequest();
-        Response baseResponse = httpChannel.getCoreResponse();
+        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
 
         FutureCallback callback = new FutureCallback();
         try
         {
-            // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+            // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
-            if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, defaultCustomizer))
+            if (handshaker.upgradeRequest(negotiator, servletContextRequest, servletContextResponse, callback, components, defaultCustomizer))
             {
                 callback.block();
             }
         }
         finally
         {
-            request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
     }
 
