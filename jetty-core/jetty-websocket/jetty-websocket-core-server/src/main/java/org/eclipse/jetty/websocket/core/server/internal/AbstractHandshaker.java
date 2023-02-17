@@ -188,7 +188,9 @@ public abstract class AbstractHandshaker implements Handshaker
 
     protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
     {
-        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
+        WebSocketConnection connection = new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
+        coreSession.setWebSocketConnection(connection);
+        return connection;
     }
 
     protected abstract void prepareResponse(Response response, WebSocketNegotiation negotiation);

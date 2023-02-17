@@ -480,6 +480,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         HttpClient httpClient = wsClient.getHttpClient();
         ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getByteBufferPool();
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
+        coreSession.setWebSocketConnection(wsConnection);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
