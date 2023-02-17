@@ -38,7 +38,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>*,org.eclipse.jetty.websocket.core.client.internal.*</Export-Package>
+            <Export-Package>*</Export-Package>
           </instructions>
         </configuration>
       </plugin>
