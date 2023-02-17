@@ -75,8 +75,8 @@ public class StreamTest
         ServerContainer container = server.getServerContainer();
 
         // Prepare Server Side Output directory for uploaded files
-        outputDir = MavenTestingUtils.getTargetTestingDir(StreamTest.class.getName());
-        FS.ensureEmpty(outputDir);
+        outputDir = MavenTestingUtils.getTargetTestingPath(StreamTest.class.getName()).toFile();
+        FS.ensureEmpty(outputDir.toPath());
 
         // Create Server Endpoint with output directory configuration
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(UploadSocket.class, "/upload/{filename}")
@@ -116,7 +116,7 @@ public class StreamTest
 
     private void upload(String filename) throws Exception
     {
-        File inputFile = MavenTestingUtils.getTestResourceFile("data/" + filename);
+        File inputFile = MavenTestingUtils.getTestResourcePath("data/" + filename).toFile();
 
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         try
@@ -127,7 +127,7 @@ public class StreamTest
             socket.uploadFile(inputFile);
             socket.awaitClose();
 
-            File sha1File = MavenTestingUtils.getTestResourceFile("data/" + filename + ".sha");
+            File sha1File = MavenTestingUtils.getTestResourcePath("data/" + filename + ".sha").toFile();
             assertFileUpload(new File(outputDir, filename), sha1File);
         }
         finally

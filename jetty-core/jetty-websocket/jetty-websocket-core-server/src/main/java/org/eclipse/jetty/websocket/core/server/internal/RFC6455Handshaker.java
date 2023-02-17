@@ -27,9 +27,9 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.util.WebSocketUtil;
 
 public final class RFC6455Handshaker extends AbstractHandshaker
@@ -75,7 +75,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected WebSocketConnection createWebSocketConnection(Request baseRequest, CoreSession coreSession)
+    protected WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession)
     {
         ConnectionMetaData connectionMetaData = baseRequest.getConnectionMetaData();
         Connector connector = connectionMetaData.getConnector();

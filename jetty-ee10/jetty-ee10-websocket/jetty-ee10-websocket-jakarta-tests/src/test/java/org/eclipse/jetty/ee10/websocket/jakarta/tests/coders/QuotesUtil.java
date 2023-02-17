@@ -31,7 +31,7 @@ public class QuotesUtil
     public static List<String> loadLines(String filename) throws IOException
     {
         // read file
-        File qfile = MavenTestingUtils.getTestResourceFile(filename);
+        File qfile = MavenTestingUtils.getTestResourcePath(filename).toFile();
         List<String> lines = new ArrayList<>();
         try (FileReader reader = new FileReader(qfile);
              BufferedReader buf = new BufferedReader(reader))

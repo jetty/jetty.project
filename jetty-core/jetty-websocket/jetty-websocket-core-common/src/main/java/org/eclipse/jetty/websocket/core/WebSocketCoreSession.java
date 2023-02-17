@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.websocket.core;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -30,25 +30,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.ExtensionStack;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.IncomingFrames;
-import org.eclipse.jetty.websocket.core.Negotiated;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
+import org.eclipse.jetty.websocket.core.internal.FrameFlusher;
+import org.eclipse.jetty.websocket.core.internal.WebSocketSessionState;
+import org.eclipse.jetty.websocket.core.util.FragmentingFlusher;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,6 +193,10 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         return sessionState.isClosed();
     }
 
+    /**
+     * Used to set the WebSocketConnection on this {@link WebSocketCoreSession}.
+     * @param connection the websocket connection.
+     */
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
@@ -248,6 +240,9 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         return components.getByteBufferPool();
     }
 
+    /**
+     * Used to notify the {@link WebSocketCoreSession} that EOF has been read or the connection has been closed.
+     */
     public void onEof()
     {
         if (LOG.isDebugEnabled())
@@ -380,7 +375,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     }
 
     /**
-     * Open/Activate the session.
+     * Used to notify the {@link WebSocketCoreSession} that the connection has been opened.
      */
     public void onOpen()
     {
@@ -813,7 +808,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         }
 
         @Override
-        void forwardFrame(Frame frame, Callback callback, boolean batch)
+        protected void forwardFrame(Frame frame, Callback callback, boolean batch)
         {
             negotiated.getExtensions().sendFrame(frame, callback, batch);
         }

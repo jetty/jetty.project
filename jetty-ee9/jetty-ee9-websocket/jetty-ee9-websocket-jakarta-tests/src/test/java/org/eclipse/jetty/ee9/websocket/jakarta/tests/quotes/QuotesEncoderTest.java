@@ -131,7 +131,7 @@ public class QuotesEncoderTest
         Quotes quotes = new Quotes();
 
         // read file
-        File qfile = MavenTestingUtils.getTargetFile("test-classes/" + filename);
+        File qfile = MavenTestingUtils.getTargetPath("test-classes/" + filename).toFile();
         try (FileReader reader = new FileReader(qfile);
              BufferedReader buf = new BufferedReader(reader))
         {

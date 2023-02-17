@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

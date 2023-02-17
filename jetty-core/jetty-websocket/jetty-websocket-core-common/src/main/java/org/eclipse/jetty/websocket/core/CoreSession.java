@@ -18,36 +18,15 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 /**
  * Represents the outgoing Frames.
  */
 public interface CoreSession extends OutgoingFrames, IncomingFrames, Configuration
 {
-    static CoreSession from(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components, ClassLoader classLoader)
-    {
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(handler, behavior, negotiated, components);
-        coreSession.setClassLoader(classLoader);
-        return coreSession;
-    }
-
-    static CoreSession from(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components, Consumer<Runnable> handle)
-    {
-        return new WebSocketCoreSession(handler, behavior, negotiated, components)
-        {
-            @Override
-            protected void handle(Runnable runnable)
-            {
-                handle.accept(runnable);
-            }
-        };
-    }
-
     String getNegotiatedSubProtocol();
 
     /**
@@ -198,41 +177,6 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
      */
     boolean isRsv3Used();
 
-    /**
-     * Used to notify the {@link CoreSession} that EOF has been read or the connection has been closed.
-     */
-    void onEof();
-
-    /**
-     * Used to notify the {@link CoreSession} that the connection has been opened.
-     */
-    void onOpen();
-
-    /**
-     * Process an Error that originated from the connection.
-     * For protocol causes, send and abnormal close frame
-     * otherwise just close the connection.
-     *
-     * @param cause the cause
-     * @param callback the callback on completion of error handling
-     */
-    void processConnectionError(Throwable cause, Callback callback);
-
-    /**
-     * Process an Error that originated from the handler.
-     * Send an abnormal close frame to ensure connection is closed.
-     *
-     * @param cause the cause
-     * @param callback the callback on completion of error handling
-     */
-    void processHandlerError(Throwable cause, Callback callback);
-
-    /**
-     * Used to set the WebSocketConnection on this {@link CoreSession}.
-     * @param connection the websocket connection.
-     */
-    void setWebSocketConnection(WebSocketConnection connection);
-
     class Empty extends ConfigurationCustomizer implements CoreSession
     {
         @Override
@@ -375,33 +319,6 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         public boolean isRsv3Used()
         {
             return false;
-        }
-
-        @Override
-        public void onEof()
-        {
-        }
-
-        @Override
-        public void onOpen()
-        {
-        }
-
-        @Override
-        public void processConnectionError(Throwable cause, Callback callback)
-        {
-            callback.succeeded();
-        }
-
-        @Override
-        public void processHandlerError(Throwable cause, Callback callback)
-        {
-            callback.succeeded();
-        }
-
-        @Override
-        public void setWebSocketConnection(WebSocketConnection connection)
-        {
         }
     }
 }

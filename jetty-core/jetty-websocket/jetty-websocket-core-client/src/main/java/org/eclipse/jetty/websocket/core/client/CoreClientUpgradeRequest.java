@@ -52,6 +52,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Negotiated;
 import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP;
 import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP2;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
@@ -472,14 +473,14 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        CoreSession coreSession = CoreSession.from(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents(), wsClient.getClassLoader());
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
+        coreSession.setClassLoader(wsClient.getClassLoader());
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
         ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getByteBufferPool();
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
-        coreSession.setWebSocketConnection(wsConnection);
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);

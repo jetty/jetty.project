@@ -57,7 +57,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final ByteBufferPool byteBufferPool;
     private final Generator generator;
     private final Parser parser;
-    private final CoreSession coreSession;
+    private final WebSocketCoreSession coreSession;
     private final Flusher flusher;
     private final Random random;
     private long demand;
@@ -80,7 +80,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool byteBufferPool,
-                               CoreSession coreSession)
+                               WebSocketCoreSession coreSession)
     {
         this(endp, executor, scheduler, byteBufferPool, coreSession, null);
     }
@@ -102,7 +102,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool byteBufferPool,
-                               CoreSession coreSession,
+                               WebSocketCoreSession coreSession,
                                Random randomMask)
     {
         super(endp, executor);

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.websocket.core.util;
 
 import java.nio.ByteBuffer;
 
@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.internal.FrameEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
         this.configuration = configuration;
     }
 
-    abstract void forwardFrame(Frame frame, Callback callback, boolean batch);
+    protected abstract void forwardFrame(Frame frame, Callback callback, boolean batch);
 
     @Override
     protected boolean onFrame(Frame frame, Callback callback, boolean batch)

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.websocket.core.util;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.internal.FrameEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

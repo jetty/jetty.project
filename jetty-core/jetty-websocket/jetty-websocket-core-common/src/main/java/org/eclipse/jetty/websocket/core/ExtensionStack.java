@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.internal.DemandChain;
+import org.eclipse.jetty.websocket.core.util.DemandChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
