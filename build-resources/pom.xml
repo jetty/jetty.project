@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>build-resources</artifactId>
-  <version>9.4.51-SNAPSHOT</version>
+  <version>9.4.51.v20230217</version>
   <packaging>jar</packaging>
   <name>Jetty :: Build Resources</name>
 
