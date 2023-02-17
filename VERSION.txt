@@ -1,4 +1,9 @@
-jetty-9.4.51-SNAPSHOT
+jetty-9.4.52-SNAPSHOT
+
+jetty-9.4.51.v20230217 - 17 February 2023
+ + 9059 IteratingCallback not serializing close() and failed()
+ + 9181 Jetty 9 java.lang.NullPointerException
+   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
 
 jetty-9.4.50.v20221201 - 01 December 2022
  + 8774 Added SizeLimitHandler
