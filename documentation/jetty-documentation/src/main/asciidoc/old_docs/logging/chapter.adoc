@@ -17,4 +17,3 @@
 This chapter discusses various options for configuring logging.
 
 include::configuring-jetty-logging.adoc[]
-include::configuring-logging-modules.adoc[]
