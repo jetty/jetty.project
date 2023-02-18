@@ -46,11 +46,11 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
-import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

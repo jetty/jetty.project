@@ -28,9 +28,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 
 public final class RFC6455Handshaker extends AbstractHandshaker
 {
@@ -80,7 +80,9 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         ConnectionMetaData connectionMetaData = baseRequest.getConnectionMetaData();
         Connector connector = connectionMetaData.getConnector();
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        return newWebSocketConnection(connectionMetaData.getConnection().getEndPoint(), connector.getExecutor(), connector.getScheduler(), byteBufferPool, coreSession);
+        WebSocketConnection connection = newWebSocketConnection(connectionMetaData.getConnection().getEndPoint(), connector.getExecutor(), connector.getScheduler(), byteBufferPool, coreSession);
+        coreSession.setWebSocketConnection(connection);
+        return connection;
     }
 
     @Override
@@ -90,6 +92,6 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         HttpFields.Mutable responseFields = response.getHeaders();
         responseFields.put(UPGRADE_WEBSOCKET);
         responseFields.put(CONNECTION_UPGRADE);
-        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketCore.hashKey(((RFC6455Negotiation)negotiation).getKey()));
+        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketUtils.hashKey(((RFC6455Negotiation)negotiation).getKey()));
     }
 }

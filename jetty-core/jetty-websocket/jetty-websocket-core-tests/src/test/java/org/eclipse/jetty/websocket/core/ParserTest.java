@@ -23,11 +23,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
-import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -1497,7 +1495,7 @@ public class ParserTest
     @Test
     public void testParseAutobahn793() throws Exception
     {
-        ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("8882c2887e61c164"));
+        ByteBuffer buf = BufferUtil.toBuffer(StringUtil.fromHexString("8882c2887e61c164"));
         Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true));
         assertThat(e.getMessage(), Matchers.containsString("Invalid CLOSE Code: "));
     }
@@ -1505,7 +1503,7 @@ public class ParserTest
     @Test
     public void testParseAutobahn796() throws Exception
     {
-        ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("88824c49cb474fbf"));
+        ByteBuffer buf = BufferUtil.toBuffer(StringUtil.fromHexString("88824c49cb474fbf"));
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
 
         capture.assertHasFrame(OpCode.CLOSE, 1);
@@ -1523,7 +1521,7 @@ public class ParserTest
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buffer, false);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
         assertEquals("Hello World", text.getPayloadAsUTF8());
         assertTrue(text.getPayload().isDirect());
         assertFalse(text.isReleaseable());
@@ -1538,7 +1536,7 @@ public class ParserTest
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buffer, false);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
         assertEquals("Hello World", text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(), sameInstance(buffer.array()));
         assertFalse(text.isReleaseable());
@@ -1559,7 +1557,7 @@ public class ParserTest
         capture.parse(buffer);
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
-        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
         assertFalse(text.isFin());
         assertEquals("Hello", text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(), sameInstance(buffer.array()));
@@ -1570,7 +1568,7 @@ public class ParserTest
         capture.parse(buffer);
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
-        text = (Parser.ParsedFrame)capture.framesQueue.take();
+        text = (Frame.Parsed)capture.framesQueue.take();
         assertFalse(text.isFin());
         assertEquals(" ", text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(), sameInstance(buffer.array()));
@@ -1582,7 +1580,7 @@ public class ParserTest
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
         capture.assertHasFrame(OpCode.CONTINUATION, 1);
-        text = (Parser.ParsedFrame)capture.framesQueue.take();
+        text = (Frame.Parsed)capture.framesQueue.take();
         assertTrue(text.isFin());
         assertEquals("World", text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(), sameInstance(buffer.array()));
@@ -1618,7 +1616,7 @@ public class ParserTest
         assertEquals(0, buffer.remaining());
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
         assertEquals("Hello World", text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(), not(sameInstance(buffer.array())));
         assertTrue(text.isReleaseable());
@@ -1652,7 +1650,7 @@ public class ParserTest
         assertEquals(0, buffer.remaining());
 
         capture.assertHasFrame(OpCode.PING, 1);
-        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
         assertEquals("Hello World", text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(), not(sameInstance(buffer.array())));
         assertTrue(text.isReleaseable());

@@ -27,9 +27,9 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.internal.messages.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

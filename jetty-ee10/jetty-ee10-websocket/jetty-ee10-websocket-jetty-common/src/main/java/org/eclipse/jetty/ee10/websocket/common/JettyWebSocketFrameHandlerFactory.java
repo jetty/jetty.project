@@ -49,16 +49,16 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.internal.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
-import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
-import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 /**
  * Factory to create {@link JettyWebSocketFrameHandler} instances suitable for

@@ -35,6 +35,9 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.util.DemandChain;
+import org.eclipse.jetty.websocket.core.util.DemandingFlusher;
+import org.eclipse.jetty.websocket.core.util.TransformingFlusher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

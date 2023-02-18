@@ -19,7 +19,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -113,7 +112,6 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface Request extends Attributes, Content.Source
 {
-    List<Locale> __defaultLocale = Collections.singletonList(Locale.getDefault());
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
 
@@ -382,13 +380,13 @@ public interface Request extends Attributes, Content.Source
     {
         HttpFields fields = request.getHeaders();
         if (fields == null)
-            return __defaultLocale;
+            return List.of(Locale.getDefault());
 
         List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
         // handle no locale
         if (acceptable.isEmpty())
-            return __defaultLocale;
+            return List.of(Locale.getDefault());
 
         return acceptable.stream().map(language ->
         {
@@ -506,7 +504,7 @@ public interface Request extends Attributes, Content.Source
          * completing the passed callback. The handling may be asynchronous, i.e. this method may return true and
          * complete the given callback later, possibly from a different thread.  If this method returns false,
          * then the callback must not be invoked and any mutation on the response reversed.</p>
-         * <p>Exceptions thrown by this method may be subsequently handled by an {@link ErrorHandler},
+         * <p>Exceptions thrown by this method may be subsequently handled by an error {@link Request.Handler},
          * if present, otherwise a default HTTP 500 error is generated and the
          * callback completed while writing the error response.</p>
          * <p>The simplest implementation is:</p>

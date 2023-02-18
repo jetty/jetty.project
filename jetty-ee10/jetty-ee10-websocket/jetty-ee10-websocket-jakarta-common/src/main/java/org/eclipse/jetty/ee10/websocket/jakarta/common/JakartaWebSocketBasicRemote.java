@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
+import org.eclipse.jetty.websocket.core.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

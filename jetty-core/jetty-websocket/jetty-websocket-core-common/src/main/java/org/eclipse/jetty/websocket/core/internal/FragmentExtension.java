@@ -23,6 +23,9 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.util.DemandChain;
+import org.eclipse.jetty.websocket.core.util.DemandingFlusher;
+import org.eclipse.jetty.websocket.core.util.FragmentingFlusher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +45,7 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
         outgoingFlusher = new FragmentingFlusher(configuration)
         {
             @Override
-            void forwardFrame(Frame frame, Callback callback, boolean batch)
+            protected void forwardFrame(Frame frame, Callback callback, boolean batch)
             {
                 nextOutgoingFrame(frame, callback, batch);
             }

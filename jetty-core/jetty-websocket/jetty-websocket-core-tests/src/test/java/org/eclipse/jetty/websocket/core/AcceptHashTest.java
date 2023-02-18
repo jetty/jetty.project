@@ -16,8 +16,8 @@ package org.eclipse.jetty.websocket.core;
 import java.util.Base64;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -29,7 +29,7 @@ public class AcceptHashTest
 {
     private static String hexAsKey(String hex)
     {
-        byte[] key = TypeUtil.fromHexString(hex);
+        byte[] key = StringUtil.fromHexString(hex);
         assertThat("Key size of hex:[" + hex + "]", key.length, is(16));
         return Base64.getEncoder().encodeToString(key);
     }
@@ -53,7 +53,7 @@ public class AcceptHashTest
     @MethodSource("data")
     public void testHashKey(String clientKey, String expectedHash)
     {
-        String serverAccept = WebSocketCore.hashKey(clientKey);
+        String serverAccept = WebSocketUtils.hashKey(clientKey);
         assertThat("Hashed Key", serverAccept, is(expectedHash));
     }
 }

@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.io.Closeable;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -87,7 +85,7 @@ public class Parser
      * @return Frame or null if not enough data for a complete frame.
      * @throws WebSocketException if unable to parse properly
      */
-    public ParsedFrame parse(ByteBuffer buffer) throws WebSocketException
+    public Frame.Parsed parse(ByteBuffer buffer) throws WebSocketException
     {
         try
         {
@@ -212,7 +210,7 @@ public class Parser
                     {
                         if (aggregate == null)
                             checkFrameSize(OpCode.getOpCode(firstByte), payloadLength);
-                        ParsedFrame frame = parsePayload(buffer);
+                        Frame.Parsed frame = parsePayload(buffer);
                         if (LOG.isDebugEnabled())
                             LOG.debug("{} parsed {}", this, frame);
                         return frame;
@@ -265,7 +263,7 @@ public class Parser
         }
     }
 
-    protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
+    protected Frame.Parsed newFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
     {
         // Validate OpCode
         byte opcode = OpCode.getOpCode(firstByte);
@@ -277,10 +275,10 @@ public class Parser
         if (OpCode.isControlFrame(opcode) && !fin)
             throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
 
-        return new ParsedFrame(firstByte, mask, payload, releaser);
+        return new Frame.Parsed(firstByte, mask, payload, releaser);
     }
 
-    private ParsedFrame autoFragment(ByteBuffer buffer, int fragmentSize)
+    private Frame.Parsed autoFragment(ByteBuffer buffer, int fragmentSize)
     {
         payloadLength -= fragmentSize;
 
@@ -299,14 +297,14 @@ public class Parser
         content.limit(fragmentSize);
         buffer.position(buffer.position() + fragmentSize);
 
-        final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, content, null);
+        final Frame.Parsed frame = newFrame((byte)(firstByte & 0x7F), mask, content, null);
         mask = nextMask;
         firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
         state = State.FRAGMENT;
         return frame;
     }
 
-    private ParsedFrame parsePayload(ByteBuffer buffer)
+    private Frame.Parsed parsePayload(ByteBuffer buffer)
     {
         if (payloadLength == 0)
             return null;
@@ -340,7 +338,7 @@ public class Parser
             if (available == payloadLength)
             {
                 // All the available data is for this frame and completes it 
-                ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), null);
+                Frame.Parsed frame = newFrame(firstByte, mask, buffer.slice(), null);
                 buffer.position(buffer.limit());
                 state = State.START;
                 return frame;
@@ -351,7 +349,7 @@ public class Parser
             int limit = buffer.limit();
             int end = buffer.position() + payloadLength;
             buffer.limit(end);
-            final ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), null);
+            final Frame.Parsed frame = newFrame(firstByte, mask, buffer.slice(), null);
             buffer.position(end);
             buffer.limit(limit);
             state = State.START;
@@ -397,55 +395,5 @@ public class Parser
     {
         return String
             .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null ? "-" : StringUtil.toHexString(mask), payloadLength);
-    }
-
-    public static class ParsedFrame extends Frame implements Closeable, CloseStatus.Supplier
-    {
-        final CloseStatus closeStatus;
-        final Runnable releaser;
-
-        public ParsedFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
-        {
-            super(firstByte, mask, payload);
-            demask();
-            this.releaser = releaser;
-            if (getOpCode() == OpCode.CLOSE)
-            {
-                if (hasPayload())
-                    closeStatus = new CloseStatus(payload.duplicate());
-                else
-                    closeStatus = CloseStatus.NO_CODE_STATUS;
-            }
-            else
-            {
-                closeStatus = null;
-            }
-        }
-
-        @Override
-        public void close()
-        {
-            if (releaser != null)
-                releaser.run();
-        }
-
-        @Override
-        public CloseStatus getCloseStatus()
-        {
-            return closeStatus;
-        }
-
-        public boolean isReleaseable()
-        {
-            return releaser != null;
-        }
-
-        @Override
-        public String toString()
-        {
-            if (closeStatus == null)
-                return super.toString();
-            return super.toString() + ":" + closeStatus;
-        }
     }
 }

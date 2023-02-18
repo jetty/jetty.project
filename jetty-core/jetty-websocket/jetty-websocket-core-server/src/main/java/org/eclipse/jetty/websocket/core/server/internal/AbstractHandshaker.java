@@ -33,14 +33,14 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Negotiated;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
-import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
@@ -129,8 +129,6 @@ public abstract class AbstractHandshaker implements Handshaker
 
         connectionMetaData.getConnector().getEventListeners().forEach(connection::addEventListener);
 
-        coreSession.setWebSocketConnection(connection);
-
         prepareResponse(response, negotiation);
         if (httpConfig.getSendServerVersion())
             response.getHeaders().put(SERVER_VERSION);
@@ -190,7 +188,9 @@ public abstract class AbstractHandshaker implements Handshaker
 
     protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
     {
-        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
+        WebSocketConnection connection = new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
+        coreSession.setWebSocketConnection(connection);
+        return connection;
     }
 
     protected abstract void prepareResponse(Response response, WebSocketNegotiation negotiation);

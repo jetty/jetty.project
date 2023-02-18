@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.websocket.server.HandshakeRequest;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;

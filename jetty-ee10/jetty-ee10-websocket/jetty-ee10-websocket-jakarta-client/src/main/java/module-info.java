@@ -13,20 +13,17 @@
 
 module org.eclipse.jetty.ee10.websocket.jakarta.client
 {
-    requires org.eclipse.jetty.websocket.core.client;
-    requires org.eclipse.jetty.ee10.websocket.jakarta.common;
     requires org.slf4j;
 
-    requires transitive jakarta.websocket;
-    requires transitive org.eclipse.jetty.client;
+    requires transitive org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-    requires static  jakarta.servlet;
+    requires static jakarta.servlet;
 
     exports org.eclipse.jetty.ee10.websocket.jakarta.client;
 
-    exports org.eclipse.jetty.ee10.websocket.jakarta.client.internal to
-        org.eclipse.jetty.ee10.websocket.jakarta.server;
-
     provides jakarta.websocket.ContainerProvider with
         org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
+
+    provides jakarta.servlet.ServletContainerInitializer with
+        org.eclipse.jetty.ee10.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer;
 }
