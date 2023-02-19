@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -55,7 +55,7 @@ public class VirtualHostRuleContainer extends RuleContainer
     }
 
     @Override
-    public Processor matchAndApply(Processor input) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
         if (_virtualHosts.isEmpty())
             return super.matchAndApply(input);

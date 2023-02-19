@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -65,11 +65,11 @@ public class IdleTimeoutHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         long idleTimeout = 0; // TODO rq.getHttpChannel().getIdleTimeout();
         // TODO rq.getHttpChannel().setIdleTimeout(_idleTimeoutMs);
-        return super.process(request, response, Callback.from(callback, () ->
+        return super.handle(request, response, Callback.from(callback, () ->
         {
             // TODO rq.getHttpChannel().setIdleTimeout(idleTimeout)
         }));

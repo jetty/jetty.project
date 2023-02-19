@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -121,7 +121,7 @@ public class ChatWebSocketServer
         upgradeHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");

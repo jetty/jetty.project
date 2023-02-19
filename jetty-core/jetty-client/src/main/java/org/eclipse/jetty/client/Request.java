@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -30,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -317,13 +317,6 @@ public interface Request
     Request followRedirects(boolean follow);
 
     /**
-     * @param listenerClass the class of the listener, or null for all listeners classes
-     * @param <T> the type of listener class
-     * @return the listeners for request events of the given class
-     */
-    <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
-
-    /**
      * @param listener a listener for request events
      * @return this request object
      */
@@ -402,6 +395,12 @@ public interface Request
     Request onResponseContentAsync(Response.AsyncContentListener listener);
 
     /**
+     * @param listener a listener for driving {@link org.eclipse.jetty.io.Content.Source}
+     * @return this request object
+     */
+    Request onResponseContentSource(Response.ContentSourceListener listener);
+
+    /**
      * @param listener a listener for response success event
      * @return this request object
      */
@@ -412,12 +411,6 @@ public interface Request
      * @return this request object
      */
     Request onResponseFailure(Response.FailureListener listener);
-
-    /**
-     * @param listener a listener for driving {@link org.eclipse.jetty.io.Content.Source}
-     * @return this request object
-     */
-    Request onResponseContentSource(Response.ContentSourceListener listener);
 
     /**
      * <p>Sets a handler for pushed resources.</p>

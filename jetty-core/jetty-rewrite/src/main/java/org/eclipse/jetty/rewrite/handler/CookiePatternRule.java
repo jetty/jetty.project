@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -76,7 +76,7 @@ public class CookiePatternRule extends PatternRule
     }
 
     @Override
-    public Processor apply(Processor input) throws IOException
+    public Handler apply(Handler input) throws IOException
     {
         // Check that cookie is not already set
         List<HttpCookie> cookies = Request.getCookies(input);
@@ -89,13 +89,13 @@ public class CookiePatternRule extends PatternRule
             }
         }
 
-        return new Processor(input)
+        return new Handler(input)
         {
             @Override
-            public boolean process(Response response, Callback callback) throws Exception
+            public boolean handle(Response response, Callback callback) throws Exception
             {
                 Response.addCookie(response, HttpCookie.from(_name, _value));
-                return super.process(response, callback);
+                return super.handle(response, callback);
             }
         };
     }

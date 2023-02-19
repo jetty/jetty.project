@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,9 +21,9 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -38,8 +38,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractHttpClientServerTest
 {
-    private RetainableByteBufferPool serverBufferPool;
-    protected RetainableByteBufferPool clientBufferPool;
+    private ByteBufferPool serverBufferPool;
+    protected ByteBufferPool clientBufferPool;
     private final AtomicLong connectionLeaks = new AtomicLong();
     protected Server server;
     protected ServerConnector connector;
@@ -53,7 +53,7 @@ public abstract class AbstractHttpClientServerTest
         server = new Server(serverThreads);
         ServerFCGIConnectionFactory fcgiConnectionFactory = new ServerFCGIConnectionFactory(new HttpConfiguration());
         // TODO: restore leak tracking.
-        serverBufferPool = new ArrayRetainableByteBufferPool();
+        serverBufferPool = new ArrayByteBufferPool();
         connector = new ServerConnector(server, null, null, serverBufferPool,
             1, Math.max(1, ProcessorUtils.availableProcessors() / 2), fcgiConnectionFactory);
         server.addConnector(connector);
@@ -67,8 +67,8 @@ public abstract class AbstractHttpClientServerTest
         clientConnector.setExecutor(clientThreads);
         // TODO: restore leak tracking.
         if (clientBufferPool == null)
-            clientBufferPool = new ArrayRetainableByteBufferPool();
-        clientConnector.setRetainableByteBufferPool(clientBufferPool);
+            clientBufferPool = new ArrayByteBufferPool();
+        clientConnector.setByteBufferPool(clientBufferPool);
         HttpClientTransport transport = new HttpClientTransportOverFCGI(clientConnector, "");
         transport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination())
         {

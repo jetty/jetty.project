@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -341,7 +341,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             // If we have no buffer
             if (_buffer == null)
             {
-                _buffer = getRequest().getComponents().getRetainableByteBufferPool().acquire(_bufferSize, false);
+                _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
                 ByteBuffer byteBuffer = _buffer.getByteBuffer();
                 // Per RFC-1952, GZIP is LITTLE_ENDIAN
                 byteBuffer.order(ByteOrder.LITTLE_ENDIAN);

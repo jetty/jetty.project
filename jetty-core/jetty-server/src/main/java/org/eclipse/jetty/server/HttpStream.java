@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -22,6 +21,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StaticException;
 
 /**
  * A HttpStream is an abstraction that together with {@link MetaData.Request}, represents the
@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface HttpStream extends Callback
 {
+    Exception CONTENT_NOT_CONSUMED = new StaticException("Content not consumed");
+
     /**
      * <p>Attribute name to be used as a {@link Request} attribute to store/retrieve
      * the {@link Connection} created during the HTTP/1.1 upgrade mechanism or the
@@ -104,27 +106,34 @@ public interface HttpStream extends Callback
         return null;
     }
 
-    default Throwable consumeAvailable()
+    Throwable consumeAvailable();
+
+    static Throwable consumeAvailable(HttpStream stream, HttpConfiguration httpConfig)
     {
-        while (true)
+        int numReads = 0;
+        int maxReads = httpConfig.getMaxUnconsumedRequestContentReads();
+        while (maxReads < 0 || numReads < maxReads)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
-            Content.Chunk content = read();
+            Chunk content = stream.read();
+            numReads++;
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
-                return new IOException("Content not consumed");
+                return CONTENT_NOT_CONSUMED;
 
             // Always release any returned content. This is a noop for EOF and Error content.
             content.release();
 
             // if the input failed, then fail the stream for same reason
-            if (content instanceof Content.Chunk.Error error)
+            if (content instanceof Chunk.Error error)
                 return error.getCause();
 
             if (content.isLast())
                 return null;
         }
+
+        return CONTENT_NOT_CONSUMED;
     }
 
     class Wrapper implements HttpStream

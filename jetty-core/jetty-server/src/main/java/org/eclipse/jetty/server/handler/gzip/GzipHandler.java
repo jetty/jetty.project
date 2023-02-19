@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -513,7 +513,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle {}", this, request);
@@ -524,7 +524,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
 
         // Are we already being gzipped?
         if (Request.as(request, GzipRequest.class) != null)
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
 
         String path = Request.getPathInContext(request);
         boolean tryInflate = getInflateBufferSize() >= 0 && isPathInflatable(path);
@@ -533,7 +533,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         // Can we skip looking at the request and wrapping request or response?
         if (!tryInflate && !tryDeflate)
             // No need for a Vary header, as we will never deflate
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
 
         // Look for inflate and deflate headers
         HttpFields fields = request.getHeaders();
@@ -573,8 +573,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             response.getHeaders().ensureField(_vary);
         }
 
-        // Call the process with the possibly wrapped request, response and callback
-        if (next.process(request, response, callback))
+        // Call handle() with the possibly wrapped request, response and callback
+        if (next.handle(request, response, callback))
             return true;
 
         // If the request was not accepted, destroy any gzipRequest wrapper

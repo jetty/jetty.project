@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.internal.HttpDestination;
-import org.eclipse.jetty.client.internal.HttpResponse;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -48,7 +48,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
 
@@ -99,7 +99,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Do not respond.
                 return true;
@@ -142,7 +142,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
 
@@ -204,7 +204,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 Content.Sink.write(response, false, null);

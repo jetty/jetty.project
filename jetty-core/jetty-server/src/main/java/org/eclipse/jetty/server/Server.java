@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -35,11 +35,11 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -76,7 +76,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final Scheduler _scheduler;
-    private final RetainableByteBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
@@ -86,7 +86,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
     private Handler _defaultHandler;
-    private Request.Processor _errorProcessor;
+    private Request.Handler _errorHandler;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private volatile DateField _dateField;
@@ -136,13 +136,13 @@ public class Server extends Handler.Wrapper implements Attributes
         this(pool, null, null);
     }
 
-    public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") RetainableByteBufferPool bufferPool)
+    public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool)
     {
         _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
         addBean(_threadPool);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler();
         addBean(_scheduler);
-        _bufferPool = bufferPool != null ? bufferPool : new ArrayRetainableByteBufferPool();
+        _bufferPool = bufferPool != null ? bufferPool : new ArrayByteBufferPool();
         addBean(_bufferPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);
@@ -154,7 +154,7 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
-     * @param defaultHandler The handler to use if no other handler is set or has processed the request. This handler should
+     * @param defaultHandler The handler to use if no other handler is set or has handled the request. This handler should
      *                       always accept the request, even if only to send a 404.
      */
     public void setDefaultHandler(Handler defaultHandler)
@@ -167,10 +167,10 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // Handle either with normal handler or default handler
-        return super.process(request, response, callback) || _defaultHandler != null && _defaultHandler.process(request, response, callback);
+        return super.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
     }
 
     public String getServerInfo()
@@ -271,9 +271,9 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public Request.Processor getErrorProcessor()
+    public Request.Handler getErrorHandler()
     {
-        return _errorProcessor;
+        return _errorHandler;
     }
 
     public void setRequestLog(RequestLog requestLog)
@@ -282,10 +282,10 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorProcessor(Request.Processor errorProcessor)
+    public void setErrorHandler(Request.Handler errorHandler)
     {
-        updateBean(_errorProcessor, errorProcessor);
-        _errorProcessor = errorProcessor;
+        updateBean(_errorHandler, errorHandler);
+        _errorHandler = errorHandler;
     }
 
     @ManagedAttribute("version of this server")
@@ -420,7 +420,7 @@ public class Server extends Handler.Wrapper implements Attributes
         return _scheduler;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
     }
@@ -498,8 +498,8 @@ public class Server extends Handler.Wrapper implements Attributes
             //Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
 
-            if (_errorProcessor == null)
-                setErrorProcessor(new DynamicErrorProcessor());
+            if (_errorHandler == null)
+                setErrorHandler(new DynamicErrorHandler());
 
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
@@ -648,8 +648,8 @@ public class Server extends Handler.Wrapper implements Attributes
             multiException = ExceptionUtil.combine(multiException, e);
         }
 
-        if (getErrorProcessor() instanceof DynamicErrorProcessor)
-            setErrorProcessor(null);
+        if (getErrorHandler() instanceof DynamicErrorHandler)
+            setErrorHandler(null);
 
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
@@ -825,7 +825,7 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private static class DynamicErrorProcessor extends ErrorProcessor {}
+    private static class DynamicErrorHandler extends ErrorHandler {}
 
     class ServerContext extends Attributes.Wrapper implements Context
     {
@@ -887,9 +887,9 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public Request.Processor getErrorProcessor()
+        public Request.Handler getErrorHandler()
         {
-            return Server.this.getErrorProcessor();
+            return Server.this.getErrorHandler();
         }
 
         @Override

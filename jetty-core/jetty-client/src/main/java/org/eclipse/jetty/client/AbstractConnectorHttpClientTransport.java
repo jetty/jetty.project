@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -52,7 +52,7 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
     {
         HttpClient httpClient = getHttpClient();
         connector.setBindAddress(httpClient.getBindAddress());
-        connector.setRetainableByteBufferPool(httpClient.getRetainableByteBufferPool());
+        connector.setByteBufferPool(httpClient.getByteBufferPool());
         connector.setConnectBlocking(httpClient.isConnectBlocking());
         connector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
         connector.setExecutor(httpClient.getExecutor());

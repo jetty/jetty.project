@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -84,7 +84,7 @@ public class HttpServerTestFixture
     protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
@@ -99,7 +99,7 @@ public class HttpServerTestFixture
     protected static class HelloWorldHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             Content.Sink.write(response, true, "Hello world\r\n", callback);
@@ -119,7 +119,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             Response.writeError(request, response, callback, code, message);
             return true;
@@ -141,7 +141,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             long len = expected < 0 ? request.getLength() : expected;
             if (len < 0)
@@ -184,7 +184,7 @@ public class HttpServerTestFixture
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
@@ -198,7 +198,7 @@ public class HttpServerTestFixture
     protected static class DataHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 

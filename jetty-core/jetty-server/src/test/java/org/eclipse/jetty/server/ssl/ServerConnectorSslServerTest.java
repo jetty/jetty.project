@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,9 +27,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -75,7 +75,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         sslContextFactory.setKeyStorePassword("storepwd");
         // TODO: restore leak tracking.
 //        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        RetainableByteBufferPool pool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool pool = new ArrayByteBufferPool();
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
         ServerConnector connector = new ServerConnector(_server, null, null, pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
@@ -212,7 +212,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             StringBuilder out = new StringBuilder();

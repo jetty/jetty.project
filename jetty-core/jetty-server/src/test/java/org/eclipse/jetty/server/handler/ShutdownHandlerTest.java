@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -71,7 +71,7 @@ public class ShutdownHandlerTest
         shutdownHandler.setHandler(new EchoHandler());
 
         InetSocketAddress fakeRemoteAddr = new InetSocketAddress("127.0.0.1", 22033);
-        Handler.Wrapper fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
+        Handler.Singleton fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
         fakeRemoteAddressHandler.setHandler(shutdownHandler);
 
         createServer(fakeRemoteAddressHandler);
@@ -119,7 +119,7 @@ public class ShutdownHandlerTest
         shutdownHandler.setHandler(new EchoHandler());
 
         InetSocketAddress fakeRemoteAddr = new InetSocketAddress("192.168.0.1", 12345);
-        Handler.Wrapper fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
+        Handler.Singleton fakeRemoteAddressHandler = new FakeRemoteAddressHandlerWrapper(fakeRemoteAddr);
         fakeRemoteAddressHandler.setHandler(shutdownHandler);
 
         createServer(fakeRemoteAddressHandler);
@@ -166,10 +166,10 @@ public class ShutdownHandlerTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Request fakedRequest = FakeRemoteAddressRequest.from(request, this.fakeRemoteAddress);
-            return super.process(fakedRequest, response, callback);
+            return super.handle(fakedRequest, response, callback);
         }
     }
 

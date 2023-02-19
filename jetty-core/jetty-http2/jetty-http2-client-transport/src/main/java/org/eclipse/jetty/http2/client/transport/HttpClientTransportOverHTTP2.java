@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,7 +28,7 @@ import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -90,7 +90,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             HttpClient httpClient = getHttpClient();
             client.setExecutor(httpClient.getExecutor());
             client.setScheduler(httpClient.getScheduler());
-            client.setRetainableByteBufferPool(httpClient.getRetainableByteBufferPool());
+            client.setByteBufferPool(httpClient.getByteBufferPool());
             client.setConnectTimeout(httpClient.getConnectTimeout());
             client.setIdleTimeout(httpClient.getIdleTimeout());
             client.setInputBufferSize(httpClient.getResponseBufferSize());

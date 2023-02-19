@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.client;
 
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,14 +30,15 @@ import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -47,16 +47,16 @@ import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Negotiated;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP;
 import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP2;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
-import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -465,10 +465,11 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         // We can upgrade
         customize(endPoint);
 
+        String scheme = request.getScheme();
         Negotiated negotiated = new Negotiated(
             request.getURI(),
             negotiatedSubProtocol,
-            HttpClient.isSchemeSecure(request.getScheme()),
+            HttpScheme.isSecure(scheme),
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
@@ -477,10 +478,10 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
-        RetainableByteBufferPool bufferPool = wsClient.getWebSocketComponents().getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getByteBufferPool();
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
-        wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
+        wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);

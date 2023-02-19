@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -43,11 +42,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.internal.HttpDestination;
-import org.eclipse.jetty.client.internal.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -122,7 +121,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Origin origin = destination.getOrigin();
         String uri = origin.getScheme() + "://" + origin.getAddress();
-        client.getCookieStore().add(URI.create(uri), new HttpCookie("foo", "bar"));
+        client.getHttpCookieStore().add(URI.create(uri), HttpCookie.from("foo", "bar"));
 
         client.stop();
 
@@ -173,7 +172,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
                 return true;
@@ -269,7 +268,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -302,7 +301,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -336,7 +335,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
@@ -760,7 +759,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[length]), callback);
                 return true;
@@ -1098,7 +1097,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
                 return true;
@@ -1161,7 +1160,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Send the headers at this point, then write the content.
                 byte[] content = "TEST".getBytes(UTF_8);
@@ -1190,7 +1189,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Send the headers at this point, then write the content
                 Content.Sink.write(response, false, null);
@@ -1248,7 +1247,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Do not complete the callback.
                 latch.countDown();
@@ -1325,7 +1324,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
                 if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
@@ -1362,7 +1361,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
                 int count = requests.incrementAndGet();
@@ -1394,7 +1393,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.allocate(1024), callback);
                 return true;
@@ -1553,7 +1552,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, org.eclipse.jetty.server.Request.getServerName(request), callback);
@@ -1724,7 +1723,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(bytes), callback);
                 return true;
@@ -1944,7 +1943,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     private void assertCopyRequest(Request original)
     {
-        Request copy = client.copyRequest((HttpRequest)original, original.getURI());
+        Request copy = client.copyRequest(original, original.getURI());
         assertEquals(original.getURI(), copy.getURI());
         assertEquals(original.getMethod(), copy.getMethod());
         assertEquals(original.getVersion(), copy.getVersion());

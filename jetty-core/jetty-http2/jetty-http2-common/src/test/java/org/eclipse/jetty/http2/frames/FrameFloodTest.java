@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,9 +23,9 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.lessThan;
 
 public class FrameFloodTest
 {
-    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     // Frame structure:
     // | Len0 | Len1 | Len2 | Type | Flags | StreamID0 |StreamID1 |StreamID2 |StreamID3 | Payload... |

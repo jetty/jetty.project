@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,8 +17,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -51,9 +51,9 @@ public interface Connector extends LifeCycle, Container, Graceful
     public Scheduler getScheduler();
 
     /**
-     * @return the {@link RetainableByteBufferPool} to acquire buffers from and release buffers to
+     * @return the {@link ByteBufferPool} to acquire buffers from and release buffers to
      */
-    public RetainableByteBufferPool getRetainableByteBufferPool();
+    public ByteBufferPool getByteBufferPool();
 
     /**
      * @param nextProtocol the next protocol

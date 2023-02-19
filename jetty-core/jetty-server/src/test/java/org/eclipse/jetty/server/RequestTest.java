@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -140,7 +140,7 @@ public class RequestTest
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -177,7 +177,7 @@ public class RequestTest
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -225,7 +225,7 @@ public class RequestTest
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -278,7 +278,7 @@ public class RequestTest
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -313,7 +313,7 @@ public class RequestTest
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -352,7 +352,7 @@ public class RequestTest
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");

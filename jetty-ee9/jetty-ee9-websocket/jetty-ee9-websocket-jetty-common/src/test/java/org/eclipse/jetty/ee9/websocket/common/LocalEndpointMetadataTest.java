@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,10 +17,10 @@ import org.eclipse.jetty.ee9.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.internal.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

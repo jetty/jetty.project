@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,29 +14,28 @@
 package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpConversation;
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpReceiver;
-import org.eclipse.jetty.client.internal.HttpRequest;
-import org.eclipse.jetty.client.internal.HttpResponse;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpReceiver;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -186,7 +185,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             if (listener != null)
             {
                 HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
-                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, List.of(listener));
+                pushRequest.getResponseListeners().addCompleteListener(listener);
+                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest);
                 pushChannel.associate(pushExchange);
                 pushChannel.setStream(stream);
                 // TODO: idle timeout ?

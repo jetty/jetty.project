@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -50,18 +49,6 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     }
 
     @Override
-    public void addHandler(Handler handler)
-    {
-        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
-    }
-
-    @Override
-    public void addHandler(Supplier<Handler> supplier)
-    {
-        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
-    }
-
-    @Override
     public List<Handler> getHandlers()
     {
         return mappings.streamResources().map(MappedResource::getResource).toList();
@@ -93,7 +80,7 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         String pathInContext = Request.getPathInContext(request);
         MatchedResource<Handler> matchedResource = mappings.getMatched(pathInContext);
@@ -105,6 +92,6 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Matched pathInContext of {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), matchedResource.getResource());
-        return matchedResource.getResource().process(request, response, callback);
+        return matchedResource.getResource().handle(request, response, callback);
     }
 }

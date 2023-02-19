@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -49,7 +49,7 @@ public class VirtualThreadsTest extends AbstractTest
         prepareServer(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 if (!VirtualThreads.isVirtualThread())
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -387,7 +387,7 @@ public class ClientConnectorDocs
 
         // Wrap the "telnet" ClientConnectionFactory with the SslClientConnectionFactory.
         connectionFactory = new SslClientConnectionFactory(clientConnector.getSslContextFactory(),
-            clientConnector.getRetainableByteBufferPool(), clientConnector.getExecutor(), connectionFactory);
+            clientConnector.getByteBufferPool(), clientConnector.getExecutor(), connectionFactory);
 
         // We will obtain a SslConnection now.
         CompletableFuture<SslConnection> connectionPromise = new Promise.Completable<>();
@@ -402,7 +402,7 @@ public class ClientConnectorDocs
             if (failure == null)
             {
                 // Unwrap the SslConnection to access the "line" APIs in TelnetConnection.
-                TelnetConnection connection = (TelnetConnection)sslConnection.getDecryptedEndPoint().getConnection();
+                TelnetConnection connection = (TelnetConnection)sslConnection.getSslEndPoint().getConnection();
                 // Register a listener that receives string lines.
                 connection.onLine(line -> System.getLogger("app").log(INFO, "line: {0}", line));
 

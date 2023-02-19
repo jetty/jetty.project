@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,11 +28,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,9 +64,7 @@ public class ServletWrapperTest
         FilterHolder filterHolder = context.addFilter(WrapFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         filterHolder.setAsyncSupported(true);
 
-        Handler.Collection handlers = new Handler.Collection();
-        handlers.setHandlers(context.getCoreContextHandler(), new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(context);
         server.start();
     }
 

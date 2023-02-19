@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -51,7 +51,7 @@ public abstract class AbstractHttpTest
     public void setUp() throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server, null, null, new ArrayRetainableByteBufferPool(64, 2048, 64 * 1024), 1, 1, new HttpConnectionFactory());
+        connector = new ServerConnector(server, null, null, new ArrayByteBufferPool(64, 2048, 64 * 1024), 1, 1, new HttpConnectionFactory());
         connector.setIdleTimeout(100000);
 
         server.addConnector(connector);
@@ -113,7 +113,7 @@ public abstract class AbstractHttpTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (throwException)
                 throw new TestCommitException();

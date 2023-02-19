@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,16 +29,16 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -69,14 +69,14 @@ public class BadURITest
     }
 
     @Test
-    @Disabled("TODO: need to fix ErrorProcessor")
+    @Disabled("TODO: need to fix ErrorHandler")
     public void testBadURI() throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 handlerLatch.countDown();
                 callback.succeeded();
@@ -85,9 +85,9 @@ public class BadURITest
         });
 
         // Remove existing ErrorHandlers.
-        server.getBeans(ErrorProcessor.class).forEach(server::removeBean);
+        server.getBeans(ErrorHandler.class).forEach(server::removeBean);
 
-        server.addBean(new ErrorProcessor()
+        server.addBean(new ErrorHandler()
         {
             @Override
             public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
@@ -97,7 +97,7 @@ public class BadURITest
             }
         });
 
-        RetainableByteBufferPool bufferPool = connector.getRetainableByteBufferPool();
+        ByteBufferPool bufferPool = connector.getByteBufferPool();
         Generator generator = new Generator(bufferPool);
 
         // Craft a request with a bad URI, it will not hit the Handler.
@@ -111,7 +111,7 @@ public class BadURITest
             HttpFields.EMPTY,
             -1
         );
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         generator.control(accumulator, new HeadersFrame(1, metaData1, null, true));

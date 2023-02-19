@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,9 +27,9 @@ import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
@@ -115,7 +115,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
 
@@ -202,7 +202,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
@@ -242,9 +242,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             }
         });
 
-        RetainableByteBufferPool pool = client.getRetainableByteBufferPool();
-        assumeTrue(pool instanceof ArrayRetainableByteBufferPool);
-        ArrayRetainableByteBufferPool bufferPool = (ArrayRetainableByteBufferPool)pool;
+        ByteBufferPool pool = client.getByteBufferPool();
+        assumeTrue(pool instanceof ArrayByteBufferPool);
+        ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)pool;
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())

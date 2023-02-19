@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -35,7 +35,7 @@ public class RewriteCustomizer extends RuleContainer implements Customizer
         try
         {
             // TODO: rule are able to complete the request/response, but customizers cannot.
-            Processor input = new Processor(request);
+            Handler input = new Handler(request);
             return matchAndApply(input);
         }
         catch (IOException e)

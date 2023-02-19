@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -113,7 +113,7 @@ public class TrailersTest extends AbstractTest
             private Callback _callback;
 
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 _request = request;
                 _callback = callback;
@@ -263,7 +263,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);
@@ -325,7 +325,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -364,7 +364,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -417,7 +417,7 @@ public class TrailersTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);

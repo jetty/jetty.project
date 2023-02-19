@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,8 +16,8 @@ package org.eclipse.jetty.websocket.core;
 import java.util.concurrent.Executor;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
@@ -27,14 +27,14 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * A collection of components which are the resources needed for websockets such as
- * {@link RetainableByteBufferPool}, {@link WebSocketExtensionRegistry}, and {@link DecoratedObjectFactory}.
+ * {@link ByteBufferPool}, {@link WebSocketExtensionRegistry}, and {@link DecoratedObjectFactory}.
  */
 public class WebSocketComponents extends ContainerLifeCycle
 {
     private final DecoratedObjectFactory _objectFactory;
     private final WebSocketExtensionRegistry _extensionRegistry;
     private final Executor _executor;
-    private final RetainableByteBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final InflaterPool _inflaterPool;
     private final DeflaterPool _deflaterPool;
 
@@ -44,17 +44,17 @@ public class WebSocketComponents extends ContainerLifeCycle
     }
 
     public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
-                               RetainableByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool)
+                               ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool)
     {
         this (extensionRegistry, objectFactory, bufferPool, inflaterPool, deflaterPool, null);
     }
 
     public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
-                               RetainableByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool, Executor executor)
+                               ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool, Executor executor)
     {
         _extensionRegistry = (extensionRegistry == null) ? new WebSocketExtensionRegistry() : extensionRegistry;
         _objectFactory = (objectFactory == null) ? new DecoratedObjectFactory() : objectFactory;
-        _bufferPool = (bufferPool == null) ? new ArrayRetainableByteBufferPool() : bufferPool;
+        _bufferPool = (bufferPool == null) ? new ArrayByteBufferPool() : bufferPool;
         _inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
         _deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
 
@@ -77,7 +77,7 @@ public class WebSocketComponents extends ContainerLifeCycle
         addBean(_executor);
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
     }

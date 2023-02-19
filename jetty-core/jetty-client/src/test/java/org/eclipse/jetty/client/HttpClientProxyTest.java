@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -115,14 +115,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scenario.getScheme() + "://" + proxyHost + ":" + proxyPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, user, password));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // ...and perform the request again => 407 + 204
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -158,7 +151,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 String target = org.eclipse.jetty.server.Request.getPathInContext(request);
                 if (target.startsWith("/proxy"))
@@ -216,14 +209,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scenario.getScheme() + "://" + proxyHost + ":" + proxyPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, user, password));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // ...and perform the request again => 407 + 302 + 204.
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -290,14 +276,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(serverURI, serverRealm, "serverUser", "serverPassword"));
         client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // Make a request, expect 407 + 401 + 204.
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -360,14 +339,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
         client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Request request)
-            {
-                requests.incrementAndGet();
-            }
-        });
+        client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
         // Make a request, expect 407 + 204.
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,14 +22,14 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.internal.generator.HeadersGenerator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HeadersTooLargeParseTest
 {
-    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testProtocolErrorURITooLong() throws HpackException
@@ -78,7 +78,7 @@ public class HeadersTooLargeParseTest
         parser.init(UnaryOperator.identity());
 
         int streamId = 48;
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 

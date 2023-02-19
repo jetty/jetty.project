@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -30,13 +30,13 @@ import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.DigestAuthentication;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.DigestAuthentication;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.security.AbstractLoginService;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
@@ -141,7 +141,7 @@ public class DigestPostTest
 
             security.setConstraintMappings(Collections.singletonList(mapping));
 
-            _server.setHandler(new Handler.Collection(context, new DefaultHandler()));
+            _server.setHandler(new Handler.Sequence(context, new DefaultHandler()));
 
             _server.start();
         }

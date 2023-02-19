@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,18 +14,18 @@
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public abstract class AbstractInstruction implements Instruction
 {
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
 
-    protected AbstractInstruction(RetainableByteBufferPool bufferPool)
+    protected AbstractInstruction(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }

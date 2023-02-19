@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -40,9 +40,9 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -504,12 +504,11 @@ public class ResourceService
         if (welcomeAction == null)
             return false;
 
-        welcomeActionProcess(request, response, callback, welcomeAction);
+        handleWelcomeAction(request, response, callback, welcomeAction);
         return true;
     }
 
-    // TODO: could use a better name
-    protected void welcomeActionProcess(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws IOException
+    protected void handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws IOException
     {
         switch (welcomeAction.type)
         {
@@ -863,7 +862,7 @@ public class ResourceService
             this.source = content.getResource().newReadableByteChannel();
             this.sink = target;
             this.callback = callback;
-            RetainableByteBufferPool bufferPool = target.getRequest().getComponents().getRetainableByteBufferPool();
+            ByteBufferPool bufferPool = target.getRequest().getComponents().getByteBufferPool();
             int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
             boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
             this.buffer = bufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);

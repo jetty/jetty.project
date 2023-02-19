@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
-import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -52,6 +51,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.HttpCookieUtils;
+import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.AtomicBiInteger;
@@ -252,7 +253,7 @@ public class Response implements HttpServletResponse
             return cookie;
 
         //sameSite is not set, use the default configured for the context, if one exists
-        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext().getCoreContext());
+        SameSite contextDefault = HttpCookieUtils.getSameSiteDefault(_channel.getRequest().getContext().getCoreContext());
         if (contextDefault == null)
             return cookie; //no default set
 
@@ -288,14 +289,14 @@ public class Response implements HttpServletResponse
             {
                 CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
                 
-                if (field instanceof HttpCookie.SetCookieHttpField)
+                if (field instanceof HttpCookieUtils.SetCookieHttpField)
                 {
-                    if (!HttpCookie.match(((HttpCookie.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
                 else
                 {
-                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
 
@@ -1582,9 +1583,15 @@ public class Response implements HttpServletResponse
         }
 
         @Override
-        public String asString()
+        public int hashCode()
         {
-            return HttpCookie.asString(this);
+            return HttpCookie.hashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            return HttpCookie.equals(this, obj);
         }
 
         @Override

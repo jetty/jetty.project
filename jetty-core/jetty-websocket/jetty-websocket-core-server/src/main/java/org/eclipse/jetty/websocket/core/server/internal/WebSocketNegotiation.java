@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -45,8 +45,8 @@ public abstract class WebSocketNegotiation
 
     public WebSocketNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
     {
-        this.request = new ServerUpgradeRequest(this, request);
-        this.response = new ServerUpgradeResponse(this, response);
+        this.request = new ServerUpgradeRequestImpl(this, request);
+        this.response = new ServerUpgradeResponseImpl(this, response);
         this.callback = callback;
         this.components = webSocketComponents;
     }

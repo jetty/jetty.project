@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -41,7 +41,7 @@ public class InterimResponseProxyTest extends AbstractProxyTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
                     .thenCompose(ignored -> Promise.Completable.<String>with(p -> Content.Source.asString(request, StandardCharsets.UTF_8, p)))

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -194,7 +194,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled //TODO glassfish-jstl not working in jpms
     @ParameterizedTest
     @ValueSource(strings = {"ee10"})
     public void testSimpleWebAppWithJSPOnModulePath(String env) throws Exception
@@ -237,7 +236,6 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                System.err.println(response.getContentAsString());
                 assertThat(response.getContentAsString(), containsString("JSTL Example"));
                 assertThat(response.getContentAsString(), not(containsString("<c:")));
             }
@@ -1101,6 +1099,59 @@ public class DistributionTests extends AbstractJettyHomeTest
                 Queue<String> logs = run2.getLogs();
                 assertThat(logs.size(), equalTo(1));
                 assertThat(logs.poll(), not(containsString("${jetty.home.uri}")));
+            }
+        }
+    }
+
+    @Test
+    public void testRequestLogFormatWithSpaces() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {"--add-module=server,http,deploy,requestlog"};
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Setup custom format string with spaces
+            Path requestLogIni = distribution.getJettyBase().resolve("start.d/requestlog.ini");
+            List<String> lines = List.of(
+                "--module=requestlog",
+                "jetty.requestlog.filePath=logs/test.request.log",
+                "jetty.requestlog.formatString=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t [foo space here] \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\""
+            );
+            Files.write(requestLogIni, lines, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+            };
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                startHttpClient(false);
+
+                String uri = "http://localhost:" + port + "/test";
+
+                // Generate a request
+                ContentResponse response = client.GET(uri + "/");
+                // Don't really care about the result, as any request should be logged in the requestlog
+                // We are just asserting a status here to ensure that the request is complete
+                assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+                Path requestLog = distribution.getJettyBase().resolve("logs/test.request.log");
+                List<String> loggedLines = Files.readAllLines(requestLog, StandardCharsets.UTF_8);
+                for (String loggedLine: loggedLines)
+                {
+                    assertThat(loggedLine, containsString(" [foo space here] "));
+                }
             }
         }
     }

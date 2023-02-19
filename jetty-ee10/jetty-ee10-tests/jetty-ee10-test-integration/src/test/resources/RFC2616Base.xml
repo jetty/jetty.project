@@ -19,8 +19,14 @@
       <Set name="requestHeaderSize">8192</Set>
       <Set name="responseHeaderSize">8192</Set>
       <Set name="sendServerVersion">true</Set>
-      <Set name="sendDateHeader">false</Set>
+      <Set name="sendDateHeader">true</Set>
       <Set name="headerCacheSize">1024</Set>
+
+      <Set name="httpCompliance">
+        <Call class="org.eclipse.jetty.http.HttpCompliance" name="from">
+          <Arg>RFC2616</Arg>
+        </Call>
+      </Set>
 
       <!-- Uncomment to enable handling of X-Forwarded- style headers
       <Call name="addCustomizer">
@@ -33,9 +39,9 @@
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="WebappContexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+      <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
         <Arg>
-          <Array type="org.eclipse.jetty.server.Handler">
+          <Array type="org.eclipse.jetty.server.handler.ContextHandler">
             <Item>
               <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
                 <Set name="contextPath">/tests</Set>
@@ -44,7 +50,7 @@
                     <Item>VirtualHost</Item>
                   </Array>
                 </Set>
-                <Set name="BaseResource"><Property name="test.docroot.base"/>/virtualhost</Set>
+                <Set name="BaseResourceAsString"><Property name="test.docroot.base"/>/virtualhost</Set>
                 <Set name="Handler"><New id="reshandler1" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
                 <Set name="DisplayName">virtual</Set>
               </New>
@@ -52,7 +58,7 @@
             <Item>
               <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                 <Set name="contextPath">/tests</Set>
-                <Set name="BaseResource"><Property name="test.docroot.base"/>/default</Set>
+                <Set name="BaseResourceAsString"><Property name="test.docroot.base"/>/default</Set>
                 <Set name="Handler"><New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
                 <Set name="DisplayName">default</Set>
               </New>
@@ -60,7 +66,7 @@
             <Item>
               <New id="echocontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                 <Set name="contextPath">/echo</Set>
-                <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.test.support.EchoHandler"/></Set>
+                <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.ee10.test.rfcs.RFC2616BaseTest$EchoHandler"/></Set>
                 <Set name="DisplayName">echo</Set>
               </New>
             </Item>
@@ -69,35 +75,58 @@
       </New>
     </Set>
 
-   <Call name="addBean">
-    <Arg>
-      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-        <Set name="contexts">
-          <Ref refid="WebappContexts" />
-        </Set>
-        <Call name="setContextAttribute">
-          <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-          <Arg>.*/jetty-jakarta-servlet-api-[^/]*\.jar$</Arg>
-        </Call>
+    <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
+      <Arg>ee10</Arg>
+    </Call>
+    <Ref refid="Environment">
+      <Call name="setAttribute">
+        <Arg>contextHandlerClass</Arg>
+        <Arg>org.eclipse.jetty.ee10.webapp.WebAppContext</Arg>
+      </Call>
+    </Ref>
 
-        <Call id="webappprovider" name="addAppProvider">
-          <Arg>
-            <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
-              <Set name="monitoredDirName"><Property name="test.resourcesdir" default="src/test/resources" />/webapp-contexts/RFC2616</Set>
+    <Call name="addBean">
+      <Arg>
+        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+          <Set name="contexts">
+            <Ref refid="Contexts" />
+          </Set>
+        
+          <Call name="addAppProvider">
+           <Arg>
+            <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
+              <Set name="environmentName">ee10</Set>
+              <Set name="monitoredDirName">
+                <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                  <Arg>src/test/resources/</Arg>
+                  <Arg>webapp-contexts/RFC2616/</Arg>
+                </Call>
+              </Set>
+
               <Set name="scanInterval">1</Set>
               <Set name="extractWars">true</Set>
-              <Set name="configurationManager">
-                <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
-                  <Set name="file"><Property name="test.targetdir" default="target"/>/testable-jetty-server-config.properties</Set>
-                </New>
-              </Set>
+              <Get name="properties">
+                <Put name="jetty.deploy.containerScanJarPattern">
+                  <Property name="jetty.deploy.containerScanJarPattern">
+                    <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
+                  </Property>
+                </Put>
+                <Put name="jetty.deploy.webInfScanJarPattern">
+                  <Property name="jetty.deploy.webInfScanJarPattern"/>
+                </Put>
+                <Put name="jetty.deploy.servletContainerInitializerExclusionPattern">
+                  <Property name="jetty.deploy.servletContainerInitializerExclusionPattern"/>
+                </Put>
+                <Put name="jetty.deploy.servletContainerInitializerOrder">
+                  <Property name="jetty.deploy.servletContainerInitializerOrder"/>
+                </Put>
+              </Get>
             </New>
           </Arg>
         </Call>
-
-      </New>
-    </Arg>
-  </Call>
+       </New>
+      </Arg>
+    </Call>
 
   <!-- =========================================================== -->
   <!-- extra options                                               -->

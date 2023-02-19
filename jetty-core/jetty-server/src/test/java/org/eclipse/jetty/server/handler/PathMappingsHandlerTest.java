@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -54,7 +54,7 @@ public class PathMappingsHandlerTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        server.addHandler(handler);
+        server.setHandler(handler);
         server.start();
     }
 
@@ -216,22 +216,22 @@ public class PathMappingsHandlerTest
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/");
 
-        Handler.Collection handlerCollection = new Handler.Collection();
-        handlerCollection.addHandler(new SimpleHandler("phpIndex"));
-        Handler.Wrapper handlerWrapper = new Handler.Wrapper(new SimpleHandler("other"));
-        handlerCollection.addHandler(handlerWrapper);
+        Handler.Sequence sequence = new Handler.Sequence();
+        sequence.addHandler(new SimpleHandler("phpIndex"));
+        Handler.Singleton handlerWrapper = new Handler.Wrapper(new SimpleHandler("other"));
+        sequence.addHandler(handlerWrapper);
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("default"));
         pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("specific"));
-        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), handlerCollection);
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), sequence);
 
         List<String> actualHandlers = pathMappingsHandler.getDescendants().stream().map(Objects::toString).toList();
 
         String[] expectedHandlers = {
             "SimpleHandler[msg=\"default\"]",
             "SimpleHandler[msg=\"specific\"]",
-            handlerCollection.toString(),
+            sequence.toString(),
             handlerWrapper.toString(),
             "SimpleHandler[msg=\"phpIndex\"]",
             "SimpleHandler[msg=\"other\"]"
@@ -266,7 +266,7 @@ public class PathMappingsHandlerTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             assertTrue(isStarted());
             response.setStatus(HttpStatus.OK_200);

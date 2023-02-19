@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,16 +16,16 @@ package org.eclipse.jetty.websocket.core.server.internal;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 
 public class RFC8441Handshaker extends AbstractHandshaker
 {
@@ -59,10 +59,10 @@ public class RFC8441Handshaker extends AbstractHandshaker
     protected WebSocketConnection createWebSocketConnection(Request request, WebSocketCoreSession coreSession)
     {
         Connector connector = request.getConnectionMetaData().getConnector();
-        RetainableByteBufferPool retainableByteBufferPool = connector.getRetainableByteBufferPool();
+        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
         TunnelSupport tunnelSupport = request.getTunnelSupport();
         EndPoint endPoint = tunnelSupport.getEndPoint();
-        return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), retainableByteBufferPool, coreSession);
+        return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), byteBufferPool, coreSession);
     }
 
     @Override

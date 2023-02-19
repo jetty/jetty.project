@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
@@ -412,7 +412,7 @@ public class Frame
         b.append(((finRsvOp & 0x40) != 0) ? '1' : '0');
         b.append(((finRsvOp & 0x20) != 0) ? '1' : '0');
         b.append(((finRsvOp & 0x10) != 0) ? '1' : '0');
-        b.append(",m=").append(mask == null ? "null" : TypeUtil.toHexString(mask));
+        b.append(",m=").append(mask == null ? "null" : StringUtil.toHexString(mask));
         b.append(']');
         if (payload != null)
             b.append(BufferUtil.toDetailString(payload));
@@ -509,6 +509,56 @@ public class Frame
         public Frame asReadOnly()
         {
             return this;
+        }
+    }
+
+    public static class Parsed extends Frame implements Closeable, CloseStatus.Supplier
+    {
+        final CloseStatus closeStatus;
+        final Runnable releaser;
+
+        public Parsed(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
+        {
+            super(firstByte, mask, payload);
+            demask();
+            this.releaser = releaser;
+            if (getOpCode() == OpCode.CLOSE)
+            {
+                if (hasPayload())
+                    closeStatus = new CloseStatus(payload.duplicate());
+                else
+                    closeStatus = CloseStatus.NO_CODE_STATUS;
+            }
+            else
+            {
+                closeStatus = null;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            if (releaser != null)
+                releaser.run();
+        }
+
+        @Override
+        public CloseStatus getCloseStatus()
+        {
+            return closeStatus;
+        }
+
+        public boolean isReleaseable()
+        {
+            return releaser != null;
+        }
+
+        @Override
+        public String toString()
+        {
+            if (closeStatus == null)
+                return super.toString();
+            return super.toString() + ":" + closeStatus;
         }
     }
 }

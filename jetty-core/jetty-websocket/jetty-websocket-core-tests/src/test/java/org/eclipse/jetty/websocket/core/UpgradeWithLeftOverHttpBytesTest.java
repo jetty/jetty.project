@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -313,7 +313,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         assertTrue(matcher.matches());
         String key = matcher.group(1);
         assertFalse(StringUtil.isEmpty(key));
-        return WebSocketCore.hashKey(key);
+        return WebSocketUtils.hashKey(key);
     }
 
     static String getRequestHeaders(InputStream is)

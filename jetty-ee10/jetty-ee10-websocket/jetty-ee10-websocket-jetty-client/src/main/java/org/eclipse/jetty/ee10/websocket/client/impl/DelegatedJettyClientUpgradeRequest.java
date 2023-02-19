@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -49,7 +49,9 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public List<HttpCookie> getCookies()
     {
-        return delegate.getCookies();
+        return delegate.getCookies().stream()
+            .map(org.eclipse.jetty.http.HttpCookie::asJavaNetHttpCookie)
+            .toList();
     }
 
     @Override
@@ -154,7 +156,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public boolean isSecure()
     {
-        return HttpClient.isSchemeSecure(delegate.getURI().getScheme());
+        return HttpScheme.isSecure(delegate.getURI().getScheme());
     }
 
     @Override

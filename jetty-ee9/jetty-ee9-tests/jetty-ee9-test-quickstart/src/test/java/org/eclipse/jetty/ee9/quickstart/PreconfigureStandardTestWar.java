@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -52,9 +52,9 @@ public class PreconfigureStandardTestWar
         System.setProperty("jetty.home", "target");
 
         PreconfigureQuickStartWar.main(
-            MavenTestingUtils.getTargetFile("test-standard.war").toString(),
+            MavenTestingUtils.getTargetPath("test-standard.war").toString(),
             target.toString(),
-            MavenTestingUtils.getTestResourceFile("test-spec.xml").toString());
+            MavenTestingUtils.getTargetPath("test-spec.xml").toString());
 
         LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 

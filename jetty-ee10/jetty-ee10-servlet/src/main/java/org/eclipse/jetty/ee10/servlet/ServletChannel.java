@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -43,7 +43,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
@@ -489,13 +489,14 @@ public class ServletChannel
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
-                            Response.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+                            if (!_httpInput.consumeAvailable())
+                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
 
                             ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
+                            Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
-                            // If we can't have a body or have no processor, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorProcessor == null)
+                            // If we can't have a body or have no ErrorHandler, then create a minimal error response.
+                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
                             {
                                 sendResponseAndComplete();
                             }
@@ -506,7 +507,7 @@ public class ServletChannel
                                 // _state.completing();
                                 try (Blocker.Callback blocker = Blocker.callback())
                                 {
-                                    dispatch(() -> errorProcessor.process(_servletContextRequest, getResponse(), blocker));
+                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
                                     blocker.block();
                                 }
                             }
@@ -573,7 +574,7 @@ public class ServletChannel
 
                             // Indicate Connection:close if we can't consume all.
                             if (getResponse().getStatus() >= 200)
-                                Response.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
                         }
 
 

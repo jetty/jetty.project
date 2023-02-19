@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
 import java.util.EventListener;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http.HttpField;
@@ -39,13 +38,6 @@ public interface Response
      * @return the request associated with this response
      */
     Request getRequest();
-
-    /**
-     * @param listenerClass the listener class
-     * @param <T> the type of class
-     * @return the response listener passed to {@link Request#send(Response.CompleteListener)}
-     */
-    <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass);
 
     /**
      * @return the HTTP version of this response, such as "HTTP/1.1"

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -125,7 +125,7 @@ public class AliasCheckerSymlinkTest
         _context.setContextPath("/");
         _context.setBaseResourceAsPath(webRootPath);
         _context.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
-        _context.addHandler(new ResourceHandler());
+        _context.setHandler(new ResourceHandler());
 
         _server.setHandler(_context);
         _context.clearAliasChecks();

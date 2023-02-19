@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -511,7 +511,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -521,7 +521,7 @@ public class ForwardProxyTLSServerTest
                     callback.succeeded();
                     return true;
                 }
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }, realm);
     }
@@ -534,7 +534,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -544,7 +544,7 @@ public class ForwardProxyTLSServerTest
                     response.write(true, ByteBuffer.allocate(4096), callback);
                     return true;
                 }
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }, realm);
     }
@@ -557,7 +557,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -567,7 +567,7 @@ public class ForwardProxyTLSServerTest
                     response.write(true, ByteBuffer.allocate(1024), callback);
                     return true;
                 }
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }, realm, true);
     }
@@ -799,14 +799,10 @@ public class ForwardProxyTLSServerTest
 
         try
         {
-            httpClient.getRequestListeners().add(new org.eclipse.jetty.client.Request.Listener()
+            httpClient.getRequestListeners().addSuccessListener(request ->
             {
-                @Override
-                public void onSuccess(org.eclipse.jetty.client.Request request)
-                {
-                    if (HttpMethod.CONNECT.is(request.getMethod()))
-                        sleep(250);
-                }
+                if (HttpMethod.CONNECT.is(request.getMethod()))
+                    sleep(250);
             });
 
             String body = "BODY";
@@ -877,7 +873,7 @@ public class ForwardProxyTLSServerTest
     private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))

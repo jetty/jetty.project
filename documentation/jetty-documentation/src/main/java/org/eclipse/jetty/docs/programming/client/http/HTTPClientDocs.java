@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,8 +17,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.CookieStore;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -54,6 +52,8 @@ import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -67,7 +67,6 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -541,8 +540,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::getCookies[]
-        CookieStore cookieStore = httpClient.getCookieStore();
-        List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"));
+        HttpCookieStore cookieStore = httpClient.getHttpCookieStore();
+        List<HttpCookie> cookies = cookieStore.match(URI.create("http://domain.com/path"));
         // end::getCookies[]
     }
 
@@ -552,11 +551,12 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::setCookie[]
-        CookieStore cookieStore = httpClient.getCookieStore();
-        HttpCookie cookie = new HttpCookie("foo", "bar");
-        cookie.setDomain("domain.com");
-        cookie.setPath("/");
-        cookie.setMaxAge(TimeUnit.DAYS.toSeconds(1));
+        HttpCookieStore cookieStore = httpClient.getHttpCookieStore();
+        HttpCookie cookie = HttpCookie.build("foo", "bar")
+            .domain("domain.com")
+            .path("/")
+            .maxAge(TimeUnit.DAYS.toSeconds(1))
+            .build();
         cookieStore.add(URI.create("http://domain.com"), cookie);
         // end::setCookie[]
     }
@@ -568,7 +568,7 @@ public class HTTPClientDocs
 
         // tag::requestCookie[]
         ContentResponse response = httpClient.newRequest("http://domain.com/path")
-            .cookie(new HttpCookie("foo", "bar"))
+            .cookie(HttpCookie.from("foo", "bar"))
             .send();
         // end::requestCookie[]
     }
@@ -579,9 +579,9 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::removeCookie[]
-        CookieStore cookieStore = httpClient.getCookieStore();
+        HttpCookieStore cookieStore = httpClient.getHttpCookieStore();
         URI uri = URI.create("http://domain.com");
-        List<HttpCookie> cookies = cookieStore.get(uri);
+        List<HttpCookie> cookies = cookieStore.match(uri);
         for (HttpCookie cookie : cookies)
         {
             cookieStore.remove(uri, cookie);
@@ -595,7 +595,7 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::emptyCookieStore[]
-        httpClient.setCookieStore(new HttpCookieStore.Empty());
+        httpClient.setHttpCookieStore(new HttpCookieStore.Empty());
         // end::emptyCookieStore[]
     }
 
@@ -605,17 +605,18 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::filteringCookieStore[]
-        class GoogleOnlyCookieStore extends HttpCookieStore
+        class GoogleOnlyCookieStore extends HttpCookieStore.Default
         {
             @Override
-            public void add(URI uri, HttpCookie cookie)
+            public boolean add(URI uri, HttpCookie cookie)
             {
                 if (uri.getHost().endsWith("google.com"))
-                    super.add(uri, cookie);
+                    return super.add(uri, cookie);
+                return false;
             }
         }
 
-        httpClient.setCookieStore(new GoogleOnlyCookieStore());
+        httpClient.setHttpCookieStore(new GoogleOnlyCookieStore());
         // end::filteringCookieStore[]
     }
 

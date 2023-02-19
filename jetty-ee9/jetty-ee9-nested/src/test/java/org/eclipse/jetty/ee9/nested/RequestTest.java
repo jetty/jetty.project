@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -73,6 +73,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -133,6 +134,7 @@ public class RequestTest
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
@@ -902,6 +904,19 @@ public class RequestTest
 
         results.clear();
         response = _connector.getResponse(
+            "GET http://myhost:8888/ HTTP/1.1\n" +
+                "Host: myhost:8888\n" +
+                "Connection: close\n" +
+                "\n");
+        i = 0;
+        assertThat(response, containsString("200 OK"));
+        assertEquals("http://myhost:8888/", results.get(i++));
+        assertEquals("0.0.0.0", results.get(i++));
+        assertEquals("myhost", results.get(i++));
+        assertEquals("8888", results.get(i));
+
+        results.clear();
+        response = _connector.getResponse(
             "GET / HTTP/1.1\n" +
                 "Host: 1.2.3.4\n" +
                 "Connection: close\n" +
@@ -996,10 +1011,10 @@ public class RequestTest
         });
         final InetSocketAddress remoteAddr = new InetSocketAddress(local, 32768);
 
-        org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.Wrapper()
+        org.eclipse.jetty.server.Handler.Singleton handler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
                 {
@@ -1019,7 +1034,7 @@ public class RequestTest
                     }
                 };
 
-                return super.process(wrapper, response, callback);
+                return super.handle(wrapper, response, callback);
             }
         };
 
@@ -1870,10 +1885,10 @@ public class RequestTest
         String uri = "http://host/foo/something";
         HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, HttpCookie.getSetCookie(HttpCookie.from("ugly", "duckling", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265)));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, HttpCookieUtils.getSetCookie(HttpCookie.from("ugly", "duckling", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265)));
         request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, "flow=away; Max-Age=0; Secure; HttpOnly; SameSite=None"));
         HttpFields.Mutable fields = HttpFields.build();
         fields.add(HttpHeader.AUTHORIZATION, "Basic foo");
@@ -2344,6 +2359,12 @@ public class RequestTest
         public Content.Chunk read()
         {
             return null;
+        }
+
+        @Override
+        public boolean consumeAvailable()
+        {
+            return false;
         }
 
         @Override

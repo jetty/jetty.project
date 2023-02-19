@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,7 +34,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -68,7 +68,7 @@ public class HttpClientLoadTest extends AbstractTest
         setStreamIdleTimeout(120000);
         client.stop();
         // TODO: restore leak tracking.
-        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool());
+        client.setByteBufferPool(new ArrayByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setIdleTimeout(120000);
@@ -118,7 +118,7 @@ public class HttpClientLoadTest extends AbstractTest
         start(transport, new LoadHandler());
         client.stop();
         // TODO: restore leak tracking.
-        client.setRetainableByteBufferPool(new ArrayRetainableByteBufferPool());
+        client.setByteBufferPool(new ArrayByteBufferPool());
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.start();
@@ -300,7 +300,7 @@ public class HttpClientLoadTest extends AbstractTest
     private static class LoadHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             String timeout = request.getHeaders().get("X-Timeout");
             if (timeout != null)

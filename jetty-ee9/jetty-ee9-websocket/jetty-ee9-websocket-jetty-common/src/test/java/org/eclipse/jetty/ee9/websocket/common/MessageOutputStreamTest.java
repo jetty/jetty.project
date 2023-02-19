@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,11 +18,11 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
+import org.eclipse.jetty.websocket.core.messages.MessageOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,13 +40,13 @@ public class MessageOutputStreamTest
     private static final int OUTPUT_BUFFER_SIZE = 4096;
 
     private final AtomicInteger leaks = new AtomicInteger();
-    private RetainableByteBufferPool bufferPool;
+    private ByteBufferPool bufferPool;
     private OutgoingMessageCapture sessionCapture;
 
     @BeforeEach
     public void beforeEach()
     {
-        bufferPool = new ArrayRetainableByteBufferPool()
+        bufferPool = new ArrayByteBufferPool()
         {
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)

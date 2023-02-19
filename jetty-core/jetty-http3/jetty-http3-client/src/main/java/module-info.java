@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,7 +23,4 @@ module org.eclipse.jetty.http3.client
     requires transitive org.eclipse.jetty.util;
 
     exports org.eclipse.jetty.http3.client;
-
-    exports org.eclipse.jetty.http3.client.internal to
-        org.eclipse.jetty.http3.client.transport;
 }

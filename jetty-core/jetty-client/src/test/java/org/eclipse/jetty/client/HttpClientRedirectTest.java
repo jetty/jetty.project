@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -482,7 +482,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/redirect"))
                 {
@@ -674,26 +674,22 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         final AtomicInteger passes = new AtomicInteger();
-        client.getRequestListeners().add(new org.eclipse.jetty.client.Request.Listener.Adapter()
+        client.getRequestListeners().addBeginListener(request ->
         {
-            @Override
-            public void onBegin(org.eclipse.jetty.client.Request request)
+            int pass = passes.incrementAndGet();
+            if (pass == 1)
             {
-                int pass = passes.incrementAndGet();
-                if (pass == 1)
-                {
-                    if (!requestMethod.is(request.getMethod()))
-                        request.abort(new Exception());
-                }
-                else if (pass == 2)
-                {
-                    if (!redirectMethod.is(request.getMethod()))
-                        request.abort(new Exception());
-                }
-                else
-                {
+                if (!requestMethod.is(request.getMethod()))
                     request.abort(new Exception());
-                }
+            }
+            else if (pass == 2)
+            {
+                if (!redirectMethod.is(request.getMethod()))
+                    request.abort(new Exception());
+            }
+            else
+            {
+                request.abort(new Exception());
             }
         });
 

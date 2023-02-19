@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,7 +29,6 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -62,9 +61,7 @@ public class ServletUpgradeTest
         contextHandler.setContextPath("/");
         contextHandler.addServlet(new ServletHolder(new TestServlet()), "/TestServlet");
 
-        org.eclipse.jetty.server.Handler.Collection handlers = new org.eclipse.jetty.server.Handler.Collection();
-        handlers.setHandlers(contextHandler.getCoreContextHandler(), new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(contextHandler);
 
         server.start();
         port = connector.getLocalPort();

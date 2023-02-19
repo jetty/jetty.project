@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -27,21 +26,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpUpgrader;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpConnection;
-import org.eclipse.jetty.client.internal.HttpDestination;
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpRequest;
-import org.eclipse.jetty.client.internal.HttpResponse;
-import org.eclipse.jetty.client.internal.SendFailure;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpConnection;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.HttpResponse;
+import org.eclipse.jetty.client.transport.ResponseListeners;
+import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
@@ -113,10 +113,16 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         HttpResponse response = (HttpResponse)context.get(HttpResponse.class.getName());
         HttpRequest request = (HttpRequest)response.getRequest();
 
-        HttpExchange exchange = request.getConversation().getExchanges().peekLast();
         HttpChannelOverHTTP2 http2Channel = acquireHttpChannel();
         activeChannels.add(http2Channel);
-        HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), exchange.getRequest(), List.of());
+
+        // Create a fake conversation, as the previous exchange received a 101 response.
+        // The new exchange simulates a request, but receives the HTTP/2 response.
+        HttpExchange exchange = request.getConversation().getExchanges().peekLast();
+        // Since we reuse the original request (with its response listeners)
+        // for the second exchange in the conversation, we use empty response
+        // listeners so that they are not notified twice.
+        HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), request, new ResponseListeners());
         http2Channel.associate(newExchange);
 
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.

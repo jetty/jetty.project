@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,7 +38,7 @@ public interface ConnectionMetaData extends Attributes
     Connection getConnection();
 
     // TODO should this be only here or only on HttpChannel, should not be on both.
-    //      Currently mostly used to get stuff like RetainableByteBufferPool and Scheduler - maybe provide those directly?
+    //      Currently mostly used to get stuff like ByteBufferPool and Scheduler - maybe provide those directly?
     Connector getConnector();
 
     boolean isPersistent();

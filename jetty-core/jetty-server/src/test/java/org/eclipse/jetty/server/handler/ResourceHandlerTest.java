@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -670,7 +670,7 @@ public class ResourceHandlerTest
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getRetainableByteBufferPool());
+                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getByteBufferPool());
                 return contentFactory;
             }
         };

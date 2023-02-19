@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,9 +25,9 @@ import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.internal.HttpDestination;
-import org.eclipse.jetty.client.internal.HttpResponse;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Callback;
 /**
  * SimpleSessionHandler example
  */
-public class SimpleSessionHandler extends AbstractSessionManager implements Handler.Nested
+public class SimpleSessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
     private Server _server;
     private Handler _handler;
@@ -47,7 +47,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = Nested.updateHandler(this, handler);
+        _handler = Handler.Singleton.updateHandler(this, handler);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -137,7 +137,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
                     Response.replaceCookie(_response, cookie);
             }
 
-            return handler.process(this, _response, callback);
+            return handler.handle(this, _response, callback);
         }
     }
 

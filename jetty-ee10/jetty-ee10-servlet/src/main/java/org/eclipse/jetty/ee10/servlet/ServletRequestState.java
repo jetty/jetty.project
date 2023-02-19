@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,7 +26,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -851,7 +851,7 @@ public class ServletRequestState
         request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
 
         // Set Jetty specific attributes.
-        request.setAttribute(ErrorProcessor.ERROR_EXCEPTION, null);
+        request.setAttribute(ErrorHandler.ERROR_EXCEPTION, th);
 
         // Ensure any async lifecycle is ended!
         _requestState = RequestState.BLOCKING;
@@ -895,16 +895,16 @@ public class ServletRequestState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
+            request.setAttribute(org.eclipse.jetty.ee10.servlet.ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, httpServletRequest.getRequestURI());
             request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
             request.setAttribute(ERROR_STATUS_CODE, code);
             request.setAttribute(ERROR_MESSAGE, message);
 
             // Set Jetty Specific Attributes.
-            request.setAttribute(ErrorProcessor.ERROR_CONTEXT, servletContextRequest.getContext());
-            request.setAttribute(ErrorProcessor.ERROR_MESSAGE, message);
-            request.setAttribute(ErrorProcessor.ERROR_STATUS, code);
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getContext());
+            request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
+            request.setAttribute(ErrorHandler.ERROR_STATUS, code);
 
             _sendError = true;
             if (_event != null)

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,8 +21,8 @@ import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee9.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;

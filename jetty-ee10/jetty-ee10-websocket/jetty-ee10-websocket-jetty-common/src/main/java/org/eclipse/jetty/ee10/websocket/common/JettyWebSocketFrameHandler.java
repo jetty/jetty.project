@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -41,8 +41,8 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
-import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -423,9 +423,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public boolean isDemanding()
+    public boolean isAutoDemanding()
     {
-        return true;
+        return false;
     }
 
     public void suspend()

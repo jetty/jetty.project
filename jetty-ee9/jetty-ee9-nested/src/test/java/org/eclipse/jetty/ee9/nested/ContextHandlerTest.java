@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -61,11 +60,9 @@ public class ContextHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        Handler.Collection handlers = new Handler.Collection();
-        _server.setHandler(handlers);
 
         _contextHandler = new ContextHandler();
-        handlers.setHandlers(_contextHandler.getCoreContextHandler());
+        _server.setHandler(_contextHandler);
     }
 
     @AfterEach
@@ -757,7 +754,7 @@ public class ContextHandlerTest
         assertThat(response.getContent(), containsString("Hello"));
 
         assertThat(history, contains(
-            // Enter for process(request, response, callback)
+            // Enter for handle(request, response, callback)
             "Core enter http://0.0.0.0/",
             "EE9 enter /",
             "Handling",

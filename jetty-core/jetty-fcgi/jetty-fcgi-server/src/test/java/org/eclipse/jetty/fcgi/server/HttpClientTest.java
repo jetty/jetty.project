@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -61,7 +61,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -83,7 +83,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
                 return true;
@@ -111,7 +111,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Setting the Content-Length triggers the HTTP
                 // content mode for response content parsing,
@@ -140,7 +140,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
@@ -172,7 +172,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
@@ -210,7 +210,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -241,7 +241,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -273,7 +273,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -306,7 +306,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -340,7 +340,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -369,7 +369,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, callback);
                 return true;
@@ -403,7 +403,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 OutputStream outputStream = Content.Sink.asOutputStream(response);
@@ -431,7 +431,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
                 callback.succeeded();
@@ -470,7 +470,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -493,7 +493,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[length]), callback);
                 return true;
@@ -530,7 +530,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 latch.countDown();
                 // Do not complete the callback.
@@ -561,7 +561,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Promise some content, then flush the headers, then fail to send the content.
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 16);
@@ -599,7 +599,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put("Connection", "close");
                 response.write(true, ByteBuffer.wrap(data), callback);
@@ -629,7 +629,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, false, UTF_8.encode("A"));
                 Content.Sink.write(response, true, UTF_8.encode("B"));

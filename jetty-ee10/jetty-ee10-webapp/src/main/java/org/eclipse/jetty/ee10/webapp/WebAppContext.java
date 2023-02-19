@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -50,6 +50,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -220,10 +221,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
         super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
-        setErrorProcessor(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
+        setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
-        if (parent != null)
-            setParent(parent);
+        Handler.Container.setAsParent(parent, this);
     }
 
     @Override

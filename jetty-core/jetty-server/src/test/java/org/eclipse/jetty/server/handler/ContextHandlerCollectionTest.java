@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -122,7 +122,7 @@ public class ContextHandlerCollectionTest
         c.addHandler(contextG);
         c.addHandler(contextH);
 
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         handlers.addHandler(contextE);
         handlers.addHandler(contextF);
         handlers.addHandler(contextD);
@@ -320,7 +320,7 @@ public class ContextHandlerCollectionTest
 
         ContextHandler contextB = new ContextHandler("/b");
         IsHandledHandler handlerB = new IsHandledHandler("B");
-        Handler.Wrapper wrapperB = new Handler.Wrapper();
+        Handler.Singleton wrapperB = new Handler.Wrapper();
         wrapperB.setHandler(handlerB);
         contextB.setHandler(wrapperB);
 
@@ -334,7 +334,7 @@ public class ContextHandlerCollectionTest
         collection.addHandler(contextB);
         collection.addHandler(contextC);
 
-        Handler.Wrapper wrapper = new Handler.Wrapper();
+        Handler.Singleton wrapper = new Handler.Wrapper();
         wrapper.setHandler(collection);
         server.setHandler(wrapper);
 
@@ -359,7 +359,7 @@ public class ContextHandlerCollectionTest
         ContextHandler left = new ContextHandler("/left");
         left.setHandler(new IsHandledHandler("left"));
 
-        Handler.Collection centre = new Handler.Collection();
+        Handler.Sequence centre = new Handler.Sequence();
         ContextHandler centreLeft = new ContextHandler("/leftcentre");
         centreLeft.setHandler(new IsHandledHandler("left of centre"));
         ContextHandler centreRight = new ContextHandler("/rightcentre");
@@ -418,10 +418,10 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put("Wrapped", tag);
-            if (super.process(request, response, callback))
+            if (super.handle(request, response, callback))
                 return true;
             response.getHeaders().remove("Wrapped");
             return false;
@@ -444,7 +444,7 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             this.handled = true;
             response.getHeaders().put("X-IsHandled-Name", name);

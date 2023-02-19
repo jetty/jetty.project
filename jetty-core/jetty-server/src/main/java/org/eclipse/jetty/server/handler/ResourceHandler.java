@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,7 +25,7 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -57,7 +57,7 @@ public class ResourceHandler extends Handler.Wrapper
 {
     private final ResourceService _resourceService;
 
-    private RetainableByteBufferPool _bufferPool;
+    private ByteBufferPool _bufferPool;
     private Resource _resourceBase;
     private Resource _styleSheet;
     private MimeTypes _mimeTypes;
@@ -80,21 +80,21 @@ public class ResourceHandler extends Handler.Wrapper
 
         _mimeTypes = context == null ? MimeTypes.DEFAULTS : context.getMimeTypes();
 
-        _bufferPool = getRetainableByteBufferPool(context);
+        _bufferPool = getByteBufferPool(context);
         _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
 
         super.doStart();
     }
 
-    private RetainableByteBufferPool getRetainableByteBufferPool(Context context)
+    private ByteBufferPool getByteBufferPool(Context context)
     {
         if (context == null)
-            return new RetainableByteBufferPool.NonPooling();
+            return new ByteBufferPool.NonPooling();
         Server server = getServer();
         if (server == null)
-            return new RetainableByteBufferPool.NonPooling();
-        return server.getRetainableByteBufferPool();
+            return new ByteBufferPool.NonPooling();
+        return server.getByteBufferPool();
     }
 
     public HttpContent.Factory getHttpContentFactory()
@@ -108,7 +108,7 @@ public class ResourceHandler extends Handler.Wrapper
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getRetainableByteBufferPool());
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
         return contentFactory;
     }
 
@@ -133,18 +133,18 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
             // try another handler
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
 
         HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
         {
-            return super.process(request, response, callback); // no content - try other handlers
+            return super.handle(request, response, callback); // no content - try other handlers
         }
 
         _resourceService.doGet(request, response, callback, content);
@@ -159,7 +159,7 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceBase;
     }
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
     }

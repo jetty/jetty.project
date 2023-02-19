@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -203,7 +203,7 @@ public class SSLEngineTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getRetainableByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
@@ -367,7 +367,7 @@ public class SSLEngineTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)

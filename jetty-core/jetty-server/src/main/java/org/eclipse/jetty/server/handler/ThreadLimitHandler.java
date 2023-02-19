@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -161,26 +161,26 @@ public class ThreadLimitHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
             return false;
 
         if (!_enabled)
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
 
         // Get the remote address of the request
         Remote remote = getRemote(request);
         if (remote == null)
         {
             // if remote is not known, handle normally
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
         }
 
-        // We accept the request and will always process it.
+        // We accept the request and will always handle it.
         LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
-        limitedRequest.process();
+        limitedRequest.handle();
         return true;
     }
 
@@ -298,7 +298,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             return _callback;
         }
 
-        protected void process() throws Exception
+        protected void handle() throws Exception
         {
             Permit permit = _remote.acquire();
 
@@ -307,21 +307,21 @@ public class ThreadLimitHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Thread permitted {} {} {}", _remote, getWrapped(), _handler);
-                process(permit);
+                handle(permit);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Thread limited {} {} {}", _remote, getWrapped(), _handler);
-                permit.whenAllocated(this::process);
+                permit.whenAllocated(this::handle);
             }
         }
 
-        protected void process(Permit permit)
+        protected void handle(Permit permit)
         {
             try
             {
-                if (!_handler.process(this, _response, _callback))
+                if (!_handler.handle(this, _response, _callback))
                     Response.writeError(this, _response, _callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable x)
@@ -588,8 +588,8 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
             if (pending != null)
             {
-                // We cannot complete the pending in this thread, as we may be in a process, demand or write callback
-                // that is serialized and other actions are waiting for the return.  Thus, we must execute.
+                // We cannot complete the pending in this thread, as we may be in handle(), demand() or write
+                // callback that is serialized and other actions are waiting for the return. Thus, we must execute.
                 _executor.execute(pending::complete);
             }
         }

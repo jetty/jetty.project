@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,8 +26,8 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -72,7 +72,7 @@ public class DebugHandlerTest
         sslContextFactory.setKeyStorePassword("storepwd");
         // TODO: restore leak tracking.
 //        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        RetainableByteBufferPool pool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool pool = new ArrayByteBufferPool();
         ServerConnector sslConnector = new ServerConnector(server, null, null, pool, 1, 1,
             AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
 

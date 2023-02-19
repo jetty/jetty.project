@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 
 public class HttpUpgraderOverHTTP implements HttpUpgrader
 {
@@ -85,7 +85,7 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
             {
                 // Check the Accept hash
                 String reqKey = requestHeaders.get(HttpHeader.SEC_WEBSOCKET_KEY);
-                String expectedHash = WebSocketCore.hashKey(reqKey);
+                String expectedHash = WebSocketUtils.hashKey(reqKey);
                 String respHash = responseHeaders.get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
                 if (expectedHash.equalsIgnoreCase(respHash))
                 {

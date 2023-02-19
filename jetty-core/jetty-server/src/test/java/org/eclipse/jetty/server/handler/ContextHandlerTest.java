@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -270,7 +270,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -306,7 +306,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -389,7 +389,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demand(() ->
@@ -443,7 +443,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -548,17 +548,17 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testThrownUsesContextErrorProcessor() throws Exception
+    public void testThrownUsesContextErrorHandler() throws Exception
     {
         _contextHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }
         });
-        _contextHandler.setErrorProcessor(new ErrorProcessor()
+        _contextHandler.setErrorHandler(new ErrorHandler()
         {
             @Override
             protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
@@ -620,7 +620,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, null, callback);
@@ -658,7 +658,7 @@ public class ContextHandlerTest
     public void testSetHandlerLoopDeepWrapper()
     {
         ContextHandler contextHandlerA = new ContextHandler();
-        Handler.Wrapper handlerWrapper = new Handler.Wrapper();
+        Handler.Singleton handlerWrapper = new Handler.Wrapper();
         contextHandlerA.setHandler(handlerWrapper);
         assertThrows(IllegalStateException.class, () -> handlerWrapper.setHandler(contextHandlerA));
     }
@@ -667,7 +667,7 @@ public class ContextHandlerTest
     public void testAddHandlerLoopDeep()
     {
         ContextHandler contextHandlerA = new ContextHandler();
-        Handler.Collection handlerCollection = new Handler.Collection();
+        Handler.Sequence handlerCollection = new Handler.Sequence();
         contextHandlerA.setHandler(handlerCollection);
         assertThrows(IllegalStateException.class, () -> handlerCollection.addHandler(contextHandlerA));
     }

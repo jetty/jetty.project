@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -235,12 +235,6 @@ public class ByteRangeTest
         // If one part is bad, the entire set of ranges should be treated as bad, per RFC7233.
         assertNotNull(ranges);
         assertThat("Should have no ranges", ranges.size(), is(0));
-    }
-
-    @Test
-    public void testBadRangeSetPartiallyBad()
-    {
-        assertBadRangeList(500, "bytes=1-50,1-b,a-50");
     }
 
     @Test

@@ -1,5 +1,5 @@
 [description]
-Configures the RetainableByteBufferPool used by ServerConnectors.
+Configures the ByteBufferPool used by ServerConnectors.
 The bucket sizes increase linearly.
 Use module "bytebufferpool-quadratic" for a pool that holds more coarse sized buffers.
 

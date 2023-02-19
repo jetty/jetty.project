@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -94,9 +94,9 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
         };
 
@@ -153,9 +153,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override
@@ -260,9 +260,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override
@@ -326,9 +326,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override
@@ -393,9 +393,9 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return true;
+                return false;
             }
 
             @Override

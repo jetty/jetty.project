@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,15 +28,15 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -365,9 +365,9 @@ public class DataDemandTest extends AbstractTest
         // Generate a lot of small DATA frames and write them in a single
         // write so that the server will continuously be notified and demand,
         // which will test that it won't throw StackOverflowError.
-        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         Generator generator = new Generator(bufferPool);
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (int i = 512; i >= 0; --i)
             generator.data(accumulator, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
 

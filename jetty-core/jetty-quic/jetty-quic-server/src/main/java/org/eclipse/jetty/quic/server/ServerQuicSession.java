@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,9 +20,9 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeouts;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
@@ -46,7 +46,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private final Connector connector;
     private long expireNanoTime;
 
-    protected ServerQuicSession(Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
+    protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
     {
         super(executor, scheduler, bufferPool, quicheConnection, connection, remoteAddress);
         this.connector = connector;

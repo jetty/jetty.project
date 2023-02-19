@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -54,12 +54,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -227,7 +225,7 @@ public class HugeResourceTest
         server.setHandler(delayedHandler);
         httpConfig.setDelayDispatchUntilContent(false);
 
-        delayedHandler.setHandler(new Handler.Collection(context, new DefaultHandler()));
+        delayedHandler.setHandler(context);
         server.start();
     }
 

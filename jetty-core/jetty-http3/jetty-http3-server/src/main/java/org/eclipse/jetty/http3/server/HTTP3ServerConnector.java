@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,7 +18,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -44,7 +44,7 @@ public class HTTP3ServerConnector extends QuicServerConnector
         this(server, null, null, null, sslContextFactory, factories);
     }
 
-    public HTTP3ServerConnector(Server server, Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public HTTP3ServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, sslContextFactory, factories);
         // Max concurrent streams that a client can open.

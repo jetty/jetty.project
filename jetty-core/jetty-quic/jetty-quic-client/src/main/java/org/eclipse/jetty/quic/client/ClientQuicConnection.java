@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -55,7 +55,7 @@ public class ClientQuicConnection extends QuicConnection
 
     public ClientQuicConnection(ClientConnector connector, EndPoint endPoint, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getRetainableByteBufferPool(), endPoint);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.context = context;
     }
@@ -97,7 +97,7 @@ public class ClientQuicConnection extends QuicConnection
                 LOG.debug("connecting to {} with protocols {}", remoteAddress, protocols);
 
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, getEndPoint().getLocalAddress(), remoteAddress);
-            ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getRetainableByteBufferPool(), quicheConnection, this, remoteAddress, context);
+            ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             if (LOG.isDebugEnabled())
                 LOG.debug("created {}", session);

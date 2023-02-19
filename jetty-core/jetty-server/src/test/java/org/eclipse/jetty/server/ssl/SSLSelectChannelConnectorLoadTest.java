@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -319,7 +319,7 @@ public class SSLSelectChannelConnectorLoadTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
             response.write(true, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()), callback);

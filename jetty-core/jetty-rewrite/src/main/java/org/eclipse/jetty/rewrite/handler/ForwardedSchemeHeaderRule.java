@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,9 +33,9 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
     }
 
     @Override
-    protected Processor apply(Processor input, String value)
+    protected Handler apply(Handler input, String value)
     {
         HttpURI newURI = HttpURI.build(input.getHttpURI()).scheme(getScheme());
-        return new HttpURIProcessor(input, newURI);
+        return new HttpURIHandler(input, newURI);
     }
 }

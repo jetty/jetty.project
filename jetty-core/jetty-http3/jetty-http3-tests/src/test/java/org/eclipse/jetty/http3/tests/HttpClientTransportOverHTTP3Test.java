@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -41,7 +41,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_3 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
@@ -69,7 +69,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.Sink.write(response, true, content, callback);
                 return true;
@@ -88,7 +88,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[10 * 1024]), callback);
                 return true;
@@ -152,7 +152,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -197,7 +197,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.Sink.write(response, true, "0", callback);
                 return true;

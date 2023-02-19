@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -42,7 +42,7 @@ public class WebAppDefaultServletCacheTest
 
         URI uri = getClass().getResource("/org/acme").toURI();
         resourcePath = Paths.get(uri);
-        server.addHandler(new WebAppContext(uri.toString(), "/"));
+        server.setHandler(new WebAppContext(uri.toString(), "/"));
 
         server.start();
     }

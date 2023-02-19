@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,11 +15,11 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public interface Instruction
 {
-    void encode(RetainableByteBufferPool.Accumulator accumulator);
+    void encode(ByteBufferPool.Accumulator accumulator);
 
     /**
      * <p>A handler for instructions issued by an {@link QpackEncoder} or {@link QpackDecoder}.</p>

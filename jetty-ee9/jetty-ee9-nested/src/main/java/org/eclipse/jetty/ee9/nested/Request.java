@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -66,7 +66,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -79,6 +78,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.HttpCookieUtils;
+import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
@@ -316,12 +317,12 @@ public class Request implements HttpServletRequest
                 }
                 else
                 {
-                    Map<String, String> cookieFields = HttpCookie.extractBasics(field.getValue());
+                    Map<String, String> cookieFields = HttpCookieUtils.extractBasics(field.getValue());
                     cookieName = cookieFields.get("name");
                     cookieValue = cookieFields.get("value");
-                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.valueOf(cookieFields.get("max-age")) : -1;
+                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.parseLong(cookieFields.get("max-age")) : -1;
                 }
-                
+
                 if (cookieMaxAge > 0)
                     cookies.put(cookieName, cookieValue);
                 else
@@ -1521,9 +1522,7 @@ public class Request implements HttpServletRequest
         _uri = coreRequest.getHttpURI();
 
         String pathInContext = org.eclipse.jetty.server.Request.getPathInContext(coreRequest);
-        _pathInContext = _context.getContextHandler().isCanonicalEncodingURIs()
-            ? pathInContext
-            : URIUtil.decodePath(pathInContext);
+        _pathInContext = URIUtil.decodePath(pathInContext);
         _httpFields = coreRequest.getHeaders();
 
         setSecure(coreRequest.isSecure());
@@ -1954,7 +1953,21 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiParts = newMultiParts(config);
+            int maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+            int maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
+            if (_context != null)
+            {
+                ContextHandler contextHandler = _context.getContextHandler();
+                maxFormContentSize = contextHandler.getMaxFormContentSize();
+                maxFormKeys = contextHandler.getMaxFormKeys();
+            }
+            else
+            {
+                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+            }
+
+            _multiParts = newMultiParts(config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
             setNonComplianceViolationsOnRequest();
 
@@ -1988,11 +2001,16 @@ public class Request implements HttpServletRequest
             else
                 defaultCharset = StandardCharsets.UTF_8;
 
+            long formContentSize = 0;
             ByteArrayOutputStream os = null;
             for (Part p : parts)
             {
                 if (p.getSubmittedFileName() == null)
                 {
+                    formContentSize = Math.addExact(formContentSize, p.getSize());
+                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
+                        throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
+
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
                     if (p.getContentType() != null)
@@ -2033,10 +2051,10 @@ public class Request implements HttpServletRequest
         setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
     }
 
-    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config) throws IOException
+    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
     {
         return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null));
+            (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null), maxParts);
     }
 
     @Override

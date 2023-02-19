@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.websocket.client;
 
 import java.io.IOException;
-import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Duration;
@@ -39,8 +38,8 @@ import org.eclipse.jetty.ee10.websocket.client.impl.JettyClientUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.common.SessionTracker;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Graceful;
@@ -321,21 +320,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public void setConnectTimeout(long ms)
     {
         getHttpClient().setConnectTimeout(ms);
-    }
-
-    public CookieStore getCookieStore()
-    {
-        return getHttpClient().getCookieStore();
-    }
-
-    public void setCookieStore(CookieStore cookieStore)
-    {
-        getHttpClient().setCookieStore(cookieStore);
-    }
-
-    public RetainableByteBufferPool getRetainableByteBufferPool()
-    {
-        return getHttpClient().getRetainableByteBufferPool();
     }
 
     @Override

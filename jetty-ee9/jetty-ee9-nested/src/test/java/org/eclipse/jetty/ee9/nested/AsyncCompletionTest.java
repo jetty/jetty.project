@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -114,10 +114,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     @Override
     protected void startServer(Handler handler) throws Exception
     {
-        org.eclipse.jetty.server.Handler.Nested terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
+        org.eclipse.jetty.server.Handler.Singleton terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -135,7 +135,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         super.failed(x);
                     }
                 });
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         };
         _server.insertHandler(terminateHandler);

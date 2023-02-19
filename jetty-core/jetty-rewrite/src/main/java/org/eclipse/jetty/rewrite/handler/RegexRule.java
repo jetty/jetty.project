@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -52,7 +52,7 @@ public abstract class RegexRule extends Rule
     }
 
     @Override
-    public Processor matchAndApply(Processor input) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
         String target = input.getHttpURI().getPathQuery();
         Matcher matcher = _regex.matcher(target);
@@ -64,12 +64,12 @@ public abstract class RegexRule extends Rule
     /**
      * <p>Invoked after the regular expression matched the URI path to apply the rule's logic.</p>
      *
-     * @param input the input {@code Request} and {@code Processor}
+     * @param input the input {@code Request} and {@code Handler}
      * @param matcher the {@code Matcher} that matched the request path, with capture groups available for replacement.
-     * @return the possibly wrapped {@code Request} and {@code Processor}
+     * @return the possibly wrapped {@code Request} and {@code Handler}
      * @throws IOException if applying the rule failed
      */
-    protected abstract Processor apply(Processor input, Matcher matcher) throws IOException;
+    protected abstract Handler apply(Handler input, Matcher matcher) throws IOException;
 
     @Override
     public String toString()

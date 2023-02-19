@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,7 +48,7 @@ public abstract class HeaderRule extends Rule
     }
 
     @Override
-    public Processor matchAndApply(Processor input) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
         String value = input.getHeaders().get(getHeaderName());
         if (value == null)
@@ -62,12 +62,12 @@ public abstract class HeaderRule extends Rule
     /**
      * <p>Invoked after the header matched the {@code Request} headers to apply the rule's logic.</p>
      *
-     * @param input the input {@code Request} and {@code Processor}
+     * @param input the input {@code Request} and {@code Handler}
      * @param value the header value
-     * @return the possibly wrapped {@code Request} and {@code Processor}
+     * @return the possibly wrapped {@code Request} and {@code Handler}
      * @throws IOException if applying the rule failed
      */
-    protected abstract Processor apply(Processor input, String value) throws IOException;
+    protected abstract Handler apply(Handler input, String value) throws IOException;
 
     @Override
     public String toString()

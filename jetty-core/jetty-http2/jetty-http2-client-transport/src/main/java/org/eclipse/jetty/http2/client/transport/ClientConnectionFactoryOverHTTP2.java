@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,9 +20,9 @@ import java.util.Map;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
 import org.eclipse.jetty.http2.client.transport.internal.HTTPSessionListenerPromise;
@@ -114,8 +114,8 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                 // Avoid double TLS wrapping. We want to keep the existing
                 // SslConnection that has already performed the TLS handshake,
                 // and just upgrade the nested connection.
-                if (factory instanceof SslClientConnectionFactory && endPoint instanceof SslConnection.DecryptedEndPoint)
-                    factory = ((SslClientConnectionFactory)factory).getClientConnectionFactory();
+                if (factory instanceof SslClientConnectionFactory sslFactory && endPoint instanceof SslConnection.SslEndPoint)
+                    factory = sslFactory.getClientConnectionFactory();
                 var newConnection = factory.newConnection(endPoint, context);
                 endPoint.upgrade(newConnection);
             }

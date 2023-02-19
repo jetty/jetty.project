@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,20 +18,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpUpgrader;
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpRequest;
-import org.eclipse.jetty.client.internal.HttpSender;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 

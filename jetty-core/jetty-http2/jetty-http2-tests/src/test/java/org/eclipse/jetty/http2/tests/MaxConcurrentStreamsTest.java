@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,7 +39,7 @@ import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -104,7 +104,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         start(1, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Sleep a bit to allow the second request to be queued.
                 sleep(sleep);
@@ -147,7 +147,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         start(concurrency, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -181,7 +181,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         startServer(maxConcurrentStreams, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(1000);
                 callback.succeeded();
@@ -264,7 +264,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         start(maxStreams, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
                 callback.succeeded();
@@ -308,7 +308,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         start(1, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
                 callback.succeeded();
@@ -339,7 +339,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         start(maxConcurrent, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
                 callback.succeeded();
@@ -368,7 +368,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         start(1, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
                 return true;
@@ -429,7 +429,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         start(1, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 if (Request.getPathInContext(request).endsWith("/1"))
                     sleep(2 * timeout);

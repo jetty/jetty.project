@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -87,7 +87,7 @@ public class HttpClientProxyProtocolTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
@@ -126,7 +126,7 @@ public class HttpClientProxyProtocolTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
@@ -168,7 +168,7 @@ public class HttpClientProxyProtocolTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
@@ -223,7 +223,7 @@ public class HttpClientProxyProtocolTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,13 +48,13 @@ public class RewriteRegexRule extends RegexRule
     }
 
     @Override
-    public Processor apply(Processor input, Matcher matcher) throws IOException
+    public Handler apply(Handler input, Matcher matcher) throws IOException
     {
         HttpURI httpURI = input.getHttpURI();
         String replacedPath = matcher.replaceAll(replacement);
 
         HttpURI newURI = HttpURI.build(httpURI, replacedPath);
-        return new HttpURIProcessor(input, newURI);
+        return new HttpURIHandler(input, newURI);
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,7 +39,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
                 return true;
@@ -63,7 +63,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         String target = Request.getPathInContext(request);
         WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
@@ -75,7 +75,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 
         if (negotiator == null)
         {
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
 
         try
@@ -83,7 +83,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
             if (mappings.upgrade(negotiator, request, response, callback, customizer))
                 return true;
 
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
         catch (Throwable t)
         {

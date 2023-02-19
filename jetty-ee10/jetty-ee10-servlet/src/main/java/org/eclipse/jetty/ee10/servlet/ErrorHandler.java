@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ErrorHandler implements Request.Processor
+public class ErrorHandler implements Request.Handler
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
@@ -80,7 +80,7 @@ public class ErrorHandler implements Request.Processor
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (!errorPageForMethod(request.getMethod()))
         {
@@ -604,13 +604,13 @@ public class ErrorHandler implements Request.Processor
         String getErrorPage(HttpServletRequest request);
     }
 
-    public static Request.Processor getErrorProcessor(Server server, ContextHandler context)
+    public static Request.Handler getErrorHandler(Server server, ContextHandler context)
     {
-        Request.Processor errorProcessor = null;
+        Request.Handler errorHandler = null;
         if (context != null)
-            errorProcessor = context.getErrorProcessor();
-        if (errorProcessor == null && server != null)
-            errorProcessor = server.getErrorProcessor();
-        return errorProcessor;
+            errorHandler = context.getErrorHandler();
+        if (errorHandler == null && server != null)
+            errorHandler = server.getErrorHandler();
+        return errorHandler;
     }
 }

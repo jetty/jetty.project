@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -272,7 +272,8 @@ public class HttpClientTransportDynamicTest
             public Origin newOrigin(org.eclipse.jetty.client.Request request)
             {
                 // Use prior-knowledge, i.e. negotiate==false.
-                boolean secure = HttpClient.isSchemeSecure(request.getScheme());
+                String scheme1 = request.getScheme();
+                boolean secure = HttpScheme.isSecure(scheme1);
                 List<String> protocols = HttpVersion.HTTP_2 == request.getVersion() ? http2.getProtocols(secure) : h1.getProtocols(secure);
                 return new Origin(request.getScheme(), request.getHost(), request.getPort(), request.getTag(), new Origin.Protocol(protocols, false));
             }
@@ -395,7 +396,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::proxyH1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
@@ -491,7 +492,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -567,7 +568,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -607,7 +608,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::sslH1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -641,7 +642,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
                 return true;
@@ -709,7 +710,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 request.getConnectionMetaData().getConnection().getEndPoint().close();
                 callback.succeeded();

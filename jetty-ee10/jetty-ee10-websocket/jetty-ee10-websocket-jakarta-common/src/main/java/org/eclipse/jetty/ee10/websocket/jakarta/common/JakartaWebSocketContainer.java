@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import jakarta.websocket.Extension;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -53,9 +53,9 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
 
     protected abstract JakartaWebSocketFrameHandlerFactory getFrameHandlerFactory();
 
-    public RetainableByteBufferPool getRetainableByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return components.getRetainableByteBufferPool();
+        return components.getByteBufferPool();
     }
 
     public WebSocketExtensionRegistry getExtensionRegistry()

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,13 +15,10 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
@@ -33,26 +30,24 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 public class StatisticsHandler extends Handler.Wrapper
 {
-    private final Set<String> _connectionStats = ConcurrentHashMap.newKeySet();
-    private final CounterStatistic _requestStats = new CounterStatistic();
-    private final CounterStatistic _processStats = new CounterStatistic();
-    private final SampleStatistic _requestTimeStats = new SampleStatistic();
-    private final SampleStatistic _processTimeStats = new SampleStatistic();
-    private final LongAdder _processingErrors = new LongAdder();
+    private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being handled (full lifecycle)
+    private final SampleStatistic _requestTimeStats = new SampleStatistic(); // latencies of requests (full lifecycle)
+    private final LongAdder _handlingFailures = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
     private final LongAdder _responses4xx = new LongAdder();
     private final LongAdder _responses5xx = new LongAdder();
+    private final LongAdder _bytesRead = new LongAdder();
+    private final LongAdder _bytesWritten = new LongAdder();
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -61,27 +56,15 @@ public class StatisticsHandler extends Handler.Wrapper
         StatisticsRequest statisticsRequest = newStatisticsRequest(request);
         try
         {
-            _processStats.increment();
-            _requestStats.increment();
-
-            String id = statisticsRequest.getConnectionMetaData().getId();
-            if (_connectionStats.add(id))
-                statisticsRequest.getConnectionMetaData().getConnection().addEventListener(statisticsRequest);
-
-            if (next.process(statisticsRequest, response, callback))
+            if (next.handle(statisticsRequest, response, callback))
                 return true;
-            _requestStats.decrement();
+            statisticsRequest.notHandled();
             return false;
         }
         catch (Throwable t)
         {
-            _processingErrors.increment();
+            _handlingFailures.increment();
             throw t;
-        }
-        finally
-        {
-            _processStats.decrement();
-            _processTimeStats.record(NanoTime.since(statisticsRequest._startProcessingNanoTime));
         }
     }
 
@@ -89,17 +72,16 @@ public class StatisticsHandler extends Handler.Wrapper
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,
-            new DumpableCollection("connectionStats", _connectionStats),
             Dumpable.named("requestStats", _requestStats),
             Dumpable.named("requestTimeStats", _requestTimeStats),
-            Dumpable.named("processStats", _processStats),
-            Dumpable.named("processTimeStats", _processTimeStats),
-            Dumpable.named("processingErrors", _processingErrors),
+            Dumpable.named("handlingFailures", _handlingFailures),
             Dumpable.named("1xxResponses", _responses1xx),
             Dumpable.named("2xxResponses", _responses2xx),
             Dumpable.named("3xxResponses", _responses3xx),
             Dumpable.named("4xxResponses", _responses4xx),
-            Dumpable.named("5xxResponses", _responses5xx)
+            Dumpable.named("5xxResponses", _responses5xx),
+            Dumpable.named("bytesRead", _bytesRead),
+            Dumpable.named("bytesWritten", _bytesWritten)
         );
     }
 
@@ -111,17 +93,16 @@ public class StatisticsHandler extends Handler.Wrapper
     @ManagedOperation(value = "resets the statistics", impact = "ACTION")
     public void reset()
     {
-        _connectionStats.clear();
         _requestStats.reset();
-        _processStats.reset();
         _requestTimeStats.reset();
-        _processTimeStats.reset();
-        _processingErrors.reset();
+        _handlingFailures.reset();
         _responses1xx.reset();
         _responses2xx.reset();
         _responses3xx.reset();
         _responses4xx.reset();
         _responses5xx.reset();
+        _bytesRead.reset();
+        _bytesWritten.reset();
     }
 
     @ManagedAttribute("number of requests")
@@ -172,28 +153,10 @@ public class StatisticsHandler extends Handler.Wrapper
         return _responses5xx.intValue();
     }
 
-    @ManagedAttribute("number of requests that threw an exception during processing")
-    public int getProcessingErrors()
+    @ManagedAttribute("number of requests that threw an exception during handling")
+    public int getHandlingFailures()
     {
-        return _processingErrors.intValue();
-    }
-
-    @ManagedAttribute("")
-    public int getProcessings()
-    {
-        return (int)_processStats.getTotal();
-    }
-
-    @ManagedAttribute("")
-    public int getProcessingsActive()
-    {
-        return (int)_processStats.getCurrent();
-    }
-
-    @ManagedAttribute("")
-    public int getProcessingsMax()
-    {
-        return (int)_processStats.getMax();
+        return _handlingFailures.intValue();
     }
 
     @ManagedAttribute("total time spend in all request execution (in ns)")
@@ -220,58 +183,25 @@ public class StatisticsHandler extends Handler.Wrapper
         return _requestTimeStats.getStdDev();
     }
 
-    @ManagedAttribute("(in ns)")
-    public long getProcessingTimeTotal()
+    @ManagedAttribute("bytes read count")
+    public long getBytesRead()
     {
-        return _processTimeStats.getTotal();
+        return _bytesRead.longValue();
     }
 
-    @ManagedAttribute("(in ns)")
-    public long getProcessingTimeMax()
+    @ManagedAttribute("bytes written count")
+    public long getBytesWritten()
     {
-        return _processTimeStats.getMax();
+        return _bytesWritten.longValue();
     }
 
-    @ManagedAttribute("(in ns)")
-    public double getProcessingTimeMean()
+    public class StatisticsRequest extends Request.Wrapper
     {
-        return _processTimeStats.getMean();
-    }
-
-    @ManagedAttribute("(in ns)")
-    public double getProcessingTimeStdDev()
-    {
-        return _processTimeStats.getStdDev();
-    }
-
-    private class StatisticsRequest extends Request.Wrapper implements Connection.Listener
-    {
-        private final LongAdder _bytesRead = new LongAdder();
-        private final LongAdder _bytesWritten = new LongAdder();
-        private final long _startProcessingNanoTime;
-
-        private StatisticsRequest(Request request)
+        public StatisticsRequest(Request request)
         {
             super(request);
-            _startProcessingNanoTime = NanoTime.now();
+            _requestStats.increment();
             addHttpStreamWrapper(this::asHttpStream);
-
-        }
-
-        public LongAdder getBytesRead()
-        {
-            return _bytesRead;
-        }
-
-        public LongAdder getBytesWritten()
-        {
-            return _bytesWritten;
-        }
-
-        @Override
-        public void onClosed(Connection connection)
-        {
-            _connectionStats.remove(getConnectionMetaData().getId());
         }
 
         public HttpStream asHttpStream(HttpStream httpStream)
@@ -279,33 +209,18 @@ public class StatisticsHandler extends Handler.Wrapper
             return new StatisticsHttpStream(httpStream);
         }
 
-        @Override
-        public Object getAttribute(String name)
+        /**
+         * Creating a {@link StatisticsRequest} increments the {@link #getRequests() request counter} before its gets a chance
+         * of figuring out if the request is going to be handled by the {@link StatisticsHandler#getHandler() wrapped handler}.
+         * In case the wrapped handler did not handle the request, calling this method decrements the request counter to
+         * compensate for the unneeded increment.
+         */
+        protected void notHandled()
         {
-            // return hidden attributes for requestLog
-            return switch (name)
-            {
-                // TODO class.getName + extra
-                case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead.longValue();
-                case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten.longValue();
-                case "o.e.j.s.h.StatsHandler.spentTime" -> spentTimeNs();
-                case "o.e.j.s.h.StatsHandler.dataReadRate" -> dataRatePerSecond(_bytesRead.longValue());
-                case "o.e.j.s.h.StatsHandler.dataWriteRate" -> dataRatePerSecond(_bytesWritten.longValue());
-                default -> super.getAttribute(name);
-            };
+            _requestStats.decrement();
         }
 
-        protected long dataRatePerSecond(long dataCount)
-        {
-            return (long)(dataCount / (spentTimeNs() / 1_000_000_000F));
-        }
-
-        private long spentTimeNs()
-        {
-            return NanoTime.since(getNanoTime());
-        }
-
-        protected class StatisticsHttpStream extends HttpStream.Wrapper
+        public class StatisticsHttpStream extends HttpStream.Wrapper
         {
             public StatisticsHttpStream(HttpStream httpStream)
             {
@@ -338,7 +253,6 @@ public class StatisticsHandler extends Handler.Wrapper
                 int length = BufferUtil.length(content);
                 if (length > 0)
                     _bytesWritten.add(length);
-
                 super.send(request, response, last, content, callback);
             }
 
@@ -360,11 +274,21 @@ public class StatisticsHandler extends Handler.Wrapper
         }
     }
 
-    static class MinimumDataRateHandler extends StatisticsHandler
+    /**
+     * Checks that the wrapped handler can read/write at a minimal rate of N bytes per second.
+     * When reading or writing does not conform to the specified rates, this handler prevents
+     * further reads or writes by making them immediately fail.
+     */
+    public static class MinimumDataRateHandler extends StatisticsHandler
     {
         private final long _minimumReadRate;
         private final long _minimumWriteRate;
 
+        /**
+         * Creates a {@code MinimumDataRateHandler} with the specified read and write rates.
+         * @param minimumReadRate the minimum number of bytes to be read per second, or 0 for not checking the read rate.
+         * @param minimumWriteRate the minimum number of bytes to be written per second, or 0 for not checking the write rate.
+         */
         public MinimumDataRateHandler(long minimumReadRate, long minimumWriteRate)
         {
             _minimumReadRate = minimumReadRate;
@@ -386,15 +310,25 @@ public class StatisticsHandler extends Handler.Wrapper
                 super(request);
             }
 
+            private long dataRatePerSecond(long dataCount)
+            {
+                if (dataCount == 0L)
+                    return 0L;
+                long delayInNs = NanoTime.since(getNanoTime());
+                // If you read 1 byte or more in 0ns or less, you have infinite bandwidth.
+                if (delayInNs <= 0L)
+                    return Long.MAX_VALUE;
+                return dataCount * 1_000_000_000 / delayInNs;
+            }
+
             @Override
             public void demand(Runnable demandCallback)
             {
                 if (_minimumReadRate > 0)
                 {
-                    long rr = dataRatePerSecond(getBytesRead().longValue());
+                    long rr = dataRatePerSecond(getBytesRead());
                     if (rr < _minimumReadRate)
                     {
-                        // TODO should this be a QuietException to reduce log verbosity from bad clients?
                         _errorContent = Content.Chunk.from(new TimeoutException("read rate is too low: " + rr));
                         demandCallback.run();
                         return;
@@ -419,7 +353,7 @@ public class StatisticsHandler extends Handler.Wrapper
                     {
                         if (_minimumWriteRate > 0)
                         {
-                            long bytesWritten = getBytesWritten().longValue();
+                            long bytesWritten = getBytesWritten();
                             if (bytesWritten > 0L)
                             {
                                 long wr = dataRatePerSecond(bytesWritten);

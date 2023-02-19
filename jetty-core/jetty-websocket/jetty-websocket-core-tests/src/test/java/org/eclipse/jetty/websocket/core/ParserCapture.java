@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,11 +18,8 @@ import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
-import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.internal.util.FrameValidation;
+import org.eclipse.jetty.websocket.core.util.FrameValidation;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -55,7 +52,7 @@ public class ParserCapture
         this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack), components);
         coreSession.setAutoFragment(false);
         coreSession.setMaxFrameSize(0);
-        this.parser = new Parser(components.getRetainableByteBufferPool(), coreSession);
+        this.parser = new Parser(components.getByteBufferPool(), coreSession);
     }
 
     public void parse(ByteBuffer buffer)

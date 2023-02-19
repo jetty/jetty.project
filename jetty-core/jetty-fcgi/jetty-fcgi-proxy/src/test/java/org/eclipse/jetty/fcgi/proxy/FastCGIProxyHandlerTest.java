@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -149,7 +149,7 @@ public class FastCGIProxyHandlerTest
         start(sendStatus200, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
                 assertEquals(path, Request.getPathInContext(request));
@@ -195,7 +195,7 @@ public class FastCGIProxyHandlerTest
         start(sendStatus200, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), startsWith(originalPath));
                 assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
@@ -211,14 +211,14 @@ public class FastCGIProxyHandlerTest
         proxyContext.insertHandler(new Handler.Wrapper()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/remote/"))
                 {
                     request.setAttribute(pathAttribute, originalPath);
                     request.setAttribute(queryAttribute, originalQuery);
                 }
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         });
         proxyContext.start();
@@ -243,7 +243,7 @@ public class FastCGIProxyHandlerTest
         start(true, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
                 return true;

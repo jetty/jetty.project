@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,12 +19,12 @@ import java.util.List;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

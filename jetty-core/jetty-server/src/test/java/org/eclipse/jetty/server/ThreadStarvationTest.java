@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,8 +31,8 @@ import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -85,7 +85,7 @@ public class ThreadStarvationTest
             sslContextFactory.setKeyStorePassword("storepwd");
             // TODO: restore leak tracking.
 //            ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-            RetainableByteBufferPool pool = new ArrayRetainableByteBufferPool();
+            ByteBufferPool pool = new ArrayByteBufferPool();
 
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
             ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
@@ -243,7 +243,7 @@ public class ThreadStarvationTest
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             /* TODO
@@ -348,7 +348,7 @@ public class ThreadStarvationTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);

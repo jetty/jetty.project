@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -244,7 +244,8 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
      */
     public static class Part extends MultiPart.Part
     {
-        private final PathContentSource content;
+        private final Path path;
+        private final ByteRange byteRange;
 
         public Part(String contentType, Path path, ByteRange byteRange, long contentLength)
         {
@@ -255,13 +256,14 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         public Part(HttpFields headers, Path path, ByteRange byteRange)
         {
             super(null, null, headers);
-            content = new PathContentSource(path, byteRange);
+            this.path = path;
+            this.byteRange = byteRange;
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source newContentSource()
         {
-            return content;
+            return new PathContentSource(path, byteRange);
         }
     }
 
@@ -292,6 +294,7 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         public void onPart(String name, String fileName, HttpFields headers)
         {
             parts.add(new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks)));
+            partChunks.forEach(Content.Chunk::release);
             partChunks.clear();
         }
 
@@ -311,16 +314,20 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
 
         private void fail(Throwable cause)
         {
-            List<MultiPart.Part> toFail;
+            List<MultiPart.Part> partsToFail;
+            List<Content.Chunk> partChunksToFail;
             try (AutoLock ignored = lock.lock())
             {
                 if (failure != null)
                     return;
                 failure = cause;
-                toFail = new ArrayList<>(parts);
+                partsToFail = new ArrayList<>(parts);
                 parts.clear();
+                partChunksToFail = new ArrayList<>(partChunks);
+                partChunks.clear();
             }
-            toFail.forEach(part -> part.getContent().fail(cause));
+            partsToFail.forEach(p -> p.fail(cause));
+            partChunksToFail.forEach(Content.Chunk::release);
         }
     }
 }

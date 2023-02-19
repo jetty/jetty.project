@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,10 +29,10 @@ import java.nio.file.Path;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
@@ -78,7 +78,7 @@ public class UnixDomainServerConnector extends AbstractConnector
         this(server, null, null, null, acceptors, selectors, factories);
     }
 
-    public UnixDomainServerConnector(Server server, Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, int acceptors, int selectors, ConnectionFactory... factories)
+    public UnixDomainServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, int selectors, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
         selectorManager = newSelectorManager(getExecutor(), getScheduler(), selectors);

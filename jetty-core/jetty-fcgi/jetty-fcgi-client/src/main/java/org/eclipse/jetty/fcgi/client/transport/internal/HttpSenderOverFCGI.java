@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,16 +20,16 @@ import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpExchange;
-import org.eclipse.jetty.client.internal.HttpSender;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.generator.ClientGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
@@ -42,7 +42,7 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         super(channel);
         HttpClient httpClient = channel.getHttpDestination().getHttpClient();
-        this.generator = new ClientGenerator(httpClient.getRetainableByteBufferPool(), httpClient.isUseOutputDirectByteBuffers());
+        this.generator = new ClientGenerator(httpClient.getByteBufferPool(), httpClient.isUseOutputDirectByteBuffers());
     }
 
     @Override
@@ -98,7 +98,7 @@ public class HttpSenderOverFCGI extends HttpSender
         HttpClientTransportOverFCGI transport = (HttpClientTransportOverFCGI)getHttpChannel().getHttpDestination().getHttpClient().getTransport();
         transport.customize(request, fcgiHeaders);
 
-        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         int id = getHttpChannel().getRequest();
         if (contentBuffer.hasRemaining() || lastContent)
         {
@@ -117,7 +117,7 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             int request = getHttpChannel().getRequest();
             generator.generateRequestContent(accumulator, request, contentBuffer, lastContent);
             getHttpChannel().flush(accumulator, callback);

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -54,8 +54,8 @@ public interface FrameHandler extends IncomingFrames
      * FrameHandler can write during this call, but can not receive frames until the callback is succeeded.
      * </p>
      * <p>
-     * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if
-     * not demanding, or can now call {@link CoreSession#demand(long)} to receive frames if demanding.
+     * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if auto-demanding,
+     * or can now call {@link CoreSession#demand(long)} to receive frames if it is not auto-demanding.
      * If the FrameHandler fails the callback a close frame will be sent with {@link CloseStatus#SERVER_ERROR} and
      * the connection will be closed. <br>
      * </p>
@@ -106,12 +106,12 @@ public interface FrameHandler extends IncomingFrames
     /**
      * Does the FrameHandler manage it's own demand?
      *
-     * @return true iff the FrameHandler will manage its own flow control by calling {@link CoreSession#demand(long)} when it
-     * is willing to receive new Frames.  Otherwise the demand will be managed by an automatic call to demand(1) after every
-     * succeeded callback passed to {@link #onFrame(Frame, Callback)}.
+     * @return true if demand will be managed by an automatic call to demand(1) after every succeeded callback passed to
+     * {@link #onFrame(Frame, Callback)}. If false the FrameHandler will need to manage its own demand by calling
+     * {@link CoreSession#demand(long)} when it is willing to receive new Frames.
      */
-    default boolean isDemanding()
+    default boolean isAutoDemanding()
     {
-        return false;
+        return true;
     }
 }

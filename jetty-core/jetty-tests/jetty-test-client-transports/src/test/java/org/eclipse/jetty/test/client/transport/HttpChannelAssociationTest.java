@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,8 +23,8 @@ import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.internal.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
@@ -36,7 +36,7 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.HttpChannelOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3;

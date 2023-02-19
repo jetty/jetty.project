@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,12 +16,12 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.internal.parser.ControlParser;
+import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +32,12 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
     public static final long STREAM_TYPE = 0x00;
     private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 
-    private final RetainableByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final ControlParser parser;
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public ControlStreamConnection(EndPoint endPoint, Executor executor, RetainableByteBufferPool bufferPool, ControlParser parser)
+    public ControlStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ControlParser parser)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;

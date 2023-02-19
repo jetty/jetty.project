@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,6 @@ package org.eclipse.jetty.client.internal;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.ContentResponse;
@@ -44,12 +43,6 @@ public class HttpContentResponse implements ContentResponse
     public Request getRequest()
     {
         return response.getRequest();
-    }
-
-    @Override
-    public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass)
-    {
-        return response.getListeners(listenerClass);
     }
 
     @Override

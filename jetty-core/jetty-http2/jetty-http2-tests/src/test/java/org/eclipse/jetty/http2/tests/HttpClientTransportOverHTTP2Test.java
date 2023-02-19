@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,6 +48,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -61,16 +63,14 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.http2.internal.parser.ServerParser;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -111,7 +111,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertTrue(http2Client.isStarted());
         assertSame(httpClient.getExecutor(), http2Client.getExecutor());
         assertSame(httpClient.getScheduler(), http2Client.getScheduler());
-        assertSame(httpClient.getRetainableByteBufferPool(), http2Client.getRetainableByteBufferPool());
+        assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
         assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
         assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
         assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
@@ -195,7 +195,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
@@ -221,7 +221,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Callback.Completable.with(c -> response.write(false, ByteBuffer.allocate(1), c))
                     .whenComplete((r, x) ->
@@ -397,7 +397,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
@@ -423,7 +423,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
@@ -541,8 +541,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         resultLatch.countDown();
                 });
 
-            RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
-            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator();
+            ByteBufferPool bufferPool = new ArrayByteBufferPool();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())

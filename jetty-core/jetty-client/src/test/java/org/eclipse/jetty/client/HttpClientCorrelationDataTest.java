@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,14 +39,8 @@ public class HttpClientCorrelationDataTest extends AbstractHttpClientServerTest
                 assertEquals(correlationData, request.getHeaders().get(correlationName));
             }
         });
-        client.getRequestListeners().add(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onQueued(Request request)
-            {
-                request.headers(headers -> headers.put(correlationName, correlation.get()));
-            }
-        });
+        client.getRequestListeners().addQueuedListener(request ->
+            request.headers(headers -> headers.put(correlationName, correlation.get())));
 
         correlation.set(correlationData);
 

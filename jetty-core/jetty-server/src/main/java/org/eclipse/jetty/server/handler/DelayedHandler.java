@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class DelayedHandler extends Handler.Wrapper
 {
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -81,7 +81,7 @@ public class DelayedHandler extends Handler.Wrapper
         MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
         DelayedProcess delayed = newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
         if (delayed == null)
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
 
         delayed.delay();
         return true;
@@ -149,7 +149,7 @@ public class DelayedHandler extends Handler.Wrapper
         {
             try
             {
-                if (!getHandler().process(getRequest(), getResponse(), getCallback()))
+                if (!getHandler().handle(getRequest(), getResponse(), getCallback()))
                     Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
@@ -181,7 +181,7 @@ public class DelayedHandler extends Handler.Wrapper
                 RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
                 try
                 {
-                    getHandler().process(request, getResponse(), getCallback());
+                    getHandler().handle(request, getResponse(), getCallback());
                 }
                 catch (Throwable x)
                 {
@@ -270,13 +270,13 @@ public class DelayedHandler extends Handler.Wrapper
             super(handler, wrapped, response, callback);
             String boundary = MultiPart.extractBoundary(contentType);
             _formData = boundary == null ? null : new MultiPartFormData(boundary);
-            getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
         }
 
         private void process(MultiPartFormData.Parts parts, Throwable x)
         {
             if (x == null)
             {
+                getRequest().setAttribute(MultiPartFormData.Parts.class.getName(), parts);
                 super.process();
             }
             else
@@ -291,7 +291,7 @@ public class DelayedHandler extends Handler.Wrapper
             {
                 // We must execute here as even though we have consumed all the input, we are probably
                 // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(super::process);
+                getRequest().getContext().execute(() -> process(parts, x));
             }
             else
             {
@@ -304,7 +304,7 @@ public class DelayedHandler extends Handler.Wrapper
         {
             if (_formData == null)
             {
-                super.process();
+                this.process();
             }
             else
             {
@@ -313,13 +313,28 @@ public class DelayedHandler extends Handler.Wrapper
                 // if we are done already, then we are still in the scope of the original process call and can
                 // process directly, otherwise we must execute a call to process as we are within a serialized
                 // demand callback.
-                _formData.whenComplete(_formData.isDone() ? this::process : this::executeProcess);
+                if (_formData.isDone())
+                {
+                    try
+                    {
+                        MultiPartFormData.Parts parts = _formData.join();
+                        process(parts, null);
+                    }
+                    catch (Throwable t)
+                    {
+                        process(null, t);
+                    }
+                }
+                else
+                {
+                    _formData.whenComplete(this::executeProcess);
+                }
             }
         }
 
         private void readAndParse()
         {
-            while (true)
+            while (!_formData.isDone())
             {
                 Content.Chunk chunk = getRequest().read();
                 if (chunk == null)

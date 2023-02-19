@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -97,7 +97,7 @@ public class HTTPServerDocs
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Succeed the callback to write the response.
                 callback.succeeded();
@@ -478,7 +478,7 @@ public class HTTPServerDocs
         class LoggingHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;
@@ -488,7 +488,7 @@ public class HTTPServerDocs
         class App1Handler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;
@@ -498,7 +498,7 @@ public class HTTPServerDocs
         class App2Handler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
                 return true;
@@ -511,11 +511,11 @@ public class HTTPServerDocs
         GzipHandler gzipHandler = new GzipHandler();
         server.setHandler(gzipHandler);
 
-        Handler.Collection collection = new Handler.Collection();
-        gzipHandler.setHandler(collection);
+        Handler.Sequence sequence = new Handler.Sequence();
+        gzipHandler.setHandler(sequence);
 
-        collection.addHandler(new App1Handler());
-        collection.addHandler(new App2Handler());
+        sequence.addHandler(new App1Handler());
+        sequence.addHandler(new App2Handler());
         // end::handlerTree[]
     }
 
@@ -525,7 +525,7 @@ public class HTTPServerDocs
         {
             @Override
             // tag::handlerAPI[]
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 return true;
             }
@@ -539,7 +539,7 @@ public class HTTPServerDocs
         class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
@@ -576,7 +576,7 @@ public class HTTPServerDocs
         class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 return true;
             }
@@ -586,7 +586,7 @@ public class HTTPServerDocs
         class FilterHandler extends Handler.Wrapper
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String path = Request.getPathInContext(request);
                 if (path.startsWith("/old_path/"))
@@ -608,7 +608,7 @@ public class HTTPServerDocs
                 }
 
                 // Forward to the next Handler.
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         }
 
@@ -631,7 +631,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -660,7 +660,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -670,7 +670,7 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
                 return true;
@@ -849,7 +849,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -859,7 +859,7 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Abstract
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
                 return true;
@@ -927,9 +927,9 @@ public class HTTPServerDocs
         // end::rewriteHandler[]
     }
 
-    public void statsHandler() throws Exception
+    public void statisticsHandler() throws Exception
     {
-        // tag::statsHandler[]
+        // tag::statisticsHandler[]
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -945,7 +945,29 @@ public class HTTPServerDocs
         statsHandler.setHandler(contextCollection);
 
         server.start();
-        // end::statsHandler[]
+        // end::statisticsHandler[]
+    }
+
+    public void dataRateHandler() throws Exception
+    {
+        // tag::dataRateHandler[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
+        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+
+        // Link the MinimumDataRateHandler to the Server.
+        server.setHandler(dataRateHandler);
+
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the MinimumDataRateHandler.
+        dataRateHandler.setHandler(contextCollection);
+
+        server.start();
+        // end::dataRateHandler[]
     }
 
     public void securedHandler() throws Exception

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,8 +17,8 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.client.internal.HttpChannel;
-import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;

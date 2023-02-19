@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,8 +26,8 @@ import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandl
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
 
 public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.BinaryStream<T>>
 {

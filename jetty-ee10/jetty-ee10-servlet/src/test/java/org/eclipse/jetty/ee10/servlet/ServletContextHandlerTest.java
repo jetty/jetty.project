@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -1728,7 +1728,7 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
-        Handler.Wrapper extra = new Handler.Wrapper();
+        Handler.Singleton extra = new Handler.Wrapper();
 
         context.getSessionHandler().insertHandler(extra);
 
@@ -1790,10 +1790,10 @@ public class ServletContextHandlerTest
         SecurityHandler securityHandler = context.getSecurityHandler();
 
         //check the handler linking order
-        Handler.Nested h = (Handler.Nested)context.getHandler();
+        Handler.Singleton h = (Handler.Singleton)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Nested)h.getHandler();
+        h = (Handler.Singleton)h.getHandler();
         assertSame(h, securityHandler);
 
         //replace the security handler
@@ -1830,10 +1830,10 @@ public class ServletContextHandlerTest
         context.setSecurityHandler(myHandler);
         assertSame(myHandler, context.getSecurityHandler());
 
-        h = (Handler.Nested)context.getHandler();
+        h = (Handler.Singleton)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Nested)h.getHandler();
+        h = (Handler.Singleton)h.getHandler();
         assertSame(h, myHandler);
     }
 
@@ -1915,7 +1915,7 @@ public class ServletContextHandlerTest
     @Test
     public void testFallThrough() throws Exception
     {
-        Handler.Collection list = new Handler.Collection();
+        Handler.Sequence list = new Handler.Sequence();
         _server.setHandler(list);
 
         ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);
@@ -1927,7 +1927,7 @@ public class ServletContextHandlerTest
         list.addHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Response.writeError(request, response, callback, 404, "Fell Through");
                 return true;

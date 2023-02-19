@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -42,7 +42,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     private PrintStream _print;
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Thread thread = Thread.currentThread();
         String name = thread.getName() + ":" + request.getHttpURI();
@@ -56,7 +56,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
                 "; " + request.getHeaders().get("User-Agent"));
             thread.setName(name);
 
-            return getHandler().process(request, response, callback);
+            return getHandler().handle(request, response, callback);
         }
         catch (Throwable x)
         {

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionHandler extends AbstractSessionManager implements Handler.Nested
+public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {    
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
     
@@ -93,7 +93,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = Nested.updateHandler(this, handler);
+        _handler = Handler.Singleton.updateHandler(this, handler);
     }
 
     @Override
@@ -634,7 +634,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -655,6 +655,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
             Response.replaceCookie(servletContextResponse, cookie);
         }
 
-        return next.process(request, response, callback);
+        return next.handle(request, response, callback);
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -116,14 +116,14 @@ circle application
 
 network - SocketChannelEndPoint
 SocketChannelEndPoint - SslConnection
-SslConnection -- DecryptedEndPoint
-DecryptedEndPoint - HttpConnection
+SslConnection -- SslEndPoint
+SslEndPoint - HttpConnection
 HttpConnection - application
 ----
 
-Bytes read by the `SocketChannelEndPoint` will be interpreted as TLS bytes by the `SslConnection`, then decrypted and made available to the `DecryptedEndPoint` (a component part of `SslConnection`), which will then provide them to `HttpConnection`.
+Bytes read by the `SocketChannelEndPoint` will be interpreted as TLS bytes by the `SslConnection`, then decrypted and made available to the `SslEndPoint` (a component part of `SslConnection`), which will then provide them to `HttpConnection`.
 
-The application writes bytes through the `HttpConnection` to the `DecryptedEndPoint`, which will encrypt them through the `SslConnection` and write the encrypted bytes to the `SocketChannelEndPoint`.
+The application writes bytes through the `HttpConnection` to the `SslEndPoint`, which will encrypt them through the `SslConnection` and write the encrypted bytes to the `SocketChannelEndPoint`.
 
 [[pg-server-io-arch-connection-factory-detecting]]
 ==== Choosing `ConnectionFactory` via Bytes Detection

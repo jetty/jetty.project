@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,7 +19,7 @@ import jakarta.websocket.PongMessage;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.MessageType;
-import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 

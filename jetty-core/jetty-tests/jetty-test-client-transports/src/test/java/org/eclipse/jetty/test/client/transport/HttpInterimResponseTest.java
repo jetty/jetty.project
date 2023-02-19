@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -43,7 +43,7 @@ public class HttpInterimResponseTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Reading the request content immediately
                 // issues an implicit 100 Continue response.
@@ -68,7 +68,7 @@ public class HttpInterimResponseTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
                     .thenCompose(ignored -> Callback.Completable.with(c -> Content.Source.consumeAll(request, c)))

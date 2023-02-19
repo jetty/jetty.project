@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,11 +27,11 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.HTTP3ClientConnectionFactory;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnector;
@@ -69,7 +69,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
             ClientConnector clientConnector = this.client.getClientConnector();
             clientConnector.setExecutor(httpClient.getExecutor());
             clientConnector.setScheduler(httpClient.getScheduler());
-            clientConnector.setRetainableByteBufferPool(httpClient.getRetainableByteBufferPool());
+            clientConnector.setByteBufferPool(httpClient.getByteBufferPool());
             clientConnector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
             clientConnector.setConnectBlocking(httpClient.isConnectBlocking());
             clientConnector.setBindAddress(httpClient.getBindAddress());

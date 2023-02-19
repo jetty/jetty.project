@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -616,7 +616,7 @@ public class SocketChannelEndPointTest
     {
         private final NormalScenario _normalScenario;
         private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
-        private final RetainableByteBufferPool _bufferPool = new ArrayRetainableByteBufferPool();
+        private final ByteBufferPool _bufferPool = new ArrayByteBufferPool();
 
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
@@ -643,8 +643,9 @@ public class SocketChannelEndPointTest
             SslConnection sslConnection = new SslConnection(_bufferPool, executor, endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
-            Connection appConnection = _normalScenario.newConnection(channel, sslConnection.getDecryptedEndPoint(), executor, blockAt, writeCount);
-            sslConnection.getDecryptedEndPoint().setConnection(appConnection);
+            SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+            Connection appConnection = _normalScenario.newConnection(channel, sslEndPoint, executor, blockAt, writeCount);
+            sslEndPoint.setConnection(appConnection);
             return sslConnection;
         }
 

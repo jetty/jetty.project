@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,7 +18,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.Connection;

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 

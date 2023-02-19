@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -84,7 +84,7 @@ public class ProxyProtocolTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertEquals("1.2.3.4", Request.getRemoteAddr(request));
                 assertEquals(1111, Request.getRemotePort(request));
@@ -128,7 +128,7 @@ public class ProxyProtocolTest
         startServer(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertEquals("10.0.0.4", Request.getRemoteAddr(request));
                 assertEquals(33824, Request.getRemotePort(request));

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
 
@@ -117,8 +117,8 @@ public class WebSocketFrameTest
         for (int i = 0; i <= 8; i++)
         {
             Frame frame = new Frame(OpCode.BINARY);
-            frame.setPayload(TypeUtil.fromHexString("0000FFFF000FFFF0".substring(0, i * 2)));
-            frame.setMask(TypeUtil.fromHexString("FF00FF00"));
+            frame.setPayload(StringUtil.fromHexString("0000FFFF000FFFF0".substring(0, i * 2)));
+            frame.setMask(StringUtil.fromHexString("FF00FF00"));
             frame.demask();
             assertEquals("Ff0000FfFf0f00F0".substring(0, i * 2), BufferUtil.toHexString(frame.getPayload()), "len=" + i);
         }

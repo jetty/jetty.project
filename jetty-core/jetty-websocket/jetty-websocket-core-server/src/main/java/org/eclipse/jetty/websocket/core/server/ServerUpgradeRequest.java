@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,131 +14,23 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.util.List;
-import java.util.Set;
 
-import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.server.internal.WebSocketNegotiation;
 
-/**
- * Upgrade request used for websocket negotiation.
- * Provides getters for things like the requested extensions and subprotocols so that the headers don't have to be parsed manually.
- */
-public class ServerUpgradeRequest extends Request.Wrapper
+public interface ServerUpgradeRequest extends Request
 {
-    private final Request request;
-    private final WebSocketNegotiation negotiation;
-    private final Attributes attributes = new Attributes.Lazy();
-    private boolean upgraded = false;
+    WebSocketComponents getWebSocketComponents();
 
-    public ServerUpgradeRequest(WebSocketNegotiation negotiation, Request baseRequest) throws BadMessageException
-    {
-        super(baseRequest);
-        this.negotiation = negotiation;
-        this.request = baseRequest;
-    }
+    void upgrade(Attributes attributes);
 
-    public WebSocketComponents getWebSocketComponents()
-    {
-        return negotiation.getWebSocketComponents();
-    }
+    List<ExtensionConfig> getExtensions();
 
-    public void upgrade(Attributes attributes)
-    {
-        this.attributes.clearAttributes();
-        for (String name : attributes.getAttributeNameSet())
-        {
-            this.attributes.setAttribute(name, attributes.getAttribute(name));
-        }
-        upgraded = true;
-    }
+    String getProtocolVersion();
 
-    @Override
-    public Object removeAttribute(String name)
-    {
-        if (upgraded)
-            return attributes.removeAttribute(name);
-        return super.removeAttribute(name);
-    }
+    List<String> getSubProtocols();
 
-    @Override
-    public Object setAttribute(String name, Object attribute)
-    {
-        if (upgraded)
-            return attributes.setAttribute(name, attribute);
-        return super.setAttribute(name, attribute);
-    }
-
-    @Override
-    public Object getAttribute(String name)
-    {
-        if (upgraded)
-            return attributes.getAttribute(name);
-        return super.getAttribute(name);
-    }
-
-    @Override
-    public Set<String> getAttributeNameSet()
-    {
-        if (upgraded)
-            return attributes.getAttributeNameSet();
-        return super.getAttributeNameSet();
-    }
-
-    @Override
-    public void clearAttributes()
-    {
-        if (upgraded)
-            attributes.clearAttributes();
-        else
-            super.clearAttributes();
-    }
-
-    /**
-     * @return The extensions offered
-     */
-    public List<ExtensionConfig> getExtensions()
-    {
-        return negotiation.getOfferedExtensions();
-    }
-
-    /**
-     * @return WebSocket protocol version from "Sec-WebSocket-Version" header
-     */
-    public String getProtocolVersion()
-    {
-        String version = request.getHeaders().get(HttpHeader.SEC_WEBSOCKET_VERSION.asString());
-        if (version == null)
-        {
-            return Integer.toString(WebSocketConstants.SPEC_VERSION);
-        }
-        return version;
-    }
-
-    /**
-     * @return Get WebSocket negotiation offered sub protocols
-     */
-    public List<String> getSubProtocols()
-    {
-        return negotiation.getOfferedSubprotocols();
-    }
-
-    /**
-     * @param subprotocol A sub protocol name
-     * @return True if the sub protocol was offered
-     */
-    public boolean hasSubProtocol(String subprotocol)
-    {
-        for (String protocol : getSubProtocols())
-        {
-            if (protocol.equalsIgnoreCase(subprotocol))
-                return true;
-        }
-        return false;
-    }
+    boolean hasSubProtocol(String subprotocol);
 }

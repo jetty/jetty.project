@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -69,7 +69,7 @@ public class MultiPartRequestContent extends MultiPartFormData.ContentSource imp
         if (headers.contains(HttpHeader.CONTENT_TYPE))
             return headers;
 
-        Content.Source partContent = part.getContent();
+        Content.Source partContent = part.getContentSource();
         if (partContent instanceof Request.Content requestContent)
         {
             String contentType = requestContent.getContentType();

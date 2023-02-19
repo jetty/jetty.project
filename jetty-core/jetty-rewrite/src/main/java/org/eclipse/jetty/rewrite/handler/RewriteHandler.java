@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -105,20 +105,20 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (!isStarted())
             return false;
 
-        Rule.Processor input = new Rule.Processor(request);
-        Rule.Processor output = _rules.matchAndApply(input);
+        Rule.Handler input = new Rule.Handler(request);
+        Rule.Handler output = _rules.matchAndApply(input);
 
         // No rule matched, call super with the original request.
         if (output == null)
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
 
         // At least one rule matched, call super with the result of the rule applications.
-        output.setProcessor(getHandler());
-        return output.process(output, response, callback);
+        output.setHandler(getHandler());
+        return output.handle(output, response, callback);
     }
 }

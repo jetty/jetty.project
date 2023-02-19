@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,7 +38,9 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -46,8 +48,6 @@ import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Connection;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -246,7 +246,7 @@ public class ForwardProxyWithDynamicTransportTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
@@ -403,7 +403,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -417,7 +417,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -485,7 +485,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
             {
-                return new DownstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), context)
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -499,7 +499,7 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
             {
-                return new UpstreamConnection(endPoint, getExecutor(), getRetainableByteBufferPool(), connectContext)
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
                 {
                     @Override
                     protected void close(Throwable failure)
@@ -576,7 +576,7 @@ public class ForwardProxyWithDynamicTransportTest
     private static class EmptyServerHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             callback.succeeded();
             return true;

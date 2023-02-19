@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -44,7 +44,7 @@ public class AsyncIOTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the data to fully arrive.
                 sleep(1000);
@@ -81,7 +81,7 @@ public class AsyncIOTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
                 callback.succeeded();
@@ -123,7 +123,7 @@ public class AsyncIOTest extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 final AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);

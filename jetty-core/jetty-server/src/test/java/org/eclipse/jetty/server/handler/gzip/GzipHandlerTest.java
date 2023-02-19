@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -1740,7 +1740,7 @@ public class GzipHandlerTest
     public static class MimeTypeContentHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String pathInfo = Request.getPathInContext(request);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
@@ -1766,7 +1766,7 @@ public class GzipHandlerTest
     public static class TestHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (HttpMethod.DELETE.is(request.getMethod()))
             {
@@ -1803,7 +1803,7 @@ public class GzipHandlerTest
     public static class WriteHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Fields parameters = Request.extractQueryParameters(request);
 
@@ -1893,7 +1893,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtil.isNotBlank(etag))
             {
@@ -1941,7 +1941,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtil.isNotBlank(etag))
             {
@@ -1962,7 +1962,7 @@ public class GzipHandlerTest
     public static class EchoHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
             if (contentType != null)
@@ -1976,7 +1976,7 @@ public class GzipHandlerTest
     public static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -2002,13 +2002,13 @@ public class GzipHandlerTest
     public static class CheckHandler extends Handler.Wrapper
     {
         @Override
-        public boolean process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             if (request.getHeaders().get("X-Content-Encoding") != null)
                 assertEquals(-1, request.getLength());
             else if (request.getLength() >= 0)
                 MatcherAssert.assertThat(request.getHeaders().get("X-Content-Encoding"), nullValue());
-            return super.process(request, response, callback);
+            return super.handle(request, response, callback);
         }
     }
 }

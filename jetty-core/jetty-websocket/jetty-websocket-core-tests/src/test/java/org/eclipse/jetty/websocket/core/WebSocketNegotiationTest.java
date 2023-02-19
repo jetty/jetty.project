@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -35,7 +35,6 @@ import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -99,7 +99,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -127,7 +127,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -162,7 +162,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -191,7 +191,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setContentType(excludedMimeType);
                 response.setBufferSize(10);
@@ -220,7 +220,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(1024);
                 PrintWriter writer = response.getWriter();
@@ -258,7 +258,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -296,7 +296,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(bufferSize);
                 PrintWriter writer = response.getWriter();
@@ -325,7 +325,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(1024);
                 PrintWriter writer = response.getWriter();
@@ -359,7 +359,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(8);
                 PrintWriter writer = response.getWriter();
@@ -408,7 +408,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 ServletOutputStream outputStream = response.getOutputStream();
 
@@ -510,7 +510,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 byte[] chunk1 = "this content will ".getBytes();
                 byte[] chunk2 = "be buffered in a file".getBytes();
@@ -569,7 +569,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 ServletOutputStream outputStream = response.getOutputStream();
                 byte[] content = "this content will be buffered in a file".getBytes();

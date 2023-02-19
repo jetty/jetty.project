@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -33,7 +33,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     private volatile String _host;
     private volatile int _port = 0;
 
-    public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, RetainableByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
+    public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories);
     }

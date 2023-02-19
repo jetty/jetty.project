@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,7 +28,7 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
@@ -119,8 +119,7 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
      * be performed.
      * </p>
      * <p>
-     * This method SHOULD NOT BE CALLED by users of Jetty.
-     * Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
+     * Users of Jetty should use the {@link #configure(ServletContextHandler, Configurator)} method instead.
      * </p>
      * <p>
      * There is no enablement check here, and no automatic deployment of endpoints at this point
@@ -131,7 +130,7 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
      * @param context the context to work with
      * @return the default {@link ServerContainer} for this context
      */
-    private static ServerContainer initialize(ServletContextHandler context)
+    public static ServerContainer initialize(ServletContextHandler context)
     {
         JakartaWebSocketServerContainer serverContainer = JakartaWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)

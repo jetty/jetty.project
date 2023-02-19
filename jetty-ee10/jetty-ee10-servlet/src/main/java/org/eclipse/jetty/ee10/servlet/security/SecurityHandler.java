@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -449,7 +449,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
     }
     
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -464,7 +464,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         if (!checkSecurity(servletApiRequest))
         {
             //don't need to do any security work, let other handlers do the processing
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
         }
 
         //See Servlet Spec 3.1 sec 13.6.3
@@ -516,7 +516,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 }
 
                 //process the request by other handlers
-                boolean processed = next.process(request, response, callback);
+                boolean processed = next.handle(request, response, callback);
                 // TODO this looks wrong
                 if (processed && authenticator != null)
                     authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
@@ -532,7 +532,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 try
                 {
                     //process the request by other handlers
-                    processed = next.process(request, response, callback);
+                    processed = next.handle(request, response, callback);
                 }
                 finally
                 {
@@ -561,7 +561,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 previousIdentity = _identityService.associate(null);
 
             //process the request by other handlers
-            boolean processed = next.process(request, response, callback);
+            boolean processed = next.handle(request, response, callback);
 
             if (processed && authenticator != null)
                 authenticator.secureResponse(request, response, callback, isAuthMandatory, null);

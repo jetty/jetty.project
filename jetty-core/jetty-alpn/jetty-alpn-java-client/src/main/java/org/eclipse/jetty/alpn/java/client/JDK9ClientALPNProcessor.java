@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,7 +20,7 @@ import javax.net.ssl.SSLParameters;
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection.SslEndPoint;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.JavaVersion;
 import org.slf4j.Logger;
@@ -52,8 +52,8 @@ public class JDK9ClientALPNProcessor implements ALPNProcessor.Client
         List<String> protocols = alpn.getProtocols();
         sslParameters.setApplicationProtocols(protocols.toArray(new String[0]));
         sslEngine.setSSLParameters(sslParameters);
-        ((DecryptedEndPoint)connection.getEndPoint()).getSslConnection()
-            .addHandshakeListener(new ALPNListener(alpn));
+        SslEndPoint sslEndPoint = (SslEndPoint)connection.getEndPoint();
+        sslEndPoint.getSslConnection().addHandshakeListener(new ALPNListener(alpn));
     }
 
     private static final class ALPNListener implements SslHandshakeListener

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,7 +39,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
@@ -74,7 +74,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))

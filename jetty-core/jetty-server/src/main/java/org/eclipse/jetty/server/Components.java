@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public interface Components
 {
-    RetainableByteBufferPool getRetainableByteBufferPool();
+    ByteBufferPool getByteBufferPool();
 
     Scheduler getScheduler();
 

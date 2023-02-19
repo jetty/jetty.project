@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -74,7 +74,7 @@ public class InvalidURIRule extends Rule
     }
 
     @Override
-    public Processor matchAndApply(Processor input) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
         String path = input.getHttpURI().getDecodedPath();
 
@@ -90,12 +90,12 @@ public class InvalidURIRule extends Rule
         return null;
     }
 
-    private Processor apply(Processor input)
+    private Handler apply(Handler input)
     {
-        return new Processor(input)
+        return new Handler(input)
         {
             @Override
-            public boolean process(Response response, Callback callback)
+            public boolean handle(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))

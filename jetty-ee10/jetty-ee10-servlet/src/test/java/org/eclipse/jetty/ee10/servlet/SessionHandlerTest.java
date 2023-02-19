@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,6 +39,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -494,7 +495,7 @@ public class SessionHandlerTest
         assertEquals(99, cookie.getMaxAge());
         assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
 
-        String cookieStr = HttpCookie.getRFC6265SetCookie(cookie);
+        String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict; ham=cheese"));
     }
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,10 +15,10 @@ package org.eclipse.jetty.client;
 
 import java.util.List;
 
-import org.eclipse.jetty.client.internal.HttpConversation;
-import org.eclipse.jetty.client.internal.HttpRequest;
-import org.eclipse.jetty.client.internal.HttpResponse;
-import org.eclipse.jetty.client.internal.ResponseNotifier;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.HttpResponse;
+import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -98,9 +98,7 @@ public class UpgradeProtocolHandler implements ProtocolHandler
     {
         HttpConversation conversation = request.getConversation();
         conversation.updateResponseListeners(null);
-        List<Response.ResponseListener> responseListeners = conversation.getResponseListeners();
-        ResponseNotifier notifier = new ResponseNotifier();
-        notifier.forwardFailure(responseListeners, response, responseFailure);
-        notifier.notifyComplete(responseListeners, new Result(request, requestFailure, response, responseFailure));
+        ResponseListeners responseListeners = conversation.getResponseListeners();
+        responseListeners.emitFailureComplete(new Result(request, requestFailure, response, responseFailure));
     }
 }

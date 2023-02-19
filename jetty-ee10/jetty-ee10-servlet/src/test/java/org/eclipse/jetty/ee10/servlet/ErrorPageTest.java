@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,7 +29,6 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -104,20 +103,20 @@ public class ErrorPageTest
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
         _context.addServlet(ExceptionServlet.class, "/exception-servlet");
 
-        Handler.Wrapper noopHandler = new Handler.Wrapper()
+        Handler.Singleton noopHandler = new Handler.Wrapper()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/noop"))
                     return false;
-                return super.process(request, response, callback);
+                return super.handle(request, response, callback);
             }
         };
         _context.insertHandler(noopHandler);
 
         _errorPageErrorHandler = new ErrorPageErrorHandler();
-        _context.setErrorProcessor(_errorPageErrorHandler);
+        _context.setErrorHandler(_errorPageErrorHandler);
         _errorPageErrorHandler.addErrorPage(595, "/error/595");
         _errorPageErrorHandler.addErrorPage(597, "/sync");
         _errorPageErrorHandler.addErrorPage(599, "/error/599");
@@ -456,7 +455,7 @@ public class ErrorPageTest
     @Test
     public void testNoop() throws Exception
     {
-        // The ServletContextHandler does not handle so should go to the servers ErrorProcessor.
+        // The ServletContextHandler does not handle so should go to the servers ErrorHandler.
         String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, not(Matchers.containsString("DISPATCH: ERROR")));

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,9 +20,9 @@ import java.util.List;
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.MessageHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
