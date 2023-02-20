@@ -1096,20 +1096,28 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             long idleTimeout = getIdleTimeout();
                             if (idleTimeout > 0 && getThreads() > _minThreads)
                             {
-                                long last;
-                                long siNanos;
                                 long now = NanoTime.now();
                                 long itNanos = TimeUnit.MILLISECONDS.toNanos(idleTimeout);
-                                if (NanoTime.elapsed(idleBaseline, now) > itNanos &&
-                                    NanoTime.elapsed(last = _lastShrink.get(), now) > (siNanos = getShrinkInterval()) &&
-                                    _lastShrink.compareAndSet(last, Math.max(last, now - itNanos) + siNanos))
+                                if (NanoTime.elapsed(idleBaseline, now) > itNanos)
                                 {
-                                    // NOTE: CaS may fail, _very_ infrequently. If it does, that's fine -- this is a
-                                    // "best effort" approach to shrinking, and even if our CaS fails, the missed
-                                    // "shrink reservation" will very likely simply be picked up by another thread.
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                    break;
+                                    // This thread has been idle for a sufficient amount of time to be eligible for
+                                    // removal from the pool; now try to reserve an "expiration slot" in accordance
+                                    // with the shrink interval (configured via `idleTimeoutDecay`), allowing the
+                                    // thread to break out of the job poll loop and exit.
+                                    long siNanos = getShrinkInterval();
+                                    long last = _lastShrink.get();
+                                    if (NanoTime.elapsed(last, now) > siNanos &&
+                                        _lastShrink.compareAndSet(last, Math.max(last, now - itNanos) + siNanos))
+
+                                    {
+                                        // NOTE: attempted CaS may fail, _very_ infrequently. If it does, that's fine.
+                                        // This is a "best effort" approach to shrinking, and even if our CaS fails,
+                                        // the missed "shrink reservation" will very likely simply be picked up by
+                                        // another thread.
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("shrinking {}", QueuedThreadPool.this);
+                                        break;
+                                    }
                                 }
                             }
 
