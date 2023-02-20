@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCache;
+import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -448,9 +449,9 @@ public interface Request extends Attributes, Content.Source
         {
             cookies = cookieCache.getCookies(request.getHeaders());
         }
-        catch (IllegalArgumentException iae)
+        catch (CookieParser.InvalidCookieException invalidCookieException)
         {
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, iae);
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, invalidCookieException);
         }
         request.setAttribute(COOKIE_ATTRIBUTE, cookies);
         return cookies;
