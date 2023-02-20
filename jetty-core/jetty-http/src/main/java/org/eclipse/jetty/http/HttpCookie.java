@@ -823,6 +823,9 @@ public interface HttpCookie
     {
         StringBuilder builder = new StringBuilder();
         builder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
+        int version = httpCookie.getVersion();
+        if (version > 0)
+            builder.append(";Version=").append(version);
         String domain = httpCookie.getDomain();
         if (domain != null)
             builder.append(";Domain=").append(domain);

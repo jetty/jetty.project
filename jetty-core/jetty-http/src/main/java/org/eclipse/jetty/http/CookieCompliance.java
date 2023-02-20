@@ -153,8 +153,8 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * <li>{@link Violation#SPECIAL_CHARS_IN_QUOTES}</li>
      * </ul>
      */
-    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265_LEGACY", of(
-        Violation.BAD_QUOTES, Violation.ESCAPE_IN_QUOTES, Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPECIAL_CHARS_IN_QUOTES)
+    public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265_LEGACY", EnumSet.of(
+        Violation.ATTRIBUTES, Violation.BAD_QUOTES, Violation.ESCAPE_IN_QUOTES, Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPECIAL_CHARS_IN_QUOTES)
     );
 
     /**
@@ -214,40 +214,41 @@ public class CookieCompliance implements ComplianceViolation.Mode
      */
     public static CookieCompliance from(String spec)
     {
-        Set<Violation> violations;
-        String[] elements = spec.split("\\s*,\\s*");
-        switch (elements[0])
+        CookieCompliance compliance = valueOf(spec);
+        if (compliance == null)
         {
-            case "0":
-                violations = noneOf(Violation.class);
-                break;
-
-            case "*":
-                violations = allOf(Violation.class);
-                break;
-
-            default:
+            String[] elements = spec.split("\\s*,\\s*");
+            Set<Violation> violations = switch (elements[0])
             {
-                CookieCompliance mode = valueOf(elements[0]);
-                violations = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
-                break;
+                case "0" -> noneOf(Violation.class);
+                case "*" -> allOf(Violation.class);
+                default ->
+                {
+                    CookieCompliance mode = valueOf(elements[0]);
+                    if (mode == null)
+                        throw new IllegalArgumentException("Unknown base mode: " + elements[0]);
+                    if (mode.getAllowed().isEmpty())
+                        yield noneOf(Violation.class);
+                    else
+                        yield copyOf(mode.getAllowed());
+                }
+            };
+
+            for (int i = 1; i < elements.length; i++)
+            {
+                String element = elements[i];
+                boolean exclude = element.startsWith("-");
+                if (exclude)
+                    element = element.substring(1);
+                Violation section = Violation.valueOf(element);
+                if (exclude)
+                    violations.remove(section);
+                else
+                    violations.add(section);
             }
-        }
 
-        for (int i = 1; i < elements.length; i++)
-        {
-            String element = elements[i];
-            boolean exclude = element.startsWith("-");
-            if (exclude)
-                element = element.substring(1);
-            Violation section = Violation.valueOf(element);
-            if (exclude)
-                violations.remove(section);
-            else
-                violations.add(section);
+            compliance = new CookieCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         }
-
-        CookieCompliance compliance = new CookieCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         if (LOG.isDebugEnabled())
             LOG.debug("CookieCompliance from {}->{}", spec, compliance);
         return compliance;
@@ -289,5 +290,11 @@ public class CookieCompliance implements ComplianceViolation.Mode
     public boolean compliesWith(CookieCompliance mode)
     {
         return this == mode || getAllowed().containsAll(mode.getAllowed());
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x%s".formatted(_name, hashCode(), _violations);
     }
 }

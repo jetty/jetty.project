@@ -323,7 +323,7 @@ public class RFC6265CookieParser implements CookieParser
                         }
                         else
                         {
-                            throw new IllegalStateException("Comma cookie separator");
+                            throw new IllegalArgumentException("Comma cookie separator");
                         }
                     }
                     else if ((c == ' ' || c == '\t') && _complianceMode.allows(OPTIONAL_WHITE_SPACE))
@@ -390,7 +390,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
 
                     if (state == State.END)
-                        throw new IllegalStateException("Invalid cookie");
+                        throw new IllegalArgumentException("Invalid cookie");
                     break;
 
                 case INVALID_COOKIE:

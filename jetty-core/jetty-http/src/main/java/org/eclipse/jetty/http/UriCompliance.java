@@ -202,45 +202,42 @@ public final class UriCompliance implements ComplianceViolation.Mode
      */
     public static UriCompliance from(String spec)
     {
-        Set<Violation> violations;
-        String[] elements = spec.split("\\s*,\\s*");
-        switch (elements[0])
+        UriCompliance compliance = valueOf(spec);
+        if (compliance == null)
         {
-            case "0":
-                violations = noneOf(Violation.class);
-                break;
+            String[] elements = spec.split("\\s*,\\s*");
 
-            case "*":
-                violations = allOf(Violation.class);
-                break;
-
-            default:
+            Set<Violation> violations = switch (elements[0])
             {
-                UriCompliance mode = UriCompliance.valueOf(elements[0]);
-                violations = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
-                break;
+                case "0" -> noneOf(Violation.class);
+                case "*" -> allOf(Violation.class);
+                default ->
+                {
+                    UriCompliance mode = UriCompliance.valueOf(elements[0]);
+                    yield (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                }
+            };
+
+            for (int i = 1; i < elements.length; i++)
+            {
+                String element = elements[i];
+                boolean exclude = element.startsWith("-");
+                if (exclude)
+                    element = element.substring(1);
+
+                // Ignore removed name. TODO: remove in future release.
+                if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
+                    continue;
+
+                Violation section = Violation.valueOf(element);
+                if (exclude)
+                    violations.remove(section);
+                else
+                    violations.add(section);
             }
+
+            compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         }
-
-        for (int i = 1; i < elements.length; i++)
-        {
-            String element = elements[i];
-            boolean exclude = element.startsWith("-");
-            if (exclude)
-                element = element.substring(1);
-
-            // Ignore removed name. TODO: remove in future release.
-            if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
-                continue;
-
-            Violation section = Violation.valueOf(element);
-            if (exclude)
-                violations.remove(section);
-            else
-                violations.add(section);
-        }
-
-        UriCompliance compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         if (LOG.isDebugEnabled())
             LOG.debug("UriCompliance from {}->{}", spec, compliance);
         return compliance;
