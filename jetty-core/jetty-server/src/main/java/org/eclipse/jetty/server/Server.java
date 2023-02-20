@@ -161,6 +161,8 @@ public class Server extends Handler.Wrapper implements Attributes
     {
         if (!isDynamic() && isStarted())
             throw new IllegalStateException(getState());
+        if (defaultHandler != null)
+            defaultHandler.setServer(this);
         Handler old = _defaultHandler;
         _defaultHandler = defaultHandler;
         updateBean(old, defaultHandler);
