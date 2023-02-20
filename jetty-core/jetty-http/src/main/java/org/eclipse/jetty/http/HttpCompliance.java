@@ -37,7 +37,7 @@ import static java.util.EnumSet.of;
  */
 public final class HttpCompliance implements ComplianceViolation.Mode
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
 
     // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
     // the relevant section of the RFC is not strictly adhered to.
@@ -222,9 +222,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
-     * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to <a href="https://tools.ietf.org/html/rfc2616">...</a>,
-     * but not https://tools.ietf.org/html/rfc7230</dd>
-     * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc7230</dd>
+     * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to <a href="https://tools.ietf.org/html/rfc2616">RFC2616</a>,
+     * but not <a href="https://tools.ietf.org/html/rfc7230">RFC7230</a></dd>
+     * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to <a href="https://tools.ietf.org/html/rfc7230">RFC7230</a></dd>
      * <dt>name</dt><dd>Any of the known modes defined in {@link HttpCompliance#KNOWN_MODES}</dd>
      * </dl>
      * <p>
