@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
@@ -250,5 +251,12 @@ public class DefaultHandler extends Handler.Abstract
     public void setShowContexts(boolean show)
     {
         _showContexts = show;
+    }
+
+    @Override
+    public String toString()
+    {
+        String name = TypeUtil.toShortName(getClass());
+        return String.format("%s@%x{showContext=%b,favIcon=%b,%s}", name, hashCode(), _showContexts, _serveFavIcon, getState());
     }
 }

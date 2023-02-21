@@ -43,7 +43,7 @@ public interface CookieParser
 
     void parseField(String field) throws InvalidCookieException;
 
-    default void parseFields(List<String> rawFields)
+    default void parseFields(List<String> rawFields) throws InvalidCookieException
     {
         // For each cookie field
         for (String field : rawFields)
@@ -58,6 +58,9 @@ public interface CookieParser
         void addCookie(String name, String value, int version, String domain, String path, String comment);
     }
 
+    /**
+     * <p>The exception thrown when a cookie cannot be parsed and {@link CookieCompliance.Violation#INVALID_COOKIES} is not allowed.</p>
+     */
     class InvalidCookieException extends IllegalArgumentException
     {
         public InvalidCookieException()

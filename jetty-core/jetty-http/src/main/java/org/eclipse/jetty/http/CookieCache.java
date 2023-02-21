@@ -131,7 +131,14 @@ public class CookieCache implements CookieParser.Handler
         if (building)
         {
             _cookieList = new ArrayList<>();
-            _parser.parseFields(_rawFields);
+            try
+            {
+                _parser.parseFields(_rawFields);
+            }
+            catch (CookieParser.InvalidCookieException invalidCookieException)
+            {
+                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, invalidCookieException.getMessage(), invalidCookieException);
+            }
         }
 
         return _cookieList == null ? Collections.emptyList() : _cookieList;
