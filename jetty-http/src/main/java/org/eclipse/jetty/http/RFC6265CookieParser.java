@@ -85,7 +85,7 @@ public class RFC6265CookieParser implements CookieParser
             if (token == null)
             {
                 if (!_complianceMode.allows(INVALID_COOKIES))
-                     throw new IllegalArgumentException("Invalid Cookie character");
+                     throw new InvalidCookieException("Invalid Cookie character");
                 state = State.INVALID_COOKIE;
                 continue;
             }
@@ -120,7 +120,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad Cookie name");
+                        throw new InvalidCookieException("Bad Cookie name");
                     }
 
                     break;
@@ -158,7 +158,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad Cookie name");
+                        throw new InvalidCookieException("Bad Cookie name");
                     }
                     break;
 
@@ -181,7 +181,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad Cookie");
+                        throw new InvalidCookieException("Bad Cookie");
                     }
                     break;
 
@@ -215,7 +215,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad Cookie value");
+                        throw new InvalidCookieException("Bad Cookie value");
                     }
                     break;
 
@@ -237,7 +237,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad Cookie value");
+                        throw new InvalidCookieException("Bad Cookie value");
                     }
                     break;
 
@@ -277,7 +277,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad Cookie quoted value");
+                        throw new InvalidCookieException("Bad Cookie quoted value");
                     }
                     break;
 
@@ -299,7 +299,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad Cookie quoted value");
+                        throw new InvalidCookieException("Bad Cookie quoted value");
                     }
                     break;
 
@@ -323,7 +323,7 @@ public class RFC6265CookieParser implements CookieParser
                         }
                         else
                         {
-                            throw new IllegalStateException("Comma cookie separator");
+                            throw new InvalidCookieException("Comma cookie separator");
                         }
                     }
                     else if ((c == ' ' || c == '\t') && _complianceMode.allows(OPTIONAL_WHITE_SPACE))
@@ -378,7 +378,7 @@ public class RFC6265CookieParser implements CookieParser
                     value = null;
 
                     if (state == State.END)
-                        throw new IllegalStateException("Invalid cookie");
+                        throw new InvalidCookieException("Invalid cookie");
                     break;
 
                 case INVALID_COOKIE:

@@ -281,7 +281,7 @@ public class HttpCookie
 
     public String getSetCookie(CookieCompliance compliance)
     {
-        if (CookieCompliance.RFC6265.compliesWith(compliance))
+        if (compliance == null || CookieCompliance.RFC6265_LEGACY.compliesWith(compliance))
             return getRFC6265SetCookie();
         return getRFC2965SetCookie();
     }
