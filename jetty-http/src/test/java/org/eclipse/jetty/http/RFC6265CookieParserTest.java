@@ -23,7 +23,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class RFC6265CookieParserTest
 {
@@ -36,7 +35,7 @@ public class RFC6265CookieParserTest
         String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
 
         // Test with RFC 2965.
-        TestCookieParser parser = new TestCookieParser(CookieCompliance.RFC2965_LEGACY);
+        TestCookieParser parser = new TestCookieParser(CookieCompliance.RFC2965);
         List<Cookie> cookies = parser.parseFields(rawCookie);
 
         assertThat("Cookies.length", cookies.size(), is(1));
@@ -44,18 +43,45 @@ public class RFC6265CookieParserTest
         // There are 2 attributes, so 2 violations.
         assertThat(parser.violations.size(), is(2));
 
-        // Same test with RFC 6265.
+        // Same test with RFC6265.
         parser = new TestCookieParser(CookieCompliance.RFC6265);
         cookies = parser.parseFields(rawCookie);
+        assertThat("Cookies.length", cookies.size(), is(3));
+        assertCookie("Cookies[0]", cookies.get(0), "$Version", "1", 0, null);
+        assertCookie("Cookies[1]", cookies.get(1), "Customer", "WILE_E_COYOTE", 0, null);
+        assertCookie("Cookies[2]", cookies.get(2), "$Path", "/acme", 0, null);
 
+        // There attributes are seen as just normal cookies, so no violations
+        assertThat(parser.violations.size(), is(0));
+
+        // Same again, but allow attributes which are ignored
+        parser = new TestCookieParser(CookieCompliance.from("RFC6265,ATTRIBUTES"));
+        cookies = parser.parseFields(rawCookie);
         assertThat("Cookies.length", cookies.size(), is(1));
         assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 0, null);
-        // There are 2 attributes, so 2 violations.
+
+        // There attributes are seen as just normal cookies, so no violations
+        assertThat(parser.violations.size(), is(2));
+
+        // Same again, but allow attributes which are not ignored
+        parser = new TestCookieParser(CookieCompliance.from("RFC6265,ATTRIBUTE_VALUES"));
+        cookies = parser.parseFields(rawCookie);
+        assertThat("Cookies.length", cookies.size(), is(1));
+        assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 1, "/acme");
+
+        // There attributes are seen as just normal cookies, so no violations
         assertThat(parser.violations.size(), is(2));
 
         // Same test with RFC 6265 strict should throw.
-        TestCookieParser strictParser = new TestCookieParser(CookieCompliance.RFC6265_STRICT);
-        assertThrows(IllegalArgumentException.class, () -> strictParser.parseFields(rawCookie));
+        parser = new TestCookieParser(CookieCompliance.RFC6265_STRICT);
+        cookies = parser.parseFields(rawCookie);
+        assertThat("Cookies.length", cookies.size(), is(3));
+        assertCookie("Cookies[0]", cookies.get(0), "$Version", "1", 0, null);
+        assertCookie("Cookies[1]", cookies.get(1), "Customer", "WILE_E_COYOTE", 0, null);
+        assertCookie("Cookies[2]", cookies.get(2), "$Path", "/acme", 0, null);
+
+        // There attributes are seen as just normal cookies, so no violations
+        assertThat(parser.violations.size(), is(0));
     }
 
     /**
@@ -68,8 +94,26 @@ public class RFC6265CookieParserTest
             "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
+        assertThat("Cookies.length", cookies.length, is(2));
+        assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
+        assertCookie("Cookies[1]", cookies[1], "Part_Number", "Rocket_Launcher_0001", 1, "/acme");
+
+        cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        assertThat("Cookies.length", cookies.length, is(5));
+        assertCookie("Cookies[0]", cookies[0], "$Version", "1", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "Customer", "WILE_E_COYOTE", 0, null);
+        assertCookie("Cookies[2]", cookies[2], "$Path", "/acme", 0, null);
+        assertCookie("Cookies[3]", cookies[3], "Part_Number", "Rocket_Launcher_0001", 0, null);
+        assertCookie("Cookies[4]", cookies[4], "$Path", "/acme", 0, null);
+
+        cookies = parseCookieHeaders(CookieCompliance.from("RFC6265,ATTRIBUTES"), rawCookie);
+        assertThat("Cookies.length", cookies.length, is(2));
+        assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "Part_Number", "Rocket_Launcher_0001", 0, null);
+
+        cookies = parseCookieHeaders(CookieCompliance.from("RFC6265,ATTRIBUTE_VALUES"), rawCookie);
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
         assertCookie("Cookies[1]", cookies[1], "Part_Number", "Rocket_Launcher_0001", 1, "/acme");
@@ -86,7 +130,7 @@ public class RFC6265CookieParserTest
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
             "Shipping=\"FedEx\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(3));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
@@ -104,7 +148,7 @@ public class RFC6265CookieParserTest
             "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "Part_Number", "Riding_Rocket_0023", 1, "/acme/ammo");
@@ -121,7 +165,7 @@ public class RFC6265CookieParserTest
             "session_id=\"1234\"; " +
             "session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
@@ -137,15 +181,25 @@ public class RFC6265CookieParserTest
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
             "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
 
         cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
-        assertThat("Cookies.length", cookies.length, is(1));
-        assertCookie("Cookies[1]", cookies[0], "session_id", "1111", 0, null);
+        assertThat("Cookies.length", cookies.length, is(3));
+        assertCookie("Cookies[0]", cookies[0], "$Version", "1", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
+        assertCookie("Cookies[2]", cookies[2], "$Domain", ".cracker.edu", 0, null);
+
+        cookies = parseCookieHeaders(CookieCompliance.from("RFC6265,COMMA_SEPARATOR"), rawCookie);
+        assertThat("Cookies.length", cookies.length, is(5));
+        assertCookie("Cookies[0]", cookies[0], "$Version", "1", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "session_id", "1234", 0, null);
+        assertCookie("Cookies[3]", cookies[2], "$Version", "1", 0, null);
+        assertCookie("Cookies[3]", cookies[3], "session_id", "1111", 0, null);
+        assertCookie("Cookies[4]", cookies[4], "$Domain", ".cracker.edu", 0, null);
     }
 
     /**
@@ -201,7 +255,8 @@ public class RFC6265CookieParserTest
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
 
-        assertThat("Cookies.length", cookies.length, is(0));
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "$key", "value", 0, null);
     }
 
     @Test
@@ -236,7 +291,7 @@ public class RFC6265CookieParserTest
     public void testRFC2965QuotedEscape()
     {
         String rawCookie = "A=\"double\\\"quote\"";
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "A", "double\"quote", 0, null);
@@ -246,15 +301,11 @@ public class RFC6265CookieParserTest
     public void testRFC2965QuotedSpecial()
     {
         String rawCookie = "A=\", ;\"";
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "A", ", ;", 0, null);
     }
-
-    // TODO:
-    //  $X; N=V
-    //  $X=Y; N=V
 
     public static List<Param> parameters()
     {
@@ -281,8 +332,8 @@ public class RFC6265CookieParserTest
             new Param("A=\"1\u0007\"; B=2; C=3", "B=2", "C=3"),
             new Param("€"),
             new Param("@={}"),
-            new Param("$X=Y; N=V", "N=V"),
-            new Param("N=V; $X=Y", "N=V")
+            new Param("$X=Y; N=V", "$X=Y", "N=V"),
+            new Param("N=V; $X=Y", "N=V", "$X=Y")
         );
     }
 
