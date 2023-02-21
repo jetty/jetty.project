@@ -13,20 +13,18 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieParser;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.UrlEncoded;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -56,54 +54,32 @@ public class ServerHttpCookieTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        _server.setHandler(new AbstractHandler()
+        _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                HttpConfiguration config = baseRequest.getHttpChannel().getHttpConfiguration();
-                baseRequest.setHandled(true);
-                String setCookie = baseRequest.getParameter("SetCookie");
+                Fields parameters = Request.extractQueryParameters(request);
+                Fields.Field setCookie = parameters.get("SetCookie");
                 if (setCookie != null)
                 {
-                    CookieParser parser = CookieParser.newParser((name, value, version, domain, path, comment) ->
+                    CookieParser parser = CookieParser.newParser(new CookieParser.Handler()
                     {
-                        Cookie cookie = new Cookie(name, value);
-                        if (version > 0)
-                            cookie.setVersion(version);
-                        if (domain != null)
-                            cookie.setDomain(domain);
-                        if (path != null)
-                            cookie.setPath(path);
-                        if (comment != null)
-                            cookie.setComment(comment);
-                        response.addCookie(cookie);
+                        @Override
+                        public void addCookie(String name, String value, int version, String domain, String path, String comment)
+                        {
+                            Response.addCookie(response, HttpCookie.build(name, value, version).domain(domain).path(path).comment(comment).build());
+                        }
                     }, RFC2965, null);
-                    parser.parseField(setCookie);
+                    parser.parseField(setCookie.getValue());
                 }
 
-                Cookie[] cookies = request.getCookies();
+                List<HttpCookie> cookies = Request.getCookies(request);
                 StringBuilder out = new StringBuilder();
-                if (cookies != null)
-                {
-                    for (Cookie cookie : cookies)
-                    {
-                        out
-                            .append("[")
-                            .append(cookie.getName())
-                            .append('=')
-                            .append(cookie.getValue());
-
-                        if (cookie.getVersion() > 0)
-                            out.append(";Version=").append(cookie.getVersion());
-                        if (cookie.getPath() != null)
-                            out.append(";Path=").append(cookie.getPath());
-                        if (cookie.getDomain() != null)
-                            out.append(";Domain=").append(cookie.getDomain());
-                        out.append("]\n");
-                    }
-                }
-                response.getWriter().println(out);
+                for (HttpCookie cookie : cookies)
+                    out.append(cookie.toString()).append('\n');
+                Content.Sink.write(response, true, out.toString(), callback);
+                return true;
             }
         });
         _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
@@ -116,15 +92,13 @@ public class ServerHttpCookieTest
             Arguments.of(RFC6265_STRICT, "Cookie: name=value", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
 
             // Attribute tests
-            // TODO $name attributes are ignored because servlet 5.0 Cookie class rejects them.  They are not ignored in servlet 6.0
-            Arguments.of(RFC6265_STRICT, "Cookie:  $version=1; name=value", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
-            Arguments.of(RFC6265, "Cookie: $version=1; name=value", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
-            Arguments.of(RFC6265, "Cookie: name=value;$path=/path", 200, "Path=", List.of("[name=value]").toArray(new String[0])),
-            Arguments.of(from("RFC6265,ATTRIBUTES"), "Cookie: name=value;$path=/path", 200, "/path", List.of("name=value").toArray(new String[0])),
+            Arguments.of(RFC6265_STRICT, "Cookie: $version=1; name=value", 400, null, List.of("BadMessageException", "Invalid Cookie with attributes").toArray(new String[0])),
+            Arguments.of(from("RFC6265_STRICT,ATTRIBUTES"), "Cookie: name=value;$path=/path", 200, "/path", List.of("name=value").toArray(new String[0])),
+            Arguments.of(RFC6265, "Cookie: name=value;$path=/path", 200, "/path", List.of("name=value").toArray(new String[0])),
             Arguments.of(from("RFC6265_STRICT,ATTRIBUTE_VALUES"), "Cookie: name=value;$path=/path", 200, null, List.of("name=value;Path=/path").toArray(new String[0])),
             Arguments.of(RFC2965, "Cookie: name=value;$path=/path", 200, null, List.of("name=value;Path=/path").toArray(new String[0])),
             Arguments.of(RFC2965, "Cookie: $Version=1;name=value;$path=/path", 200, null, List.of("name=value;Version=1;Path=/path").toArray(new String[0])),
-            Arguments.of(RFC2965, "Cookie: $Version=1;name=value;$path=/path;$Domain=host", 200, null, List.of("name=value;Version=1;Path=/path;Domain=host").toArray(new String[0])),
+            Arguments.of(RFC2965, "Cookie: $Version=1;name=value;$path=/path;$Domain=host", 200, null, List.of("name=value;Version=1;Domain=host;Path=/path").toArray(new String[0])),
 
             // multiple cookie tests
             Arguments.of(RFC6265_STRICT, "Cookie: name=value; other=extra", 200, "Version=", List.of("[name=value]", "[other=extra]").toArray(new String[0])),
@@ -149,10 +123,7 @@ public class ServerHttpCookieTest
             Arguments.of(RFC2965, "Cookie: name=\"value;other=extra\"", 200, null, List.of("[name=value;other=extra]").toArray(new String[0])),
             Arguments.of(RFC2965, "Cookie: name=\"value;other=extra", 200, "name=value", null),
             Arguments.of(RFC2965_LEGACY, "Cookie: name=\"value;other=extra\"", 200, null, List.of("[name=value;other=extra]").toArray(new String[0])),
-            Arguments.of(RFC2965_LEGACY, "Cookie: name=\"value;other=extra", 200, null, List.of("[name=\"value;other=extra]").toArray(new String[0])),
-
-            // TCK check
-            Arguments.of(RFC6265, "Cookie: $Version=1; name1=value1; $Domain=hostname; $Path=/servlet_jsh_cookie_web", 200, null, List.of("name1=value1").toArray(new String[0]))
+            Arguments.of(RFC2965_LEGACY, "Cookie: name=\"value;other=extra", 200, null, List.of("[name=\"value;other=extra]").toArray(new String[0]))
         );
     }
 
@@ -162,7 +133,11 @@ public class ServerHttpCookieTest
     {
         _httpConfiguration.setRequestCookieCompliance(compliance);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET / HTTP/1.0\r\n" + cookie + "\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+            GET / HTTP/1.0\r
+            %s\r
+            \r
+            """.formatted(cookie)));
 
         assertThat(response.getStatus(), equalTo(status));
 
@@ -186,11 +161,11 @@ public class ServerHttpCookieTest
             Arguments.of(RFC6265_STRICT, "name=value;$version=1;$path=/path;$domain=domain", "name=value; Path=/path; Domain=domain"),
             Arguments.of(RFC6265, "name=value;$version=1;$path=/path;$domain=domain", "name=value; Path=/path; Domain=domain"),
             Arguments.of(RFC6265_LEGACY, "name=value;$version=1;$path=/path;$domain=domain", "name=value; Path=/path; Domain=domain"),
-            Arguments.of(RFC2965, "name=value;$version=1;$path=/path;$domain=domain", "name=value;Version=1;Path=/path;Domain=domain"),
-            Arguments.of(RFC2965_LEGACY, "name=value;$version=1;$path=/path;$domain=domain", "name=value;Version=1;Path=/path;Domain=domain"),
+            Arguments.of(RFC2965, "name=value;$version=1;$path=/path;$domain=domain", "name=value;Version=1;Domain=domain;Path=/path"),
+            Arguments.of(RFC2965_LEGACY, "name=value;$version=1;$path=/path;$domain=domain", "name=value;Version=1;Domain=domain;Path=/path"),
 
             Arguments.of(RFC6265, "name=value", "name=value")
-        );
+            );
     }
 
     @ParameterizedTest
@@ -199,7 +174,11 @@ public class ServerHttpCookieTest
     {
         _httpConfiguration.setResponseCookieCompliance(compliance);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /?SetCookie=" + UrlEncoded.encodeString(cookie) + " HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /?SetCookie=%s HTTP/1.0\r
+            \r
+            """.formatted(UrlEncoded.encodeString(cookie))));
+
         assertThat(response.getStatus(), equalTo(200));
 
         String setCookie = response.get(HttpHeader.SET_COOKIE);
