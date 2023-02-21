@@ -100,7 +100,7 @@ public class RFC6265CookieParser implements CookieParser
 
                     if (token.isRfc2616Token())
                     {
-                        if (!StringUtil.isBlank(cookieName) && c != '$')
+                        if (!StringUtil.isBlank(cookieName) && !(c == '$' && (_complianceMode.allows(ATTRIBUTES) || _complianceMode.allows(ATTRIBUTE_VALUES))))
                         {
                             _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                             cookieName = null;
@@ -332,7 +332,6 @@ public class RFC6265CookieParser implements CookieParser
                         continue;
                     }
 
-                    boolean knownAttribute = true;
                     if (StringUtil.isBlank(attributeName))
                     {
                         cookieValue = value;
@@ -358,7 +357,10 @@ public class RFC6265CookieParser implements CookieParser
                                     cookieVersion = Integer.parseInt(value);
                                     break;
                                 default:
-                                    knownAttribute = false;
+                                    if (!_complianceMode.allows(INVALID_COOKIES))
+                                        throw new IllegalArgumentException("Invalid Cookie attribute");
+                                    reportComplianceViolation(INVALID_COOKIES, field);
+                                    state = State.INVALID_COOKIE;
                                     break;
                             }
                         }
@@ -366,28 +368,14 @@ public class RFC6265CookieParser implements CookieParser
                         {
                             reportComplianceViolation(ATTRIBUTES, field);
                         }
-                        else if (_complianceMode.allows(INVALID_COOKIES))
-                        {
-                            reportComplianceViolation(INVALID_COOKIES, field);
-                            state = State.INVALID_COOKIE;
-                            continue;
-                        }
                         else
                         {
-                            throw new IllegalArgumentException("Invalid Cookie with attributes");
+                            cookieName = attributeName;
+                            cookieValue = value;
                         }
                         attributeName = null;
                     }
                     value = null;
-
-                    if (!knownAttribute)
-                    {
-                        if (!_complianceMode.allows(INVALID_COOKIES))
-                            throw new IllegalArgumentException("Invalid Cookie attribute");
-                        reportComplianceViolation(INVALID_COOKIES, field);
-                        state = State.INVALID_COOKIE;
-                        continue;
-                    }
 
                     if (state == State.END)
                         throw new IllegalStateException("Invalid cookie");

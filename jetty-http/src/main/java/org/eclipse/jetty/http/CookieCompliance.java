@@ -128,13 +128,12 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * <p>A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance,
      * but allows:</p>
      * <ul>
-     * <li>{@link Violation#ATTRIBUTES}</li>
      * <li>{@link Violation#INVALID_COOKIES}</li>
      * <li>{@link Violation#OPTIONAL_WHITE_SPACE}</li>
      * </ul>
      */
     public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(
-        Violation.ATTRIBUTES, Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE)
+        Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE)
     );
 
     /**
