@@ -17,9 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.servlet.http.Cookie;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,7 +97,14 @@ public class Cookies implements CookieParser.Handler
         if (_parsed)
             return _cookies;
 
-        _parser.parseFields(_rawFields);
+        try
+        {
+            _parser.parseFields(_rawFields);
+        }
+        catch (CookieParser.InvalidCookieException invalidCookieException)
+        {
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, invalidCookieException.getMessage(), invalidCookieException);
+        }
         _cookies = _cookieList.toArray(new Cookie[0]);
         _cookieList.clear();
         _parsed = true;
