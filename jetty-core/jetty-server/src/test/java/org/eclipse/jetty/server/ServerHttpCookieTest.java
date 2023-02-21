@@ -92,9 +92,10 @@ public class ServerHttpCookieTest
             Arguments.of(RFC6265_STRICT, "Cookie: name=value", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
 
             // Attribute tests
-            Arguments.of(RFC6265_STRICT, "Cookie: $version=1; name=value", 400, null, List.of("BadMessageException", "Invalid Cookie with attributes").toArray(new String[0])),
-            Arguments.of(from("RFC6265_STRICT,ATTRIBUTES"), "Cookie: name=value;$path=/path", 200, "/path", List.of("name=value").toArray(new String[0])),
-            Arguments.of(RFC6265, "Cookie: name=value;$path=/path", 200, "/path", List.of("name=value").toArray(new String[0])),
+            Arguments.of(RFC6265_STRICT, "Cookie:  $version=1; name=value", 200, "Version=", List.of("[$version=1]", "[name=value]").toArray(new String[0])),
+            Arguments.of(RFC6265, "Cookie: $version=1; name=value", 200, "Version=", List.of("[$version=1]", "[name=value]").toArray(new String[0])),
+            Arguments.of(RFC6265, "Cookie: name=value;$path=/path", 200, "Path=", List.of("[name=value]", "[$path=/path]").toArray(new String[0])),
+            Arguments.of(from("RFC6265,ATTRIBUTES"), "Cookie: name=value;$path=/path", 200, "/path", List.of("name=value").toArray(new String[0])),
             Arguments.of(from("RFC6265_STRICT,ATTRIBUTE_VALUES"), "Cookie: name=value;$path=/path", 200, null, List.of("name=value;Path=/path").toArray(new String[0])),
             Arguments.of(RFC2965, "Cookie: name=value;$path=/path", 200, null, List.of("name=value;Path=/path").toArray(new String[0])),
             Arguments.of(RFC2965, "Cookie: $Version=1;name=value;$path=/path", 200, null, List.of("name=value;Version=1;Path=/path").toArray(new String[0])),
@@ -123,7 +124,10 @@ public class ServerHttpCookieTest
             Arguments.of(RFC2965, "Cookie: name=\"value;other=extra\"", 200, null, List.of("[name=value;other=extra]").toArray(new String[0])),
             Arguments.of(RFC2965, "Cookie: name=\"value;other=extra", 200, "name=value", null),
             Arguments.of(RFC2965_LEGACY, "Cookie: name=\"value;other=extra\"", 200, null, List.of("[name=value;other=extra]").toArray(new String[0])),
-            Arguments.of(RFC2965_LEGACY, "Cookie: name=\"value;other=extra", 200, null, List.of("[name=\"value;other=extra]").toArray(new String[0]))
+            Arguments.of(RFC2965_LEGACY, "Cookie: name=\"value;other=extra", 200, null, List.of("[name=\"value;other=extra]").toArray(new String[0])),
+
+            // TCK check
+            Arguments.of(RFC6265, "Cookie: $Version=1; name1=value1; $Domain=hostname; $Path=/servlet_jsh_cookie_web", 200, null, List.of("$Version=1", "name1=value1", "$Domain=hostname", "$Path=/servlet_jsh_cookie_web").toArray(new String[0]))
         );
     }
 
