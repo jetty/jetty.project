@@ -366,7 +366,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public void setIdleTimeout(int idleTimeout)
     {
         _idleTimeout = idleTimeout;
-        if (_idleTimeoutDecay > 1) {
+        if (_idleTimeoutDecay > 1)
+        {
             // if non-default idleTimeoutDecay is configured, we must recompute _shrinkInterval
             _shrinkInterval = computeShrinkIntervalNanos(idleTimeout, _idleTimeoutDecay);
         }
@@ -394,7 +395,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      */
     public void setIdleTimeoutDecay(int expireCount)
     {
-        if (expireCount < 1) {
+        if (expireCount < 1)
+        {
             throw new IllegalArgumentException("idleTimeoutDecay expireCount must be >= 1; found: " + expireCount);
         }
         _idleTimeoutDecay = expireCount;
@@ -405,11 +407,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 //            reserved.setIdleTimeoutDecay(expireCount);
     }
 
-    private long getShrinkInterval() {
+    private long getShrinkInterval()
+    {
         return _shrinkInterval < 0 ? TimeUnit.MILLISECONDS.toNanos(_idleTimeout) : _shrinkInterval;
     }
 
-    static long computeShrinkIntervalNanos(int idleTimeout, int idleTimeoutDecay) {
+    static long computeShrinkIntervalNanos(int idleTimeout, int idleTimeoutDecay)
+    {
         return TimeUnit.MILLISECONDS.toNanos(idleTimeout) / idleTimeoutDecay;
     }
 
