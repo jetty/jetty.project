@@ -41,9 +41,9 @@ public interface CookieParser
         return new RFC6265CookieParser(handler, compliance, complianceListener);
     }
 
-    void parseField(String field);
+    void parseField(String field) throws InvalidCookieException;
 
-    default void parseFields(List<String> rawFields)
+    default void parseFields(List<String> rawFields) throws InvalidCookieException
     {
         // For each cookie field
         for (String field : rawFields)
@@ -56,5 +56,31 @@ public interface CookieParser
     interface Handler
     {
         void addCookie(String name, String value, int version, String domain, String path, String comment);
+    }
+
+    /**
+     * <p>The exception thrown when a cookie cannot be parsed and {@link CookieCompliance.Violation#INVALID_COOKIES} is not allowed.</p>
+     */
+    class InvalidCookieException extends IllegalArgumentException
+    {
+        public InvalidCookieException()
+        {
+            super();
+        }
+
+        public InvalidCookieException(String s)
+        {
+            super(s);
+        }
+
+        public InvalidCookieException(String message, Throwable cause)
+        {
+            super(message, cause);
+        }
+
+        public InvalidCookieException(Throwable cause)
+        {
+            super(cause);
+        }
     }
 }
