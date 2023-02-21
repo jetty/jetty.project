@@ -295,6 +295,6 @@ public class CookieCompliance implements ComplianceViolation.Mode
     @Override
     public String toString()
     {
-        return "%s@%x%s".formatted(_name, hashCode(), _violations);
+        return String.format("%s@%x%s", _name, hashCode(), _violations);
     }
 }

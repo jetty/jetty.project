@@ -25,19 +25,17 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCache;
-import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -445,14 +443,7 @@ public interface Request extends Attributes, Content.Source
             request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
         }
 
-        try
-        {
-            cookies = cookieCache.getCookies(request.getHeaders());
-        }
-        catch (CookieParser.InvalidCookieException invalidCookieException)
-        {
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, invalidCookieException);
-        }
+        cookies = cookieCache.getCookies(request.getHeaders());
         request.setAttribute(COOKIE_ATTRIBUTE, cookies);
         return cookies;
     }
