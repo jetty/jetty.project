@@ -228,7 +228,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 return formFields;
 
             if (formFields.isEmpty())
-                return Fields.EMPTY;
+                return queryFields;
 
             Fields fields = new Fields();
             fields.addAll(queryFields);
