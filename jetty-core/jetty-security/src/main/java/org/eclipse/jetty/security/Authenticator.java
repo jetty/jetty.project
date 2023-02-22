@@ -59,7 +59,10 @@ public interface Authenticator
      *
      * @param request the request to prepare for authentication
      */
-    Request prepareRequest(Request request);
+    default Request prepareRequest(Request request)
+    {
+        return request;
+    }
 
     /**
      * Validate a request
@@ -87,7 +90,11 @@ public interface Authenticator
      * @return true if response is secure
      * @throws ServerAuthException if unable to test response
      */
-    boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException;
+    @Deprecated
+    default boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
+    {
+        return true;
+    }
 
     /**
      * Authenticator Configuration

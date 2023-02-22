@@ -20,7 +20,9 @@ import java.util.Arrays;
  * Constraint
  *
  * Describe an auth and/or data constraint.
+ * TODO remove
  */
+@Deprecated
 public class Constraint implements Cloneable, Serializable
 {
 

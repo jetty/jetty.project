@@ -14,7 +14,11 @@
 package org.eclipse.jetty.security;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A Security Constraint interface.
@@ -23,40 +27,103 @@ public interface Constraint
 {
     boolean isForbidden();
 
-    boolean isAuthenticationMandatory();
-
-    UserDataConstraint getUserDataConstraint();
+    UserData getUserData();
 
     Authorization getAuthorization();
 
-    Collection<String> getRoles();
+    Set<String> getRoles();
+
+    enum UserData
+    {
+        NONE,
+        INTEGRAL,
+        CONFIDENTIAL;
+
+        static UserData combine(UserData a, UserData b)
+        {
+            if (a == null)
+                return b == null ? NONE : b;
+            if (b == null)
+                return a;
+
+            return switch (b)
+            {
+                case NONE -> a;
+                case INTEGRAL -> a == CONFIDENTIAL ? CONFIDENTIAL : INTEGRAL;
+                case CONFIDENTIAL -> CONFIDENTIAL;
+            };
+        }
+    }
 
     enum Authorization
     {
+        NONE,
         AUTHENTICATED,
         AUTHENTICATED_IN_KNOWN_ROLE,
-        AUTHENTICATED_IN_ROLE,
+        AUTHENTICATED_IN_ROLE;
+
+        static Authorization combine(Authorization a, Authorization b)
+        {
+            if (a == null)
+                return b == null ? NONE : b;
+            if (b == null)
+                return a;
+
+            return switch (b)
+            {
+                case NONE -> a;
+                case AUTHENTICATED -> a == NONE ? AUTHENTICATED : a;
+                case AUTHENTICATED_IN_KNOWN_ROLE -> a == AUTHENTICATED_IN_ROLE ? AUTHENTICATED_IN_ROLE : AUTHENTICATED_IN_KNOWN_ROLE;
+                case AUTHENTICATED_IN_ROLE -> AUTHENTICATED_IN_ROLE;
+            };
+        }
     }
 
     Constraint NONE = null;
-    Constraint INTEGRAL = from(false, true, UserDataConstraint.Integral, null);
-    Constraint CONFIDENTAL = from(false, true, UserDataConstraint.Confidential, null);
-    Constraint AUTHENTICATED = from(false, true, null, Authorization.AUTHENTICATED);
-    Constraint AUTHENTICATED_IN_KNOWN_ROLE = from(false, true, null, Authorization.AUTHENTICATED_IN_KNOWN_ROLE);
+    Constraint FORBIDDEN = from(true, null, null);
+    Constraint INTEGRAL = from(false, UserData.INTEGRAL, null);
+    Constraint CONFIDENTIAL = from(false, UserData.CONFIDENTIAL, null);
+    Constraint AUTHENTICATED = from(false, null, Authorization.AUTHENTICATED);
+    Constraint AUTHENTICATED_IN_KNOWN_ROLE = from(false, null, Authorization.AUTHENTICATED_IN_KNOWN_ROLE);
 
-    static Constraint combine(Constraint... constraints)
+    static Constraint combine(Constraint a, Constraint b)
     {
-        // TODO
-        return null;
+        if (a == null)
+            return b == null ? NONE : b;
+        if (b == null)
+            return a;
+
+        Set<String> roles = a.getRoles();
+        if (roles == null)
+            roles = b.getRoles();
+        else if (b.getRoles() != null || b.getRoles() != null)
+            roles = Stream.concat(roles.stream(), b.getRoles().stream()).collect(Collectors.toSet());
+
+        return from(
+            a.isForbidden() || b.isForbidden(),
+            UserData.combine(a.getUserData(), b.getUserData()),
+            Authorization.combine(a.getAuthorization(), b.getAuthorization()),
+            roles);
     }
 
-    static Constraint from(String... roles)
+    static Constraint roles(String... roles)
     {
-        return from(false, true, null, Authorization.AUTHENTICATED_IN_ROLE, roles);
+        return from(false, null, Authorization.AUTHENTICATED_IN_ROLE, roles);
     }
 
-    static Constraint from(boolean forbidden, boolean authMandatory, UserDataConstraint userDataConstraint, Authorization authorization, String... roles)
+    static Constraint from(boolean forbidden, UserData userData, Authorization authorization, String... roles)
     {
+        return from(forbidden, userData, authorization, (roles == null || roles.length == 0)
+            ? Collections.emptySet()
+            : new HashSet<>(Arrays.stream(roles).toList()));
+    }
+
+    static Constraint from(boolean forbidden, UserData userData, Authorization authorization, Set<String> roles)
+    {
+        Set<String> roleSet = roles == null
+            ? Collections.emptySet()
+            : Collections.unmodifiableSet(roles);
+
         return new Constraint()
         {
             @Override
@@ -66,162 +133,23 @@ public interface Constraint
             }
 
             @Override
-            public boolean isAuthenticationMandatory()
+            public UserData getUserData()
             {
-                return authMandatory;
-            }
-
-            @Override
-            public UserDataConstraint getUserDataConstraint()
-            {
-                return userDataConstraint;
+                return userData == null ? UserData.NONE : userData;
             }
 
             @Override
             public Authorization getAuthorization()
             {
-                return authorization;
+                return authorization == null ? Authorization.NONE : authorization;
             }
 
             @Override
-            public Collection<String> getRoles()
+            public Set<String> getRoles()
             {
-                return Arrays.asList(roles);
+                return roleSet;
             }
         };
     }
 }
 
-/*
-{
-    private boolean _isAnyAuth;
-    private boolean _isAnyRole;
-    private boolean _mandatory;
-    private boolean _forbidden;
-    private UserDataConstraint _userDataConstraint;
-
-    private final Set<String> _roles = new CopyOnWriteArraySet<>();
-
-    public Constraint()
-    {
-    }
-
-    public boolean isMandatory()
-    {
-        return _mandatory;
-    }
-
-    public void setMandatory(boolean mandatory)
-    {
-        this._mandatory = mandatory;
-        if (!mandatory)
-        {
-            _forbidden = false;
-            _roles.clear();
-            _isAnyRole = false;
-            _isAnyAuth = false;
-        }
-    }
-
-    public boolean isForbidden()
-    {
-        return _forbidden;
-    }
-
-    public void setForbidden(boolean forbidden)
-    {
-        this._forbidden = forbidden;
-        if (forbidden)
-        {
-            _mandatory = true;
-            _userDataConstraint = null;
-            _isAnyRole = false;
-            _isAnyAuth = false;
-            _roles.clear();
-        }
-    }
-
-    public boolean isAnyRole()
-    {
-        return _isAnyRole;
-    }
-
-    public void setAnyRole(boolean anyRole)
-    {
-        this._isAnyRole = anyRole;
-        if (anyRole)
-            _mandatory = true;
-    }
-
-    public boolean isAnyAuth()
-    {
-        return _isAnyAuth;
-    }
-
-    public void setAnyAuth(boolean anyAuth)
-    {
-        this._isAnyAuth = anyAuth;
-        if (anyAuth)
-            _mandatory = true;
-    }
-
-    public UserDataConstraint getUserDataConstraint()
-    {
-        return _userDataConstraint;
-    }
-
-    public void setUserDataConstraint(UserDataConstraint userDataConstraint)
-    {
-        if (userDataConstraint == null)
-            throw new NullPointerException("Null UserDataConstraint");
-        if (this._userDataConstraint == null)
-        {
-
-            this._userDataConstraint = userDataConstraint;
-        }
-        else
-        {
-            this._userDataConstraint = this._userDataConstraint.combine(userDataConstraint);
-        }
-    }
-
-    public Set<String> getRoles()
-    {
-        return _roles;
-    }
-
-    public void addRole(String role)
-    {
-        _roles.add(role);
-    }
-
-    public void combine(Constraint other)
-    {
-        if (other._forbidden)
-            setForbidden(true);
-        else if (other._mandatory)
-        {
-            setMandatory(true);
-            if (other._isAnyAuth)
-                setAnyAuth(true);
-            if (other._isAnyRole)
-                setAnyRole(true);
-
-            _roles.addAll(other._roles);
-        }
-        setUserDataConstraint(other._userDataConstraint);
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("RoleInfo@%x{%s%s%s%s,%s}",
-            hashCode(),
-            (_forbidden ? "Forbidden," : ""),
-            (_mandatory ? "Checked," : ""),
-            (_isAnyAuth ? "AnyAuth," : ""),
-            (_isAnyRole ? "*" : _roles),
-            _userDataConstraint);
-    }
-
- */

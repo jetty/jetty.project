@@ -36,12 +36,6 @@ public abstract class LoginAuthenticator implements Authenticator
     {
     }
 
-    @Override
-    public Request prepareRequest(Request request)
-    {
-        return request;
-    }
-
     /**
      * If the UserIdentity is not null after this method calls {@link LoginService#login(String, Object, Request)}, it
      * is assumed that the user is fully authenticated and we need to change the session id to prevent

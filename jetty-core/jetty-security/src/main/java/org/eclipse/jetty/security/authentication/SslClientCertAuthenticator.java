@@ -20,7 +20,6 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
@@ -127,12 +126,6 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e.getMessage());
         }
-    }
-
-    @Override
-    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        return true;
     }
 
     /**

@@ -20,7 +20,6 @@ import java.util.Base64;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
@@ -96,9 +95,8 @@ public class BasicAuthenticator extends LoginAuthenticator
         return Authentication.SEND_CONTINUE;
     }
 
-    @Override
-    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
+    public static String authorization(String user, String password)
     {
-        return true;
+        return "basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
     }
 }

@@ -28,7 +28,7 @@ public class DefaultIdentityServiceTest
     public void testDefaultIdentityService() throws Exception
     {
         Server server = new Server();
-        SecurityHandler securityHandler = new SecurityHandler();
+        SecurityHandler securityHandler = new SecurityHandler.Mapped();
         TestAuthenticator authenticator = new TestAuthenticator();
         securityHandler.setAuthenticator(authenticator);
 
@@ -66,11 +66,6 @@ public class DefaultIdentityServiceTest
         public String getAuthMethod()
         {
             return getClass().getSimpleName();
-        }
-
-        @Override
-        public Request prepareRequest(Request request)
-        {
         }
 
         @Override

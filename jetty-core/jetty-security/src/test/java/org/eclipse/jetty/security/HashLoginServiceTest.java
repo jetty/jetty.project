@@ -51,9 +51,9 @@ public class HashLoginServiceTest
     @Test
     public void testAutoCreatedUserStore() throws Exception
     {
-        Path fooPropsFile = MavenTestingUtils.getTestResourcePathFile("foo.properties");
+        Path fooPropsFile = MavenTestingUtils.getTestResourcePathFile("user.properties");
         Resource fooResource = ResourceFactory.root().newResource(fooPropsFile);
-        HashLoginService loginService = new HashLoginService("foo", fooResource);
+        HashLoginService loginService = new HashLoginService("users", fooResource);
         assertThat(loginService.getIdentityService(), is(notNullValue()));
         loginService.start();
         assertTrue(loginService.getUserStore().isStarted());
@@ -67,7 +67,7 @@ public class HashLoginServiceTest
     @Test
     public void testProvidedUserStore() throws Exception
     {
-        HashLoginService loginService = new HashLoginService("foo");
+        HashLoginService loginService = new HashLoginService("users");
         assertThat(loginService.getIdentityService(), is(notNullValue()));
         UserStore store = new UserStore();
         loginService.setUserStore(store);

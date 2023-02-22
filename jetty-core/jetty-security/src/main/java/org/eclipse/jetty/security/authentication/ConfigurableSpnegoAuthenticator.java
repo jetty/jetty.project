@@ -21,7 +21,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.SpnegoUserIdentity;
@@ -208,12 +207,6 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         if (header.regionMatches(true, 0, scheme, 0, scheme.length()))
             return header.substring(scheme.length()).trim();
         return null;
-    }
-
-    @Override
-    public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, User validatedUser)
-    {
-        return true;
     }
 
     private static class UserIdentityHolder implements Serializable

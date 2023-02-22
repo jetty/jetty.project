@@ -406,12 +406,6 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
-
-    @Override
-    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        return true;
-    }
     
     //TODO reinstate use of forward dispatch
     /*

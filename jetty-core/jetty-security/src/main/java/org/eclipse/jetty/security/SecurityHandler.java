@@ -18,6 +18,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -25,6 +26,9 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
@@ -403,14 +407,19 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             return next.handle(request, response, callback);
         }
 
+        if (constraint.isForbidden())
+        {
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            return true;
+        }
+
         // Check data constraints
-        if (!checkUserDataConstraint(pathInContext, request, response, callback, constraint))
+        if (!checkUserData(pathInContext, request, response, callback, constraint))
             return true;
 
-
         // is Auth mandatory?
-        boolean isAuthenticationMandatory = constraint.isAuthenticationMandatory();
-        if (isAuthenticationMandatory && authenticator == null)
+        boolean authMandatory = constraint.getAuthorization() != null && constraint.getAuthorization() != Constraint.Authorization.NONE;
+        if (authMandatory && authenticator == null)
         {
             LOG.warn("No authenticator for: {}", constraint);
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -425,7 +434,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             if (authentication == null || authentication == Authentication.NOT_CHECKED)
                 authentication = authenticator == null
                     ? Authentication.UNAUTHENTICATED
-                    : authenticator.validateRequest(request, response, callback, isAuthenticationMandatory);
+                    : authenticator.validateRequest(request, response, callback, authMandatory);
 
             if (authentication instanceof Authentication.ResponseSent)
                 return true;
@@ -436,7 +445,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 if (_identityService != null)
                     previousIdentity = _identityService.associate(userAuth.getUserIdentity());
 
-                if (isAuthenticationMandatory)
+                if (authMandatory)
                 {
                     boolean authorized = checkAuthorization(Request.getPathInContext(request), request, response, constraint, userAuth.getUserIdentity());
                     if (!authorized)
@@ -448,9 +457,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
 
                 //process the request by other handlers
                 boolean processed = next.handle(request, response, callback);
+
                 // TODO this looks wrong as in way too late
                 if (processed && authenticator != null)
-                    authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, userAuth);
+                    authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
                 return processed;
             }
 
@@ -473,14 +483,14 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 {
                     Authentication auth = Authentication.getAuthentication(request);
                     if (auth instanceof Authentication.User userAuth)
-                        authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, userAuth);
+                        authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
                     else
-                        authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, null);
+                        authenticator.secureResponse(request, response, callback, authMandatory, null);
                 }
                 return handled;
             }
 
-            if (isAuthenticationMandatory)
+            if (authMandatory)
             {
                 Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401, "unauthenticated");
                 return true;
@@ -494,7 +504,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             boolean handled = next.handle(request, response, callback);
 
             if (handled && authenticator != null)
-                authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, null);
+                authenticator.secureResponse(request, response, callback, authMandatory, null);
             return handled;
         }
         catch (ServerAuthException e)
@@ -542,80 +552,65 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
 
     protected abstract Constraint getConstraint(String pathInContext, Request request);
 
-    protected boolean checkUserDataConstraint(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
+    protected boolean checkUserData(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
     {
-        if (constraint == null)
-            return true;
-
-        if (constraint.isForbidden())
-        {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-            return false;
-        }
-
-        UserDataConstraint dataConstraint = constraint.getUserDataConstraint();
-        if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
+        Constraint.UserData dataConstraint = constraint.getUserData();
+        if (dataConstraint == null || dataConstraint == Constraint.UserData.NONE)
             return true;
 
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
 
-        if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
+        if (request.isSecure())
+            return true;
+
+        if (httpConfig.getSecurePort() > 0)
         {
-            if (request.isSecure())
-                return true;
+            //Redirect to secure port
+            String scheme = httpConfig.getSecureScheme();
+            int port = httpConfig.getSecurePort();
 
-            if (httpConfig.getSecurePort() > 0)
-            {
-                //Redirect to secure port
-                String scheme = httpConfig.getSecureScheme();
-                int port = httpConfig.getSecurePort();
+            String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
 
-                String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-
-                Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);
-            }
-            else
-                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!Secure");
-            return false;
+            Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);
         }
         else
         {
-            throw new IllegalArgumentException("Invalid dataConstraint value: " + dataConstraint);
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!Secure");
         }
+        return false;
     }
 
     protected boolean checkAuthorization(String pathInContext, Request request, Response response, Constraint constraint, UserIdentity userIdentity)
     {
-
         Constraint.Authorization authorization = constraint.getAuthorization();
         if (authorization == null)
             return true;
 
-        switch (constraint.getAuthorization())
+        return switch (constraint.getAuthorization())
         {
-            case AUTHENTICATED:
-                return userIdentity.getUserPrincipal() != null;
+            case NONE -> true;
 
-            case AUTHENTICATED_IN_KNOWN_ROLE:
-                if (userIdentity.getUserPrincipal() == null)
-                    return false;
-                for (String role : getKnownRoles())
-                    if (userIdentity.isUserInRole(role))
-                        return true;
-                return false;
+            case AUTHENTICATED -> userIdentity.getUserPrincipal() != null;
 
-            case AUTHENTICATED_IN_ROLE:
-                if (userIdentity.getUserPrincipal() == null)
-                    return false;
-                for (String role : constraint.getRoles())
-                    if (userIdentity.isUserInRole(role))
-                        return true;
-                return false;
+            case AUTHENTICATED_IN_KNOWN_ROLE ->
+            {
+                if (userIdentity.getUserPrincipal() != null)
+                    for (String role : getKnownRoles())
+                        if (userIdentity.isUserInRole(role))
+                            yield true;
+                yield false;
+            }
 
-            default:
-                return false;
-        }
+            case AUTHENTICATED_IN_ROLE ->
+            {
+                if (userIdentity.getUserPrincipal() != null)
+                    for (String role : constraint.getRoles())
+                        if (userIdentity.isUserInRole(role))
+                            yield true;
+                yield false;
+            }
+        };
     }
 
     protected Set<String> getKnownRoles()
@@ -680,4 +675,69 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             return getName();
         }
     };
+
+    public static class Mapped extends SecurityHandler
+    {
+        private final PathMappings<Constraint> _mappings = new PathMappings<>();
+        private final Set<String> _knownRoles = new HashSet<>();
+
+        public Mapped()
+        {
+        }
+
+        public Constraint add(String pathSpec, Constraint constraint)
+        {
+            return add(PathSpec.from(pathSpec), constraint);
+        }
+
+        public Constraint add(PathSpec pathSpec, Constraint constraint)
+        {
+            Set<String> roles = constraint.getRoles();
+            if (roles != null)
+                _knownRoles.addAll(roles);
+            return _mappings.put(pathSpec, constraint);
+        }
+
+        public Constraint get(PathSpec pathSpec)
+        {
+            return _mappings.get(pathSpec);
+        }
+
+        public Constraint remove(PathSpec pathSpec)
+        {
+            Constraint removed = _mappings.remove(pathSpec);
+            _knownRoles.clear();
+            _mappings.values().forEach(c ->
+            {
+                Set<String> roles = c.getRoles();
+                if (roles != null)
+                    _knownRoles.addAll(roles);
+
+            });
+            return removed;
+        }
+
+        @Override
+        protected Constraint getConstraint(String pathInContext, Request request)
+        {
+            List<MappedResource<Constraint>> matches = _mappings.getMatches(pathInContext);
+            if (matches == null || matches.isEmpty())
+                return null;
+
+            if (matches.size() == 1)
+                return matches.get(0).getResource();
+
+            Constraint constraint = null;
+            for (MappedResource<Constraint> c : matches)
+                constraint = Constraint.combine(constraint, c.getResource());
+
+            return constraint;
+        }
+
+        @Override
+        protected Set<String> getKnownRoles()
+        {
+            return _knownRoles;
+        }
+    }
 }

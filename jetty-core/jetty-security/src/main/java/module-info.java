@@ -11,8 +11,9 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.session
+module org.eclipse.jetty.security
 {
+    uses org.eclipse.jetty.security.Authenticator.Factory;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.util;
     requires transitive org.slf4j;

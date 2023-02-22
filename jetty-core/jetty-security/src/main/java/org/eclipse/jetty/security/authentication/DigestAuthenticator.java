@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
@@ -95,12 +94,6 @@ public class DigestAuthenticator extends LoginAuthenticator
     public String getAuthMethod()
     {
         return Constraint.__DIGEST_AUTH;
-    }
-
-    @Override
-    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        return true;
     }
 
     @Override

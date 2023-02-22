@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
@@ -194,12 +193,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
     {
         return CertificateUtils.loadCRL(crlPath);
-    }
-
-    @Override
-    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        return true;
     }
 
     /**
