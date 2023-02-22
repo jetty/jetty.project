@@ -16,6 +16,10 @@ package org.eclipse.jetty.server;
 import java.util.List;
 import java.util.stream.Stream;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpCookie;
