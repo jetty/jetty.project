@@ -35,6 +35,8 @@ import java.util.stream.Stream;
  */
 public class Fields implements Iterable<Fields.Field>
 {
+    public static final Fields EMPTY = new Fields(); // TODO make immutable
+
     private final boolean caseSensitive;
     private final Map<String, Field> fields;
 
@@ -218,6 +220,12 @@ public class Fields implements Iterable<Fields.Field>
             else
                 return new Field(f.getName(), f.getValues(), field.getValues());
         });
+    }
+
+    public void addAll(Fields fields)
+    {
+        for (Field field : fields)
+            add(field);
     }
 
     /**

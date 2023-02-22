@@ -79,7 +79,7 @@ public interface Constraint
         }
     }
 
-    Constraint NONE = null;
+    Constraint NONE = from(false, UserData.NONE, Authorization.NONE);
     Constraint FORBIDDEN = from(true, null, null);
     Constraint INTEGRAL = from(false, UserData.INTEGRAL, null);
     Constraint CONFIDENTIAL = from(false, UserData.CONFIDENTIAL, null);

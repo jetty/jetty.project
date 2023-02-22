@@ -40,7 +40,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
 
     private static final long serialVersionUID = -4643200685888258706L;
 
-    public static final String __J_AUTHENTICATED = "org.eclipse.jetty.security.UserIdentity";
+    public static final String AUTHENTICATED_ATTRIBUTE = "org.eclipse.jetty.security.UserIdentity";
 
     private final String _name;
     private final Object _credentials;

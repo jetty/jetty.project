@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.util.concurrent.ExecutionException;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -164,7 +166,7 @@ public class FormAuthenticator extends LoginAuthenticator
         {
             Session session = request.getSession(true);
             Authentication cached = new SessionAuthentication(getAuthMethod(), user, password);
-            session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
+            session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);
         }
         return user;
     }
@@ -178,7 +180,7 @@ public class FormAuthenticator extends LoginAuthenticator
             return;
 
         //clean up session
-        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+        session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
     }
 
     @Override
@@ -192,7 +194,7 @@ public class FormAuthenticator extends LoginAuthenticator
         //
         //See Servlet Spec 3.1 sec 13.6.3
         Session session = request.getSession(false);
-        if (session == null || session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
+        if (session == null || session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE) == null)
             return request; //not authenticated yet
 
         HttpURI juri = (HttpURI)session.getAttribute(__J_URI);
@@ -217,9 +219,26 @@ public class FormAuthenticator extends LoginAuthenticator
 
     protected Fields getParameters(Request request)
     {
-        // TODO: Content parameters?
-        // TODO: override for servlet so we don't lose content parameters when we read them?
-        return Request.extractQueryParameters(request);
+        try
+        {
+            Fields queryFields = Request.extractQueryParameters(request);
+            Fields formFields = FormFields.from(request).get();
+
+            if (queryFields.isEmpty())
+                return formFields;
+
+            if (formFields.isEmpty())
+                return Fields.EMPTY;
+
+            Fields fields = new Fields();
+            fields.addAll(queryFields);
+            fields.addAll(formFields);
+            return fields;
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     protected String encodeURL(String url)
@@ -304,7 +323,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
         // Look for cached authentication
         Session session = req.getSession(false);
-        Authentication authentication = session == null ? null : (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+        Authentication authentication = session == null ? null : (Authentication)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
         if (authentication != null)
         {
             // Has authentication been revoked?
@@ -313,7 +332,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 !_loginService.validate(((User)authentication).getUserIdentity()))
             {
                 LOG.debug("auth revoked {}", authentication);
-                session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
             }
             else
             {
@@ -335,10 +354,10 @@ public class FormAuthenticator extends LoginAuthenticator
                                 LOG.debug("auth rePOST {}->{}", authentication, jUri);
                                 // servletApiRequest.setContentParameters(jPost);
                             }
-                            session.removeAttribute(__J_URI);
-                            session.removeAttribute(__J_METHOD);
-                            session.removeAttribute(__J_POST);
                         }
+                        session.removeAttribute(__J_URI);
+                        session.removeAttribute(__J_METHOD);
+                        session.removeAttribute(__J_POST);
                     }
                 }
                 LOG.debug("auth {}", authentication);

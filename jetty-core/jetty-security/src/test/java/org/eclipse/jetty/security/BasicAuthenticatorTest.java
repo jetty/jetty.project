@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.session.SimpleSessionHandler;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,17 +37,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
-public class SecurityHandlerTest
+public class BasicAuthenticatorTest
 {
     private Server _server;
     private LocalConnector _connector;
     private LocalConnector _connectorS;
+    private SimpleSessionHandler _sessionHandler;
     private SecurityHandler.Mapped _securityHandler;
 
     @BeforeEach
     public void configureServer() throws Exception
     {
         _server = new Server();
+
+        _server.addBean(new CustomLoginService(new DefaultIdentityService()));
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         HttpConfiguration httpConfiguration = http.getHttpConfiguration();
@@ -78,11 +83,22 @@ public class SecurityHandlerTest
         _connectorS = new LocalConnector(_server, https);
         _server.setConnectors(new Connector[]{_connector, _connectorS});
 
-        ContextHandler contextHandler = new ContextHandler("/ctx");
+        ContextHandler contextHandler = new ContextHandler();
+        _sessionHandler = new SimpleSessionHandler();
+
+        contextHandler.setContextPath("/ctx");
         _server.setHandler(contextHandler);
+        contextHandler.setHandler(_sessionHandler);
+
         _securityHandler = new SecurityHandler.Mapped();
-        contextHandler.setHandler(_securityHandler);
+        _sessionHandler.setHandler(_securityHandler);
+
         _securityHandler.setHandler(new OkHandler());
+
+        _securityHandler.add("/admin/*", Constraint.roles("admin"));
+        _securityHandler.add("/any/*", Constraint.AUTHENTICATED);
+        _securityHandler.add("/known/*", Constraint.AUTHENTICATED_IN_KNOWN_ROLE);
+        _securityHandler.setAuthenticator(new BasicAuthenticator());
         _server.start();
     }
 
@@ -97,90 +113,42 @@ public class SecurityHandlerTest
     }
 
     @Test
-    public void testNoConstraints() throws Exception
+    public void testBasic() throws Exception
     {
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("You are OK"));
-    }
 
-    @Test
-    public void testForbidden() throws Exception
-    {
-        _securityHandler.add("/secret/*", Constraint.FORBIDDEN);
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, not(containsString("You are OK")));
 
-        String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("wrong", "user")));
+        assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, not(containsString("You are OK")));
+
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("You are OK"));
+        assertThat(response, containsString("user is OK"));
 
-        response = _connector.getResponse("GET /ctx/secret/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("admin is OK"));
+
+        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, not(containsString("You are OK")));
-    }
+        assertThat(response, containsString("!role"));
+        assertThat(response, not(containsString("OK")));
 
-    @Test
-    public void testUserData() throws Exception
-    {
-        _securityHandler.add("/integral/*", Constraint.INTEGRAL);
-        _securityHandler.add("/confidential/*", Constraint.CONFIDENTIAL);
-
-        String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("You are OK"));
+        assertThat(response, containsString("admin is OK"));
 
-        response = _connector.getResponse("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: BWTP://"));
-        assertThat(response, containsString(":9999"));
-        assertThat(response, not(containsString("You are OK")));
-
-        response = _connectorS.getResponse("GET /ctx/integral/info HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
-
-        response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: BWTP://"));
-        assertThat(response, containsString(":9999"));
-        assertThat(response, not(containsString("You are OK")));
-
-        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
-    }
-
-    @Test
-    public void testCombinedForbiddenConfidential() throws Exception
-    {
-        _securityHandler.add("/*", Constraint.NONE);
-        _securityHandler.add("/confidential/*", Constraint.CONFIDENTIAL);
-        _securityHandler.add("*.hidden", Constraint.FORBIDDEN);
-
-        String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
-
-        response = _connector.getResponse("GET /ctx/something.hidden HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /ctx/known/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, not(containsString("You are OK")));
-
-        response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: BWTP://"));
-        assertThat(response, containsString(":9999"));
-        assertThat(response, not(containsString("You are OK")));
-
-        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
-
-        response = _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, not(containsString("You are OK")));
+        assertThat(response, containsString("!role"));
+        assertThat(response, not(containsString("OK")));
     }
 
     public static class OkHandler extends Handler.Abstract
@@ -198,6 +166,54 @@ public class SecurityHandlerTest
             else
                 Content.Sink.write(response, true, authentication + " is not OK", callback);
             return true;
+        }
+    }
+
+    private static class CustomLoginService implements LoginService
+    {
+        private final IdentityService identityService;
+
+        public CustomLoginService(IdentityService identityService)
+        {
+            this.identityService = identityService;
+        }
+
+        @Override
+        public String getName()
+        {
+            return "name";
+        }
+
+        @Override
+        public UserIdentity login(String username, Object credentials, Request request)
+        {
+            if ("admin".equals(username) && "password".equals(credentials))
+                return new DefaultUserIdentity(null, new UserPrincipal("admin", null), new String[]{"admin"});
+            if ("user".equals(username) && "password".equals(credentials))
+                return new DefaultUserIdentity(null, new UserPrincipal("user", null), new String[]{"user"});
+            return null;
+        }
+
+        @Override
+        public boolean validate(UserIdentity user)
+        {
+            return false;
+        }
+
+        @Override
+        public IdentityService getIdentityService()
+        {
+            return identityService;
+        }
+
+        @Override
+        public void setIdentityService(IdentityService service)
+        {
+        }
+
+        @Override
+        public void logout(UserIdentity user)
+        {
         }
     }
 }

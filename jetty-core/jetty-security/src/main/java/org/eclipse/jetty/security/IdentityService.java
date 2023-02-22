@@ -29,7 +29,7 @@ public interface IdentityService
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the
-     * {@link Handler#process(Request, org.eclipse.jetty.server.Response, org.eclipse.jetty.util.Callback)}
+     * {@link Handler#handle(Request, org.eclipse.jetty.server.Response, org.eclipse.jetty.util.Callback)}
      * method and then again with a null argument as that call exits.
      *
      * @param user The current user or null for no user to associated.

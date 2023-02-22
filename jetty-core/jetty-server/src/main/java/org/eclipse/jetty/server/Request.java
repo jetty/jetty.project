@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -410,8 +409,10 @@ public interface Request extends Attributes, Content.Source
 
     static Fields extractQueryParameters(Request request)
     {
-        Fields fields = new Fields(true);
         String query = request.getHttpURI().getQuery();
+        if (StringUtil.isBlank(query))
+            return Fields.EMPTY;
+        Fields fields = new Fields(true);
         if (StringUtil.isNotBlank(query))
             UrlEncoded.decodeUtf8To(query, fields);
         return fields;

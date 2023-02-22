@@ -37,7 +37,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 {
     public static final String MAX_FIELDS_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormKeys";
     public static final String MAX_LENGTH_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormContentSize";
-    private static final CompletableFuture<Fields> EMPTY = CompletableFuture.completedFuture(new Fields());
+    private static final CompletableFuture<Fields> EMPTY = CompletableFuture.completedFuture(Fields.EMPTY);
 
     public static Charset getFormEncodedCharset(Request request)
     {
