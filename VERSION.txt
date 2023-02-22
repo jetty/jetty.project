@@ -1,4 +1,16 @@
-jetty-11.0.14-SNAPSHOT
+jetty-11.0.14 - 22 February 2023
+ + 7650 QueuedThreadPool: Stopped without executing or closing null
+ + 9059 IteratingCallback not serializing close() and failed()
+ + 9119 Wrong value of javax.servlet.forward.context_path attribute
+ + 9181 Jetty 9 java.lang.NullPointerException
+   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
+ + 9183 ConnectHandler may close the connection instead of sending 200 OK
+ + 9285 ContextHandler sends redirect on BaseResponse instead of Wrapped
+   Response object from Handler chain
+ + 9334 Better support for Cookie RFC 2965 compliance
+ + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
+   hard-coded message
+ + jetty-12 null
 
 jetty-11.0.13 - 07 December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
@@ -19,14 +31,14 @@ jetty-11.0.13 - 07 December 2022
  + 8678 Jetty client is not responding to GO_AWAY packet received from (Jetty)
    Server and continue to send traffic on same connection
  + 8695 Update quiche to 0.16.0
- + 8712 ELContextCleaner no longer needed.
+ + 8712 ELContextCleaner no longer needed
  + 8716 Multiple Host header values handled poorly
  + 8721 jetty:effective-web-xml doesn't generate quickstart information for web
    fragment jars that contain META-INF/resources
  + 8723 Provide a thread-safe way to modify HttpClient proxies at runtime
  + 8750 AbstractProxyServlet.onServerResponseHeaders does not support headers
    with empty values
- + 8753 Starting HttpClient with destinationIdleTimeout set throws NPE.
+ + 8753 Starting HttpClient with destinationIdleTimeout set throws NPE
  + 8770 Review whether to send request body in redirects
  + 8779 CompactPathRule drops query section on use
  + 8786 KeyStoreScanner is not able to monitor a symlink file and always
@@ -94,14 +106,14 @@ jetty-10.0.13 - 07 December 2022
  + 8678 Jetty client is not responding to GO_AWAY packet received from (Jetty)
    Server and continue to send traffic on same connection
  + 8695 Update quiche to 0.16.0
- + 8712 ELContextCleaner no longer needed.
+ + 8712 ELContextCleaner no longer needed
  + 8716 Multiple Host header values handled poorly
  + 8721 jetty:effective-web-xml doesn't generate quickstart information for web
    fragment jars that contain META-INF/resources
  + 8723 Provide a thread-safe way to modify HttpClient proxies at runtime
  + 8750 AbstractProxyServlet.onServerResponseHeaders does not support headers
    with empty values
- + 8753 Starting HttpClient with destinationIdleTimeout set throws NPE.
+ + 8753 Starting HttpClient with destinationIdleTimeout set throws NPE
  + 8770 Review whether to send request body in redirects
  + 8779 CompactPathRule drops query section on use
  + 8786 KeyStoreScanner is not able to monitor a symlink file and always
@@ -1029,7 +1041,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
