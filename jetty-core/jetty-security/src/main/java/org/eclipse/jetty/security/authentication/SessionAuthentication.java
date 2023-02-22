@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,6 +22,7 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * into an HttpSession to remember that the user is authenticated.
  */
 public class SessionAuthentication extends AbstractUserAuthentication
-    implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
+    implements Serializable
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionAuthentication.class);
 
@@ -43,7 +44,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
 
     private final String _name;
     private final Object _credentials;
-    private transient HttpSession _session;
+    private Session _session;
 
     public SessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
     {
@@ -97,6 +98,8 @@ public class SessionAuthentication extends AbstractUserAuthentication
         return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
     }
 
+    /* TODO
+
     @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
@@ -110,4 +113,6 @@ public class SessionAuthentication extends AbstractUserAuthentication
             _session = se.getSession();
         }
     }
+
+     */
 }

@@ -13,35 +13,37 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.Serializable;
-import java.security.Principal;
-import javax.security.auth.Subject;
+import java.util.List;
+
+import org.eclipse.jetty.util.security.Credential;
 
 /**
- * RolePrincipal
- * 
- * Represents a role. This class can be added to a Subject to represent a role that the
- * Subject has.
- * 
+ * TestLoginService
  */
-public class RolePrincipal implements Principal, Serializable
+public class TestLoginService extends AbstractLoginService
 {
-    private static final long serialVersionUID = 2998397924051854402L;
-    private final String _roleName;
 
-    public RolePrincipal(String name)
+    UserStore userStore = new UserStore();
+
+    public TestLoginService(String name)
     {
-        _roleName = name;
+        setName(name);
+    }
+
+    public void putUser(String username, Credential credential, String[] roles)
+    {
+        userStore.addUser(username, credential, roles);
     }
 
     @Override
-    public String getName()
+    protected List<RolePrincipal> loadRoleInfo(UserPrincipal user)
     {
-        return _roleName;
+        return userStore.getRolePrincipals(user.getName());
     }
-    
-    public void configureForSubject(Subject subject)
+
+    @Override
+    protected UserPrincipal loadUserInfo(String username)
     {
-        subject.getPrincipals().add(this);
+        return userStore.getUserPrincipal(username);
     }
 }

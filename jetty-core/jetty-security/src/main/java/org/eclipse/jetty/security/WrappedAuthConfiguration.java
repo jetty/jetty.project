@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -43,15 +43,15 @@ public class WrappedAuthConfiguration implements AuthConfiguration
     }
 
     @Override
-    public String getInitParameter(String param)
+    public String getParameter(String param)
     {
-        return _configuration.getInitParameter(param);
+        return _configuration.getParameter(param);
     }
 
     @Override
-    public Set<String> getInitParameterNames()
+    public Set<String> getParameterNames()
     {
-        return _configuration.getInitParameterNames();
+        return _configuration.getParameterNames();
     }
 
     @Override

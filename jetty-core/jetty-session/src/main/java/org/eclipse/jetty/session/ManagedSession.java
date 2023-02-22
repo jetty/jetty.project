@@ -49,6 +49,7 @@ public class ManagedSession implements Session
     /**
      * Attribute set if the session is secure
      */
+    @Deprecated
     public static final String SESSION_CREATED_SECURE = "org.eclipse.jetty.security.sessionCreatedSecure";
 
     /**

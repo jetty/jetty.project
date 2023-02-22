@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -56,9 +56,10 @@ public interface Authenticator
      * where the http method of the original request causing authentication
      * is not the same as the http method resulting from the redirect
      * after authentication.
+     *
      * @param request the request to prepare for authentication
      */
-    void prepareRequest(Request request);
+    Request prepareRequest(Request request);
 
     /**
      * Validate a request
@@ -102,17 +103,15 @@ public interface Authenticator
          *
          * @param param parameter name
          * @return Parameter value or null
-         * @see SecurityHandler#getInitParameter(String)
          */
-        String getInitParameter(String param);
+        String getParameter(String param);
 
         /**
          * Get a SecurityHandler init parameter names
          *
          * @return Set of parameter names
-         * @see SecurityHandler#getInitParameterNames()
          */
-        Set<String> getInitParameterNames();
+        Set<String> getParameterNames();
 
         LoginService getLoginService();
 

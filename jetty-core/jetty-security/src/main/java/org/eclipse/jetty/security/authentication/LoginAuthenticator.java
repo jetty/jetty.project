@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,6 +16,7 @@ package org.eclipse.jetty.security.authentication;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -36,9 +37,9 @@ public abstract class LoginAuthenticator implements Authenticator
     }
 
     @Override
-    public void prepareRequest(Request request)
+    public Request prepareRequest(Request request)
     {
-        //empty implementation as the default
+        return request;
     }
 
     /**
@@ -65,9 +66,10 @@ public abstract class LoginAuthenticator implements Authenticator
 
     public void logout(Request request)
     {
+        Session session = request.getSession(false);
         if (session == null)
             return;
-        session.removeAttribute(ManagedSession.SESSION_CREATED_SECURE);
+        session.removeAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE);
     }
 
     @Override
@@ -108,9 +110,9 @@ public abstract class LoginAuthenticator implements Authenticator
             {
                 //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (session.getAttribute(ManagedSession.SESSION_CREATED_SECURE) != Boolean.TRUE)
+                if (session.getAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE) != Boolean.TRUE)
                 {
-                    session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
+                    session.setAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE, Boolean.TRUE);
                     session.renewId(httpRequest, httpResponse);
                     return session;
                 }

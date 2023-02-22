@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,26 +16,25 @@ package org.eclipse.jetty.security;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee10.servlet.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +55,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class SecurityHandler extends Handler.Wrapper implements Authenticator.AuthConfiguration
 {
+    public static String SESSION_AUTHENTICATED_ATTRIBUTE = "org.eclipse.jetty.security.sessionAuthenticated";
+
     private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class);
     private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();
 
@@ -64,7 +65,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
     private Authenticator.Factory _authenticatorFactory;
     private String _realmName;
     private String _authMethod;
-    private final Map<String, String> _initParameters = new HashMap<>();
+    private final Map<String, String> _parameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession = true;
@@ -218,51 +219,16 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         _authMethod = authMethod;
     }
 
-    /**
-     * @return True if forwards to welcome files are authenticated
-     */
-    public boolean isCheckWelcomeFiles()
+    @Override
+    public String getParameter(String key)
     {
-        return _checkWelcomeFiles;
-    }
-
-    /**
-     * @param authenticateWelcomeFiles True if forwards to welcome files are
-     * authenticated
-     * @throws IllegalStateException if the SecurityHandler is running
-     */
-    public void setCheckWelcomeFiles(boolean authenticateWelcomeFiles)
-    {
-        if (isRunning())
-            throw new IllegalStateException("running");
-        _checkWelcomeFiles = authenticateWelcomeFiles;
+        return _parameters.get(key);
     }
 
     @Override
-    public String getInitParameter(String key)
+    public Set<String> getParameterNames()
     {
-        return _initParameters.get(key);
-    }
-
-    @Override
-    public Set<String> getInitParameterNames()
-    {
-        return _initParameters.keySet();
-    }
-
-    /**
-     * Set an initialization parameter.
-     *
-     * @param key the init key
-     * @param value the init value
-     * @return previous value
-     * @throws IllegalStateException if the SecurityHandler is started
-     */
-    public String setInitParameter(String key, String value)
-    {
-        if (isStarted())
-            throw new IllegalStateException("started");
-        return _initParameters.put(key, value);
+        return _parameters.keySet();
     }
 
     protected LoginService findLoginService() throws Exception
@@ -296,20 +262,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
     protected void doStart()
         throws Exception
     {
-        // copy security init parameters
-        Context context = ContextHandler.getCurrentContext();
-        if (context != null)
-        {
-            Enumeration<String> names = context.getInitParameterNames();
-            while (names != null && names.hasMoreElements())
-            {
-                String name = names.nextElement();
-                if (name.startsWith("org.eclipse.jetty.security.") &&
-                    getInitParameter(name) == null)
-                    setInitParameter(name, context.getInitParameter(name));
-            }
-        }
-
         // complicated resolution of login and identity service to handle
         // many different ways these can be constructed and injected.
 
@@ -344,6 +296,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             else if (_loginService.getIdentityService() != _identityService)
                 throw new IllegalStateException("LoginService has different IdentityService to " + this);
         }
+
+        Context context = ContextHandler.getCurrentContext();
 
         if (_authenticator == null)
         {
@@ -410,25 +364,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         super.doStop();
     }
 
-    protected boolean checkSecurity(Request request)
-    {
-        switch (request.getDispatcherType())
-        {
-            case REQUEST:
-            case ASYNC:
-                return true;
-            case FORWARD:
-                if (isCheckWelcomeFiles() && request.getAttribute("org.eclipse.jetty.server.welcome") != null)
-                {
-                    request.removeAttribute("org.eclipse.jetty.server.welcome");
-                    return true;
-                }
-                return false;
-            default:
-                return false;
-        }
-    }
-
     @Override
     public boolean isSessionRenewedOnAuthentication()
     {
@@ -449,42 +384,36 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
     }
     
     @Override
-    public boolean process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
             return false;
         
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        if (servletContextRequest == null)
-            return false;
-        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
         Authenticator authenticator = _authenticator;
-        
-        if (!checkSecurity(servletApiRequest))
+        if (authenticator != null)
+            request = authenticator.prepareRequest(request);
+
+        String pathInContext = Request.getPathInContext(request);
+        Constraint constraint = getConstraint(pathInContext, request);
+
+        if (constraint == null)
         {
             //don't need to do any security work, let other handlers do the processing
-            return next.process(request, response, callback);
+            return next.handle(request, response, callback);
         }
 
-        //See Servlet Spec 3.1 sec 13.6.3
-        if (authenticator != null)
-            authenticator.prepareRequest(request);
-
-        RoleInfo roleInfo = prepareConstraintInfo(servletContextRequest.getPathInContext(), servletApiRequest);
-
         // Check data constraints
-        if (!checkUserDataPermissions(servletContextRequest.getPathInContext(), servletContextRequest, response, callback, roleInfo))
+        if (!checkUserDataConstraint(pathInContext, request, response, callback, constraint))
             return true;
 
-        // is Auth mandatory?
-        boolean isAuthMandatory =
-            isAuthMandatory(request, response, roleInfo);
 
-        if (isAuthMandatory && authenticator == null)
+        // is Auth mandatory?
+        boolean isAuthenticationMandatory = constraint.isAuthenticationMandatory();
+        if (isAuthenticationMandatory && authenticator == null)
         {
-            LOG.warn("No authenticator for: {}", roleInfo);
-            Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
+            LOG.warn("No authenticator for: {}", constraint);
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return true;
         }
 
@@ -492,85 +421,86 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         Object previousIdentity = null;
         try
         {
-            Authentication authentication = servletApiRequest.getAuthentication();
+            Authentication authentication = Authentication.getAuthentication(request);
             if (authentication == null || authentication == Authentication.NOT_CHECKED)
-                authentication = authenticator == null ? Authentication.UNAUTHENTICATED : authenticator.validateRequest(request, response, callback, isAuthMandatory);
+                authentication = authenticator == null
+                    ? Authentication.UNAUTHENTICATED
+                    : authenticator.validateRequest(request, response, callback, isAuthenticationMandatory);
 
             if (authentication instanceof Authentication.ResponseSent)
                 return true;
 
             if (authentication instanceof Authentication.User userAuth)
             {
-                servletApiRequest.setAuthentication(authentication);
+                Authentication.setAuthentication(request, authentication);
                 if (_identityService != null)
                     previousIdentity = _identityService.associate(userAuth.getUserIdentity());
 
-                if (isAuthMandatory)
+                if (isAuthenticationMandatory)
                 {
-                    boolean authorized = checkWebResourcePermissions(Request.getPathInContext(request), request, response, roleInfo, userAuth.getUserIdentity());
+                    boolean authorized = checkAuthorization(Request.getPathInContext(request), request, response, constraint, userAuth.getUserIdentity());
                     if (!authorized)
                     {
-                        Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN, "!role");
+                        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!role");
                         return true;
                     }
                 }
 
                 //process the request by other handlers
-                boolean processed = next.process(request, response, callback);
-                // TODO this looks wrong
+                boolean processed = next.handle(request, response, callback);
+                // TODO this looks wrong as in way too late
                 if (processed && authenticator != null)
-                    authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
+                    authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, userAuth);
                 return processed;
             }
 
-            if (authentication instanceof Authentication.Deferred)
+            if (authentication instanceof DeferredAuthentication deferred)
             {
-                DeferredAuthentication deferred = (DeferredAuthentication)authentication;
-                servletApiRequest.setAuthentication(authentication);
+                Authentication.setAuthentication(request, authentication);
 
-                boolean processed = false;
+                boolean handled;
                 try
                 {
                     //process the request by other handlers
-                    processed = next.process(request, response, callback);
+                    handled = next.handle(request, response, callback);
                 }
                 finally
                 {
                     previousIdentity = deferred.getPreviousAssociation();
                 }
 
-                if (processed && authenticator != null)
+                if (handled && authenticator != null)
                 {
-                    Authentication auth = servletApiRequest.getAuthentication();
+                    Authentication auth = Authentication.getAuthentication(request);
                     if (auth instanceof Authentication.User userAuth)
-                        authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
+                        authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, userAuth);
                     else
-                        authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
+                        authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, null);
                 }
-                return processed;
+                return handled;
             }
 
-            if (isAuthMandatory)
+            if (isAuthenticationMandatory)
             {
-                Response.writeError(request, response, callback, HttpServletResponse.SC_UNAUTHORIZED, "unauthenticated");
+                Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401, "unauthenticated");
                 return true;
             }
 
-            servletApiRequest.setAuthentication(authentication);
+            Authentication.setAuthentication(request, authentication);
             if (_identityService != null)
                 previousIdentity = _identityService.associate(null);
 
             //process the request by other handlers
-            boolean processed = next.process(request, response, callback);
+            boolean handled = next.handle(request, response, callback);
 
-            if (processed && authenticator != null)
-                authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
-            return processed;
+            if (handled && authenticator != null)
+                authenticator.secureResponse(request, response, callback, isAuthenticationMandatory, null);
+            return handled;
         }
         catch (ServerAuthException e)
         {
             // jaspi 3.8.3 send HTTP 500 internal server error, with message from AuthException
-            Response.writeError(request, response, callback, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
             return true;
         }
         finally
@@ -582,11 +512,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
 
     public static SecurityHandler getCurrentSecurityHandler()
     {
-        ServletContextHandler contextHandler = ServletContextHandler.getCurrentServletContextHandler();
-        if (contextHandler == null)
-            return null;
-
-        return contextHandler.getDescendant(SecurityHandler.class);
+        ContextHandler contextHandler = ContextHandler.getCurrentContextHandler();
+        if (contextHandler != null)
+            return contextHandler.getDescendant(SecurityHandler.class);
+        // TODO what about without context?
+        return null;
     }
 
     public void logout(Authentication.User user)
@@ -610,14 +540,88 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         }
     }
 
-    protected abstract RoleInfo prepareConstraintInfo(String pathInContext, HttpServletRequest request);
+    protected abstract Constraint getConstraint(String pathInContext, Request request);
 
-    protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Callback callback, RoleInfo constraintInfo) throws IOException;
+    protected boolean checkUserDataConstraint(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
+    {
+        if (constraint == null)
+            return true;
 
-    protected abstract boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo);
+        if (constraint.isForbidden())
+        {
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            return false;
+        }
 
-    protected abstract boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo,
-                                                           UserIdentity userIdentity) throws IOException;
+        UserDataConstraint dataConstraint = constraint.getUserDataConstraint();
+        if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
+            return true;
+
+        HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
+
+        if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
+        {
+            if (request.isSecure())
+                return true;
+
+            if (httpConfig.getSecurePort() > 0)
+            {
+                //Redirect to secure port
+                String scheme = httpConfig.getSecureScheme();
+                int port = httpConfig.getSecurePort();
+
+                String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+
+                Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);
+            }
+            else
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!Secure");
+            return false;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Invalid dataConstraint value: " + dataConstraint);
+        }
+    }
+
+    protected boolean checkAuthorization(String pathInContext, Request request, Response response, Constraint constraint, UserIdentity userIdentity)
+    {
+
+        Constraint.Authorization authorization = constraint.getAuthorization();
+        if (authorization == null)
+            return true;
+
+        switch (constraint.getAuthorization())
+        {
+            case AUTHENTICATED:
+                return userIdentity.getUserPrincipal() != null;
+
+            case AUTHENTICATED_IN_KNOWN_ROLE:
+                if (userIdentity.getUserPrincipal() == null)
+                    return false;
+                for (String role : getKnownRoles())
+                    if (userIdentity.isUserInRole(role))
+                        return true;
+                return false;
+
+            case AUTHENTICATED_IN_ROLE:
+                if (userIdentity.getUserPrincipal() == null)
+                    return false;
+                for (String role : constraint.getRoles())
+                    if (userIdentity.isUserInRole(role))
+                        return true;
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    protected Set<String> getKnownRoles()
+    {
+        return Collections.emptySet();
+    }
 
     public class NotChecked implements Principal
     {

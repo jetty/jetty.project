@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,44 +13,108 @@
 
 package org.eclipse.jetty.security;
 
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.Arrays;
+import java.util.Collection;
 
 /**
- * RoleInfo
- *
- * Badly named class that holds the role and user data constraint info for a
- * path/http method combination, extracted and combined from security
- * constraints.
- *
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
+ * A Security Constraint interface.
  */
-public class RoleInfo
+public interface Constraint
+{
+    boolean isForbidden();
+
+    boolean isAuthenticationMandatory();
+
+    UserDataConstraint getUserDataConstraint();
+
+    Authorization getAuthorization();
+
+    Collection<String> getRoles();
+
+    enum Authorization
+    {
+        AUTHENTICATED,
+        AUTHENTICATED_IN_KNOWN_ROLE,
+        AUTHENTICATED_IN_ROLE,
+    }
+
+    Constraint NONE = null;
+    Constraint INTEGRAL = from(false, true, UserDataConstraint.Integral, null);
+    Constraint CONFIDENTAL = from(false, true, UserDataConstraint.Confidential, null);
+    Constraint AUTHENTICATED = from(false, true, null, Authorization.AUTHENTICATED);
+    Constraint AUTHENTICATED_IN_KNOWN_ROLE = from(false, true, null, Authorization.AUTHENTICATED_IN_KNOWN_ROLE);
+
+    static Constraint combine(Constraint... constraints)
+    {
+        // TODO
+        return null;
+    }
+
+    static Constraint from(String... roles)
+    {
+        return from(false, true, null, Authorization.AUTHENTICATED_IN_ROLE, roles);
+    }
+
+    static Constraint from(boolean forbidden, boolean authMandatory, UserDataConstraint userDataConstraint, Authorization authorization, String... roles)
+    {
+        return new Constraint()
+        {
+            @Override
+            public boolean isForbidden()
+            {
+                return forbidden;
+            }
+
+            @Override
+            public boolean isAuthenticationMandatory()
+            {
+                return authMandatory;
+            }
+
+            @Override
+            public UserDataConstraint getUserDataConstraint()
+            {
+                return userDataConstraint;
+            }
+
+            @Override
+            public Authorization getAuthorization()
+            {
+                return authorization;
+            }
+
+            @Override
+            public Collection<String> getRoles()
+            {
+                return Arrays.asList(roles);
+            }
+        };
+    }
+}
+
+/*
 {
     private boolean _isAnyAuth;
     private boolean _isAnyRole;
-    private boolean _checked;
+    private boolean _mandatory;
     private boolean _forbidden;
     private UserDataConstraint _userDataConstraint;
 
-    /**
-     * List of permitted roles
-     */
     private final Set<String> _roles = new CopyOnWriteArraySet<>();
 
-    public RoleInfo()
+    public Constraint()
     {
     }
 
-    public boolean isChecked()
+    public boolean isMandatory()
     {
-        return _checked;
+        return _mandatory;
     }
 
-    public void setChecked(boolean checked)
+    public void setMandatory(boolean mandatory)
     {
-        this._checked = checked;
-        if (!checked)
+        this._mandatory = mandatory;
+        if (!mandatory)
         {
             _forbidden = false;
             _roles.clear();
@@ -69,7 +133,7 @@ public class RoleInfo
         this._forbidden = forbidden;
         if (forbidden)
         {
-            _checked = true;
+            _mandatory = true;
             _userDataConstraint = null;
             _isAnyRole = false;
             _isAnyAuth = false;
@@ -86,7 +150,7 @@ public class RoleInfo
     {
         this._isAnyRole = anyRole;
         if (anyRole)
-            _checked = true;
+            _mandatory = true;
     }
 
     public boolean isAnyAuth()
@@ -98,7 +162,7 @@ public class RoleInfo
     {
         this._isAnyAuth = anyAuth;
         if (anyAuth)
-            _checked = true;
+            _mandatory = true;
     }
 
     public UserDataConstraint getUserDataConstraint()
@@ -131,13 +195,13 @@ public class RoleInfo
         _roles.add(role);
     }
 
-    public void combine(RoleInfo other)
+    public void combine(Constraint other)
     {
         if (other._forbidden)
             setForbidden(true);
-        else if (other._checked)
+        else if (other._mandatory)
         {
-            setChecked(true);
+            setMandatory(true);
             if (other._isAnyAuth)
                 setAnyAuth(true);
             if (other._isAnyRole)
@@ -154,9 +218,10 @@ public class RoleInfo
         return String.format("RoleInfo@%x{%s%s%s%s,%s}",
             hashCode(),
             (_forbidden ? "Forbidden," : ""),
-            (_checked ? "Checked," : ""),
+            (_mandatory ? "Checked," : ""),
             (_isAnyAuth ? "AnyAuth," : ""),
             (_isAnyRole ? "*" : _roles),
             _userDataConstraint);
     }
-}
+
+ */

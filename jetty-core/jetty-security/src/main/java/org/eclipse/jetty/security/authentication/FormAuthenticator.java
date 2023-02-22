@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,6 @@ package org.eclipse.jetty.security.authentication;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
@@ -24,6 +23,7 @@ import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
@@ -105,13 +105,13 @@ public class FormAuthenticator extends LoginAuthenticator
     public void setConfiguration(AuthConfiguration configuration)
     {
         super.setConfiguration(configuration);
-        String login = configuration.getInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE);
+        String login = configuration.getParameter(FormAuthenticator.__FORM_LOGIN_PAGE);
         if (login != null)
             setLoginPage(login);
-        String error = configuration.getInitParameter(FormAuthenticator.__FORM_ERROR_PAGE);
+        String error = configuration.getParameter(FormAuthenticator.__FORM_ERROR_PAGE);
         if (error != null)
             setErrorPage(error);
-        String dispatch = configuration.getInitParameter(FormAuthenticator.__FORM_DISPATCH);
+        String dispatch = configuration.getParameter(FormAuthenticator.__FORM_DISPATCH);
         _dispatch = dispatch == null ? _dispatch : Boolean.parseBoolean(dispatch);
     }
 
@@ -182,7 +182,7 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public void prepareRequest(Request request)
+    public Request prepareRequest(Request request)
     {
         //if this is a request resulting from a redirect after auth is complete
         //(ie its from a redirect to the original request uri) then due to 
@@ -193,18 +193,18 @@ public class FormAuthenticator extends LoginAuthenticator
         //See Servlet Spec 3.1 sec 13.6.3
         Session session = request.getSession(false);
         if (session == null || session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
-            return; //not authenticated yet
+            return request; //not authenticated yet
 
         HttpURI juri = (HttpURI)session.getAttribute(__J_URI);
         if (juri == null)
-            return; //no original uri saved
+            return request; //no original uri saved
 
         String method = (String)session.getAttribute(__J_METHOD);
         if (method == null || method.length() == 0)
-            return; //didn't save original request method
+            return request; //didn't save original request method
 
         if (!juri.equals(request.getHttpURI()))
-            return; //this request is not for the same url as the original
+            return request; //this request is not for the same url as the original
 
         //restore the original request's method on this request
         if (LOG.isDebugEnabled())
@@ -212,6 +212,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
         // TODO: Set method.
         // servletContextRequest.getServletApiRequest().setMethod(method);
+        return request;
     }
 
     protected Fields getParameters(Request request)
@@ -223,99 +224,8 @@ public class FormAuthenticator extends LoginAuthenticator
 
     protected String encodeURL(String url)
     {
-        SessionManager sessionManager = _response.getServletContextRequest().getServletChannel().getContextHandler().getSessionHandler();
-        if (sessionManager == null)
-            return url;
-
-        HttpURI uri = null;
-        if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
-        {
-            uri = HttpURI.from(url);
-            String path = uri.getPath();
-            path = (path == null ? "" : path);
-            int port = uri.getPort();
-            if (port < 0)
-                port = HttpScheme.getDefaultPort(uri.getScheme());
-
-            // Is it the same server?
-            if (!Request.getServerName(request).equalsIgnoreCase(uri.getHost()))
-                return url;
-            if (Request.getServerPort(request) != port)
-                return url;
-            if (request.getContext() != null && !path.startsWith(request.getContext().getContextPath()))
-                return url;
-        }
-
-        String sessionURLPrefix = sessionManager.getSessionIdPathParameterNamePrefix();
-        if (sessionURLPrefix == null)
-            return url;
-
-        if (url == null)
-            return null;
-
-        // should not encode if cookies in evidence
-        if ((sessionManager.isUsingCookies() && httpServletRequest.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
-        {
-            int prefix = url.indexOf(sessionURLPrefix);
-            if (prefix != -1)
-            {
-                int suffix = url.indexOf("?", prefix);
-                if (suffix < 0)
-                    suffix = url.indexOf("#", prefix);
-
-                if (suffix <= prefix)
-                    return url.substring(0, prefix);
-                return url.substring(0, prefix) + url.substring(suffix);
-            }
-            return url;
-        }
-
-        // get session;
-        Session session = request.getSession(false);
-
-        // no session
-        if (session == null || !(session instanceof Session.API))
-            return url;
-
-        // invalid session
-        Session.API api = (Session.API)session;
-
-        if (!api.getSession().isValid())
-            return url;
-
-        String id = api.getSession().getExtendedId();
-
-        if (uri == null)
-            uri = HttpURI.from(url);
-
-        // Already encoded
-        int prefix = url.indexOf(sessionURLPrefix);
-        if (prefix != -1)
-        {
-            int suffix = url.indexOf("?", prefix);
-            if (suffix < 0)
-                suffix = url.indexOf("#", prefix);
-
-            if (suffix <= prefix)
-                return url.substring(0, prefix + sessionURLPrefix.length()) + id;
-            return url.substring(0, prefix + sessionURLPrefix.length()) + id +
-                url.substring(suffix);
-        }
-
-        // edit the session
-        int suffix = url.indexOf('?');
-        if (suffix < 0)
-            suffix = url.indexOf('#');
-        if (suffix < 0)
-        {
-            return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
-                sessionURLPrefix + id;
-        }
-
-        return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
-            sessionURLPrefix + id + url.substring(suffix);
+        // TODO
+        return url;
     }
 
     @Override
@@ -453,9 +363,10 @@ public class FormAuthenticator extends LoginAuthenticator
                 session.setAttribute(__J_URI, req.getHttpURI());
                 session.setAttribute(__J_METHOD, req.getMethod());
 
-                if (MimeTypes.Type.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(req.getMethod()))
+                if (HttpMethod.POST.is(req.getMethod()) && MimeTypes.Type.FORM_ENCODED.is(req.getHeaders().get(HttpHeader.CONTENT_TYPE)))
                 {
-                    session.setAttribute(__J_POST, servletApiRequest.getContentParameters());
+                    // TODO limit size!!!
+                    session.setAttribute(__J_POST, FormFields.from(req));
                 }
             }
         }
@@ -473,7 +384,7 @@ public class FormAuthenticator extends LoginAuthenticator
             else
             {*/
         LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-        Response.sendRedirect(req, res, callback, servletContextRequest.getHttpServletResponse().encodeRedirectURL(URIUtil.addPaths(req.getContext().getContextPath(), _formLoginPage)));
+        Response.sendRedirect(req, res, callback, encodeURL(URIUtil.addPaths(req.getContext().getContextPath(), _formLoginPage)));
         //}
         return Authentication.SEND_CONTINUE;
     }

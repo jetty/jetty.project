@@ -22,8 +22,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.session.SimpleSessionHandler.SessionAPI;
-import org.eclipse.jetty.session.SimpleSessionHandler.SessionRequest;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,9 +65,7 @@ public class SimpleSessionHandlerTest
                 String pathInContext = Request.getPathInContext(request);
                 String[] split = pathInContext.substring(1).split("/");
 
-                SessionRequest sessionRequest = Request.as(request, SessionRequest.class);
-                Session session = sessionRequest.getSession(false);
-                SessionAPI api = session == null ? null : session.getApi();
+                Session session = request.getSession(false);
 
                 if (split.length > 0)
                 {
@@ -106,7 +102,7 @@ public class SimpleSessionHandlerTest
                                 callback.failed(new IllegalStateException("Session already created"));
                                 return true;
                             }
-                            session = sessionRequest.getSession(true);
+                            session = request.getSession(true);
                         }
 
                         case "invalidate" ->
@@ -126,7 +122,7 @@ public class SimpleSessionHandlerTest
                                 callback.failed(new IllegalStateException("No Session"));
                                 return true;
                             }
-                            api.renewId(request, response);
+                            session.renewId(request, response);
                         }
                     }
                 }
