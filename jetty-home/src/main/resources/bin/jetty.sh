@@ -464,13 +464,14 @@ case "$ACTION" in
         CH_USER="--chuid $JETTY_USER"
       fi
 
-      start-stop-daemon --start $CH_USER \
+      echo ${RUN_CMD[@]} start-log-file="$JETTY_START_LOG" | xargs start-stop-daemon \
+       --start $CH_USER \
        --pidfile "$JETTY_PID" \
        --chdir "$JETTY_BASE" \
        --background \
        --make-pidfile \
        --startas "$JAVA" \
-       -- ${RUN_ARGS[@]} start-log-file="$JETTY_START_LOG"
+       --
 
     else
 
