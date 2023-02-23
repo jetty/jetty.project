@@ -115,6 +115,8 @@ public class HugeResourceTest
 
         makeStaticFile(staticBase.resolve("test-1m.dat"), MB);
         makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
+        // The reason for testing 4GB and 10GB were because of various filesystem handling bugs
+        // we had in our code (the 2GB threshold and the 8GB threshold in various FileSystem APIs).
         // makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
         // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
@@ -603,10 +605,9 @@ public class HugeResourceTest
                     IO.copy(inputStream, byteCounting);
                     out.printf("part[%s].inputStream.length=%d%n", part.getName(), byteCounting.getCount());
                 }
-                catch (Throwable e)
+                catch (Throwable x)
                 {
-                    resp.setStatus(500);
-                    e.printStackTrace(out);
+                    throw new AssertionError(x);
                 }
             });
         }
