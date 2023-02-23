@@ -37,7 +37,7 @@ import static java.util.EnumSet.of;
  */
 public final class HttpCompliance implements ComplianceViolation.Mode
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
 
     // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
     // the relevant section of the RFC is not strictly adhered to.
@@ -222,9 +222,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
-     * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc2616,
-     * but not https://tools.ietf.org/html/rfc7230</dd>
-     * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc7230</dd>
+     * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to <a href="https://tools.ietf.org/html/rfc2616">RFC2616</a>,
+     * but not <a href="https://tools.ietf.org/html/rfc7230">RFC7230</a></dd>
+     * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to <a href="https://tools.ietf.org/html/rfc7230">RFC7230</a></dd>
      * <dt>name</dt><dd>Any of the known modes defined in {@link HttpCompliance#KNOWN_MODES}</dd>
      * </dl>
      * <p>
@@ -237,39 +237,37 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      */
     public static HttpCompliance from(String spec)
     {
-        Set<Violation> sections;
-        String[] elements = spec.split("\\s*,\\s*");
-        switch (elements[0])
+        HttpCompliance compliance = valueOf(spec);
+        if (compliance == null)
         {
-            case "0":
-                sections = noneOf(Violation.class);
-                break;
+            String[] elements = spec.split("\\s*,\\s*");
+            Set<Violation> sections = switch (elements[0])
+                {
+                    case "0" -> noneOf(Violation.class);
+                    case "*" -> allOf(Violation.class);
+                    default ->
+                    {
+                        HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
+                        yield (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                    }
+                };
 
-            case "*":
-                sections = allOf(Violation.class);
-                break;
-
-            default:
+            for (int i = 1; i < elements.length; i++)
             {
-                HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
-                sections = (mode == null) ? noneOf(HttpCompliance.Violation.class) : copyOf(mode.getAllowed());
+                String element = elements[i];
+                boolean exclude = element.startsWith("-");
+                if (exclude)
+                    element = element.substring(1);
+                Violation section = Violation.valueOf(element);
+                if (exclude)
+                    sections.remove(section);
+                else
+                    sections.add(section);
             }
-        }
 
-        for (int i = 1; i < elements.length; i++)
-        {
-            String element = elements[i];
-            boolean exclude = element.startsWith("-");
-            if (exclude)
-                element = element.substring(1);
-            Violation section = Violation.valueOf(element);
-            if (exclude)
-                sections.remove(section);
-            else
-                sections.add(section);
+            compliance = new HttpCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
         }
-
-        return new HttpCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
+        return compliance;
     }
 
     private final String _name;

@@ -218,25 +218,21 @@ public class CookieCompliance implements ComplianceViolation.Mode
         if (compliance == null)
         {
             String[] elements = spec.split("\\s*,\\s*");
-            Set<Violation> violations;
-            switch (elements[0])
+            Set<Violation> violations = switch (elements[0])
             {
-                case "0" :
-                    violations = noneOf(Violation.class);
-                    break;
-
-                case "*" :
-                    violations = allOf(Violation.class);
-                    break;
-
-                default :
+                case "0" -> noneOf(Violation.class);
+                case "*" -> allOf(Violation.class);
+                default ->
                 {
                     CookieCompliance mode = valueOf(elements[0]);
                     if (mode == null)
                         throw new IllegalArgumentException("Unknown base mode: " + elements[0]);
-                    violations = (mode.getAllowed().isEmpty())  ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                    if (mode.getAllowed().isEmpty())
+                        yield noneOf(Violation.class);
+                    else
+                        yield copyOf(mode.getAllowed());
                 }
-            }
+            };
 
             for (int i = 1; i < elements.length; i++)
             {
