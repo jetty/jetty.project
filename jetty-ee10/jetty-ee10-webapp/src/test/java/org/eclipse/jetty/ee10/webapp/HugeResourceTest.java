@@ -52,6 +52,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -70,7 +71,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -83,7 +83,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("large-disk-resource")
-@Disabled // TODO investigate
 public class HugeResourceTest
 {
     private static final long KB = 1024;
@@ -114,11 +113,10 @@ public class HugeResourceTest
             String.format("FileStore %s of %s needs at least 30GB of free space for this test (only had %,.2fGB)",
                 baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
 
-        makeStaticFile(staticBase.resolve("test-1M.dat"), MB);
-        makeStaticFile(staticBase.resolve("test-100M.dat"), 100 * MB);
-        makeStaticFile(staticBase.resolve("test-1G.dat"), GB);
-        // makeStaticFile(staticBase.resolve("test-4G.dat"), 4 * GB);
-        // makeStaticFile(staticBase.resolve("test-10G.dat"), 10 * GB);
+        makeStaticFile(staticBase.resolve("test-1m.dat"), MB);
+        makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
+        // makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
+        // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
         FS.ensureEmpty(outputDir);
@@ -131,11 +129,10 @@ public class HugeResourceTest
     {
         ArrayList<Arguments> ret = new ArrayList<>();
 
-        ret.add(Arguments.of("test-1M.dat", MB));
-        ret.add(Arguments.of("test-100M.dat", 100 * MB));
-        ret.add(Arguments.of("test-1G.dat", GB));
-        // ret.add(Arguments.of("test-4G.dat", 4 * GB));
-        // ret.add(Arguments.of("test-1Gg.dat", 10 * GB));
+        ret.add(Arguments.of("test-1m.dat", MB));
+        ret.add(Arguments.of("test-1g.dat", GB));
+        // ret.add(Arguments.of("test-4g.dat", 4 * GB));
+        // ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
     }
@@ -202,7 +199,8 @@ public class HugeResourceTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setDetailedDump(true);
         serverThreads.setName("server");
-        server = new Server(serverThreads);
+        // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
+        server = new Server(serverThreads, null, new ByteBufferPool.NonPooling());
         httpConfig = new HttpConfiguration();
         ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig));
         connector.setPort(0);
@@ -249,6 +247,8 @@ public class HugeResourceTest
         connector.setSelectors(1);
         connector.setExecutor(clientThreads);
         client = new HttpClient(new HttpClientTransportOverHTTP(connector));
+        // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
+        client.setByteBufferPool(new ByteBufferPool.NonPooling());
         client.start();
     }
 
@@ -603,8 +603,9 @@ public class HugeResourceTest
                     IO.copy(inputStream, byteCounting);
                     out.printf("part[%s].inputStream.length=%d%n", part.getName(), byteCounting.getCount());
                 }
-                catch (IOException e)
+                catch (Throwable e)
                 {
+                    resp.setStatus(500);
                     e.printStackTrace(out);
                 }
             });
