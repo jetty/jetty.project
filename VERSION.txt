@@ -1,3 +1,5 @@
+jetty-12.0.0-SNAPSHOT
+
 jetty-12.0.0.beta0 - 23 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
  + 8069 Jetty 12 is missing a way to record server latencies
