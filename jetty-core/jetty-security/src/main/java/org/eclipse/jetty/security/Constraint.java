@@ -33,6 +33,21 @@ public interface Constraint
 
     Set<String> getRoles();
 
+    default Constraint with(UserData userData)
+    {
+        return from(isForbidden(), userData, getAuthorization(), getRoles());
+    }
+
+    default Constraint with(Authorization authorization)
+    {
+        return from(isForbidden(), getUserData(), authorization, getRoles());
+    }
+
+    default Constraint with(String... roles)
+    {
+        return from(isForbidden(), getUserData(), getAuthorization(), roles);
+    }
+
     enum UserData
     {
         NONE,
@@ -106,7 +121,7 @@ public interface Constraint
             roles);
     }
 
-    static Constraint roles(String... roles)
+    static Constraint from(String... roles)
     {
         return from(false, null, Authorization.AUTHENTICATED_IN_ROLE, roles);
     }

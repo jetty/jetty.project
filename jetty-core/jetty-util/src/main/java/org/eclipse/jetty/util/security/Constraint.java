@@ -25,7 +25,6 @@ import java.util.Arrays;
 @Deprecated
 public class Constraint implements Cloneable, Serializable
 {
-
     public static final String __BASIC_AUTH = "BASIC";
 
     public static final String __FORM_AUTH = "FORM";
@@ -41,26 +40,9 @@ public class Constraint implements Cloneable, Serializable
     public static final String __NEGOTIATE_AUTH = "NEGOTIATE";
     public static final String __OPENID_AUTH = "OPENID";
 
-    public static boolean validateMethod(String method)
-    {
-        if (method == null)
-            return false;
-        method = method.trim();
-        return (method.equals(__FORM_AUTH) ||
-            method.equals(__BASIC_AUTH) ||
-            method.equals(__DIGEST_AUTH) ||
-            method.equals(__CERT_AUTH) ||
-            method.equals(__CERT_AUTH2) ||
-            method.equals(__SPNEGO_AUTH) ||
-            method.equals(__NEGOTIATE_AUTH) ||
-            method.equals(__OPENID_AUTH));
-    }
-
-    public static final int DC_UNSET = -1;
     public static final int DC_NONE = 0;
     public static final int DC_INTEGRAL = 1;
     public static final int DC_CONFIDENTIAL = 2;
-    public static final int DC_FORBIDDEN = 3;
 
     public static final String NONE = "NONE";
 
@@ -72,7 +54,7 @@ public class Constraint implements Cloneable, Serializable
 
     private String[] _roles;
 
-    private int _dataConstraint = DC_UNSET;
+    private int _dataConstraint = -1;
 
     private boolean _anyRole = false;
 
@@ -160,23 +142,6 @@ public class Constraint implements Cloneable, Serializable
     }
 
     /**
-     * @param role the role
-     * @return True if the constraint contains the role.
-     */
-    public boolean hasRole(String role)
-    {
-        if (_anyRole)
-            return true;
-        if (_roles != null)
-            for (int i = _roles.length; i-- > 0; )
-            {
-                if (role.equals(_roles[i]))
-                    return true;
-            }
-        return false;
-    }
-
-    /**
      * @param authenticate True if users must be authenticated
      */
     public void setAuthenticate(boolean authenticate)
@@ -220,19 +185,11 @@ public class Constraint implements Cloneable, Serializable
         return _dataConstraint;
     }
 
-    /**
-     * @return True if a data constraint has been set.
-     */
-    public boolean hasDataConstraint()
-    {
-        return _dataConstraint >= DC_NONE;
-    }
-
     @Override
     public String toString()
     {
         return "SC{" + _name +
             "," + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString())) +
-            "," + (_dataConstraint == DC_UNSET ? "DC_UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
+            "," + (_dataConstraint == -1 ? "UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
     }
 }

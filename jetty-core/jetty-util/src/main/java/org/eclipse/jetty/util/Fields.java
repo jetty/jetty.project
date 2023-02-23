@@ -48,7 +48,7 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>
+     * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>**
      *
      * @param caseSensitive whether this {@code Fields} instance must be case sensitive
      */
@@ -380,4 +380,25 @@ public class Fields implements Iterable<Fields.Field>
             return String.format("%s=%s", name, values);
         }
     }
+
+    /**
+     * <p>Combine two Fields</p>
+     * @param a The base Fields or null
+     * @param b The overlayed Fields or null
+     * @return Fields, which may be empty, but never null.
+     */
+    public static Fields combine(Fields a, Fields b)
+    {
+        if (b == null || b.isEmpty())
+            return a == null ? EMPTY : a;
+
+        if (a == null || a.isEmpty())
+            return b;
+
+        Fields fields = new Fields();
+        fields.addAll(a);
+        fields.addAll(b);
+        return fields;
+    }
+
 }

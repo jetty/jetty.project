@@ -232,17 +232,7 @@ public class FormAuthenticator extends LoginAuthenticator
         {
             Fields queryFields = Request.extractQueryParameters(request);
             Fields formFields = FormFields.from(request).get();
-
-            if (queryFields.isEmpty())
-                return formFields;
-
-            if (formFields.isEmpty())
-                return queryFields;
-
-            Fields fields = new Fields();
-            fields.addAll(queryFields);
-            fields.addAll(formFields);
-            return fields;
+            return Fields.combine(queryFields, formFields);
         }
         catch (InterruptedException | ExecutionException e)
         {

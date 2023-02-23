@@ -125,16 +125,11 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
     public FormFields(Content.Source source, Charset charset, int maxFields, int maxSize)
     {
-        this(source, charset, maxFields, maxSize, null);
-    }
-
-    public FormFields(Content.Source source, Charset charset, int maxFields, int maxSize, Fields fields)
-    {
         _source = source;
         _maxFields = maxFields;
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
-        _fields = fields == null ? new Fields() : fields;
+        _fields = new Fields();
     }
 
     @Override
