@@ -21,18 +21,35 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A Security Constraint interface.
+ * A Security Constraint.
  */
 public interface Constraint
 {
+    /**
+     * @return true if the {@code Constraint} forbids all access.
+     */
     boolean isForbidden();
 
+    /**
+     * @return The {@link UserData} criteria applied by this {@code Constraint}.
+     */
     UserData getUserData();
 
+    /**
+     * @return The {@link Authorization} criteria applied by this {@code Constraint}.
+     */
     Authorization getAuthorization();
 
+    /**
+     * @return The set of roles applied by this {@code Constraint} or the empty set.
+     */
     Set<String> getRoles();
 
+    /**
+     * <p>Create a new {@code Constraint}, based on this one but with the supplied {@link UserData}.</p>
+     * @param userData The {@code UserData} to apply to the new {@code Constraint}.
+     * @return a new  {@code Constraint} with the passed {@code UserData}.
+     */
     default Constraint with(UserData userData)
     {
         return from(isForbidden(), userData, getAuthorization(), getRoles());
