@@ -825,8 +825,9 @@ public class ServletApiRequest implements HttpServletRequest
             _parameters = _queryParameters;
         else if (_parameters == null)
         {
-            _parameters = new Fields(_queryParameters, false);
-            _contentParameters.forEach(_parameters::add);
+            _parameters = new Fields(true);
+            _parameters.addAll(_queryParameters);
+            _parameters.addAll(_contentParameters);
         }
 
         // protect against calls to recycled requests (which is illegal, but

@@ -18,6 +18,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.SimpleSessionHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -275,6 +277,43 @@ public class FormAuthenticatorTest
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
     }
 
+    @Test
+    public void testRedirectToPost() throws Exception
+    {
+        String response;
+        String sessionId = "unknown";
+
+        response = _connector.getResponse("""
+            POST /ctx/any/user HTTP/1.0\r
+            Host: host:8888\r
+            Content-Length: 25\r
+            Content-Type: application/x-www-form-urlencoded\r
+            Cookie: JSESSIONID=%s\r
+            \r
+            name1=value1&name2=value2\r
+            """.formatted(sessionId));
+        assertThat(response, containsString("HTTP/1.1 302 Found"));
+        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Set-Cookie: JSESSIONID="));
+        sessionId = sessionId(response);
+
+        response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 302 Found"));
+        assertThat(response, containsString("Location: http://host:8888/ctx/any/user"));
+        assertThat(response, containsString("Set-Cookie: JSESSIONID="));
+        String unsafeSessionId = sessionId;
+        sessionId = sessionId(response);
+        assertThat(sessionId, not(equalTo(unsafeSessionId)));
+
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
+        assertThat(response, containsString("name1: value1\r\n"));
+        assertThat(response, containsString("name2: value2\r\n"));
+        assertThat(response, containsString("user is OK"));
+
+    }
+
     public static class OkHandler extends Handler.Abstract
     {
         @Override
@@ -282,6 +321,13 @@ public class FormAuthenticatorTest
         {
             if (Boolean.parseBoolean(Request.extractQueryParameters(request).getValue("createSession")))
                 request.getSession(true);
+
+            if (request.getMethod().equals("POST"))
+            {
+                Fields form = FormFields.from(request).get();
+                for (Fields.Field field : form)
+                    response.getHeaders().put(field.getName(), field.getValue());
+            }
 
             Authentication authentication = Authentication.getAuthentication(request);
             if (authentication instanceof Authentication.User user)

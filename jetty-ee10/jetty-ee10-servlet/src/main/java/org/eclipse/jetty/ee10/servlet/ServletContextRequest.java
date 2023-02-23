@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 
@@ -50,8 +51,8 @@ public class ServletContextRequest extends ContextRequest
     static final int INPUT_STREAM = 1;
     static final int INPUT_READER = 2;
 
-    static final Fields NO_PARAMS = new Fields(new Fields(), true);
-    static final Fields BAD_PARAMS = new Fields(new Fields(), true);
+    static final Fields NO_PARAMS = new Fields(Collections.emptyMap());
+    static final Fields BAD_PARAMS = new Fields(Collections.emptyMap());
 
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {

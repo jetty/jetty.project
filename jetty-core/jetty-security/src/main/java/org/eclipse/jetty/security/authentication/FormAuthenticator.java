@@ -194,27 +194,36 @@ public class FormAuthenticator extends LoginAuthenticator
         //
         //See Servlet Spec 3.1 sec 13.6.3
         Session session = request.getSession(false);
-        if (session == null || session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE) == null)
-            return request; //not authenticated yet
-
-        HttpURI juri = (HttpURI)session.getAttribute(__J_URI);
-        if (juri == null)
-            return request; //no original uri saved
+        if (session == null)
+            return request; // couldn't be authenticated yet
 
         String method = (String)session.getAttribute(__J_METHOD);
-        if (method == null || method.length() == 0)
-            return request; //didn't save original request method
+        if (method == null)
+            return request; // No method so no wrapping required
 
-        if (!juri.equals(request.getHttpURI()))
-            return request; //this request is not for the same url as the original
+        if (session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE) == null)
+            return request; // not authenticated yet
+
+        HttpURI juri = (HttpURI)session.getAttribute(__J_URI);
+        if (juri == null || !juri.equals(request.getHttpURI()))
+            return request; //no original uri saved or this is not a request for it
 
         //restore the original request's method on this request
         if (LOG.isDebugEnabled())
             LOG.debug("Restoring original method {} for {} with method {}", method, juri, request.getMethod());
 
-        // TODO: Set method.
-        // servletContextRequest.getServletApiRequest().setMethod(method);
-        return request;
+        Fields fields = (Fields)session.removeAttribute(__J_POST);
+        if (fields != null)
+            request.setAttribute(FormFields.class.getName(), fields);
+
+        return new Request.Wrapper(request)
+        {
+            @Override
+            public String getMethod()
+            {
+                return method;
+            }
+        };
     }
 
     protected Fields getParameters(Request request)
@@ -380,12 +389,19 @@ public class FormAuthenticator extends LoginAuthenticator
             if (session.getAttribute(__J_URI) == null || _alwaysSaveUri)
             {
                 session.setAttribute(__J_URI, req.getHttpURI());
-                session.setAttribute(__J_METHOD, req.getMethod());
+                if (!req.getMethod().equals(HttpMethod.GET.asString()))
+                    session.setAttribute(__J_METHOD, req.getMethod());
 
                 if (HttpMethod.POST.is(req.getMethod()) && MimeTypes.Type.FORM_ENCODED.is(req.getHeaders().get(HttpHeader.CONTENT_TYPE)))
                 {
-                    // TODO limit size!!!
-                    session.setAttribute(__J_POST, FormFields.from(req));
+                    try
+                    {
+                        session.setAttribute(__J_POST, FormFields.from(req).get());
+                    }
+                    catch (InterruptedException | ExecutionException e)
+                    {
+                        throw new ServerAuthException(e);
+                    }
                 }
             }
         }
