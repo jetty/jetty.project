@@ -18,7 +18,6 @@ package org.eclipse.jetty.security;
  */
 public class UserAuthentication extends AbstractUserAuthentication
 {
-
     public UserAuthentication(String method, UserIdentity userIdentity)
     {
         super(method, userIdentity);

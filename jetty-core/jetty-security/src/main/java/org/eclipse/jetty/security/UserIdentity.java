@@ -25,7 +25,6 @@ import javax.security.auth.Subject;
  */
 public interface UserIdentity
 {
-
     /**
      * @return The user subject
      */
@@ -46,11 +45,11 @@ public interface UserIdentity
      */
     boolean isUserInRole(String role);
 
-    public interface UnauthenticatedUserIdentity extends UserIdentity
+    interface UnauthenticatedUserIdentity extends UserIdentity
     {
     }
 
-    public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
+    UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
     {
         @Override
         public Subject getSubject()

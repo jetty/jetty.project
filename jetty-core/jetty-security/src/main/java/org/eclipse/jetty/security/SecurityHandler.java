@@ -221,6 +221,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         if (isRunning())
             throw new IllegalStateException("running");
         _authMethod = authMethod;
+        if (_authenticator != null && !_authenticator.getAuthMethod().equals(_authMethod))
+            _authenticator = null;
     }
 
     @Override

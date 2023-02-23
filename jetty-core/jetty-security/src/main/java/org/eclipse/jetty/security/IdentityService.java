@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Request;
  */
 public interface IdentityService
 {
-    static final String[] NO_ROLES = new String[]{};
+    String[] NO_ROLES = new String[]{};
 
     /**
      * Associate a user identity with the current thread.
