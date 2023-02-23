@@ -135,11 +135,9 @@ public final class HttpCookieUtils
 
     public static String getSetCookie(HttpCookie httpCookie, CookieCompliance compliance)
     {
-        if (compliance == CookieCompliance.RFC6265)
+        if (compliance == null || CookieCompliance.RFC6265_LEGACY.compliesWith(compliance))
             return getRFC6265SetCookie(httpCookie);
-        if (compliance == CookieCompliance.RFC2965)
-            return getRFC2965SetCookie(httpCookie);
-        throw new IllegalStateException();
+        return getRFC2965SetCookie(httpCookie);
     }
 
     public static String getRFC2965SetCookie(HttpCookie httpCookie)

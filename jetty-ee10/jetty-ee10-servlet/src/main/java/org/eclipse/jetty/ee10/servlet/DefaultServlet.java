@@ -388,7 +388,7 @@ public class DefaultServlet extends HttpServlet
                 }
 
                 // no content
-                resp.setStatus(404);
+                resp.sendError(404);
             }
             else
             {
