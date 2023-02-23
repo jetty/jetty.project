@@ -583,7 +583,7 @@ case "$ACTION" in
     # Under control of daemontools supervise monitor which
     # handles restarts and shutdowns via the svc program.
     #
-    exec "${RUN_CMD[@]}"
+    echo ${RUN_CMD[*]} | xargs ${JAVA} > /dev/null &
 
     ;;
 
@@ -596,7 +596,7 @@ case "$ACTION" in
       exit 1
     fi
 
-    exec "${RUN_CMD[@]}"
+    echo ${RUN_CMD[*]} | xargs ${JAVA} > /dev/null &
     ;;
 
   check|status)
