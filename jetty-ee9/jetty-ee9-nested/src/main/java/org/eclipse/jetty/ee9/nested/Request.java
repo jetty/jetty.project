@@ -526,7 +526,7 @@ public class Request implements HttpServletRequest
             if (_input.isAsync())
                 throw new IllegalStateException("Cannot extract parameters with async IO");
 
-            UrlEncoded.decodeTo(in, params, getCharacterEncoding(), maxFormContentSize, maxFormKeys);
+            UrlEncoded.decodeTo(in, params, UrlEncoded.decodeCharset(getCharacterEncoding()), maxFormContentSize, maxFormKeys);
         }
         catch (IOException e)
         {
