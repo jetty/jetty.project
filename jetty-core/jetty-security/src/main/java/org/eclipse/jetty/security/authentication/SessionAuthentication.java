@@ -20,7 +20,7 @@ import java.io.Serializable;
 import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.SimpleSecurityHandler;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Session;
 import org.slf4j.Logger;
@@ -66,7 +66,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
     {
         stream.defaultReadObject();
 
-        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        SimpleSecurityHandler security = SimpleSecurityHandler.getCurrentSecurityHandler();
         if (security == null)
         {
             if (LOG.isDebugEnabled())

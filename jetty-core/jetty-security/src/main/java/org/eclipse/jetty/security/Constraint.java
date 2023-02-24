@@ -25,46 +25,6 @@ import java.util.stream.Stream;
  */
 public interface Constraint
 {
-    /**
-     * @return true if the {@code Constraint} forbids all access.
-     */
-    boolean isForbidden();
-
-    /**
-     * @return The {@link UserData} criteria applied by this {@code Constraint}.
-     */
-    UserData getUserData();
-
-    /**
-     * @return The {@link Authorization} criteria applied by this {@code Constraint}.
-     */
-    Authorization getAuthorization();
-
-    /**
-     * @return The set of roles applied by this {@code Constraint} or the empty set.
-     */
-    Set<String> getRoles();
-
-    /**
-     * <p>Create a new {@code Constraint}, based on this one but with the supplied {@link UserData}.</p>
-     * @param userData The {@code UserData} to apply to the new {@code Constraint}.
-     * @return a new  {@code Constraint} with the passed {@code UserData}.
-     */
-    default Constraint with(UserData userData)
-    {
-        return from(isForbidden(), userData, getAuthorization(), getRoles());
-    }
-
-    default Constraint with(Authorization authorization)
-    {
-        return from(isForbidden(), getUserData(), authorization, getRoles());
-    }
-
-    default Constraint with(String... roles)
-    {
-        return from(isForbidden(), getUserData(), getAuthorization(), roles);
-    }
-
     enum UserData
     {
         NONE,
@@ -111,6 +71,59 @@ public interface Constraint
         }
     }
 
+    /**
+     * @return The name for the {@code Constraint} or "unnamed@hashcode" if not named
+     */
+    default String getName()
+    {
+        return "unnamed@%x".formatted(hashCode());
+    }
+
+    /**
+     * @return true if the {@code Constraint} forbids all access.
+     */
+    boolean isForbidden();
+
+    /**
+     * @return The {@link UserData} criteria applied by this {@code Constraint}.
+     */
+    UserData getUserData();
+
+    /**
+     * @return The {@link Authorization} criteria applied by this {@code Constraint}.
+     */
+    Authorization getAuthorization();
+
+    /**
+     * @return The set of roles applied by this {@code Constraint} or the empty set.
+     */
+    Set<String> getRoles();
+
+    /**
+     * <p>Create a new {@code Constraint}, based on this one but with the supplied {@link UserData}.</p>
+     * @param userData The {@code UserData} to apply to the new {@code Constraint}.
+     * @return a new  {@code Constraint} with the passed {@code UserData}.
+     */
+    default Constraint with(UserData userData)
+    {
+        return from(isForbidden(), userData, getAuthorization(), getRoles());
+    }
+
+    default Constraint with(Authorization authorization)
+    {
+        return from(isForbidden(), getUserData(), authorization, getRoles());
+    }
+
+    default Constraint with(String... roles)
+    {
+        return from(isForbidden(), getUserData(), getAuthorization(), roles);
+    }
+
+    default Constraint named(String name)
+    {
+        return from(name, isForbidden(), getUserData(), getAuthorization(), getRoles());
+    }
+
     Constraint NONE = from(false, UserData.NONE, Authorization.NONE);
     Constraint FORBIDDEN = from(true, null, null);
     Constraint INTEGRAL = from(false, UserData.INTEGRAL, null);
@@ -152,12 +165,23 @@ public interface Constraint
 
     static Constraint from(boolean forbidden, UserData userData, Authorization authorization, Set<String> roles)
     {
+        return from(null, forbidden, userData, authorization, roles);
+    }
+
+    static Constraint from(String name, boolean forbidden, UserData userData, Authorization authorization, Set<String> roles)
+    {
         Set<String> roleSet = roles == null
             ? Collections.emptySet()
             : Collections.unmodifiableSet(roles);
 
         return new Constraint()
         {
+            @Override
+            public String getName()
+            {
+                return name != null ? name : Constraint.super.getName();
+            }
+
             @Override
             public boolean isForbidden()
             {

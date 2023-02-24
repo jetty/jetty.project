@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee.security;
 
 import java.util.List;
 import java.util.Set;
@@ -20,7 +20,7 @@ public interface ConstraintAware
 {
     List<ConstraintMapping> getConstraintMappings();
 
-    Set<String> getRoles();
+    Set<String> getKnownRoles();
 
     /**
      * Set Constraint Mappings and roles.
@@ -45,7 +45,7 @@ public interface ConstraintAware
      *
      * @param role the role
      */
-    void addRole(String role);
+    void addKnownRole(String role);
 
     /**
      * See Servlet Spec 31, sec 13.8.4, pg 145

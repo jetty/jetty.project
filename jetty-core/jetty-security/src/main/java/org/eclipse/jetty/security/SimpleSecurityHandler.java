@@ -57,11 +57,11 @@ import org.slf4j.LoggerFactory;
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
  */
-public abstract class SecurityHandler extends Handler.Wrapper implements Authenticator.AuthConfiguration
+public abstract class SimpleSecurityHandler extends Handler.Wrapper implements Authenticator.AuthConfiguration
 {
     public static String SESSION_AUTHENTICATED_ATTRIBUTE = "org.eclipse.jetty.security.sessionAuthenticated";
 
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleSecurityHandler.class);
     private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();
 
     private boolean _checkWelcomeFiles = false;
@@ -81,7 +81,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
     }
 
-    protected SecurityHandler()
+    protected SimpleSecurityHandler()
     {
         addBean(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
     }
@@ -522,11 +522,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         }
     }
 
-    public static SecurityHandler getCurrentSecurityHandler()
+    public static SimpleSecurityHandler getCurrentSecurityHandler()
     {
         ContextHandler contextHandler = ContextHandler.getCurrentContextHandler();
         if (contextHandler != null)
-            return contextHandler.getDescendant(SecurityHandler.class);
+            return contextHandler.getDescendant(SimpleSecurityHandler.class);
         // TODO what about without context?
         return null;
     }
@@ -634,9 +634,9 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             return "NOT CHECKED";
         }
 
-        public SecurityHandler getSecurityHandler()
+        public SimpleSecurityHandler getSecurityHandler()
         {
-            return SecurityHandler.this;
+            return SimpleSecurityHandler.this;
         }
     }
 
@@ -678,7 +678,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         }
     };
 
-    public static class Mapped extends SecurityHandler
+    public static class Mapped extends SimpleSecurityHandler
     {
         private final PathMappings<Constraint> _mappings = new PathMappings<>();
         private final Set<String> _knownRoles = new HashSet<>();

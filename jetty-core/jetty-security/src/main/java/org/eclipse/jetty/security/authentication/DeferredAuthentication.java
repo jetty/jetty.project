@@ -23,8 +23,8 @@ import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoggedOutAuthentication;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.SimpleSecurityHandler;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
@@ -112,7 +112,7 @@ public class DeferredAuthentication implements Authentication.Deferred
     @Override
     public Authentication logout(Request request)
     {
-        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        SimpleSecurityHandler security = SimpleSecurityHandler.getCurrentSecurityHandler();
         if (security != null)
         {
             security.logout(null);

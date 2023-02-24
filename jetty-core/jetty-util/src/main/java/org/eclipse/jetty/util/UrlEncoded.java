@@ -553,35 +553,14 @@ public class UrlEncoded
     }
 
     /**
-     * Decoded parameters to Map.
-     *
-     * @param in the stream containing the encoded parameters
-     * @param map the MultiMap to decode into
-     * @param charset the charset to use for decoding
-     * @param maxLength the maximum length of the form to decode or -1 for no limit
-     * @param maxKeys the maximum number of keys to decode or -1 for no limit
-     * @throws IOException if unable to decode the input stream
-     * @deprecated use {@link #decodeTo(InputStream, MultiMap, Charset, int, int)} instead
+     * @param charsetName The charset name for decoding or null for the default
+     * @return A Charset to use for decoding.
      */
-    @Deprecated(since = "10", forRemoval = true)
-    public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
-        throws IOException
+    public static Charset decodeCharset(String charsetName)
     {
-        if (charset == null)
-        {
-            if (ENCODING.equals(StandardCharsets.UTF_8))
-                decodeUtf8To(in, map, maxLength, maxKeys);
-            else
-                decodeTo(in, map, ENCODING, maxLength, maxKeys);
-        }
-        else if (StringUtil.__UTF8.equalsIgnoreCase(charset))
-            decodeUtf8To(in, map, maxLength, maxKeys);
-        else if (StringUtil.__ISO_8859_1.equalsIgnoreCase(charset))
-            decode88591To(in, map, maxLength, maxKeys);
-        else if (StringUtil.__UTF16.equalsIgnoreCase(charset))
-            decodeUtf16To(in, map, maxLength, maxKeys);
-        else
-            decodeTo(in, map, Charset.forName(charset), maxLength, maxKeys);
+        if (charsetName == null)
+            return ENCODING;
+        return Charset.forName(charsetName);
     }
 
     /**

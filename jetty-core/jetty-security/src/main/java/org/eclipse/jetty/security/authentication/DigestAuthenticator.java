@@ -27,8 +27,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.SimpleSecurityHandler;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
@@ -43,8 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)}
- * using the name "maxNonceAge".  The nonce max count can be set with {@link SecurityHandler#setInitParameter(String, String)}
+ * The nonce max age in ms can be set with the {@link SimpleSecurityHandler#setInitParameter(String, String)}
+ * using the name "maxNonceAge".  The nonce max count can be set with {@link SimpleSecurityHandler#setInitParameter(String, String)}
  * using the name "maxNonceCount".  When the age or count is exceeded, the nonce is considered stale.
  */
 public class DigestAuthenticator extends LoginAuthenticator

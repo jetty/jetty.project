@@ -14,7 +14,6 @@
 package org.eclipse.jetty.security;
 
 import java.io.Serializable;
-import java.util.Set;
 
 import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
@@ -53,6 +52,7 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     @Override
     public boolean isUserInRole(String role)
     {
+        /* TODO move to somewhere in ee
         //Servlet Spec 3.1 pg 125 if testing special role **
         if ("**".equals(role.trim()))
         {
@@ -64,10 +64,12 @@ public abstract class AbstractUserAuthentication implements User, Serializable
             else
                 return _userIdentity.isUserInRole(role);
         }
+         */
 
         return _userIdentity.isUserInRole(role);
     }
 
+    /* TODO remove this
     public boolean declaredRolesContains(String roleName)
     {
         SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
@@ -76,17 +78,19 @@ public abstract class AbstractUserAuthentication implements User, Serializable
 
         if (security instanceof ConstraintAware)
         {
-            Set<String> declaredRoles = ((ConstraintAware)security).getRoles();
+            xxx; Set<String> declaredRoles = ((ConstraintAware)security).getRoles();
             return (declaredRoles != null) && declaredRoles.contains(roleName);
         }
 
         return false;
     }
 
+     */
+
     @Override
     public Authentication logout(Request request)
     {
-        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        SimpleSecurityHandler security = SimpleSecurityHandler.getCurrentSecurityHandler();
         if (security != null)
         {
             security.logout(this);

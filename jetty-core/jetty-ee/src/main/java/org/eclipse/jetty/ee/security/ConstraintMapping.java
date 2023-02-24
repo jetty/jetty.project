@@ -11,17 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee.security;
 
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.security.Constraint;
 
 public class ConstraintMapping
 {
     String _method;
     String[] _methodOmissions;
-
     String _pathSpec;
-
     Constraint _constraint;
 
     /**

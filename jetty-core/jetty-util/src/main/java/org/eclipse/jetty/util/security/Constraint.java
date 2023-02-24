@@ -47,7 +47,6 @@ public class Constraint implements Cloneable, Serializable
     public static final String NONE = "NONE";
 
     public static final String ANY_ROLE = "*";
-
     public static final String ANY_AUTH = "**"; //Servlet Spec 3.1 pg 140
 
     private String _name;
