@@ -28,7 +28,7 @@ public class DefaultIdentityServiceTest
     public void testDefaultIdentityService() throws Exception
     {
         Server server = new Server();
-        SimpleSecurityHandler securityHandler = new SimpleSecurityHandler.Mapped();
+        SecurityHandler securityHandler = new SecurityHandler.Mapped();
         TestAuthenticator authenticator = new TestAuthenticator();
         securityHandler.setAuthenticator(authenticator);
 

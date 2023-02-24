@@ -47,7 +47,7 @@ public class FormAuthenticatorTest
     private LocalConnector _connector;
     private LocalConnector _connectorS;
     private SimpleSessionHandler _sessionHandler;
-    private SimpleSecurityHandler.Mapped _securityHandler;
+    private SecurityHandler.Mapped _securityHandler;
 
     @BeforeEach
     public void configureServer() throws Exception
@@ -94,7 +94,7 @@ public class FormAuthenticatorTest
         _server.setHandler(contextHandler);
         contextHandler.setHandler(_sessionHandler);
 
-        _securityHandler = new SimpleSecurityHandler.Mapped();
+        _securityHandler = new SecurityHandler.Mapped();
         _sessionHandler.setHandler(_securityHandler);
 
         _securityHandler.setHandler(new OkHandler());

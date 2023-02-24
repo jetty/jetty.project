@@ -35,12 +35,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
-public class SimpleSecurityHandlerTest
+public class SecurityHandlerTest
 {
     private Server _server;
     private LocalConnector _connector;
     private LocalConnector _connectorS;
-    private SimpleSecurityHandler.Mapped _securityHandler;
+    private SecurityHandler.Mapped _securityHandler;
 
     @BeforeEach
     public void configureServer() throws Exception
@@ -80,7 +80,7 @@ public class SimpleSecurityHandlerTest
 
         ContextHandler contextHandler = new ContextHandler("/ctx");
         _server.setHandler(contextHandler);
-        _securityHandler = new SimpleSecurityHandler.Mapped();
+        _securityHandler = new SecurityHandler.Mapped();
         contextHandler.setHandler(_securityHandler);
         _securityHandler.setHandler(new OkHandler());
         _server.start();
