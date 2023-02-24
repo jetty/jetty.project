@@ -117,8 +117,8 @@ public class HugeResourceTest
         makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
         // The reason for testing 4GB and 10GB were because of various filesystem handling bugs
         // we had in our code (the 2GB threshold and the 8GB threshold in various FileSystem APIs).
-        // makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
-        // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
+        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
+        makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
         FS.ensureEmpty(outputDir);
@@ -133,8 +133,8 @@ public class HugeResourceTest
 
         ret.add(Arguments.of("test-1m.dat", MB));
         ret.add(Arguments.of("test-1g.dat", GB));
-        // ret.add(Arguments.of("test-4g.dat", 4 * GB));
-        // ret.add(Arguments.of("test-10g.dat", 10 * GB));
+        ret.add(Arguments.of("test-4g.dat", 4 * GB));
+        ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
     }
@@ -430,7 +430,7 @@ public class HugeResourceTest
         Thread.sleep(100);
         stalled.set(false);
         demand.get().run();
-        assertTrue(complete.await(30, TimeUnit.SECONDS));
+        assertTrue(complete.await(60, TimeUnit.SECONDS));
         Response response = responseRef.get();
         assertThat("HTTP Response Code", response.getStatus(), is(200));
 
