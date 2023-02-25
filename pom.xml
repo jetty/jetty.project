@@ -48,9 +48,9 @@
     <hazelcast.version>3.12.12</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
-    <jackson.annotations.version>2.13.3</jackson.annotations.version>
-    <jackson.core.version>2.13.3</jackson.core.version>
-    <jackson.databind.version>2.13.3</jackson.databind.version>
+    <jackson.annotations.version>2.14.2</jackson.annotations.version>
+    <jackson.core.version>2.14.2</jackson.core.version>
+    <jackson.databind.version>2.14.2</jackson.databind.version>
     <jamon.version>2.82</jamon.version>
     <javax.activation.version>1.1.0.v201105071233</javax.activation.version>
     <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
@@ -59,9 +59,8 @@
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
     <javax.transaction.api.version>1.3</javax.transaction.api.version>
     <javax.websocket.api.version>1.0</javax.websocket.api.version>
-    <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
-    <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.4.3.Final</jboss.logging.version>
+    <jboss.threads.version>3.4.3.Final</jboss.threads.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.schemas.version>3.1.2</jetty.schemas.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
@@ -78,7 +77,7 @@
     <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.2.11</logback.version>
     <maven.plugin-tools.version>3.7.1</maven.plugin-tools.version>
-    <maven.resolver.version>1.9.4</maven.resolver.version>
+    <maven.resolver.version>1.9.5</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>2.14.3</mongodb.version>
     <osgi.annotation.version>8.1.0</osgi.annotation.version>
@@ -92,8 +91,7 @@
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.17.6</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
-    <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.1.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -109,7 +107,7 @@
     <jetty-version-txt.plugin.version>2.7</jetty-version-txt.plugin.version>
     <license.plugin.version>4.1</license.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.5.0</maven.assembly.plugin.version>
     <maven.invoker.plugin.version>3.5.0</maven.invoker.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
     <maven.checkstyle.plugin.version>3.2.1</maven.checkstyle.plugin.version>
@@ -1041,22 +1039,22 @@
       <dependency>
         <groupId>org.jboss.logging</groupId>
         <artifactId>jboss-logging-processor</artifactId>
-        <version>2.2.1.Final</version>
+        <version>${jboss.logging.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.logging</groupId>
         <artifactId>jboss-logging-annotations</artifactId>
-        <version>2.2.1.Final</version>
+        <version>${jboss.logging.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.logmanager</groupId>
         <artifactId>jboss-logmanager</artifactId>
-        <version>2.1.19.Final</version>
+        <version>${jboss.logging.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.threads</groupId>
         <artifactId>jboss-threads</artifactId>
-        <version>3.5.0.Final</version>
+        <version>${jboss.threads.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1125,11 +1123,6 @@
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
         <version>${jackson.annotations.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.wildfly.common</groupId>
-        <artifactId>wildfly-common</artifactId>
-        <version>${wildfly.common.version}</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>

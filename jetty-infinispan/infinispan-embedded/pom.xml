@@ -78,15 +78,5 @@
       <artifactId>infinispan-common</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-core</artifactId>
-      <exclusions>
-          <exclusion>
-              <groupId>org.wildfly.common</groupId>
-              <artifactId>wildfly-common</artifactId>
-          </exclusion>
-      </exclusions>
-    </dependency>
   </dependencies>
 </project>
