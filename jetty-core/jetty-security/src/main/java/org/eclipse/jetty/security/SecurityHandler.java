@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
@@ -57,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
  */
-public abstract class SecurityHandler extends Handler.Wrapper implements Authenticator.AuthConfiguration
+public abstract class SecurityHandler extends Handler.Wrapper implements AuthConfiguration
 {
     public static String SESSION_AUTHENTICATED_ATTRIBUTE = "org.eclipse.jetty.security.sessionAuthenticated";
 
@@ -237,6 +238,21 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         return _parameters.keySet();
     }
 
+    /**
+     * Set an authentication parameter for retrieval via {@link AuthConfiguration#getParameter(String)}
+     *
+     * @param key the key
+     * @param value the init value
+     * @return previous value
+     * @throws IllegalStateException if the SecurityHandler is started
+     */
+    public String setParameter(String key, String value)
+    {
+        if (isStarted())
+            throw new IllegalStateException("started");
+        return _parameters.put(key, value);
+    }
+
     protected LoginService findLoginService() throws Exception
     {
         java.util.Collection<LoginService> list = getServer().getBeans(LoginService.class);
@@ -382,7 +398,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
      * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
      *
      * @param renew true to renew the authentication on session
-     * @see Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
+     * @see AuthConfiguration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
     {

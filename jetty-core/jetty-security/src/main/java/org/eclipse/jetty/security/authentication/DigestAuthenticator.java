@@ -43,8 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)}
- * using the name "maxNonceAge".  The nonce max count can be set with {@link SecurityHandler#setInitParameter(String, String)}
+ * The nonce max age in ms can be set with the {@link SecurityHandler#setParameter(String, String)}
+ * using the name "maxNonceAge".  The nonce max count can be set with {@link SecurityHandler#setParameter(String, String)}
  * using the name "maxNonceCount".  When the age or count is exceeded, the nonce is considered stale.
  */
 public class DigestAuthenticator extends LoginAuthenticator
