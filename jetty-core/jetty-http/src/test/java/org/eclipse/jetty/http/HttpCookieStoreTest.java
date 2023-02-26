@@ -275,4 +275,24 @@ public class HttpCookieStoreTest
         assertTrue(store.clear());
         assertFalse(store.clear());
     }
+
+    @Test
+    public void testDifferentScheme()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI cookieURI = URI.create("http://example.com");
+        assertTrue(store.add(cookieURI, HttpCookie.from("n1", "v1")));
+
+        URI matchURI = URI.create(cookieURI.toString().replaceFirst("^http", "ws"));
+        List<HttpCookie> matches = store.match(matchURI);
+        assertEquals(1, matches.size());
+
+        cookieURI = URI.create("wss://example.com");
+        assertTrue(store.add(cookieURI, HttpCookie.from("n2", "v2")));
+
+        matchURI = URI.create("https://example.com");
+        matches = store.match(matchURI);
+        assertEquals(1, matches.size());
+        assertEquals("n2", matches.get(0).getName());
+    }
 }

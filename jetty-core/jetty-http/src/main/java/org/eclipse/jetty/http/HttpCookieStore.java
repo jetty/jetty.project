@@ -173,7 +173,7 @@ public interface HttpCookieStore
             // - add(sub.example.com, cookie[Domain]=null) => Key[domain=sub.example.com]
             // - add(sub.example.com, cookie[Domain]=example.com) => Key[domain=example.com]
             // This facilitates the matching algorithm.
-            Key key = new Key(uri.getScheme(), cookieDomain);
+            Key key = new Key(secure, cookieDomain);
             boolean[] result = new boolean[]{true};
             try (AutoLock ignored = lock.lock())
             {
@@ -217,8 +217,7 @@ public interface HttpCookieStore
         public List<HttpCookie> match(URI uri)
         {
             List<HttpCookie> result = new ArrayList<>();
-            String scheme = uri.getScheme();
-            boolean secure = HttpScheme.isSecure(scheme);
+            boolean secure = HttpScheme.isSecure(uri.getScheme());
             String uriDomain = uri.getHost();
             String path = uri.getPath();
             if (path == null || path.trim().isEmpty())
@@ -239,7 +238,7 @@ public interface HttpCookieStore
                 String domain = uriDomain;
                 while (true)
                 {
-                    Key key = new Key(scheme, domain);
+                    Key key = new Key(secure, domain);
                     List<HttpCookie> stored = cookies.get(key);
                     Iterator<HttpCookie> iterator = stored == null ? Collections.emptyIterator() : stored.iterator();
                     while (iterator.hasNext())
@@ -328,7 +327,7 @@ public interface HttpCookieStore
         @Override
         public boolean remove(URI uri, HttpCookie cookie)
         {
-            Key key = new Key(uri.getScheme(), uri.getHost());
+            Key key = new Key(HttpScheme.isSecure(uri.getScheme()), uri.getHost());
             try (AutoLock ignored = lock.lock())
             {
                 boolean[] result = new boolean[1];
@@ -356,11 +355,11 @@ public interface HttpCookieStore
             }
         }
 
-        private record Key(String scheme, String domain)
+        private record Key(boolean secure, String domain)
         {
-            private Key(String scheme, String domain)
+            private Key(boolean secure, String domain)
             {
-                this.scheme = scheme;
+                this.secure = secure;
                 this.domain = domain.toLowerCase(Locale.ENGLISH);
             }
         }
