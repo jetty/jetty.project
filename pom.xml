@@ -52,7 +52,7 @@
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.15.2</hawtio.version>
     <hazelcast.version>5.2.1</hazelcast.version>
-    <infinispan.protostream.version>4.6.0.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.6.1.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
     <jackson.version>2.14.1</jackson.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
@@ -100,12 +100,12 @@
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>9.0.52</jsp.impl.version>
     <junit.version>5.9.1</junit.version>
-    <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
-    <log4j2.version>2.19.0</log4j2.version>
+    <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
+    <log4j2.version>2.20.0</log4j2.version>
     <logback.version>1.3.5</logback.version>
     <mariadb.version>3.0.8</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.resolver.version>1.9.4</maven.resolver.version>
+    <maven.resolver.version>1.9.5</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -122,7 +122,7 @@
     <testcontainers.version>1.17.6</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.1.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -136,7 +136,7 @@
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.5.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.2.1</maven.checkstyle.plugin.version>
