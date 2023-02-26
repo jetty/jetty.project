@@ -72,8 +72,6 @@ jetty.console-capture.retainDays=7
 
 The properties that may be present in your Jetty 9.3's `start.ini`, such as `jetty.logging.retainDays` will still be working in Jetty 9.4, but a warning will be printed at Jetty 9.4 startup, saying to replace them with correspondent `jetty.console-capture.*` properties such as `jetty.console-capture.retainDays`.
 
-For information on logging modules in the Jetty 9.4 architecture please see the section on link:#configuring-logging-modules[configuring logging modules.]
-
 ==== Session Management
 
 Session management received a significant overhaul in Jetty 9.4.
