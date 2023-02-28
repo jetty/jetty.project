@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -157,7 +156,6 @@ public abstract class WebSocketNegotiation
     public void setSubprotocol(String protocol)
     {
         this.protocol = protocol;
-        response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
     }
 
     public List<String> getOfferedSubprotocols()
