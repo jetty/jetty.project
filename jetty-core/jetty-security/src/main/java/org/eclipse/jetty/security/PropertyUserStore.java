@@ -180,7 +180,7 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
 
             if (username.length() > 0)
             {
-                String[] roleArray = IdentityService.NO_ROLES;
+                String[] roleArray = new String[0];
                 if (roles != null && roles.length() > 0)
                     roleArray = StringUtil.csvSplit(roles);
                 known.add(username);

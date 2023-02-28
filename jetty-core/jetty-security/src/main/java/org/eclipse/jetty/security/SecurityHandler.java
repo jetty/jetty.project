@@ -445,7 +445,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
 
         // check authentication
-        Object previousIdentity = null;
         try
         {
             Authentication authentication = Authentication.getAuthentication(request);
@@ -460,26 +459,26 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             if (authentication instanceof Authentication.User userAuth)
             {
                 Authentication.setAuthentication(request, authentication);
-                if (_identityService != null)
-                    previousIdentity = _identityService.associate(userAuth.getUserIdentity());
-
-                if (authMandatory)
+                try (AutoCloseable association = _identityService.associate(userAuth.getUserIdentity()))
                 {
-                    boolean authorized = checkAuthorization(Request.getPathInContext(request), request, response, constraint, userAuth.getUserIdentity());
-                    if (!authorized)
+                    if (authMandatory)
                     {
-                        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!role");
-                        return true;
+                        boolean authorized = checkAuthorization(Request.getPathInContext(request), request, response, constraint, userAuth.getUserIdentity());
+                        if (!authorized)
+                        {
+                            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!role");
+                            return true;
+                        }
                     }
+
+                    //process the request by other handlers
+                    boolean processed = next.handle(request, response, callback);
+
+                    // TODO this looks wrong as in way too late
+                    if (processed && authenticator != null)
+                        authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
+                    return processed;
                 }
-
-                //process the request by other handlers
-                boolean processed = next.handle(request, response, callback);
-
-                // TODO this looks wrong as in way too late
-                if (processed && authenticator != null)
-                    authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
-                return processed;
             }
 
             if (authentication instanceof DeferredAuthentication deferred)
@@ -491,21 +490,23 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
                 {
                     //process the request by other handlers
                     handled = next.handle(request, response, callback);
+
+                    if (handled && authenticator != null)
+                    {
+                        Authentication auth = Authentication.getAuthentication(request);
+                        if (auth instanceof Authentication.User userAuth)
+                            authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
+                        else
+                            authenticator.secureResponse(request, response, callback, authMandatory, null);
+                    }
+                    return handled;
                 }
                 finally
                 {
-                    previousIdentity = deferred.getPreviousAssociation();
+                    IdentityService.Association association = deferred.getAssociation();
+                    if (association != null)
+                        association.close();
                 }
-
-                if (handled && authenticator != null)
-                {
-                    Authentication auth = Authentication.getAuthentication(request);
-                    if (auth instanceof Authentication.User userAuth)
-                        authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
-                    else
-                        authenticator.secureResponse(request, response, callback, authMandatory, null);
-                }
-                return handled;
             }
 
             if (authMandatory)
@@ -515,8 +516,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             }
 
             Authentication.setAuthentication(request, authentication);
-            if (_identityService != null)
-                previousIdentity = _identityService.associate(null);
 
             //process the request by other handlers
             boolean handled = next.handle(request, response, callback);
@@ -530,11 +529,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             // jaspi 3.8.3 send HTTP 500 internal server error, with message from AuthException
             Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
             return true;
-        }
-        finally
-        {
-            if (_identityService != null)
-                _identityService.disassociate(previousIdentity);
         }
     }
 
@@ -555,25 +549,19 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
         LoginService loginService = getLoginService();
         if (loginService != null)
-        {
             loginService.logout(user.getUserIdentity());
-        }
 
         IdentityService identityService = getIdentityService();
         if (identityService != null)
-        {
-            // TODO recover previous from threadlocal (or similar)
-            Object previous = null;
-            identityService.disassociate(previous);
-        }
+            identityService.logout(user.getUserIdentity());
     }
 
     protected abstract Constraint getConstraint(String pathInContext, Request request);
 
     protected boolean checkUserData(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
     {
-        Constraint.UserData dataConstraint = constraint.getUserData();
-        if (dataConstraint == null || dataConstraint == Constraint.UserData.NONE)
+        Constraint.Transport dataConstraint = constraint.getUserData();
+        if (dataConstraint == null || dataConstraint == Constraint.Transport.CLEAR)
             return true;
 
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();

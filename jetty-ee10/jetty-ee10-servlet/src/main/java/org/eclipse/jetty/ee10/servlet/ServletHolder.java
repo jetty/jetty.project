@@ -42,8 +42,10 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.RunAsToken;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
@@ -1336,12 +1338,15 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         }
 
         @Override
-        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        public void service(ServletRequest request, ServletResponse res) throws ServletException, IOException
         {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
+            ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+            Authentication authentication = servletContextRequest.getServletApiRequest().getAuthentication();
+            UserIdentity userIdentity = (authentication instanceof Authentication.User user) ? user.getUserIdentity() : _identityService.getSystemUserIdentity();
+            Object oldRunAs = _identityService.setRunAs(userIdentity, _runAsToken);
             try
             {
-                getWrapped().service(req, res);
+                getWrapped().service(request, res);
             }
             finally
             {

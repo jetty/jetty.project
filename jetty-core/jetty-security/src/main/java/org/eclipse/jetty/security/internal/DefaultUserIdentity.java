@@ -11,10 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.security.internal;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
+
+import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.security.UserIdentity;
 
 /**
  * The default implementation of UserIdentity.
@@ -47,6 +50,9 @@ public class DefaultUserIdentity implements UserIdentity
     @Override
     public boolean isUserInRole(String role)
     {
+        if (DefaultIdentityService.isRoleAssociated(role))
+            return true;
+
         //Servlet Spec 3.1, pg 125
         if ("*".equals(role))
             return false;

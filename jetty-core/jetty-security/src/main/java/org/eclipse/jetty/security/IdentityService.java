@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.Closeable;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
@@ -24,43 +25,27 @@ import org.eclipse.jetty.server.Request;
  */
 public interface IdentityService
 {
-    String[] NO_ROLES = new String[]{};
-
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the
      * {@link Handler#handle(Request, org.eclipse.jetty.server.Response, org.eclipse.jetty.util.Callback)}
      * method and then again with a null argument as that call exits.
      *
-     * @param user The current user or null for no user to associated.
-     * @return an object representing the previous associated state
+     * @param user The current user or null for no user to associate.
+     * @return A {@link Closeable} that, when closed, will disassociate the user and restore any prior associations.
      */
-    Object associate(UserIdentity user);
-
-    /**
-     * Disassociate the user identity from the current thread
-     * and restore previous identity.
-     *
-     * @param previous The opaque object returned from a call to {@link IdentityService#associate(UserIdentity)}
-     */
-    void disassociate(Object previous);
+    Association associate(UserIdentity user);
 
     /**
      * Associate a runas Token with the current user and thread.
      *
      * @param user The UserIdentity
-     * @param token The runAsToken to associate.
-     * @return The previous runAsToken or null.
+     * @param token The runAsToken to associate, obtained from {@link #newRunAsToken(String)}.
+     * @return A {@link Closeable} that, when closed, will disassociate the token and restore any prior associations.
      */
-    Object setRunAs(UserIdentity user, RunAsToken token);
+    Association associate(UserIdentity user, Object token);
 
-    /**
-     * Disassociate the current runAsToken from the thread
-     * and reassociate the previous token.
-     *
-     * @param token RUNAS returned from previous associateRunAs call
-     */
-    void unsetRunAs(Object token);
+    void logout(UserIdentity user);
 
     /**
      * Create a new UserIdentity for use with this identity service.
@@ -77,9 +62,14 @@ public interface IdentityService
      * Create a new RunAsToken from a runAsName (normally a role).
      *
      * @param runAsName Normally a role name
-     * @return A new immutable RunAsToken
+     * @return A token that can be passed to {@link #associate(UserIdentity, Object)}.
      */
-    RunAsToken newRunAsToken(String runAsName);
+    Object newRunAsToken(String runAsName);
 
     UserIdentity getSystemUserIdentity();
+
+    interface Association extends AutoCloseable
+    {
+
+    }
 }

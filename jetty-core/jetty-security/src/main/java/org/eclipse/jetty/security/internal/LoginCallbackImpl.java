@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.security.internal;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.authentication.LoginCallback;
 
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user
@@ -37,7 +37,7 @@ public class LoginCallbackImpl implements LoginCallback
 
     private Principal userPrincipal;
 
-    private String[] roles = IdentityService.NO_ROLES;
+    private String[] roles = new String[0];
 
     //TODO could use Credential instance instead of Object if Basic/Form create a Password object
     public LoginCallbackImpl(Subject subject, String userName, Object credential)

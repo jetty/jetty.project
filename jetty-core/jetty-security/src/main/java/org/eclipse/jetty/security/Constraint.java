@@ -25,22 +25,22 @@ import java.util.stream.Stream;
  */
 public interface Constraint
 {
-    enum UserData
+    enum Transport
     {
-        NONE,
+        CLEAR,
         INTEGRAL,
         CONFIDENTIAL;
 
-        static UserData combine(UserData a, UserData b)
+        static Transport combine(Transport a, Transport b)
         {
             if (a == null)
-                return b == null ? NONE : b;
+                return b == null ? CLEAR : b;
             if (b == null)
                 return a;
 
             return switch (b)
             {
-                case NONE -> a;
+                case CLEAR -> a;
                 case INTEGRAL -> a == CONFIDENTIAL ? CONFIDENTIAL : INTEGRAL;
                 case CONFIDENTIAL -> CONFIDENTIAL;
             };
@@ -74,10 +74,7 @@ public interface Constraint
     /**
      * @return The name for the {@code Constraint} or "unnamed@hashcode" if not named
      */
-    default String getName()
-    {
-        return "unnamed@%x".formatted(hashCode());
-    }
+    String getName();
 
     /**
      * @return true if the {@code Constraint} forbids all access.
@@ -85,9 +82,9 @@ public interface Constraint
     boolean isForbidden();
 
     /**
-     * @return The {@link UserData} criteria applied by this {@code Constraint}.
+     * @return The {@link Transport} criteria applied by this {@code Constraint}.
      */
-    UserData getUserData();
+    Transport getUserData();
 
     /**
      * @return The {@link Authorization} criteria applied by this {@code Constraint}.
@@ -99,35 +96,77 @@ public interface Constraint
      */
     Set<String> getRoles();
 
-    /**
-     * <p>Create a new {@code Constraint}, based on this one but with the supplied {@link UserData}.</p>
-     * @param userData The {@code UserData} to apply to the new {@code Constraint}.
-     * @return a new  {@code Constraint} with the passed {@code UserData}.
-     */
-    default Constraint with(UserData userData)
+    default Builder builder()
     {
-        return from(isForbidden(), userData, getAuthorization(), getRoles());
+        return new Builder(this);
     }
 
-    default Constraint with(Authorization authorization)
+    class Builder
     {
-        return from(isForbidden(), getUserData(), authorization, getRoles());
+        private String _name;
+        private boolean _forbidden;
+        private Transport _transport;
+        private Authorization _authorization;
+        private Set<String> _roles;
+
+        public Builder()
+        {}
+
+        Builder(Constraint constraint)
+        {
+            _forbidden = constraint.isForbidden();
+            _transport = constraint.getUserData();
+            _authorization = constraint.getAuthorization();
+            _roles = constraint.getRoles();
+        }
+
+        public Builder name(String name)
+        {
+            _name = name;
+            return this;
+        }
+
+        public Builder forbidden(boolean forbidden)
+        {
+            _forbidden = forbidden;
+            return this;
+        }
+
+        public Builder transport(Transport transport)
+        {
+            _transport = transport;
+            return this;
+        }
+
+        public Builder authorization(Authorization authorization)
+        {
+            _authorization = authorization;
+            return this;
+        }
+
+        public Builder roles(String... roles)
+        {
+            if (roles != null && roles.length > 0)
+            {
+                if (_roles == null)
+                    _roles = new HashSet<>();
+                else if (!(_roles instanceof HashSet<String>))
+                    _roles = new HashSet<>(_roles);
+                _roles.addAll(Arrays.asList(roles));
+            }
+            return this;
+        }
+
+        public Constraint build()
+        {
+            return from(_name, _forbidden, _transport, _authorization, _roles);
+        }
     }
 
-    default Constraint with(String... roles)
-    {
-        return from(isForbidden(), getUserData(), getAuthorization(), roles);
-    }
-
-    default Constraint named(String name)
-    {
-        return from(name, isForbidden(), getUserData(), getAuthorization(), getRoles());
-    }
-
-    Constraint NONE = from(false, UserData.NONE, Authorization.NONE);
+    Constraint NONE = from(false, Transport.CLEAR, Authorization.NONE);
     Constraint FORBIDDEN = from(true, null, null);
-    Constraint INTEGRAL = from(false, UserData.INTEGRAL, null);
-    Constraint CONFIDENTIAL = from(false, UserData.CONFIDENTIAL, null);
+    Constraint INTEGRAL = from(false, Transport.INTEGRAL, null);
+    Constraint CONFIDENTIAL = from(false, Transport.CONFIDENTIAL, null);
     Constraint AUTHENTICATED = from(false, null, Authorization.AUTHENTICATED);
     Constraint AUTHENTICATED_IN_KNOWN_ROLE = from(false, null, Authorization.AUTHENTICATED_IN_KNOWN_ROLE);
 
@@ -146,7 +185,7 @@ public interface Constraint
 
         return from(
             a.isForbidden() || b.isForbidden(),
-            UserData.combine(a.getUserData(), b.getUserData()),
+            Transport.combine(a.getUserData(), b.getUserData()),
             Authorization.combine(a.getAuthorization(), b.getAuthorization()),
             roles);
     }
@@ -156,19 +195,19 @@ public interface Constraint
         return from(false, null, Authorization.AUTHENTICATED_IN_ROLE, roles);
     }
 
-    static Constraint from(boolean forbidden, UserData userData, Authorization authorization, String... roles)
+    static Constraint from(boolean forbidden, Transport transport, Authorization authorization, String... roles)
     {
-        return from(forbidden, userData, authorization, (roles == null || roles.length == 0)
+        return from(forbidden, transport, authorization, (roles == null || roles.length == 0)
             ? Collections.emptySet()
             : new HashSet<>(Arrays.stream(roles).toList()));
     }
 
-    static Constraint from(boolean forbidden, UserData userData, Authorization authorization, Set<String> roles)
+    static Constraint from(boolean forbidden, Transport transport, Authorization authorization, Set<String> roles)
     {
-        return from(null, forbidden, userData, authorization, roles);
+        return from(null, forbidden, transport, authorization, roles);
     }
 
-    static Constraint from(String name, boolean forbidden, UserData userData, Authorization authorization, Set<String> roles)
+    static Constraint from(String name, boolean forbidden, Transport transport, Authorization authorization, Set<String> roles)
     {
         Set<String> roleSet = roles == null
             ? Collections.emptySet()
@@ -179,7 +218,7 @@ public interface Constraint
             @Override
             public String getName()
             {
-                return name != null ? name : Constraint.super.getName();
+                return name;
             }
 
             @Override
@@ -189,9 +228,9 @@ public interface Constraint
             }
 
             @Override
-            public UserData getUserData()
+            public Transport getUserData()
             {
-                return userData == null ? UserData.NONE : userData;
+                return transport == null ? Transport.CLEAR : transport;
             }
 
             @Override
@@ -204,6 +243,12 @@ public interface Constraint
             public Set<String> getRoles()
             {
                 return roleSet;
+            }
+
+            @Override
+            public Builder builder()
+            {
+                return null;
             }
         };
     }

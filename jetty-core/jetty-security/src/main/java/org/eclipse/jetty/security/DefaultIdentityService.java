@@ -16,42 +16,46 @@ package org.eclipse.jetty.security;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.security.internal.DefaultUserIdentity;
+import org.eclipse.jetty.security.internal.RoleRunAsToken;
+import org.eclipse.jetty.security.internal.RunAsToken;
+
 /**
- * Default Identity Service implementation.
- * This service handles only role reference maps passed in an
- * associated {@link UserIdentity}.  If there are roles
- * refs present, then associate will wrap the UserIdentity with one
- * that uses the role references in the
- * {@link UserIdentity#isUserInRole(String)}
- * implementation. All other operations are effectively noops.
- * TODO associate on demand and write callbacks?
+ *
  */
 public class DefaultIdentityService implements IdentityService
 {
-    /**
-     * If there are roles refs present in the scope, then wrap the UserIdentity
-     * with one that uses the role references in the {@link UserIdentity#isUserInRole(String)}
-     */
-    @Override
-    public Object associate(UserIdentity user)
+    private static final ThreadLocal<String> runAsRole = new ThreadLocal<>();
+
+    public static boolean isRoleAssociated(String role)
     {
-        return null;
+        return role != null && role.equals(runAsRole.get());
     }
 
     @Override
-    public void disassociate(Object previous)
+    public Association associate(UserIdentity user)
     {
+        return NOOP;
     }
 
     @Override
-    public Object setRunAs(UserIdentity user, RunAsToken token)
+    public Association associate(UserIdentity user, Object token)
     {
-        return token;
+        if (token instanceof RoleRunAsToken roleRunAsToken)
+        {
+            String oldAssociate = runAsRole.get();
+            runAsRole.set(roleRunAsToken.getRunAsRole());
+            if (oldAssociate == null)
+                return CLEAR_RUN_AS;
+            return () -> runAsRole.set(oldAssociate);
+        }
+        return NOOP;
     }
 
     @Override
-    public void unsetRunAs(Object lastToken)
+    public void logout(UserIdentity user)
     {
+        runAsRole.set(null);
     }
 
     @Override
@@ -71,4 +75,7 @@ public class DefaultIdentityService implements IdentityService
     {
         return new DefaultUserIdentity(subject, userPrincipal, roles);
     }
+
+    private static final Association NOOP = () -> {};
+    private static final Association CLEAR_RUN_AS = () -> runAsRole.set(null);
 }
