@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>10.0.14-SNAPSHOT</version>
+  <version>10.0.15-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -147,7 +147,7 @@
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
-    <maven.invoker.plugin.version>3.5.0</maven.invoker.plugin.version>
+    <maven.invoker.plugin.version>3.4.0</maven.invoker.plugin.version>
     <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
@@ -2285,9 +2285,11 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
+                <excludedGroups>external, large-disk-resource, stress, slow, flaky</excludedGroups>
                 <systemPropertyVariables>
                   <env>ci</env>
                   <maven.repo.uri>${maven.repo.uri}</maven.repo.uri>
+                  <jetty.testtracker.log>true</jetty.testtracker.log>
                 </systemPropertyVariables>
               </configuration>
             </plugin>
