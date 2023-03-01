@@ -285,24 +285,35 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         @Override
         public void onPartContent(Content.Chunk chunk)
         {
-            // Retain the chunk because it is stored for later use.
-            chunk.retain();
-            partChunks.add(chunk);
+            try (AutoLock ignored = lock.lock())
+            {
+                // Retain the chunk because it is stored for later use.
+                chunk.retain();
+                partChunks.add(chunk);
+            }
         }
 
         @Override
         public void onPart(String name, String fileName, HttpFields headers)
         {
-            parts.add(new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks)));
-            partChunks.forEach(Content.Chunk::release);
-            partChunks.clear();
+            try (AutoLock ignored = lock.lock())
+            {
+                parts.add(new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks)));
+                partChunks.forEach(Content.Chunk::release);
+                partChunks.clear();
+            }
         }
 
         @Override
         public void onComplete()
         {
             super.onComplete();
-            complete(new Parts(getBoundary(), parts));
+            List<MultiPart.Part> copy;
+            try (AutoLock ignored = lock.lock())
+            {
+                copy = List.copyOf(parts);
+            }
+            complete(new Parts(getBoundary(), copy));
         }
 
         @Override
@@ -315,19 +326,17 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         private void fail(Throwable cause)
         {
             List<MultiPart.Part> partsToFail;
-            List<Content.Chunk> partChunksToFail;
             try (AutoLock ignored = lock.lock())
             {
                 if (failure != null)
                     return;
                 failure = cause;
-                partsToFail = new ArrayList<>(parts);
+                partsToFail = List.copyOf(parts);
                 parts.clear();
-                partChunksToFail = new ArrayList<>(partChunks);
+                partChunks.forEach(Content.Chunk::release);
                 partChunks.clear();
             }
             partsToFail.forEach(p -> p.fail(cause));
-            partChunksToFail.forEach(Content.Chunk::release);
         }
     }
 }
