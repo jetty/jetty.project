@@ -71,6 +71,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -367,7 +368,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
-    @EnabledForJreRange(max = JRE.JAVA_10)
+    @Disabled("No longer supported on newer Java 8 releases")
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
@@ -447,7 +448,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
-    @EnabledForJreRange(max = JRE.JAVA_10)
+    @Disabled("Not supported with newer Java 8 releases")
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
