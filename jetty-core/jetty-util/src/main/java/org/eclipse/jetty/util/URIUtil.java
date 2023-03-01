@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
@@ -459,7 +460,8 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters
+     * Decode a URI path and strip parameters.
+     * @param path The URI path to decode
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
@@ -469,11 +471,58 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters of UTF-8 path
+     * Decode a URI path and strip parameters of UTF-8 path.
+     * @param path A String holding the URI path to decode
+     * @param offset The start of the URI within the path string
+     * @param length The length of the URI within the path string
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
     public static String decodePath(String path, int offset, int length)
+    {
+        return decodePath(path, offset, length, Utf8StringBuilder::append);
+    }
+
+    /**
+     * Decode a URI path and strip parameters of UTF-8 path, but leave %2F and %2C encoded.
+     * @param path A String holding the URI path to decode
+     * @see #canonicalPath(String)
+     * @see #normalizePath(String)
+     */
+    public static String decodeSafePath(String path)
+    {
+        return decodeSafePath(path, 0, path.length());
+    }
+
+    /**
+     * Decode a URI path and strip parameters of UTF-8 path, but leave %2F and %2C encoded.
+     * @param path A String holding the URI path to decode
+     * @param offset The start of the URI within the path string
+     * @param length The length of the URI within the path string
+     * @see #canonicalPath(String)
+     * @see #normalizePath(String)
+     */
+    public static String decodeSafePath(String path, int offset, int length)
+    {
+        return decodePath(path, offset, length, URIUtil::safePathAppend);
+    }
+
+    private static void safePathAppend(Utf8StringBuilder builder, byte b)
+    {
+        if (b == '/')
+            builder.append("%2F");
+        else if (b == '%')
+            builder.append("%25");
+        else
+            builder.append(b);
+    }
+
+    /**
+     * Decode a URI path and strip parameters of UTF-8 path
+     * @see #canonicalPath(String)
+     * @see #normalizePath(String)
+     */
+    public static String decodePath(String path, int offset, int length, BiConsumer<Utf8StringBuilder, Byte> decoder)
     {
         try
         {
@@ -487,7 +536,7 @@ public final class URIUtil
                     case '%':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(path.length());
+                            builder = new Utf8StringBuilder(length);
                             builder.append(path, offset, i - offset);
                         }
                         if ((i + 2) < end)
@@ -500,12 +549,13 @@ public final class URIUtil
                                 String str = new String(codePoints, 0, 1);
                                 byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
                                 for (byte b: bytes)
-                                    builder.append(b);
+                                    decoder.accept(builder, b);
                                 i += 5;
                             }
                             else
                             {
-                                builder.append((byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
+                                byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
+                                decoder.accept(builder, b);
                                 i += 2;
                             }
                         }

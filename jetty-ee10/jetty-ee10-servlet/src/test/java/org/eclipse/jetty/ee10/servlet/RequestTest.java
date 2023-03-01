@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -120,5 +121,58 @@ public class RequestTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999/"));
         assertThat("request.getRequestURI", resultRequestURI.get(), is("/"));
+    }
+
+    @Test
+    public void testSafeURI() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp)
+            {
+            }
+        });
+
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986_UNAMBIGUOUS);
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET /test/foo%2fbar HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+    }
+
+    @Test
+    public void testGetWithEncodedURI() throws Exception
+    {
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
+        final AtomicReference<String> resultPathInfo = new AtomicReference<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp)
+            {
+                resultRequestURI.set(request.getRequestURI());
+                resultPathInfo.set(request.getPathInfo());
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET /test/path%20info/foo%2fbar HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is("/test/path%20info/foo%2fbar"));
+        assertThat("request.getPathInfo", resultPathInfo.get(), is("/test/path info/foo%2Fbar"));
     }
 }
