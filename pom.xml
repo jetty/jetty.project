@@ -2285,9 +2285,11 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
+                <excludedGroups>external, large-disk-resource, stress, slow, flaky</excludedGroups>
                 <systemPropertyVariables>
                   <env>ci</env>
                   <maven.repo.uri>${maven.repo.uri}</maven.repo.uri>
+                  <jetty.testtracker.log>true</jetty.testtracker.log>
                 </systemPropertyVariables>
               </configuration>
             </plugin>
