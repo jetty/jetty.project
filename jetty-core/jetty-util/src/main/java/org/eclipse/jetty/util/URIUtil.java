@@ -484,7 +484,7 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters of UTF-8 path, but leave %2F and %2C encoded.
+     * Decode a URI path and strip parameters of UTF-8 path, but URI leaves reserved path characters encoded.
      * @param path A String holding the URI path to decode
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
@@ -495,7 +495,7 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters of UTF-8 path, but leave %2F and %2C encoded.
+     * Decode a URI path and strip parameters of UTF-8 path, but URI leaves reserved path characters encoded.
      * @param path A String holding the URI path to decode
      * @param offset The start of the URI within the path string
      * @param length The length of the URI within the path string
@@ -509,12 +509,13 @@ public final class URIUtil
 
     private static void safePathAppend(Utf8StringBuilder builder, byte b)
     {
-        if (b == '/')
-            builder.append("%2F");
-        else if (b == '%')
-            builder.append("%25");
-        else
-            builder.append(b);
+        switch (b)
+        {
+            case '/' -> builder.append("%2F");
+            case '%' -> builder.append("%25");
+            case '?' -> builder.append("%3F");
+            default -> builder.append(b);
+        }
     }
 
     /**
