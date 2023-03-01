@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.51-SNAPSHOT</version>
+  <version>9.4.52-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -1525,7 +1525,10 @@
               <artifactId>maven-surefire-plugin</artifactId>
               <version>${maven.surefire.plugin.version}</version>
               <configuration>
-                <excludedGroups>external, large-disk-resource</excludedGroups>
+                <excludedGroups>external, large-disk-resource, stress, slow</excludedGroups>
+                <systemPropertyVariables>
+                  <jetty.testtracker.log>true</jetty.testtracker.log>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>
