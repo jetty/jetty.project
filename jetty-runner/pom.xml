@@ -72,6 +72,13 @@
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+            <configuration>
+              <extraArtifacts>
+                <extraArtifact>org.eclipse.jetty:jetty-home:${project.version}:zip</extraArtifact>
+                <extraArtifact>org.eclipse.jetty.demos:demo-simple-webapp:${project.version}:war</extraArtifact>
+                <extraArtifact>org.eclipse.jetty:jetty-client:${project.version}</extraArtifact>
+              </extraArtifacts>
+            </configuration>
           </execution>
         </executions>
         <configuration>
