@@ -1532,7 +1532,10 @@
               <artifactId>maven-surefire-plugin</artifactId>
               <version>${maven.surefire.plugin.version}</version>
               <configuration>
-                <excludedGroups>external, large-disk-resource</excludedGroups>
+                <excludedGroups>external, large-disk-resource, stress, slow</excludedGroups>
+                <systemPropertyVariables>
+                  <jetty.testtracker.log>true</jetty.testtracker.log>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>
