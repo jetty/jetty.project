@@ -93,11 +93,6 @@
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
-            <configuration>
-              <extraArtifacts>
-                <extraArtifact>org.eclipse.jetty:jetty-home:${project.version}:zip</extraArtifact>
-              </extraArtifacts>
-            </configuration>
           </execution>
         </executions>
         <configuration>
