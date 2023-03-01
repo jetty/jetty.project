@@ -82,6 +82,12 @@ public abstract class ByteBufferChunk implements Content.Chunk
         {
             return references.release();
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s[rc=%d]".formatted(super.toString(), references.get());
+        }
     }
 
     public static class ReleasedByRunnable extends ByteBufferChunk.WithReferenceCount
@@ -158,6 +164,12 @@ public abstract class ByteBufferChunk implements Content.Chunk
         public boolean release()
         {
             return retainable.release();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s[%s]".formatted(super.toString(), retainable);
         }
     }
 }

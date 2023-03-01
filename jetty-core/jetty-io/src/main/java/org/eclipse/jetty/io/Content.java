@@ -333,6 +333,7 @@ public class Content
          * the content reader reads a content chunk, via an {@link Chunk.Error} instance.</p>
          * <p>If {@link #read()} has returned a last chunk, this is a no operation.</p>
          * <p>Typical failure: the content being aborted by user code, or idle timeouts.</p>
+         * <p>If this method has already been called, then it is a no operation.</p>
          *
          * @param failure the cause of the failure
          */
