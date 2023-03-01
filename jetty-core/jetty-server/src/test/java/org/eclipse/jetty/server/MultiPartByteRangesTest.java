@@ -19,6 +19,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,7 +28,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -46,12 +49,14 @@ public class MultiPartByteRangesTest
 {
     private Server server;
     private ServerConnector connector;
+    private LeakTrackingBufferPool byteBufferPool;
 
     private void start(Handler handler) throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        server = new Server(serverThreads);
+        byteBufferPool = new LeakTrackingBufferPool();
+        server = new Server(serverThreads, null, byteBufferPool);
         connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -62,6 +67,7 @@ public class MultiPartByteRangesTest
     public void dispose()
     {
         LifeCycle.stop(server);
+        assertEquals(0, byteBufferPool.countLeaks());
     }
 
     @Test
@@ -124,6 +130,33 @@ public class MultiPartByteRangesTest
             assertEquals("456", Content.Source.asString(part2.getContentSource()));
             MultiPart.Part part3 = parts.get(2);
             assertEquals("CDEF", Content.Source.asString(part3.getContentSource()));
+        }
+    }
+
+    private static class LeakTrackingBufferPool extends ArrayByteBufferPool
+    {
+        private final AtomicInteger leaks = new AtomicInteger();
+
+        public int countLeaks()
+        {
+            return leaks.get();
+        }
+
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            leaks.incrementAndGet();
+            return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+            {
+                @Override
+                public boolean release()
+                {
+                    boolean released = super.release();
+                    if (released)
+                        leaks.decrementAndGet();
+                    return released;
+                }
+            };
         }
     }
 }
