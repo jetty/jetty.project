@@ -67,6 +67,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -1406,6 +1407,7 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
+    @Disabled("OpenJDK 11.0.18+ breaks this test")
     @Test
     public void testRequestWithContentWithRenegotiationInMiddleOfContentWhenRenegotiationIsForbidden() throws Exception
     {
