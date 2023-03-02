@@ -137,22 +137,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
      */
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
-    /**
-     * @deprecated equivalent to DEFAULT
-     */
-    @SuppressWarnings("DeprecatedIsStillUsed")
-    @Deprecated
-    public static final UriCompliance SAFE = new UriCompliance("SAFE", DEFAULT.getAllowed());
-
-    /**
-     * @deprecated equivalent to RFC3986
-     */
-    @SuppressWarnings("DeprecatedIsStillUsed")
-    @Deprecated
-    public static final UriCompliance STRICT = new UriCompliance("STRICT", RFC3986_UNAMBIGUOUS.getAllowed());
-
     private static final AtomicInteger __custom = new AtomicInteger();
-    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE, SAFE, STRICT);
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE);
 
     public static UriCompliance valueOf(String name)
     {

@@ -461,7 +461,7 @@ public class ServletChannel
                                 }
                             }
                             // We first worked with the core pathInContext above, but now need to convert to servlet style
-                            pathInContext = URIUtil.decodeSafePath(pathInContext);
+                            pathInContext = URIUtil.safeDecodePath(pathInContext);
 
                             Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, pathInContext);
                             dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());

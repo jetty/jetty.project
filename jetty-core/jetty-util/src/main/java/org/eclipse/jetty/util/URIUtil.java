@@ -489,9 +489,9 @@ public final class URIUtil
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
-    public static String decodeSafePath(String path)
+    public static String safeDecodePath(String path)
     {
-        return decodeSafePath(path, 0, path.length());
+        return safeDecodePath(path, 0, path.length());
     }
 
     /**
@@ -502,7 +502,7 @@ public final class URIUtil
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
-    public static String decodeSafePath(String path, int offset, int length)
+    public static String safeDecodePath(String path, int offset, int length)
     {
         return decodePath(path, offset, length, URIUtil::safePathAppend);
     }
