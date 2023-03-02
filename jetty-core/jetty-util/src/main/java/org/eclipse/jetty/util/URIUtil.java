@@ -460,7 +460,7 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters.
+     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters.
      * @param path The URI path to decode
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
@@ -471,7 +471,7 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters of UTF-8 path.
+     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters.
      * @param path A String holding the URI path to decode
      * @param offset The start of the URI within the path string
      * @param length The length of the URI within the path string
@@ -484,7 +484,7 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters of UTF-8 path, but URI leaves reserved path characters encoded.
+     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters, but leaves reserved path characters percent-encoded.
      * @param path A String holding the URI path to decode
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
@@ -495,7 +495,7 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters of UTF-8 path, but URI leaves reserved path characters encoded.
+     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters, but leaves reserved path characters percent-encoded.
      * @param path A String holding the URI path to decode
      * @param offset The start of the URI within the path string
      * @param length The length of the URI within the path string
