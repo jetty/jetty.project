@@ -89,6 +89,20 @@ jetty-11.0.12 - 14 September 2022
  + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
    an authority-form request-target
 
+jetty-10.0.14 - 22 February 2023
+ + 7650 QueuedThreadPool: Stopped without executing or closing null
+ + 9059 IteratingCallback not serializing close() and failed()
+ + 9119 Wrong value of javax.servlet.forward.context_path attribute
+ + 9181 Jetty 9 java.lang.NullPointerException
+   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
+ + 9183 ConnectHandler may close the connection instead of sending 200 OK
+ + 9285 ContextHandler sends redirect on BaseResponse instead of Wrapped
+   Response object from Handler chain
+ + 9334 Better support for Cookie RFC 2965 compliance
+ + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
+   hard-coded message
+ + jetty-12 null
+
 jetty-10.0.13 - 07 December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
  + 7286 WebSocket write can time out even if the frame / callback has not been
