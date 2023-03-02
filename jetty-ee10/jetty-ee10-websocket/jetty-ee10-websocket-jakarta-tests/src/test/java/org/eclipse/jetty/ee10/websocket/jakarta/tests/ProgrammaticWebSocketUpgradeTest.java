@@ -35,16 +35,21 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.internal.JakartaWebSocketCreator;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ProgrammaticWebSocketUpgradeTest
 {
@@ -97,6 +102,20 @@ public class ProgrammaticWebSocketUpgradeTest
         }
     }
 
+    public static class BrokenEndpoint extends Endpoint
+    {
+        public BrokenEndpoint()
+        {
+            throw new RuntimeException("Broken");
+        }
+
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
     public static class CustomUpgradeServlet extends HttpServlet
     {
         private JakartaWebSocketServerContainer container;
@@ -128,6 +147,12 @@ public class ProgrammaticWebSocketUpgradeTest
                         container.upgradeHttpToWebSocket(request, response, sec, PATH_PARAMS);
                         break;
                     }
+                    case "/brokenEndpoint":
+                    {
+                        ServerEndpointConfig sec = ServerEndpointConfig.Builder.create(BrokenEndpoint.class, "/").build();
+                        container.upgradeHttpToWebSocket(request, response, sec, PATH_PARAMS);
+                        break;
+                    }
                     default:
                         throw new IllegalStateException();
                 }
@@ -153,6 +178,25 @@ public class ProgrammaticWebSocketUpgradeTest
         String msg = socket.textMessages.poll();
         assertThat(msg, is("hello world"));
         assertThat(socket.closeReason.getCloseCode(), is(CloseReason.CloseCodes.NORMAL_CLOSURE));
+    }
+
+    @Test
+    public void testWebSocketUpgradeFailure() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(JakartaWebSocketCreator.class);)
+        {
+            URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/brokenEndpoint");
+            EventSocket socket = new EventSocket();
+            try
+            {
+                client.connectToServer(socket, uri);
+                fail("expected IOException");
+            }
+            catch (IOException ioe)
+            {
+                assertInstanceOf(UpgradeException.class, ioe.getCause());
+            }
+        }
     }
 
     @Test
