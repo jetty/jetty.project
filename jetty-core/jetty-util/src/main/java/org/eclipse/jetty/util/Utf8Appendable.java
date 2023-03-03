@@ -81,6 +81,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     };
 
     private int _codep;
+    private boolean _throwOnInvalid = true;
 
     public Utf8Appendable(Appendable appendable)
     {
@@ -88,6 +89,16 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     }
 
     public abstract int length();
+
+    public boolean isThrowOnInvalid()
+    {
+        return _throwOnInvalid;
+    }
+
+    public void setThrowOnInvalid(boolean throwOnInvalid)
+    {
+        _throwOnInvalid = throwOnInvalid;
+    }
 
     protected void reset()
     {
@@ -101,7 +112,8 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
             _appendable.append(REPLACEMENT);
             int state = _state;
             _state = UTF8_ACCEPT;
-            throw new NotUtf8Exception("char appended in state " + state);
+            if (_throwOnInvalid)
+                throw new NotUtf8Exception("char appended in state " + state);
         }
     }
 
@@ -250,7 +262,9 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                     _codep = 0;
                     _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
-                    throw new NotUtf8Exception(reason);
+                    if (_throwOnInvalid)
+                        throw new NotUtf8Exception(reason);
+                    break;
 
                 default:
                     _state = next;
@@ -286,7 +300,8 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
             {
                 throw new RuntimeException(e);
             }
-            throw new NotUtf8Exception("incomplete UTF8 sequence");
+            if (_throwOnInvalid)
+                throw new NotUtf8Exception("incomplete UTF8 sequence");
         }
     }
 

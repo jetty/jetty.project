@@ -139,6 +139,30 @@ public class Utf8AppendableTest
         assertEquals("\u00FC\u00F6\u00E4", buffer.toString());
     }
 
+    /**
+     * Test of ARABIC LETTER TEH MARBUTA.
+     * (hex code point 0629, decimal code point 1577, hex utf-8 bytes D8 A9)
+     * (bidi note, this is a right to left character as well)
+     */
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testArabicTehMarbuta(Class<Utf8Appendable> impl) throws Exception
+    {
+        byte[] bytes = new byte[4];
+        bytes[0] = (byte)0xD8;
+        bytes[1] = (byte)0xA9;
+        bytes[2] = (byte)0xD8;
+        bytes[3] = (byte)0xA9;
+
+        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+        for (int i = 0; i < bytes.length; i++)
+        {
+            buffer.append(bytes[i]);
+        }
+
+        assertEquals("ةة", buffer.toString());
+    }
+
     @ParameterizedTest
     @MethodSource("implementations")
     public void testInvalidUTF8(Class<Utf8Appendable> impl) throws UnsupportedEncodingException
