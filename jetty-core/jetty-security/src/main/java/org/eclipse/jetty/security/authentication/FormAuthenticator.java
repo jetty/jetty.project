@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authentication.User;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +120,7 @@ public class FormAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__FORM_AUTH;
+        return Authenticator.FORM_AUTH;
     }
 
     private void setLoginPage(String path)

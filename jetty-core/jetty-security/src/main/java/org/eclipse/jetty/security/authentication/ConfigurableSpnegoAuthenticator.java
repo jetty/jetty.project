@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.SpnegoUserIdentity;
@@ -31,7 +32,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 
     public ConfigurableSpnegoAuthenticator()
     {
-        this(Constraint.__SPNEGO_AUTH);
+        this(Authenticator.SPNEGO_AUTH);
     }
 
     /**

@@ -25,28 +25,6 @@ import java.util.stream.Stream;
  */
 public interface Constraint
 {
-    enum Transport
-    {
-        REQUIRE_NONE,
-        REQUIRE_INTEGRAL,
-        REQUIRE_CONFIDENTIAL;
-
-        static Transport combine(Transport a, Transport b)
-        {
-            if (a == null)
-                return b == null ? REQUIRE_NONE : b;
-            if (b == null)
-                return a;
-
-            return switch (b)
-            {
-                case REQUIRE_NONE -> a;
-                case REQUIRE_INTEGRAL -> a == REQUIRE_CONFIDENTIAL ? REQUIRE_CONFIDENTIAL : REQUIRE_INTEGRAL;
-                case REQUIRE_CONFIDENTIAL -> REQUIRE_CONFIDENTIAL;
-            };
-        }
-    }
-
     enum Authentication
     {
         REQUIRE_NONE,
@@ -82,9 +60,9 @@ public interface Constraint
     boolean isForbidden();
 
     /**
-     * @return The {@link Transport} criteria applied by this {@code Constraint}.
+     * @return {@code True} if the transport must be confidential.
      */
-    Transport getTransport();
+    boolean isConfidential();
 
     /**
      * @return The {@link Authentication} criteria applied by this {@code Constraint}.
@@ -105,7 +83,7 @@ public interface Constraint
     {
         private String _name;
         private boolean _forbidden;
-        private Transport _transport;
+        private boolean _confidential;
         private Authentication _authentication;
         private Set<String> _roles;
 
@@ -115,7 +93,7 @@ public interface Constraint
         Builder(Constraint constraint)
         {
             _forbidden = constraint.isForbidden();
-            _transport = constraint.getTransport();
+            _confidential = constraint.isConfidential();
             _authentication = constraint.getAuthentication();
             _roles = constraint.getRoles();
         }
@@ -142,15 +120,15 @@ public interface Constraint
             return _forbidden;
         }
 
-        public Builder transport(Transport transport)
+        public Builder confidential(boolean confidential)
         {
-            _transport = transport;
+            _confidential = confidential;
             return this;
         }
 
-        public Transport getTransport()
+        public boolean isConfidential()
         {
-            return _transport;
+            return _confidential;
         }
 
         public Builder authentication(Authentication authentication)
@@ -184,16 +162,15 @@ public interface Constraint
 
         public Constraint build()
         {
-            return from(_name, _forbidden, _transport, _authentication, _roles);
+            return from(_name, _forbidden, _confidential, _authentication, _roles);
         }
     }
 
-    Constraint NONE = from(false, Transport.REQUIRE_NONE, Authentication.REQUIRE_NONE);
-    Constraint FORBIDDEN = from(true, null, null);
-    Constraint INTEGRAL = from(false, Transport.REQUIRE_INTEGRAL, null);
-    Constraint CONFIDENTIAL = from(false, Transport.REQUIRE_CONFIDENTIAL, null);
-    Constraint AUTHENTICATED = from(false, null, Authentication.REQUIRE);
-    Constraint AUTHENTICATED_KNOWN_ROLE = from(false, null, Authentication.REQUIRE_KNOWN_ROLE);
+    Constraint NONE = from(false, false, Authentication.REQUIRE_NONE);
+    Constraint FORBIDDEN = from(true, false, null);
+    Constraint CONFIDENTIAL = from(false, true, null);
+    Constraint AUTHENTICATED = from(false, false, Authentication.REQUIRE);
+    Constraint AUTHENTICATED_KNOWN_ROLE = from(false, false, Authentication.REQUIRE_KNOWN_ROLE);
 
     static Constraint combine(Constraint a, Constraint b)
     {
@@ -210,29 +187,29 @@ public interface Constraint
 
         return from(
             a.isForbidden() || b.isForbidden(),
-            Transport.combine(a.getTransport(), b.getTransport()),
+            a.isConfidential() || b.isConfidential(),
             Authentication.combine(a.getAuthentication(), b.getAuthentication()),
             roles);
     }
 
     static Constraint from(String... roles)
     {
-        return from(false, null, Authentication.REQUIRE_SPECIFIC_ROLE, roles);
+        return from(false, false, Authentication.REQUIRE_SPECIFIC_ROLE, roles);
     }
 
-    static Constraint from(boolean forbidden, Transport transport, Authentication authentication, String... roles)
+    static Constraint from(boolean forbidden, boolean confidential, Authentication authentication, String... roles)
     {
-        return from(forbidden, transport, authentication, (roles == null || roles.length == 0)
+        return from(forbidden, confidential, authentication, (roles == null || roles.length == 0)
             ? Collections.emptySet()
             : new HashSet<>(Arrays.stream(roles).toList()));
     }
 
-    static Constraint from(boolean forbidden, Transport transport, Authentication authentication, Set<String> roles)
+    static Constraint from(boolean forbidden, boolean confidential, Authentication authentication, Set<String> roles)
     {
-        return from(null, forbidden, transport, authentication, roles);
+        return from(null, forbidden, confidential, authentication, roles);
     }
 
-    static Constraint from(String name, boolean forbidden, Transport transport, Authentication authentication, Set<String> roles)
+    static Constraint from(String name, boolean forbidden, boolean confidential, Authentication authentication, Set<String> roles)
     {
         Set<String> roleSet = roles == null
             ? Collections.emptySet()
@@ -253,9 +230,9 @@ public interface Constraint
             }
 
             @Override
-            public Transport getTransport()
+            public boolean isConfidential()
             {
-                return transport == null ? Transport.REQUIRE_NONE : transport;
+                return confidential;
             }
 
             @Override

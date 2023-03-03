@@ -34,6 +34,13 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface Authenticator
 {
+    String BASIC_AUTH = "BASIC";
+    String FORM_AUTH = "FORM";
+    String DIGEST_AUTH = "DIGEST";
+    String CERT_AUTH = "CLIENT_CERT";
+    String SPNEGO_AUTH = "SPNEGO";
+    String NEGOTIATE_AUTH = "NEGOTIATE";
+    String OPENID_AUTH = "OPENID";
 
     /**
      * Configure the Authenticator
@@ -125,6 +132,58 @@ public interface Authenticator
         IdentityService getIdentityService();
 
         boolean isSessionRenewedOnAuthentication();
+
+        class Wrapper implements AuthConfiguration
+        {
+            private final AuthConfiguration _configuration;
+
+            public Wrapper(AuthConfiguration configuration)
+            {
+                _configuration = configuration;
+            }
+
+            @Override
+            public String getAuthMethod()
+            {
+                return _configuration.getAuthMethod();
+            }
+
+            @Override
+            public String getRealmName()
+            {
+                return _configuration.getRealmName();
+            }
+
+            @Override
+            public String getParameter(String param)
+            {
+                return _configuration.getParameter(param);
+            }
+
+            @Override
+            public Set<String> getParameterNames()
+            {
+                return _configuration.getParameterNames();
+            }
+
+            @Override
+            public LoginService getLoginService()
+            {
+                return _configuration.getLoginService();
+            }
+
+            @Override
+            public IdentityService getIdentityService()
+            {
+                return _configuration.getIdentityService();
+            }
+
+            @Override
+            public boolean isSessionRenewedOnAuthentication()
+            {
+                return _configuration.isSessionRenewedOnAuthentication();
+            }
+        }
     }
 
     /**
@@ -132,6 +191,6 @@ public interface Authenticator
      */
     interface Factory
     {
-        Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService);
+        Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration);
     }
 }

@@ -20,13 +20,13 @@ import java.util.Base64;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.security.Constraint;
 
 public class BasicAuthenticator extends LoginAuthenticator
 {
@@ -45,7 +45,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__BASIC_AUTH;
+        return Authenticator.BASIC_AUTH;
     }
 
     @Override

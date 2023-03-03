@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.SecureRequestCustomizer.SslSessionData;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
@@ -52,7 +51,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__CERT_AUTH;
+        return Authenticator.CERT_AUTH;
     }
 
     @Override

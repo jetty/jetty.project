@@ -123,23 +123,12 @@ public class SecurityHandlerTest
     @Test
     public void testUserData() throws Exception
     {
-        _securityHandler.add("/integral/*", Constraint.INTEGRAL);
         _securityHandler.add("/confidential/*", Constraint.CONFIDENTIAL);
 
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("You are OK"));
-
-        response = _connector.getResponse("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: BWTP://"));
-        assertThat(response, containsString(":9999"));
-        assertThat(response, not(containsString("You are OK")));
-
-        response = _connectorS.getResponse("GET /ctx/integral/info HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
 
         response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));

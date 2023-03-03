@@ -40,10 +40,10 @@ public interface IdentityService
      * Associate a runas Token with the current user and thread.
      *
      * @param user The UserIdentity
-     * @param token The runAsToken to associate, obtained from {@link #newRunAsToken(String)}.
+     * @param runAsToken The runAsToken to associate, obtained from {@link #newRunAsToken(String)}.
      * @return A {@link Closeable} that, when closed, will disassociate the token and restore any prior associations.
      */
-    Association associate(UserIdentity user, Token token);
+    Association associate(UserIdentity user, RunAsToken runAsToken);
 
     void logout(UserIdentity user);
 
@@ -62,9 +62,9 @@ public interface IdentityService
      * Create a new RunAsToken from a runAsName (normally a role).
      *
      * @param roleName a role name
-     * @return A token that can be passed to {@link #associate(UserIdentity, Token)}.
+     * @return A token that can be passed to {@link #associate(UserIdentity, RunAsToken)}.
      */
-    Token newRunAsToken(String roleName);
+    RunAsToken newRunAsToken(String roleName);
 
     UserIdentity getSystemUserIdentity();
 
@@ -72,7 +72,7 @@ public interface IdentityService
     {
     }
 
-    interface Token
+    interface RunAsToken
     {
     }
 }

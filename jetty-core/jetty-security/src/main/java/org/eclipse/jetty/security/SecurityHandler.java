@@ -50,10 +50,10 @@ import org.slf4j.LoggerFactory;
  * Select and apply an {@link Authenticator} to a request.
  * <p>
  * The Authenticator may either be directly set on the handler
- * or will be create during {@link #start()} with a call to
+ * or it will be created during {@link #start()} with a call to
  * either the default or set AuthenticatorFactory.
  * <p>
- * SecurityHandler has a set of initparameters that are used by the
+ * SecurityHandler has a set of parameters that are used by the
  * Authentication.Configuration. At startup, any context init parameters
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
@@ -65,7 +65,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
     private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class);
     private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();
 
-    private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
     private Authenticator.Factory _authenticatorFactory;
     private String _realmName;
@@ -327,7 +326,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             if (_authenticatorFactory != null)
             {
                 Authenticator authenticator = _authenticatorFactory.getAuthenticator(getServer(), context,
-                    this, _identityService, _loginService);
+                    this);
 
                 if (authenticator != null)
                 {
@@ -342,7 +341,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
                 for (Authenticator.Factory factory : getKnownAuthenticatorFactories())
                 {
                     Authenticator authenticator = factory.getAuthenticator(getServer(), context,
-                        this, _identityService, _loginService);
+                        this);
 
                     if (authenticator != null)
                     {
@@ -432,7 +431,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
 
         // Check data constraints
-        if (!checkUserData(pathInContext, request, response, callback, constraint))
+        if (!checkTransport(pathInContext, request, response, callback, constraint))
             return true;
 
         // is Auth mandatory?
@@ -463,7 +462,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
                 {
                     if (authMandatory)
                     {
-                        boolean authorized = checkAuthorization(Request.getPathInContext(request), request, response, constraint, userAuth.getUserIdentity());
+                        boolean authorized = checkAuthentication(Request.getPathInContext(request), request, response, constraint, userAuth.getUserIdentity());
                         if (!authorized)
                         {
                             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!role");
@@ -558,17 +557,12 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
     protected abstract Constraint getConstraint(String pathInContext, Request request);
 
-    protected boolean checkUserData(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
+    protected boolean checkTransport(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
     {
-        Constraint.Transport dataConstraint = constraint.getTransport();
-        if (dataConstraint == null || dataConstraint == Constraint.Transport.REQUIRE_NONE)
+        if (request.isSecure() || !constraint.isConfidential())
             return true;
 
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
-
-        if (request.isSecure())
-            return true;
-
         if (httpConfig.getSecurePort() > 0)
         {
             //Redirect to secure port
@@ -587,7 +581,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         return false;
     }
 
-    protected boolean checkAuthorization(String pathInContext, Request request, Response response, Constraint constraint, UserIdentity userIdentity)
+    protected boolean checkAuthentication(String pathInContext, Request request, Response response, Constraint constraint, UserIdentity userIdentity)
     {
         Constraint.Authentication authentication = constraint.getAuthentication();
         if (authentication == null)

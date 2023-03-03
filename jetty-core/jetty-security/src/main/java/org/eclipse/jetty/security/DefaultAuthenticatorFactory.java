@@ -17,7 +17,6 @@ import java.util.Collection;
 
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.security.authentication.ConfigurableSpnegoAuthenticator;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
@@ -27,10 +26,7 @@ import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.security.authentication.SslClientCertAuthenticator;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The Default Authenticator Factory.
@@ -38,8 +34,8 @@ import org.slf4j.LoggerFactory;
  * <li>{@link BasicAuthenticator}</li>
  * <li>{@link DigestAuthenticator}</li>
  * <li>{@link FormAuthenticator}</li>
- * <li>{@link ClientCertAuthenticator}</li>
  * <li>{@link SslClientCertAuthenticator}</li>
+ * <li>{@link ConfigurableSpnegoAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link LoginAuthenticator} are
  * wrapped with a {@link DeferredAuthentication}
@@ -54,46 +50,30 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultAuthenticatorFactory implements Authenticator.Factory
 {
-
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultAuthenticatorFactory.class);
-
     LoginService _loginService;
 
     @Override
-    public Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
+    public Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration)
     {
         String auth = configuration.getAuthMethod();
         Authenticator authenticator = null;
 
-        if (Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
+        if (Authenticator.BASIC_AUTH.equalsIgnoreCase(auth))
             authenticator = new BasicAuthenticator();
-        else if (Constraint.__DIGEST_AUTH.equalsIgnoreCase(auth))
+        else if (Authenticator.DIGEST_AUTH.equalsIgnoreCase(auth))
             authenticator = new DigestAuthenticator();
-        else if (Constraint.__FORM_AUTH.equalsIgnoreCase(auth))
+        else if (Authenticator.FORM_AUTH.equalsIgnoreCase(auth))
             authenticator = new FormAuthenticator();
-        else if (Constraint.__SPNEGO_AUTH.equalsIgnoreCase(auth))
+        else if (Authenticator.SPNEGO_AUTH.equalsIgnoreCase(auth))
             authenticator = new ConfigurableSpnegoAuthenticator();
-        else if (Constraint.__NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
-            authenticator = new ConfigurableSpnegoAuthenticator(Constraint.__NEGOTIATE_AUTH);
-        if (Constraint.__CERT_AUTH.equalsIgnoreCase(auth) || Constraint.__CERT_AUTH2.equalsIgnoreCase(auth))
+        else if (Authenticator.NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
+            authenticator = new ConfigurableSpnegoAuthenticator(Authenticator.NEGOTIATE_AUTH);
+        if (Authenticator.CERT_AUTH.equalsIgnoreCase(auth))
         {
             Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
             if (sslContextFactories.size() != 1)
-            {
-                if (sslContextFactories.size() > 1)
-                {
-                    LOG.info("Multiple SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
-                }
-                else
-                {
-                    LOG.debug("No SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
-                }
-                authenticator = new ClientCertAuthenticator();
-            }
-            else
-            {
-                authenticator = new SslClientCertAuthenticator(sslContextFactories.iterator().next());
-            }
+                throw new IllegalStateException("SslClientCertAuthenticator requires a single SslContextFactory instances.");
+            authenticator = new SslClientCertAuthenticator(sslContextFactories.iterator().next());
         }
 
         return authenticator;

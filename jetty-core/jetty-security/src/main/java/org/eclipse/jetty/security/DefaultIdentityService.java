@@ -38,9 +38,9 @@ public class DefaultIdentityService implements IdentityService
     }
 
     @Override
-    public Association associate(UserIdentity user, Token token)
+    public Association associate(UserIdentity user, RunAsToken runAsToken)
     {
-        if (token instanceof RoleRunAsToken roleRunAsToken)
+        if (runAsToken instanceof RoleRunAsToken roleRunAsToken)
         {
             String oldAssociate = runAsRole.get();
             runAsRole.set(roleRunAsToken.getRunAsRole());
@@ -58,7 +58,7 @@ public class DefaultIdentityService implements IdentityService
     }
 
     @Override
-    public Token newRunAsToken(String roleName)
+    public RunAsToken newRunAsToken(String roleName)
     {
         return new RoleRunAsToken(roleName);
     }
