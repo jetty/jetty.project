@@ -268,7 +268,7 @@ public class URIUtilTest
             Arguments.of("/abc%f8%a1%a1%a1", "/abc����"), // incomplete sequence
 
             // Test for null character (real world ugly test case)
-            Arguments.of("/%00/", "/�/"), // null is not in the unreserved characters list and should not be decoded
+            Arguments.of("/%00/", "/\u0000/"), // null is not in the unreserved characters list and should not be decoded
 
             // Deprecated Microsoft Percent-U encoding
             Arguments.of("/abc%u3040", "/abc\u3040"),

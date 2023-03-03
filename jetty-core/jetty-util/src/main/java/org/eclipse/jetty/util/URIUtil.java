@@ -509,14 +509,6 @@ public final class URIUtil
 
     private static void safePathAppend(Utf8StringBuilder builder, byte b)
     {
-        // control characters
-        if (((b >= 0x00) && (b <= 0x1F)) || (b == 0x7F))
-        {
-            // TODO: perhaps we should just ensure these are encoded instead?
-            builder.append("�"); // unicode replacement character
-            return;
-        }
-
         switch (b)
         {
             case '/' -> builder.append("%2F");
