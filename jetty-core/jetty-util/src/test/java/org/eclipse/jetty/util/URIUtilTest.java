@@ -256,13 +256,14 @@ public class URIUtilTest
 
             // Invalid UTF-8 - replacement characters should be present on invalid sequences
             // URI paths do not support ISO8859-1, so this should not be a fallback of our safeDecodePath implementation
-            Arguments.of("/abc%C3%28", "/abc�"), // invalid 2 octext sequence
-            Arguments.of("/abc%A0%A1", "/abc��"), // invalid 2 octext sequence
-            Arguments.of("/abc%e2%28%a1", "/abc��"), // invalid 3 octext sequence
-            Arguments.of("/abc%e2%82%28", "/abc�"), // invalid 3 octext sequence
-            Arguments.of("/abc%f0%28%8c%bc", "/abc���"), // invalid 4 octext sequence
-            Arguments.of("/abc%f0%90%28%bc", "/abc��"), // invalid 4 octext sequence
-            Arguments.of("/abc%f0%28%8c%28", "/abc��("), // invalid 4 octext sequence
+            Arguments.of("/a%D8%2fbar", "/a�%2Fbar"), // invalid 2 octet sequence
+            Arguments.of("/abc%C3%28", "/abc�"), // invalid 2 octet sequence
+            Arguments.of("/abc%A0%A1", "/abc��"), // invalid 2 octet sequence
+            Arguments.of("/abc%e2%28%a1", "/abc��"), // invalid 3 octet sequence
+            Arguments.of("/abc%e2%82%28", "/abc�"), // invalid 3 octet sequence
+            Arguments.of("/abc%f0%28%8c%bc", "/abc���"), // invalid 4 octet sequence
+            Arguments.of("/abc%f0%90%28%bc", "/abc��"), // invalid 4 octet sequence
+            Arguments.of("/abc%f0%28%8c%28", "/abc��("), // invalid 4 octet sequence
             Arguments.of("/abc%f8%a1%a1%a1%a1", "/abc�����"), // valid sequence, but not unicode
             Arguments.of("/abc%fc%a1%a1%a1%a1%a1", "/abc������"), // valid sequence, but not unicode
             Arguments.of("/abc%f8%a1%a1%a1", "/abc����"), // incomplete sequence
