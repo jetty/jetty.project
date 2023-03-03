@@ -433,7 +433,7 @@ public class ServletChannel
                         dispatch(() ->
                         {
                             HttpURI uri;
-                            String pathInContext = Request.getPathInContext(_servletContextRequest);
+                            String pathInContext;
                             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
                             String dispatchString = asyncContextEvent.getDispatchPath();
                             if (dispatchString != null)
@@ -451,6 +451,7 @@ public class ServletChannel
                                 if (uri == null)
                                 {
                                     uri = _servletContextRequest.getHttpURI();
+                                    pathInContext = Request.getPathInContext(_servletContextRequest);
                                 }
                                 else
                                 {
@@ -459,6 +460,8 @@ public class ServletChannel
                                         pathInContext = pathInContext.substring(_context.getContextPath().length());
                                 }
                             }
+                            // We first worked with the core pathInContext above, but now need to convert to servlet style
+                            pathInContext = URIUtil.safeDecodePath(pathInContext);
 
                             Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, pathInContext);
                             dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());

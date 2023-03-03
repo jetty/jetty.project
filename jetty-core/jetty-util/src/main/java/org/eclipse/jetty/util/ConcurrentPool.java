@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -46,10 +45,18 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class ConcurrentPool<P> implements Pool<P>, Dumpable
 {
+    /**
+     * {@link ConcurrentPool} internally needs to linearly scan a list to perform an acquisition.
+     * This list needs to be reasonably short otherwise there is a risk that scanning the list
+     * becomes a bottleneck. Instances created with a size at most this value should be immune
+     * to this problem.
+     */
+    public static final int OPTIMAL_MAX_SIZE = 256;
+
     private static final Logger LOG = LoggerFactory.getLogger(ConcurrentPool.class);
 
     private final List<Entry<P>> entries = new CopyOnWriteArrayList<>();
-    private final int maxEntries;
+    private final int maxSize;
     private final StrategyType strategyType;
     /*
      * The cache is used to avoid hammering on the first index of the entry list.
@@ -59,8 +66,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      * When an entry can't be found in the cache, the global list is iterated
      * with the configured strategy so the cache has no visible effect besides performance.
      */
-    private final AutoLock lock = new AutoLock();
     private final ThreadLocal<Entry<P>> cache;
+    private final AutoLock lock = new AutoLock();
     private final AtomicInteger nextIndex;
     private final ToIntFunction<P> maxMultiplex;
     private volatile boolean terminated;
@@ -69,23 +76,23 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      * <p>Creates an instance with the specified strategy and no {@link ThreadLocal} cache.</p>
      *
      * @param strategyType the strategy to used to lookup entries
-     * @param maxEntries the maximum number of pooled entries
+     * @param maxSize the maximum number of pooled entries
      */
-    public ConcurrentPool(StrategyType strategyType, int maxEntries)
+    public ConcurrentPool(StrategyType strategyType, int maxSize)
     {
-        this(strategyType, maxEntries, false);
+        this(strategyType, maxSize, false);
     }
 
     /**
      * <p>Creates an instance with the specified strategy and an optional {@link ThreadLocal} cache.</p>
      *
      * @param strategyType the strategy to used to lookup entries
-     * @param maxEntries the maximum number of pooled entries
+     * @param maxSize the maximum number of pooled entries
      * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
      */
-    public ConcurrentPool(StrategyType strategyType, int maxEntries, boolean cache)
+    public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache)
     {
-        this(strategyType, maxEntries, cache, pooled -> 1);
+        this(strategyType, maxSize, cache, pooled -> 1);
     }
 
     /**
@@ -93,13 +100,15 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      * and a function that returns the max multiplex count for a given pooled object.</p>
      *
      * @param strategyType the strategy to used to lookup entries
-     * @param maxEntries the maximum number of pooled entries
+     * @param maxSize the maximum number of pooled entries
      * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
      * @param maxMultiplex a function that given the pooled object returns the max multiplex count
      */
-    public ConcurrentPool(StrategyType strategyType, int maxEntries, boolean cache, ToIntFunction<P> maxMultiplex)
+    public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex)
     {
-        this.maxEntries = maxEntries;
+        if (maxSize > OPTIMAL_MAX_SIZE && LOG.isDebugEnabled())
+            LOG.debug("{} configured with max size {} which is above the recommended value {}", getClass().getSimpleName(), maxSize, OPTIMAL_MAX_SIZE);
+        this.maxSize = maxSize;
         this.strategyType = Objects.requireNonNull(strategyType);
         this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
@@ -138,10 +147,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
             // If we have no space
             int entriesSize = entries.size();
-            if (maxEntries > 0 && entriesSize >= maxEntries)
+            if (maxSize > 0 && entriesSize >= maxSize)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("no space: {} >= {}, cannot reserve entry for {}", entriesSize, maxEntries, this);
+                    LOG.debug("no space: {} >= {}, cannot reserve entry for {}", entriesSize, maxSize, this);
                 return null;
             }
 
@@ -214,37 +223,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             case ROUND_ROBIN -> nextIndex.getAndUpdate(c -> Math.max(0, c + 1)) % size;
             case THREAD_ID -> (int)(Thread.currentThread().getId() % size);
         };
-    }
-
-    @Override
-    public Entry<P> acquire(Function<Entry<P>, P> creator)
-    {
-        Entry<P> entry = acquire();
-        if (entry != null)
-            return entry;
-
-        entry = reserve();
-        if (entry == null)
-            return null;
-
-        P value;
-        try
-        {
-            value = creator.apply(entry);
-        }
-        catch (Throwable th)
-        {
-            entry.remove();
-            throw th;
-        }
-
-        if (value == null)
-        {
-            entry.remove();
-            return null;
-        }
-
-        return entry.enable(value, true) ? entry : null;
     }
 
     private boolean release(Entry<P> entry)
@@ -325,7 +303,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Override
     public int getMaxSize()
     {
-        return maxEntries;
+        return maxSize;
     }
 
     @Override

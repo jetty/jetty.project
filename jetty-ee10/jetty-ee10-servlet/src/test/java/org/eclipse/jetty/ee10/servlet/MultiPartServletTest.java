@@ -134,8 +134,6 @@ public class MultiPartServletTest
     @Test
     public void testLargePart() throws Exception
     {
-        // TODO: Use normal pool when a fix for https://github.com/eclipse/jetty.project/issues/9311 is merged.
-        ByteBufferPool bufferPool = new ByteBufferPool.NonPooling();
         start(new HttpServlet()
         {
             @Override
@@ -143,7 +141,7 @@ public class MultiPartServletTest
             {
                 req.getParameterMap();
             }
-        }, new MultipartConfigElement(tmpDirString), bufferPool);
+        }, new MultipartConfigElement(tmpDirString));
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
