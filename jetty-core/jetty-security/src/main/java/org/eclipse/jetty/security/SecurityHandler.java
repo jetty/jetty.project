@@ -436,7 +436,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             return true;
 
         // is Auth mandatory?
-        boolean authMandatory = constraint.getAuthorization() != null && constraint.getAuthorization() != Constraint.Authorization.NONE;
+        boolean authMandatory = constraint.getAuthentication() != null && constraint.getAuthentication() != Constraint.Authentication.REQUIRE_NONE;
         if (authMandatory && authenticator == null)
         {
             LOG.warn("No authenticator for: {}", constraint);
@@ -447,10 +447,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         // check authentication
         try
         {
-            Authentication authentication = Authentication.getAuthentication(request);
-            if (authentication == null || authentication == Authentication.NOT_CHECKED)
+            Authentication authentication = org.eclipse.jetty.security.Authentication.getAuthentication(request);
+            if (authentication == null || authentication == org.eclipse.jetty.security.Authentication.NOT_CHECKED)
                 authentication = authenticator == null
-                    ? Authentication.UNAUTHENTICATED
+                    ? org.eclipse.jetty.security.Authentication.UNAUTHENTICATED
                     : authenticator.validateRequest(request, response, callback, authMandatory);
 
             if (authentication instanceof Authentication.ResponseSent)
@@ -458,7 +458,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
             if (authentication instanceof Authentication.User userAuth)
             {
-                Authentication.setAuthentication(request, authentication);
+                org.eclipse.jetty.security.Authentication.setAuthentication(request, authentication);
                 try (AutoCloseable association = _identityService.associate(userAuth.getUserIdentity()))
                 {
                     if (authMandatory)
@@ -483,7 +483,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
             if (authentication instanceof DeferredAuthentication deferred)
             {
-                Authentication.setAuthentication(request, authentication);
+                org.eclipse.jetty.security.Authentication.setAuthentication(request, authentication);
 
                 boolean handled;
                 try
@@ -493,7 +493,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
                     if (handled && authenticator != null)
                     {
-                        Authentication auth = Authentication.getAuthentication(request);
+                        Authentication auth = org.eclipse.jetty.security.Authentication.getAuthentication(request);
                         if (auth instanceof Authentication.User userAuth)
                             authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
                         else
@@ -515,7 +515,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
                 return true;
             }
 
-            Authentication.setAuthentication(request, authentication);
+            org.eclipse.jetty.security.Authentication.setAuthentication(request, authentication);
 
             //process the request by other handlers
             boolean handled = next.handle(request, response, callback);
@@ -560,8 +560,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
     protected boolean checkUserData(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
     {
-        Constraint.Transport dataConstraint = constraint.getUserData();
-        if (dataConstraint == null || dataConstraint == Constraint.Transport.CLEAR)
+        Constraint.Transport dataConstraint = constraint.getTransport();
+        if (dataConstraint == null || dataConstraint == Constraint.Transport.REQUIRE_NONE)
             return true;
 
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
@@ -589,17 +589,17 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
     protected boolean checkAuthorization(String pathInContext, Request request, Response response, Constraint constraint, UserIdentity userIdentity)
     {
-        Constraint.Authorization authorization = constraint.getAuthorization();
-        if (authorization == null)
+        Constraint.Authentication authentication = constraint.getAuthentication();
+        if (authentication == null)
             return true;
 
-        return switch (constraint.getAuthorization())
+        return switch (constraint.getAuthentication())
         {
-            case NONE -> true;
+            case REQUIRE_NONE -> true;
 
-            case AUTHENTICATED -> userIdentity.getUserPrincipal() != null;
+            case REQUIRE -> userIdentity.getUserPrincipal() != null;
 
-            case AUTHENTICATED_IN_KNOWN_ROLE ->
+            case REQUIRE_KNOWN_ROLE ->
             {
                 if (userIdentity.getUserPrincipal() != null)
                     for (String role : getKnownRoles())
@@ -608,7 +608,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
                 yield false;
             }
 
-            case AUTHENTICATED_IN_ROLE ->
+            case REQUIRE_SPECIFIC_ROLE ->
             {
                 if (userIdentity.getUserPrincipal() != null)
                     for (String role : constraint.getRoles())

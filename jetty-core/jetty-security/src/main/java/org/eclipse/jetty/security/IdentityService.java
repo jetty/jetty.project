@@ -43,7 +43,7 @@ public interface IdentityService
      * @param token The runAsToken to associate, obtained from {@link #newRunAsToken(String)}.
      * @return A {@link Closeable} that, when closed, will disassociate the token and restore any prior associations.
      */
-    Association associate(UserIdentity user, Object token);
+    Association associate(UserIdentity user, Token token);
 
     void logout(UserIdentity user);
 
@@ -61,15 +61,18 @@ public interface IdentityService
     /**
      * Create a new RunAsToken from a runAsName (normally a role).
      *
-     * @param runAsName Normally a role name
-     * @return A token that can be passed to {@link #associate(UserIdentity, Object)}.
+     * @param roleName a role name
+     * @return A token that can be passed to {@link #associate(UserIdentity, Token)}.
      */
-    Object newRunAsToken(String runAsName);
+    Token newRunAsToken(String roleName);
 
     UserIdentity getSystemUserIdentity();
 
     interface Association extends AutoCloseable
     {
+    }
 
+    interface Token
+    {
     }
 }

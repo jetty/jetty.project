@@ -98,7 +98,7 @@ public class BasicAuthenticatorTest
 
         _securityHandler.add("/admin/*", Constraint.from("admin"));
         _securityHandler.add("/any/*", Constraint.AUTHENTICATED);
-        _securityHandler.add("/known/*", Constraint.AUTHENTICATED_IN_KNOWN_ROLE);
+        _securityHandler.add("/known/*", Constraint.AUTHENTICATED_KNOWN_ROLE);
         _securityHandler.setAuthenticator(new BasicAuthenticator());
         _server.start();
     }

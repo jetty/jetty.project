@@ -18,7 +18,6 @@ import javax.security.auth.Subject;
 
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 import org.eclipse.jetty.security.internal.RoleRunAsToken;
-import org.eclipse.jetty.security.internal.RunAsToken;
 
 /**
  *
@@ -39,7 +38,7 @@ public class DefaultIdentityService implements IdentityService
     }
 
     @Override
-    public Association associate(UserIdentity user, Object token)
+    public Association associate(UserIdentity user, Token token)
     {
         if (token instanceof RoleRunAsToken roleRunAsToken)
         {
@@ -59,9 +58,9 @@ public class DefaultIdentityService implements IdentityService
     }
 
     @Override
-    public RunAsToken newRunAsToken(String runAsName)
+    public Token newRunAsToken(String roleName)
     {
-        return new RoleRunAsToken(runAsName);
+        return new RoleRunAsToken(roleName);
     }
 
     @Override
