@@ -37,8 +37,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -163,17 +161,13 @@ public class URIUtilTest
     @MethodSource("decodePathSource")
     public void testDecodePath(String encodedPath, String canonicalPath, String decodedPath)
     {
-        String path = URIUtil.decodePath(encodedPath);
-        assertEquals(decodedPath, path);
+        String result = URIUtil.decodePath(encodedPath);
+        assertThat("decodePath(\"" + encodedPath + "\")", result, is(decodedPath));
     }
 
     public static Stream<Arguments> decodeBadPathSource()
     {
         List<Arguments> arguments = new ArrayList<>();
-
-        // Test for null character (real world ugly test case)
-        // TODO is this a bad decoding or a bad URI ?
-        // arguments.add(Arguments.of("/%00/"));
 
         // Deprecated Microsoft Percent-U encoding
         // TODO still supported for now ?
@@ -219,6 +213,83 @@ public class URIUtilTest
     public void testBadDecodePath(String encodedPath)
     {
         assertThrows(IllegalArgumentException.class, () -> URIUtil.decodePath(encodedPath));
+    }
+
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+    public static Stream<Arguments> safeDecodePathSource()
+    {
+        return Stream.of(
+            Arguments.of("/foo/bar", "/foo/bar"),
+
+            // Simple encoding
+            Arguments.of("/f%20%6f/b%20r", "/f o/b r"),
+
+            // Raw UTF8 and unicode handling
+            Arguments.of("/foo/b\u00e4\u00e4", "/foo/bää"),
+            Arguments.of("/f\u20ac\u20ac/bar", "/f€€/bar"),
+
+            // Encoded UTF-8 unicode (euro)
+            Arguments.of("/f%e2%82%ac%E2%82%AC/bar", "/f€€/bar"),
+
+            // Encoded delimiters
+            Arguments.of("/foo%2fbar", "/foo%2Fbar"),
+            Arguments.of("/foo%252fbar", "/foo%252fbar"),
+            Arguments.of("/foo%3bbar", "/foo;bar"),
+            Arguments.of("/foo%3fbar", "/foo%3Fbar"),
+
+            Arguments.of("/f%20o/b%20r", "/f o/b r"),
+            Arguments.of("/f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D", "/f\u00e4\u00e4%2523;,:=b a r="),
+            Arguments.of("/f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r", "/f\u0629\u0629%2523;,:=b a r"),
+
+            // path parameters should be ignored
+            Arguments.of("/foo;ignore/bar;ignore", "/foo/bar"),
+            Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar"),
+            Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%2523/bar"),
+            Arguments.of("/foo%2523%3b%2c:%3db%20a%20r;rubbish", "/foo%2523;,:=b a r"),
+
+            // test for chars that are somehow already decoded, but shouldn't be
+            Arguments.of("/foo bar\n", "/foo bar\n"),
+            Arguments.of("/foo\u0000bar", "/foo\u0000bar"),
+            Arguments.of("/foo/bär", "/foo/bär"),
+            Arguments.of("/foo/€/bar", "/foo/€/bar"),
+            Arguments.of("/fo %2fo/b%61r", "/fo %2Fo/bar"),
+
+            // Invalid UTF-8 - replacement characters should be present on invalid sequences
+            // URI paths do not support ISO8859-1, so this should not be a fallback of our safeDecodePath implementation
+            Arguments.of("/abc%C3%28", "/abc�"), // invalid 2 octext sequence
+            Arguments.of("/abc%A0%A1", "/abc��"), // invalid 2 octext sequence
+            Arguments.of("/abc%e2%28%a1", "/abc��"), // invalid 3 octext sequence
+            Arguments.of("/abc%e2%82%28", "/abc�"), // invalid 3 octext sequence
+            Arguments.of("/abc%f0%28%8c%bc", "/abc���"), // invalid 4 octext sequence
+            Arguments.of("/abc%f0%90%28%bc", "/abc��"), // invalid 4 octext sequence
+            Arguments.of("/abc%f0%28%8c%28", "/abc��("), // invalid 4 octext sequence
+            Arguments.of("/abc%f8%a1%a1%a1%a1", "/abc�����"), // valid sequence, but not unicode
+            Arguments.of("/abc%fc%a1%a1%a1%a1%a1", "/abc������"), // valid sequence, but not unicode
+            Arguments.of("/abc%f8%a1%a1%a1", "/abc����"), // incomplete sequence
+
+            // Test for null character (real world ugly test case)
+            Arguments.of("/%00/", "/�/"), // null is not in the unreserved characters list and should not be decoded
+
+            // Deprecated Microsoft Percent-U encoding
+            Arguments.of("/abc%u3040", "/abc\u3040"),
+
+            // Canonical paths are also normalized
+            Arguments.of("./bar", "./bar"),
+            Arguments.of("/foo/./bar", "/foo/./bar"),
+            Arguments.of("/foo/../bar", "/foo/../bar"),
+            Arguments.of("/foo/.../bar", "/foo/.../bar"),
+            Arguments.of("/foo/%2e/bar", "/foo/./bar"), // Not by the RFC, but safer
+            Arguments.of("/foo/%2e%2e/bar", "/foo/../bar"), // Not by the RFC, but safer
+            Arguments.of("/foo/%2e%2e%2e/bar", "/foo/.../bar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("safeDecodePathSource")
+    public void testSafeDecodePath(String encodedPath, String decodedPath)
+    {
+        String result = URIUtil.safeDecodePath(encodedPath);
+        assertThat("safeDecodePath(\"" + encodedPath + "\")", result, is(decodedPath));
     }
 
     @Test

@@ -480,7 +480,7 @@ public final class URIUtil
      */
     public static String decodePath(String path, int offset, int length)
     {
-        return decodePath(path, offset, length, Utf8StringBuilder::append);
+        return decodePath(path, offset, length, Utf8StringBuilder::append, true);
     }
 
     /**
@@ -504,11 +504,19 @@ public final class URIUtil
      */
     public static String safeDecodePath(String path, int offset, int length)
     {
-        return decodePath(path, offset, length, URIUtil::safePathAppend);
+        return decodePath(path, offset, length, URIUtil::safePathAppend, false);
     }
 
     private static void safePathAppend(Utf8StringBuilder builder, byte b)
     {
+        // control characters
+        if (((b >= 0x00) && (b <= 0x1F)) || (b == 0x7F))
+        {
+            // TODO: perhaps we should just ensure these are encoded instead?
+            builder.append("�"); // unicode replacement character
+            return;
+        }
+
         switch (b)
         {
             case '/' -> builder.append("%2F");
@@ -523,7 +531,7 @@ public final class URIUtil
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
-    public static String decodePath(String path, int offset, int length, BiConsumer<Utf8StringBuilder, Byte> decoder)
+    private static String decodePath(String path, int offset, int length, BiConsumer<Utf8StringBuilder, Byte> decoder, boolean fallbackToIso88591)
     {
         try
         {
@@ -538,6 +546,7 @@ public final class URIUtil
                         if (builder == null)
                         {
                             builder = new Utf8StringBuilder(length);
+                            builder.setThrowOnInvalid(fallbackToIso88591);
                             builder.append(path, offset, i - offset);
                         }
                         if ((i + 2) < end)
@@ -571,6 +580,7 @@ public final class URIUtil
                         if (builder == null)
                         {
                             builder = new Utf8StringBuilder(path.length());
+                            builder.setThrowOnInvalid(fallbackToIso88591);
                             builder.append(path, offset, i - offset);
                         }
 
@@ -602,6 +612,8 @@ public final class URIUtil
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
+            if (!fallbackToIso88591)
+                throw new IllegalArgumentException("Not UTF-8, not decoding in ISO-8859-1", e);
             return decodeISO88591Path(path, offset, length);
         }
         catch (IllegalArgumentException e)
