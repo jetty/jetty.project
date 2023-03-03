@@ -34,15 +34,15 @@ import org.eclipse.jetty.util.UrlEncoded;
  * via the static methods such as {@link #build()} and {@link #from(String)}.
  *
  * A URI such as
- * {@code http://user@host:port/path;param1/%2e/f%6fo%2fbar;param2?query#fragment}
+ * {@code http://user@host:port/path;param1/%2e/f%6fo%2fbar%20bob;param2?query#fragment}
  * is split into the following optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
  * <li>{@link #getPort()} - port</li>
- * <li>{@link #getPath()} - /path;param1/%2e/f%6fo%2fbar;param2</li>
- * <li>{@link #getCanonicalPath()} - /path/foo%2Fbar</li>
- * <li>{@link #getDecodedPath()} - /path/foo/bar</li>
+ * <li>{@link #getPath()} - /path;param1/%2e/f%6fo%2fbar%20bob;param2</li>
+ * <li>{@link #getCanonicalPath()} - /path/foo%2Fbar%20bob</li>
+ * <li>{@link #getDecodedPath()} - /path/foo/bar bob</li>
  * <li>{@link #getParam()} - param2</li>
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
@@ -712,7 +712,7 @@ public interface HttpURI
         {
             _uri = null;
             _path = URIUtil.encodePath(path);
-            _canonicalPath = path;
+            _canonicalPath = URIUtil.canonicalPath(_path);
             return this;
         }
 
