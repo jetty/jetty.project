@@ -52,40 +52,8 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     @Override
     public boolean isUserInRole(String role)
     {
-        /* TODO move to somewhere in ee
-        //Servlet Spec 3.1 pg 125 if testing special role **
-        if ("**".equals(role.trim()))
-        {
-            //if ** is NOT a declared role name, the we return true 
-            //as the user is authenticated. If ** HAS been declared as a
-            //role name, then we have to check if the user has that role
-            if (!declaredRolesContains("**"))
-                return true;
-            else
-                return _userIdentity.isUserInRole(role);
-        }
-         */
-
         return _userIdentity.isUserInRole(role);
     }
-
-    /* TODO remove this
-    public boolean declaredRolesContains(String roleName)
-    {
-        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
-        if (security == null)
-            return false;
-
-        if (security instanceof ConstraintAware)
-        {
-            xxx; Set<String> declaredRoles = ((ConstraintAware)security).getRoles();
-            return (declaredRoles != null) && declaredRoles.contains(roleName);
-        }
-
-        return false;
-    }
-
-     */
 
     @Override
     public Authentication logout(Request request)

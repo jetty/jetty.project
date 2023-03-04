@@ -100,10 +100,10 @@ public class FormAuthenticatorTest
 
         _securityHandler.setHandler(new OkHandler());
 
-        _securityHandler.add("/j_security_check", Constraint.AUTHENTICATED); // TODO this should not be needed
-        _securityHandler.add("/any/*", Constraint.AUTHENTICATED);
-        _securityHandler.add("/known/*", Constraint.AUTHENTICATED_KNOWN_ROLE);
-        _securityHandler.add("/admin/*", Constraint.from("admin"));
+        _securityHandler.put("/j_security_check", Constraint.AUTHENTICATED); // TODO this should not be needed
+        _securityHandler.put("/any/*", Constraint.AUTHENTICATED);
+        _securityHandler.put("/known/*", Constraint.AUTHENTICATED_KNOWN_ROLE);
+        _securityHandler.put("/admin/*", Constraint.from("admin"));
         _securityHandler.setAuthenticator(new FormAuthenticator("/login", "/error", false));
         _server.start();
     }

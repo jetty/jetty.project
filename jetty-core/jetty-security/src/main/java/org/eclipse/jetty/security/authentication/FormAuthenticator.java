@@ -186,13 +186,12 @@ public class FormAuthenticator extends LoginAuthenticator
     @Override
     public Request prepareRequest(Request request)
     {
-        //if this is a request resulting from a redirect after auth is complete
-        //(ie its from a redirect to the original request uri) then due to 
-        //browser handling of 302 redirects, the method may not be the same as
-        //that of the original request. Replace the method and original post
-        //params (if it was a post).
-        //
-        //See Servlet Spec 3.1 sec 13.6.3
+        // if this is a request resulting from a redirect after auth is complete
+        // (ie its from a redirect to the original request uri) then due to
+        // browser handling of 302 redirects, the method may not be the same as
+        // that of the original request. Replace the method and original post
+        // params (if it was a post).
+
         Session session = request.getSession(false);
         if (session == null)
             return request; // couldn't be authenticated yet
@@ -302,15 +301,6 @@ public class FormAuthenticator extends LoginAuthenticator
                 LOG.debug("auth failed {}->403", username);
                 Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
             }
-            //TODO need to reinstate forward
-            /*                else if (_dispatch)
-            {
-                LOG.debug("auth failed {}=={}", username, _formErrorPage);
-                RequestDispatcher dispatcher = servletApiRequest.getRequestDispatcher(_formErrorPage);
-                res.setHeader(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
-                res.getHeaders().addDateField(HttpHeader.EXPIRES.asString(), 1);
-                dispatcher.forward(new FormRequest(req), new FormResponse(res));
-            }*/
             else
             {
                 LOG.debug("auth failed {}->{}", username, _formErrorPage);
@@ -350,8 +340,8 @@ public class FormAuthenticator extends LoginAuthenticator
                             if (jPost != null)
                             {
                                 // TODO: how to do this
+                                // TODO Should this be done here or is it in prepare request?
                                 LOG.debug("auth rePOST {}->{}", authentication, jUri);
-                                // servletApiRequest.setContentParameters(jPost);
                             }
                         }
                         session.removeAttribute(__J_URI);
@@ -397,20 +387,8 @@ public class FormAuthenticator extends LoginAuthenticator
         }
 
         // send the the challenge
-        //TODO reinstate use of dispatch
-        /*            if (_dispatch)
-            {
-                LOG.debug("challenge {}=={}", session.getId(), _formLoginPage);
-                RequestDispatcher dispatcher = servletApiRequest.getRequestDispatcher(_formLoginPage);
-                res.setHeader(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
-                res.setDateHeader(HttpHeader.EXPIRES.asString(), 1);
-                dispatcher.forward(new FormRequest(req), new FormResponse(res));
-            }
-            else
-            {*/
         LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
         Response.sendRedirect(req, res, callback, encodeURL(URIUtil.addPaths(req.getContext().getContextPath(), _formLoginPage)));
-        //}
         return Authentication.SEND_CONTINUE;
     }
 
@@ -431,94 +409,6 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
-    
-    //TODO reinstate use of forward dispatch
-    /*
-    protected static class FormRequest extends HttpServletRequestWrapper
-    {
-        public FormRequest(HttpServletRequest request)
-        {
-            super(request);
-        }
-    
-        @Override
-        public long getDateHeader(String name)
-        {
-            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
-                return -1;
-            return super.getDateHeader(name);
-        }
-    
-        @Override
-        public String getHeader(String name)
-        {
-            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
-                return null;
-            return super.getHeader(name);
-        }
-    
-        @Override
-        public Enumeration<String> getHeaderNames()
-        {
-            return Collections.enumeration(Collections.list(super.getHeaderNames()));
-        }
-    
-        @Override
-        public Enumeration<String> getHeaders(String name)
-        {
-            if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
-                return Collections.<String>enumeration(Collections.<String>emptyList());
-            return super.getHeaders(name);
-        }
-    }
-    
-    protected static class FormResponse extends HttpServletResponseWrapper
-    {
-        public FormResponse(HttpServletResponse response)
-        {
-            super(response);
-        }
-    
-        @Override
-        public void addDateHeader(String name, long date)
-        {
-            if (notIgnored(name))
-                super.addDateHeader(name, date);
-        }
-    
-        @Override
-        public void addHeader(String name, String value)
-        {
-            if (notIgnored(name))
-                super.addHeader(name, value);
-        }
-    
-        @Override
-        public void setDateHeader(String name, long date)
-        {
-            if (notIgnored(name))
-                super.setDateHeader(name, date);
-        }
-    
-        @Override
-        public void setHeader(String name, String value)
-        {
-            if (notIgnored(name))
-                super.setHeader(name, value);
-        }
-    
-        private boolean notIgnored(String name)
-        {
-            if (HttpHeader.CACHE_CONTROL.is(name) ||
-                HttpHeader.PRAGMA.is(name) ||
-                HttpHeader.ETAG.is(name) ||
-                HttpHeader.EXPIRES.is(name) ||
-                HttpHeader.LAST_MODIFIED.is(name) ||
-                HttpHeader.AGE.is(name))
-                return false;
-            return true;
-        }
-    }*/
 
     /**
      * This Authentication represents a just completed Form authentication.

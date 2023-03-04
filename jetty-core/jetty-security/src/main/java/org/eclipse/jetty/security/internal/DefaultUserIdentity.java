@@ -53,10 +53,6 @@ public class DefaultUserIdentity implements UserIdentity
         if (DefaultIdentityService.isRoleAssociated(role))
             return true;
 
-        //Servlet Spec 3.1, pg 125
-        if ("*".equals(role))
-            return false;
-
         for (String r : _roles)
         {
             if (r.equals(role))

@@ -58,11 +58,8 @@ public interface Authenticator
      * Called prior to validateRequest. The authenticator can
      * manipulate the request to update it with information that
      * can be inspected prior to validateRequest being called.
-     * The primary purpose of this method is to satisfy the Servlet
-     * Spec 3.1 section 13.6.3 on handling Form authentication
-     * where the http method of the original request causing authentication
-     * is not the same as the http method resulting from the redirect
-     * after authentication.
+     * This may be restore method or content from a previous request
+     * that was challenged.
      *
      * @param request the request to prepare for authentication
      */

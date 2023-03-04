@@ -685,12 +685,12 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         {
         }
 
-        public Constraint add(String pathSpec, Constraint constraint)
+        public Constraint put(String pathSpec, Constraint constraint)
         {
-            return add(PathSpec.from(pathSpec), constraint);
+            return put(PathSpec.from(pathSpec), constraint);
         }
 
-        public Constraint add(PathSpec pathSpec, Constraint constraint)
+        public Constraint put(PathSpec pathSpec, Constraint constraint)
         {
             Set<String> roles = constraint.getRoles();
             if (roles != null)

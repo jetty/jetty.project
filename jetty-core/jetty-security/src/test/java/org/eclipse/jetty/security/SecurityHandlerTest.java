@@ -108,7 +108,7 @@ public class SecurityHandlerTest
     @Test
     public void testForbidden() throws Exception
     {
-        _securityHandler.add("/secret/*", Constraint.FORBIDDEN);
+        _securityHandler.put("/secret/*", Constraint.FORBIDDEN);
 
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
@@ -123,7 +123,7 @@ public class SecurityHandlerTest
     @Test
     public void testUserData() throws Exception
     {
-        _securityHandler.add("/confidential/*", Constraint.CONFIDENTIAL);
+        _securityHandler.put("/confidential/*", Constraint.CONFIDENTIAL);
 
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
@@ -136,7 +136,7 @@ public class SecurityHandlerTest
         assertThat(response, containsString(":9999"));
         assertThat(response, not(containsString("You are OK")));
 
-        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
+        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UNAUTHENTICATED is not OK"));
     }
@@ -144,9 +144,9 @@ public class SecurityHandlerTest
     @Test
     public void testCombinedForbiddenConfidential() throws Exception
     {
-        _securityHandler.add("/*", Constraint.NONE);
-        _securityHandler.add("/confidential/*", Constraint.CONFIDENTIAL);
-        _securityHandler.add("*.hidden", Constraint.FORBIDDEN);
+        _securityHandler.put("/*", Constraint.NONE);
+        _securityHandler.put("/confidential/*", Constraint.CONFIDENTIAL);
+        _securityHandler.put("*.hidden", Constraint.FORBIDDEN);
 
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
@@ -163,11 +163,11 @@ public class SecurityHandlerTest
         assertThat(response, containsString(":9999"));
         assertThat(response, not(containsString("You are OK")));
 
-        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
+        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UNAUTHENTICATED is not OK"));
 
-        response = _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nX-Forwarded-Proto: https\r\n\r\n");
+        response = _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("You are OK")));
     }
