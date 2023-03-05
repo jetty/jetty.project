@@ -34,16 +34,15 @@ public class UserStore extends ContainerLifeCycle
     protected class User
     {
         protected UserPrincipal _userPrincipal;
-        protected List<RolePrincipal> _rolePrincipals = Collections.emptyList();
+        protected List<RolePrincipal> _rolePrincipals;
         
         protected User(String username, Credential credential, String[] roles)
         {
             _userPrincipal = new UserPrincipal(username, credential);
 
-            _rolePrincipals = Collections.emptyList();
-            
-            if (roles != null)
-                _rolePrincipals = Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
+            _rolePrincipals = (roles == null || roles.length == 0)
+                ? Collections.emptyList()
+                : Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
         }
         
         protected UserPrincipal getUserPrincipal()
