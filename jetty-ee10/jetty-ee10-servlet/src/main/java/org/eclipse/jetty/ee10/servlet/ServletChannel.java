@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -461,7 +461,7 @@ public class ServletChannel
                                 }
                             }
                             // We first worked with the core pathInContext above, but now need to convert to servlet style
-                            pathInContext = URIUtil.safeDecodePath(pathInContext);
+                            pathInContext = URIUtil.decodePath(pathInContext);
 
                             Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, pathInContext);
                             dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
@@ -683,7 +683,7 @@ public class ServletChannel
     {
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
-        Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
+        Throwable noStack = unwrap(failure, BadMessage.RuntimeException.class, IOException.class, TimeoutException.class);
 
         if (quiet != null || !getServer().isRunning())
         {

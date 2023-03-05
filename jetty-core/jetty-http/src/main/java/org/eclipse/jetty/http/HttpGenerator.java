@@ -218,7 +218,7 @@ public class HttpGenerator
                     generateRequestLine(info, header);
 
                     if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
-                        throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "HTTP/0.9 not supported");
+                        throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, "HTTP/0.9 not supported");
 
                     generateHeaders(header, content, last);
 
@@ -243,7 +243,7 @@ public class HttpGenerator
 
                     return Result.FLUSH;
                 }
-                catch (BadMessageException e)
+                catch (BadMessage.RuntimeException e)
                 {
                     throw e;
                 }
@@ -254,7 +254,7 @@ public class HttpGenerator
                 }
                 catch (Exception e)
                 {
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
+                    throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
                 }
                 finally
                 {
@@ -370,7 +370,7 @@ public class HttpGenerator
 
                 HttpVersion version = info.getHttpVersion();
                 if (version == null)
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "No version");
+                    throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, "No version");
 
                 if (version == HttpVersion.HTTP_0_9)
                 {
@@ -429,7 +429,7 @@ public class HttpGenerator
                     }
                     _state = last ? State.COMPLETING : State.COMMITTED;
                 }
-                catch (BadMessageException e)
+                catch (BadMessage.RuntimeException e)
                 {
                     throw e;
                 }
@@ -440,7 +440,7 @@ public class HttpGenerator
                 }
                 catch (Exception e)
                 {
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
+                    throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
                 }
                 finally
                 {
@@ -625,7 +625,7 @@ public class HttpGenerator
                             if (contentLength < 0)
                                 contentLength = field.getLongValue();
                             else if (contentLength != field.getLongValue())
-                                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, field.getLongValue()));
+                                throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, field.getLongValue()));
                             contentLengthField = true;
                             break;
 
@@ -707,7 +707,7 @@ public class HttpGenerator
 
             // But it is an error if there actually is content
             if (_contentPrepared > 0)
-                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
+                throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
 
             if (contentLengthField)
             {
@@ -722,7 +722,7 @@ public class HttpGenerator
                         content.clear();
                     }
                     else
-                        throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
+                        throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
                 }
             }
         }
@@ -747,7 +747,7 @@ public class HttpGenerator
                 transferEncoding = null;
             }
             else
-                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Bad Transfer-Encoding");
+                throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, "Bad Transfer-Encoding");
         }
         // Else if we known the content length and are a request or a persistent response, 
         else if (contentLength >= 0 && (request != null || _persistent))
@@ -772,7 +772,7 @@ public class HttpGenerator
         else
         {
             // with no way to indicate body length
-            throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Unknown content length for request");
+            throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, "Unknown content length for request");
         }
 
         if (LOG.isDebugEnabled())

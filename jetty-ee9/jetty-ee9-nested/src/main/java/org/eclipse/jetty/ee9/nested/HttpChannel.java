@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -833,7 +833,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
-        Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
+        Throwable noStack = unwrap(failure, BadMessage.RuntimeException.class, IOException.class, TimeoutException.class);
 
         if (quiet != null || !getServer().isRunning())
         {
@@ -1035,12 +1035,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             callback.succeeded();
     }
 
-    public void onBadMessage(BadMessageException failure)
+    public void onBadMessage(BadMessage.RuntimeException failure)
     {
         int status = failure.getCode();
         String reason = failure.getReason();
         if (status < HttpStatus.BAD_REQUEST_400 || status > 599)
-            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
+            failure = new BadMessage.RuntimeException(HttpStatus.BAD_REQUEST_400, reason, failure);
 
         _combinedListener.onRequestFailure(_request, failure);
 
@@ -1527,7 +1527,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (LOG.isDebugEnabled())
                 LOG.debug("Commit failed", x);
 
-            if (x instanceof BadMessageException)
+            if (x instanceof BadMessage)
             {
                 send(_request.getMetaData(), HttpGenerator.RESPONSE_500_INFO, null, true, new Nested(this)
                 {

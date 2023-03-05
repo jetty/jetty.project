@@ -31,7 +31,7 @@ import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.transport.internal.HttpReceiverOverHTTP;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -206,7 +206,7 @@ public class HttpReceiverOverHTTPTest
 
         ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(HttpResponseException.class));
-        assertThat(e.getCause().getCause(), instanceOf(BadMessageException.class));
+        assertThat(e.getCause().getCause(), instanceOf(BadMessage.RuntimeException.class));
         assertThat(e.getCause().getCause().getCause(), instanceOf(NumberFormatException.class));
     }
 

@@ -428,7 +428,7 @@ public class HttpTester
         }
 
         @Override
-        public void badMessage(BadMessageException failure)
+        public void badMessage(BadMessage.RuntimeException failure)
         {
             throw failure;
         }
@@ -461,7 +461,7 @@ public class HttpTester
 
                         case HEADER_OVERFLOW:
                             if (header.capacity() >= 32 * 1024)
-                                throw new BadMessageException(500, "Header too large");
+                                throw new BadMessage.RuntimeException(500, "Header too large");
                             header = BufferUtil.allocate(32 * 1024);
                             continue;
 

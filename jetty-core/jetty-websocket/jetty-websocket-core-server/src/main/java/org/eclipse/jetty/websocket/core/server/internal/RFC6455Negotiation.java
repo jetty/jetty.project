@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
@@ -27,7 +27,7 @@ public class RFC6455Negotiation extends WebSocketNegotiation
     private boolean successful;
     private String key;
 
-    public RFC6455Negotiation(Request request, Response response, Callback callback, WebSocketComponents components) throws BadMessageException
+    public RFC6455Negotiation(Request request, Response response, Callback callback, WebSocketComponents components) throws BadMessage.RuntimeException
     {
         super(request, response, callback, components);
     }

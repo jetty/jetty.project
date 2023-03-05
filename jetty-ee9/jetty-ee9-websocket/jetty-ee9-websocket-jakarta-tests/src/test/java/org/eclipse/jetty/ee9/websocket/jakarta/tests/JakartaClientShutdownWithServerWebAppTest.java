@@ -31,7 +31,7 @@ import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientCont
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -100,7 +100,7 @@ public class JakartaClientShutdownWithServerWebAppTest
         app.copyLib(WebSocketComponents.class, "jetty-websocket-core-common.jar");
         app.copyLib(Response.class, "jetty-client.jar");
         app.copyLib(EndPoint.class, "jetty-io.jar");
-        app.copyLib(BadMessageException.class, "jetty-http.jar");
+        app.copyLib(BadMessage.RuntimeException.class, "jetty-http.jar");
 
         return app;
     }

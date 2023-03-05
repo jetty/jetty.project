@@ -37,7 +37,7 @@ import org.eclipse.jetty.ee10.websocket.common.WebSocketSession;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -170,7 +170,7 @@ public class JettyClientClassLoaderTest
         app.copyLib(WebSocketComponents.class, "jetty-websocket-core-common.jar");
         app.copyLib(Response.class, "jetty-client.jar");
         app.copyLib(EndPoint.class, "jetty-io.jar");
-        app.copyLib(BadMessageException.class, "jetty-http.jar");
+        app.copyLib(BadMessage.RuntimeException.class, "jetty-http.jar");
         app.copyLib(XmlConfiguration.class, "jetty-xml.jar");
 
         return app;

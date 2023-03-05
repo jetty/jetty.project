@@ -255,7 +255,8 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("In a while"));
 
-        // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 404
+        // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 400
+        // due to BadMessage thrown from getServletPath and getPathInfo
         rawResponse = connector.getResponse("""
             GET /context/dirFoo%2Fother.txt HTTP/1.1\r
             Host: local\r
@@ -263,7 +264,7 @@ public class DefaultServletTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
 
     @Test
@@ -655,7 +656,7 @@ public class DefaultServletTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                HttpStatus.NOT_FOUND_404,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 

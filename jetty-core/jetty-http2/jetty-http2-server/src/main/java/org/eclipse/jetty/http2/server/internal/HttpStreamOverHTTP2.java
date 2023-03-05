@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -138,7 +138,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
             };
         }
-        catch (BadMessageException x)
+        catch (BadMessage.RuntimeException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onRequest", x);
@@ -146,11 +146,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         catch (Throwable x)
         {
-            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
+            return () -> onBadMessage(new BadMessage.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 
-    private void onBadMessage(BadMessageException x)
+    private void onBadMessage(BadMessage.RuntimeException x)
     {
         // TODO
     }
@@ -337,7 +337,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
                 else if (hasContent && contentLength != realContentLength)
                 {
-                    callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new BadMessage.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
                     return;
                 }
             }
@@ -506,13 +506,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             return task;
         }
-        catch (BadMessageException x)
+        catch (BadMessage.RuntimeException x)
         {
             return () -> onBadMessage(x);
         }
         catch (Throwable x)
         {
-            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
+            return () -> onBadMessage(new BadMessage.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 

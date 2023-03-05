@@ -38,7 +38,7 @@ public class HostPortHttpField extends HttpField
         }
         catch (Exception e)
         {
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad HostPort", e);
+            throw new BadMessage.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad HostPort", e);
         }
     }
 

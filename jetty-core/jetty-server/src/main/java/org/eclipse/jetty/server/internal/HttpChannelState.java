@@ -24,7 +24,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -525,7 +525,7 @@ public class HttpChannelState implements HttpChannel, Components
                     !Request.getPathInContext(_request).startsWith("/") &&
                     !HttpMethod.OPTIONS.is(request.getMethod()))
                 {
-                    throw new BadMessageException("Bad URI path");
+                    throw new BadMessage.RuntimeException("Bad URI path");
                 }
 
                 HttpURI uri = request.getHttpURI();
@@ -533,7 +533,7 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri);
                     if (badMessage != null)
-                        throw new BadMessageException(badMessage);
+                        throw new BadMessage.RuntimeException(badMessage);
                 }
 
                 // Customize before processing.

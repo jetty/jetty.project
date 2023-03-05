@@ -16,7 +16,7 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -76,9 +76,9 @@ public interface ConnectionFactory
          * @param responseFields The fields to be sent with the 101 response
          * @return Null to indicate that request processing should continue normally without upgrading. A new connection instance to
          * indicate that the upgrade should proceed.
-         * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
+         * @throws BadMessage.RuntimeException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
-        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields.Mutable responseFields) throws BadMessageException;
+        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields.Mutable responseFields) throws BadMessage.RuntimeException;
     }
 
     /**

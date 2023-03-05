@@ -28,7 +28,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
@@ -480,51 +479,6 @@ public final class URIUtil
      */
     public static String decodePath(String path, int offset, int length)
     {
-        return decodePath(path, offset, length, Utf8StringBuilder::append);
-    }
-
-    /**
-     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters, but leaves reserved path characters percent-encoded.
-     * @param path A String holding the URI path to decode
-     * @see #canonicalPath(String)
-     * @see #normalizePath(String)
-     */
-    public static String safeDecodePath(String path)
-    {
-        return safeDecodePath(path, 0, path.length());
-    }
-
-    /**
-     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters, but leaves reserved path characters percent-encoded.
-     * @param path A String holding the URI path to decode
-     * @param offset The start of the URI within the path string
-     * @param length The length of the URI within the path string
-     * @see #canonicalPath(String)
-     * @see #normalizePath(String)
-     */
-    public static String safeDecodePath(String path, int offset, int length)
-    {
-        return decodePath(path, offset, length, URIUtil::safePathAppend);
-    }
-
-    private static void safePathAppend(Utf8StringBuilder builder, byte b)
-    {
-        switch (b)
-        {
-            case '/' -> builder.append("%2F");
-            case '%' -> builder.append("%25");
-            case '?' -> builder.append("%3F");
-            default -> builder.append(b);
-        }
-    }
-
-    /**
-     * Decode a URI path and strip parameters of UTF-8 path
-     * @see #canonicalPath(String)
-     * @see #normalizePath(String)
-     */
-    public static String decodePath(String path, int offset, int length, BiConsumer<Utf8StringBuilder, Byte> decoder)
-    {
         try
         {
             Utf8StringBuilder builder = null;
@@ -550,13 +504,13 @@ public final class URIUtil
                                 String str = new String(codePoints, 0, 1);
                                 byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
                                 for (byte b: bytes)
-                                    decoder.accept(builder, b);
+                                    builder.append(b);
                                 i += 5;
                             }
                             else
                             {
                                 byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
-                                decoder.accept(builder, b);
+                                builder.append(b);
                                 i += 2;
                             }
                         }

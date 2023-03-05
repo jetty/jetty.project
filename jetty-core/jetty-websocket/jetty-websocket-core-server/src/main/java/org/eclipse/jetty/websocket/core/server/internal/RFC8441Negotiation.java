@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
@@ -22,7 +22,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public class RFC8441Negotiation extends WebSocketNegotiation
 {
-    public RFC8441Negotiation(Request request, Response response, Callback callback, WebSocketComponents components) throws BadMessageException
+    public RFC8441Negotiation(Request request, Response response, Callback callback, WebSocketComponents components) throws BadMessage.RuntimeException
     {
         super(request, response, callback, components);
     }

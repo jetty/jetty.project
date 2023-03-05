@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -70,7 +70,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         if (!result)
             return false;
         if (((RFC6455Negotiation)negotiation).getKey() == null)
-            throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
+            throw new BadMessage.RuntimeException("Missing request header 'Sec-WebSocket-Key'");
         return true;
     }
 

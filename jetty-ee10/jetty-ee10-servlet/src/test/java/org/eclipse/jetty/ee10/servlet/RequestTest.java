@@ -134,7 +134,7 @@ public class RequestTest
             }
         });
 
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986_UNAMBIGUOUS);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
 
         String rawResponse = _connector.getResponse(
             """

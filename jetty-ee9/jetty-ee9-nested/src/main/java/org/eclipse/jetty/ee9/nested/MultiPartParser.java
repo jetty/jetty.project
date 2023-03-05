@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.util.BufferUtil;
@@ -133,7 +133,7 @@ public class MultiPartParser
 
             case CR:
                 if (_cr)
-                    throw new BadMessageException("Bad EOL");
+                    throw new BadMessage.RuntimeException("Bad EOL");
 
                 _cr = true;
                 return null;
@@ -147,7 +147,7 @@ public class MultiPartParser
             case OTEXT:
             case COLON:
                 if (_cr)
-                    throw new BadMessageException("Bad EOL");
+                    throw new BadMessage.RuntimeException("Bad EOL");
                 break;
 
             default:
@@ -700,7 +700,7 @@ public class MultiPartParser
     }
 
     @SuppressWarnings("serial")
-    private static class IllegalCharacterException extends BadMessageException
+    private static class IllegalCharacterException extends BadMessage.RuntimeException
     {
         private IllegalCharacterException(State state, HttpTokens.Token token, ByteBuffer buffer)
         {

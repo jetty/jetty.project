@@ -85,7 +85,7 @@ public class MultiPartFormDataTest
 
         formData.handle((parts, failure) ->
         {
-            assertInstanceOf(BadMessageException.class, failure);
+            assertInstanceOf(BadMessage.RuntimeException.class, failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("bad last boundary"));
             return null;
         }).get(5, TimeUnit.SECONDS);
