@@ -165,14 +165,14 @@ public class RequestTest
 
         String rawResponse = _connector.getResponse(
             """
-                GET /test/path%20info/foo%2fbar HTTP/1.1\r
+                GET /test/path%20info/foo%2cbar HTTP/1.1\r
                 Host: localhost\r
                 Connection: close\r
                 \r
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("request.getRequestURI", resultRequestURI.get(), is("/test/path%20info/foo%2fbar"));
-        assertThat("request.getPathInfo", resultPathInfo.get(), is("/test/path info/foo%2Fbar"));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is("/test/path%20info/foo%2cbar"));
+        assertThat("request.getPathInfo", resultPathInfo.get(), is("/test/path info/foo,bar"));
     }
 }
