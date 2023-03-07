@@ -62,7 +62,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//@Disabled // TODO
 public class ErrorPageTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ErrorPageTest.class);
@@ -125,7 +124,7 @@ public class ErrorPageTest
         _errorPageErrorHandler.addErrorPage(400, "/error/400");
         // error.addErrorPage(500,"/error/500");
         _errorPageErrorHandler.addErrorPage(IllegalStateException.class.getCanonicalName(), "/error/TestException");
-        _errorPageErrorHandler.addErrorPage(BadMessage.RuntimeException.class, "/error/BadMessageException");
+        _errorPageErrorHandler.addErrorPage(BadMessage.RuntimeException.class, "/error/BadMessage");
         _errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
         _errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
         _errorPageErrorHandler.addErrorPage(TestServletException.class, "/error");
@@ -380,7 +379,7 @@ public class ErrorPageTest
         {
             String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad Request"));
-            assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessage"));
             assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessage$RuntimeException: 400: Bad query encoding"));

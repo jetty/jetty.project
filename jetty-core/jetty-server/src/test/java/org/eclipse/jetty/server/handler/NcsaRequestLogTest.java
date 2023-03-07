@@ -557,7 +557,7 @@ public class NcsaRequestLogTest
                                 if (!baseRequest.isHandled())
                                     response.sendError(404);
                             }
-                            catch (BadMessageException bad)
+                            catch (BadMessage.RuntimeException bad)
                             {
                                 response.sendError(bad.getCode(), bad.getReason());
                             }
@@ -689,7 +689,7 @@ public class NcsaRequestLogTest
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            throw new BadMessageException(499);
+            throw new BadMessage.RuntimeException(499);
         }
     }
 
@@ -698,7 +698,7 @@ public class NcsaRequestLogTest
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            BadMessageException bad = new BadMessageException(488);
+            BadMessage.RuntimeException bad = new BadMessage.RuntimeException(488);
             baseRequest.getHttpChannel().abort(bad);
             throw bad;
         }

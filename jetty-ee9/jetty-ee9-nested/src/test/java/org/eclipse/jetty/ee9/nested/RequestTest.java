@@ -304,7 +304,7 @@ public class RequestTest
         _handler._checker = (request, response) ->
         {
             request.getParameterMap();
-            // should have thrown a BadMessageException
+            // should have thrown a BadMessage
             return false;
         };
 

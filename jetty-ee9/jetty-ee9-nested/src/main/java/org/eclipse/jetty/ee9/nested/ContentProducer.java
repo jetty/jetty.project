@@ -53,7 +53,7 @@ public interface ContentProducer
     /**
      * Check if the current data rate consumption is above the minimal rate.
      * Abort the channel, fail the content currently available and throw a
-     * BadMessageException(REQUEST_TIMEOUT_408) if the check fails.
+     * BadMessage$RuntimeException(REQUEST_TIMEOUT_408) if the check fails.
      */
     void checkMinDataRate();
 

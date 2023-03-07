@@ -396,7 +396,7 @@ public interface Response extends Content.Sink
         // public field that will force a transitive dependency on SLF4J.
         Logger logger = LoggerFactory.getLogger(Response.class);
 
-        // Let's be less verbose with BadMessageExceptions & QuietExceptions
+        // Let's be less verbose with QuietExceptions
         if (logger.isDebugEnabled())
             logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
         else if (cause instanceof QuietException || cause instanceof TimeoutException)

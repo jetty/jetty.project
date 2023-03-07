@@ -142,7 +142,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 /* If there was an error creating the extension we need to differentiate between a
                 bad ExtensionConfig offered by the client and a bad ExtensionConfig negotiated by the server.
 
-                When deciding whether to throw a BadMessageException and send a 400 response or a WebSocketException
+                When deciding whether to throw a BadMessage and send a 400 response or a WebSocketException
                 and send a 500 response it depends on whether this is running on the client or the server. */
                 switch (behavior)
                 {

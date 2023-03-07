@@ -3285,7 +3285,7 @@ jetty-core/jetty-http/src/main/java/module-info.java, 2009-03-24
 jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/HttpCookie.java, 2009-03-24
 jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/DateGenerator.java, 2013-10-17
 jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/HttpField.java, 2012-12-07
-jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/BadMessageException.java, 2012-05-08
+jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/BadMessage.java, 2012-05-08
 jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/CookieCache.java, 2017-07-19
 jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/MultiPartByteRanges.java, 2022-08-05
 jetty-core/jetty-http/src/main/java/org/eclipse/jetty/http/CompressedContentFormat.java, 2009-03-24

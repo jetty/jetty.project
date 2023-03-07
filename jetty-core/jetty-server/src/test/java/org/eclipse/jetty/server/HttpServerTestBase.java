@@ -236,7 +236,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testFullMethod() throws Exception
     {
         // TODO this test is flakey
-        // The failure appears associated with the 431 BadMessageException being thrown
+        // The failure appears associated with the 431 BadMessage being thrown
 
         startServer(new HelloHandler());
 
