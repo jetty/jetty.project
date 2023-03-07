@@ -15,44 +15,69 @@ package org.eclipse.jetty.quic.quiche;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
-import java.util.Base64;
+import java.util.Set;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SSLKeyPair
 {
-    private static final byte[] BEGIN_KEY = "-----BEGIN PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
-    private static final byte[] END_KEY = "-----END PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
-    private static final byte[] BEGIN_CERT = "-----BEGIN CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
-    private static final byte[] END_CERT = "-----END CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
-    private static final byte[] LINE_SEPARATOR = System.getProperty("line.separator").getBytes(StandardCharsets.US_ASCII);
-    private static final int LINE_LENGTH = 64;
-
-    private final Base64.Encoder encoder = Base64.getMimeEncoder(LINE_LENGTH, LINE_SEPARATOR);
     private final Key key;
     private final Certificate[] certChain;
     private final String alias;
 
     public SSLKeyPair(File storeFile, String storeType, char[] storePassword, String alias, char[] keyPassword) throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, CertificateException
     {
+        this(loadKeyStore(storeFile, storeType, storePassword),
+                alias,
+                keyPassword);
+    }
+
+    public SSLKeyPair(SslContextFactory sslContextFactory)
+            throws UnrecoverableKeyException, KeyStoreException, NoSuchAlgorithmException {
+        this(sslContextFactory.getKeyStore(),
+                getAlias(sslContextFactory),
+                sslContextFactory.getKeyManagerPassword() == null ?
+                        sslContextFactory.getKeyStorePassword().toCharArray() :
+                        sslContextFactory.getKeyManagerPassword().toCharArray());
+    }
+
+    public SSLKeyPair(KeyStore keyStore, String alias, char[] keyPassword) throws UnrecoverableKeyException, KeyStoreException, NoSuchAlgorithmException {
+        this.alias = alias;
+        this.key = keyStore.getKey(alias, keyPassword);
+        this.certChain = keyStore.getCertificateChain(alias);
+    }
+
+    private static KeyStore loadKeyStore(File storeFile, String storeType, char[] storePassword)
+            throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
         KeyStore keyStore = KeyStore.getInstance(storeType);
-        try (FileInputStream fis = new FileInputStream(storeFile))
-        {
+        try (FileInputStream fis = new FileInputStream(storeFile)) {
             keyStore.load(fis, storePassword);
-            this.alias = alias;
-            this.key = keyStore.getKey(alias, keyPassword);
-            this.certChain = keyStore.getCertificateChain(alias);
         }
+        return keyStore;
+    }
+
+    private static String getAlias(SslContextFactory sslContextFactory) {
+        Set<String> aliases = sslContextFactory.getAliases();
+        if (aliases.isEmpty()) {
+            throw new IllegalStateException("Invalid KeyStore: no aliases");
+        }
+        String alias = sslContextFactory.getCertAlias();
+        if (alias == null) {
+            alias = aliases.stream().findFirst().orElse("mykey");
+        }
+        return alias;
     }
 
     /**
@@ -64,37 +89,30 @@ public class SSLKeyPair
         files[0] = new File(targetFolder, alias + ".key");
         files[1] = new File(targetFolder, alias + ".crt");
 
-        try (FileOutputStream fos = new FileOutputStream(files[0]))
+        try (FileWriter fileWriter = new FileWriter(files[0]))
         {
-            writeAsPEM(fos, key);
+            writeAsPEM(fileWriter, key);
         }
-        try (FileOutputStream fos = new FileOutputStream(files[1]))
+        try (FileWriter fileWriter = new FileWriter(files[1]))
         {
-            for (Certificate cert : certChain)
-                writeAsPEM(fos, cert);
+            writeAsPEM(fileWriter, certChain);
         }
         return files;
     }
 
-    private void writeAsPEM(OutputStream outputStream, Key key) throws IOException
+    private void writeAsPEM(FileWriter fileWriter, Key key) throws IOException
     {
-        byte[] encoded = encoder.encode(key.getEncoded());
-        outputStream.write(BEGIN_KEY);
-        outputStream.write(LINE_SEPARATOR);
-        outputStream.write(encoded);
-        outputStream.write(LINE_SEPARATOR);
-        outputStream.write(END_KEY);
-        outputStream.write(LINE_SEPARATOR);
+        try(JcaPEMWriter pemWriter = new JcaPEMWriter(fileWriter)) {
+            pemWriter.writeObject(new JcaPKCS8Generator((PrivateKey) key, null));
+        }
     }
 
-    private void writeAsPEM(OutputStream outputStream, Certificate certificate) throws CertificateEncodingException, IOException
+    private void writeAsPEM(FileWriter fileWriter, Certificate[] certChain) throws IOException
     {
-        byte[] encoded = encoder.encode(certificate.getEncoded());
-        outputStream.write(BEGIN_CERT);
-        outputStream.write(LINE_SEPARATOR);
-        outputStream.write(encoded);
-        outputStream.write(LINE_SEPARATOR);
-        outputStream.write(END_CERT);
-        outputStream.write(LINE_SEPARATOR);
+        try(JcaPEMWriter pemWriter = new JcaPEMWriter(fileWriter)) {
+            for (Certificate certificate : certChain) {
+                pemWriter.writeObject(certificate);
+            }
+        }
     }
 }

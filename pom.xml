@@ -34,6 +34,7 @@
     <asm.version>9.5</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
+    <bouncycastle.version>1.72</bouncycastle.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.3.4</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -1270,6 +1271,11 @@
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>${asciidoctor.maven.plugin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
         <groupId>org.conscrypt</groupId>

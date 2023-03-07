@@ -15,6 +15,7 @@ module org.eclipse.jetty.quic.quiche
 {
     requires org.eclipse.jetty.util;
     requires org.slf4j;
+    requires org.bouncycastle.pkix;
 
     exports org.eclipse.jetty.quic.quiche;
 

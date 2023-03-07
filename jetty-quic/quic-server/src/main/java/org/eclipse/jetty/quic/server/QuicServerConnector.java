@@ -22,7 +22,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.file.Files;
 import java.util.EventListener;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -158,21 +157,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         super.doStart();
         selectorManager.accept(datagramChannel);
 
-        Set<String> aliases = sslContextFactory.getAliases();
-        if (aliases.isEmpty())
-            throw new IllegalStateException("Invalid KeyStore: no aliases");
-        String alias = sslContextFactory.getCertAlias();
-        if (alias == null)
-            alias = aliases.stream().findFirst().orElse("mykey");
-        char[] keyStorePassword = sslContextFactory.getKeyStorePassword().toCharArray();
-        String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
-        SSLKeyPair keyPair = new SSLKeyPair(
-            sslContextFactory.getKeyStoreResource().getFile(),
-            sslContextFactory.getKeyStoreType(),
-            keyStorePassword,
-            alias,
-            keyManagerPassword == null ? keyStorePassword : keyManagerPassword.toCharArray()
-        );
+        SSLKeyPair keyPair = new SSLKeyPair(sslContextFactory);
         File[] pemFiles = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
         privateKeyFile = pemFiles[0];
         certificateChainFile = pemFiles[1];

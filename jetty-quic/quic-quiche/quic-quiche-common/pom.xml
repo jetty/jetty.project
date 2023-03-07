@@ -29,6 +29,10 @@
       <artifactId>jetty-quiche-native</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
