@@ -74,6 +74,8 @@ public class RFC6265CookieParserLenientTest
             Arguments.of("abc= \"x\" ", "abc", "x"),
             Arguments.of("abc= \"x\" ;", "abc", "x"),
             Arguments.of("abc= \"x\" ; ", "abc", "x"),
+            Arguments.of("abc = x y z ", "abc", "x y z"),
+            Arguments.of("abc = x  y  z ", "abc", "x  y  z"),
 
             // The backslash character ("\") may be used as a single-character quoting
             // mechanism only within quoted-string and comment constructs.

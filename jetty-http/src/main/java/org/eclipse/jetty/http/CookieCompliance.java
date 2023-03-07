@@ -94,7 +94,12 @@ public class CookieCompliance implements ComplianceViolation.Mode
         /**
          * Whitespace was found around the cookie name and/or around the cookie value.
          */
-        OPTIONAL_WHITE_SPACE("https://www.rfc-editor.org/rfc/rfc6265#section-5.2", "White space around name/value");
+        OPTIONAL_WHITE_SPACE("https://www.rfc-editor.org/rfc/rfc6265#section-5.2", "White space around name/value"),
+
+        /**
+         * Allow spaces within values without quotes.
+         */
+        SPACE_IN_VALUES("https://www.rfc-editor.org/rfc/rfc6265#section-5.2", "Space in value");
 
         private final String url;
         private final String description;
@@ -130,10 +135,11 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * <ul>
      * <li>{@link Violation#INVALID_COOKIES}</li>
      * <li>{@link Violation#OPTIONAL_WHITE_SPACE}</li>
+     * <li>{@link Violation#SPACE_IN_VALUES}</li>
      * </ul>
      */
     public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(
-        Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE)
+        Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPACE_IN_VALUES)
     );
 
     /**

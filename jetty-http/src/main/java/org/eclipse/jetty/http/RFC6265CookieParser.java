@@ -26,6 +26,7 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_SEPARATOR;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.OPTIONAL_WHITE_SPACE;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.SPACE_IN_VALUES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
 
 /**
@@ -53,6 +54,7 @@ public class RFC6265CookieParser implements CookieParser
         AFTER_NAME,
         VALUE,
         IN_VALUE,
+        SPACE_IN_VALUE,
         IN_QUOTED_VALUE,
         ESCAPED_VALUE,
         AFTER_QUOTED_VALUE,
@@ -74,6 +76,7 @@ public class RFC6265CookieParser implements CookieParser
         String cookieComment = null;
         int cookieVersion = 0;
         boolean cookieInvalid = false;
+        int spaces = 0;
 
         int length = field.length();
         StringBuilder string = new StringBuilder();
@@ -220,7 +223,13 @@ public class RFC6265CookieParser implements CookieParser
                     break;
 
                 case IN_VALUE:
-                    if (c == ';' || c == ',' || c == ' ' || c == '\t')
+                    if (c == ' ' && _complianceMode.allows(SPACE_IN_VALUES))
+                    {
+                        reportComplianceViolation(SPACE_IN_VALUES, field);
+                        spaces = 1;
+                        state = State.SPACE_IN_VALUE;
+                    }
+                    else if (c == ' ' || c == ';' || c == ',' || c == '\t')
                     {
                         value = string.toString();
                         i--;
@@ -229,6 +238,33 @@ public class RFC6265CookieParser implements CookieParser
                     else if (token.isRfc6265CookieOctet())
                     {
                         string.append(c);
+                    }
+                    else if (_complianceMode.allows(INVALID_COOKIES))
+                    {
+                        reportComplianceViolation(INVALID_COOKIES, field);
+                        state = State.INVALID_COOKIE;
+                    }
+                    else
+                    {
+                        throw new InvalidCookieException("Bad Cookie value");
+                    }
+                    break;
+
+                case SPACE_IN_VALUE:
+                    if (c == ' ')
+                    {
+                        spaces++;
+                    }
+                    else if (c == ';' || c == ',' || c == '\t')
+                    {
+                        value = string.toString();
+                        i--;
+                        state = State.END;
+                    }
+                    else if (token.isRfc6265CookieOctet())
+                    {
+                        string.append(" ".repeat(spaces)).append(c);
+                        state = State.IN_VALUE;
                     }
                     else if (_complianceMode.allows(INVALID_COOKIES))
                     {
