@@ -853,7 +853,7 @@ public class HttpChannelState
         final Request request = _channel.getRequest();
         final int code;
         final String message;
-        Throwable cause = _channel.unwrap(th, BadMessage.RuntimeException.class, UnavailableException.class);
+        Throwable cause = _channel.unwrap(th, BadMessage.class, UnavailableException.class);
         if (cause == null)
         {
             code = HttpStatus.INTERNAL_SERVER_ERROR_500;

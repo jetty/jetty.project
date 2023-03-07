@@ -399,7 +399,7 @@ public interface Response extends Content.Sink
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (logger.isDebugEnabled())
             logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
-        else if (cause instanceof BadMessage || cause instanceof QuietException || cause instanceof TimeoutException)
+        else if (cause instanceof QuietException || cause instanceof TimeoutException)
             logger.debug("writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
         else if (cause != null)
             logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);

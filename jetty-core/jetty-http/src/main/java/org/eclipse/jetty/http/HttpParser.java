@@ -2020,7 +2020,7 @@ public class HttpParser
          *
          * @param failure the failure with the bad message information
          */
-        default void badMessage(BadMessage.RuntimeException failure)
+        default void badMessage(Throwable failure)
         {
         }
     }

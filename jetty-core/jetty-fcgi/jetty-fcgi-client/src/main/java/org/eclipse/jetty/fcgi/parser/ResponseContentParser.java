@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -306,7 +305,7 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public void badMessage(BadMessage.RuntimeException failure)
+        public void badMessage(Throwable failure)
         {
             fail(failure);
         }

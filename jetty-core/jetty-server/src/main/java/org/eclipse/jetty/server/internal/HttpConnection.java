@@ -1053,7 +1053,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void badMessage(BadMessage.RuntimeException failure)
+        public void badMessage(Throwable failure)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);

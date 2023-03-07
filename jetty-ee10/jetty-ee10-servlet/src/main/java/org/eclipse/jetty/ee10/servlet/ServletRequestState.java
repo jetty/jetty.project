@@ -819,7 +819,7 @@ public class ServletRequestState
         final Request request = _servletChannel.getServletContextRequest();
         final int code;
         final String message;
-        Throwable cause = _servletChannel.unwrap(th, BadMessage.RuntimeException.class, UnavailableException.class);
+        Throwable cause = _servletChannel.unwrap(th, BadMessage.class, UnavailableException.class);
         if (cause == null)
         {
             code = HttpStatus.INTERNAL_SERVER_ERROR_500;

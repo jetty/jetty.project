@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -428,9 +429,9 @@ public class HttpTester
         }
 
         @Override
-        public void badMessage(BadMessage.RuntimeException failure)
+        public void badMessage(Throwable failure)
         {
-            throw failure;
+            ExceptionUtil.ifExceptionThrowRuntime(failure);
         }
 
         public ByteBuffer generate()

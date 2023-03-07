@@ -1281,7 +1281,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ExecutionException e = assertThrows(ExecutionException.class, () ->
             testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 1024));
 
-        assertThat(e.getCause(), instanceOf(BadMessage.RuntimeException.class));
+        assertThat(e.getCause(), instanceOf(BadMessage.class));
         assertThat(e.getCause().getMessage(), containsString("Unknown content"));
     }
 
@@ -1292,7 +1292,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ExecutionException e = assertThrows(ExecutionException.class, () ->
             testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 128 * 1024));
 
-        assertThat(e.getCause(), instanceOf(BadMessage.RuntimeException.class));
+        assertThat(e.getCause(), instanceOf(BadMessage.class));
         assertThat(e.getCause().getMessage(), containsString("Unknown content"));
     }
 

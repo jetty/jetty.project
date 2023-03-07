@@ -138,19 +138,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
             };
         }
-        catch (BadMessage.RuntimeException x)
+        catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onRequest", x);
-            return () -> onBadMessage(x);
-        }
-        catch (Throwable x)
-        {
+            if (x instanceof BadMessage)
+                return () -> onBadMessage(x);
             return () -> onBadMessage(new BadMessage.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 
-    private void onBadMessage(BadMessage.RuntimeException x)
+    private void onBadMessage(Throwable x)
     {
         // TODO
     }
@@ -506,12 +504,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             return task;
         }
-        catch (BadMessage.RuntimeException x)
-        {
-            return () -> onBadMessage(x);
-        }
         catch (Throwable x)
         {
+            if (x instanceof BadMessage)
+                return () -> onBadMessage(x);
             return () -> onBadMessage(new BadMessage.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }

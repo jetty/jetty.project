@@ -131,7 +131,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 }
             };
         }
-        catch (BadMessage.RuntimeException x)
+        catch (BadMessage.RuntimeException | BadMessage.IllegalArgumentException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onRequest() failure", x);
@@ -143,7 +143,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }
     }
 
-    private void onBadMessage(BadMessage.RuntimeException x)
+    private void onBadMessage(BadMessage x)
     {
         // TODO
     }

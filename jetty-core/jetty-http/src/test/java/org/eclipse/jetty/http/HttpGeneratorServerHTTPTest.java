@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -256,9 +257,9 @@ public class HttpGeneratorServerHTTPTest
         }
 
         @Override
-        public void badMessage(BadMessage.RuntimeException failure)
+        public void badMessage(Throwable failure)
         {
-            throw failure;
+            ExceptionUtil.ifExceptionThrowRuntime(failure);
         }
     }
 

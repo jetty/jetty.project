@@ -243,10 +243,6 @@ public class HttpGenerator
 
                     return Result.FLUSH;
                 }
-                catch (BadMessage.RuntimeException e)
-                {
-                    throw e;
-                }
                 catch (BufferOverflowException e)
                 {
                     LOG.trace("IGNORED", e);
@@ -254,6 +250,8 @@ public class HttpGenerator
                 }
                 catch (Exception e)
                 {
+                    if (e instanceof BadMessage)
+                        throw e;
                     throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
                 }
                 finally
@@ -429,10 +427,6 @@ public class HttpGenerator
                     }
                     _state = last ? State.COMPLETING : State.COMMITTED;
                 }
-                catch (BadMessage.RuntimeException e)
-                {
-                    throw e;
-                }
                 catch (BufferOverflowException e)
                 {
                     LOG.trace("IGNORED", e);
@@ -440,6 +434,8 @@ public class HttpGenerator
                 }
                 catch (Exception e)
                 {
+                    if (e instanceof BadMessage)
+                        throw e;
                     throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
                 }
                 finally
