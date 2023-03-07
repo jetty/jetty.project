@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -94,7 +93,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
-    private final AtomicLong _lastShrink = new AtomicLong();
+    private ShrinkManager shrinkManager;
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private final BlockingQueue<Runnable> _jobs;
@@ -220,7 +219,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         addBean(_tryExecutor);
 
-        _lastShrink.set(NanoTime.now());
+        shrinkManager.init();
 
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
@@ -436,6 +435,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (_budget != null)
             _budget.check(maxThreads);
         _maxThreads = maxThreads;
+        shrinkManager = new ShrinkManager(maxThreads);
         if (_minThreads > _maxThreads)
             _minThreads = _maxThreads;
     }
@@ -876,7 +876,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
-            _lastShrink.set(NanoTime.now());
+            shrinkManager.init();
             thread.start();
             started = true;
         }
@@ -1070,10 +1070,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
             boolean idle = true;
+            boolean pruneIdle = false;
             try
             {
                 Runnable job = null;
-                long idleBaseline = NanoTime.now();
+                pruneIdle = shrinkManager.onIdle();
                 while (true)
                 {
                     // If we had a job,
@@ -1100,28 +1101,12 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             long idleTimeout = getIdleTimeout();
                             if (idleTimeout > 0 && getThreads() > _minThreads)
                             {
-                                long now = NanoTime.now();
-                                long itNanos = TimeUnit.MILLISECONDS.toNanos(idleTimeout);
-                                if (NanoTime.elapsed(idleBaseline, now) > itNanos)
+                                if (shrinkManager.pollIdleShrink(TimeUnit.MILLISECONDS.toNanos(idleTimeout), getShrinkInterval()))
                                 {
-                                    // This thread has been idle for a sufficient amount of time to be eligible for
-                                    // removal from the pool; now try to reserve an "expiration slot" in accordance
-                                    // with the shrink interval (configured via `idleTimeoutDecay`), allowing the
-                                    // thread to break out of the job poll loop and exit.
-                                    long siNanos = getShrinkInterval();
-                                    long last = _lastShrink.get();
-                                    if (NanoTime.elapsed(last, now) > siNanos &&
-                                        _lastShrink.compareAndSet(last, Math.max(last, now - itNanos) + siNanos))
-
-                                    {
-                                        // NOTE: attempted CaS may fail, _very_ infrequently. If it does, that's fine.
-                                        // This is a "best effort" approach to shrinking, and even if our CaS fails,
-                                        // the missed "shrink reservation" will very likely simply be picked up by
-                                        // another thread.
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                        break;
-                                    }
+                                    pruneIdle = false;
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("shrinking {}", QueuedThreadPool.this);
+                                    break;
                                 }
                             }
 
@@ -1139,8 +1124,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                         // run job
                         if (LOG.isDebugEnabled())
                             LOG.debug("run {} in {}", job, QueuedThreadPool.this);
+                        pruneIdle = shrinkManager.onBusy();
                         runJob(job);
-                        idleBaseline = NanoTime.now();
+                        pruneIdle = shrinkManager.onIdle();
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
                     }
@@ -1163,6 +1149,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
             finally
             {
+                if (pruneIdle)
+                {
+                    shrinkManager.prune();
+                }
                 Thread thread = Thread.currentThread();
                 removeThread(thread);
 
