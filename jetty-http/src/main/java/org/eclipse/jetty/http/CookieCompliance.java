@@ -157,10 +157,11 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * <li>{@link Violation#INVALID_COOKIES}</li>
      * <li>{@link Violation#OPTIONAL_WHITE_SPACE}</li>
      * <li>{@link Violation#SPECIAL_CHARS_IN_QUOTES}</li>
+     * <li>{@link Violation#SPACE_IN_VALUES}</li>
      * </ul>
      */
     public static final CookieCompliance RFC6265_LEGACY = new CookieCompliance("RFC6265_LEGACY", EnumSet.of(
-        Violation.ATTRIBUTES, Violation.BAD_QUOTES, Violation.ESCAPE_IN_QUOTES, Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPECIAL_CHARS_IN_QUOTES)
+        Violation.ATTRIBUTES, Violation.BAD_QUOTES, Violation.ESCAPE_IN_QUOTES, Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPECIAL_CHARS_IN_QUOTES, Violation.SPACE_IN_VALUES)
     );
 
     /**
