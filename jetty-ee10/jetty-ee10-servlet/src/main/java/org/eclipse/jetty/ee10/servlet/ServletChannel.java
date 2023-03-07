@@ -30,7 +30,6 @@ import java.util.function.Consumer;
 import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -683,7 +682,7 @@ public class ServletChannel
     {
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
-        Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
+        Throwable noStack = unwrap(failure, IOException.class, TimeoutException.class);
 
         if (quiet != null || !getServer().isRunning())
         {

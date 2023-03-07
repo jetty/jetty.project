@@ -28,7 +28,7 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -93,7 +93,7 @@ public class ErrorHandlerTest
                 if (target.startsWith("/badmessage/"))
                 {
                     int code = Integer.parseInt(target.substring(target.lastIndexOf('/') + 1));
-                    throw new ServletException(new BadMessageException(code));
+                    throw new ServletException(new BadMessage.RuntimeException(code));
                 }
 
                 // produce an exception with an JSON formatted cause message

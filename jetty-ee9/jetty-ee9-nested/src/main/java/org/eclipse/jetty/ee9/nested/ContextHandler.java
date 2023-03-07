@@ -62,7 +62,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -1621,7 +1621,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     {
                         encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
                         if (encodedPathQuery == null)
-                            throw new BadMessageException(500, "Bad dispatch path");
+                            throw new BadMessage.RuntimeException(500, "Bad dispatch path");
                     }
                 }
 

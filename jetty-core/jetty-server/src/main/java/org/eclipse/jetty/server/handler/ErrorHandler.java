@@ -31,7 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -92,7 +92,7 @@ public class ErrorHandler implements Request.Handler
         int code = response.getStatus();
         String message = (String)request.getAttribute(ERROR_MESSAGE);
         Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
-        if (cause instanceof BadMessageException bad)
+        if (cause instanceof BadMessage bad)
         {
             code = bad.getCode();
             response.setStatus(code);

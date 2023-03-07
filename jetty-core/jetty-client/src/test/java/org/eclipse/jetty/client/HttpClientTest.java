@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -1281,7 +1281,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ExecutionException e = assertThrows(ExecutionException.class, () ->
             testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 1024));
 
-        assertThat(e.getCause(), instanceOf(BadMessageException.class));
+        assertThat(e.getCause(), instanceOf(BadMessage.class));
         assertThat(e.getCause().getMessage(), containsString("Unknown content"));
     }
 
@@ -1292,7 +1292,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ExecutionException e = assertThrows(ExecutionException.class, () ->
             testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 128 * 1024));
 
-        assertThat(e.getCause(), instanceOf(BadMessageException.class));
+        assertThat(e.getCause(), instanceOf(BadMessage.class));
         assertThat(e.getCause().getMessage(), containsString("Unknown content"));
     }
 

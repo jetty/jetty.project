@@ -62,7 +62,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -402,7 +402,7 @@ public class Request implements HttpServletRequest
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
                     LOG.warn(e.toString());
-                    throw new BadMessageException("Unable to parse form content", e);
+                    throw new BadMessage.RuntimeException("Unable to parse form content", e);
                 }
             }
         }
@@ -444,7 +444,7 @@ public class Request implements HttpServletRequest
             catch (IllegalStateException | IllegalArgumentException e)
             {
                 _queryParameters = BAD_PARAMS;
-                throw new BadMessageException("Unable to parse URI query", e);
+                throw new BadMessage.RuntimeException("Unable to parse URI query", e);
             }
         }
     }
@@ -475,7 +475,7 @@ public class Request implements HttpServletRequest
                 {
                     if (_metaData != null && !isContentEncodingSupported())
                     {
-                        throw new BadMessageException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
+                        throw new BadMessage.RuntimeException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
                     }
 
                     extractFormParameters(_contentParameters);
@@ -488,7 +488,7 @@ public class Request implements HttpServletRequest
                     {
                         if (_metaData != null && !isContentEncodingSupported())
                         {
-                            throw new BadMessageException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
+                            throw new BadMessage.RuntimeException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
                         }
                         getParts(_contentParameters);
                     }
@@ -2102,7 +2102,7 @@ public class Request implements HttpServletRequest
             catch (Throwable th)
             {
                 _queryParameters = BAD_PARAMS;
-                throw new BadMessageException(400, "Bad query encoding", th);
+                throw new BadMessage.RuntimeException(400, "Bad query encoding", th);
             }
         }
 

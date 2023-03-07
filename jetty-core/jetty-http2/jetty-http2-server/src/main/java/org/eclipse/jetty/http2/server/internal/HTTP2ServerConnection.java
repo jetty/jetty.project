@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -307,7 +307,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             HttpField settingsField = request.getFields().getField(HttpHeader.HTTP2_SETTINGS);
             if (settingsField == null)
-                throw new BadMessageException("Missing " + HttpHeader.HTTP2_SETTINGS + " header");
+                throw new BadMessage.RuntimeException("Missing " + HttpHeader.HTTP2_SETTINGS + " header");
             String value = settingsField.getValue();
             final byte[] settings = Base64.getUrlDecoder().decode(value == null ? "" : value);
 
@@ -318,7 +318,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (settingsFrame == null)
             {
                 LOG.warn("Invalid {} header value: {}", HttpHeader.HTTP2_SETTINGS, value);
-                throw new BadMessageException();
+                throw new BadMessage.RuntimeException();
             }
 
             responseFields.put(HttpHeader.UPGRADE, "h2c");

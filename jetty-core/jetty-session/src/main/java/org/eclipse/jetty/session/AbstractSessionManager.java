@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
@@ -1111,7 +1111,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                                             LOG.debug("Error releasing duplicate valid session: {}", id);
                                     }
 
-                                    throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
+                                    throw new BadMessage.RuntimeException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
                                 }
                             }
                             else

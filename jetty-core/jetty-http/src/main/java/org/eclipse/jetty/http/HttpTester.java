@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -428,9 +429,9 @@ public class HttpTester
         }
 
         @Override
-        public void badMessage(BadMessageException failure)
+        public void badMessage(Throwable failure)
         {
-            throw failure;
+            ExceptionUtil.ifExceptionThrowRuntime(failure);
         }
 
         public ByteBuffer generate()
@@ -461,7 +462,7 @@ public class HttpTester
 
                         case HEADER_OVERFLOW:
                             if (header.capacity() >= 32 * 1024)
-                                throw new BadMessageException(500, "Header too large");
+                                throw new BadMessage.RuntimeException(500, "Header too large");
                             header = BufferUtil.allocate(32 * 1024);
                             continue;
 
