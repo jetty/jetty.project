@@ -362,6 +362,8 @@ public class DefaultServlet extends HttpServlet
         String pathInContext;
         if (included)
             pathInContext = getIncludedPathInContext(req, includedServletPath, isPathInfoOnly());
+        else if (req instanceof ServletApiRequest apiRequest)
+            pathInContext = apiRequest.getServletContextRequest().getPathInContext();
         else
             pathInContext = URIUtil.addPaths(isPathInfoOnly() ? "/" : req.getServletPath(), req.getPathInfo());
 
