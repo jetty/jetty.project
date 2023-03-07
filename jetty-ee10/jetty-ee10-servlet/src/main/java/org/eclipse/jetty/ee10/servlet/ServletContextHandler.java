@@ -1150,10 +1150,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel,
                                                              Request request,
                                                              Response response,
-                                                             String pathInContext,
+                                                             String decodedPathInContext,
                                                              MatchedResource<ServletHandler.MappedServlet> matchedResource)
     {
-        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext, matchedResource, getSessionHandler());
+        return new ServletContextRequest(_servletContext, servletChannel, request, response, decodedPathInContext, matchedResource, getSessionHandler());
     }
 
     @Override
@@ -1161,9 +1161,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         // Need to ask directly to the Context for the pathInContext, rather than using
         // Request.getPathInContext(), as the request is not yet wrapped in this Context.
-        String pathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
 
-        MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
         if (matchedResource == null)
             return null;
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
@@ -1179,7 +1179,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             cache.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
-        ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, pathInContext, matchedResource);
+        ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, decodedPathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
         return servletContextRequest;
     }
@@ -1197,7 +1197,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
-        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getPathInContext()))
+        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getDecodedPathInContext()))
         {
             Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
             return true;
@@ -2824,16 +2824,16 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 String contextPath = getContextPath();
                 // uriInContext is canonicalized by HttpURI.
                 HttpURI.Mutable uri = HttpURI.build(uriInContext);
-                String pathInfo = uri.getCanonicalPath();
-                if (StringUtil.isEmpty(pathInfo))
+                String encodedPathInContext = uri.getCanonicalPath();
+                if (StringUtil.isEmpty(encodedPathInContext))
                     return null;
 
                 if (!StringUtil.isEmpty(contextPath))
                 {
                     uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
-                    pathInfo = uri.getCanonicalPath().substring(contextPath.length());
+                    encodedPathInContext = uri.getCanonicalPath().substring(contextPath.length());
                 }
-                return new Dispatcher(ServletContextHandler.this, uri, pathInfo);
+                return new Dispatcher(ServletContextHandler.this, uri, URIUtil.decodePath(encodedPathInContext));
             }
             catch (Exception e)
             {

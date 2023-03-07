@@ -1135,7 +1135,7 @@ public class ServletApiRequest implements HttpServletRequest
         // handle relative path
         if (!path.startsWith("/"))
         {
-            String relTo = _request.getPathInContext();
+            String relTo = _request.getDecodedPathInContext();
             int slash = relTo.lastIndexOf("/");
             if (slash > 1)
                 relTo = relTo.substring(0, slash + 1);
@@ -1213,7 +1213,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _request._mappedServlet.getServletPathMapping(_request.getPathInContext());
+        return _request._mappedServlet.getServletPathMapping(_request.getDecodedPathInContext());
     }
 
     @Override

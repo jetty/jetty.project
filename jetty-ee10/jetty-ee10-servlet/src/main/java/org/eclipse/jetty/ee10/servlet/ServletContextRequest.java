@@ -78,7 +78,7 @@ public class ServletContextRequest extends ContextRequest
     private final ServletContextResponse _response;
     final ServletHandler.MappedServlet _mappedServlet;
     private final HttpInput _httpInput;
-    private final String _pathInContext;
+    private final String _decodedPathInContext;
     private final ServletChannel _servletChannel;
     private final PathSpec _pathSpec;
     private final SessionManager _sessionManager;
@@ -93,7 +93,7 @@ public class ServletContextRequest extends ContextRequest
         ServletChannel servletChannel,
         Request request,
         Response response,
-        String pathInContext,
+        String decodedPathInContext,
         MatchedResource<ServletHandler.MappedServlet> matchedResource,
         SessionManager sessionManager)
     {
@@ -102,7 +102,7 @@ public class ServletContextRequest extends ContextRequest
         _httpServletRequest = newServletApiRequest();
         _mappedServlet = matchedResource.getResource();
         _httpInput = _servletChannel.getHttpInput();
-        _pathInContext = pathInContext;
+        _decodedPathInContext = decodedPathInContext;
         _pathSpec = matchedResource.getPathSpec();
         _matchedPath = matchedResource.getMatchedPath();
         _response =  newServletContextResponse(response);
@@ -119,9 +119,9 @@ public class ServletContextRequest extends ContextRequest
         return new ServletContextResponse(_servletChannel, this, response);
     }
 
-    public String getPathInContext()
+    public String getDecodedPathInContext()
     {
-        return _pathInContext;
+        return _decodedPathInContext;
     }
 
     public PathSpec getPathSpec()
@@ -209,8 +209,8 @@ public class ServletContextRequest extends ContextRequest
         {
             case "o.e.j.s.s.ServletScopedRequest.request" -> _httpServletRequest;
             case "o.e.j.s.s.ServletScopedRequest.response" -> _response.getHttpServletResponse();
-            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(getPathInContext()).getServletName();
-            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getPathInContext()).getPattern();
+            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(getDecodedPathInContext()).getServletName();
+            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getDecodedPathInContext()).getPattern();
             default -> super.getAttribute(name);
         };
     }

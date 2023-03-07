@@ -471,10 +471,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         if (authenticator != null)
             authenticator.prepareRequest(request);
 
-        RoleInfo roleInfo = prepareConstraintInfo(servletContextRequest.getPathInContext(), servletApiRequest);
+        RoleInfo roleInfo = prepareConstraintInfo(servletContextRequest.getDecodedPathInContext(), servletApiRequest);
 
         // Check data constraints
-        if (!checkUserDataPermissions(servletContextRequest.getPathInContext(), servletContextRequest, response, callback, roleInfo))
+        if (!checkUserDataPermissions(servletContextRequest.getDecodedPathInContext(), servletContextRequest, response, callback, roleInfo))
             return true;
 
         // is Auth mandatory?
