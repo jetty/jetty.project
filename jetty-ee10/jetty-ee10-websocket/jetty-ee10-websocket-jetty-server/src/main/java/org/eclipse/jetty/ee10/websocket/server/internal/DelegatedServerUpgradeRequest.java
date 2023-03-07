@@ -34,7 +34,7 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -66,7 +66,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
         }
         catch (Throwable t)
         {
-            throw new BadMessageException("Bad WebSocket UpgradeRequest", t);
+            throw new BadMessage.RuntimeException("Bad WebSocket UpgradeRequest", t);
         }
     }
 

@@ -51,7 +51,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.MappingMatch;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -220,7 +220,7 @@ public class RequestTest
                 request.getParameterMap();
                 return false;
             }
-            catch (BadMessageException e)
+            catch (BadMessage.RuntimeException e)
             {
                 // Should be able to retrieve the raw query
                 String rawQuery = request.getQueryString();
@@ -575,7 +575,7 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (BadMessage.RuntimeException e)
             {
                 // Should still be able to get the raw query.
                 String rawQuery = request.getQueryString();
@@ -607,7 +607,7 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (BadMessage.RuntimeException e)
             {
                 return e.getCode() == 415;
             }
@@ -1787,7 +1787,7 @@ public class RequestTest
             String rawResponse = _connector.getResponse(request);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(400));
-            assertThat("Response body content", response.getContent(), containsString(BadMessageException.class.getName()));
+            assertThat("Response body content", response.getContent(), containsString(BadMessage.RuntimeException.class.getName()));
             assertThat("Response body content", response.getContent(), containsString(IllegalStateException.class.getName()));
             assertTrue(NanoTime.millisSince(start) < 5000);
         }
@@ -1825,7 +1825,7 @@ public class RequestTest
             String rawResponse = _connector.getResponse(request);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(400));
-            assertThat("Response body content", response.getContent(), containsString(BadMessageException.class.getName()));
+            assertThat("Response body content", response.getContent(), containsString(BadMessage.RuntimeException.class.getName()));
             assertThat("Response body content", response.getContent(), containsString(IllegalStateException.class.getName()));
             assertTrue(NanoTime.millisSince(start) < 5000);
         }

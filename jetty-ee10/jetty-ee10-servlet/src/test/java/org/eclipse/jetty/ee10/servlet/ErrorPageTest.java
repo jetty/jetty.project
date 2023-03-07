@@ -37,7 +37,7 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -123,7 +123,7 @@ public class ErrorPageTest
         _errorPageErrorHandler.addErrorPage(400, "/error/400");
         // error.addErrorPage(500,"/error/500");
         _errorPageErrorHandler.addErrorPage(IllegalStateException.class.getCanonicalName(), "/error/TestException");
-        _errorPageErrorHandler.addErrorPage(BadMessageException.class, "/error/BadMessageException");
+        _errorPageErrorHandler.addErrorPage(BadMessage.RuntimeException.class, "/error/BadMessageException");
         _errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
         _errorPageErrorHandler.addErrorPage(TestServletException.class, "/error");
 

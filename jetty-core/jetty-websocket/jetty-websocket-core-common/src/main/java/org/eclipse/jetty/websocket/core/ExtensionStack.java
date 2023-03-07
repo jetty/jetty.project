@@ -21,7 +21,7 @@ import java.util.ListIterator;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -152,7 +152,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                         for (ExtensionConfig offered : offeredConfigs)
                         {
                             if (offered.getParameterizedName().equals(parameterizedName))
-                                throw new BadMessageException("could not instantiate offered extension", t);
+                                throw new BadMessage.RuntimeException("could not instantiate offered extension", t);
                         }
                         throw new WebSocketException("could not instantiate negotiated extension", t);
                     }
@@ -164,7 +164,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                             if (offered.getParameterizedName().equals(parameterizedName))
                                 throw new WebSocketException("could not instantiate offered extension", t);
                         }
-                        throw new BadMessageException("could not instantiate negotiated extension", t);
+                        throw new BadMessage.RuntimeException("could not instantiate negotiated extension", t);
                     }
                     default:
                         throw new IllegalStateException();

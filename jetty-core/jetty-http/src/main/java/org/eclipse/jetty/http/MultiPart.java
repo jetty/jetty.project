@@ -982,14 +982,14 @@ public class MultiPart
                             // SPEC: ignore linear whitespace after boundary.
                             else if (type != HttpTokens.Type.SPACE && type != HttpTokens.Type.HTAB)
                             {
-                                throw new BadMessageException("bad last boundary");
+                                throw new BadMessage.RuntimeException("bad last boundary");
                             }
                         }
                         case BOUNDARY_CLOSE ->
                         {
                             HttpTokens.Token token = next(buffer);
                             if (token.getByte() != '-')
-                                throw new BadMessageException("bad last boundary");
+                                throw new BadMessage.RuntimeException("bad last boundary");
                             state = State.EPILOGUE;
                         }
                         case HEADER_START ->
@@ -1059,7 +1059,7 @@ public class MultiPart
             {
                 case CNTL ->
                 {
-                    throw new BadMessageException("invalid byte " + Integer.toHexString(t.getChar()));
+                    throw new BadMessage.RuntimeException("invalid byte " + Integer.toHexString(t.getChar()));
                 }
                 case LF ->
                 {
@@ -1068,13 +1068,13 @@ public class MultiPart
                 case CR ->
                 {
                     if (crFlag)
-                        throw new BadMessageException("invalid EOL");
+                        throw new BadMessage.RuntimeException("invalid EOL");
                     crFlag = true;
                 }
                 default ->
                 {
                     if (crFlag)
-                        throw new BadMessageException("invalid EOL");
+                        throw new BadMessage.RuntimeException("invalid EOL");
                 }
             }
             return t;
@@ -1145,14 +1145,14 @@ public class MultiPart
                     }
                     case COLON ->
                     {
-                        throw new BadMessageException("invalid empty header name");
+                        throw new BadMessage.RuntimeException("invalid empty header name");
                     }
                     default ->
                     {
                         if (Character.isWhitespace(token.getByte()))
                         {
                             if (text.length() == 0)
-                                throw new BadMessageException("invalid leading whitespace before header");
+                                throw new BadMessage.RuntimeException("invalid leading whitespace before header");
                         }
                         else
                         {
@@ -1187,7 +1187,7 @@ public class MultiPart
                     {
                         byte current = token.getByte();
                         if (trailingWhiteSpaces > 0)
-                            throw new BadMessageException("invalid header name");
+                            throw new BadMessage.RuntimeException("invalid header name");
                         incrementAndCheckPartHeadersLength();
                         text.append(current);
                     }
@@ -1201,7 +1201,7 @@ public class MultiPart
                         }
                         else
                         {
-                            throw new BadMessageException("invalid header name");
+                            throw new BadMessage.RuntimeException("invalid header name");
                         }
                     }
                 }

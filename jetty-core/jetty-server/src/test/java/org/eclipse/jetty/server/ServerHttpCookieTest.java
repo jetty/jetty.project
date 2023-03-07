@@ -103,7 +103,7 @@ public class ServerHttpCookieTest
 
             // multiple cookie tests
             Arguments.of(RFC6265_STRICT, "Cookie: name=value; other=extra", 200, "Version=", List.of("[name=value]", "[other=extra]").toArray(new String[0])),
-            Arguments.of(RFC6265_STRICT, "Cookie: name=value, other=extra", 400, null, List.of("BadMessageException", "Comma cookie separator").toArray(new String[0])),
+            Arguments.of(RFC6265_STRICT, "Cookie: name=value, other=extra", 400, null, List.of("BadMessage$RuntimeException", "Comma cookie separator").toArray(new String[0])),
             Arguments.of(from("RFC6265_STRICT,COMMA_SEPARATOR,"), "Cookie: name=value, other=extra", 200, "Version=", List.of("[name=value]", "[other=extra]").toArray(new String[0])),
             Arguments.of(RFC6265, "Cookie: name=value, other=extra", 200, "name=value", null),
             Arguments.of(RFC6265_LEGACY, "Cookie: name=value, other=extra", 200, null, List.of("[name=value, other=extra]").toArray(new String[0])),
@@ -112,13 +112,13 @@ public class ServerHttpCookieTest
             Arguments.of(RFC2965_LEGACY, "Cookie: name=value, other=extra", 200, "Version=", List.of("[name=value]", "[other=extra]").toArray(new String[0])),
 
             // white space
-            Arguments.of(RFC6265_STRICT, "Cookie: name =value", 400, null, List.of("BadMessageException", "Bad Cookie name").toArray(new String[0])),
+            Arguments.of(RFC6265_STRICT, "Cookie: name =value", 400, null, List.of("BadMessage$RuntimeException", "Bad Cookie name").toArray(new String[0])),
             Arguments.of(from("RFC6265,OPTIONAL_WHITE_SPACE"), "Cookie: name =value", 200, null, List.of("name=value").toArray(new String[0])),
 
             // bad characters
-            Arguments.of(RFC6265_STRICT, "Cookie: name=va\\ue", 400, null, List.of("BadMessageException", "Bad Cookie value").toArray(new String[0])),
+            Arguments.of(RFC6265_STRICT, "Cookie: name=va\\ue", 400, null, List.of("BadMessage$RuntimeException", "Bad Cookie value").toArray(new String[0])),
             Arguments.of(RFC6265_STRICT, "Cookie: name=\"value\"", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
-            Arguments.of(RFC6265_STRICT, "Cookie: name=\"value;other=extra\"", 400, null, List.of("BadMessageException", "Bad Cookie quoted value").toArray(new String[0])),
+            Arguments.of(RFC6265_STRICT, "Cookie: name=\"value;other=extra\"", 400, null, List.of("BadMessage$RuntimeException", "Bad Cookie quoted value").toArray(new String[0])),
             Arguments.of(RFC6265, "Cookie: name=\"value;other=extra\"", 200, "name=value", null),
             Arguments.of(RFC6265_LEGACY, "Cookie: name=\"value;other=extra\"", 200, null, List.of("[name=value;other=extra]").toArray(new String[0])),
             Arguments.of(RFC2965, "Cookie: name=\"value;other=extra\"", 200, null, List.of("[name=value;other=extra]").toArray(new String[0])),

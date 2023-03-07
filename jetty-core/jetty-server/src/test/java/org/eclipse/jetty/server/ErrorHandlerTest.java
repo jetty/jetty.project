@@ -22,7 +22,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -78,7 +78,7 @@ public class ErrorHandlerTest
                 if (pathInContext.startsWith("/badmessage/"))
                 {
                     int code = Integer.parseInt(pathInContext.substring(pathInContext.lastIndexOf('/') + 1));
-                    throw new BadMessageException(code);
+                    throw new BadMessage.RuntimeException(code);
                 }
 
                 // produce an exception with an JSON formatted cause message

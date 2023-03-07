@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -830,7 +830,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     case HEADER_OVERFLOW:
                     {
                         if (_header.capacity() >= _configuration.getResponseHeaderSize())
-                            throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
+                            throw new BadMessage.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
                         _header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
@@ -1053,7 +1053,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void badMessage(BadMessageException failure)
+        public void badMessage(Throwable failure)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
@@ -1091,7 +1091,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream != null)
             {
-                BadMessageException bad = new BadMessageException("Early EOF");
+                BadMessage.RuntimeException bad = new BadMessage.RuntimeException("Early EOF");
 
                 if (stream._chunk instanceof Error error)
                     error.getCause().addSuppressed(bad);
@@ -1219,7 +1219,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 compliance = _configuration.getUriCompliance();
                 String badMessage = UriCompliance.checkUriCompliance(compliance, _uri);
                 if (badMessage != null)
-                    throw new BadMessageException(badMessage);
+                    throw new BadMessage.RuntimeException(badMessage);
             }
 
             // Check host field matches the authority in the any absolute URI or is not blank
@@ -1233,13 +1233,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                             onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString());
                         else
-                            throw new BadMessageException("Authority!=Host");
+                            throw new BadMessage.RuntimeException("Authority!=Host");
                     }
                 }
                 else
                 {
                     if (StringUtil.isBlank(_hostField.getHostPort().getHost()))
-                        throw new BadMessageException("Blank Host");
+                        throw new BadMessage.RuntimeException("Blank Host");
                 }
             }
 
@@ -1301,7 +1301,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 {
                     if (_unknownExpectation)
                     {
-                        _requestHandler.badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
+                        _requestHandler.badMessage(new BadMessage.RuntimeException(HttpStatus.EXPECTATION_FAILED_417));
                         return null;
                     }
 
@@ -1336,7 +1336,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
                     // TODO is this sufficient?
                     _parser.close();
-                    throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
+                    throw new BadMessage.RuntimeException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
                 }
 
                 default:
@@ -1472,7 +1472,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             @SuppressWarnings("ReferenceEquality")
             boolean isPriorKnowledgeH2C = _upgrade == PREAMBLE_UPGRADE_H2C;
             if (!isPriorKnowledgeH2C  && !_connectionUpgrade)
-                throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
+                throw new BadMessage.RuntimeException(HttpStatus.BAD_REQUEST_400);
 
             // Find the upgrade factory.
             ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()

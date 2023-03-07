@@ -57,7 +57,7 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -835,7 +835,7 @@ public class ServletApiRequest implements HttpServletRequest
         return parameters == null ? ServletContextRequest.NO_PARAMS : parameters;
     }
 
-    private void extractContentParameters() throws BadMessageException
+    private void extractContentParameters() throws BadMessage.RuntimeException
     {
         if (!_contentParamsExtracted)
         {
@@ -867,7 +867,7 @@ public class ServletApiRequest implements HttpServletRequest
                                    InterruptedException e)
                             {
                                 LOG.warn(e.toString());
-                                throw new BadMessageException("Unable to parse form content", e);
+                                throw new BadMessage.RuntimeException("Unable to parse form content", e);
                             }
                         }
                         else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
@@ -893,13 +893,13 @@ public class ServletApiRequest implements HttpServletRequest
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
                     LOG.warn(e.toString());
-                    throw new BadMessageException("Unable to parse form content", e);
+                    throw new BadMessage.RuntimeException("Unable to parse form content", e);
                 }
             }
         }
     }
 
-    private void extractQueryParameters() throws BadMessageException
+    private void extractQueryParameters() throws BadMessage.RuntimeException
     {
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().
@@ -917,7 +917,7 @@ public class ServletApiRequest implements HttpServletRequest
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
                     _queryParameters = ServletContextRequest.BAD_PARAMS;
-                    throw new BadMessageException("Unable to parse URI query", e);
+                    throw new BadMessage.RuntimeException("Unable to parse URI query", e);
                 }
             }
         }

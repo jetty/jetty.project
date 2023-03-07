@@ -3330,10 +3330,17 @@ public class HttpParserTest
         }
 
         @Override
-        public void badMessage(BadMessageException failure)
+        public void badMessage(Throwable failure)
         {
-            String reason = failure.getReason();
-            _bad = reason == null ? String.valueOf(failure.getCode()) : reason;
+            if (failure instanceof BadMessage bm)
+            {
+                String reason = bm.getReason();
+                _bad = reason == null ? String.valueOf(bm.getCode()) : reason;
+            }
+            else
+            {
+                _bad = "500";
+            }
         }
 
         @Override

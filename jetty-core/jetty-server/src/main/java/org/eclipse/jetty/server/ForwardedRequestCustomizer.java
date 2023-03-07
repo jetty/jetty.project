@@ -19,7 +19,7 @@ import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -641,7 +641,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
 
     protected void onError(HttpField field, Throwable t)
     {
-        throw new BadMessageException("Bad header value for " + field.getName(), t);
+        throw new BadMessage.RuntimeException("Bad header value for " + field.getName(), t);
     }
 
     protected static String getLeftMost(String headerValue)
@@ -960,7 +960,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             }
             else
             {
-                throw new BadMessageException("Invalid value for " + field.getName());
+                throw new BadMessage.RuntimeException("Invalid value for " + field.getName());
             }
         }
 

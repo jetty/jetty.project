@@ -21,7 +21,7 @@ import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -853,17 +853,16 @@ public class HttpChannelState
         final Request request = _channel.getRequest();
         final int code;
         final String message;
-        Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
+        Throwable cause = _channel.unwrap(th, BadMessage.class, UnavailableException.class);
         if (cause == null)
         {
             code = HttpStatus.INTERNAL_SERVER_ERROR_500;
             message = th.toString();
         }
-        else if (cause instanceof BadMessageException)
+        else if (cause instanceof BadMessage bm)
         {
-            BadMessageException bme = (BadMessageException)cause;
-            code = bme.getCode();
-            message = bme.getReason();
+            code = bm.getCode();
+            message = bm.getReason();
         }
         else if (cause instanceof UnavailableException)
         {

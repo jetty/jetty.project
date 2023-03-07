@@ -44,7 +44,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -1027,10 +1027,10 @@ public class DefaultServlet extends HttpServlet
 
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
-            if (cause instanceof BadMessageException badMessageException)
+            if (cause instanceof BadMessage bm)
             {
-                statusCode = badMessageException.getCode();
-                reason = badMessageException.getReason();
+                statusCode = bm.getCode();
+                reason = bm.getReason();
             }
             writeHttpError(coreRequest, coreResponse, callback, statusCode, reason, cause);
         }
