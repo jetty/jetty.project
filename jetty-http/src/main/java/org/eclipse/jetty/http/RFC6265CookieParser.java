@@ -301,6 +301,11 @@ public class RFC6265CookieParser implements CookieParser
                         reportComplianceViolation(COMMA_NOT_VALID_OCTET, field);
                         string.append(c);
                     }
+                    else if (c == ' ' && _complianceMode.allows(SPACE_IN_VALUES))
+                    {
+                        reportComplianceViolation(SPACE_IN_VALUES, field);
+                        string.append(c);
+                    }
                     else if (_complianceMode.allows(INVALID_COOKIES))
                     {
                         string.append(c);

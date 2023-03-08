@@ -22,6 +22,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 /**
@@ -80,6 +81,10 @@ public class RFC6265CookieParserLenientTest
             Arguments.of("abc=a;x b;y c;z", new String[]{"abc", "a"}),
             Arguments.of("abc=a  ;b=x", new String[]{"abc", "a", "b", "x"}),
 
+            Arguments.of("abc=x y;def=w z", new String[]{"abc", "x y", "def", "w z"}),
+            Arguments.of("abc=\"x y\";def=w z", new String[]{"abc", "x y", "def", "w z"}),
+            Arguments.of("abc=x y;def=\"w z\"", new String[]{"abc", "x y", "def", "w z"}),
+
             // The backslash character ("\") may be used as a single-character quoting
             // mechanism only within quoted-string and comment constructs.
             //   quoted-pair    = "\" CHAR
@@ -106,10 +111,12 @@ public class RFC6265CookieParserLenientTest
         parser.parseField(rawHeader);
 
         assertThat(expected.length % 2, is(0));
+        assertThat(parser.names.size(), equalTo(expected.length / 2));
         for (int i = 0; i < expected.length; i += 2)
         {
-            assertThat("Cookie.name", parser.names.get(i / 2), is(expected[i]));
-            assertThat("Cookie.value", parser.values.get(i / 2), is(expected[i + 1]));
+            int cookie = i / 2;
+            assertThat("Cookie.name " + cookie, parser.names.get(cookie), is(expected[i]));
+            assertThat("Cookie.value " + cookie, parser.values.get(cookie), is(expected[i + 1]));
         }
     }
 
