@@ -114,7 +114,6 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         Path extraJarResources = MavenPaths.findTestResourceFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
@@ -209,6 +208,8 @@ public class DefaultServletTest
     @Test
     public void testGetPercent2F() throws Exception
     {
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+
         Path file = docRoot.resolve("file.txt");
         Files.writeString(file, "How now brown cow", UTF_8);
 
@@ -658,7 +659,7 @@ public class DefaultServletTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.NOT_FOUND_404,
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 

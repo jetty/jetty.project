@@ -362,6 +362,8 @@ public class DefaultServlet extends HttpServlet
         String encodedPathInContext;
         if (included)
             encodedPathInContext = URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, isPathInfoOnly()));
+        else if (isPathInfoOnly())
+            encodedPathInContext = URIUtil.encodePath(req.getPathInfo());
         else if (req instanceof ServletApiRequest apiRequest)
             encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getServletContextRequest().getHttpURI().getCanonicalPath());
         else
