@@ -836,7 +836,7 @@ public class HttpParser
                             }
                             else
                             {
-                                throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
+                                throw new HttpException.RuntimeException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
                             }
                             break;
 
@@ -2052,7 +2052,7 @@ public class HttpParser
     {
         private IllegalCharacterException(State state, HttpTokens.Token token, ByteBuffer buffer)
         {
-            super(400, String.format("Illegal character %s", token));
+            super(String.format("Illegal character %s", token));
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("Illegal character %s in state=%s for buffer %s", token, state, BufferUtil.toDetailString(buffer)));
         }
