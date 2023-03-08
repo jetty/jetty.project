@@ -221,7 +221,7 @@ public class RequestTest
                 request.getParameterMap();
                 return false;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 // Should be able to retrieve the raw query
                 String rawQuery = request.getQueryString();
@@ -398,7 +398,7 @@ public class RequestTest
                 assertTrue(e.getMessage().startsWith("No multipart config"));
                 return true;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 return false;
             }
@@ -576,7 +576,7 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 // Should still be able to get the raw query.
                 String rawQuery = request.getQueryString();
@@ -1324,7 +1324,7 @@ public class RequestTest
                 {
                     //expected
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
                     fail("Session creation after response commit should throw IllegalStateException");
                 }
@@ -2229,7 +2229,7 @@ public class RequestTest
                 assertTrue(e.getMessage().startsWith("No multipart config"));
                 response.setStatus(200);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 response.sendError(500);
             }

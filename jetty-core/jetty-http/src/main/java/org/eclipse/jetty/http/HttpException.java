@@ -28,15 +28,10 @@ public interface HttpException extends QuietException
 
     String getReason();
 
-    static Throwable asThrowable(HttpException httpException)
-    {
-        return httpException instanceof Throwable throwable ? throwable : null;
-    }
-
-    static void rethrowRuntime(HttpException httpException)
+    static void throwAsUnchecked(HttpException httpException)
     {
         if (httpException instanceof Throwable throwable)
-            ExceptionUtil.ifExceptionThrowRuntime(throwable);
+            ExceptionUtil.ifExceptionThrowUnchecked(throwable);
     }
 
     /**
@@ -47,8 +42,8 @@ public interface HttpException extends QuietException
     @SuppressWarnings("serial")
     class RuntimeException extends java.lang.RuntimeException implements HttpException
     {
-        final int _code;
-        final String _reason;
+        private final int _code;
+        private final String _reason;
 
         public RuntimeException(int code)
         {

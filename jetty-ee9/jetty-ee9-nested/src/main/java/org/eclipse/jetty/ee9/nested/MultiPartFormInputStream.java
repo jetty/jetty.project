@@ -488,7 +488,7 @@ public class MultiPartFormInputStream
             }
         }
         _parts.clear();
-        ExceptionUtil.ifExceptionThrowRuntime(err);
+        ExceptionUtil.ifExceptionThrowUnchecked(err);
     }
 
     /**

@@ -430,7 +430,7 @@ public class HttpTester
         @Override
         public void badMessage(HttpException failure)
         {
-            HttpException.rethrowRuntime(failure);
+            HttpException.throwAsUnchecked(failure);
         }
 
         public ByteBuffer generate()

@@ -51,16 +51,4 @@ public class BadMessageException extends HttpException.RuntimeException
         super(code, reason, cause);
         assert code >= 400 && code < 500;
     }
-
-    @Override
-    public int getCode()
-    {
-        return _code;
-    }
-
-    @Override
-    public String getReason()
-    {
-        return _reason;
-    }
 }

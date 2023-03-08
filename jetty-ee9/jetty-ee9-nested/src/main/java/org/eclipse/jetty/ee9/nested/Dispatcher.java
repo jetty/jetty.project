@@ -199,7 +199,7 @@ public class Dispatcher implements RequestDispatcher
                     catch (Throwable e)
                     {
                         // Only throw HttpException if not in Error Dispatch Mode
-                        // This allows application ErrorPageErrorHandler to handle BME messages
+                        // This allows application ErrorPageErrorHandler to handle HttpException messages
                         if (e instanceof HttpException && dispatch == DispatcherType.ERROR)
                         {
                             LOG.warn("Ignoring Original Bad Request Query String: {}", old_uri, e);

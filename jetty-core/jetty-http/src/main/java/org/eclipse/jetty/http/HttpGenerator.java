@@ -436,10 +436,10 @@ public class HttpGenerator
                 }
                 catch (Exception e)
                 {
-                    if (e instanceof HttpException httpException)
-                        HttpException.rethrowRuntime(httpException);
-                    else
-                        throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
+                    if (e instanceof HttpException)
+                        throw e;
+
+                    throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
                 }
                 finally
                 {

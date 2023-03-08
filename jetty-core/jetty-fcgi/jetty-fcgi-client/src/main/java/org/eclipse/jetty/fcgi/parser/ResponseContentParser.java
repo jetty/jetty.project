@@ -308,7 +308,7 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public void badMessage(HttpException failure)
         {
-            fail(HttpException.asThrowable(failure));
+            fail((Throwable)failure);
         }
 
         protected void fail(Throwable failure)

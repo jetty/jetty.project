@@ -258,7 +258,7 @@ public class HttpGeneratorServerHTTPTest
         @Override
         public void badMessage(HttpException failure)
         {
-            HttpException.rethrowRuntime(failure);
+            HttpException.throwAsUnchecked(failure);
         }
     }
 

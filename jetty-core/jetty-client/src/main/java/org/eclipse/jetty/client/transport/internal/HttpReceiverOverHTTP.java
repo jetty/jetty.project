@@ -550,7 +550,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             HttpResponse response = exchange.getResponse();
             response.status(failure.getCode()).reason(failure.getReason());
-            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response, HttpException.asThrowable(failure)));
+            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response, (Throwable)failure));
         }
     }
 

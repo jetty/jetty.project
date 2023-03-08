@@ -1059,7 +1059,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
 
-            _failure = HttpException.asThrowable(failure);
+            _failure = (Throwable)failure;
             _generator.setPersistent(false);
 
             HttpStreamOverHTTP1 stream = _stream.get();
