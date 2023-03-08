@@ -60,6 +60,7 @@ public class SessionHandlerTest
     private Server _server;
     private LocalConnector _connector;
     private SessionHandler _sessionHandler;
+    private ContextHandler _contextHandler;
 
     @BeforeEach
     public void beforeEach() throws Exception
@@ -67,15 +68,15 @@ public class SessionHandlerTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        ContextHandler contextHandler = new ContextHandler();
-        _server.setHandler(contextHandler);
+        _contextHandler = new ContextHandler();
+        _server.setHandler(_contextHandler);
 
         _sessionHandler = new SessionHandler();
         _sessionHandler.setSessionCookie("JSESSIONID");
         _sessionHandler.setUsingCookies(true);
         _sessionHandler.setUsingURLs(false);
         _sessionHandler.setSessionPath("/");
-        contextHandler.setHandler(_sessionHandler);
+        _contextHandler.setHandler(_sessionHandler);
 
         _sessionHandler.setHandler(new AbstractHandler()
         {
@@ -283,6 +284,10 @@ public class SessionHandlerTest
     @Test
     public void testCreateSession() throws Exception
     {
+        _server.stop();
+        _sessionHandler.setSessionPath(null);
+        _contextHandler.setContextPath("/");
+        _server.start();
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
         endPoint.addInput("""
             GET / HTTP/1.1
@@ -301,6 +306,8 @@ public class SessionHandlerTest
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
+        String setCookie = response.get("SET-COOKIE");
+        assertThat(setCookie, containsString("Path=/"));
         String content = response.getContent();
         assertThat(content, startsWith("Session="));
         String id = content.substring(content.indexOf('=') + 1, content.indexOf('\n'));
