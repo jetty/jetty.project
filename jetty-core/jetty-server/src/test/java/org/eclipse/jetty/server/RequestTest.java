@@ -88,9 +88,7 @@ public class RequestTest
                 \r
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.getContent(), containsString("httpURI.path=/fo%6f%2fbar"));
-        assertThat(response.getContent(), containsString("pathInContext=/foo%2Fbar"));
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
     @Test

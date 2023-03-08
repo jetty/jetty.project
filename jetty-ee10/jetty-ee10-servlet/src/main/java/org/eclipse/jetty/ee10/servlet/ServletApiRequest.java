@@ -68,6 +68,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
@@ -280,6 +281,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
+        checkForUriComplianceViolations();
         return _request._matchedPath.getPathInfo();
     }
 
@@ -364,7 +366,24 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getServletPath()
     {
+        checkForUriComplianceViolations();
         return _request._matchedPath.getPathMatch();
+    }
+
+    private void checkForUriComplianceViolations()
+    {
+        if (_request.getHttpURI().hasViolations())
+        {
+            for (UriCompliance.Violation violation : _request.getHttpURI().getViolations())
+            {
+                switch (violation)
+                {
+                    case AMBIGUOUS_PATH_SEGMENT, AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_PARAMETER, AMBIGUOUS_PATH_ENCODING ->
+                        // TODO throw new BadMessage.IllegalArgumentException("Ambiguous URI encoding");
+                        throw new BadMessageException("Ambiguous URI encoding");
+                }
+            }
+        }
     }
 
     @Override
@@ -1117,7 +1136,7 @@ public class ServletApiRequest implements HttpServletRequest
         // handle relative path
         if (!path.startsWith("/"))
         {
-            String relTo = _request.getPathInContext();
+            String relTo = _request.getDecodedPathInContext();
             int slash = relTo.lastIndexOf("/");
             if (slash > 1)
                 relTo = relTo.substring(0, slash + 1);
@@ -1195,7 +1214,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _request._mappedServlet.getServletPathMapping(_request.getPathInContext());
+        return _request._mappedServlet.getServletPathMapping(_request.getDecodedPathInContext());
     }
 
     @Override

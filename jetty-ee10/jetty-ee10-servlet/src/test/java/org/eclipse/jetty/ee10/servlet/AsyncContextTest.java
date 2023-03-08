@@ -71,7 +71,7 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/servletPath2");
 
         ServletHolder testHolder = new ServletHolder(new TestServlet());
-        testHolder.setInitParameter("dispatchPath", "/test2/something%2felse");
+        testHolder.setInitParameter("dispatchPath", "/test2/something%25else");
         _contextHandler.addServlet(testHolder, "/test/*");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/test2/*");
 
@@ -233,15 +233,15 @@ public class AsyncContextTest
 
         // initial values
         assertThat("servlet gets right path", responseBody, containsString("doGet:getServletPath:/test2"));
-        assertThat("request uri has correct encoding", responseBody, containsString("doGet:getRequestURI:/ctx/test2/something%2Felse"));
-        assertThat("request url has correct encoding", responseBody, containsString("doGet:getRequestURL:http://localhost/ctx/test2/something%2Felse"));
-        assertThat("path info has correct encoding", responseBody, containsString("doGet:getPathInfo:/something%2Felse"));
+        assertThat("request uri has correct encoding", responseBody, containsString("doGet:getRequestURI:/ctx/test2/something%25else"));
+        assertThat("request url has correct encoding", responseBody, containsString("doGet:getRequestURL:http://localhost/ctx/test2/something%25else"));
+        assertThat("path info has correct encoding", responseBody, containsString("doGet:getPathInfo:/something%else"));
 
         // async values
         assertThat("async servlet gets right path", responseBody, containsString("doGet:async:getServletPath:/test2"));
-        assertThat("async request uri has correct encoding", responseBody, containsString("doGet:async:getRequestURI:/ctx/test2/something%2Felse"));
-        assertThat("async request url has correct encoding", responseBody, containsString("doGet:async:getRequestURL:http://localhost/ctx/test2/something%2Felse"));
-        assertThat("async path info has correct encoding", responseBody, containsString("doGet:async:getPathInfo:/something%2Felse"));
+        assertThat("async request uri has correct encoding", responseBody, containsString("doGet:async:getRequestURI:/ctx/test2/something%25else"));
+        assertThat("async request url has correct encoding", responseBody, containsString("doGet:async:getRequestURL:http://localhost/ctx/test2/something%25else"));
+        assertThat("async path info has correct encoding", responseBody, containsString("doGet:async:getPathInfo:/something%else"));
 
         // async run attributes
         assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/test"));

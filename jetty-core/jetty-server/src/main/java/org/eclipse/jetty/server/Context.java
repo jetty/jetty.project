@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public interface Context extends Attributes, Decorator, Executor
 {
     /**
-     * @return the context path of this Context
+     * @return the encoded context path of this Context
      */
     String getContextPath();
 
@@ -98,14 +98,30 @@ public interface Context extends Attributes, Decorator, Executor
      * <p>For example, if the context path is {@code /ctx} then a
      * full path of {@code /ctx/foo/bar} will return {@code /foo/bar}.</p>
      *
-     * @param fullPath a full URI path
+     * @param canonicallyEncodedPath a full URI path
      * @return the URI path scoped to this Context, or {@code null} if the full path does not match this Context.
      * The empty string is returned if the full path is exactly the context path.
      */
-    String getPathInContext(String fullPath);
+    default String getPathInContext(String canonicallyEncodedPath)
+    {
+        return getPathInContext(getContextPath(), canonicallyEncodedPath);
+    }
 
     /**
      * @return a non-{@code null} temporary directory, configured either for the context, the server or the JVM
      */
     File getTempDirectory();
+
+    static String getPathInContext(String encodedContextPath, String canonicallyEncodedPath)
+    {
+        if (encodedContextPath.length() == 0 || "/".equals(encodedContextPath))
+            return canonicallyEncodedPath;
+        if (encodedContextPath.length() > canonicallyEncodedPath.length() || !canonicallyEncodedPath.startsWith(encodedContextPath))
+            return null;
+        if (canonicallyEncodedPath.length() == encodedContextPath.length())
+            return "";
+        if (canonicallyEncodedPath.charAt(encodedContextPath.length()) != '/')
+            return null;
+        return canonicallyEncodedPath.substring(encodedContextPath.length());
+    }
 }
