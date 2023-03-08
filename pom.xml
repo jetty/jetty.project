@@ -2089,6 +2089,36 @@
       </build>
     </profile>
     <profile>
+      <!--
+        $ mvn -Pdependency-updates-reports validate
+        # once done, check the /target/site/dependency-updates-aggregate-report.html
+        -->
+      <id>dependency-updates-reports</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>root-report</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>dependency-updates-aggregate-report</goal>
+                </goals>
+                <configuration>
+                  <formats>
+                    <format>html</format>
+                  </formats>
+
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <!-- This profile is used exclusively on Eclipse CBI.
            Various plugins and artifacts declared here only
            exist on the Eclipse CBI infrastructure. -->

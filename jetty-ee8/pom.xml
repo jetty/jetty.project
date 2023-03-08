@@ -383,4 +383,36 @@
         </dependency>
       </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <!--
+        $ mvn -Pdependency-updates-reports validate
+        # once done, check the jetty-ee8/target/site/dependency-updates-aggregate-report.html
+        -->
+      <id>dependency-updates-reports</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>ee8-report</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>dependency-updates-aggregate-report</goal>
+                </goals>
+                <configuration>
+                  <formats>
+                    <format>html</format>
+                  </formats>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
