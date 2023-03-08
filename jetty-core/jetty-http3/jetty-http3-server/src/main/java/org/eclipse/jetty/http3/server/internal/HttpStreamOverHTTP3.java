@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -131,19 +131,16 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 }
             };
         }
-        catch (BadMessageException x)
+        catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onRequest() failure", x);
-            return () -> onBadMessage(x);
-        }
-        catch (Throwable x)
-        {
-            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
+            HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
+            return () -> onBadMessage(httpException);
         }
     }
 
-    private void onBadMessage(BadMessageException x)
+    private void onBadMessage(HttpException x)
     {
         // TODO
     }
@@ -325,7 +322,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 }
                 else if (hasContent && contentLength != realContentLength)
                 {
-                    callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
                     return;
                 }
             }

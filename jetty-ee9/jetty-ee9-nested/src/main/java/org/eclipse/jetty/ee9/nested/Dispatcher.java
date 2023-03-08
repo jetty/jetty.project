@@ -26,7 +26,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Attributes;
@@ -196,17 +196,17 @@ public class Dispatcher implements RequestDispatcher
                     {
                         baseRequest.mergeQueryParameters(old_uri.getQuery(), _uri.getQuery());
                     }
-                    catch (BadMessageException e)
+                    catch (Throwable e)
                     {
-                        // Only throw BME if not in Error Dispatch Mode
+                        // Only throw HttpException if not in Error Dispatch Mode
                         // This allows application ErrorPageErrorHandler to handle BME messages
-                        if (dispatch != DispatcherType.ERROR)
+                        if (e instanceof HttpException && dispatch == DispatcherType.ERROR)
                         {
-                            throw e;
+                            LOG.warn("Ignoring Original Bad Request Query String: {}", old_uri, e);
                         }
                         else
                         {
-                            LOG.warn("Ignoring Original Bad Request Query String: {}", old_uri, e);
+                            throw e;
                         }
                     }
                 }

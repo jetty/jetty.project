@@ -55,6 +55,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -220,7 +221,7 @@ public class RequestTest
                 request.getParameterMap();
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Exception e)
             {
                 // Should be able to retrieve the raw query
                 String rawQuery = request.getQueryString();
@@ -575,7 +576,7 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Exception e)
             {
                 // Should still be able to get the raw query.
                 String rawQuery = request.getQueryString();
@@ -607,9 +608,11 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Throwable e)
             {
-                return e.getCode() == 415;
+                if (e instanceof HttpException httpException)
+                    return httpException.getCode() == 415;
+                throw e;
             }
         };
 
