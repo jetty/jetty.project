@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.14-SNAPSHOT</version>
+    <version>10.0.15-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -21,7 +21,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
+            @{argLine} ${jetty.surefire.argLine}
+            --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
+            --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>

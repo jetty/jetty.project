@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.14-SNAPSHOT</version>
+    <version>10.0.15-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-io</artifactId>
@@ -37,4 +37,17 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.io=org.eclipse.jetty.logging
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

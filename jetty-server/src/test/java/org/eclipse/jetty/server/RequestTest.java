@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -154,6 +154,7 @@ public class RequestTest
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
@@ -966,6 +967,15 @@ public class RequestTest
         response = _connector.getResponse(
             "GET http://myhost:8888/ HTTP/1.1\n" +
                 "Host: wrong:666\n" +
+                "Connection: close\n" +
+                "\n");
+        i = 0;
+        assertThat(response, containsString("400 Bad Request"));
+
+        results.clear();
+        response = _connector.getResponse(
+            "GET http://myhost:8888/ HTTP/1.1\n" +
+                "Host: myhost:8888\n" +
                 "Connection: close\n" +
                 "\n");
         i = 0;

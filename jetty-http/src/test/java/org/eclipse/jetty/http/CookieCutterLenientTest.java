@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -64,6 +63,8 @@ public class CookieCutterLenientTest
 
             // lenient with spaces and EOF
             Arguments.of("abc=", "abc", ""),
+            Arguments.of("abc= ", "abc", ""),
+            Arguments.of("abc= x", "abc", "x"),
             Arguments.of("abc = ", "abc", ""),
             Arguments.of("abc = ;", "abc", ""),
             Arguments.of("abc = ; ", "abc", ""),
@@ -173,28 +174,27 @@ public class CookieCutterLenientTest
         }
     }
 
-    class TestCutter extends CookieCutter
+    static class TestCutter implements CookieParser.Handler
     {
+        CookieCutter cutter;
         List<String> names = new ArrayList<>();
         List<String> values = new ArrayList<>();
 
         protected TestCutter()
         {
-            super(CookieCompliance.RFC6265, null);
-        }
-
-        @Override
-        protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
-        {
-            names.add(cookieName);
-            values.add(cookieValue);
+            cutter = new CookieCutter(this, CookieCompliance.RFC6265_LEGACY, null);
         }
 
         public void parseField(String field)
         {
-            super.parseFields(Collections.singletonList(field));
+            cutter.parseField(field);
+        }
+
+        @Override
+        public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
+        {
+            names.add(cookieName);
+            values.add(cookieValue);
         }
     }
-
-    ;
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -373,7 +373,7 @@ public class XmlConfiguredJetty
     public void load() throws Exception
     {
         this._server = loadConfigurations(_xmlConfigurations, _properties);
-        this._server.setStopTimeout(10);
+        this._server.setStopTimeout(1000); //wait up to a second to stop
     }
 
     public void removeWebapp(String name)

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
     <artifactId>quic-parent</artifactId>
-    <version>10.0.14-SNAPSHOT</version>
+    <version>10.0.15-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -42,7 +42,7 @@
     <profile>
       <id>jdk17</id>
       <activation>
-        <jdk>[17,)</jdk>
+        <jdk>17</jdk>
       </activation>
       <dependencies>
         <dependency>

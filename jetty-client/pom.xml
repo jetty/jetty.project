@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.14-SNAPSHOT</version>
+    <version>10.0.15-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -23,6 +23,7 @@
             @{argLine} ${jetty.surefire.argLine}
             --add-modules java.security.jgss
             --add-modules org.eclipse.jetty.jmx
+            --add-reads org.eclipse.jetty.client=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>

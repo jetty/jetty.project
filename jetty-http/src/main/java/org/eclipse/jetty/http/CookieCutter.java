@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,32 +13,47 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http.CookieCompliance.Violation.BAD_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
 
 /**
  * Cookie parser
  */
-public abstract class CookieCutter
+@Deprecated
+public class CookieCutter implements CookieParser
 {
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCutter.class);
 
-    protected final CookieCompliance _complianceMode;
+    private final CookieParser.Handler _handler;
+    private final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
 
-    protected CookieCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    public CookieCutter(CookieParser.Handler handler, CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
+        _handler = handler;
         _complianceMode = compliance;
         _complianceListener = complianceListener;
     }
 
-    protected void parseFields(List<String> rawFields)
+    @Override
+    public void parseField(String field)
+    {
+        parseFields(Collections.singletonList(field));
+    }
+
+    @Override
+    public void parseFields(List<String> rawFields)
     {
         StringBuilder unquoted = null;
 
@@ -93,19 +108,33 @@ public abstract class CookieCutter
                             break;
 
                         case '\\':
+                            if (_complianceMode.allows(ESCAPE_IN_QUOTES))
+                                reportComplianceViolation(ESCAPE_IN_QUOTES, hdr);
+                            else
+                                reject = true;
                             escaped = true;
                             continue;
 
                         case 0:
                             // unterminated quote, let's ignore quotes
+                            if (_complianceMode.allows(BAD_QUOTES))
+                                reportComplianceViolation(BAD_QUOTES, hdr);
+                            else
+                                reject = true;
                             unquoted.setLength(0);
                             inQuoted = false;
                             i--;
                             continue;
 
                         default:
+                            if (isRFC6265RejectedCharacter(c))
+                            {
+                                if (_complianceMode.allows(SPECIAL_CHARS_IN_QUOTES))
+                                    reportComplianceViolation(SPECIAL_CHARS_IN_QUOTES, hdr);
+                                else
+                                    reject = true;
+                            }
                             unquoted.append(c);
-                            continue;
                     }
                 }
                 else
@@ -128,6 +157,10 @@ public abstract class CookieCutter
                                     if (quoted)
                                     {
                                         // must have been a bad internal quote. let's fix as best we can
+                                        if (_complianceMode.allows(BAD_QUOTES))
+                                            reportComplianceViolation(BAD_QUOTES, hdr);
+                                        else
+                                            reject = true;
                                         unquoted.append(hdr, tokenstart, i--);
                                         inQuoted = true;
                                         quoted = false;
@@ -157,7 +190,7 @@ public abstract class CookieCutter
 
                                 try
                                 {
-                                    if (name.startsWith("$"))
+                                    if (name != null && name.startsWith("$"))
                                     {
                                         if (RESERVED_NAMES_NOT_DOLLAR_PREFIXED.isAllowedBy(_complianceMode))
                                         {
@@ -187,11 +220,18 @@ public abstract class CookieCutter
                                         // This is a new cookie, so add the completed last cookie if we have one
                                         if (cookieName != null)
                                         {
-                                            if (!reject)
+                                            if (reject)
                                             {
-                                                addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-                                                reject = false;
+                                                if (_complianceMode.allows(INVALID_COOKIES))
+                                                    reportComplianceViolation(INVALID_COOKIES, hdr);
+                                                else
+                                                    throw new IllegalArgumentException("Bad Cookie");
                                             }
+                                            else
+                                            {
+                                                _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                                            }
+                                            reject = false;
                                             cookieDomain = null;
                                             cookiePath = null;
                                             cookieComment = null;
@@ -227,24 +267,27 @@ public abstract class CookieCutter
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
+                                    if (_complianceMode.allows(BAD_QUOTES))
+                                        reportComplianceViolation(BAD_QUOTES, hdr);
+                                    else
+                                        reject = true;
                                     unquoted.append(hdr, tokenstart, i--);
                                     inQuoted = true;
                                     quoted = false;
                                     continue;
                                 }
 
-                                if (_complianceMode == CookieCompliance.RFC6265)
+                                if (isRFC6265RejectedCharacter(c))
                                 {
-                                    if (isRFC6265RejectedCharacter(inQuoted, c))
-                                    {
+                                    if (c < 128 && _complianceMode.allows(SPECIAL_CHARS_IN_QUOTES))
+                                        reportComplianceViolation(SPECIAL_CHARS_IN_QUOTES, hdr);
+                                    else
                                         reject = true;
-                                    }
                                 }
 
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
-                                continue;
                         }
                     }
                     else
@@ -287,68 +330,69 @@ public abstract class CookieCutter
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
+                                    if (_complianceMode.allows(BAD_QUOTES))
+                                        reportComplianceViolation(BAD_QUOTES, hdr);
+                                    else
+                                        reject = true;
                                     unquoted.append(hdr, tokenstart, i--);
                                     inQuoted = true;
                                     quoted = false;
                                     continue;
                                 }
 
-                                if (_complianceMode == CookieCompliance.RFC6265)
+                                if (isRFC6265RejectedCharacter(c))
                                 {
-                                    if (isRFC6265RejectedCharacter(inQuoted, c))
-                                    {
+                                    if (_complianceMode.allows(SPECIAL_CHARS_IN_QUOTES))
+                                        reportComplianceViolation(SPECIAL_CHARS_IN_QUOTES, hdr);
+                                    else
                                         reject = true;
-                                    }
                                 }
 
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
-                                continue;
                         }
                     }
                 }
             }
 
-            if (cookieName != null && !reject)
-                addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
+            if (cookieName != null)
+            {
+                if (reject)
+                {
+                    if (_complianceMode.allows(INVALID_COOKIES))
+                        reportComplianceViolation(INVALID_COOKIES, hdr);
+                    else
+                        throw new IllegalArgumentException("Bad Cookie");
+                }
+                else
+                {
+                    _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                }
+            }
         }
     }
 
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
-        {
             _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
-        }
     }
 
-    protected abstract void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment);
-
-    protected boolean isRFC6265RejectedCharacter(boolean inQuoted, char c)
+    protected boolean isRFC6265RejectedCharacter(char c)
     {
-        if (inQuoted)
-        {
-            // We only reject if a Control Character is encountered
-            if (Character.isISOControl(c))
-            {
-                return true;
-            }
-        }
-        else
-        {
-            /* From RFC6265 - Section 4.1.1 - Syntax
-             *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
-             *                  ; US-ASCII characters excluding CTLs,
-             *                  ; whitespace DQUOTE, comma, semicolon,
-             *                  ; and backslash
-             */
-            return Character.isISOControl(c) || // control characters
-                c > 127 || // 8-bit characters
-                c == ',' || // comma
-                c == ';'; // semicolon
-        }
-
-        return false;
+        /* From RFC6265 - Section 4.1.1 - Syntax
+         *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+         *                  ; US-ASCII characters excluding CTLs,
+         *                  ; whitespace DQUOTE, comma, semicolon,
+         *                  ; and backslash
+         */
+        return Character.isISOControl(c) || // control characters
+            c > 127 || // 8-bit characters
+            c == ' ' || // whitespace
+            c == '"' || // DQUOTE
+            c == ',' || // comma
+            c == ';' || // semicolon
+            c == '\\';  // backslash
     }
 }
