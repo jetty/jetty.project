@@ -378,6 +378,8 @@ public class ServletApiRequest implements HttpServletRequest
             {
                 switch (violation)
                 {
+                    // TODO optionally don't throw?
+                    // TODO review which violations
                     case AMBIGUOUS_PATH_SEGMENT, AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_PARAMETER, AMBIGUOUS_PATH_ENCODING ->
                         // TODO throw new BadMessage.IllegalArgumentException("Ambiguous URI encoding");
                         throw new BadMessageException("Ambiguous URI encoding");

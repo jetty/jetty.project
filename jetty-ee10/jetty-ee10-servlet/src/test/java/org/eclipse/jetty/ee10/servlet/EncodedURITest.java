@@ -27,6 +27,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -149,6 +150,7 @@ public class EncodedURITest
         context2.setContextPath("/context_path".replace("_", separator));
         _contextCollection.addHandler(context2);
         context2.addServlet(TestServlet.class, URIUtil.decodePath("/test_servlet/*".replace("_", separator)));
+        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         _server.start();
 
         String response = _connector.getResponse("GET /context_path/test_servlet/path_info HTTP/1.0\n\n".replace("_", separator));
@@ -157,8 +159,8 @@ public class EncodedURITest
         assertThat(response, Matchers.containsString("contextPath=/context_path".replace("_", separator)));
         if ("%2F".equals(separator))
         {
-            assertThat(response, Matchers.containsString("servletPath=org.eclipse.jetty.http.BadMessage$IllegalArgumentException: 400: Ambiguous URI encoding"));
-            assertThat(response, Matchers.containsString("pathInfo=org.eclipse.jetty.http.BadMessage$IllegalArgumentException: 400: Ambiguous URI encoding"));
+            assertThat(response, Matchers.containsString("servletPath=org.eclipse.jetty.http.BadMessageException: 400: Ambiguous URI encoding"));
+            assertThat(response, Matchers.containsString("pathInfo=org.eclipse.jetty.http.BadMessageException: 400: Ambiguous URI encoding"));
         }
         else
         {
@@ -179,7 +181,7 @@ public class EncodedURITest
             {
                 response.getWriter().println("servletPath=" + request.getServletPath());
             }
-            catch (IllegalArgumentException e)
+            catch (Throwable e)
             {
                 response.getWriter().println("servletPath=" + e);
             }
@@ -187,7 +189,7 @@ public class EncodedURITest
             {
                 response.getWriter().println("pathInfo=" + request.getPathInfo());
             }
-            catch (IllegalArgumentException e)
+            catch (Throwable e)
             {
                 response.getWriter().println("pathInfo=" + e);
             }
