@@ -88,8 +88,8 @@ public interface HttpException extends QuietException
     @SuppressWarnings("serial")
     class IllegalArgumentException extends java.lang.IllegalArgumentException implements HttpException
     {
-        final int _code;
-        final String _reason;
+        private final int _code;
+        private final String _reason;
 
         public IllegalArgumentException(int code)
         {
