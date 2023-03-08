@@ -455,6 +455,7 @@
                   <formats>
                     <format>html</format>
                   </formats>
+                  <onlyProjectDependencies>true</onlyProjectDependencies>
                   <ruleSet>
                     <rules>
                       <rule>

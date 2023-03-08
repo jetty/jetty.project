@@ -78,7 +78,7 @@
                   <formats>
                     <format>html</format>
                   </formats>
-                  <rulesUri></rulesUri>
+                  <onlyProjectDependencies>true</onlyProjectDependencies>
                   <ruleSet>
                     <rules>
                       <rule>
