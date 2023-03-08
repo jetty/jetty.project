@@ -48,6 +48,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -113,6 +114,7 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         Path extraJarResources = MavenPaths.findTestResourceFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
@@ -255,8 +257,8 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("In a while"));
 
-        // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 400
-        // due to BadMessage thrown from getServletPath and getPathInfo
+        // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 404
+        // as neither getServletPath and getPathInfo are used and thus they don't throw.
         rawResponse = connector.getResponse("""
             GET /context/dirFoo%2Fother.txt HTTP/1.1\r
             Host: local\r
@@ -264,7 +266,7 @@ public class DefaultServletTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 
     @Test
