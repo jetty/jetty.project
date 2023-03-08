@@ -33,7 +33,7 @@
     <mina.core.version>2.2.1</mina.core.version>
     <asm.version>9.4</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>6.3.1</bndlib.version>
+    <bndlib.version>6.4.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -2110,7 +2110,16 @@
                   <formats>
                     <format>html</format>
                   </formats>
-
+                  <ruleSet>
+                    <rules>
+                      <rule>
+                        <groupId>org.eclipse.jetty</groupId>
+                      </rule>
+                      <rule>
+                        <groupId>org.eclipse.jetty.http2</groupId>
+                      </rule>
+                    </rules>
+                  </ruleSet>
                 </configuration>
               </execution>
             </executions>
