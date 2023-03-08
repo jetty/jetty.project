@@ -19,16 +19,24 @@ mvn -N -Pdependency-updates-reports validate
 cp -Rv target/site/* $REPORT_OUTPUT_DIR
 mv $REPORT_OUTPUT_DIR/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-root.html
 
+pushd jetty-core
+mvn -Pdependency-updates-reports validate
+cp target/site/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-core.html
+popd
+
 pushd jetty-ee10
 mvn -Pdependency-updates-reports validate
 cp target/site/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-ee10.html
+popd
 
 pushd jetty-ee9
 mvn -Pdependency-updates-reports validate
 cp target/site/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-ee9.html
+popd
 
 pushd jetty-ee8
 mvn -Pdependency-updates-reports validate
 cp target/site/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-ee8.html
+popd
 
 echo "HTML Reports can be found in $REPORT_OUTPUT_DIR"
