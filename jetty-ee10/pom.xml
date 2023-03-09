@@ -429,7 +429,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- ignore jetty core level version changes -->
+                        <!-- ignore jetty core/root deps -->
                         <groupId>org.eclipse.jetty</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -439,12 +439,22 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- ignore jetty nested level version changes -->
+                        <!-- ignore all jetty nested deps -->
                         <groupId>org.eclipse.jetty.*</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
                             <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore unstable mina releases -->
+                        <groupId>org.apache.mina</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-M[0-9]+$</version>
                           </ignoreVersion>
                         </ignoreVersions>
                       </rule>
