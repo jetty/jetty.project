@@ -88,7 +88,7 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-DskipTests"
+DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
