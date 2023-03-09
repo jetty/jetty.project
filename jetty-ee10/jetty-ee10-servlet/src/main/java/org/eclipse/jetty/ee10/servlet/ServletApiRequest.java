@@ -374,13 +374,11 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_request.getHttpURI().hasViolations())
         {
-            for (UriCompliance.Violation violation : _request.getHttpURI().getViolations())
+            if (!getServletContextRequest().getServletChannel().getContextHandler().getServletHandler().getDecodeAmbiguousUris())
             {
-                switch (violation)
+                for (UriCompliance.Violation violation : _request.getHttpURI().getViolations())
                 {
-                    // TODO optionally don't throw?
-                    // TODO review which violations
-                    case AMBIGUOUS_PATH_SEGMENT, AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_PARAMETER, AMBIGUOUS_PATH_ENCODING ->
+                    if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))
                         // TODO throw new BadMessage.IllegalArgumentException("Ambiguous URI encoding");
                         throw new BadMessageException("Ambiguous URI encoding");
                 }

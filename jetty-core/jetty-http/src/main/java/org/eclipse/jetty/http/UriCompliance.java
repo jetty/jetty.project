@@ -99,6 +99,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
         }
     }
 
+    public static final Set<Violation> AMBIGUOUS_VIOLATIONS = EnumSet.of(
+        Violation.AMBIGUOUS_EMPTY_SEGMENT,
+        Violation.AMBIGUOUS_PATH_ENCODING,
+        Violation.AMBIGUOUS_PATH_PARAMETER,
+        Violation.AMBIGUOUS_PATH_SEGMENT,
+        Violation.AMBIGUOUS_PATH_SEPARATOR);
     /**
      * The default compliance mode allows no violations from <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
      * and is equivalent to {@link #RFC3986} compliance..

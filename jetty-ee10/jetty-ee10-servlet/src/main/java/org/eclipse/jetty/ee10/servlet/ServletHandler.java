@@ -116,12 +116,28 @@ public class ServletHandler extends Handler.Wrapper
 
     @SuppressWarnings("unchecked")
     protected final ConcurrentMap<String, FilterChain>[] _chainCache = new ConcurrentMap[FilterMapping.ALL];
+    private boolean _decodeAmbiguousUris = false;
 
     /**
      * Constructor.
      */
     public ServletHandler()
     {
+    }
+
+    @ManagedAttribute(value = "True if URIs with violations are decoded")
+    public boolean getDecodeAmbiguousUris()
+    {
+        return _decodeAmbiguousUris;
+    }
+
+    /**
+     * @param decodeAmbiguousUris {@code True} if ambiguous URIs are decoded by {@link ServletApiRequest#getServletPath()}
+     *                            and {@link ServletApiRequest#getPathInfo()}.
+     */
+    public void setDecodeAmbiguousUris(boolean decodeAmbiguousUris)
+    {
+        _decodeAmbiguousUris = decodeAmbiguousUris;
     }
 
     AutoLock lock()
