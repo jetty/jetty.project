@@ -136,6 +136,10 @@ public class JnaQuicheConnection extends QuicheConnection
         if (privKeyPemPath != null)
             LibQuiche.INSTANCE.quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
 
+        String trustedCaPemPath = config.getTrustedCaPemPath();
+        if (trustedCaPemPath != null)
+            LibQuiche.INSTANCE.quiche_config_load_verify_locations_from_file(quicheConfig, trustedCaPemPath);
+
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
         {

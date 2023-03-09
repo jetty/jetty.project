@@ -83,6 +83,9 @@ public interface LibQuiche extends Library
     // Configures the given private key.
     int quiche_config_load_priv_key_from_pem_file(quiche_config config, String path);
 
+    // Configures the given trusted CA.
+    int quiche_config_load_verify_locations_from_file(quiche_config config, String path);
+
     // Configures whether to verify the peer's certificate.
     void quiche_config_verify_peer(quiche_config config, boolean v);
 

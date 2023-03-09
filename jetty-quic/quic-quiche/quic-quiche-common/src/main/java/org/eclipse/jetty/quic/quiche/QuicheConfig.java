@@ -37,6 +37,7 @@ public class QuicheConfig
     private Boolean verifyPeer;
     private String certChainPemPath;
     private String privKeyPemPath;
+    private String trustedCaPemPath;
     private String[] applicationProtos;
     private CongestionControl congestionControl;
     private Long maxIdleTimeout;
@@ -73,6 +74,10 @@ public class QuicheConfig
     public String getPrivKeyPemPath()
     {
         return privKeyPemPath;
+    }
+
+    public String getTrustedCaPemPath() {
+        return trustedCaPemPath;
     }
 
     public String[] getApplicationProtos()
@@ -158,6 +163,10 @@ public class QuicheConfig
     public void setPrivKeyPemPath(String path)
     {
         this.privKeyPemPath = path;
+    }
+
+    public void setTrustedCaPemPath(String trustedCaPemPath) {
+        this.trustedCaPemPath = trustedCaPemPath;
     }
 
     public void setApplicationProtos(String... protos)

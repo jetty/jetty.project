@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.quiche;
 
-import org.eclipse.jetty.quic.quiche.SSLTrustedCertificates;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,7 @@ class SSLTrustedCertificatesTest {
     void testExport() throws IOException, URISyntaxException {
 
         Path expectedPath = Paths.get(this.getClass()
-                .getResource("/certs/intermediate_ca/intermediate_ca.pem").toURI());
+                .getResource("/certs/ca.pem").toURI());
         String expected = Files.readString(expectedPath);
         
         File file = sut.export(tempDir.toFile());

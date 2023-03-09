@@ -178,6 +178,10 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         if (privKeyPemPath != null)
             quiche_h.quiche_config_load_priv_key_from_pem_file(quicheConfig, CLinker.toCString(privKeyPemPath, scope).address());
 
+        String trustedCaPemPath = config.getTrustedCaPemPath();
+        if(trustedCaPemPath != null)
+            quiche_h.quiche_config_load_verify_locations_from_file(quicheConfig, CLinker.toCString(trustedCaPemPath, scope).address());
+
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
         {

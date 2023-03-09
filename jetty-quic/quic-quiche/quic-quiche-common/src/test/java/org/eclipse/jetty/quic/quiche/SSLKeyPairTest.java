@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import org.eclipse.jetty.quic.quiche.SSLKeyPair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,7 @@ class SSLKeyPairTest {
     void setup() throws GeneralSecurityException, IOException {
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         try(InputStream keyStoreInputStream = this.getClass().getResourceAsStream(
-            "/certs/client/client.p12")) {
+                "/certs/keyStore.p12")) {
             keyStore.load(keyStoreInputStream, "password".toCharArray());
         }
         sut = new SSLKeyPair(keyStore, "client", "password".toCharArray());
@@ -47,10 +46,10 @@ class SSLKeyPairTest {
 
     @Test
     void testExport() throws Exception {
-        Path expectedKeyPath = Paths.get(this.getClass().getResource("/certs/client/client.key").toURI());
+        Path expectedKeyPath = Paths.get(this.getClass().getResource("/certs/keyStore.key").toURI());
         String expectedKey = Files.readString(expectedKeyPath);
         
-        Path expectedCertificatePath = Paths.get(this.getClass().getResource("/certs/client/client.pem").toURI());
+        Path expectedCertificatePath = Paths.get(this.getClass().getResource("/certs/keyStore.pem").toURI());
         String expectedCertificate = Files.readString(expectedCertificatePath);
 
         File[] actual = sut.export(tempDir.toFile());

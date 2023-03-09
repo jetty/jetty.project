@@ -64,6 +64,12 @@ public class quiche_h
         FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER)
     );
 
+    private static final MethodHandle quiche_config_load_verify_locations_from_file$MH = downcallHandle(
+      "quiche_config_load_verify_locations_from_file",
+        "(Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;)I",
+        FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER)
+    );
+
     private static final MethodHandle quiche_config_verify_peer$MH = downcallHandle(
         "quiche_config_verify_peer",
         "(Ljdk/incubator/foreign/MemoryAddress;B)V",
@@ -381,6 +387,18 @@ public class quiche_h
         try
         {
             return (int) quiche_config_load_priv_key_from_pem_file$MH.invokeExact(config, path);
+        }
+        catch (Throwable ex)
+        {
+            throw new AssertionError("should not reach here", ex);
+        }
+    }
+
+    public static int quiche_config_load_verify_locations_from_file(MemoryAddress config, MemoryAddress path)
+    {
+        try
+        {
+            return (int) quiche_config_load_verify_locations_from_file$MH.invokeExact(config, path);
         }
         catch (Throwable ex)
         {
