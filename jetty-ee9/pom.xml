@@ -558,7 +558,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of interceptor spec
+                        <!-- for ee9, we need to stay on 2.0.x of mail spec
                              ee10 starts with version 2.1.x -->
                         <groupId>jakarta.mail</groupId>
                         <artifactId>jakarta.mail-api</artifactId>
