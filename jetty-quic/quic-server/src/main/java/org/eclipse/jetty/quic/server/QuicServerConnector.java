@@ -20,6 +20,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.file.Files;
+import java.security.KeyStore;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.SSLKeyPair;
+import org.eclipse.jetty.quic.quiche.SSLTrustedCertificates;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -61,6 +63,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
     private final SslContextFactory.Server sslContextFactory;
     private File privateKeyFile;
     private File certificateChainFile;
+    private File trustedCaFile;
     private volatile DatagramChannel datagramChannel;
     private volatile int localPort = -1;
     private int inputBufferSize = 2048;
@@ -161,6 +164,12 @@ public class QuicServerConnector extends AbstractNetworkConnector
         File[] pemFiles = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
         privateKeyFile = pemFiles[0];
         certificateChainFile = pemFiles[1];
+
+        if (sslContextFactory.getTrustStore() != null)
+        {
+            SSLTrustedCertificates sslTrustedCertificates = new SSLTrustedCertificates(sslContextFactory.getTrustStore());
+            trustedCaFile = sslTrustedCertificates.export(new File(System.getProperty("java.io.tmpdir")));
+        }
     }
 
     @Override
@@ -198,6 +207,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         QuicheConfig quicheConfig = new QuicheConfig();
         quicheConfig.setPrivKeyPemPath(privateKeyFile.getPath());
         quicheConfig.setCertChainPemPath(certificateChainFile.getPath());
+        quicheConfig.setTrustedCaPemPath(trustedCaFile.getPath());
         quicheConfig.setVerifyPeer(quicConfiguration.isVerifyPeerCertificates());
         // Idle timeouts must not be managed by Quiche.
         quicheConfig.setMaxIdleTimeout(0L);
