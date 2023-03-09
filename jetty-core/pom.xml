@@ -79,6 +79,7 @@
                     <format>html</format>
                   </formats>
                   <onlyProjectDependencies>true</onlyProjectDependencies>
+                  <onlyUpgradable>true</onlyUpgradable>
                   <ruleSet>
                     <rules>
                       <rule>

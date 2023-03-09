@@ -2115,7 +2115,8 @@
                   <formats>
                     <format>html</format>
                   </formats>
-                  <onlyProjectDependencies>true</onlyProjectDependencies>
+                  <onlyProjectDependencies>false</onlyProjectDependencies>
+                  <onlyUpgradable>true</onlyUpgradable>
                   <ruleSet>
                     <rules>
                       <rule>
