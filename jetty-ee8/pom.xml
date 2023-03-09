@@ -422,7 +422,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- ignore jetty core level version changes -->
+                        <!-- ignore jetty core/root deps -->
                         <groupId>org.eclipse.jetty</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -432,12 +432,81 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- ignore jetty nested level version changes -->
+                        <!-- ignore all jetty nested deps -->
                         <groupId>org.eclipse.jetty.*</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
                             <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 1.x of annotation spec
+                             ee9 starts with version 2.0.x -->
+                        <groupId>jakarta.annotation</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 2.x of jsp spec
+                             ee9 starts with version 3.x -->
+                        <groupId>jakarta.servlet.jsp</groupId>
+                        <artifactId>jakarta.servlet.jsp-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 1.x of jsp-jstl spec
+                             ee9 starts with version 2.x -->
+                        <groupId>jakarta.servlet.jsp.jstl</groupId>
+                        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 1.x of transaction spec
+                             ee9 starts with version 2.x -->
+                        <groupId>jakarta.transaction</groupId>
+                        <artifactId>jakarta.transaction-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 2.1.x of directory impl -->
+                        <groupId>org.apache.directory.api</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 9.0.x of mortbay apache-jsp impl
+                             ee10 starts with version 10.0.x -->
+                        <groupId>org.mortbay.jasper</groupId>
+                        <artifactId>apache-jsp</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!9.0.).+</version>
                           </ignoreVersion>
                         </ignoreVersions>
                       </rule>
