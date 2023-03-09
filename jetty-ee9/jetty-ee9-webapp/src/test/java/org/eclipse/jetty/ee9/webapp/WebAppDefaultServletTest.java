@@ -50,7 +50,7 @@ public class WebAppDefaultServletTest
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         server = new Server();
         connector = new LocalConnector(server);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         server.addConnector(connector);
 
         Path directoryPath = workDir.getEmptyPathDir();
