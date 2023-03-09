@@ -489,7 +489,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee8, we need to stay on 2.1.x of directory impl -->
+                        <!-- for ee8, we need to stay on 2.1.x of apache directory api+impl (LDAP) -->
                         <groupId>org.apache.directory.api</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -507,6 +507,16 @@
                           <ignoreVersion>
                             <type>regex</type>
                             <version>^(?!9.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore unstable mina releases -->
+                        <groupId>org.apache.mina</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-M[0-9]+$</version>
                           </ignoreVersion>
                         </ignoreVersions>
                       </rule>
