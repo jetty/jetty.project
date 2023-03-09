@@ -438,7 +438,6 @@ public class HttpGenerator
                 {
                     if (e instanceof HttpException)
                         throw e;
-
                     throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
                 }
                 finally

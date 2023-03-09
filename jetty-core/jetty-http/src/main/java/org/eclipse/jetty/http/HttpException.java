@@ -21,7 +21,6 @@ import org.eclipse.jetty.util.ExceptionUtil;
  * <p>Exception sub-classes that implement this interface will be caught by the container
  * and the {@link #getCode()} used to send a response.</p>
  */
-@SuppressWarnings("serial")
 public interface HttpException extends QuietException
 {
     int getCode();
@@ -30,8 +29,7 @@ public interface HttpException extends QuietException
 
     static void throwAsUnchecked(HttpException httpException)
     {
-        if (httpException instanceof Throwable throwable)
-            ExceptionUtil.ifExceptionThrowUnchecked(throwable);
+        ExceptionUtil.ifExceptionThrowUnchecked((Throwable)httpException);
     }
 
     /**
@@ -39,7 +37,6 @@ public interface HttpException extends QuietException
      * or attempted to be generated.  Typically these are handled with either 400
      * or 500 responses.</p>
      */
-    @SuppressWarnings("serial")
     class RuntimeException extends java.lang.RuntimeException implements HttpException
     {
         private final int _code;
@@ -85,7 +82,6 @@ public interface HttpException extends QuietException
      * or attempted to be generated.  Typically these are handled with either 400
      * or 500 responses.</p>
      */
-    @SuppressWarnings("serial")
     class IllegalArgumentException extends java.lang.IllegalArgumentException implements HttpException
     {
         private final int _code;
