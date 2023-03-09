@@ -299,7 +299,7 @@ public class SessionHandlerTest
     @Test
     public void testSimpleSessionCreation() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
 
         Server server = new Server();
@@ -339,7 +339,8 @@ public class SessionHandlerTest
             client.start();
 
             //make a session
-            String url = "http://localhost:" + port + contextPath + servletMapping + "?action=create";
+            String path = contextPath + (contextPath.endsWith("/") && servletMapping.startsWith("/") ? servletMapping.substring(1) : servletMapping);
+            String url = "http://localhost:" + port + path + "?action=create";
 
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
@@ -347,8 +348,9 @@ public class SessionHandlerTest
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
+            assertThat(sessionCookie, containsString("Path=/"));
 
-            ContentResponse response2 = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=test");
+            ContentResponse response2 = client.GET("http://localhost:" + port + path + "?action=test");
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
         }
         finally
