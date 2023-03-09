@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.quic.client;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.security.KeyStoreException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,8 @@ import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
+import org.eclipse.jetty.quic.quiche.SSLKeyPair;
+import org.eclipse.jetty.quic.quiche.SSLTrustedCertificates;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -90,6 +94,42 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setInitialMaxStreamsUni((long)quicConfiguration.getMaxUnidirectionalRemoteStreams());
             quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
             quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
+
+            if (connector.getSslContextFactory().getKeyStore() != null)
+            {
+                try
+                {
+                    SSLKeyPair keyPair = new SSLKeyPair(connector.getSslContextFactory());
+                    File[] pemFiles =
+                            keyPair.export(new File(System.getProperty("java.io.tmpdir")));
+                    String privateKeyFile = pemFiles[0].getPath();
+                    String certificateChainFile = pemFiles[1].getPath();
+
+                    quicheConfig.setPrivKeyPemPath(privateKeyFile);
+                    quicheConfig.setCertChainPemPath(certificateChainFile);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException("Error creating SSLKeyPair", e);
+                }
+            }
+
+            if (connector.getSslContextFactory().getTrustStore() != null)
+            {
+                try
+                {
+                    SSLTrustedCertificates sslTrustedCertificates = new SSLTrustedCertificates(
+                            connector.getSslContextFactory().getTrustStore());
+                    String trustedCaFile =
+                            sslTrustedCertificates.export(new File(System.getProperty("java.io.tmpdir"))).getPath();
+
+                    quicheConfig.setTrustedCaPemPath(trustedCaFile);
+                }
+                catch (KeyStoreException | IOException e)
+                {
+                    throw new IllegalStateException("Error creating SSLTrustedCertificates", e);
+                }
+            }
 
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
 

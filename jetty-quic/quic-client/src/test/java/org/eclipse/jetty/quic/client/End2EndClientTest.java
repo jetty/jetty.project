@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.client;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -62,8 +64,10 @@ public class End2EndClientTest
     public void setUp() throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStorePath("src/test/resources/certs/localhost.p12");
+        sslContextFactory.setKeyStorePassword("password");
+        sslContextFactory.setTrustStorePath("src/test/resources/certs/trustStore.jks");
+        sslContextFactory.setTrustStorePassword("password");
 
         server = new Server();
 
@@ -86,11 +90,22 @@ public class End2EndClientTest
 
         server.start();
 
-        ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
-        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client());
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setKeyStorePath("src/test/resources/certs/client.p12");
+        clientSslContextFactory.setKeyStorePassword("password");
+        clientSslContextFactory.setTrustStorePath("src/test/resources/certs/trustStore.jks");
+        clientSslContextFactory.setTrustStorePassword("password");
+
         QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator();
-        configurator.getQuicConfiguration().setVerifyPeerCertificates(false);
-        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(new ClientConnector(configurator), http1Info, http2Info);
+        configurator.getQuicConfiguration().setVerifyPeerCertificates(true);
+        ClientConnector clientConnector = new ClientConnector(configurator);
+        clientConnector.setSslContextFactory(clientSslContextFactory);
+
+        ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(clientConnector, http1Info, http2Info);
         client = new HttpClient(transport);
         client.start();
     }
@@ -167,5 +182,45 @@ public class End2EndClientTest
         CompletableFuture.allOf(futures)
             .orTimeout(15, TimeUnit.SECONDS)
             .join();
+    }
+
+    @Test
+    void testUntrustedServerHTTP2() throws Exception
+    {
+        LifeCycle.stop(server);
+
+        server = new Server();
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("src/test/resources/certs/untrusted.p12");
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setTrustStorePath("src/test/resources/certs/trustStore.jks");
+        sslContextFactory.setTrustStorePassword("password");
+
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
+        connector = new QuicServerConnector(server, sslContextFactory, http2);
+        server.addConnector(connector);
+
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                PrintWriter writer = response.getWriter();
+                writer.print(responseContent);
+            }
+        });
+
+        server.start();
+
+        Assertions.assertThrows(ExecutionException.class, () ->
+        {
+            client.newRequest("https://localhost:" + connector.getLocalPort())
+                    .version(HttpVersion.HTTP_2)
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+        });
     }
 }
