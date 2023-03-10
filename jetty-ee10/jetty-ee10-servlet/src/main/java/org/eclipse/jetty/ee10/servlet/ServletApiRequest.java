@@ -1248,7 +1248,7 @@ public class ServletApiRequest implements HttpServletRequest
         return trailersMap;
     }
 
-    public static class AmbiguousURI extends ServletApiRequest
+    static class AmbiguousURI extends ServletApiRequest
     {
         protected AmbiguousURI(ServletContextRequest servletContextRequest)
         {

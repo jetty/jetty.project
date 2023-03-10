@@ -100,7 +100,6 @@ public interface Context extends Attributes, Decorator, Executor
      *        per {@link org.eclipse.jetty.util.URIUtil#canonicalPath(String)}
      * @return the URI path scoped to this Context, or {@code null} if the full path does not match this Context.
      *         The empty string is returned if the full path is exactly the context path.
-     *
      */
     default String getPathInContext(String canonicallyEncodedPath)
     {

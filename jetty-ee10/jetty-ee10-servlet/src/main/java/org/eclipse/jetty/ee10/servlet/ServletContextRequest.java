@@ -40,13 +40,10 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Fields;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ServletContextRequest extends ContextRequest
 {
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-    private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
     static final int INPUT_NONE = 0;
     static final int INPUT_STREAM = 1;
     static final int INPUT_READER = 2;
