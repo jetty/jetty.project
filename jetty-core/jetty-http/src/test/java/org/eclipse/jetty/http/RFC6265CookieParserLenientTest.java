@@ -22,6 +22,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 /**
@@ -34,8 +35,8 @@ public class RFC6265CookieParserLenientTest
     {
         return Stream.of(
             // Simple test to verify behavior
-            Arguments.of("x=y", "x", "y"),
-            Arguments.of("key=value", "key", "value"),
+            Arguments.of("x=y", new String[]{"x", "y"}),
+            Arguments.of("key=value", new String[]{"key", "value"}),
 
             // Tests that conform to RFC2109
             // RFC2109 - token values
@@ -49,75 +50,83 @@ public class RFC6265CookieParserLenientTest
             //                  | "," | ";" | ":" | "\" | <">
             //                  | "/" | "[" | "]" | "?" | "="
             //                  | "{" | "}" | SP | HT
-            Arguments.of("abc=xyz", "abc", "xyz"),
-            Arguments.of("abc=!bar", "abc", "!bar"),
-            Arguments.of("abc=#hash", "abc", "#hash"),
-            Arguments.of("abc=#hash", "abc", "#hash"),
+            Arguments.of("abc=xyz", new String[]{"abc", "xyz"}),
+            Arguments.of("abc=!bar", new String[]{"abc", "!bar"}),
+            Arguments.of("abc=#hash", new String[]{"abc", "#hash"}),
+            Arguments.of("abc=#hash", new String[]{"abc", "#hash"}),
             // RFC2109 - quoted-string values
             //   quoted-string  = ( <"> *(qdtext) <"> )
             //   qdtext         = <any TEXT except <">>
 
             // rejected, as name cannot be DQUOTED
-            Arguments.of("\"a\"=bcd", null, null),
-            Arguments.of("\"a\"=\"b c d\"", null, null),
+            Arguments.of("\"a\"=bcd", new String[0]),
+            Arguments.of("\"a\"=\"b c d\"", new String[0]),
 
             // lenient with spaces and EOF
-            Arguments.of("abc=", "abc", ""),
-            Arguments.of("abc= ", "abc", ""),
-            Arguments.of("abc= x", "abc", "x"),
-            Arguments.of("abc = ", "abc", ""),
-            Arguments.of("abc = ;", "abc", ""),
-            Arguments.of("abc = ; ", "abc", ""),
-            Arguments.of("abc = x ", "abc", "x"),
-            Arguments.of("abc=\"\"", "abc", ""),
-            Arguments.of("abc= \"\" ", "abc", ""),
-            Arguments.of("abc= \"x\" ", "abc", "x"),
-            Arguments.of("abc= \"x\" ;", "abc", "x"),
-            Arguments.of("abc= \"x\" ; ", "abc", "x"),
+            Arguments.of("abc=", new String[]{"abc", ""}),
+            Arguments.of("abc= ", new String[]{"abc", ""}),
+            Arguments.of("abc= x", new String[]{"abc", "x"}),
+            Arguments.of("abc = ", new String[]{"abc", ""}),
+            Arguments.of("abc = ;", new String[]{"abc", ""}),
+            Arguments.of("abc = ; ", new String[]{"abc", ""}),
+            Arguments.of("abc = x ", new String[]{"abc", "x"}),
+            Arguments.of("abc=\"\"", new String[]{"abc", ""}),
+            Arguments.of("abc= \"\" ", new String[]{"abc", ""}),
+            Arguments.of("abc= \"x\" ", new String[]{"abc", "x"}),
+            Arguments.of("abc= \"x\" ;", new String[]{"abc", "x"}),
+            Arguments.of("abc= \"x\" ; ", new String[]{"abc", "x"}),
+            Arguments.of("abc = x y z ", new String[]{"abc", "x y z"}),
+            Arguments.of("abc = x  y  z ", new String[]{"abc", "x  y  z"}),
+            Arguments.of("abc=a:x b:y c:z", new String[]{"abc", "a:x b:y c:z"}),
+            Arguments.of("abc=a;x b;y c;z", new String[]{"abc", "a"}),
+            Arguments.of("abc=a  ;b=x", new String[]{"abc", "a", "b", "x"}),
+
+            Arguments.of("abc=x y;def=w z", new String[]{"abc", "x y", "def", "w z"}),
+            Arguments.of("abc=\"x y\";def=w z", new String[]{"abc", "x y", "def", "w z"}),
+            Arguments.of("abc=x y;def=\"w z\"", new String[]{"abc", "x y", "def", "w z"}),
 
             // The backslash character ("\") may be used as a single-character quoting
             // mechanism only within quoted-string and comment constructs.
             //   quoted-pair    = "\" CHAR
-            Arguments.of("abc=\"xyz\"", "abc", "xyz"),
-            Arguments.of("abc=\"!bar\"", "abc", "!bar"),
-            Arguments.of("abc=\"#hash\"", "abc", "#hash"),
+            Arguments.of("abc=\"xyz\"", new String[]{"abc", "xyz"}),
+            Arguments.of("abc=\"!bar\"", new String[]{"abc", "!bar"}),
+            Arguments.of("abc=\"#hash\"", new String[]{"abc", "#hash"}),
             // RFC2109 - other valid name types that conform to 'attr'/'token' syntax
-            Arguments.of("!f!o!o!=wat", "!f!o!o!", "wat"),
-            Arguments.of("__MyHost=Foo", "__MyHost", "Foo"),
-            Arguments.of("some-thing-else=to-parse", "some-thing-else", "to-parse"),
-            Arguments.of("$foo=bar", "$foo", "bar"),
+            Arguments.of("!f!o!o!=wat", new String[]{"!f!o!o!", "wat"}),
+            Arguments.of("__MyHost=Foo", new String[]{"__MyHost", "Foo"}),
+            Arguments.of("some-thing-else=to-parse", new String[]{"some-thing-else", "to-parse"}),
+            Arguments.of("$foo=bar", new String[]{"$foo", "bar"}),
 
             // Tests that conform to RFC6265
-            Arguments.of("abc=foobar!", "abc", "foobar!"),
-            Arguments.of("abc=\"foobar!\"", "abc", "foobar!")
-
+            Arguments.of("abc=foobar!", new String[]{"abc", "foobar!"}),
+            Arguments.of("abc=\"foobar!\"", new String[]{"abc", "foobar!"})
         );
     }
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testLenientBehavior(String rawHeader, String expectedName, String expectedValue)
+    public void testLenientBehavior(String rawHeader, String... expected)
     {
-        TestCutter cutter = new TestCutter();
-        cutter.parseField(rawHeader);
+        TestParser parser = new TestParser();
+        parser.parseField(rawHeader);
 
-        if (expectedName == null)
-            assertThat("Cookies.length", cutter.names.size(), is(0));
-        else
+        assertThat(expected.length % 2, is(0));
+        assertThat(parser.names.size(), equalTo(expected.length / 2));
+        for (int i = 0; i < expected.length; i += 2)
         {
-            assertThat("Cookies.length", cutter.names.size(), is(1));
-            assertThat("Cookie.name", cutter.names.get(0), is(expectedName));
-            assertThat("Cookie.value", cutter.values.get(0), is(expectedValue));
+            int cookie = i / 2;
+            assertThat("Cookie.name " + cookie, parser.names.get(cookie), is(expected[i]));
+            assertThat("Cookie.value " + cookie, parser.values.get(cookie), is(expected[i + 1]));
         }
     }
 
-    static class TestCutter implements CookieParser.Handler
+    static class TestParser implements CookieParser.Handler
     {
         CookieParser parser;
         List<String> names = new ArrayList<>();
         List<String> values = new ArrayList<>();
 
-        protected TestCutter()
+        protected TestParser()
         {
             parser = new RFC6265CookieParser(this, CookieCompliance.RFC6265, null);
         }

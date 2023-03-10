@@ -37,7 +37,7 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
@@ -325,9 +325,10 @@ public class ServerTimeoutsTest extends AbstractTest
                             break;
                     }
                 }
-                catch (BadMessageException x)
+                catch (Exception x)
                 {
-                    handlerLatch.countDown();
+                    if (x instanceof HttpException)
+                        handlerLatch.countDown();
                     throw x;
                 }
             }

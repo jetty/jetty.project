@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -830,7 +831,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     case HEADER_OVERFLOW:
                     {
                         if (_header.capacity() >= _configuration.getResponseHeaderSize())
-                            throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
+                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
                         _header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
@@ -1053,12 +1054,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void badMessage(BadMessageException failure)
+        public void badMessage(HttpException failure)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
 
-            _failure = failure;
+            _failure = (Throwable)failure;
             _generator.setPersistent(false);
 
             HttpStreamOverHTTP1 stream = _stream.get();
@@ -1077,7 +1078,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _httpChannel.onRequest(new MetaData.Request(stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
-            Runnable task = _httpChannel.onFailure(failure);
+            Runnable task = _httpChannel.onFailure(_failure);
             if (task != null)
                 getServer().getThreadPool().execute(task);
         }

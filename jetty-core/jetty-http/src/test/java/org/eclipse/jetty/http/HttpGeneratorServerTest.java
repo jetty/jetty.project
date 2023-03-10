@@ -281,11 +281,9 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
 
-        BadMessageException e = assertThrows(BadMessageException.class, () ->
-        {
-            gen.generateResponse(info, false, header, null, null, true);
-        });
-        assertEquals(500, e._code);
+        HttpException e = assertThrows(HttpException.RuntimeException.class, () ->
+            gen.generateResponse(info, false, header, null, null, true));
+        assertEquals(500, e.getCode());
     }
 
     @Test
