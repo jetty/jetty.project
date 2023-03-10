@@ -42,6 +42,11 @@ import org.eclipse.jetty.websocket.server.internal.ServerUpgradeResponseDelegate
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>A server-side WebSocket container that allows to {@link #addMapping(String, WebSocketCreator) map}
+ * URI paths to WebSocket endpoints and configure WebSocket parameters such as idle timeouts,
+ * max WebSocket message sizes, etc.</p>
+ */
 public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerWebSocketContainer.class);
@@ -196,11 +201,25 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         configuration.setAutoFragment(autoFragment);
     }
 
+    /**
+     * <p>Maps the given {@code pathSpec} to the creator of WebSocket endpoints.</p>
+     * <p>The {@code pathSpec} format is that supported by
+     * {@link WebSocketMappings#parsePathSpec(String)}.</p>
+     *
+     * @param pathSpec the {@code pathSpec} to associate to the creator
+     * @param creator the creator of WebSocket endpoints
+     */
     public void addMapping(String pathSpec, WebSocketCreator creator)
     {
         addMapping(WebSocketMappings.parsePathSpec(pathSpec), creator);
     }
 
+    /**
+     * <p>Maps the given {@code pathSpec} to the creator of WebSocket endpoints.</p>
+     *
+     * @param pathSpec the {@code pathSpec} to associate to the creator
+     * @param creator the creator of WebSocket endpoints
+     */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
     {
         if (mappings.getWebSocketNegotiator(pathSpec) != null)

@@ -56,7 +56,7 @@ public class ServerUpgradeResponseImpl extends Response.Wrapper implements Serve
     public void setAcceptedSubProtocol(String protocol)
     {
         negotiation.setSubprotocol(protocol);
-        // Use the nested headers to avoid recursion.
+        // Use the nested headers (not the wrapped ones) to avoid infinite recursion.
         response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
     }
 
