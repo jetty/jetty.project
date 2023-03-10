@@ -45,10 +45,6 @@ jetty-12.0.0.beta0 - 23 February 2023
  + 9398 DefaultHandler does not list contexts
  + 9403 TCK failure: DefaultServlet only sets status 404 instead of sending 404
    response
- + 25746 null
- + jetty-11 null
- + jetty-12 null
- + Jetty-12 null
 
 jetty-12.0.0.alpha3 - 07 December 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
