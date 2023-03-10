@@ -40,7 +40,7 @@ public interface Pool<P>
      * @return a disabled entry that is contained in the pool, or {@code null}
      * if the pool is terminated or if the pool cannot reserve an entry
      */
-    public Entry<P> reserve();
+    Entry<P> reserve();
 
     /**
      * <p>Acquires an entry from the pool.</p>
@@ -50,7 +50,7 @@ public interface Pool<P>
      *
      * @return an entry from the pool or null if none is available.
      */
-    public Entry<P> acquire();
+    Entry<P> acquire();
 
     /**
      * <p>Acquires an entry from the pool,
@@ -59,13 +59,41 @@ public interface Pool<P>
      * @param creator a function to create the pooled value for a reserved entry.
      * @return an entry from the pool or null if none is available.
      */
-    public Entry<P> acquire(Function<Entry<P>, P> creator);
+    default Entry<P> acquire(Function<Entry<P>, P> creator)
+    {
+        Entry<P> entry = acquire();
+        if (entry != null)
+            return entry;
+
+        entry = reserve();
+        if (entry == null)
+            return null;
+
+        P value;
+        try
+        {
+            value = creator.apply(entry);
+        }
+        catch (Throwable th)
+        {
+            entry.remove();
+            throw th;
+        }
+
+        if (value == null)
+        {
+            entry.remove();
+            return null;
+        }
+
+        return entry.enable(value, true) ? entry : null;
+    }
 
     /**
      * @return whether this {@code Pool} has been terminated
      * @see #terminate()
      */
-    public boolean isTerminated();
+    boolean isTerminated();
 
     /**
      * <p>Terminates this {@code Pool}.</p>
@@ -77,30 +105,30 @@ public interface Pool<P>
      *
      * @return a list of all entries
      */
-    public Collection<Entry<P>> terminate();
+    Collection<Entry<P>> terminate();
 
     /**
      * @return the current number of entries in this {@code Pool}
      */
     @ManagedAttribute("The number of entries")
-    public int size();
+    int size();
 
     /**
      * @return the maximum number of entries in this {@code Pool}
      */
     @ManagedAttribute("The maximum number of entries")
-    public int getMaxSize();
+    int getMaxSize();
 
     /**
      * @return a {@link Stream} over the entries
      */
-    public Stream<Entry<P>> stream();
+    Stream<Entry<P>> stream();
 
     /**
      * @return the number of reserved entries
      */
     @ManagedAttribute("The number of reserved entries")
-    public default int getReservedCount()
+    default int getReservedCount()
     {
         return (int)stream().filter(Entry::isReserved).count();
     }
@@ -109,7 +137,7 @@ public interface Pool<P>
      * @return the number of idle entries
      */
     @ManagedAttribute("The number of idle entries")
-    public default int getIdleCount()
+    default int getIdleCount()
     {
         return (int)stream().filter(Entry::isIdle).count();
     }
@@ -118,7 +146,7 @@ public interface Pool<P>
      * @return the number of in-use entries
      */
     @ManagedAttribute("The number of in-use entries")
-    public default int getInUseCount()
+    default int getInUseCount()
     {
         return (int)stream().filter(Entry::isInUse).count();
     }
@@ -127,7 +155,7 @@ public interface Pool<P>
      * @return the number of terminated entries
      */
     @ManagedAttribute("The number of terminated entries")
-    public default int getTerminatedCount()
+    default int getTerminatedCount()
     {
         return (int)stream().filter(Entry::isTerminated).count();
     }
@@ -137,7 +165,7 @@ public interface Pool<P>
      *
      * @param <W> the type of the pooled objects
      */
-    public static class Wrapper<W> implements Pool<W>
+    class Wrapper<W> implements Pool<W>
     {
         private final Pool<W> wrapped;
 
@@ -229,7 +257,7 @@ public interface Pool<P>
      *
      * @param <E> the type of the pooled objects
      */
-    public interface Entry<E>
+    interface Entry<E>
     {
         /**
          * <p>Enables this, previously {@link #reserve() reserved}, {@code Entry}.</p>
@@ -245,54 +273,54 @@ public interface Pool<P>
          * @return whether this {@code Entry} was enabled
          * @throws IllegalStateException if this {@code Entry} was already enabled
          */
-        public boolean enable(E pooled, boolean acquire);
+        boolean enable(E pooled, boolean acquire);
 
         /**
          * @return the pooled object
          */
-        public E getPooled();
+        E getPooled();
 
         /**
          * <p>Releases this {@code Entry} to the {@code Pool}.</p>
          *
          * @return whether this {@code Entry} was released
          */
-        public boolean release();
+        boolean release();
 
         /**
          * <p>Removes this {@code Entry} from the {@code Pool}.</p>
          *
          * @return whether this {@code Entry} was removed
          */
-        public boolean remove();
+        boolean remove();
 
         /**
          * @return whether this {@code Entry} is reserved
          * @see Pool#reserve()
          */
-        public boolean isReserved();
+        boolean isReserved();
 
         /**
          * @return whether this {@code Entry} is idle in the {@code Pool}
          */
-        public boolean isIdle();
+        boolean isIdle();
 
         /**
          * @return whether this {@code Entry} is in use
          */
-        public boolean isInUse();
+        boolean isInUse();
 
         /**
          * @return whether this {@code Entry} is terminated
          */
-        public boolean isTerminated();
+        boolean isTerminated();
 
         /**
          * <p>A wrapper for {@code Entry} instances.</p>
          *
          * @param <W> the type of the pooled objects
          */
-        public static class Wrapper<W> implements Entry<W>
+        class Wrapper<W> implements Entry<W>
         {
             private final Entry<W> wrapped;
 
@@ -361,7 +389,7 @@ public interface Pool<P>
      *
      * @param <F> the type of the pooled objects
      */
-    public interface Factory<F>
+    interface Factory<F>
     {
         /**
          * @return a new {@link Pool} instance

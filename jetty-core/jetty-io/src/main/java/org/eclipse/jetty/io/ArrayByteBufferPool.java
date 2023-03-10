@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 
+import org.eclipse.jetty.io.internal.CompoundPool;
+import org.eclipse.jetty.io.internal.QueuedPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.NanoTime;
@@ -444,9 +446,15 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private final Pool<RetainableByteBuffer> _pool;
         private final int _capacity;
 
-        private RetainedBucket(int capacity, int size)
+        private RetainedBucket(int capacity, int poolSize)
         {
-            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, size, true);
+            if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
+                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, true);
+            else
+                _pool = new CompoundPool<>(
+                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, true),
+                    new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
+                );
             _capacity = capacity;
         }
 

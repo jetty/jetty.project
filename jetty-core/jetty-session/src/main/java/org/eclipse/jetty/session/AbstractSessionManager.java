@@ -239,9 +239,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _context = ContextHandler.getCurrentContext();
         _loader = Thread.currentThread().getContextClassLoader();
 
-        // ensure a session path is set for non root contexts
+        // ensure a session path is set
         String contextPath = _context == null ? "/" : _context.getContextPath();
-        if (!"/".equals(contextPath) && getSessionPath() == null)
+        if (getSessionPath() == null)
             setSessionPath(contextPath);
 
         // Use a coarser lock to serialize concurrent start of many contexts.

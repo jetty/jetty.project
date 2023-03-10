@@ -215,7 +215,7 @@ public class CookieCutter implements CookieParser
                                                 if (_complianceMode.allows(INVALID_COOKIES))
                                                     reportComplianceViolation(INVALID_COOKIES, hdr);
                                                 else
-                                                    throw new IllegalArgumentException("Bad Cookie");
+                                                    throw new InvalidCookieException("Bad Cookie");
                                             }
                                             else
                                             {
@@ -353,7 +353,7 @@ public class CookieCutter implements CookieParser
                     if (_complianceMode.allows(INVALID_COOKIES))
                         reportComplianceViolation(INVALID_COOKIES, hdr);
                     else
-                        throw new IllegalArgumentException("Bad Cookie");
+                        throw new InvalidCookieException("Bad Cookie");
                 }
                 else
                 {

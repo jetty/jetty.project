@@ -341,7 +341,11 @@ public class FileID
      */
     public static boolean isClassFile(Path path)
     {
-        String filename = path.getFileName().toString();
+        Path fileNamePath = path.getFileName();
+        if (fileNamePath == null)
+            return false;
+        
+        String filename = fileNamePath.toString();
         // has to end in ".class"
         if (!filename.toLowerCase(Locale.ENGLISH).endsWith(".class"))
             return false;

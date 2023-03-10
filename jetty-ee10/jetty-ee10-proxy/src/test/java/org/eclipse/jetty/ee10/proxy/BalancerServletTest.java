@@ -180,7 +180,7 @@ public class BalancerServletTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%0A'"));
         assertThat(response.getContentAsString(), containsString("servletPath='/mapping'"));
-        assertThat(response.getContentAsString(), containsString("pathInfo='/test/%0A'"));
+        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\n'"));
     }
 
     private String readFirstLine(byte[] responseBytes) throws IOException
