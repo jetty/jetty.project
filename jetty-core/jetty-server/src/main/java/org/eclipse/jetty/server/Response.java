@@ -19,9 +19,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -337,10 +337,10 @@ public interface Response extends Content.Sink
             cause = new Throwable("unknown cause");
         int status = HttpStatus.INTERNAL_SERVER_ERROR_500;
         String message = cause.toString();
-        if (cause instanceof BadMessageException bad)
+        if (cause instanceof HttpException httpException)
         {
-            status = bad.getCode();
-            message = bad.getReason();
+            status = httpException.getCode();
+            message = httpException.getReason();
         }
         writeError(request, response, callback, status, message, cause);
     }
@@ -399,7 +399,7 @@ public interface Response extends Content.Sink
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (logger.isDebugEnabled())
             logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
-        else if (cause instanceof BadMessageException || cause instanceof QuietException || cause instanceof TimeoutException)
+        else if (cause instanceof QuietException || cause instanceof TimeoutException)
             logger.debug("writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
         else if (cause != null)
             logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);

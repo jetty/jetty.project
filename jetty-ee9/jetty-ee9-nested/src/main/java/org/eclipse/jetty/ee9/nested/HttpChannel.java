@@ -34,9 +34,9 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -1040,7 +1040,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         int status = failure.getCode();
         String reason = failure.getReason();
         if (status < HttpStatus.BAD_REQUEST_400 || status > 599)
-            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
+            failure = new BadMessageException(reason, failure);
 
         _combinedListener.onRequestFailure(_request, failure);
 
@@ -1527,9 +1527,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (LOG.isDebugEnabled())
                 LOG.debug("Commit failed", x);
 
-            if (x instanceof BadMessageException)
+            if (x instanceof HttpException httpException)
             {
-                send(_request.getMetaData(), HttpGenerator.RESPONSE_500_INFO, null, true, new Nested(this)
+                MetaData.Response responseMeta = new MetaData.Response(HttpVersion.HTTP_1_1, httpException.getCode(), httpException.getReason(), HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
+                send(_request.getMetaData(), responseMeta, null, true, new Nested(this)
                 {
                     @Override
                     public void succeeded()

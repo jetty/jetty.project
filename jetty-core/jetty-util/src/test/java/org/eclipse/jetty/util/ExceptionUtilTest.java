@@ -104,7 +104,7 @@ public class ExceptionUtilTest
     public void testEmpty() throws Exception
     {
         ExceptionUtil.ifExceptionThrow(null);
-        ExceptionUtil.ifExceptionThrowRuntime(null);
+        ExceptionUtil.ifExceptionThrowUnchecked(null);
     }
 
     @Test

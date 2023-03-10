@@ -23,7 +23,6 @@ import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -401,7 +400,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} failure on {}: {}", request, stream, failure);
             if (stream != null)
-                stream.getHttpChannel().onFailure(new BadMessageException(HttpStatus.BAD_REQUEST_400, null, failure));
+                stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
             stream = null;
         }
     }
