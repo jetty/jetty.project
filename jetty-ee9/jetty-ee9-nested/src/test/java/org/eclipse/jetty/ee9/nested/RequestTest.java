@@ -55,6 +55,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -220,7 +221,7 @@ public class RequestTest
                 request.getParameterMap();
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Throwable e)
             {
                 // Should be able to retrieve the raw query
                 String rawQuery = request.getQueryString();
@@ -397,7 +398,7 @@ public class RequestTest
                 assertTrue(e.getMessage().startsWith("No multipart config"));
                 return true;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 return false;
             }
@@ -575,7 +576,7 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Throwable e)
             {
                 // Should still be able to get the raw query.
                 String rawQuery = request.getQueryString();
@@ -607,9 +608,11 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Throwable e)
             {
-                return e.getCode() == 415;
+                if (e instanceof HttpException httpException)
+                    return httpException.getCode() == 415;
+                throw e;
             }
         };
 
@@ -1321,7 +1324,7 @@ public class RequestTest
                 {
                     //expected
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
                     fail("Session creation after response commit should throw IllegalStateException");
                 }
@@ -2226,7 +2229,7 @@ public class RequestTest
                 assertTrue(e.getMessage().startsWith("No multipart config"));
                 response.setStatus(200);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 response.sendError(500);
             }

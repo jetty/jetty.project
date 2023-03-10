@@ -166,9 +166,10 @@ public class JakartaWebSocketCreator implements WebSocketCreator
             Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
             return new ConfiguredEndpoint(endpoint, config);
         }
-        catch (InstantiationException e)
+        catch (Throwable x)
         {
-            LOG.warn("Unable to create websocket: {}", config.getEndpointClass().getName(), e);
+            LOG.warn("Unable to create websocket: {}", config.getEndpointClass().getName(), x);
+            callback.failed(x);
             return null;
         }
     }

@@ -574,7 +574,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         _configurations = null;
         super.destroy();
-        ExceptionUtil.ifExceptionThrowRuntime(multiException);
+        ExceptionUtil.ifExceptionThrowUnchecked(multiException);
     }
 
     /*

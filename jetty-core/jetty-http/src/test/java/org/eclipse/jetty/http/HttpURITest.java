@@ -79,7 +79,7 @@ public class HttpURITest
         assertThat(uri.getHost(), is("[::1]"));
         assertThat(uri.getPort(), is(8080));
         assertThat(uri.getPath(), is("/some%20encoded/evening;id=12345"));
-        assertThat(uri.getCanonicalPath(), is("/some encoded/evening"));
+        assertThat(uri.getCanonicalPath(), is("/some%20encoded/evening"));
         assertThat(uri.getParam(), is("id=12345"));
         assertThat(uri.getQuery(), nullValue());
         assertThat(uri.getAuthority(), is("[::1]:8080"));

@@ -340,7 +340,7 @@ public class HttpParser
         if (violation.isAllowedBy(_complianceMode))
             reportComplianceViolation(violation, violation.getDescription());
         else
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, violation.getDescription());
+            throw new BadMessageException(violation.getDescription());
     }
 
     protected void reportComplianceViolation(Violation violation)
@@ -701,7 +701,7 @@ public class HttpParser
                             break;
                         case CR:
                         case LF:
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "No Status");
+                            throw new BadMessageException("No Status");
                         default:
                             throw new IllegalCharacterException(_state, t, buffer);
                     }
@@ -758,7 +758,7 @@ public class HttpParser
                             break;
 
                         default:
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, _requestHandler != null ? "No URI" : "No Status");
+                            throw new BadMessageException(_requestHandler != null ? "No URI" : "No Status");
                     }
                     break;
 
@@ -836,7 +836,7 @@ public class HttpParser
                             }
                             else
                             {
-                                throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
+                                throw new HttpException.RuntimeException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
                             }
                             break;
 
@@ -966,10 +966,10 @@ public class HttpParser
     private void checkVersion()
     {
         if (_version == null)
-            throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unknown Version");
+            throw new HttpException.RuntimeException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unknown Version");
 
         if (_version.getVersion() < 10 || _version.getVersion() > 20)
-            throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unsupported Version");
+            throw new HttpException.RuntimeException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unsupported Version");
     }
 
     private void parsedHeader()
@@ -991,7 +991,7 @@ public class HttpParser
                         {
                             checkViolation(MULTIPLE_CONTENT_LENGTHS);
                             if (convertContentLength(_valueString) != _contentLength)
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, MULTIPLE_CONTENT_LENGTHS.getDescription());
+                                throw new BadMessageException(MULTIPLE_CONTENT_LENGTHS.getDescription());
                         }
                         _hasContentLength = true;
 
@@ -1013,7 +1013,7 @@ public class HttpParser
 
                         // we encountered another Transfer-Encoding header, but chunked was already set
                         if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                            throw new BadMessageException("Bad Transfer-Encoding, chunked not last");
 
                         if (HttpHeaderValue.CHUNKED.is(_valueString))
                         {
@@ -1030,7 +1030,7 @@ public class HttpParser
                                 if (HttpHeaderValue.CHUNKED.is(values.get(i)))
                                 {
                                     if (chunked != -1)
-                                        throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, multiple chunked tokens");
+                                        throw new BadMessageException("Bad Transfer-Encoding, multiple chunked tokens");
                                     chunked = i;
                                     // declared chunked
                                     _endOfContent = EndOfContent.CHUNKED_CONTENT;
@@ -1039,7 +1039,7 @@ public class HttpParser
                                 // we have a non-chunked token after a declared chunked token
                                 else if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
                                 {
-                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                                    throw new BadMessageException("Bad Transfer-Encoding, chunked not last");
                                 }
                             }
                         }
@@ -1134,7 +1134,7 @@ public class HttpParser
         catch (NumberFormatException e)
         {
             LOG.trace("IGNORED", e);
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Invalid Content-Length Value", e);
+            throw new BadMessageException("Invalid Content-Length Value", e);
         }
     }
 
@@ -1212,14 +1212,14 @@ public class HttpParser
                                 {
                                     // Transfer-Encoding chunked not specified
                                     // https://tools.ietf.org/html/rfc7230#section-3.3.1
-                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                                    throw new BadMessageException("Bad Transfer-Encoding, chunked not last");
                                 }
                             }
 
                             // Was there a required host header?
                             if (_parsedHost == null && _version == HttpVersion.HTTP_1_1 && _requestHandler != null)
                             {
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "No Host");
+                                throw new BadMessageException("No Host");
                             }
 
                             // is it a response that cannot have a body?
@@ -1637,20 +1637,18 @@ public class HttpParser
                 }
             }
         }
-        catch (BadMessageException x)
-        {
-            BufferUtil.clear(buffer);
-            badMessage(x);
-        }
         catch (Throwable x)
         {
             BufferUtil.clear(buffer);
-            badMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400, _requestHandler != null ? "Bad Request" : "Bad Response", x));
+            HttpException bad = x instanceof HttpException http
+                ? http
+                : new BadMessageException(_requestHandler != null ? "Bad Request" : "Bad Response", x);
+            badMessage(bad);
         }
         return false;
     }
 
-    protected void badMessage(BadMessageException x)
+    protected void badMessage(HttpException x)
     {
         if (debugEnabled)
             LOG.debug("Parse exception: {} for {}", this, _handler, x);
@@ -2020,7 +2018,7 @@ public class HttpParser
          *
          * @param failure the failure with the bad message information
          */
-        default void badMessage(BadMessageException failure)
+        default void badMessage(HttpException failure)
         {
         }
     }
@@ -2054,7 +2052,7 @@ public class HttpParser
     {
         private IllegalCharacterException(State state, HttpTokens.Token token, ByteBuffer buffer)
         {
-            super(400, String.format("Illegal character %s", token));
+            super(String.format("Illegal character %s", token));
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("Illegal character %s in state=%s for buffer %s", token, state, BufferUtil.toDetailString(buffer)));
         }
