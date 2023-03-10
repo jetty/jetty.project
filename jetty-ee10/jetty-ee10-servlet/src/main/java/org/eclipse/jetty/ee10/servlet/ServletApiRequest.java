@@ -60,6 +60,7 @@ import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -379,8 +380,7 @@ public class ServletApiRequest implements HttpServletRequest
                 for (UriCompliance.Violation violation : _request.getHttpURI().getViolations())
                 {
                     if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))
-                        // TODO throw new BadMessage.IllegalArgumentException("Ambiguous URI encoding");
-                        throw new BadMessageException("Ambiguous URI encoding");
+                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
                 }
             }
         }

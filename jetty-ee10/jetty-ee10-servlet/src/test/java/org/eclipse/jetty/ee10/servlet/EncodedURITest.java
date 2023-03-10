@@ -159,8 +159,8 @@ public class EncodedURITest
         assertThat(response, Matchers.containsString("contextPath=/context_path".replace("_", separator)));
         if ("%2F".equals(separator))
         {
-            assertThat(response, Matchers.containsString("servletPath=org.eclipse.jetty.http.BadMessageException: 400: Ambiguous URI encoding"));
-            assertThat(response, Matchers.containsString("pathInfo=org.eclipse.jetty.http.BadMessageException: 400: Ambiguous URI encoding"));
+            assertThat(response, Matchers.containsString("servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+            assertThat(response, Matchers.containsString("pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
         }
         else
         {
