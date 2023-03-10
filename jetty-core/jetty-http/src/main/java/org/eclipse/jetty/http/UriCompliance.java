@@ -105,16 +105,23 @@ public final class UriCompliance implements ComplianceViolation.Mode
         Violation.AMBIGUOUS_PATH_PARAMETER,
         Violation.AMBIGUOUS_PATH_SEGMENT,
         Violation.AMBIGUOUS_PATH_SEPARATOR);
+
+    /**
+     * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
+     * excluding all URI Violations.
+     */
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", noneOf(Violation.class));
+
     /**
      * The default compliance mode allows no violations from <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
-     * and is equivalent to {@link #RFC3986} compliance..
+     * and is equivalent to {@link #RFC3986} compliance.
      */
-    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", noneOf(Violation.class));
+    public static final UriCompliance DEFAULT = RFC3986;
 
     /**
      * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT},
      * {@link Violation#AMBIGUOUS_EMPTY_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, {@link Violation#AMBIGUOUS_PATH_ENCODING}
-     * and {@link Violation#UTF16_ENCODINGS}
+     * and {@link Violation#UTF16_ENCODINGS}.
      */
     public static final UriCompliance LEGACY = new UriCompliance("LEGACY",
         of(Violation.AMBIGUOUS_PATH_SEGMENT,
@@ -124,13 +131,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.UTF16_ENCODINGS));
 
     /**
-     * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
-     * including allowing all additional ambiguous URI Violations.
-     */
-    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", noneOf(Violation.class));
-
-    /**
-     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non canonicalized form.
+     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form.
      */
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 

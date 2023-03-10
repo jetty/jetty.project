@@ -70,10 +70,14 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/path with spaces/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/servletPath2");
 
-        ServletHolder testHolder = new ServletHolder(new TestServlet());
-        testHolder.setInitParameter("dispatchPath", "/test2/something%25else");
-        _contextHandler.addServlet(testHolder, "/test/*");
+        ServletHolder encodedTestHolder = new ServletHolder(new TestServlet());
+        encodedTestHolder.setInitParameter("dispatchPath", "/test2/something%25else");
+        _contextHandler.addServlet(encodedTestHolder, "/encoded/*");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/test2/*");
+
+        ServletHolder ambiguousTestHolder = new ServletHolder(new TestServlet());
+        ambiguousTestHolder.setInitParameter("dispatchPath", "/test2/something%2Felse");
+        _contextHandler.addServlet(ambiguousTestHolder, "/ambiguous/*");
 
         _contextHandler.addServlet(new ServletHolder(new SelfDispatchingServlet()), "/self/*");
 
@@ -221,11 +225,13 @@ public class AsyncContextTest
     @Test
     public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
-        String request = "GET /ctx/test/hello%20there?dispatch=true HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+        String request = """
+            GET /ctx/encoded/hello%20there?dispatch=true HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: application/x-www-form-urlencoded\r
+            Connection: close\r
+            \r
+            """;
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
@@ -244,13 +250,52 @@ public class AsyncContextTest
         assertThat("async path info has correct encoding", responseBody, containsString("doGet:async:getPathInfo:/something%else"));
 
         // async run attributes
-        assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/test"));
+        assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/encoded"));
         assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello there"));
         assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
-        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%20there"));
-        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:test"));
-        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/test/*"));
+        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/encoded/hello%20there"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:encoded"));
+        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/encoded/*"));
+        assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
+        assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:PATH"));
+    }
+
+    @Test
+    public void testDispatchAsyncAmbiguousUrl() throws Exception
+    {
+        String request = """
+            GET /ctx/ambiguous/hello%20there?dispatch=true HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: application/x-www-form-urlencoded\r
+            Connection: close\r
+            \r
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
+
+        String responseBody = response.getContent();
+
+        // initial values
+        assertThat("servlet gets right path", responseBody, containsString("doGet:getServletPath:/test2"));
+        assertThat("request uri has correct encoding", responseBody, containsString("doGet:getRequestURI:/ctx/test2/something%2Felse"));
+        assertThat("request url has correct encoding", responseBody, containsString("doGet:getRequestURL:http://localhost/ctx/test2/something%2Felse"));
+        assertThat("path info has correct encoding", responseBody, containsString("doGet:getPathInfo:/something/else"));
+
+        // async values
+        assertThat("async servlet gets right path", responseBody, containsString("doGet:async:getServletPath:/test2"));
+        assertThat("async request uri has correct encoding", responseBody, containsString("doGet:async:getRequestURI:/ctx/test2/something%2Felse"));
+        assertThat("async request url has correct encoding", responseBody, containsString("doGet:async:getRequestURL:http://localhost/ctx/test2/something%2Felse"));
+        assertThat("async path info has correct encoding", responseBody, containsString("doGet:async:getPathInfo:/something/else"));
+
+        // async run attributes
+        assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/ambiguous"));
+        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello there"));
+        assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
+        assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
+        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/ambiguous/hello%20there"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:ambiguous"));
+        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/ambiguous/*"));
         assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
         assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:PATH"));
     }

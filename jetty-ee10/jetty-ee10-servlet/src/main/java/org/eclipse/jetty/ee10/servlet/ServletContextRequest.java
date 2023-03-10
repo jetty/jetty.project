@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -111,6 +112,15 @@ public class ServletContextRequest extends ContextRequest
 
     protected ServletApiRequest newServletApiRequest()
     {
+        if (getHttpURI().hasViolations() && !getServletChannel().getContextHandler().getServletHandler().isDecodeAmbiguousURIs())
+        {
+            for (UriCompliance.Violation violation : getHttpURI().getViolations())
+            {
+                if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))
+                    return new ServletApiRequest.AmbiguousURI(this);
+            }
+        }
+
         return new ServletApiRequest(this);
     }
 

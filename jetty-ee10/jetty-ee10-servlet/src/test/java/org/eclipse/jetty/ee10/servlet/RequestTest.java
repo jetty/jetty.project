@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.http.HttpServlet;
@@ -30,6 +32,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class RequestTest
@@ -124,27 +128,70 @@ public class RequestTest
     }
 
     @Test
-    public void testSafeURI() throws Exception
+    public void testAmbiguousURI() throws Exception
     {
+        AtomicInteger count = new AtomicInteger();
         startServer(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse resp)
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
             {
+                count.incrementAndGet();
+                String requestURI = request.getRequestURI();
+                String servletPath;
+                String pathInfo;
+                try
+                {
+                    servletPath = request.getServletPath();
+                }
+                catch (IllegalArgumentException iae)
+                {
+                    servletPath = iae.toString();
+                }
+                try
+                {
+                    pathInfo = request.getPathInfo();
+                }
+                catch (IllegalArgumentException iae)
+                {
+                    pathInfo = iae.toString();
+                }
+
+                resp.getOutputStream().println("requestURI=%s servletPath=%s pathInfo=%s".formatted(requestURI, servletPath, pathInfo));
             }
         });
 
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-
-        String rawResponse = _connector.getResponse(
-            """
-                GET /test/foo%2fbar HTTP/1.1\r
-                Host: localhost\r
-                Connection: close\r
-                \r
-                """);
+        String rawRequest = """
+            GET /test/foo%2fbar HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+        String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+        assertThat(count.get(), equalTo(0));
+
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        rawResponse = _connector.getResponse(rawRequest);
+
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("requestURI=/test/foo%2fbar"));
+        assertThat(response.getContent(), containsString("servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+        assertThat(response.getContent(), containsString("pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+        assertThat(count.get(), equalTo(1));
+
+        _server.getContainedBeans(ServletHandler.class).iterator().next().setDecodeAmbiguousURIs(true);
+        rawResponse = _connector.getResponse(rawRequest);
+
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("requestURI=/test/foo%2fbar"));
+        assertThat(response.getContent(), containsString("servletPath= "));
+        assertThat(response.getContent(), containsString("pathInfo=/test/foo/bar"));
+        assertThat(count.get(), equalTo(2));
     }
 
     @Test

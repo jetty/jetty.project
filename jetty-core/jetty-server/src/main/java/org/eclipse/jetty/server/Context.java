@@ -94,13 +94,13 @@ public interface Context extends Attributes, Decorator, Executor
     void run(Runnable task, Request request);
 
     /**
-     * <p>Returns a URI path scoped to this Context.</p>
-     * <p>For example, if the context path is {@code /ctx} then a
-     * full path of {@code /ctx/foo/bar} will return {@code /foo/bar}.</p>
-     *
-     * @param canonicallyEncodedPath a full URI path
+     * <p>Returns the URI path scoped to this Context.</p>
+     * @see #getPathInContext(String, String)
+     * @param canonicallyEncodedPath a full URI path that should be canonically encoded as
+     *        per {@link org.eclipse.jetty.util.URIUtil#canonicalPath(String)}
      * @return the URI path scoped to this Context, or {@code null} if the full path does not match this Context.
-     * The empty string is returned if the full path is exactly the context path.
+     *         The empty string is returned if the full path is exactly the context path.
+     *
      */
     default String getPathInContext(String canonicallyEncodedPath)
     {
@@ -112,16 +112,29 @@ public interface Context extends Attributes, Decorator, Executor
      */
     File getTempDirectory();
 
-    static String getPathInContext(String encodedContextPath, String canonicallyEncodedPath)
+    /**
+     * <p>Returns the URI path scoped to the passed context path.</p>
+     * <p>For example, if the context path passed is {@code /ctx} then a
+     * path of {@code /ctx/foo/bar} will return {@code /foo/bar}.</p>
+     *
+     * @param encodedContextPath The context path that should be canonically encoded as
+     *        per {@link org.eclipse.jetty.util.URIUtil#canonicalPath(String)}.
+     * @param encodedPath a full URI path that should be canonically encoded as
+     *        per {@link org.eclipse.jetty.util.URIUtil#canonicalPath(String)}.
+     * @return the URI {@code encodedPath} scoped to the {@code encodedContextPath},
+     *         or {@code null} if the {@code encodedPath} does not match the context.
+     *         The empty string is returned if the {@code encodedPath} is exactly the {@code encodedContextPath}.
+     */
+    static String getPathInContext(String encodedContextPath, String encodedPath)
     {
         if (encodedContextPath.length() == 0 || "/".equals(encodedContextPath))
-            return canonicallyEncodedPath;
-        if (encodedContextPath.length() > canonicallyEncodedPath.length() || !canonicallyEncodedPath.startsWith(encodedContextPath))
+            return encodedPath;
+        if (encodedContextPath.length() > encodedPath.length() || !encodedPath.startsWith(encodedContextPath))
             return null;
-        if (canonicallyEncodedPath.length() == encodedContextPath.length())
+        if (encodedPath.length() == encodedContextPath.length())
             return "";
-        if (canonicallyEncodedPath.charAt(encodedContextPath.length()) != '/')
+        if (encodedPath.charAt(encodedContextPath.length()) != '/')
             return null;
-        return canonicallyEncodedPath.substring(encodedContextPath.length());
+        return encodedPath.substring(encodedContextPath.length());
     }
 }

@@ -69,7 +69,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
@@ -282,7 +281,6 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
-        checkForUriComplianceViolations();
         return _request._matchedPath.getPathInfo();
     }
 
@@ -367,23 +365,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getServletPath()
     {
-        checkForUriComplianceViolations();
         return _request._matchedPath.getPathMatch();
-    }
-
-    private void checkForUriComplianceViolations()
-    {
-        if (_request.getHttpURI().hasViolations())
-        {
-            if (!getServletContextRequest().getServletChannel().getContextHandler().getServletHandler().getDecodeAmbiguousUris())
-            {
-                for (UriCompliance.Violation violation : _request.getHttpURI().getViolations())
-                {
-                    if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))
-                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
-                }
-            }
-        }
     }
 
     @Override
@@ -1264,5 +1246,25 @@ public class ServletApiRequest implements HttpServletRequest
             trailersMap.merge(key, field.getValue(), (existing, value) -> existing + "," + value);
         }
         return trailersMap;
+    }
+
+    public static class AmbiguousURI extends ServletApiRequest
+    {
+        protected AmbiguousURI(ServletContextRequest servletContextRequest)
+        {
+            super(servletContextRequest);
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+        }
+
+        @Override
+        public String getServletPath()
+        {
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+        }
     }
 }
