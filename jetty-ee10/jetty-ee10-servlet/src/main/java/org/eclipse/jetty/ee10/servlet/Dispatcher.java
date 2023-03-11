@@ -35,7 +35,6 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -64,30 +63,30 @@ public class Dispatcher implements RequestDispatcher
 
     private final ServletContextHandler _contextHandler;
     private final HttpURI _uri;
-    private final String _pathInContext;
+    private final String _decodedPathInContext;
     private final String _named;
     private final ServletHandler.MappedServlet _mappedServlet;
     private final ServletHandler _servletHandler;
     private final ServletPathMapping _servletPathMapping;
 
-    public Dispatcher(ServletContextHandler contextHandler, HttpURI uri, String pathInContext)
+    public Dispatcher(ServletContextHandler contextHandler, HttpURI uri, String decodedPathInContext)
     {
         _contextHandler = contextHandler;
         _uri = uri.asImmutable();
-        _pathInContext = pathInContext;
+        _decodedPathInContext = decodedPathInContext;
         _named = null;
 
         _servletHandler = _contextHandler.getServletHandler();
-        MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(pathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(decodedPathInContext);
         _mappedServlet = matchedServlet.getResource();
-        _servletPathMapping = _mappedServlet.getServletPathMapping(_pathInContext, matchedServlet.getMatchedPath());
+        _servletPathMapping = _mappedServlet.getServletPathMapping(_decodedPathInContext, matchedServlet.getMatchedPath());
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
     {
         _contextHandler = contextHandler;
         _uri = null;
-        _pathInContext = null;
+        _decodedPathInContext = null;
         _named = name;
 
         _servletHandler = _contextHandler.getServletHandler();
@@ -100,7 +99,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, _pathInContext, new ErrorRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ErrorRequest(httpRequest), httpResponse);
     }
 
     @Override
@@ -111,7 +110,7 @@ public class Dispatcher implements RequestDispatcher
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
         servletContextRequest.getResponse().resetForForward();
-        _mappedServlet.handle(_servletHandler, _pathInContext, new ForwardRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
         if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getHttpOutput().isClosed())
@@ -136,7 +135,7 @@ public class Dispatcher implements RequestDispatcher
 
         try
         {
-            _mappedServlet.handle(_servletHandler, _pathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
         }
         finally
         {
@@ -149,7 +148,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, _pathInContext, new AsyncRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new AsyncRequest(httpRequest), httpResponse);
     }
 
     public class ParameterRequestWrapper extends HttpServletRequestWrapper

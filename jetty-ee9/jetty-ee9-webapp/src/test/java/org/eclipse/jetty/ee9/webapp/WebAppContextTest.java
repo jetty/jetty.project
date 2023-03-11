@@ -325,7 +325,7 @@ public class WebAppContextTest
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
 
         server.start();
 
