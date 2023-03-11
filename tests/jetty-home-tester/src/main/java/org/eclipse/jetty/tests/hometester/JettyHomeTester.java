@@ -347,11 +347,14 @@ public class JettyHomeTester
         // create tmp directory to unzip distribution
         Path homes = MavenTestingUtils.getTargetTestingPath("homes");
         FS.ensureDirExists(homes);
-        Path tmp = Files.createTempDirectory(homes, "jetty_home_");
+        Path tmp = Files.createDirectories(homes.resolve(Long.toString(artifactFile.toFile().lastModified())));
+        Path home = tmp.resolve("jetty-home-" + version);
+        if (!Files.exists(home))
+        {
+            unzip(artifactFile, tmp);
+        }
 
-        unzip(artifactFile, tmp);
-
-        return tmp.resolve("jetty-home-" + version);
+        return home;
     }
 
     private RepositorySystem newRepositorySystem()
