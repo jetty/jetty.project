@@ -48,6 +48,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -207,6 +208,8 @@ public class DefaultServletTest
     @Test
     public void testGetPercent2F() throws Exception
     {
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+
         Path file = docRoot.resolve("file.txt");
         Files.writeString(file, "How now brown cow", UTF_8);
 
@@ -256,6 +259,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getContent(), is("In a while"));
 
         // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 404
+        // as neither getServletPath and getPathInfo are used and thus they don't throw.
         rawResponse = connector.getResponse("""
             GET /context/dirFoo%2Fother.txt HTTP/1.1\r
             Host: local\r

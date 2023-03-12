@@ -147,12 +147,12 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
 
         //On every subsequent re-run set it back to the original base dir before
         //we might have applied any war overlays onto it
-        
         webApp.setBaseResource(originalBaseResource);
-
-        if (webApp.getWar() == null)
-            webApp.setWar(originalBaseResource.getURI().toURL().toExternalForm());
         
+        //TODO the war does not need to be set, _except_ that QuickStartConfiguration checks for non null
+        if (webApp.getWar() == null)
+            webApp.setWar(originalBaseResource.toString());
+
         if (classesDirectory != null)
             webApp.setClasses(classesDirectory);
 

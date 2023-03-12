@@ -60,6 +60,7 @@ import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -1118,7 +1119,7 @@ public class ServletApiRequest implements HttpServletRequest
         // handle relative path
         if (!path.startsWith("/"))
         {
-            String relTo = _request.getPathInContext();
+            String relTo = _request.getDecodedPathInContext();
             int slash = relTo.lastIndexOf("/");
             if (slash > 1)
                 relTo = relTo.substring(0, slash + 1);
@@ -1196,7 +1197,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _request._mappedServlet.getServletPathMapping(_request.getPathInContext());
+        return _request._mappedServlet.getServletPathMapping(_request.getDecodedPathInContext());
     }
 
     @Override
@@ -1246,5 +1247,25 @@ public class ServletApiRequest implements HttpServletRequest
             trailersMap.merge(key, field.getValue(), (existing, value) -> existing + "," + value);
         }
         return trailersMap;
+    }
+
+    static class AmbiguousURI extends ServletApiRequest
+    {
+        protected AmbiguousURI(ServletContextRequest servletContextRequest)
+        {
+            super(servletContextRequest);
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+        }
+
+        @Override
+        public String getServletPath()
+        {
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+        }
     }
 }

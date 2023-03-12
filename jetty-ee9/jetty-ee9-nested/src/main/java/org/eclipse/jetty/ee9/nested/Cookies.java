@@ -21,7 +21,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieParser;
-import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +102,7 @@ public class Cookies implements CookieParser.Handler
         }
         catch (CookieParser.InvalidCookieException invalidCookieException)
         {
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, invalidCookieException.getMessage(), invalidCookieException);
+            throw new BadMessageException(invalidCookieException.getMessage(), invalidCookieException);
         }
         _cookies = _cookieList.toArray(new Cookie[0]);
         _cookieList.clear();

@@ -2102,7 +2102,7 @@ public class Request implements HttpServletRequest
             catch (Throwable th)
             {
                 _queryParameters = BAD_PARAMS;
-                throw new BadMessageException(400, "Bad query encoding", th);
+                throw new BadMessageException("Bad query encoding", th);
             }
         }
 

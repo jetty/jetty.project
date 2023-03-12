@@ -91,15 +91,15 @@ public class ExceptionUtil
      * @throws Error If the passed {@link Throwable} is an {@link Error}.
      * @throws RuntimeException Otherwise, if the passed {@link Throwable} is not null.
      */
-    public static void ifExceptionThrowRuntime(Throwable throwable)
+    public static void ifExceptionThrowUnchecked(Throwable throwable)
         throws Error, RuntimeException
     {
         if (throwable == null)
             return;
-        if (throwable instanceof Error error)
-            throw error;
         if (throwable instanceof RuntimeException runtimeException)
             throw runtimeException;
+        if (throwable instanceof Error error)
+            throw error;
         throw new RuntimeException(throwable);
     }
 
@@ -231,7 +231,7 @@ public class ExceptionUtil
 
         public void ifExceptionThrowRuntime()
         {
-            ExceptionUtil.ifExceptionThrowRuntime(_multiException);
+            ExceptionUtil.ifExceptionThrowUnchecked(_multiException);
         }
 
         public <T extends Throwable> void ifExceptionThrowAs(Class<T> type) throws T

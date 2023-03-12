@@ -914,9 +914,9 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public String getPathInContext(String fullPath)
+        public String getPathInContext(String canonicallyEncodedPath)
         {
-            return fullPath;
+            return canonicallyEncodedPath;
         }
 
         @Override

@@ -137,7 +137,7 @@ public class CookieCache implements CookieParser.Handler
             }
             catch (CookieParser.InvalidCookieException invalidCookieException)
             {
-                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, invalidCookieException.getMessage(), invalidCookieException);
+                throw new BadMessageException(invalidCookieException.getMessage(), invalidCookieException);
             }
         }
 

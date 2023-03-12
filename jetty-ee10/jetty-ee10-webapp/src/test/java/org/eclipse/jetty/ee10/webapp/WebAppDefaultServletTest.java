@@ -48,7 +48,7 @@ public class WebAppDefaultServletTest
     {
         server = new Server();
         connector = new LocalConnector(server);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         server.addConnector(connector);
 
         Path directoryPath = workDir.getEmptyPathDir();

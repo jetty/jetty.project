@@ -44,8 +44,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -359,18 +359,22 @@ public class DefaultServlet extends HttpServlet
     {
         String includedServletPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
         boolean included = includedServletPath != null;
-        String pathInContext;
+        String encodedPathInContext;
         if (included)
-            pathInContext = getIncludedPathInContext(req, includedServletPath, isPathInfoOnly());
+            encodedPathInContext = URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, isPathInfoOnly()));
+        else if (isPathInfoOnly())
+            encodedPathInContext = URIUtil.encodePath(req.getPathInfo());
+        else if (req instanceof ServletApiRequest apiRequest)
+            encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getServletContextRequest().getHttpURI().getCanonicalPath());
         else
-            pathInContext = URIUtil.addPaths(isPathInfoOnly() ? "/" : req.getServletPath(), req.getPathInfo());
-
+            encodedPathInContext = Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
+        
         if (LOG.isDebugEnabled())
-            LOG.debug("doGet(req={}, resp={}) pathInContext={}, included={}", req, resp, pathInContext, included);
+            LOG.debug("doGet(req={}, resp={}) pathInContext={}, included={}", req, resp, encodedPathInContext, included);
 
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getServletContextRequest(req));
+            HttpContent content = _resourceService.getContent(encodedPathInContext, ServletContextRequest.getServletContextRequest(req));
             if (LOG.isDebugEnabled())
                 LOG.debug("content = {}", content);
 
@@ -384,7 +388,7 @@ public class DefaultServlet extends HttpServlet
                      * If the exception isn’t caught and handled, and the response
                      * hasn’t been committed, the status code MUST be set to 500.
                      */
-                    throw new FileNotFoundException(pathInContext);
+                    throw new FileNotFoundException(encodedPathInContext);
                 }
 
                 // no content
@@ -432,9 +436,9 @@ public class DefaultServlet extends HttpServlet
         catch (InvalidPathException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
+                LOG.debug("InvalidPathException for pathInContext: {}", encodedPathInContext, e);
             if (included)
-                throw new FileNotFoundException(pathInContext);
+                throw new FileNotFoundException(encodedPathInContext);
             resp.setStatus(404);
         }
     }
@@ -481,9 +485,9 @@ public class DefaultServlet extends HttpServlet
             if (request.getDispatcherType() == DispatcherType.REQUEST)
                 _uri = getWrapped().getHttpURI();
             else if (included)
-                _uri = Request.newHttpURIFrom(getWrapped(), getIncludedPathInContext(request, includedServletPath, false));
+                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(getIncludedPathInContext(request, includedServletPath, false)));
             else
-                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
+                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo())));
         }
 
         @Override
@@ -1027,10 +1031,10 @@ public class DefaultServlet extends HttpServlet
 
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
-            if (cause instanceof BadMessageException badMessageException)
+            if (cause instanceof HttpException httpException)
             {
-                statusCode = badMessageException.getCode();
-                reason = badMessageException.getReason();
+                statusCode = httpException.getCode();
+                reason = httpException.getReason();
             }
             writeHttpError(coreRequest, coreResponse, callback, statusCode, reason, cause);
         }

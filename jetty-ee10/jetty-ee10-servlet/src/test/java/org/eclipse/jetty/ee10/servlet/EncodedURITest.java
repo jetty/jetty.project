@@ -27,6 +27,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -148,15 +149,24 @@ public class EncodedURITest
         ServletContextHandler context2 = new ServletContextHandler();
         context2.setContextPath("/context_path".replace("_", separator));
         _contextCollection.addHandler(context2);
-        context2.addServlet(TestServlet.class, "/test_servlet/*".replace("_", separator));
+        context2.addServlet(TestServlet.class, URIUtil.decodePath("/test_servlet/*".replace("_", separator)));
+        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         _server.start();
 
         String response = _connector.getResponse("GET /context_path/test_servlet/path_info HTTP/1.0\n\n".replace("_", separator));
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context_path/test_servlet/path_info".replace("_", separator)));
         assertThat(response, Matchers.containsString("contextPath=/context_path".replace("_", separator)));
-        assertThat(response, Matchers.containsString("servletPath=/test_servlet".replace("_", separator)));
-        assertThat(response, Matchers.containsString("pathInfo=/path_info".replace("_", separator)));
+        if ("%2F".equals(separator))
+        {
+            assertThat(response, Matchers.containsString("servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+            assertThat(response, Matchers.containsString("pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+        }
+        else
+        {
+            assertThat(response, Matchers.containsString("servletPath=/test_servlet".replace("_", "?")));
+            assertThat(response, Matchers.containsString("pathInfo=/path_info".replace("_", "?")));
+        }
     }
 
     public static class TestServlet extends HttpServlet
@@ -167,8 +177,22 @@ public class EncodedURITest
             response.setContentType("text/plain");
             response.getWriter().println("requestURI=" + request.getRequestURI());
             response.getWriter().println("contextPath=" + request.getContextPath());
-            response.getWriter().println("servletPath=" + request.getServletPath());
-            response.getWriter().println("pathInfo=" + request.getPathInfo());
+            try
+            {
+                response.getWriter().println("servletPath=" + request.getServletPath());
+            }
+            catch (Throwable e)
+            {
+                response.getWriter().println("servletPath=" + e);
+            }
+            try
+            {
+                response.getWriter().println("pathInfo=" + request.getPathInfo());
+            }
+            catch (Throwable e)
+            {
+                response.getWriter().println("pathInfo=" + e);
+            }
         }
     }
 
