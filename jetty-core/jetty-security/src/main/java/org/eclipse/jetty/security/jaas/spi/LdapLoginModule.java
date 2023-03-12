@@ -39,8 +39,8 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
-import org.eclipse.jetty.ee9.jaas.callback.ObjectCallback;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.security.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;

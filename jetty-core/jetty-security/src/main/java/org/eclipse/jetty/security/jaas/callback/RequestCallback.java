@@ -15,23 +15,23 @@ package org.eclipse.jetty.security.jaas.callback;
 
 import javax.security.auth.callback.Callback;
 
-import jakarta.servlet.ServletRequest;
+import org.eclipse.jetty.server.Request;
 
 /**
  * ServletRequestCallback
  *
  * Provides access to the request associated with the authentication.
  */
-public class ServletRequestCallback implements Callback
+public class RequestCallback implements Callback
 {
-    protected ServletRequest _request;
+    protected Request _request;
 
-    public void setRequest(ServletRequest request)
+    public void setRequest(Request request)
     {
         _request = request;
     }
 
-    public ServletRequest getRequest()
+    public Request getRequest()
     {
         return _request;
     }

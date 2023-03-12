@@ -14,13 +14,15 @@
 package org.eclipse.jetty.security.jaas.callback;
 
 import java.io.IOException;
-import java.util.Arrays;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
-import jakarta.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.Fields;
 
 /**
  * DefaultCallbackHandler
@@ -30,9 +32,9 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 public class DefaultCallbackHandler extends AbstractCallbackHandler
 {
-    private HttpServletRequest _request;
+    private Request _request;
 
-    public void setRequest(HttpServletRequest request)
+    public void setRequest(Request request)
     {
         _request = request;
     }
@@ -60,12 +62,15 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
                 if (_request != null)
                 {
                     RequestParameterCallback rpc = (RequestParameterCallback)callback;
-                    rpc.setParameterValues(Arrays.asList(_request.getParameterValues(rpc.getParameterName())));
+                    Fields queryFields = Request.extractQueryParameters(_request);
+                    Fields formFields = ExceptionUtil.get(FormFields.from(_request));
+                    Fields fields = Fields.combine(queryFields, formFields);
+                    rpc.setParameterValues(fields.getValues(rpc.getParameterName()));
                 }
             }
-            else if (callback instanceof ServletRequestCallback)
+            else if (callback instanceof RequestCallback)
             {
-                ((ServletRequestCallback)callback).setRequest(_request);
+                ((RequestCallback)callback).setRequest(_request);
             }
             else
                 throw new UnsupportedCallbackException(callback);

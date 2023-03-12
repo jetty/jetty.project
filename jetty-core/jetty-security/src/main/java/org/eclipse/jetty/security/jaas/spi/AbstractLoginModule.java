@@ -28,6 +28,7 @@ import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
 import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.security.jaas.JAASRole;
 import org.eclipse.jetty.security.jaas.callback.ObjectCallback;
 
 /**

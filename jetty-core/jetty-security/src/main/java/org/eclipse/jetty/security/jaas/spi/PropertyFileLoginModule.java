@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
-import org.eclipse.jetty.ee9.jaas.JAASLoginService;
-import org.eclipse.jetty.ee9.jaas.PropertyUserStoreManager;
-import org.eclipse.jetty.ee9.security.PropertyUserStore;
-import org.eclipse.jetty.ee9.security.RolePrincipal;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.security.PropertyUserStore;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.security.jaas.JAASLoginService;
+import org.eclipse.jetty.security.jaas.PropertyUserStoreManager;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
