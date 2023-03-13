@@ -16,7 +16,9 @@ package org.eclipse.jetty.security.openid;
 import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -25,17 +27,22 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,8 +62,7 @@ public class OpenIdAuthenticationTest
     private ServerConnector connector;
     private HttpClient client;
 
-    @BeforeEach
-    public void setup() throws Exception
+    public void setup(LoginService loginService) throws Exception
     {
         openIdProvider = new OpenIdProvider(CLIENT_ID, CLIENT_SECRET);
         openIdProvider.start();
@@ -100,6 +106,7 @@ public class OpenIdAuthenticationTest
 
         securityHandler.setAuthMethod(Constraint.__OPENID_AUTH);
         securityHandler.setRealmName(openIdProvider.getProvider());
+        securityHandler.setLoginService(loginService);
         securityHandler.addConstraintMapping(profileMapping);
         securityHandler.addConstraintMapping(loginMapping);
         securityHandler.addConstraintMapping(adminMapping);
@@ -135,6 +142,7 @@ public class OpenIdAuthenticationTest
     @Test
     public void testLoginLogout() throws Exception
     {
+        setup(null);
         openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
 
         String appUriString = "http://localhost:" + connector.getLocalPort();
@@ -178,6 +186,77 @@ public class OpenIdAuthenticationTest
 
         // We are no longer authenticated after logging out
         response = client.GET(appUriString + "/logout");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
+
+        // Test that the user was logged out successfully on the openid provider.
+        assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(0L));
+        assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
+        assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
+    }
+
+    @Test
+    public void testNestedLoginService() throws Exception
+    {
+        AtomicBoolean loggedIn = new AtomicBoolean(true);
+        setup(new AbstractLoginService()
+        {
+
+            @Override
+            protected List<RolePrincipal> loadRoleInfo(UserPrincipal user)
+            {
+                return List.of(new RolePrincipal("admin"));
+            }
+
+            @Override
+            protected UserPrincipal loadUserInfo(String username)
+            {
+                return new UserPrincipal(username, new Password(""));
+            }
+
+            @Override
+            public boolean validate(UserIdentity user)
+            {
+                if (!loggedIn.get())
+                    return false;
+                return super.validate(user);
+            }
+        });
+
+        openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
+
+        String appUriString = "http://localhost:" + connector.getLocalPort();
+
+        // Initially not authenticated
+        ContentResponse response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
+
+        // Request to login is success
+        response = client.GET(appUriString + "/login");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("success"));
+
+        // Now authenticated we can get info
+        response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
+
+        // The nested login service has supplied the admin role.
+        response = client.GET(appUriString + "/admin");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+
+        // This causes any validation of UserIdentity in the LoginService to fail.
+        loggedIn.set(false);
+
+        // This results in a logout redirect to the Provider, and then user will no longer be authenticated.
+        response = client.GET(appUriString + "/admin");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         content = response.getContentAsString();
         assertThat(content, containsString("not authenticated"));
