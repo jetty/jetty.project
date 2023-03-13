@@ -217,7 +217,8 @@ public class TestAnnotationParser
     @Test
     public void testJep238MultiReleaseInJar() throws Exception
     {
-        Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("jdk9/log4j-api-2.9.0.jar");
+       Path badClassesJar = MavenTestingUtils.getTargetPath("test-classes/jdk9/log4j-api-2.9.0.jar");
+
         AnnotationParser parser = new AnnotationParser();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -228,16 +229,16 @@ public class TestAnnotationParser
             Map<String, URI> parsed = parser.getParsedClassNames();
             URI processIdUtilURI = parsed.get("org.apache.logging.log4j.util.ProcessIdUtil");
             assertNotNull(processIdUtilURI);
-            assertThat(processIdUtilURI.toString(), containsString("META-INF/versions/9"));
+            if (Runtime.version().feature() > 17)
+                assertThat(processIdUtilURI.toString(), containsString("META-INF/versions/9"));
         }
     }
 
     @Test
     public void testJep238MultiReleaseInJarJDK10() throws Exception
     {
-        Path jdk10Jar = MavenTestingUtils.getTestResourcePathFile("jdk10/multirelease-10.jar");
+        Path jdk10Jar = MavenTestingUtils.getTargetPath("test-classes/jdk10/multirelease-10.jar");
         AnnotationParser parser = new AnnotationParser();
-
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             // Should throw no exceptions
@@ -246,7 +247,8 @@ public class TestAnnotationParser
             Map<String, URI> parsed = parser.getParsedClassNames();
             assertEquals(3, parsed.size());           
             assertThat(parsed.keySet(), containsInAnyOrder("hello.DetailedVer", "hello.Greetings", "hello.Hello"));
-            assertThat(parsed.get("hello.Greetings").toString(), containsString("META-INF/versions/10"));
+            if (Runtime.version().feature() > 17)
+                assertThat(parsed.get("hello.Greetings").toString(), containsString("META-INF/versions/10"));
         }
     }
 

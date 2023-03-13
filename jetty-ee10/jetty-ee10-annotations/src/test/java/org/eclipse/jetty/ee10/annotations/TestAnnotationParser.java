@@ -229,7 +229,8 @@ public class TestAnnotationParser
             Map<String, URI> parsed = parser.getParsedClassNames();
             URI processIdUtilURI = parsed.get("org.apache.logging.log4j.util.ProcessIdUtil");
             assertNotNull(processIdUtilURI);
-            assertThat(processIdUtilURI.toString(), containsString("META-INF/versions/9"));
+            if (Runtime.version().feature() > 17)
+                assertThat(processIdUtilURI.toString(), containsString("META-INF/versions/9"));
         }
     }
 
@@ -247,7 +248,8 @@ public class TestAnnotationParser
             Map<String, URI> parsed = parser.getParsedClassNames();
             assertEquals(3, parsed.size());           
             assertThat(parsed.keySet(), containsInAnyOrder("hello.DetailedVer", "hello.Greetings", "hello.Hello"));
-            assertThat(parsed.get("hello.Greetings").toString(), containsString("META-INF/versions/10"));
+            if (Runtime.version().feature() > 17)
+                assertThat(parsed.get("hello.Greetings").toString(), containsString("META-INF/versions/10"));
         }
     }
 
