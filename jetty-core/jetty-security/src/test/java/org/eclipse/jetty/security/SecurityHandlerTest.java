@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
@@ -180,7 +181,7 @@ public class SecurityHandlerTest
             Authentication authentication = Authentication.getAuthentication(request);
             if (authentication instanceof UserAuthentication user)
                 Content.Sink.write(response, true, user.getUserIdentity().getUserPrincipal() + " is OK", callback);
-            else if (authentication instanceof Authentication.Deferred)
+            else if (authentication instanceof DeferredAuthentication)
                 Content.Sink.write(response, true, "Somebody might be OK", callback);
             else if (authentication == null)
                 Content.Sink.write(response, true, "You are OK", callback);

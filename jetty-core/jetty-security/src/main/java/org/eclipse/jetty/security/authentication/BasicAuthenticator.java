@@ -49,12 +49,9 @@ public class BasicAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
         String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
-
-        if (!mandatory)
-            return new DeferredAuthentication(this);
 
         if (credentials != null)
         {
@@ -83,8 +80,8 @@ public class BasicAuthenticator extends LoginAuthenticator
             }
         }
 
-        if (DeferredAuthentication.isDeferred(res))
-            return Authentication.UNAUTHENTICATED;
+        if (res.isCommitted())
+            return null;
 
         String value = "basic realm=\"" + _loginService.getName() + "\"";
         Charset charset = getCharset();
@@ -92,7 +89,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             value += ", charset=\"" + charset.name() + "\"";
         res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), value);
         Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
-        return Authentication.SEND_CONTINUE;
+        return Authentication.CHALLENGE;
     }
 
     public static String authorization(String user, String password)

@@ -21,9 +21,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoggedOutAuthentication;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
@@ -33,7 +31,7 @@ import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeferredAuthentication implements Authentication.Deferred
+public class DeferredAuthentication implements Authentication
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeferredAuthentication.class);
     protected final LoginAuthenticator _authenticator;
@@ -46,21 +44,20 @@ public class DeferredAuthentication implements Authentication.Deferred
         this._authenticator = authenticator;
     }
 
-    @Override
-    public Authentication authenticate(Request request)
+    public Authentication.User authenticate(Request request)
     {
         try
         {
-            Authentication authentication = _authenticator.validateRequest(request, __deferredResponse, null, true);
-            if (authentication != null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
+            Authentication authentication = _authenticator.validateRequest(request, __deferredResponse, null);
+            if (authentication instanceof Authentication.User user)
             {
                 LoginService loginService = _authenticator.getLoginService();
                 IdentityService identityService = loginService.getIdentityService();
 
                 if (identityService != null)
-                    _association = identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                    _association = identityService.associate(user.getUserIdentity());
 
-                return authentication;
+                return user;
             }
         }
         catch (ServerAuthException e)
@@ -68,10 +65,9 @@ public class DeferredAuthentication implements Authentication.Deferred
             LOG.debug("Unable to authenticate {}", request, e);
         }
 
-        return this;
+        return null;
     }
 
-    @Override
     public Authentication authenticate(Request request, Response response, Callback callback)
     {
         try
@@ -79,7 +75,7 @@ public class DeferredAuthentication implements Authentication.Deferred
             LoginService loginService = _authenticator.getLoginService();
             IdentityService identityService = loginService.getIdentityService();
 
-            Authentication authentication = _authenticator.validateRequest(request, response, callback, true);
+            Authentication authentication = _authenticator.validateRequest(request, response, callback);
             if (authentication instanceof Authentication.User && identityService != null)
                 _association = identityService.associate(((Authentication.User)authentication).getUserIdentity());
             return authentication;
@@ -88,11 +84,10 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             LOG.debug("Unable to authenticate {}", request, e);
         }
-        return this;
+        return null;
     }
 
-    @Override
-    public Authentication login(String username, Object password, Request request, Response response)
+    public Authentication.User login(String username, Object password, Request request, Response response)
     {
         if (username == null)
             return null;
@@ -107,20 +102,6 @@ public class DeferredAuthentication implements Authentication.Deferred
             return authentication;
         }
         return null;
-    }
-
-    @Override
-    public Authentication logout(Request request)
-    {
-        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
-        if (security != null)
-        {
-            security.logout(null);
-            _authenticator.logout(request);
-            return new LoggedOutAuthentication(_authenticator);
-        }
-
-        return Authentication.UNAUTHENTICATED;
     }
 
     public IdentityService.Association getAssociation()
@@ -182,7 +163,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         @Override
         public boolean isCommitted()
         {
-            return false;
+            return true;
         }
 
         @Override

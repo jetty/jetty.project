@@ -148,6 +148,18 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
+     * @param name the field name
+     * @return the values of the field with the given name, or empty list if no such field exists
+     */
+    public List<String> getValuesOrEmpty(String name)
+    {
+        Field field = get(name);
+        if (field == null)
+            return Collections.emptyList();
+        return field.getValues();
+    }
+
+    /**
      * <p>Inserts or replaces the given name/value pair as a single-valued {@link Field}.</p>
      *
      * @param name the field name

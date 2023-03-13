@@ -108,11 +108,8 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
-        if (!mandatory)
-            return new DeferredAuthentication(this);
-
         String header = req.getHeaders().get(HttpHeader.AUTHORIZATION);
         String spnegoToken = getSpnegoToken(header);
         Session httpSession = req.getSession(false);
@@ -145,12 +142,12 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
             else
             {
                 if (DeferredAuthentication.isDeferred(res))
-                    return Authentication.UNAUTHENTICATED;
+                    return null;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Sending intermediate challenge");
                 SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
                 sendChallenge(req, res, callback, principal.getEncodedToken());
-                return Authentication.SEND_CONTINUE;
+                return Authentication.CHALLENGE;
             }
         }
         // No token from the client; check if the client has logged in
@@ -177,12 +174,12 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         }
 
         if (DeferredAuthentication.isDeferred(res))
-            return Authentication.UNAUTHENTICATED;
+            return null;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Sending initial challenge");
         sendChallenge(req, res, callback, null);
-        return Authentication.SEND_CONTINUE;
+        return Authentication.CHALLENGE;
     }
 
     private void sendChallenge(Request req, Response res, Callback callback, String token) throws ServerAuthException

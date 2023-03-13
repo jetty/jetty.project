@@ -16,8 +16,11 @@ package org.eclipse.jetty.security;
 import java.io.Serializable;
 
 import org.eclipse.jetty.security.Authentication.User;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * AbstractUserAuthentication
@@ -56,20 +59,41 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     }
 
     @Override
-    public Authentication logout(Request request)
+    public void logout(Request request)
     {
         SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
         if (security != null)
         {
             security.logout(this);
             Authenticator authenticator = security.getAuthenticator();
-            if (authenticator instanceof LoginAuthenticator)
+
+            Authentication authentication = null;
+            if (authenticator instanceof LoginAuthenticator loginAuthenticator)
             {
                 ((LoginAuthenticator)authenticator).logout(request);
-                return new LoggedOutAuthentication((LoginAuthenticator)authenticator);
+                authentication = new LoggedOutAuthentication(loginAuthenticator);
             }
+            Authentication.setAuthentication(request, authentication);
+        }
+    }
+
+    private static class LoggedOutAuthentication extends DeferredAuthentication
+    {
+        public LoggedOutAuthentication(LoginAuthenticator authenticator)
+        {
+            super(authenticator);
         }
 
-        return Authentication.UNAUTHENTICATED;
+        @Override
+        public Authentication.User authenticate(Request request)
+        {
+            return null;
+        }
+
+        @Override
+        public Authentication authenticate(Request request, Response response, Callback callback)
+        {
+            return null;
+        }
     }
 }

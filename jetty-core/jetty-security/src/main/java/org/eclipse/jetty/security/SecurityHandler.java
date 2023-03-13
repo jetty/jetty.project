@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -73,6 +73,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession = true;
+    DeferredAuthentication _deferredAuthentication;
 
     static
     {
@@ -363,6 +364,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             throw new IllegalStateException("No Authenticator");
         }
 
+        if (_authenticator instanceof LoginAuthenticator loginAuthenticator)
+        {
+            _deferredAuthentication = new DeferredAuthentication(loginAuthenticator);
+            addBean(_deferredAuthentication);
+        }
         super.doStart();
     }
 
@@ -382,6 +388,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             _loginService = null;
         }
 
+        if (_deferredAuthentication != null)
+        {
+            removeBean(_deferredAuthentication);
+            _deferredAuthentication = null;
+        }
         super.doStop();
     }
 
@@ -410,19 +421,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         Handler next = getHandler();
         if (next == null)
             return false;
-        
-        Authenticator authenticator = _authenticator;
-        if (authenticator != null)
-            request = authenticator.prepareRequest(request);
 
         String pathInContext = Request.getPathInContext(request);
         Constraint constraint = getConstraint(pathInContext, request);
-
         if (constraint == null)
-        {
-            //don't need to do any security work, let other handlers do the processing
-            return next.handle(request, response, callback);
-        }
+            constraint = Constraint.NONE;
 
         if (constraint.isForbidden())
         {
@@ -431,101 +434,53 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
 
         // Check data constraints
-        if (!checkTransport(pathInContext, request, response, callback, constraint))
-            return true;
-
-        // is Auth mandatory?
-        boolean authMandatory = constraint.getAuthentication() != null && constraint.getAuthentication() != Constraint.Authentication.REQUIRE_NONE;
-        if (authMandatory && authenticator == null)
+        if (constraint.isConfidential() && !request.isSecure())
         {
-            LOG.warn("No authenticator for: {}", constraint);
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            redirectToSecure(request, response, callback);
             return true;
         }
 
-        // check authentication
+        // Determine Constraint.Authentication
+        Constraint.Authentication constraintAuthentication = constraint.getAuthentication();
+        constraintAuthentication = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthentication);
+        boolean mustValidate = constraintAuthentication != Constraint.Authentication.REQUIRE_NONE;
+
         try
         {
-            Authentication authentication = org.eclipse.jetty.security.Authentication.getAuthentication(request);
-            if (authentication == null || authentication == org.eclipse.jetty.security.Authentication.NOT_CHECKED)
-                authentication = authenticator == null
-                    ? org.eclipse.jetty.security.Authentication.UNAUTHENTICATED
-                    : authenticator.validateRequest(request, response, callback, authMandatory);
+            Authentication authentication = mustValidate ? _authenticator.validateRequest(request, response, callback) : null;
 
             if (authentication instanceof Authentication.ResponseSent)
                 return true;
 
-            if (authentication instanceof Authentication.User userAuth)
+            if (isNotAuthorized(constraint, authentication))
             {
-                org.eclipse.jetty.security.Authentication.setAuthentication(request, authentication);
-                try (AutoCloseable association = _identityService.associate(userAuth.getUserIdentity()))
-                {
-                    if (authMandatory)
-                    {
-                        boolean authorized = checkAuthentication(Request.getPathInContext(request), request, response, constraint, userAuth.getUserIdentity());
-                        if (!authorized)
-                        {
-                            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!role");
-                            return true;
-                        }
-                    }
-
-                    //process the request by other handlers
-                    boolean processed = next.handle(request, response, callback);
-
-                    // TODO this looks wrong as in way too late
-                    if (processed && authenticator != null)
-                        authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
-                    return processed;
-                }
-            }
-
-            if (authentication instanceof DeferredAuthentication deferred)
-            {
-                org.eclipse.jetty.security.Authentication.setAuthentication(request, authentication);
-
-                boolean handled;
-                try
-                {
-                    //process the request by other handlers
-                    handled = next.handle(request, response, callback);
-
-                    if (handled && authenticator != null)
-                    {
-                        Authentication auth = org.eclipse.jetty.security.Authentication.getAuthentication(request);
-                        if (auth instanceof Authentication.User userAuth)
-                            authenticator.secureResponse(request, response, callback, authMandatory, userAuth);
-                        else
-                            authenticator.secureResponse(request, response, callback, authMandatory, null);
-                    }
-                    return handled;
-                }
-                finally
-                {
-                    IdentityService.Association association = deferred.getAssociation();
-                    if (association != null)
-                        association.close();
-                }
-            }
-
-            if (authMandatory)
-            {
-                Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401, "unauthenticated");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
                 return true;
             }
 
-            org.eclipse.jetty.security.Authentication.setAuthentication(request, authentication);
+            if (authentication == null)
+                authentication = _deferredAuthentication;
 
-            //process the request by other handlers
-            boolean handled = next.handle(request, response, callback);
+            Authentication.setAuthentication(request, authentication);
+            IdentityService.Association association = authentication instanceof Authentication.User user
+                ? _identityService.associate(user.getUserIdentity())
+                : null;
 
-            if (handled && authenticator != null)
-                authenticator.secureResponse(request, response, callback, authMandatory, null);
-            return handled;
+            try
+            {
+                //process the request by other handlers
+                return next.handle(_authenticator.prepareRequest(request), response, callback);
+            }
+            finally
+            {
+                if (association == null && authentication instanceof DeferredAuthentication deferred)
+                    association = deferred.getAssociation();
+                if (association != null)
+                    association.close();
+            }
         }
         catch (ServerAuthException e)
         {
-            // jaspi 3.8.3 send HTTP 500 internal server error, with message from AuthException
             Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
             return true;
         }
@@ -557,11 +512,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
     protected abstract Constraint getConstraint(String pathInContext, Request request);
 
-    protected boolean checkTransport(String pathInContext, Request request, Response response, Callback callback, Constraint constraint) throws IOException
+    protected void redirectToSecure(Request request, Response response, Callback callback)
     {
-        if (request.isSecure() || !constraint.isConfidential())
-            return true;
-
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
         if (httpConfig.getSecurePort() > 0)
         {
@@ -578,37 +530,32 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!Secure");
         }
-        return false;
     }
 
-    protected boolean checkAuthentication(String pathInContext, Request request, Response response, Constraint constraint, UserIdentity userIdentity)
+    protected boolean isNotAuthorized(Constraint constraint, Authentication authentication)
     {
-        Constraint.Authentication authentication = constraint.getAuthentication();
-        if (authentication == null)
-            return true;
+        UserIdentity userIdentity = authentication instanceof Authentication.User user ? user.getUserIdentity() : null;
 
         return switch (constraint.getAuthentication())
         {
-            case REQUIRE_NONE -> true;
-
-            case REQUIRE -> userIdentity.getUserPrincipal() != null;
-
+            case REQUIRE_NONE -> false;
+            case REQUIRE -> userIdentity == null || userIdentity.getUserPrincipal() == null;
             case REQUIRE_KNOWN_ROLE ->
             {
-                if (userIdentity.getUserPrincipal() != null)
+                if (userIdentity != null && userIdentity.getUserPrincipal() != null)
                     for (String role : getKnownRoles())
                         if (userIdentity.isUserInRole(role))
-                            yield true;
-                yield false;
+                            yield false;
+                yield true;
             }
 
             case REQUIRE_SPECIFIC_ROLE ->
             {
-                if (userIdentity.getUserPrincipal() != null)
+                if (userIdentity != null && userIdentity.getUserPrincipal() != null)
                     for (String role : constraint.getRoles())
                         if (userIdentity.isUserInRole(role))
-                            yield true;
-                yield false;
+                            yield false;
+                yield true;
             }
         };
     }

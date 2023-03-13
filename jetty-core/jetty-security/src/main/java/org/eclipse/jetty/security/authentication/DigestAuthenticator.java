@@ -97,11 +97,8 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
-        if (!mandatory)
-            return new DeferredAuthentication(this);
-
         String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
 
         boolean stale = false;
@@ -184,10 +181,10 @@ public class DigestAuthenticator extends LoginAuthenticator
                     ", stale=" + stale);
             Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
 
-            return Authentication.SEND_CONTINUE;
+            return Authentication.CHALLENGE;
         }
 
-        return Authentication.UNAUTHENTICATED;
+        return null;
     }
 
     @Override

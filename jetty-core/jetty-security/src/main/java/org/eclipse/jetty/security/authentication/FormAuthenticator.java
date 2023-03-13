@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
@@ -211,6 +212,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (LOG.isDebugEnabled())
             LOG.debug("Restoring original method {} for {} with method {}", method, juri, request.getMethod());
 
+        // TODO do this same as resetting the method
         Fields fields = (Fields)session.removeAttribute(__J_POST);
         if (fields != null)
             request.setAttribute(FormFields.class.getName(), fields);
@@ -246,16 +248,20 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
+    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing)
+    {
+        if (isJSecurityCheck(pathInContext))
+            return Constraint.Authentication.REQUIRE;
+        if (isLoginOrErrorPage(pathInContext))
+            return Constraint.Authentication.REQUIRE_NONE;
+        return existing;
+    }
+
+    @Override
+    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
         String pathInContext = Request.getPathInContext(req);
         boolean jSecurityCheck = isJSecurityCheck(pathInContext);
-        mandatory |= jSecurityCheck;
-        if (!mandatory)
-            return new DeferredAuthentication(this);
-
-        if (isLoginOrErrorPage(pathInContext) && !DeferredAuthentication.isDeferred(res))
-            return new DeferredAuthentication(this);
 
         // Handle a request for authentication.
         if (jSecurityCheck)
@@ -358,7 +364,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (DeferredAuthentication.isDeferred(res))
         {
             LOG.debug("auth deferred {}", session == null ? null : session.getId());
-            return Authentication.UNAUTHENTICATED;
+            return null;
         }
 
         // remember the current URI
@@ -389,7 +395,7 @@ public class FormAuthenticator extends LoginAuthenticator
         // send the the challenge
         LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
         Response.sendRedirect(req, res, callback, encodeURL(URIUtil.addPaths(req.getContext().getContextPath(), _formLoginPage)));
-        return Authentication.SEND_CONTINUE;
+        return Authentication.CHALLENGE;
     }
 
     public boolean isJSecurityCheck(String uri)

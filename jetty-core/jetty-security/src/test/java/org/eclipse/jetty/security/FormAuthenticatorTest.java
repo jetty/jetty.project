@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 import org.eclipse.jetty.server.Connector;
@@ -333,7 +334,7 @@ public class FormAuthenticatorTest
             Authentication authentication = Authentication.getAuthentication(request);
             if (authentication instanceof Authentication.User user)
                 Content.Sink.write(response, true, user.getUserIdentity().getUserPrincipal() + " is OK", callback);
-            else if (authentication instanceof Authentication.Deferred)
+            else if (authentication instanceof DeferredAuthentication)
                 Content.Sink.write(response, true, "Somebody might be OK", callback);
             else if (authentication == null)
                 Content.Sink.write(response, true, "You are OK", callback);

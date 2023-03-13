@@ -55,11 +55,8 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
-        if (!mandatory)
-            return new DeferredAuthentication(this);
-
         SslSessionData sslSessionData = (SslSessionData)req.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
         if (sslSessionData == null)
         {
@@ -117,7 +114,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
                 return Authentication.SEND_FAILURE;
             }
 
-            return Authentication.UNAUTHENTICATED;
+            return null;
         }
         catch (Exception e)
         {

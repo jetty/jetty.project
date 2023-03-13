@@ -69,15 +69,9 @@ public class DefaultIdentityServiceTest
         }
 
         @Override
-        public Authentication validateRequest(Request request, Response response, Callback callback, boolean mandatory) throws ServerAuthException
+        public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
         {
             return null;
-        }
-
-        @Override
-        public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
-        {
-            return false;
         }
     }
 }

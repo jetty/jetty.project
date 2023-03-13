@@ -42,6 +42,7 @@ public interface Authenticator
     String NEGOTIATE_AUTH = "NEGOTIATE";
     String OPENID_AUTH = "OPENID";
 
+
     /**
      * Configure the Authenticator
      *
@@ -69,36 +70,32 @@ public interface Authenticator
     }
 
     /**
+     * Get an {@link Constraint.Authentication} applicable to the path for
+     * this authenticator.  This is typically used to vary protection on special URIs known to a
+     * specific {@link Authenticator} (e.g. /j_security_check for
+     * the {@link org.eclipse.jetty.security.authentication.FormAuthenticator}.
+     * @param pathInContext The pathInContext to potentially constrain.
+     * @param existing The existing authentication constraint for the pathInContext determined independently of {@link Authenticator}
+     * @return The {@link Constraint.Authentication} to apply.
+     */
+    default Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing)
+    {
+        return existing == null ? Constraint.Authentication.REQUIRE_NONE : existing;
+    }
+
+    /**
      * Validate a request
      *
      * @param request The request
      * @param response The response
      * @param callback the callback to use for writing a response
-     * @param mandatory True if authentication is mandatory.
      * @return An Authentication.  If Authentication is successful, this will be a {@link User}. If a response has
      * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
      * implement {@link Authentication.ResponseSent}.  If Authentication is not mandatory, then a
      * {@link Authentication.Deferred} may be returned.
      * @throws ServerAuthException if unable to validate request
      */
-    Authentication validateRequest(Request request, Response response, Callback callback, boolean mandatory) throws ServerAuthException;
-
-    /**
-     * is response secure
-     *
-     * @param request the request
-     * @param response the response
-     * @param callback the callback to write a response
-     * @param mandatory if security is mandatory
-     * @param validatedUser the user that was validated
-     * @return true if response is secure
-     * @throws ServerAuthException if unable to test response
-     */
-    @Deprecated
-    default boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        return true;
-    }
+    Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException;
 
     /**
      * Authenticator Configuration
