@@ -356,6 +356,9 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             }
         }
 
+        if (_authenticator == null)
+            setAuthenticator(new Authenticator.Null());
+
         if (_authenticator != null)
             _authenticator.setConfiguration(this);
         else if (_realmName != null)
@@ -469,7 +472,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             try
             {
                 //process the request by other handlers
-                return next.handle(_authenticator.prepareRequest(request), response, callback);
+                return next.handle(_authenticator.prepareRequest(request, authentication), response, callback);
             }
             finally
             {

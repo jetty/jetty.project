@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -68,6 +69,19 @@ public class AuthenticationTestHandler extends Handler.Abstract
 
                     case "thread" -> out.append(TestIdentityService.USER_IDENTITY.get());
 
+                    case "session" -> out.append(request.getSession(true).getId());
+
+                    case "form" ->
+                    {
+                        Fields fields = FormFields.from(request).get();
+                        String d = "";
+                        for (Fields.Field field : fields)
+                        {
+                            out.append(d).append(field.getName()).append(":").append(field.getValue());
+                            d = ",";
+                        }
+                    }
+
                     default -> out.append("???");
                 }
 
@@ -76,12 +90,12 @@ public class AuthenticationTestHandler extends Handler.Abstract
         }
 
         Authentication authentication = Authentication.getAuthentication(request);
-        if (authentication instanceof UserAuthentication user)
+        if (authentication instanceof Authentication.User user)
             out.append(user.getUserIdentity().getUserPrincipal()).append(" is OK");
         else if (authentication instanceof DeferredAuthentication)
             out.append("Deferred");
         else if (authentication == null)
-            out.append("Who are you?");
+            out.append("Unauthenticated");
         else
             out.append(authentication).append(" is not OK");
 
@@ -136,7 +150,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         @Override
         public boolean validate(UserIdentity user)
         {
-            return false;
+            return true;
         }
 
         @Override

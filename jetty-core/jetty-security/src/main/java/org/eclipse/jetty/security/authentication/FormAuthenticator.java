@@ -15,11 +15,9 @@ package org.eclipse.jetty.security.authentication;
 
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.security.Authenticator;
@@ -33,7 +31,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,46 +182,43 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Request prepareRequest(Request request)
+    public Request prepareRequest(Request request, Authentication authentication)
     {
         // if this is a request resulting from a redirect after auth is complete
         // (ie its from a redirect to the original request uri) then due to
         // browser handling of 302 redirects, the method may not be the same as
         // that of the original request. Replace the method and original post
         // params (if it was a post).
-
-        Session session = request.getSession(false);
-        if (session == null)
-            return request; // couldn't be authenticated yet
-
-        String method = (String)session.getAttribute(__J_METHOD);
-        if (method == null)
-            return request; // No method so no wrapping required
-
-        if (session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE) == null)
-            return request; // not authenticated yet
-
-        HttpURI juri = (HttpURI)session.getAttribute(__J_URI);
-        if (juri == null || !juri.equals(request.getHttpURI()))
-            return request; //no original uri saved or this is not a request for it
-
-        //restore the original request's method on this request
-        if (LOG.isDebugEnabled())
-            LOG.debug("Restoring original method {} for {} with method {}", method, juri, request.getMethod());
-
-        // TODO do this same as resetting the method
-        Fields fields = (Fields)session.removeAttribute(__J_POST);
-        if (fields != null)
-            request.setAttribute(FormFields.class.getName(), fields);
-
-        return new Request.Wrapper(request)
+        if (authentication instanceof Authentication.User user)
         {
-            @Override
-            public String getMethod()
+            Session session = request.getSession(false);
+
+            HttpURI juri = (HttpURI)session.getAttribute(__J_URI);
+            HttpURI uri = request.getHttpURI();
+            if ((uri.equals(juri)))
             {
-                return method;
+                session.removeAttribute(__J_URI);
+
+                Fields fields = (Fields)session.removeAttribute(__J_POST);
+                if (fields != null)
+                    request.setAttribute(FormFields.class.getName(), fields);
+
+                String method = (String)session.removeAttribute(__J_METHOD);
+                if (method != null && request.getMethod().equals(method))
+                {
+                    return new Request.Wrapper(request)
+                    {
+                        @Override
+                        public String getMethod()
+                        {
+                            return method;
+                        }
+                    };
+                }
             }
-        };
+        }
+
+        return request;
     }
 
     protected Fields getParameters(Request request)
@@ -258,133 +252,89 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
     {
-        String pathInContext = Request.getPathInContext(req);
+        String pathInContext = Request.getPathInContext(request);
         boolean jSecurityCheck = isJSecurityCheck(pathInContext);
 
         // Handle a request for authentication.
         if (jSecurityCheck)
         {
-            Fields parameters = getParameters(req);
+            Fields parameters = getParameters(request);
             final String username = parameters.getValue(__J_USERNAME);
             final String password = parameters.getValue(__J_PASSWORD);
 
-            UserIdentity user = login(username, password, req, res);
+            UserIdentity user = login(username, password, request, response);
             LOG.debug("jsecuritycheck {} {}", username, user);
-            Session session = req.getSession(false);
             if (user != null)
             {
                 // Redirect to original request
-                String nuri;
-                FormAuthentication formAuth;
-                synchronized (session)
-                {
-                    HttpURI savedURI = (HttpURI)session.getAttribute(__J_URI);
-                    if (savedURI == null)
-                    {
-                        nuri = Request.getContextPath(req);
-                        if (nuri.length() == 0)
-                            nuri = "/";
-                    }
-                    else
-                        nuri = savedURI.asString();
-                    formAuth = new FormAuthentication(getAuthMethod(), user);
-                }
-                LOG.debug("authenticated {}->{}", formAuth, nuri);
-
-                res.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                //TODO yuck - should use Response the whole way
-                Response.sendRedirect(req, res, callback, encodeURL(nuri));
+                Session session = request.getSession(false);
+                HttpURI savedURI = (HttpURI)session.getAttribute(__J_URI);
+                String originalURI = savedURI != null ? savedURI.asString() : Request.getContextPath(request);
+                if (originalURI == null)
+                    originalURI = "/";
+                FormAuthentication formAuth = new FormAuthentication(getAuthMethod(), user);
+                Response.sendRedirect(request, response, callback, encodeURL(originalURI));
                 return formAuth;
             }
 
             // not authenticated
-            if (LOG.isDebugEnabled())
-                LOG.debug("Form authentication FAILED for {}", StringUtil.printable(username));
             if (_formErrorPage == null)
-            {
-                LOG.debug("auth failed {}->403", username);
-                Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
-            }
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             else
-            {
-                LOG.debug("auth failed {}->{}", username, _formErrorPage);
-                Response.sendRedirect(req, res, callback, encodeURL(URIUtil.addPaths(req.getContext().getContextPath(), _formErrorPage)));
-            }
+                Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage)));
 
             return Authentication.SEND_FAILURE;
         }
 
         // Look for cached authentication
-        Session session = req.getSession(false);
+        Session session = request.getSession(false);
         Authentication authentication = session == null ? null : (Authentication)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
-        if (authentication != null)
+        if (LOG.isDebugEnabled())
+            LOG.debug("auth {}", authentication);
+        // Has authentication been revoked?
+        if (authentication instanceof User user && _loginService != null && !_loginService.validate(user.getUserIdentity()))
         {
-            // Has authentication been revoked?
-            if (authentication instanceof User &&
-                _loginService != null &&
-                !_loginService.validate(((User)authentication).getUserIdentity()))
-            {
+            if (LOG.isDebugEnabled())
                 LOG.debug("auth revoked {}", authentication);
-                session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
-            }
-            else
-            {
-                synchronized (session)
-                {
-                    HttpURI jUri = (HttpURI)session.getAttribute(__J_URI);
-                    if (jUri != null)
-                    {
-                        //check if the request is for the same url as the original and restore
-                        //params if it was a post
-                        LOG.debug("auth retry {}->{}", authentication, jUri);
-
-                        if (jUri.equals(req.getHttpURI()))
-                        {
-                            Fields jPost = (Fields)session.getAttribute(__J_POST);
-                            if (jPost != null)
-                            {
-                                // TODO: how to do this
-                                // TODO Should this be done here or is it in prepare request?
-                                LOG.debug("auth rePOST {}->{}", authentication, jUri);
-                            }
-                        }
-                        session.removeAttribute(__J_URI);
-                        session.removeAttribute(__J_METHOD);
-                        session.removeAttribute(__J_POST);
-                    }
-                }
-                LOG.debug("auth {}", authentication);
-                return authentication;
-            }
+            session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
+            authentication = null;
         }
 
+        if (authentication != null)
+            return authentication;
+
         // if we can't send challenge
-        if (DeferredAuthentication.isDeferred(res))
+        if (response.isCommitted())
         {
             LOG.debug("auth deferred {}", session == null ? null : session.getId());
             return null;
         }
 
         // remember the current URI
-        session = (session != null ? session : req.getSession(true));
+        session = (session != null ? session : request.getSession(true));
         synchronized (session)
         {
             // But only if it is not set already, or we save every uri that leads to a login form redirect
             if (session.getAttribute(__J_URI) == null || _alwaysSaveUri)
             {
-                session.setAttribute(__J_URI, req.getHttpURI());
-                if (!req.getMethod().equals(HttpMethod.GET.asString()))
-                    session.setAttribute(__J_METHOD, req.getMethod());
+                HttpURI juri = request.getHttpURI();
+                session.setAttribute(__J_URI, juri);
+                if (!HttpMethod.GET.is(request.getMethod()))
+                    session.setAttribute(__J_METHOD, request.getMethod());
 
-                if (HttpMethod.POST.is(req.getMethod()) && MimeTypes.Type.FORM_ENCODED.is(req.getHeaders().get(HttpHeader.CONTENT_TYPE)))
+                if (HttpMethod.POST.is(request.getMethod()))
                 {
                     try
                     {
-                        session.setAttribute(__J_POST, FormFields.from(req).get());
+                        session.setAttribute(__J_POST, FormFields.from(request).get());
                     }
-                    catch (InterruptedException | ExecutionException e)
+                    catch (ExecutionException e)
+                    {
+                        throw new ServerAuthException(e.getCause());
+                    }
+                    catch (InterruptedException e)
                     {
                         throw new ServerAuthException(e);
                     }
@@ -392,9 +342,10 @@ public class FormAuthenticator extends LoginAuthenticator
             }
         }
 
-        // send the the challenge
-        LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-        Response.sendRedirect(req, res, callback, encodeURL(URIUtil.addPaths(req.getContext().getContextPath(), _formLoginPage)));
+        // send the challenge
+        if (LOG.isDebugEnabled())
+            LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
+        Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage)));
         return Authentication.CHALLENGE;
     }
 

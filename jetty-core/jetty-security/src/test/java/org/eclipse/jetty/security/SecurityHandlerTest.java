@@ -15,19 +15,14 @@ package org.eclipse.jetty.security;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +78,7 @@ public class SecurityHandlerTest
         _server.setHandler(contextHandler);
         _securityHandler = new SecurityHandler.Mapped();
         contextHandler.setHandler(_securityHandler);
-        _securityHandler.setHandler(new OkHandler());
+        _securityHandler.setHandler(new AuthenticationTestHandler());
         _server.start();
     }
 
@@ -103,7 +98,7 @@ public class SecurityHandlerTest
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("You are OK"));
+        assertThat(response, containsString("Unauthenticated"));
     }
 
     @Test
@@ -114,11 +109,11 @@ public class SecurityHandlerTest
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("You are OK"));
+        assertThat(response, containsString("Unauthenticated"));
 
         response = _connector.getResponse("GET /ctx/secret/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, not(containsString("You are OK")));
+        assertThat(response, not(containsString("OK")));
     }
 
     @Test
@@ -129,17 +124,17 @@ public class SecurityHandlerTest
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("You are OK"));
+        assertThat(response, containsString("Unauthenticated"));
 
         response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: BWTP://"));
         assertThat(response, containsString(":9999"));
-        assertThat(response, not(containsString("You are OK")));
+        assertThat(response, not(containsString("OK")));
 
         response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
+        assertThat(response, containsString("Unauthenticated"));
     }
 
     @Test
@@ -152,42 +147,24 @@ public class SecurityHandlerTest
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
+        assertThat(response, containsString("Unauthenticated"));
 
         response = _connector.getResponse("GET /ctx/something.hidden HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, not(containsString("You are OK")));
+        assertThat(response, not(containsString("OK")));
 
         response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: BWTP://"));
         assertThat(response, containsString(":9999"));
-        assertThat(response, not(containsString("You are OK")));
+        assertThat(response, not(containsString("OK")));
 
         response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UNAUTHENTICATED is not OK"));
+        assertThat(response, containsString("Unauthenticated"));
 
         response = _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, not(containsString("You are OK")));
-    }
-
-    public static class OkHandler extends Handler.Abstract
-    {
-        @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
-        {
-            Authentication authentication = Authentication.getAuthentication(request);
-            if (authentication instanceof UserAuthentication user)
-                Content.Sink.write(response, true, user.getUserIdentity().getUserPrincipal() + " is OK", callback);
-            else if (authentication instanceof DeferredAuthentication)
-                Content.Sink.write(response, true, "Somebody might be OK", callback);
-            else if (authentication == null)
-                Content.Sink.write(response, true, "You are OK", callback);
-            else
-                Content.Sink.write(response, true, authentication + " is not OK", callback);
-            return true;
-        }
+        assertThat(response, not(containsString("OK")));
     }
 }

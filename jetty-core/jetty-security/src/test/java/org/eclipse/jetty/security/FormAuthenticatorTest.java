@@ -15,24 +15,16 @@ package org.eclipse.jetty.security;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.SimpleSessionHandler;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +48,7 @@ public class FormAuthenticatorTest
     {
         _server = new Server();
 
-        _server.addBean(new CustomLoginService(new DefaultIdentityService()));
+        _server.addBean(new AuthenticationTestHandler.CustomLoginService(new AuthenticationTestHandler.TestIdentityService()));
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         HttpConfiguration httpConfiguration = http.getHttpConfiguration();
@@ -99,7 +91,7 @@ public class FormAuthenticatorTest
         _securityHandler = new SecurityHandler.Mapped();
         _sessionHandler.setHandler(_securityHandler);
 
-        _securityHandler.setHandler(new OkHandler());
+        _securityHandler.setHandler(new AuthenticationTestHandler());
 
         _securityHandler.put("/j_security_check", Constraint.AUTHENTICATED); // TODO this should not be needed
         _securityHandler.put("/any/*", Constraint.AUTHENTICATED);
@@ -125,7 +117,7 @@ public class FormAuthenticatorTest
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("You are OK"));
+        assertThat(response, containsString("Deferred"));
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
@@ -156,10 +148,10 @@ public class FormAuthenticatorTest
     public void testUseExistingSession() throws Exception
     {
         String response;
-        response = _connector.getResponse("GET /ctx/some/thing?createSession=true HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /ctx/some/thing?action=session HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
-        assertThat(response, containsString("You are OK"));
+        assertThat(response, containsString("Deferred"));
         String sessionId = sessionId(response);
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
@@ -226,7 +218,7 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
@@ -270,7 +262,7 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
@@ -286,7 +278,7 @@ public class FormAuthenticatorTest
         String sessionId = "unknown";
 
         response = _connector.getResponse("""
-            POST /ctx/any/user HTTP/1.0\r
+            POST /ctx/any/user?action=form HTTP/1.0\r
             Host: host:8888\r
             Content-Length: 25\r
             Content-Type: application/x-www-form-urlencoded\r
@@ -301,95 +293,18 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/any/user"));
+        assertThat(response, containsString("Location: http://host:8888/ctx/any/user?action=form"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         String unsafeSessionId = sessionId;
         sessionId = sessionId(response);
         assertThat(sessionId, not(equalTo(unsafeSessionId)));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponse("GET /ctx/any/user?action=form HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
-        assertThat(response, containsString("name1: value1\r\n"));
-        assertThat(response, containsString("name2: value2\r\n"));
+        assertThat(response, containsString("name1:value1,"));
+        assertThat(response, containsString("name2:value2,"));
         assertThat(response, containsString("user is OK"));
 
-    }
-
-    public static class OkHandler extends Handler.Abstract
-    {
-        @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
-        {
-            if (Boolean.parseBoolean(Request.extractQueryParameters(request).getValue("createSession")))
-                request.getSession(true);
-
-            if (request.getMethod().equals("POST"))
-            {
-                Fields form = FormFields.from(request).get();
-                for (Fields.Field field : form)
-                    response.getHeaders().put(field.getName(), field.getValue());
-            }
-
-            Authentication authentication = Authentication.getAuthentication(request);
-            if (authentication instanceof Authentication.User user)
-                Content.Sink.write(response, true, user.getUserIdentity().getUserPrincipal() + " is OK", callback);
-            else if (authentication instanceof DeferredAuthentication)
-                Content.Sink.write(response, true, "Somebody might be OK", callback);
-            else if (authentication == null)
-                Content.Sink.write(response, true, "You are OK", callback);
-            else
-                Content.Sink.write(response, true, authentication + " is not OK", callback);
-            return true;
-        }
-    }
-
-    private static class CustomLoginService implements LoginService
-    {
-        private final IdentityService identityService;
-
-        public CustomLoginService(IdentityService identityService)
-        {
-            this.identityService = identityService;
-        }
-
-        @Override
-        public String getName()
-        {
-            return "name";
-        }
-
-        @Override
-        public UserIdentity login(String username, Object credentials, Request request)
-        {
-            if ("admin".equals(username) && "password".equals(credentials))
-                return new DefaultUserIdentity(null, new UserPrincipal("admin", null), new String[]{"admin"});
-            if ("user".equals(username) && "password".equals(credentials))
-                return new DefaultUserIdentity(null, new UserPrincipal("user", null), new String[]{"user"});
-            return null;
-        }
-
-        @Override
-        public boolean validate(UserIdentity user)
-        {
-            return user instanceof DefaultUserIdentity;
-        }
-
-        @Override
-        public IdentityService getIdentityService()
-        {
-            return identityService;
-        }
-
-        @Override
-        public void setIdentityService(IdentityService service)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void logout(UserIdentity user)
-        {
-        }
     }
 }

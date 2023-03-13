@@ -56,15 +56,14 @@ public interface Authenticator
     String getAuthMethod();
 
     /**
-     * Called prior to validateRequest. The authenticator can
-     * manipulate the request to update it with information that
-     * can be inspected prior to validateRequest being called.
+     * Called after to validateRequest.
      * This may be restore method or content from a previous request
      * that was challenged.
      *
-     * @param request the request to prepare for authentication
+     * @param request the request to prepare for handling
+     * @param authentication The authentication for the request
      */
-    default Request prepareRequest(Request request)
+    default Request prepareRequest(Request request, Authentication authentication)
     {
         return request;
     }
@@ -186,5 +185,25 @@ public interface Authenticator
     interface Factory
     {
         Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration);
+    }
+
+    class Null implements Authenticator
+    {
+        @Override
+        public void setConfiguration(AuthConfiguration configuration)
+        {
+        }
+
+        @Override
+        public String getAuthMethod()
+        {
+            return null;
+        }
+
+        @Override
+        public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+        {
+            return null;
+        }
     }
 }
