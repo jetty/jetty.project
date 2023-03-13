@@ -2406,9 +2406,9 @@ public class ServletContextHandlerTest
         ServletContextHandler context = new ServletContextHandler()
         {
             @Override
-            protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel, Request request, Response response, String pathInContext, MatchedResource<ServletHandler.MappedServlet> matchedResource)
+            protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel, Request request, Response response, String decodedPathInContext, MatchedResource<ServletHandler.MappedServlet> matchedResource)
             {
-                return new ServletContextRequest(getContext().getServletContext(), servletChannel, request, response, pathInContext, matchedResource, getSessionHandler())
+                return new ServletContextRequest(getContext().getServletContext(), servletChannel, request, response, decodedPathInContext, matchedResource, getSessionHandler())
                 {
                     @Override
                     protected ServletContextResponse newServletContextResponse(Response response)

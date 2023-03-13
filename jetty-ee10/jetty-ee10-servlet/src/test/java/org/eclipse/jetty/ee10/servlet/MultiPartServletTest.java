@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -173,6 +174,7 @@ public class MultiPartServletTest
     }
 
     @Test
+    @Tag("Flaky")
     public void testManyParts() throws Exception
     {
         start(new HttpServlet()

@@ -169,7 +169,7 @@
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.8.1</maven.plugin-tools.version>
-    <maven-plugin.plugin.version>3.7.1</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.8.1</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>

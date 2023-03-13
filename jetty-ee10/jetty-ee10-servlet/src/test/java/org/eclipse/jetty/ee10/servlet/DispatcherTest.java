@@ -212,12 +212,12 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Content-Type: text/plain\r
-            Content-Length: 56\r
+            Content-Length: 54\r
             Connection: close\r
             \r
             /context\r
             /EchoURI\r
-            /x%20x\r
+            /x x\r
             /context/EchoURI/x%20x;a=1\r
             """;
         assertEquals(expected, responses);
