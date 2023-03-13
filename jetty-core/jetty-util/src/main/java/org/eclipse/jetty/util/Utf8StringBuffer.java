@@ -44,6 +44,12 @@ public class Utf8StringBuffer extends Utf8Appendable
         _buffer = (StringBuffer)_appendable;
     }
 
+    public Utf8StringBuffer(CodingErrorAction codingErrorAction)
+    {
+        super(new StringBuffer(), codingErrorAction);
+        _buffer = (StringBuffer)_appendable;
+    }
+
     public Utf8StringBuffer(int capacity, CodingErrorAction codingErrorAction)
     {
         super(new StringBuffer(capacity), codingErrorAction);

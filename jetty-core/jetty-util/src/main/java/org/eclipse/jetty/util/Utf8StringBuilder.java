@@ -44,6 +44,12 @@ public class Utf8StringBuilder extends Utf8Appendable
         _buffer = (StringBuilder)_appendable;
     }
 
+    public Utf8StringBuilder(CodingErrorAction codingErrorAction)
+    {
+        super(new StringBuilder(), codingErrorAction);
+        _buffer = (StringBuilder)_appendable;
+    }
+
     public Utf8StringBuilder(int capacity, CodingErrorAction codingErrorAction)
     {
         super(new StringBuilder(capacity), codingErrorAction);
