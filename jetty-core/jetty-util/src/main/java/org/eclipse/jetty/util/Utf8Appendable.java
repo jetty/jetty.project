@@ -98,7 +98,6 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
 
     private final CodingErrorAction _coderErrorAction;
     private int _codep;
-    private int _prev;
     private boolean _hasReplacements = false;
 
     public Utf8Appendable(Appendable appendable)
