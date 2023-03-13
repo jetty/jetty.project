@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -37,6 +38,39 @@ public interface Authentication
     static void setAuthentication(Request request, Authentication authentication)
     {
         request.setAttribute(Authentication.class.getName(), authentication);
+    }
+
+    /**
+     *
+     * @param request
+     * @param response
+     * @param callback
+     * @return
+     */
+    static boolean authenticate(Request request, Response response, Callback callback)
+    {
+        Authentication authentication = getAuthentication(request);
+
+        //if already authenticated, return true
+        if (authentication instanceof Authentication.User userAuthentication && userAuthentication.getUserIdentity().getUserPrincipal() != null)
+            return true;
+
+        //do the authentication
+        if (authentication instanceof Authentication.Deferred deferred)
+        {
+            Authentication undeferred = deferred.authenticate(request, response, callback);
+            if (undeferred instanceof Authentication.ResponseSent)
+                return false;
+
+            if (undeferred instanceof Authentication.User)
+            {
+                setAuthentication(request, undeferred);
+                return true;
+            }
+        }
+
+        Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401);
+        return false;
     }
 
     class Failed extends QuietException.Exception
@@ -100,7 +134,6 @@ public interface Authentication
      */
     interface Deferred extends LoginAuthentication, LogoutAuthentication
     {
-
         /**
          * Authenticate if possible without sending a challenge.
          * This is used to check credentials that have been sent for
@@ -118,7 +151,8 @@ public interface Authentication
          *
          * @param request the request
          * @param response the response
-         * @return The new Authentication state.
+         * @return The new Authentication state, which may be {@link Authentication.ResponseSent} if the response
+         *         has been generated and the {@code callback} called.
          */
         Authentication authenticate(Request request, Response response, Callback callback);
     }

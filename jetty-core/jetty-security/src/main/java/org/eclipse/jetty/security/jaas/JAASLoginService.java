@@ -54,7 +54,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
 {
     private static final Logger LOG = LoggerFactory.getLogger(JAASLoginService.class);
 
-    public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.ee9.jaas.JAASRole";
+    public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.security.jaas.JAASRole";
     public static final String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
     public static final ThreadLocal<JAASLoginService> INSTANCE = new ThreadLocal<>();
     
