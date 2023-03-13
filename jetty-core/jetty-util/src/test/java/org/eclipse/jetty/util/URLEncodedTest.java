@@ -261,13 +261,13 @@ public class URLEncodedTest
     {
         ArrayList<Arguments> data = new ArrayList<>();
         data.add(Arguments.of("Name=xx%zzyy", UTF_8, IllegalArgumentException.class));
-        data.add(Arguments.of("Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        data.add(Arguments.of("Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        // data.add(Arguments.of("Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        // data.add(Arguments.of("Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
         data.add(Arguments.of("Name=%E%F%F", UTF_8, IllegalArgumentException.class));
         data.add(Arguments.of("Name=x%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
         data.add(Arguments.of("Name=x%2", UTF_8, Utf8Appendable.NotUtf8Exception.class));
         data.add(Arguments.of("Name=xxx%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        data.add(Arguments.of("name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        // data.add(Arguments.of("name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class));
         return data.stream();
     }
 

@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -318,7 +319,7 @@ public class UrlEncoded
 
     private static void decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder)
     {
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        Utf8StringBuilder buffer = new Utf8StringBuilder(CodingErrorAction.REPLACE);
         String key = null;
         String value;
 
@@ -329,7 +330,7 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.toReplacedString();
+                    value = buffer.toString();
                     buffer.reset();
                     if (key != null)
                     {
@@ -348,7 +349,7 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.toReplacedString();
+                    key = buffer.toString();
                     buffer.reset();
                     break;
 
@@ -377,13 +378,13 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.toReplacedString();
+            value = buffer.toString();
             buffer.reset();
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)
         {
-            adder.accept(buffer.toReplacedString(), "");
+            adder.accept(buffer.toString(), "");
         }
     }
 
@@ -477,7 +478,7 @@ public class UrlEncoded
     public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
     {
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        Utf8StringBuilder buffer = new Utf8StringBuilder(CodingErrorAction.REPLACE);
         String key = null;
         String value;
 
@@ -489,7 +490,7 @@ public class UrlEncoded
             switch ((char)b)
             {
                 case '&':
-                    value = buffer.toReplacedString();
+                    value = buffer.toString();
                     buffer.reset();
                     if (key != null)
                     {
@@ -509,7 +510,7 @@ public class UrlEncoded
                         buffer.append((byte)b);
                         break;
                     }
-                    key = buffer.toReplacedString();
+                    key = buffer.toString();
                     buffer.reset();
                     break;
 
@@ -532,13 +533,13 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.toReplacedString();
+            value = buffer.toString();
             buffer.reset();
             map.add(key, value);
         }
         else if (buffer.length() > 0)
         {
-            map.add(buffer.toReplacedString(), "");
+            map.add(buffer.toString(), "");
         }
         checkMaxKeys(map, maxKeys);
     }

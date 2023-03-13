@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class UrlEncodedUtf8Test
 {
@@ -32,12 +31,12 @@ public class UrlEncodedUtf8Test
     @Test
     public void testIncompleteSequestAtTheEnd() throws Exception
     {
-        byte[] bytes = {97, 98, 61, 99, -50};
+        byte[] bytes = {'a', 'b', '=', 'c', -50};
         String test = new String(bytes, StandardCharsets.UTF_8);
         String expected = "c" + Utf8Appendable.REPLACEMENT;
 
-        fromString(test, test, "ab", expected, false);
-        fromInputStream(test, bytes, "ab", expected, false);
+        fromString(test, test, "ab", expected);
+        fromInputStream(test, bytes, "ab", expected);
     }
 
     @Test
@@ -47,8 +46,8 @@ public class UrlEncodedUtf8Test
         String test = new String(bytes, StandardCharsets.UTF_8);
         String expected = "" + Utf8Appendable.REPLACEMENT;
 
-        fromString(test, test, "ab", expected, false);
-        fromInputStream(test, bytes, "ab", expected, false);
+        fromString(test, test, "ab", expected);
+        fromInputStream(test, bytes, "ab", expected);
     }
 
     @Test
@@ -59,8 +58,8 @@ public class UrlEncodedUtf8Test
         String name = "e" + Utf8Appendable.REPLACEMENT;
         String value = "fg";
 
-        fromString(test, test, name, value, false);
-        fromInputStream(test, bytes, name, value, false);
+        fromString(test, test, name, value);
+        fromInputStream(test, bytes, name, value);
     }
 
     @Test
@@ -71,46 +70,22 @@ public class UrlEncodedUtf8Test
         String name = "ef";
         String value = "g" + Utf8Appendable.REPLACEMENT;
 
-        fromString(test, test, name, value, false);
-        fromInputStream(test, bytes, name, value, false);
+        fromString(test, test, name, value);
+        fromInputStream(test, bytes, name, value);
     }
 
-    // TODO: Split thrown/not-thrown
-    static void fromString(String test, String s, String field, String expected, boolean thrown) throws Exception
+    static void fromString(String test, String s, String field, String expected) throws Exception
     {
         MultiMap<String> values = new MultiMap<>();
-        try
-        {
-            UrlEncoded.decodeUtf8To(s, 0, s.length(), values);
-            if (thrown)
-                fail("Expected an exception");
-            assertThat(test, values.getString(field), is(expected));
-        }
-        catch (Exception e)
-        {
-            if (!thrown)
-                throw e;
-            LOG.trace("IGNORED", e);
-        }
+        UrlEncoded.decodeUtf8To(s, 0, s.length(), values);
+        assertThat(test, values.getString(field), is(expected));
     }
 
-    // TODO: Split thrown/not-thrown
-    static void fromInputStream(String test, byte[] b, String field, String expected, boolean thrown) throws Exception
+    static void fromInputStream(String test, byte[] b, String field, String expected) throws Exception
     {
         InputStream is = new ByteArrayInputStream(b);
         MultiMap<String> values = new MultiMap<>();
-        try
-        {
-            UrlEncoded.decodeUtf8To(is, values, 1000000, -1);
-            if (thrown)
-                fail("Expected an exception");
-            assertThat(test, values.getString(field), is(expected));
-        }
-        catch (Exception e)
-        {
-            if (!thrown)
-                throw e;
-            LOG.trace("IGNORED", e);
-        }
+        UrlEncoded.decodeUtf8To(is, values, 1000000, -1);
+        assertThat(test, values.getString(field), is(expected));
     }
 }
