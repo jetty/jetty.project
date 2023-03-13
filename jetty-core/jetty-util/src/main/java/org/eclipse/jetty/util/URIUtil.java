@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -491,7 +492,7 @@ public final class URIUtil
                     case '%':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(length);
+                            builder = new Utf8StringBuilder(length, CodingErrorAction.REPLACE);
                             builder.append(path, offset, i - offset);
                         }
                         if ((i + 2) < end)
@@ -524,7 +525,7 @@ public final class URIUtil
                     case ';':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(path.length());
+                            builder = new Utf8StringBuilder(path.length(), CodingErrorAction.REPLACE);
                             builder.append(path, offset, i - offset);
                         }
 
@@ -556,7 +557,7 @@ public final class URIUtil
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
-            return decodeISO88591Path(path, offset, length);
+            throw e;
         }
         catch (IllegalArgumentException e)
         {
@@ -685,7 +686,7 @@ public final class URIUtil
                     case '%':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(encodedPath.length());
+                            builder = new Utf8StringBuilder(encodedPath.length(), CodingErrorAction.REPLACE);
                             builder.append(encodedPath, 0, i);
                         }
                         if ((i + 2) < end)
@@ -729,7 +730,7 @@ public final class URIUtil
                     case ';':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(encodedPath.length());
+                            builder = new Utf8StringBuilder(encodedPath.length(), CodingErrorAction.REPLACE);
                             builder.append(encodedPath, 0, i);
                         }
 
@@ -758,7 +759,7 @@ public final class URIUtil
                     default:
                         if (builder == null && !isSafe(c))
                         {
-                            builder = new Utf8StringBuilder(encodedPath.length());
+                            builder = new Utf8StringBuilder(encodedPath.length(), CodingErrorAction.REPLACE);
                             builder.append(encodedPath, 0, i);
                         }
 

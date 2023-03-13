@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
@@ -138,20 +139,19 @@ public class URIUtilTest
             Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"),
 
             // Invalid UTF-8 - replacement characters should be present on invalid sequences
-            // URI paths do not support ISO-8859-1, so this should not be a fallback of our decodePath implementation
-            /* TODO: remove ISO-8859-1 fallback mode in decodePath - Issue #9489
-            Arguments.of("/a%D8%2fbar", "/a�%2Fbar", "/a�%2Fbar"), // invalid 2 octet sequence
-            Arguments.of("/abc%C3%28", "/abc�", "/abc�"), // invalid 2 octet sequence
+            // The expected sequences here were derived from URI.create(input).getPath() to ensure we have similar
+            // UTF-8 Replacement character logic
+            Arguments.of("/a%D8%2fbar", "/a�%2Fbar", "/a�/bar"), // invalid 2 octet sequence
+            Arguments.of("/abc%C3%28", "/abc�(", "/abc�("), // invalid 2 octet sequence
             Arguments.of("/abc%A0%A1", "/abc��", "/abc��"), // invalid 2 octet sequence
-            Arguments.of("/abc%e2%28%a1", "/abc��", "/abc��"), // invalid 3 octet sequence
-            Arguments.of("/abc%e2%82%28", "/abc�", "/abc�"), // invalid 3 octet sequence
-            Arguments.of("/abc%f0%28%8c%bc", "/abc���", "/abc���"), // invalid 4 octet sequence
-            Arguments.of("/abc%f0%90%28%bc", "/abc��", "/abc��"), // invalid 4 octet sequence
-            Arguments.of("/abc%f0%28%8c%28", "/abc��(", "/abc��("), // invalid 4 octet sequence
+            Arguments.of("/abc%e2%28%a1", "/abc�(�", "/abc�(�"), // invalid 3 octet sequence
+            Arguments.of("/abc%e2%82%28", "/abc�(", "/abc�("), // invalid 3 octet sequence
+            Arguments.of("/abc%f0%28%8c%bc", "/abc�(��", "/abc�(��"), // invalid 4 octet sequence
+            Arguments.of("/abc%f0%90%28%bc", "/abc�(�", "/abc�(�"), // invalid 4 octet sequence
+            Arguments.of("/abc%f0%28%8c%28", "/abc�(�(", "/abc�(�("), // invalid 4 octet sequence
             Arguments.of("/abc%f8%a1%a1%a1%a1", "/abc�����", "/abc�����"), // valid sequence, but not unicode
             Arguments.of("/abc%fc%a1%a1%a1%a1%a1", "/abc������", "/abc������"), // valid sequence, but not unicode
             Arguments.of("/abc%f8%a1%a1%a1", "/abc����", "/abc����"), // incomplete sequence
-             */
 
             // Deprecated Microsoft Percent-U encoding
             Arguments.of("/abc%u3040", "/abc\u3040", "/abc\u3040"),
@@ -180,7 +180,49 @@ public class URIUtilTest
     public void testDecodePath(String encodedPath, String canonicalPath, String decodedPath)
     {
         String path = URIUtil.decodePath(encodedPath);
-        assertEquals(decodedPath, path);
+        assertThat("decodePath(" + encodedPath + "]", path, is(decodedPath));
+    }
+
+    /**
+     * <p>
+     * Test to ensure that {@link URIUtil#decodePath(String)} behaves the same as {@link URI#getPath()}.
+     * </p>
+     *
+     * <p>
+     * This ensures that behaviors with odd characters (eg: control) and bad/incomplete UTF-8 sequences
+     * produce the same results on both paths (ours and the JVM)
+     * </p>
+     *
+     * @param inputPath the raw input path
+     * @throws CharacterCodingException if a fundamental character decode error occurs (which it shouldn't)
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/a%00b/",
+        "/%00/",
+        "/a%252fbar",
+        "/a%25%2fbar",
+        "/a%25bar",
+        "/a%2fbar",
+        "/a%D8%2fbar",
+        "/abc%C3%28", // invalid 2 octet sequence
+        "/abc%A0%A1", // invalid 2 octet sequence
+        "/abc%e2%28%a1",  // invalid 3 octet sequence
+        "/abc%e2%82%28",  // invalid 3 octet sequence
+        "/abc%f0%28%8c%bc",  // invalid 4 octet sequence
+        "/abc%f0%90%28%bc",  // invalid 4 octet sequence
+        "/abc%f0%28%8c%28",  // invalid 4 octet sequence
+        "/abc%f8%a1%a1%a1%a1",  // valid sequence, but not unicode
+        "/abc%fc%a1%a1%a1%a1%a1",  // valid sequence, but not unicode
+        "/abc%f8%a1%a1%a1", // incomplete sequence
+    })
+    public void testDecodePathLikeUriToPath(String inputPath) throws CharacterCodingException
+    {
+        // The behavior from URI
+        String standardJavaResult = URI.create(inputPath).getPath();
+        // Now lets compare those results with what our decodePath() produces
+        String ourResult = URIUtil.decodePath(inputPath);
+        assertThat("Path [" + inputPath + "]", ourResult, is(standardJavaResult));
     }
 
     public static Stream<Arguments> decodeBadPathSource()

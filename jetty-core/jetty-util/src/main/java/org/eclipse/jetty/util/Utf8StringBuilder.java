@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 
 /**
  * UTF-8 StringBuilder.
@@ -40,6 +41,12 @@ public class Utf8StringBuilder extends Utf8Appendable
     public Utf8StringBuilder(int capacity)
     {
         super(new StringBuilder(capacity));
+        _buffer = (StringBuilder)_appendable;
+    }
+
+    public Utf8StringBuilder(int capacity, CodingErrorAction codingErrorAction)
+    {
+        super(new StringBuilder(capacity), codingErrorAction);
         _buffer = (StringBuilder)_appendable;
     }
 
