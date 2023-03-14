@@ -26,11 +26,11 @@ pipeline {
                      "PATH+MAVEN=${ tool "jdk17" }/bin:${tool "maven3"}/bin",
                      "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
               checkout([$class: 'GitSCM',
-                        branches: [[name: "*/$JETTY_BRANCH"]],
+                        branches: [[name: "$JETTY_BRANCH"]],
                         extensions: [[$class: 'CloneOption', depth: 1, noTags: true, shallow: true, reference: "/home/jenkins/jetty.project.git"]],
                         userRemoteConfigs: [[url: 'https://github.com/eclipse/jetty.project.git']]])
               sh "ls -lrt"
-              sh "ls -lrt ./build/scripts/dependency-updates-report.sh"
+              sh "ls -lrt ./build/scripts/"
               sh "./build/scripts/dependency-updates-report.sh"
               publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/reports/dependency-update-reports/", reportFiles: 'report.html', reportName: 'Dependencies Report', reportTitles: ''])
             }
