@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -1020,6 +1021,47 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         stopping._thread.interrupt(); // spurious interrupt
         assertTrue(interrupted.await(5, TimeUnit.SECONDS));
         assertTrue(stopping._completed.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testShrinkCount() throws Exception
+    {
+        QueuedThreadPool tp = new QueuedThreadPool();
+        int minThreads = 2;
+        tp.setMinThreads(minThreads);
+        int maxThreads = 10;
+        tp.setMaxThreads(maxThreads);
+        int idleTimeout = 1000;
+        tp.setIdleTimeout(idleTimeout);
+        tp.setIdleTimeoutMaxShrinkCount(3);
+        tp.start();
+
+        waitForThreads(tp, minThreads);
+        waitForIdle(tp, minThreads);
+
+        RunningJob[] jobs = new RunningJob[maxThreads];
+        for (int i = 0; i < jobs.length; i++)
+        {
+            RunningJob job = jobs[i] = new RunningJob("JOB" + i);
+            tp.execute(job);
+            assertTrue(job._run.await(1, TimeUnit.SECONDS));
+        }
+
+        for (int i = 0; i < jobs.length; i++)
+        {
+            jobs[i]._stopping.countDown();
+        }
+
+        assertEquals(maxThreads, tp.getThreads());
+
+        Thread.sleep(idleTimeout + idleTimeout / 2);
+        assertEquals(maxThreads - tp.getIdleTimeoutMaxShrinkCount(), tp.getThreads());
+
+        Thread.sleep(idleTimeout);
+        assertEquals(maxThreads - 2 * tp.getIdleTimeoutMaxShrinkCount(), tp.getThreads());
+
+        Thread.sleep(idleTimeout);
+        assertEquals(minThreads, tp.getThreads());
     }
 
     private int count(String s, String p)

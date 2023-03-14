@@ -113,6 +113,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
+    private int _shrinkCount = 1;
 
     public QueuedThreadPool()
     {
@@ -537,6 +538,36 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
+     * <p>Returns the maximum number of idle threads that are exited for every idle timeout
+     * period, thus shrinking this thread pool towards its {@link #getMinThreads() minimum
+     * number of threads}.
+     * The default value is {@code 1}.</p>
+     * <p>For example, consider a thread pool with {@code minThread=2}, {@code maxThread=20},
+     * {@code idleTimeout=5000} and {@code idleTimeoutShrinkCount=3}.
+     * Let's assume all 20 threads are executing a task, and they all finish their own tasks
+     * at the same time and no more tasks are submitted; then, all 20 will wait for an idle
+     * timeout, after which 3 threads will be exited, while the other 17 will wait another
+     * idle timeout; then another 3 threads will be exited, and so on until {@code minThreads=2}
+     * will be reached.</p>
+     *
+     * @param shrinkCount the maximum number of idle threads to exit in one idle timeout period
+     */
+    public void setIdleTimeoutMaxShrinkCount(int shrinkCount)
+    {
+        if (shrinkCount < 1)
+            throw new IllegalArgumentException("Invalid shrink count " + shrinkCount);
+        _shrinkCount = shrinkCount;
+    }
+
+    /**
+     * @return the maximum number of idle threads to exit in one idle timeout period
+     */
+    public int getIdleTimeoutMaxShrinkCount()
+    {
+        return _shrinkCount;
+    }
+
+    /**
      * @return the number of jobs in the queue waiting for a thread
      */
     @ManagedAttribute("size of the job queue")
@@ -830,7 +861,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
-            _lastShrink.set(NanoTime.now());
             thread.start();
             started = true;
         }
@@ -1010,11 +1040,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     private class Runner implements Runnable
     {
-        private Runnable idleJobPoll(long idleTimeout) throws InterruptedException
+        private Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
         {
-            if (idleTimeout <= 0)
+            if (idleTimeoutNanos <= 0)
                 return _jobs.take();
-            return _jobs.poll(idleTimeout, TimeUnit.MILLISECONDS);
+            return _jobs.poll(idleTimeoutNanos, TimeUnit.NANOSECONDS);
         }
 
         @Override
@@ -1027,17 +1057,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             try
             {
                 Runnable job = null;
-                while (true)
+                exit: while (true)
                 {
                     // If we had a job,
                     if (job != null)
                     {
+                        // signal that we are idle again,
                         idle = true;
-                        // signal that we are idle again
                         if (!addCounts(0, 1))
                             break;
                     }
-                    // else check we are still running
+                    // else check we are still running.
                     else if (_counts.getHi() == Integer.MIN_VALUE)
                     {
                         break;
@@ -1045,36 +1075,50 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
                     try
                     {
-                        // Look for an immediately available job
-                        job = _jobs.poll();
+                        long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
+                        job = idleJobPoll(idleTimeoutNanos);
                         if (job == null)
                         {
-                            // No job immediately available maybe we should shrink?
-                            long idleTimeout = getIdleTimeout();
-                            if (idleTimeout > 0 && getThreads() > _minThreads)
+                            // No job available after an idle timeout, maybe we should shrink?
+                            if (idleTimeoutNanos > 0 && getThreads() > getMinThreads())
                             {
-                                long last = _lastShrink.get();
                                 long now = NanoTime.now();
-                                if (NanoTime.millisElapsed(last, now) > idleTimeout && _lastShrink.compareAndSet(last, now))
+                                long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Shrink check, period={}ms {}", TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
+                                while (true)
                                 {
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                    break;
+                                    long lastShrink = _lastShrink.get();
+                                    long prevShrink = lastShrink;
+                                    // If the shrink window is too far in the past,
+                                    // advance it to be one idle timeout before now.
+                                    if (NanoTime.elapsed(lastShrink, now) > idleTimeoutNanos)
+                                        prevShrink = now - idleTimeoutNanos;
+
+                                    // Add shrink periods until the window is full.
+                                    long nextShrink = prevShrink + shrinkPeriod;
+                                    if (NanoTime.isBefore(now, nextShrink))
+                                    {
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("Shrink skipped, last={}ms ago {}", NanoTime.millisElapsed(lastShrink, now), QueuedThreadPool.this);
+                                        break;
+                                    }
+
+                                    // Update the shrink window.
+                                    if (_lastShrink.compareAndSet(lastShrink, nextShrink))
+                                    {
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("Shrink necessary, last={}ms ago {}", NanoTime.millisElapsed(lastShrink, now), QueuedThreadPool.this);
+                                        break exit;
+                                    }
                                 }
                             }
-
-                            // Wait for a job, only after we have checked if we should shrink
-                            job = idleJobPoll(idleTimeout);
-
-                            // If still no job?
-                            if (job == null)
-                                // continue to try again
-                                continue;
+                            continue;
                         }
 
                         idle = false;
 
-                        // run job
+                        // Run the job.
                         if (LOG.isDebugEnabled())
                             LOG.debug("run {} in {}", job, QueuedThreadPool.this);
                         runJob(job);
@@ -1093,7 +1137,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     }
                     finally
                     {
-                        // Clear any interrupted status
+                        // Clear any thread interrupted status.
                         Thread.interrupted();
                     }
                 }
@@ -1103,13 +1147,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 Thread thread = Thread.currentThread();
                 removeThread(thread);
 
-                // Decrement the total thread count and the idle count if we had no job
+                // Decrement the total thread count and the idle count if we had no job.
                 addCounts(-1, idle ? -1 : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited for {}", thread, QueuedThreadPool.this);
 
-                // There is a chance that we shrunk just as a job was queued for us, so
-                // check again if we have sufficient threads to meet demand
+                // There is a chance that we shrunk just as a job was queued,
+                // so check again if we have sufficient threads to meet demand.
                 ensureThreads();
             }
         }
