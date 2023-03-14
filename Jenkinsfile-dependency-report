@@ -31,7 +31,7 @@ pipeline {
                         userRemoteConfigs: [[url: 'https://github.com/eclipse/jetty.project.git']]])
               sh "ls -lrt"
               sh "ls -lrt ./build/scripts/"
-              sh "./build/scripts/dependency-updates-report.sh"
+              sh "bash ./build/scripts/dependency-update-reports.sh"
               publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/reports/dependency-update-reports/", reportFiles: 'report.html', reportName: 'Dependencies Report', reportTitles: ''])
             }
           }
