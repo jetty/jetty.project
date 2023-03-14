@@ -6,11 +6,15 @@ pipeline {
     pollSCM('@weekly')
   }
   options {
+    skipDefaultCheckout()
     buildDiscarder logRotator( numToKeepStr: '50' )
     // save some io during the build
     durabilityHint( 'PERFORMANCE_OPTIMIZED' )
   }
-
+  parameters {
+    string( defaultValue: 'jetty-12.0.x', description: 'Jetty branch to build',
+            name: 'JETTY_BRANCH' )
+  }
   stages {
     stage( "Build / Dependency Report" ) {
       agent {
@@ -21,6 +25,10 @@ pipeline {
             withEnv(["JAVA_HOME=${ tool "jdk17" }",
                      "PATH+MAVEN=${ tool "jdk17" }/bin:${tool "maven3"}/bin",
                      "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
+              checkout([$class: 'GitSCM',
+                        branches: [[name: "*/$JETTY_BRANCH"]],
+                        extensions: [[$class: 'CloneOption', depth: 1, noTags: true, shallow: true, reference: "/home/jenkins/jetty.project.git"]],
+                        userRemoteConfigs: [[url: 'https://github.com/eclipse/jetty.project.git']]])
               sh "./build/scripts/dependency-updates-report.sh"
               publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/reports/dependency-update-reports/", reportFiles: 'report.html', reportName: 'Dependencies Report', reportTitles: ''])
             }
