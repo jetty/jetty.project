@@ -567,7 +567,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         }
 
         @Override
-        public void onSessionAttribute(Session session, String name, Object old, Object value)
+        public void onSessionAttributeUpdate(Session session, String name, Object old, Object value)
         {
             if (old != null)
                 callUnboundBindingListener(session, name, old);
@@ -636,10 +636,10 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         }
 
         @Override
-        public void onSessionId(Session session, String oldId)
+        public void onSessionIdChanged(Session session, String oldId)
         {
             //inform the listeners
-            super.onSessionId(session, oldId);
+            super.onSessionIdChanged(session, oldId);
             if (!_sessionIdListeners.isEmpty())
             {
                 HttpSessionEvent event = new HttpSessionEvent(session.getApi());
@@ -677,7 +677,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         }
 
         @Override
-        public void onSessionPassivate(Session session)
+        public void onSessionPassivation(Session session)
         {
             for (String name : session.getAttributeNameSet())
             {

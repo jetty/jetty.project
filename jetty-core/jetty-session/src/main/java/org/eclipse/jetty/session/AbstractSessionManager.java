@@ -643,10 +643,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     @Override
-    public void onSessionId(Session session, String oldId)
+    public void onSessionIdChanged(Session session, String oldId)
     {
         for (Session.LifeCycleListener listener : _sessionLifeCycleListeners)
-            listener.onSessionId(session, oldId);
+            listener.onSessionIdChanged(session, oldId);
     }
 
     @Override
@@ -930,7 +930,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
 
             //inform the listeners
-            onSessionId(session, oldId);
+            onSessionIdChanged(session, oldId);
         }
         catch (Exception e)
         {

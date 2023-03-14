@@ -354,7 +354,7 @@ public class SessionHandlerTest
         _context.setAttribute("slcl", new Session.LifeCycleListener()
         {
             @Override
-            public void onSessionId(Session session, String oldId)
+            public void onSessionIdChanged(Session session, String oldId)
             {
                 history.add("changed %s->%s".formatted(oldId, session.getId()));
             }
@@ -404,7 +404,7 @@ public class SessionHandlerTest
                 session.setAttribute("listener", new Session.ValueListener()
                 {
                     @Override
-                    public void onSessionAttribute(Session session, String name, Object oldValue, Object newValue)
+                    public void onSessionAttributeUpdate(Session session, String name, Object oldValue, Object newValue)
                     {
                         history.add("attribute %s %s: %s->%s".formatted(session.getId(), name, oldValue, newValue));
                     }
@@ -416,7 +416,7 @@ public class SessionHandlerTest
                     }
 
                     @Override
-                    public void onSessionPassivate(Session session)
+                    public void onSessionPassivation(Session session)
                     {
                         history.add("passivate %s".formatted(session.getId()));
                     }

@@ -93,9 +93,9 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public void onSessionId(Session session, String oldId)
+    public void onSessionIdChanged(Session session, String oldId)
     {
-        super.onSessionId(session, oldId);
+        super.onSessionIdChanged(session, oldId);
         _sessionIdListenersCalled.add(session.getId());
     }
 
@@ -114,7 +114,7 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public void onSessionAttribute(Session session, String name, Object old, Object value)
+    public void onSessionAttributeUpdate(Session session, String name, Object old, Object value)
     {
         if (old != null)
             callUnboundBindingListener(session, name, old);
@@ -142,7 +142,7 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public void onSessionPassivate(Session session)
+    public void onSessionPassivation(Session session)
     {
         for (String name : session.getAttributeNameSet())
             callSessionPassivationListener(session, name, session.getAttribute(name));

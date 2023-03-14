@@ -274,8 +274,8 @@ public class ManagedSession implements Session
         if (!Objects.equals(newValue, oldValue))
         {
             for (Session.ValueListener listener : _valueListenerList)
-                listener.onSessionAttribute(this, name, oldValue, newValue);
-            _manager.onSessionAttribute(this, name, oldValue, newValue);
+                listener.onSessionAttributeUpdate(this, name, oldValue, newValue);
+            _manager.onSessionAttributeUpdate(this, name, oldValue, newValue);
         }
     }
 
@@ -310,8 +310,8 @@ public class ManagedSession implements Session
     public void onSessionPassivate()
     {
         for (Session.ValueListener listener : _valueListenerList)
-            listener.onSessionPassivate(this);
-        _manager.onSessionPassivate(this);
+            listener.onSessionPassivation(this);
+        _manager.onSessionPassivation(this);
     }
 
     @Override

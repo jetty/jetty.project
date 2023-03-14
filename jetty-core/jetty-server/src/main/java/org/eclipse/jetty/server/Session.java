@@ -116,7 +116,7 @@ public interface Session extends Attributes
      */
     interface LifeCycleListener
     {
-        default void onSessionId(Session session, String oldId)
+        default void onSessionIdChanged(Session session, String oldId)
         {
         }
 
@@ -135,7 +135,7 @@ public interface Session extends Attributes
      */
     interface ValueListener
     {
-        default void onSessionAttribute(Session session, String name, Object oldValue, Object newValue)
+        default void onSessionAttributeUpdate(Session session, String name, Object oldValue, Object newValue)
         {
         }
 
@@ -143,7 +143,7 @@ public interface Session extends Attributes
         {
         }
 
-        default void onSessionPassivate(Session session)
+        default void onSessionPassivation(Session session)
         {
         }
     }

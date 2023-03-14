@@ -24,9 +24,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 /**
  * SessionManager
  * Non-servlet spec specific contract implemented by all SessionHandlers.
- *
  */
-public interface SessionManager extends LifeCycle, SessionConfig, Session.LifeCycleListener, Session.ValueListener
+public interface SessionManager extends LifeCycle, SessionConfig
 {
     // TODO break this interface into multiple interfaces:
     //       - the configuration interface used to configure the manager
@@ -117,7 +116,31 @@ public interface SessionManager extends LifeCycle, SessionConfig, Session.LifeCy
     void recordSessionTime(ManagedSession session);
     
     int getSessionsCreated();
-    
+
+    default void onSessionIdChanged(Session session, String oldId)
+    {
+    }
+
+    default void onSessionCreated(Session session)
+    {
+    }
+
+    default void onSessionDestroyed(Session session)
+    {
+    }
+
+    default void onSessionAttributeUpdate(Session session, String name, Object oldValue, Object newValue)
+    {
+    }
+
+    default void onSessionActivation(Session session)
+    {
+    }
+
+    default void onSessionPassivation(Session session)
+    {
+    }
+
     double getSessionTimeStdDev();
     
     double getSessionTimeMean();
