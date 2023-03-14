@@ -31,7 +31,7 @@ pipeline {
                         userRemoteConfigs: [[url: 'https://github.com/eclipse/jetty.project.git']]])
               sh "mvn install -f build/build-resources/ -ntp"
               sh "bash ./build/scripts/dependency-update-reports.sh"
-              publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/reports/dependency-update-reports/", reportFiles: 'report.html', reportName: 'Dependencies Report', reportTitles: ''])
+              publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/reports/dependency-update-reports/", reportFiles: 'dependency-updates-report-*.html', reportName: 'Dependencies Report', reportTitles: ''])
             }
           }
       }
