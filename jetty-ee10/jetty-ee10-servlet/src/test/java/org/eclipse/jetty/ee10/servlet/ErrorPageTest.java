@@ -388,7 +388,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
-            String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponse("GET /app?baa=%xx%zz HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad Request"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(response, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
