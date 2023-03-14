@@ -30,6 +30,7 @@ pipeline {
                         extensions: [[$class: 'CloneOption', depth: 1, noTags: true, shallow: true, reference: "/home/jenkins/jetty.project.git"]],
                         userRemoteConfigs: [[url: 'https://github.com/eclipse/jetty.project.git']]])
               sh "ls -lrt"
+              sh "ls -lrt ./build/scripts/dependency-updates-report.sh"
               sh "./build/scripts/dependency-updates-report.sh"
               publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/reports/dependency-update-reports/", reportFiles: 'report.html', reportName: 'Dependencies Report', reportTitles: ''])
             }
