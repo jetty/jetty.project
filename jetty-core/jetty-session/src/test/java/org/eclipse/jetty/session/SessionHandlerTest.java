@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.session;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
@@ -22,8 +25,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.session.SimpleSessionHandler.SessionAPI;
-import org.eclipse.jetty.session.SimpleSessionHandler.SessionRequest;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.session.SessionHandler.SessionRequest;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,10 +42,11 @@ import static org.hamcrest.Matchers.startsWith;
 /**
  * SimpleSessionHandlerTest
  */
-public class SimpleSessionHandlerTest
+public class SessionHandlerTest
 {
     private Server _server;
     private LocalConnector _connector;
+    ContextHandler _context;
 
     @BeforeEach
     public void beforeEach() throws Exception
@@ -52,14 +56,17 @@ public class SimpleSessionHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        SimpleSessionHandler sessionManager = new SimpleSessionHandler();
-        sessionManager.setSessionCookie("SIMPLE");
-        sessionManager.setUsingCookies(true);
-        sessionManager.setUsingURLs(false);
-        sessionManager.setSessionPath("/");
-        _server.setHandler(sessionManager);
+        _context = new ContextHandler("/");
+        _server.setHandler(_context);
 
-        sessionManager.setHandler(new Handler.Abstract()
+        SessionHandler sessionHandler = new SessionHandler();
+        sessionHandler.setSessionCookie("SIMPLE");
+        sessionHandler.setUsingCookies(true);
+        sessionHandler.setUsingURLs(false);
+        sessionHandler.setSessionPath("/");
+        _context.setHandler(sessionHandler);
+
+        sessionHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -69,11 +76,12 @@ public class SimpleSessionHandlerTest
 
                 SessionRequest sessionRequest = Request.as(request, SessionRequest.class);
                 Session session = sessionRequest.getSession(false);
-                SessionAPI api = session == null ? null : session.getApi();
 
-                if (split.length > 0)
+                int n = 0;
+                while (n < split.length)
                 {
-                    switch (split[0])
+                    String action = split[n++];
+                    switch (action)
                     {
                         case "set" ->
                         {
@@ -83,8 +91,7 @@ public class SimpleSessionHandlerTest
                                 return true;
                             }
 
-                            if (split.length > 2)
-                                session.setAttribute(split[1], split[2]);
+                            session.setAttribute(split[n++], split[n++]);
                         }
 
                         case "remove" ->
@@ -96,7 +103,7 @@ public class SimpleSessionHandlerTest
                             }
 
                             if (split.length > 1)
-                                session.setAttribute(split[1], null);
+                                session.setAttribute(split[n++], null);
                         }
 
                         case "create" ->
@@ -126,7 +133,7 @@ public class SimpleSessionHandlerTest
                                 callback.failed(new IllegalStateException("No Session"));
                                 return true;
                             }
-                            api.renewId(request, response);
+                            session.renewId(request, response);
                         }
                     }
                 }
@@ -137,16 +144,23 @@ public class SimpleSessionHandlerTest
                 else
                 {
                     out.append("Session=").append(session.getId()).append('\n');
-                    for (String name : session.getAttributeNameSet())
-                        out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
+                    if (session.isValid())
+                    {
+                        if (session.isNew())
+                            out.append("New\n");
+                        for (String name : session.getAttributeNameSet())
+                            out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
+                    }
+                    else
+                    {
+                        out.append("Invalid\n");
+                    }
                 }
 
                 Content.Sink.write(response, true, out.toString(), callback);
                 return true;
             }
         });
-
-        _server.start();
     }
 
     @AfterEach
@@ -158,6 +172,8 @@ public class SimpleSessionHandlerTest
     @Test
     public void testNoSession() throws Exception
     {
+        _server.start();
+
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
         endPoint.addInput("""
             GET / HTTP/1.1
@@ -181,6 +197,8 @@ public class SimpleSessionHandlerTest
     @Test
     public void testCreateSession() throws Exception
     {
+        _server.start();
+
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
         endPoint.addInput("""
             GET / HTTP/1.1
@@ -224,6 +242,8 @@ public class SimpleSessionHandlerTest
     @Test
     public void testSetAttribute() throws Exception
     {
+        _server.start();
+
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
         endPoint.addInput("""
             GET /create HTTP/1.1
@@ -267,6 +287,8 @@ public class SimpleSessionHandlerTest
     @Test
     public void testChangeSessionId() throws Exception
     {
+        _server.start();
+
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
         endPoint.addInput("""
             GET /create HTTP/1.1
@@ -323,5 +345,108 @@ public class SimpleSessionHandlerTest
         assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
         assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
+    }
+
+    @Test
+    public void testSessionLifeCycleListener() throws Exception
+    {
+        List<String> history = new CopyOnWriteArrayList<>();
+        _context.setAttribute("slcl", new Session.LifeCycleListener()
+        {
+            @Override
+            public void onSessionId(Session session, String oldId)
+            {
+                history.add("changed %s->%s".formatted(oldId, session.getId()));
+            }
+
+            @Override
+            public void onSessionCreated(Session session)
+            {
+                history.add("created %s".formatted(session.getId()));
+            }
+
+            @Override
+            public void onSessionDestroyed(Session session)
+            {
+                history.add("destroyed %s".formatted(session.getId()));
+            }
+        });
+
+        _server.start();
+
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
+            GET /create/change/invalidate HTTP/1.1
+            Host: localhost
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        String content = response.getContent();
+        assertThat(content, startsWith("Session="));
+        assertThat(content, containsString("Invalid"));
+        assertThat(history.size(), equalTo(3));
+        assertThat(history.get(0), startsWith("created "));
+        assertThat(history.get(1), startsWith("changed "));
+        assertThat(history.get(2), startsWith("destroyed "));
+    }
+
+    @Test
+    public void testSessionValueAttributeListener() throws Exception
+    {
+        List<String> history = new CopyOnWriteArrayList<>();
+        _context.setAttribute("slcl", new Session.LifeCycleListener()
+        {
+            @Override
+            public void onSessionCreated(Session session)
+            {
+                session.setAttribute("listener", new Session.ValueListener()
+                {
+                    @Override
+                    public void onSessionAttribute(Session session, String name, Object oldValue, Object newValue)
+                    {
+                        history.add("attribute %s %s: %s->%s".formatted(session.getId(), name, oldValue, newValue));
+                    }
+
+                    @Override
+                    public void onSessionActivation(Session session)
+                    {
+                        history.add("activate %s".formatted(session.getId()));
+                    }
+
+                    @Override
+                    public void onSessionPassivate(Session session)
+                    {
+                        history.add("passivate %s".formatted(session.getId()));
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "SVL";
+                    }
+                });
+            }
+        });
+
+        _server.start();
+
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
+            GET /create/set/n1/v1/set/n2/v2/set/n1/V1/remove/n2 HTTP/1.1
+            Host: localhost
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+
+        assertThat(history.size(), equalTo(5));
+        assertThat(history.get(0), containsString("listener: null->SVL"));
+        assertThat(history.get(1), containsString("n1: null->v1"));
+        assertThat(history.get(2), containsString("n2: null->v2"));
+        assertThat(history.get(3), containsString("n1: v1->V1"));
+        assertThat(history.get(4), containsString("n2: v2->null"));
     }
 }

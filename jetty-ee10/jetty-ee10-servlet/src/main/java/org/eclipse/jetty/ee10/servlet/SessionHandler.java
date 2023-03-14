@@ -44,17 +44,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
-{    
-    static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
-    
+{
     public static final EnumSet<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES =
         EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
     
@@ -104,7 +99,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
     /**
      * CookieConfig
-     *
      * Implementation of the jakarta.servlet.SessionCookieConfig.
      * SameSite configuration can be achieved by using setComment
      *
@@ -142,8 +136,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
                 case "max-age" -> setMaxAge(value == null ? -1 : Integer.parseInt(value));
                 case "comment" -> setComment(value);
                 case "domain" -> setDomain(value);
-                case "httponly" -> setHttpOnly(Boolean.valueOf(value));
-                case "secure" -> setSecure(Boolean.valueOf(value));
+                case "httponly" -> setHttpOnly(Boolean.parseBoolean(value));
+                case "secure" -> setSecure(Boolean.parseBoolean(value));
                 case "path" -> setPath(value);
                 default -> setSessionAttribute(name, value);
             }
@@ -318,7 +312,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         @Override
         public ServletContext getServletContext()
         {
-            return ServletContextHandler.getServletContext((ContextHandler.ScopedContext)_session.getSessionManager().getContext());
+            return ServletContextHandler.getServletContext(_session.getSessionManager().getContext());
         }
 
         @Override
@@ -465,8 +459,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     }
 
     @Override
-    public void callSessionAttributeListeners(Session session, String name, Object old, Object value)
+    public void onSessionAttribute(Session session, String name, Object old, Object value)
     {
+        if (old != null)
+            callUnboundBindingListener(session, name, old);
+        if (value != null)
+            callBoundBindingListener(session, name, value);
+
         if (!_sessionAttributeListeners.isEmpty())
         {
             HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
@@ -490,11 +489,11 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
      * @param session the session on which to call the lifecycle listeners
      */
     @Override
-    public void callSessionCreatedListeners(Session session)
+    public void onSessionCreated(Session session)
     {
         if (session == null)
             return;
-
+        super.onSessionCreated(session);
         HttpSessionEvent event = new HttpSessionEvent(session.getApi());
         for (HttpSessionListener  l : _sessionListeners)
         {
@@ -509,11 +508,11 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
      * @param session the session on which to call the lifecycle listeners
      */
     @Override
-    public void callSessionDestroyedListeners(Session session)
+    public void onSessionDestroyed(Session session)
     {
         if (session == null)
             return;
-
+        super.onSessionDestroyed(session);
         //We annoint the calling thread with
         //the webapp's classloader because the calling thread may
         //come from the scavenger, rather than a request thread
@@ -528,9 +527,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     }
 
     @Override
-    public void callSessionIdListeners(Session session, String oldId)
+    public void onSessionId(Session session, String oldId)
     {
         //inform the listeners
+        super.onSessionId(session, oldId);
         if (!_sessionIdListeners.isEmpty())
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
@@ -541,37 +541,43 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
     }
     
-    @Override
-    public void callUnboundBindingListener(Session session, String name, Object value)
+    protected void callUnboundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
             ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
     }
     
-    @Override
-    public void callBoundBindingListener(Session session, String name, Object value)
+    protected void callBoundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
             ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getApi(), name));
     }
-    
+
     @Override
-    public void callSessionActivationListener(Session session, String name, Object value)
+    public void onSessionActivation(Session session)
     {
-        if (value instanceof HttpSessionActivationListener listener)
+        for (String name : session.getAttributeNameSet())
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            listener.sessionDidActivate(event);
+            Object value = session.getAttribute(name);
+            if (value instanceof HttpSessionActivationListener listener)
+            {
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
+                listener.sessionDidActivate(event);
+            }
         }
     }
 
     @Override
-    public void callSessionPassivationListener(Session session, String name, Object value)
+    public void onSessionPassivate(Session session)
     {
-        if (value instanceof HttpSessionActivationListener listener)
+        for (String name : session.getAttributeNameSet())
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            listener.sessionWillPassivate(event);
+            Object value = session.getAttribute(name);
+            if (value instanceof HttpSessionActivationListener listener)
+            {
+                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
+                listener.sessionWillPassivate(event);
+            }
         }
     }
     

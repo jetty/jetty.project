@@ -93,49 +93,67 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public void callSessionIdListeners(Session session, String oldId)
+    public void onSessionId(Session session, String oldId)
     {
+        super.onSessionId(session, oldId);
         _sessionIdListenersCalled.add(session.getId());
     }
 
     @Override
-    public void callSessionCreatedListeners(Session session)
+    public void onSessionCreated(Session session)
     {
+        super.onSessionCreated(session);
         _sessionCreatedListenersCalled.add(session.getId());
     }
 
     @Override
-    public void callSessionDestroyedListeners(Session session)
+    public void onSessionDestroyed(Session session)
     {
+        super.onSessionDestroyed(session);
         _sessionDestroyedListenersCalled.add(session.getId());
     }
 
     @Override
-    public void callSessionAttributeListeners(Session session, String name, Object old, Object value)
+    public void onSessionAttribute(Session session, String name, Object old, Object value)
     {
+        if (old != null)
+            callUnboundBindingListener(session, name, old);
+        if (value != null)
+            callBoundBindingListener(session, name, value);
+
         _sessionAttributeListenersCalled.add(session.getId());
     }
 
-    @Override
-    public void callUnboundBindingListener(Session session, String name, Object value)
+    protected void callUnboundBindingListener(Session session, String name, Object value)
     {
         _sessionUnboundListenersCalled.add(session.getId());
     }
 
-    @Override
-    public void callBoundBindingListener(Session session, String name, Object value)
+    protected void callBoundBindingListener(Session session, String name, Object value)
     {
         _sessionBoundListenersCalled.add(session.getId());
     }
 
     @Override
-    public void callSessionActivationListener(Session session, String name, Object value)
+    public void onSessionActivation(Session session)
+    {
+        for (String name : session.getAttributeNameSet())
+            callSessionActivationListener(session, name, session.getAttribute(name));
+    }
+
+    @Override
+    public void onSessionPassivate(Session session)
+    {
+        for (String name : session.getAttributeNameSet())
+            callSessionPassivationListener(session, name, session.getAttribute(name));
+    }
+
+    protected void callSessionActivationListener(Session session, String name, Object value)
     {
         _sessionActivationListenersCalled.add(session.getId());
     }
 
-    @Override
-    public void callSessionPassivationListener(Session session, String name, Object value)
+    protected void callSessionPassivationListener(Session session, String name, Object value)
     {
         _sessionPassivationListenersCalled.add(session.getId());
     }

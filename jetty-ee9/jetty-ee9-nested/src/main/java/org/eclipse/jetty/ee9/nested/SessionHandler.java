@@ -567,8 +567,13 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         }
 
         @Override
-        public void callSessionAttributeListeners(Session session, String name, Object old, Object value)
+        public void onSessionAttribute(Session session, String name, Object old, Object value)
         {
+            if (old != null)
+                callUnboundBindingListener(session, name, old);
+            if (value != null)
+                callBoundBindingListener(session, name, value);
+
             if (!_sessionAttributeListeners.isEmpty())
             {
                 HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
@@ -592,11 +597,11 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
          * @param session the session on which to call the lifecycle listeners
          */
         @Override
-        public void callSessionCreatedListeners(Session session)
+        public void onSessionCreated(Session session)
         {
             if (session == null)
                 return;
-
+            super.onSessionCreated(session);
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (HttpSessionListener  l : _sessionListeners)
                 l.sessionCreated(event);
@@ -609,10 +614,12 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
          * @param session the session on which to call the lifecycle listeners
          */
         @Override
-        public void callSessionDestroyedListeners(Session session)
+        public void onSessionDestroyed(Session session)
         {
             if (session == null)
                 return;
+
+            super.onSessionDestroyed(session);
 
             //We annoint the calling thread with
             //the webapp's classloader because the calling thread may
@@ -629,9 +636,10 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         }
 
         @Override
-        public void callSessionIdListeners(Session session, String oldId)
+        public void onSessionId(Session session, String oldId)
         {
             //inform the listeners
+            super.onSessionId(session, oldId);
             if (!_sessionIdListeners.isEmpty())
             {
                 HttpSessionEvent event = new HttpSessionEvent(session.getApi());
@@ -642,38 +650,43 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             }
         }
 
-        @Override
-        public void callUnboundBindingListener(Session session, String name, Object value)
+        protected void callUnboundBindingListener(Session session, String name, Object value)
         {
             if (value instanceof HttpSessionBindingListener)
                 ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
         }
 
-        @Override
-        public void callBoundBindingListener(Session session, String name, Object value)
+        protected void callBoundBindingListener(Session session, String name, Object value)
         {
             if (value instanceof HttpSessionBindingListener)
                 ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getApi(), name));
         }
 
         @Override
-        public void callSessionActivationListener(Session session, String name, Object value)
+        public void onSessionActivation(Session session)
         {
-            if (value instanceof HttpSessionActivationListener listener)
+            for (String name : session.getAttributeNameSet())
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-                listener.sessionDidActivate(event);
+                Object value = session.getAttribute(name);
+                if (value instanceof HttpSessionActivationListener listener)
+                {
+                    HttpSessionEvent event = new HttpSessionEvent(session.getApi());
+                    listener.sessionDidActivate(event);
+                }
             }
-
         }
 
         @Override
-        public void callSessionPassivationListener(Session session, String name, Object value)
+        public void onSessionPassivate(Session session)
         {
-            if (value instanceof HttpSessionActivationListener listener)
+            for (String name : session.getAttributeNameSet())
             {
-                HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-                listener.sessionWillPassivate(event);
+                Object value = session.getAttribute(name);
+                if (value instanceof HttpSessionActivationListener listener)
+                {
+                    HttpSessionEvent event = new HttpSessionEvent(session.getApi());
+                    listener.sessionWillPassivate(event);
+                }
             }
         }
     }

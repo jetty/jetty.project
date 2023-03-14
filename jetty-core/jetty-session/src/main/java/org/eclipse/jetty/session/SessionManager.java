@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * Non-servlet spec specific contract implemented by all SessionHandlers.
  *
  */
-public interface SessionManager extends LifeCycle, SessionConfig
+public interface SessionManager extends LifeCycle, SessionConfig, Session.LifeCycleListener, Session.ValueListener
 {
     // TODO break this interface into multiple interfaces:
     //       - the configuration interface used to configure the manager
@@ -113,38 +113,6 @@ public interface SessionManager extends LifeCycle, SessionConfig
     SessionCache getSessionCache();
 
     void setSessionCache(SessionCache cache);
-
-    default void callSessionIdListeners(Session session, String oldId)
-    {
-    }
-
-    default void callSessionCreatedListeners(Session session)
-    {
-    }
-
-    default void callSessionDestroyedListeners(Session session)
-    {
-    }
-
-    default void callSessionAttributeListeners(Session session, String name, Object old, Object value)
-    {
-    }
-
-    default void callUnboundBindingListener(Session session, String name, Object value)
-    {
-    }
-
-    default void callBoundBindingListener(Session session, String name, Object value)
-    {
-    }
-
-    default void callSessionActivationListener(Session session, String name, Object value)
-    {
-    }
-
-    default void callSessionPassivationListener(Session session, String name, Object value)
-    {
-    }
     
     void recordSessionTime(ManagedSession session);
     
