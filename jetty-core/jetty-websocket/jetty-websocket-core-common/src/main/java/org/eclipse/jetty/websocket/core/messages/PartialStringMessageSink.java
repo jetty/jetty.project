@@ -42,12 +42,14 @@ public class PartialStringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.toString(), true);
+                out.finish();
+                methodHandle.invoke(out.getString(true), true);
                 out = null;
             }
             else
             {
-                methodHandle.invoke(out.takePartialString(), false);
+                methodHandle.invoke(out.getString(true), false);
+                out.clear();
             }
 
             callback.succeeded();

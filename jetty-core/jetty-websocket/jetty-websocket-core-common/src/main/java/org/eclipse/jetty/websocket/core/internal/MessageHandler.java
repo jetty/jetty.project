@@ -202,17 +202,24 @@ public class MessageHandler implements FrameHandler
                     throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
 
                 textBuffer.append(frame.getPayload());
+                if (textBuffer.hasReplacements())
+                    throw new BadPayloadException("Invalid UTF-8 sequence");
             }
 
             if (frame.isFin())
             {
-                onText(textBuffer.toString(), callback);
+                textBuffer.finish();
+                onText(textBuffer.takeFinishedString(true), callback);
                 textBuffer.reset();
             }
             else
             {
                 callback.succeeded();
             }
+        }
+        catch (BadPayloadException e)
+        {
+            callback.failed(e);
         }
         catch (Utf8Appendable.NotUtf8Exception e)
         {

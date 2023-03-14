@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -413,7 +412,7 @@ public final class URIUtil
                 ret.append(c);
             }
         }
-        return ret.toString();
+        return ret.getString();
     }
 
     /**
@@ -492,7 +491,7 @@ public final class URIUtil
                     case '%':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(length, CodingErrorAction.REPLACE);
+                            builder = new Utf8StringBuilder(length);
                             builder.append(path, offset, i - offset);
                         }
                         if ((i + 2) < end)
@@ -525,7 +524,7 @@ public final class URIUtil
                     case ';':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(path.length(), CodingErrorAction.REPLACE);
+                            builder = new Utf8StringBuilder(path.length());
                             builder.append(path, offset, i - offset);
                         }
 
@@ -548,7 +547,7 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.toString();
+                return builder.takeFinishedString();
             if (offset == 0 && length == path.length())
                 return path;
             return path.substring(offset, end);
@@ -686,7 +685,7 @@ public final class URIUtil
                     case '%':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(encodedPath.length(), CodingErrorAction.REPLACE);
+                            builder = new Utf8StringBuilder(encodedPath.length());
                             builder.append(encodedPath, 0, i);
                         }
                         if ((i + 2) < end)
@@ -730,7 +729,7 @@ public final class URIUtil
                     case ';':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(encodedPath.length(), CodingErrorAction.REPLACE);
+                            builder = new Utf8StringBuilder(encodedPath.length());
                             builder.append(encodedPath, 0, i);
                         }
 
@@ -759,7 +758,7 @@ public final class URIUtil
                     default:
                         if (builder == null && !isSafe(c))
                         {
-                            builder = new Utf8StringBuilder(encodedPath.length(), CodingErrorAction.REPLACE);
+                            builder = new Utf8StringBuilder(encodedPath.length());
                             builder.append(encodedPath, 0, i);
                         }
 
@@ -771,7 +770,7 @@ public final class URIUtil
                 slash = c == '/';
             }
 
-            String canonical = (builder != null) ? builder.toString() : encodedPath;
+            String canonical = (builder != null) ? builder.takeFinishedString() : encodedPath;
             return normal ? canonical : normalizePath(canonical);
         }
         catch (NotUtf8Exception e)
@@ -1625,7 +1624,7 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.toString();
+                return builder.takeFinishedString();
             return path;
         }
         catch (IllegalArgumentException e)

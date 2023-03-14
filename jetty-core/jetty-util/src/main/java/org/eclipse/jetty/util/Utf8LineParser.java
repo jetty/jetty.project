@@ -56,7 +56,7 @@ public class Utf8LineParser
             if (parseByte(b))
             {
                 state = State.START;
-                return utf.toString();
+                return utf.getString();
             }
         }
         // have not reached end of line (yet)

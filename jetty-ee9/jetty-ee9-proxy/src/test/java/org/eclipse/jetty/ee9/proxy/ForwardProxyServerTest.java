@@ -171,7 +171,7 @@ public class ForwardProxyServerTest
                             }
                             Utf8StringBuilder builder = new Utf8StringBuilder();
                             builder.append(buffer);
-                            String request = builder.toString();
+                            String request = builder.takeFinishedString();
 
                             // ProxyServlet will receive an absolute URI from
                             // the client, and convert it to a relative URI.

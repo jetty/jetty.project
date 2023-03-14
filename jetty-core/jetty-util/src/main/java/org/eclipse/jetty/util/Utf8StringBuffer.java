@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CodingErrorAction;
-
 /**
  * UTF-8 StringBuffer.
  *
@@ -44,18 +41,6 @@ public class Utf8StringBuffer extends Utf8Appendable
         _buffer = (StringBuffer)_appendable;
     }
 
-    public Utf8StringBuffer(CodingErrorAction codingErrorAction)
-    {
-        super(new StringBuffer(), codingErrorAction);
-        _buffer = (StringBuffer)_appendable;
-    }
-
-    public Utf8StringBuffer(int capacity, CodingErrorAction codingErrorAction)
-    {
-        super(new StringBuffer(capacity), codingErrorAction);
-        _buffer = (StringBuffer)_appendable;
-    }
-
     @Override
     public int length()
     {
@@ -63,9 +48,8 @@ public class Utf8StringBuffer extends Utf8Appendable
     }
 
     @Override
-    public void reset()
+    public void clear()
     {
-        super.reset();
         _buffer.setLength(0);
     }
 
@@ -77,34 +61,7 @@ public class Utf8StringBuffer extends Utf8Appendable
 
     public StringBuffer getStringBuffer()
     {
-        checkState();
+        finish();
         return _buffer;
-    }
-
-    @Override
-    public String toString()
-    {
-        checkState();
-        return _buffer.toString();
-    }
-
-    @Override
-    public String takeString() throws CharacterCodingException
-    {
-        try
-        {
-            checkState();
-        }
-        catch (NotUtf8Exception e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e);
-        }
-        catch (RuntimeException e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e.getCause());
-        }
-        String s = _buffer.toString();
-        reset();
-        return s;
     }
 }

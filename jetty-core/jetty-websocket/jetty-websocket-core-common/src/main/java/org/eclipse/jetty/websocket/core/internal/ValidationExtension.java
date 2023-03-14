@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.util.Map;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -137,7 +138,11 @@ public class ValidationExtension extends AbstractExtension
                     appendable.append(frame.getPayload().slice());
 
                 if (frame.isFin())
-                    appendable.checkState();
+                {
+                    appendable.finish();
+                    if (appendable.hasReplacements())
+                        throw new Utf8Appendable.NotUtf8Exception("Invalid UTF-8 encountered");
+                }
             }
         }
     }

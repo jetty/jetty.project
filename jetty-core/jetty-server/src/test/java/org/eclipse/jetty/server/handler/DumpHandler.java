@@ -179,7 +179,7 @@ public class DumpHandler extends Handler.Abstract
 
         writer.write("</pre>\n<h3>Content:</h3>\n<pre>");
         if (read != null)
-            writer.write(read.toString());
+            writer.write(read.getString());
         else
             writer.write(Content.Source.asString(request));
 

@@ -234,7 +234,7 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.toString());
+                messages.offer(activeMessage.takeFinishedString(true));
                 activeMessage = null;
             }
             callback.succeeded();

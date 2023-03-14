@@ -171,7 +171,7 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.toString());
+                messages.offer(activeMessage.getString(true));
                 activeMessage = null;
             }
             callback.succeeded();

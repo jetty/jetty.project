@@ -815,7 +815,7 @@ public class HttpParser
                                         checkVersion();
                                         _fieldCache.prepare();
                                         setState(State.HEADER);
-                                        _requestHandler.startRequest(_methodString, _uri.toString(), _version);
+                                        _requestHandler.startRequest(_methodString, _uri.getString(), _version);
                                         continue;
                                     }
                                 }
@@ -828,7 +828,7 @@ public class HttpParser
                             if (Violation.HTTP_0_9.isAllowedBy(_complianceMode))
                             {
                                 reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
-                                _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
+                                _requestHandler.startRequest(_methodString, _uri.getString(), HttpVersion.HTTP_0_9);
                                 setState(State.CONTENT);
                                 _endOfContent = EndOfContent.NO_CONTENT;
                                 BufferUtil.clear(buffer);
@@ -882,7 +882,7 @@ public class HttpParser
                             {
                                 // HTTP/0.9
                                 checkViolation(Violation.HTTP_0_9);
-                                _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
+                                _requestHandler.startRequest(_methodString, _uri.getString(), HttpVersion.HTTP_0_9);
                                 setState(State.CONTENT);
                                 _endOfContent = EndOfContent.NO_CONTENT;
                                 BufferUtil.clear(buffer);
@@ -908,7 +908,7 @@ public class HttpParser
                             _fieldCache.prepare();
                             setState(State.HEADER);
 
-                            _requestHandler.startRequest(_methodString, _uri.toString(), _version);
+                            _requestHandler.startRequest(_methodString, _uri.getString(), _version);
                             continue;
 
                         case ALPHA:
@@ -1929,7 +1929,7 @@ public class HttpParser
                     info = _requestHandler == null ? _version.asString() : _methodString;
                     break;
                 case SPACE2:
-                    info = _requestHandler == null ? Integer.toString(_responseStatus) : _uri.toString();
+                    info = _requestHandler == null ? Integer.toString(_responseStatus) : _uri.getString();
                     break;
                 case CONTENT_END:
                 case TRAILER:

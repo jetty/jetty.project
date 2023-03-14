@@ -71,6 +71,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
          */
         UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding");
 
+        // TODO: BAD_UTF8_ENCODINGS
+
         private final String _url;
         private final String _description;
 

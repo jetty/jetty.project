@@ -59,8 +59,8 @@ public class Utf8AppendableTest
         {
             buffer.append(aByte);
         }
-        assertEquals(source, buffer.toString());
-        assertTrue(buffer.toString().endsWith("jetty"));
+        assertEquals(source, buffer.getString());
+        assertTrue(buffer.getString().endsWith("jetty"));
     }
 
     @ParameterizedTest
@@ -76,8 +76,8 @@ public class Utf8AppendableTest
             {
                 buffer.append(bytes[i]);
             }
-            buffer.checkState();
-            buffer.toString();
+            buffer.finish();
+            buffer.getString(true);
         });
     }
 
@@ -97,6 +97,8 @@ public class Utf8AppendableTest
             {
                 buffer.append(aByte);
             }
+
+            buffer.getString(true);
         });
     }
 
@@ -112,7 +114,7 @@ public class Utf8AppendableTest
 
         Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
         buffer.append(bytes, 0, bytes.length);
-        String result = buffer.toString();
+        String result = buffer.getString();
         assertEquals(source, result);
     }
 
@@ -134,7 +136,7 @@ public class Utf8AppendableTest
             buffer.append(bytes[i]);
         }
 
-        assertEquals("\u00FC\u00F6\u00E4", buffer.toString());
+        assertEquals("\u00FC\u00F6\u00E4", buffer.getString());
     }
 
     /**
@@ -158,7 +160,7 @@ public class Utf8AppendableTest
             buffer.append(bytes[i]);
         }
 
-        assertEquals("ةة", buffer.toString());
+        assertEquals("ةة", buffer.getString());
     }
 
     @ParameterizedTest
@@ -170,6 +172,8 @@ public class Utf8AppendableTest
             Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
             buffer.append((byte)0xC2);
             buffer.append((byte)0xC2);
+
+            buffer.getString(true);
         });
     }
 
@@ -183,6 +187,8 @@ public class Utf8AppendableTest
             Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
             buffer.append((byte)0xC0);
             buffer.append((byte)0x80);
+
+            buffer.getString(true);
         });
     }
 
@@ -199,17 +205,19 @@ public class Utf8AppendableTest
             buffer.append((byte)0xae);
             buffer.append((byte)0x2e);
             buffer.append((byte)0x2f);
+
+            buffer.getString(true);
         });
     }
 
     @ParameterizedTest
     @MethodSource("defaultImplementations")
-    public void testFastFail1(Class<Utf8Appendable> impl) throws Exception
+    public void testFail1(Class<Utf8Appendable> impl) throws Exception
     {
-        byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5");
-        byte[] part2 = TypeUtil.fromHexString("f4908080"); // INVALID
+        byte[] part1 = StringUtil.fromHexString("cebae1bdb9cf83cebcceb5");
+        byte[] part2 = StringUtil.fromHexString("f4908080"); // INVALID
         // Here for test tracking reasons, not needed to satisfy test
-        // byte[] part3 = TypeUtil.fromHexString("656469746564");
+        // byte[] part3 = StringUtil.fromHexString("656469746564");
 
         Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
         // Part 1 is valid
@@ -219,17 +227,18 @@ public class Utf8AppendableTest
         {
             // Part 2 is invalid
             buffer.append(part2, 0, part2.length);
+            buffer.getString(true);
         });
     }
 
     @ParameterizedTest
     @MethodSource("defaultImplementations")
-    public void testFastFail2(Class<Utf8Appendable> impl) throws Exception
+    public void testFail2(Class<Utf8Appendable> impl) throws Exception
     {
-        byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
-        byte[] part2 = TypeUtil.fromHexString("90"); // INVALID
+        byte[] part1 = StringUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
+        byte[] part2 = StringUtil.fromHexString("90"); // INVALID
         // Here for test search/tracking reasons, not needed to satisfy test
-        // byte[] part3 = TypeUtil.fromHexString("8080656469746564");
+        // byte[] part3 = StringUtil.fromHexString("8080656469746564");
 
         Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
         // Part 1 is valid
@@ -239,6 +248,7 @@ public class Utf8AppendableTest
         {
             // Part 2 is invalid
             buffer.append(part2, 0, part2.length);
+            buffer.getString(true);
         });
     }
 
@@ -270,10 +280,10 @@ public class Utf8AppendableTest
         String seq1 = "48656C6C6F2DEC8AB540EC8E9FEC8E";
         String seq2 = "A4EC8EBCEC8EA0EC8EA12D5554462D382121";
 
-        utf8.append(TypeUtil.fromHexString(seq1));
+        utf8.append(StringUtil.fromHexString(seq1));
         String ret1 = utf8.takePartialString();
 
-        utf8.append(TypeUtil.fromHexString(seq2));
+        utf8.append(StringUtil.fromHexString(seq2));
         String ret2 = utf8.takePartialString();
 
         assertThat("Seq1", ret1, is("Hello-\uC2B5@\uC39F"));
@@ -289,10 +299,10 @@ public class Utf8AppendableTest
         String seq1 = "48656C6C6F2DEC8AB540EC8E9FEC8E";
         String seq2 = "A4EC8EBCEC8EA0EC8EA12D5554462D382121";
 
-        utf8.append(TypeUtil.fromHexString(seq1));
+        utf8.append(StringUtil.fromHexString(seq1));
         String ret1 = utf8.takePartialString();
         String ret2 = utf8.takePartialString();
-        utf8.append(TypeUtil.fromHexString(seq2));
+        utf8.append(StringUtil.fromHexString(seq2));
         String ret3 = utf8.takePartialString();
 
         assertThat("Seq1", ret1, is("Hello-\uC2B5@\uC39F"));
@@ -374,7 +384,7 @@ public class Utf8AppendableTest
             }
         }
 
-        Utf8StringBuilder utf8Builder = new Utf8StringBuilder(20, CodingErrorAction.REPLACE);
+        Utf8StringBuilder utf8Builder = new Utf8StringBuilder();
         for (byte b: inputBytes)
         {
             try
@@ -386,7 +396,7 @@ public class Utf8AppendableTest
                 fail("Should not have thrown while in REPLACE mode", e);
             }
         }
-        String ourResult = utf8Builder.toReplacedString();
+        String ourResult = utf8Builder.getString(false);
         assertThat("Utf8Appendable with REPLACE mode", ourResult, is(expectedResult));
     }
 }

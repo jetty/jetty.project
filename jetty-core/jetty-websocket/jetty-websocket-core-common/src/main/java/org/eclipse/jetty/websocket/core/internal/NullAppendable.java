@@ -48,6 +48,12 @@ public class NullAppendable extends Utf8Appendable
     }
 
     @Override
+    public void clear()
+    {
+        // do nothing
+    }
+
+    @Override
     public String getPartialString()
     {
         return null;

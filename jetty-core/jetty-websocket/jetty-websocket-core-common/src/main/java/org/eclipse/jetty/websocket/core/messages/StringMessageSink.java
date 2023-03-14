@@ -50,7 +50,9 @@ public class StringMessageSink extends AbstractMessageSink
 
             out.append(frame.getPayload());
             if (frame.isFin())
-                methodHandle.invoke(out.toString());
+            {
+                methodHandle.invoke(out.takeFinishedString(true));
+            }
 
             callback.succeeded();
             session.demand(1);

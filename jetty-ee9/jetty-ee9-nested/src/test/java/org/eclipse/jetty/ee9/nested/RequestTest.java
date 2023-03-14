@@ -580,19 +580,18 @@ public class RequestTest
             {
                 // Should still be able to get the raw query.
                 String rawQuery = request.getQueryString();
-                return rawQuery.equals("param=aaa%E7bbb");
+                return rawQuery.equals("param=aaa%xxbbb");
             }
         };
 
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
-        String request = "GET /?param=aaa%E7bbb HTTP/1.1\r\n" +
+        String request = "GET /?param=aaa%xxbbb HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Content-Type: text/html;charset=utf8\n" +
             "Connection: close\n" +
             "\n";
 
-        LOG.info("Expecting NotUtf8Exception in state 36...");
         String responses = _connector.getResponse(request);
         assertThat(responses, startsWith("HTTP/1.1 200"));
     }

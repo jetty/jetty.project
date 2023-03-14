@@ -15,7 +15,7 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.CodingErrorAction;
+import java.nio.charset.CharacterCodingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,42 +96,42 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
     };
 
-    private final CodingErrorAction _coderErrorAction;
     private int _codep;
     private boolean _hasReplacements = false;
 
+    /**
+     * Construct with {@link Appendable}
+     * @param appendable the appendable to put encoded characters into
+     */
     public Utf8Appendable(Appendable appendable)
     {
-        this(appendable, CodingErrorAction.REPORT);
-    }
-
-    public Utf8Appendable(Appendable appendable, CodingErrorAction codingErrorAction)
-    {
         _appendable = appendable;
-        _coderErrorAction = codingErrorAction;
     }
 
+    /**
+     * The length of the {@link Appendable} buffer
+     * @return the length of the {@link Appendable} buffer in count of codepoints.
+     */
     public abstract int length();
 
-    protected void reset()
+    /**
+     * Reset the internal state of this {@code Utf8Appendable} and reset out the {@link Appendable} buffers.
+     */
+    public void reset()
     {
         _codep = 0;
         _state = UTF8_ACCEPT;
+        clear();
     }
 
     private void checkCharAppend() throws IOException
     {
         if (_state != UTF8_ACCEPT)
         {
-            if (_coderErrorAction == CodingErrorAction.REPLACE)
-            {
-                _appendable.append(REPLACEMENT);
-                _hasReplacements = true;
-            }
             int state = _state;
             _state = UTF8_ACCEPT;
-            if (_coderErrorAction == CodingErrorAction.REPORT)
-                throw new NotUtf8Exception("char appended in state " + state);
+            _appendable.append(REPLACEMENT);
+            _hasReplacements = true;
         }
     }
 
@@ -266,6 +266,16 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         return s;
     }
 
+    /**
+     * Append a byte to the buffer, taking care to form up UTF-8 codepoints.
+     *
+     * <p>
+     *     Invalid UTF-8 sequences will result in a Replacement Character.
+     * </p>
+     *
+     * @param b the byte to add
+     * @throws IOException if unable to add result to underlying {@link Appendable}
+     */
     public void appendByte(byte b) throws IOException
     {
         if (false && b > 0 && _state == UTF8_ACCEPT)
@@ -278,7 +288,8 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
             int current = decode(_state, b);
             switch (current)
             {
-                case UTF8_ACCEPT:
+                case UTF8_ACCEPT ->
+                {
                     if (_codep < Character.MIN_HIGH_SURROGATE)
                     {
                         _appendable.append((char)_codep);
@@ -292,31 +303,24 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                     }
                     _codep = 0; // reset codepoint, as we've written it now
                     _state = current;
-                    break;
+                }
 
-                case UTF8_REJECT:
-                    if (_coderErrorAction == CodingErrorAction.REPORT)
-                    {
-                        final String reason = "byte " + TypeUtil.toHexString(b) + " in state " + (_state / 12);
-                        _codep = 0;
-                        _state = current;
-                        throw new NotUtf8Exception(reason);
-                    }
-                    else if (_coderErrorAction == CodingErrorAction.REPLACE)
-                    {
-                        _appendable.append(REPLACEMENT);
-                        _hasReplacements = true;
-                        _codep = 0; // it's a bad codepoint, don't use it
+                case UTF8_REJECT ->
+                {
+                    _appendable.append(REPLACEMENT);
+                    _hasReplacements = true;
+                    _codep = 0; // it's a bad codepoint, don't use it
 
-                        if (_state != UTF8_ACCEPT)
-                        {
-                            _state = UTF8_ACCEPT;
-                            appendByte(b);
-                        }
+                    if (_state != UTF8_ACCEPT)
+                    {
+                        _state = UTF8_ACCEPT;
+                        appendByte(b);
                     }
-                    break;
-                default:
+                }
+                default ->
+                {
                     _state = current;
+                }
             }
         }
     }
@@ -327,40 +331,159 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     }
 
     /**
-     * Not a valid sequences of UTF-8 bytes
+     * Finish the buffer state.
+     * <p>
+     *     This will address any incomplete utf-8 sequences in the buffer, and set Utf8Appendable in a state
+     *     where it will be ready to accept new utf-8 sequences.
+     * </p>
      */
-    public static class NotUtf8Exception extends IllegalArgumentException
-    {
-        public NotUtf8Exception(String reason)
-        {
-            super("Not valid UTF8! " + reason);
-        }
-    }
-
-    /**
-     * Check the state of the Appendable to know if the current UTF-8 sequence is complete (or not)
-     */
-    public void checkState()
+    public void finish()
     {
         if (!isUtf8SequenceComplete())
         {
-            if (_coderErrorAction == CodingErrorAction.REPLACE)
+            try
             {
-                try
-                {
-                    _appendable.append(REPLACEMENT);
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-                _hasReplacements = true;
+                _appendable.append(REPLACEMENT);
             }
-            _codep = 0;
-            _state = UTF8_ACCEPT;
-            if (_coderErrorAction == CodingErrorAction.REPORT)
-                throw new NotUtf8Exception("incomplete UTF8 sequence");
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            _hasReplacements = true;
         }
+        _codep = 0;
+        _state = UTF8_ACCEPT;
+    }
+
+    /**
+     * Clear out the {@link Appendable} of any content, resetting it to zero.
+     * <p>
+     *     This will not clear out any partial code points.
+     * </p>
+     */
+    public abstract void clear();
+
+    /**
+     * True if there was a replacement of a bad UTF-8 sequence with a UTF-8 replacement character.
+     *
+     * <p>
+     *     If the input already has a replacement character, this is not counted when using
+     *     this method.
+     * </p>
+     *
+     * @return true if there was a replacement of an appended character or byte with a replacement character.
+     */
+    public boolean hasReplacements()
+    {
+        return _hasReplacements;
+    }
+
+    /**
+     * Get the UTF-8 encoded String.
+     *
+     * <p>
+     *     This will get the String as it exists currently, without including any trailing incomplete UTF-8 sequences.
+     * </p>
+     * <p>
+     *     Use {@link #finish()} to complete any incomplete UTF-8 sequences before calling this method.
+     * </p>
+     *
+     * @param throwOnReplacement to throw if a replacement to an appended character has occurred
+     * @return the UTF-8 String
+     * @throws NotUtf8Exception if String has replacement characters due to bad UTF-8 sequences
+     * @see #finish()
+     */
+    public String getString(boolean throwOnReplacement)
+    {
+        if (throwOnReplacement && hasReplacements())
+        {
+            throw new NotUtf8Exception("String has invalid UTF-8 sequences");
+        }
+        return _appendable.toString();
+    }
+
+    /**
+     * Get the String as it exists currently.
+     *
+     * <p>
+     *     This will get the String as it exists currently, without including any trailing incomplete UTF-8 sequences.
+     * </p>
+     * <p>
+     *     Use {@link #finish()} to complete any incomplete UTF-8 sequences before calling this method.
+     * </p>
+     *
+     * @return the String as it exists currently, without throwing an Exception
+     * @see #finish()
+     */
+    public String getString()
+    {
+        return getString(false);
+    }
+
+    /**
+     * <p>
+     * Take the String from the {@link Appendable}, taking care to finish any incomplete UTF-8 sequences first.
+     * </p>
+     *
+     * <p>
+     * Calls to this method will {@link #reset()} this {@link Utf8Appendable}.
+     * </p>
+     *
+     * @return the String buffer from the appendable
+     * @throws CharacterCodingException if unable to encode the input bytes (eg: bad UTF-8 sequences)
+     */
+    @Override
+    public String takeString() throws CharacterCodingException
+    {
+        String str = null;
+        try
+        {
+            finish();
+            str = getString(true);
+        }
+        catch (NotUtf8Exception e)
+        {
+            throw (CharacterCodingException)new CharacterCodingException().initCause(e);
+        }
+        catch (RuntimeException e)
+        {
+            throw (CharacterCodingException)new CharacterCodingException().initCause(e.getCause());
+        }
+        finally
+        {
+            reset();
+        }
+        return str;
+    }
+
+    /**
+     * Take the complete UTF-8 string and reset the internal buffer.
+     *
+     * @param throwOnReplacement throw {@link NotUtf8Exception} if input had characters replaced.
+     * @return the UTF-8 so far, including any final incomplete UTF-8 sequences.
+     */
+    public String takeFinishedString(boolean throwOnReplacement)
+    {
+        finish();
+        String str = null;
+        try
+        {
+            str = getString(throwOnReplacement);
+        }
+        finally
+        {
+            reset();
+        }
+        return str;
+    }
+
+    /**
+     * Convenience method for {@code .takeFinishedString(false)}
+     * @return the UTF-8 String, with possible replacement characters for bad UTF-8 sequences
+     */
+    public String takeFinishedString()
+    {
+        return takeFinishedString(false);
     }
 
     /**
@@ -386,24 +509,25 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     }
 
     /**
-     * @return the String from the appendable, with checks on final valid utf-8 byte sequence
+     * Default toString implementation
+     * @return String representation of this object
      */
-    public String toReplacedString()
+    public String toString()
     {
-        if (!isUtf8SequenceComplete())
-        {
-            _codep = 0;
-            _state = UTF8_ACCEPT;
-            if (_coderErrorAction == CodingErrorAction.REPORT)
-            {
-                Throwable th = new NotUtf8Exception("incomplete UTF8 sequence");
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Unable to get replacement string", th);
-                else
-                    LOG.warn("Unable to get replacement string {}", th.toString());
-            }
+        // NOTE: Do not trigger state change in this method!
+        // Don't call reset(), or clear(), or change things like the state or codep!
+        // This breaks behavior when debugging or logging.
+        return String.format("%s@%h[%s]", this.getClass().getName(), hashCode(), _appendable.toString());
+    }
 
+    /**
+     * Not a valid sequences of UTF-8 bytes
+     */
+    public static class NotUtf8Exception extends IllegalArgumentException
+    {
+        public NotUtf8Exception(String reason)
+        {
+            super("Not valid UTF8! " + reason);
         }
-        return _appendable.toString();
     }
 }

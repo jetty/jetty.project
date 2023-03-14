@@ -417,7 +417,7 @@ public class Huffman
         if (node != 0)
             throw new HpackException.CompressionException("Bad termination");
 
-        return utf8.toString();
+        return utf8.getString(true);
     }
 
     public static int octetsNeeded(String s)
