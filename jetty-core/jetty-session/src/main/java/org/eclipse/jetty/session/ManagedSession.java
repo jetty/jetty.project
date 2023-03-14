@@ -269,7 +269,7 @@ public class ManagedSession implements Session
      * @param oldValue previous value of the attribute
      * @throws IllegalStateException if no session manager can be find
      */
-    protected void onSessionAttribute(String name, Object newValue, Object oldValue)
+    protected void onSessionAttributeUpdate(String name, Object newValue, Object oldValue)
     {
         if (!Objects.equals(newValue, oldValue))
         {
@@ -307,7 +307,7 @@ public class ManagedSession implements Session
     /**
      * Call the passivation listeners. This must be called holding the lock
      */
-    public void onSessionPassivate()
+    public void onSessionPassivation()
     {
         for (Session.ValueListener listener : _valueListenerList)
             listener.onSessionPassivation(this);
@@ -517,7 +517,7 @@ public class ManagedSession implements Session
         if (value == null && old == null)
             return null; // if same as remove attribute but attribute was already
         // removed, no change
-        onSessionAttribute(name, value, old);
+        onSessionAttributeUpdate(name, value, old);
         return old;
     }
 
@@ -757,7 +757,7 @@ public class ManagedSession implements Session
                             // already removed, no change
                             if (old == null)
                                 continue;
-                            onSessionAttribute(key, null, old);
+                            onSessionAttributeUpdate(key, null, old);
                         }
                     }
                     while (!keys.isEmpty());

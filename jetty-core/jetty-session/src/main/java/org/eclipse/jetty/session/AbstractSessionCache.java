@@ -465,7 +465,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 }
                 else
                 {
-                    session.onSessionPassivate();
+                    session.onSessionPassivation();
                     _sessionDataStore.store(session.getId(), session.getSessionData());
                     session.onSessionActivation();
                 }
@@ -532,7 +532,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 else
                 {
                     //backing store supports passivation, call the listeners
-                    session.onSessionPassivate();
+                    session.onSessionPassivation();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session passivating id={}", id);
                     _sessionDataStore.store(id, session.getSessionData());
@@ -695,7 +695,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     if (isSaveOnInactiveEviction() && _sessionDataStore != null)
                     {
                         if (_sessionDataStore.isPassivating())
-                            session.onSessionPassivate();
+                            session.onSessionPassivation();
 
                         //Fake being dirty to force the write
                         session.getSessionData().setDirty(true);
