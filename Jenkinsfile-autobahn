@@ -17,11 +17,9 @@ pipeline {
         node { label 'linux' }
       }
       steps {
-        container( 'jetty-build' ) {
-          timeout( time: 120, unit: 'MINUTES' ) {
-            mavenBuild( "jdk11", "-T3 clean install -Djacoco.skip=true -Pautobahn", "maven3", true ) //
-            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
-          }
+        timeout( time: 120, unit: 'MINUTES' ) {
+          mavenBuild( "jdk11", "-T3 clean install -Djacoco.skip=true -Pautobahn", "maven3", true ) //
+          junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
         }
       }
     }

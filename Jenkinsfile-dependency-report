@@ -1,0 +1,37 @@
+#!groovy
+
+pipeline {
+  agent any
+  triggers {
+    pollSCM('@weekly')
+  }
+  options {
+    buildDiscarder logRotator( numToKeepStr: '50' )
+    // save some io during the build
+    durabilityHint( 'PERFORMANCE_OPTIMIZED' )
+  }
+
+  stages {
+    stage( "Build / Dependency Report" ) {
+      agent {
+        node { label 'linux' }
+      }
+      steps {
+          timeout( time: 120, unit: 'MINUTES' ) {
+            withEnv(["JAVA_HOME=${ tool "jdk17" }",
+                     "PATH+MAVEN=${ tool "jdk17" }/bin:${tool "maven3"}/bin",
+                     "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
+              sh "./build/scripts/dependency-updates-report.sh"
+              publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/reports/dependency-update-reports/", reportFiles: 'report.html', reportName: 'Dependencies Report', reportTitles: ''])
+            }
+          }
+      }
+    }
+  }
+}
+
+
+
+
+
+// vim: et:ts=2:sw=2:ft=groovy
