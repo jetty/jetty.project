@@ -64,14 +64,12 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -388,13 +386,13 @@ public class DispatcherTest
             response = _connector.getResponse("GET /context/forward/badparams?echo=badparams HTTP/1.0\n\n");
             assertThat(response, containsString(" 500 "));
 
-            response = _connector.getResponse("GET /context/forward/?echo=badclient&bad=%88%A4 HTTP/1.0\n\n");
+            response = _connector.getResponse("GET /context/forward/?echo=badclient&bad=%xx%zz HTTP/1.0\n\n");
             assertThat(response, containsString(" 400 "));
 
-            response = _connector.getResponse("GET /context/forward/params?echo=badclient&bad=%88%A4 HTTP/1.0\n\n");
+            response = _connector.getResponse("GET /context/forward/params?echo=badclient&bad=%xx%zz HTTP/1.0\n\n");
             assertThat(response, containsString(" 400 "));
 
-            response = _connector.getResponse("GET /context/forward/badparams?echo=badclientandparam&bad=%88%A4 HTTP/1.0\n\n");
+            response = _connector.getResponse("GET /context/forward/badparams?echo=badclientandparam&bad=%xx%zz HTTP/1.0\n\n");
             assertThat(response, containsString(" 500 "));
         }
     }
@@ -824,7 +822,7 @@ public class DispatcherTest
             if ("/params".equals(request.getPathInfo()))
                 getServletContext().getRequestDispatcher("/echo?echo=forward").forward(request, response);
             else if ("/badparams".equals(request.getPathInfo()))
-                getServletContext().getRequestDispatcher("/echo?echo=forward&fbad=%88%A4").forward(request, response);
+                getServletContext().getRequestDispatcher("/echo?echo=forward&fbad=%xx%zz").forward(request, response);
             else
                 getServletContext().getRequestDispatcher("/echo").forward(request, response);
         }

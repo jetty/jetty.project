@@ -329,7 +329,7 @@ public class DispatcherTest
             assertThat(rawResponse, containsString(" 500 "));
 
             rawResponse = _connector.getResponse("""
-                GET /context/forward/?echo=badclient&bad=%88%A4 HTTP/1.1\r
+                GET /context/forward/?echo=badclient&bad=%xx%zz HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
@@ -337,7 +337,7 @@ public class DispatcherTest
             assertThat(rawResponse, containsString(" 400 "));
 
             rawResponse = _connector.getResponse("""
-                GET /context/forward/params?echo=badclient&bad=%88%A4 HTTP/1.1\r
+                GET /context/forward/params?echo=badclient&bad=%xx%zz HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
@@ -345,7 +345,7 @@ public class DispatcherTest
             assertThat(rawResponse, containsString(" 400 "));
 
             rawResponse = _connector.getResponse("""
-                GET /context/forward/badparams?echo=badclientandparam&bad=%88%A4 HTTP/1.1\r
+                GET /context/forward/badparams?echo=badclientandparam&bad=%xx%zz HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
@@ -874,7 +874,7 @@ public class DispatcherTest
             if ("/params".equals(request.getPathInfo()))
                 getServletContext().getRequestDispatcher("/echo?echo=forward").forward(request, response);
             else if ("/badparams".equals(request.getPathInfo()))
-                getServletContext().getRequestDispatcher("/echo?echo=forward&fbad=%88%A4").forward(request, response);
+                getServletContext().getRequestDispatcher("/echo?echo=forward&fbad=%xx%zz").forward(request, response);
             else
                 getServletContext().getRequestDispatcher("/echo").forward(request, response);
         }
