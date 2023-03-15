@@ -14,7 +14,8 @@
     <ee9.module>jetty-ee9-jaas</ee9.module>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
     <apacheds.version>2.0.0.AM26</apacheds.version>
-    <apache.directory.api.version>2.1.0</apache.directory.api.version>
+    <apache.directory.api.version>2.1.2</apache.directory.api.version>
+    <apache.mina.version>2.2.1</apache.mina.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>
   </properties>
 
@@ -55,6 +56,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.mina</groupId>
+      <artifactId>mina-core</artifactId>
+      <version>${apache.mina.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -125,6 +132,12 @@
       <groupId>org.apache.directory.api</groupId>
       <artifactId>api-ldap-model</artifactId>
       <version>${apache.directory.api.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.mina</groupId>
+          <artifactId>mina-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.directory.api</groupId>
