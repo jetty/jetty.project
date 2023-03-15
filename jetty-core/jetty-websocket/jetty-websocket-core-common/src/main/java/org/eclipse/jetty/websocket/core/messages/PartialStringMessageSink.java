@@ -42,7 +42,6 @@ public class PartialStringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                out.finish();
                 methodHandle.invoke(out.getString(true), true);
                 out = null;
             }

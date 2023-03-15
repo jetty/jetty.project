@@ -383,7 +383,6 @@ public class UrlEncoded
         }
         else if (buffer.length() > 0)
         {
-            buffer.finish();
             adder.accept(buffer.getString(), "");
         }
     }

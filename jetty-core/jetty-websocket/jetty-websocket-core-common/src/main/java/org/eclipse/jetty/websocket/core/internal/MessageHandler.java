@@ -207,7 +207,6 @@ public class MessageHandler implements FrameHandler
 
             if (frame.isFin())
             {
-                textBuffer.finish();
                 onText(textBuffer.getString(true, () -> new BadPayloadException("Invalid UTF-8")), callback);
                 textBuffer.reset();
             }
