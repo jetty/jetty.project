@@ -396,6 +396,10 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
             X error = throwableOnReplacementsSupplier.get();
             throw error;
         }
+        if (completeCodePoints)
+        {
+            finish();
+        }
         return _appendable.toString();
     }
 

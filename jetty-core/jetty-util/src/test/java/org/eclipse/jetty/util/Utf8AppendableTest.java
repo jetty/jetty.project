@@ -70,12 +70,11 @@ public class Utf8AppendableTest
     {
         assertThrows(IllegalArgumentException.class, () ->
         {
-            String source = "abc\u10fb";
-            byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = StringUtil.fromHexString("61626310FB");
             Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
-            for (int i = 0; i < bytes.length - 1; i++)
+            for (byte b: bytes)
             {
-                buffer.append(bytes[i]);
+                buffer.append(b);
             }
             buffer.getString(true, NOT_UTF8);
         });
@@ -87,11 +86,7 @@ public class Utf8AppendableTest
     {
         assertThrows(Utf8Appendable.NotUtf8Exception.class, () ->
         {
-            String source = "abcXX";
-            byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-            bytes[3] = (byte)0xc0;
-            bytes[4] = (byte)0x00;
-
+            byte[] bytes = StringUtil.fromHexString("616263C000");
             Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
             for (byte aByte : bytes)
             {
@@ -263,9 +258,11 @@ public class Utf8AppendableTest
 
         utf8.append(BufferUtil.toBuffer(seq1, StandardCharsets.UTF_8));
         String ret1 = utf8.getString(false);
+        utf8.clear();
 
         utf8.append(BufferUtil.toBuffer(seq2, StandardCharsets.UTF_8));
         String ret2 = utf8.getString(false);
+        utf8.clear();
 
         assertThat("Seq1", ret1, is(seq1));
         assertThat("Seq2", ret2, is(seq2));
@@ -282,6 +279,7 @@ public class Utf8AppendableTest
 
         utf8.append(StringUtil.fromHexString(seq1));
         String ret1 = utf8.getString(false);
+        utf8.clear();
 
         utf8.append(StringUtil.fromHexString(seq2));
         String ret2 = utf8.getString(false);
@@ -301,7 +299,9 @@ public class Utf8AppendableTest
 
         utf8.append(StringUtil.fromHexString(seq1));
         String ret1 = utf8.getString(false);
+        utf8.clear();
         String ret2 = utf8.getString(false);
+        utf8.clear();
         utf8.append(StringUtil.fromHexString(seq2));
         String ret3 = utf8.getString(false);
 
