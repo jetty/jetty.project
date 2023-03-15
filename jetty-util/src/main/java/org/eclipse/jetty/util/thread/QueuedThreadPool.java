@@ -94,7 +94,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
-    private final AtomicLong _lastShrink = new AtomicLong();
+    private final AtomicLong _shrinkThreshold = new AtomicLong();
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private final BlockingQueue<Runnable> _jobs;
@@ -219,7 +219,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         addBean(_tryExecutor);
 
-        _lastShrink.set(NanoTime.now());
+        _shrinkThreshold.set(NanoTime.now());
 
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
@@ -1079,43 +1079,49 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                         job = idleJobPoll(idleTimeoutNanos);
                         if (job == null)
                         {
-                            // No job available after an idle timeout, maybe we should shrink?
-                            if (idleTimeoutNanos > 0 && getThreads() > getMinThreads())
+                            // No job available
+                            int threads = getThreads();
+                            if (idleTimeoutNanos > 0 && threads > getMinThreads())
                             {
+                                // We have an idle timeout and excess threads, so check if we should shrink?
                                 long now = NanoTime.now();
                                 long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("Shrink check, period={}ms {}", TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
+                                    LOG.debug("Shrink check, {} > {} period={}ms {}", threads, getMinThreads(), TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
                                 while (true)
                                 {
-                                    long lastShrink = _lastShrink.get();
-                                    long prevShrink = lastShrink;
-                                    // If the shrink window is too far in the past,
-                                    // advance it to be one idle timeout before now.
-                                    if (NanoTime.elapsed(lastShrink, now) > idleTimeoutNanos)
-                                        prevShrink = now - idleTimeoutNanos;
+                                    long shrinkThreshold = _shrinkThreshold.get();
+                                    long threshold = shrinkThreshold;
 
-                                    // Add shrink periods until the window is full.
-                                    long nextShrink = prevShrink + shrinkPeriod;
-                                    if (NanoTime.isBefore(now, nextShrink))
+                                    // If the threshold is too far in the past,
+                                    // advance it to be one idle timeout before now plus a bit of shrink period.
+                                    if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
+                                        threshold = now - idleTimeoutNanos;
+
+                                    // advance the threshold by one shrink period
+                                    threshold += shrinkPeriod;
+
+                                    // Is the new threshold in the future?
+                                    if (NanoTime.isBefore(now, threshold))
                                     {
+                                        // Yes - we cannot shrink yet, so break and continue looking for jobs
                                         if (LOG.isDebugEnabled())
-                                            LOG.debug("Shrink skipped, last={}ms ago {}", NanoTime.millisElapsed(lastShrink, now), QueuedThreadPool.this);
+                                            LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
                                         break;
                                     }
 
-                                    // Update the shrink window.
-                                    if (_lastShrink.compareAndSet(lastShrink, nextShrink))
+                                    // We can shrink if we can update the atomic shrink threshold?
+                                    if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
                                     {
+                                        // Yes - we have shrunk, so exit.
                                         if (LOG.isDebugEnabled())
-                                            LOG.debug("Shrink necessary, last={}ms ago {}", NanoTime.millisElapsed(lastShrink, now), QueuedThreadPool.this);
+                                            LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
                                         break exit;
                                     }
                                 }
                             }
                             continue;
                         }
-
                         idle = false;
 
                         // Run the job.
