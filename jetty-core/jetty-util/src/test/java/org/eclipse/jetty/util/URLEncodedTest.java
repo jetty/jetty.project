@@ -259,33 +259,30 @@ public class URLEncodedTest
 
     public static Stream<Arguments> invalidTestData()
     {
-        ArrayList<Arguments> data = new ArrayList<>();
-        data.add(Arguments.of("Name=xx%zzyy", UTF_8, IllegalArgumentException.class));
-        // data.add(Arguments.of("Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        // data.add(Arguments.of("Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        data.add(Arguments.of("Name=%E%F%F", UTF_8, IllegalArgumentException.class));
-        data.add(Arguments.of("Name=x%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        data.add(Arguments.of("Name=x%2", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        data.add(Arguments.of("Name=xxx%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        // data.add(Arguments.of("name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class));
-        return data.stream();
+        return List.of(
+            "Name=xx%zzyy",
+            "Name=%E%F%F",
+            "Name=x%",
+            "Name=%x",
+            "Name=x%2",
+            "Name=xxx%").stream().map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("invalidTestData")
-    public void testInvalidDecode(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    public void testInvalidDecode(String inputString)
     {
-        assertThrows(expectedThrowable, () ->
+        assertThrows(IllegalArgumentException.class, () ->
         {
-            UrlEncoded.decodeTo(inputString, new MultiMap<>(), charset);
+            UrlEncoded.decodeTo(inputString, new MultiMap<>(), UTF_8);
         });
     }
 
     @ParameterizedTest
     @MethodSource("invalidTestData")
-    public void testInvalidDecodeUtf8ToMap(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    public void testInvalidDecodeUtf8ToMap(String inputString)
     {
-        assertThrows(expectedThrowable, () ->
+        assertThrows(IllegalArgumentException.class, () ->
         {
             MultiMap<String> map = new MultiMap<>();
             UrlEncoded.decodeUtf8To(inputString, map);
@@ -294,12 +291,12 @@ public class URLEncodedTest
 
     @ParameterizedTest
     @MethodSource("invalidTestData")
-    public void testInvalidDecodeTo(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    public void testInvalidDecodeTo(String inputString)
     {
-        assertThrows(expectedThrowable, () ->
+        assertThrows(IllegalArgumentException.class, () ->
         {
             MultiMap<String> map = new MultiMap<>();
-            UrlEncoded.decodeTo(inputString, map, charset);
+            UrlEncoded.decodeTo(inputString, map, UTF_8);
         });
     }
 }

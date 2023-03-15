@@ -365,7 +365,8 @@ public class UrlEncoded
                     }
                     else
                     {
-                        throw new Utf8Appendable.NotUtf8Exception("Incomplete % encoding");
+                        // partial % encoding at end of string, this is a replacement
+                        throw new IllegalArgumentException("Invalid percent sequence");
                     }
                     break;
 
