@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.junit.jupiter.api.Test;
@@ -99,7 +99,7 @@ public class StringMessageSinkTest
 
         // Callback should fail and we don't receive the message in the sink.
         RuntimeException error = assertThrows(RuntimeException.class, () -> callback.block(5, TimeUnit.SECONDS));
-        assertThat(error.getCause(), instanceOf(Utf8Appendable.NotUtf8Exception.class));
+        assertThat(error.getCause(), instanceOf(BadPayloadException.class));
         assertNull(endpoint.messages.poll());
     }
 
@@ -119,7 +119,7 @@ public class StringMessageSinkTest
 
         // Callback should fail and we don't receive the message in the sink.
         RuntimeException error = assertThrows(RuntimeException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
-        assertThat(error.getCause(), instanceOf(Utf8Appendable.NotUtf8Exception.class));
+        assertThat(error.getCause(), instanceOf(BadPayloadException.class));
         assertNull(endpoint.messages.poll());
     }
 
