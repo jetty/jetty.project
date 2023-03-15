@@ -394,14 +394,14 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
      */
     public <X extends Throwable> String getString(boolean completeCodePoints, Supplier<? extends X> throwableOnReplacementsSupplier) throws X
     {
+        if (completeCodePoints)
+        {
+            finish();
+        }
         if (throwableOnReplacementsSupplier != null && hasReplacements())
         {
             X error = throwableOnReplacementsSupplier.get();
             throw error;
-        }
-        if (completeCodePoints)
-        {
-            finish();
         }
         return _appendable.toString();
     }
