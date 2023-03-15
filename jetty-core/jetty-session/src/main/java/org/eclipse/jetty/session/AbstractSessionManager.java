@@ -82,7 +82,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private boolean _secureRequestOnly = true;
     private int _refreshCookieAge;
     private boolean _checkingRemoteSessionIdEncoding;
-    private List<Session.LifeCycleListener> _sessionLifeCycleListeners;
+    private List<Session.LifeCycleListener> _sessionLifeCycleListeners = Collections.emptyList();
 
     public AbstractSessionManager()
     {
@@ -1063,7 +1063,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         super.doStop();
         _loader = null;
         removeBean(_sessionLifeCycleListeners);
-        _sessionLifeCycleListeners = null;
+        _sessionLifeCycleListeners = Collections.emptyList();
     }
 
     /**
