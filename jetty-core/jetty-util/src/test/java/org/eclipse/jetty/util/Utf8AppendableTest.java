@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.eclipse.jetty.util.Utf8Appendable.NOT_UTF8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,8 +77,7 @@ public class Utf8AppendableTest
             {
                 buffer.append(bytes[i]);
             }
-            buffer.finish();
-            buffer.getString(true);
+            buffer.getString(true, NOT_UTF8);
         });
     }
 
@@ -98,7 +98,7 @@ public class Utf8AppendableTest
                 buffer.append(aByte);
             }
 
-            buffer.getString(true);
+            buffer.getString(true, NOT_UTF8);
         });
     }
 
@@ -173,7 +173,7 @@ public class Utf8AppendableTest
             buffer.append((byte)0xC2);
             buffer.append((byte)0xC2);
 
-            buffer.getString(true);
+            buffer.getString(true, NOT_UTF8);
         });
     }
 
@@ -188,7 +188,7 @@ public class Utf8AppendableTest
             buffer.append((byte)0xC0);
             buffer.append((byte)0x80);
 
-            buffer.getString(true);
+            buffer.getString(true, NOT_UTF8);
         });
     }
 
@@ -206,7 +206,7 @@ public class Utf8AppendableTest
             buffer.append((byte)0x2e);
             buffer.append((byte)0x2f);
 
-            buffer.getString(true);
+            buffer.getString(true, NOT_UTF8);
         });
     }
 
@@ -227,7 +227,7 @@ public class Utf8AppendableTest
         {
             // Part 2 is invalid
             buffer.append(part2, 0, part2.length);
-            buffer.getString(true);
+            buffer.getString(true, NOT_UTF8);
         });
     }
 
@@ -248,7 +248,7 @@ public class Utf8AppendableTest
         {
             // Part 2 is invalid
             buffer.append(part2, 0, part2.length);
-            buffer.getString(true);
+            buffer.getString(true, NOT_UTF8);
         });
     }
 
@@ -262,10 +262,10 @@ public class Utf8AppendableTest
         String seq2 = "\uC3BC\uC3A0\uC3A1-UTF-8!!";
 
         utf8.append(BufferUtil.toBuffer(seq1, StandardCharsets.UTF_8));
-        String ret1 = utf8.takePartialString();
+        String ret1 = utf8.getString(false);
 
         utf8.append(BufferUtil.toBuffer(seq2, StandardCharsets.UTF_8));
-        String ret2 = utf8.takePartialString();
+        String ret2 = utf8.getString(false);
 
         assertThat("Seq1", ret1, is(seq1));
         assertThat("Seq2", ret2, is(seq2));
@@ -281,10 +281,10 @@ public class Utf8AppendableTest
         String seq2 = "A4EC8EBCEC8EA0EC8EA12D5554462D382121";
 
         utf8.append(StringUtil.fromHexString(seq1));
-        String ret1 = utf8.takePartialString();
+        String ret1 = utf8.getString(false);
 
         utf8.append(StringUtil.fromHexString(seq2));
-        String ret2 = utf8.takePartialString();
+        String ret2 = utf8.getString(false);
 
         assertThat("Seq1", ret1, is("Hello-\uC2B5@\uC39F"));
         assertThat("Seq2", ret2, is("\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!"));
@@ -300,10 +300,10 @@ public class Utf8AppendableTest
         String seq2 = "A4EC8EBCEC8EA0EC8EA12D5554462D382121";
 
         utf8.append(StringUtil.fromHexString(seq1));
-        String ret1 = utf8.takePartialString();
-        String ret2 = utf8.takePartialString();
+        String ret1 = utf8.getString(false);
+        String ret2 = utf8.getString(false);
         utf8.append(StringUtil.fromHexString(seq2));
-        String ret3 = utf8.takePartialString();
+        String ret3 = utf8.getString(false);
 
         assertThat("Seq1", ret1, is("Hello-\uC2B5@\uC39F"));
         assertThat("Seq2", ret2, is(""));

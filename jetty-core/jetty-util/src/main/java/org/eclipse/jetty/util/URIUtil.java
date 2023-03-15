@@ -547,7 +547,7 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.takeFinishedString();
+                return builder.getString();
             if (offset == 0 && length == path.length())
                 return path;
             return path.substring(offset, end);
@@ -770,7 +770,7 @@ public final class URIUtil
                 slash = c == '/';
             }
 
-            String canonical = (builder != null) ? builder.takeFinishedString() : encodedPath;
+            String canonical = (builder != null) ? builder.getString() : encodedPath;
             return normal ? canonical : normalizePath(canonical);
         }
         catch (NotUtf8Exception e)
@@ -1624,7 +1624,7 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.takeFinishedString();
+                return builder.getString();
             return path;
         }
         catch (IllegalArgumentException e)

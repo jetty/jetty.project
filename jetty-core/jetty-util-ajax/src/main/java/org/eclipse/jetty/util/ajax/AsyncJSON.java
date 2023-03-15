@@ -773,7 +773,7 @@ public class AsyncJSON
                     }
                     else
                     {
-                        String string = stringBuilder.takeFinishedString(false);
+                        String string = stringBuilder.getString();
                         stringBuilder.reset();
                         stack.pop();
                         stack.peek().value(string);
@@ -1173,7 +1173,7 @@ public class AsyncJSON
         builder.append(indent);
         builder.append("^ ");
         builder.append(message);
-        return new IllegalArgumentException(builder.takeFinishedString(false));
+        return new IllegalArgumentException(builder.getString());
     }
 
     private static boolean isWhitespace(byte ws)

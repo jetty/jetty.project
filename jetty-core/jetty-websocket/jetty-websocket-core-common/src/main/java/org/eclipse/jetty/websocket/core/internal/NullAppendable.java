@@ -54,12 +54,6 @@ public class NullAppendable extends Utf8Appendable
     }
 
     @Override
-    public String getPartialString()
-    {
-        return null;
-    }
-
-    @Override
     public String takeString()
     {
         return null;

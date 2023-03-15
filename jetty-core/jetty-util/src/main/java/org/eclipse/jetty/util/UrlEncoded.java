@@ -329,7 +329,8 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.takePartialString();
+                    value = buffer.getString();
+                    buffer.reset();
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -347,7 +348,8 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.takeFinishedString();
+                    key = buffer.getString();
+                    buffer.reset();
                     break;
 
                 case '+':
@@ -375,13 +377,13 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.takeFinishedString();
+            value = buffer.getString();
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)
         {
             buffer.finish();
-            adder.accept(buffer.takeFinishedString(), "");
+            adder.accept(buffer.getString(), "");
         }
     }
 
@@ -487,7 +489,8 @@ public class UrlEncoded
             switch ((char)b)
             {
                 case '&':
-                    value = buffer.takeFinishedString();
+                    value = buffer.getString();
+                    buffer.reset();
                     if (key != null)
                     {
                         map.add(key, value);
@@ -506,7 +509,8 @@ public class UrlEncoded
                         buffer.append((byte)b);
                         break;
                     }
-                    key = buffer.takeFinishedString();
+                    key = buffer.getString();
+                    buffer.reset();
                     break;
 
                 case '+':
@@ -528,12 +532,12 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.takeFinishedString();
+            value = buffer.getString();
             map.add(key, value);
         }
         else if (buffer.length() > 0)
         {
-            map.add(buffer.takeFinishedString(), "");
+            map.add(buffer.getString(), "");
         }
         checkMaxKeys(map, maxKeys);
     }
@@ -782,7 +786,7 @@ public class UrlEncoded
                 return encoded.substring(offset, offset + length);
             }
 
-            return buffer.getString(false);
+            return buffer.getString();
         }
         else
         {

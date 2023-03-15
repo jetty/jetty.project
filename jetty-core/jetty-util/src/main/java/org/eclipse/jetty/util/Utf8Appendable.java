@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,6 +122,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     {
         _codep = 0;
         _state = UTF8_ACCEPT;
+        _hasReplacements = false;
         clear();
     }
 
@@ -379,27 +381,27 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     }
 
     /**
-     * Get the UTF-8 encoded String.
+     * Get the String.
      *
-     * <p>
-     *     This will get the String as it exists currently, without including any trailing incomplete UTF-8 sequences.
-     * </p>
-     * <p>
-     *     Use {@link #finish()} to complete any incomplete UTF-8 sequences before calling this method.
-     * </p>
-     *
-     * @param throwOnReplacement to throw if a replacement to an appended character has occurred
-     * @return the UTF-8 String
-     * @throws NotUtf8Exception if String has replacement characters due to bad UTF-8 sequences
-     * @see #finish()
+     * @param completeCodePoints true to complete any active codepoints/sequences before returning the String
+     * @param throwableOnReplacementsSupplier if a replacement of a character occurred during append,
+     * and if this supplier is non-null, then use this supplier to throw an error
+     * @return the String
+     * @throws X if replacement of bad characters occurred, and {@code throwableOnReplacementsSupplier} was provided
      */
-    public String getString(boolean throwOnReplacement)
+    public <X extends Throwable> String getString(boolean completeCodePoints, Supplier<? extends X> throwableOnReplacementsSupplier) throws X
     {
-        if (throwOnReplacement && hasReplacements())
+        if (throwableOnReplacementsSupplier != null && hasReplacements())
         {
-            throw new NotUtf8Exception("String has invalid UTF-8 sequences");
+            X error = throwableOnReplacementsSupplier.get();
+            throw error;
         }
         return _appendable.toString();
+    }
+
+    public String getString(boolean completeCodePoints)
+    {
+        return getString(completeCodePoints, null);
     }
 
     /**
@@ -417,7 +419,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
      */
     public String getString()
     {
-        return getString(false);
+        return getString(true, null);
     }
 
     /**
@@ -435,77 +437,19 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     @Override
     public String takeString() throws CharacterCodingException
     {
-        String str = null;
         try
         {
-            finish();
-            str = getString(true);
-        }
-        catch (NotUtf8Exception e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e);
-        }
-        catch (RuntimeException e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e.getCause());
+            return getString(true, () ->
+            {
+                CharacterCodingException characterCodingException = new CharacterCodingException();
+                characterCodingException.initCause(new NotUtf8Exception("Not valid UTF-8"));
+                return characterCodingException;
+            });
         }
         finally
         {
             reset();
         }
-        return str;
-    }
-
-    /**
-     * Take the complete UTF-8 string and reset the internal buffer.
-     *
-     * @param throwOnReplacement throw {@link NotUtf8Exception} if input had characters replaced.
-     * @return the UTF-8 so far, including any final incomplete UTF-8 sequences.
-     */
-    public String takeFinishedString(boolean throwOnReplacement)
-    {
-        finish();
-        String str = null;
-        try
-        {
-            str = getString(throwOnReplacement);
-        }
-        finally
-        {
-            reset();
-        }
-        return str;
-    }
-
-    /**
-     * Convenience method for {@code .takeFinishedString(false)}
-     * @return the UTF-8 String, with possible replacement characters for bad UTF-8 sequences
-     */
-    public String takeFinishedString()
-    {
-        return takeFinishedString(false);
-    }
-
-    /**
-     * @return The UTF8 so far decoded, ignoring partial code points
-     */
-    public abstract String getPartialString();
-
-    /**
-     * Take the partial string a reset in internal buffer, but retain
-     * partial code points.
-     *
-     * @return The UTF8 so far decoded, ignoring partial code points
-     */
-    public String takePartialString()
-    {
-        String partial = getPartialString();
-        int savedState = _state;
-        int savedCodepoint = _codep;
-        reset();
-        _state = savedState;
-        _codep = savedCodepoint;
-        return partial;
     }
 
     /**
@@ -527,7 +471,9 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     {
         public NotUtf8Exception(String reason)
         {
-            super("Not valid UTF8! " + reason);
+            super(reason);
         }
     }
+
+    public static final Supplier<NotUtf8Exception> NOT_UTF8 = () -> new NotUtf8Exception("Not valid UTF8");
 }

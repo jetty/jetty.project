@@ -1607,7 +1607,7 @@ public class AsyncMiddleManServletTest
                         {
                             builder.append(buffer);
                         }
-                        String transformed = transform(builder.takeFinishedString());
+                        String transformed = transform(builder.getString());
                         output.add(ByteBuffer.wrap(transformed.getBytes(StandardCharsets.UTF_8)));
                         output.add(slice);
                     }

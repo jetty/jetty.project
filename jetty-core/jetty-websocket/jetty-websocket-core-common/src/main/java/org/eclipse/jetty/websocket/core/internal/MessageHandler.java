@@ -20,7 +20,6 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -209,7 +208,7 @@ public class MessageHandler implements FrameHandler
             if (frame.isFin())
             {
                 textBuffer.finish();
-                onText(textBuffer.takeFinishedString(true), callback);
+                onText(textBuffer.getString(true, () -> new BadPayloadException("Invalid UTF-8")), callback);
                 textBuffer.reset();
             }
             else
@@ -220,10 +219,6 @@ public class MessageHandler implements FrameHandler
         catch (BadPayloadException e)
         {
             callback.failed(e);
-        }
-        catch (Utf8Appendable.NotUtf8Exception e)
-        {
-            callback.failed(new BadPayloadException(e));
         }
         catch (Throwable t)
         {

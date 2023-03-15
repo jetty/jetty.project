@@ -21,6 +21,8 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
+import static org.eclipse.jetty.util.Utf8Appendable.NOT_UTF8;
+
 public class StringMessageSink extends AbstractMessageSink
 {
     private Utf8StringBuilder out;
@@ -51,7 +53,7 @@ public class StringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.takeFinishedString(true));
+                methodHandle.invoke(out.getString(true, NOT_UTF8));
             }
 
             callback.succeeded();
