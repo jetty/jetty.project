@@ -19,9 +19,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
-
-import static org.eclipse.jetty.util.Utf8Appendable.NOT_UTF8;
 
 public class StringMessageSink extends AbstractMessageSink
 {
@@ -53,7 +52,7 @@ public class StringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.getString(true, NOT_UTF8));
+                methodHandle.invoke(out.getString(true, () -> new BadPayloadException("Not valid UTF-8")));
             }
 
             callback.succeeded();
