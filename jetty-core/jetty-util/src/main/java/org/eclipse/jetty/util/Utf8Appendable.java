@@ -132,8 +132,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         {
             int state = _state;
             _state = UTF8_ACCEPT;
-            _appendable.append(REPLACEMENT);
-            _hasReplacements = true;
+            appendReplacement();
         }
     }
 
@@ -309,8 +308,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
 
                 case UTF8_REJECT ->
                 {
-                    _appendable.append(REPLACEMENT);
-                    _hasReplacements = true;
+                    appendReplacement();
                     _codep = 0; // it's a bad codepoint, don't use it
 
                     if (_state != UTF8_ACCEPT)
@@ -325,6 +323,19 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                 }
             }
         }
+    }
+
+    public void appendReplacement()
+    {
+        try
+        {
+            _appendable.append(REPLACEMENT);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        _hasReplacements = true;
     }
 
     public boolean isUtf8SequenceComplete()
@@ -343,15 +354,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     {
         if (!isUtf8SequenceComplete())
         {
-            try
-            {
-                _appendable.append(REPLACEMENT);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-            _hasReplacements = true;
+            appendReplacement();
         }
         _codep = 0;
         _state = UTF8_ACCEPT;
@@ -458,7 +461,9 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
 
     /**
      * Default toString implementation
+     *
      * @return String representation of this object
+     * @see #getString()
      */
     public String toString()
     {
