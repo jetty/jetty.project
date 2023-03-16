@@ -48,7 +48,7 @@ public class Utf8StringBuffer extends Utf8Appendable
     }
 
     @Override
-    protected void resetBuffer()
+    protected void resetAppendable()
     {
         _buffer.setLength(0);
     }

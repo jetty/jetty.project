@@ -15,12 +15,12 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -200,21 +200,22 @@ public class MessageHandler implements FrameHandler
                 long currentSize = frame.getPayload().remaining() + textBuffer.length();
                 if (currentSize > maxSize)
                     throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
-
                 textBuffer.append(frame.getPayload());
             }
 
             if (frame.isFin())
             {
-                onText(textBuffer.toString(), callback);
+                onText(textBuffer.takeString(CharacterCodingException::new), callback);
                 textBuffer.reset();
             }
             else
             {
+                if (textBuffer.hasCodingErrors())
+                    throw new CharacterCodingException();
                 callback.succeeded();
             }
         }
-        catch (Utf8Appendable.NotUtf8Exception e)
+        catch (CharacterCodingException e)
         {
             callback.failed(new BadPayloadException(e));
         }
@@ -222,7 +223,6 @@ public class MessageHandler implements FrameHandler
         {
             callback.failed(t);
         }
-
     }
 
     protected void onBinaryFrame(Frame frame, Callback callback)

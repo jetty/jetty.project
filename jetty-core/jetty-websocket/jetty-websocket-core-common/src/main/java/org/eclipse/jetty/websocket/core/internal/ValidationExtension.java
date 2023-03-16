@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.nio.charset.CharacterCodingException;
 import java.util.Map;
 
 import org.eclipse.jetty.util.Callback;
@@ -137,7 +138,9 @@ public class ValidationExtension extends AbstractExtension
                     appendable.append(frame.getPayload().slice());
 
                 if (frame.isFin())
-                    appendable.checkState();
+                    appendable.complete();
+                if (appendable.hasCodingErrors())
+                    throw new IllegalArgumentException(new CharacterCodingException());
             }
         }
     }

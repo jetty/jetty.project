@@ -17,6 +17,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -95,7 +95,7 @@ public class PartialStringMessageSinkTest
 
         // Callback should fail and we don't receive the message in the sink.
         RuntimeException error = assertThrows(RuntimeException.class, () -> callback.block(5, TimeUnit.SECONDS));
-        assertThat(error.getCause(), instanceOf(Utf8Appendable.NotUtf8Exception.class));
+        assertThat(error.getCause(), instanceOf(CharacterCodingException.class));
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertTrue(message.isEmpty());
     }
@@ -115,7 +115,7 @@ public class PartialStringMessageSinkTest
 
         // Callback should fail and we only received the first frame which had no full character.
         RuntimeException error = assertThrows(RuntimeException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
-        assertThat(error.getCause(), instanceOf(Utf8Appendable.NotUtf8Exception.class));
+        assertThat(error.getCause(), instanceOf(CharacterCodingException.class));
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertThat(message.size(), is(1));
         assertThat(message.get(0), is(""));

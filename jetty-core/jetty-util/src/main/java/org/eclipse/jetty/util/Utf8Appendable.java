@@ -47,10 +47,7 @@ import org.slf4j.LoggerFactory;
 public abstract class Utf8Appendable implements CharsetStringBuilder
 {
     protected static final Logger LOG = LoggerFactory.getLogger(Utf8Appendable.class);
-    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-    public static final char REPLACEMENT = '\ufffd';
-    // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
-    public static final byte[] REPLACEMENT_UTF8 = new byte[]{(byte)0xEF, (byte)0xBF, (byte)0xBD};
+    public static final char REPLACEMENT = '�';
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
 
@@ -92,20 +89,33 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
 
     public abstract int length();
 
-    protected abstract void resetBuffer();
+    /**
+     * Reset the appendable pass in {@link Utf8Appendable#Utf8Appendable(Appendable)}
+     */
+    protected abstract void resetAppendable();
 
+    /**
+     * @return {@code True} if the characters decoded have contained UTF8 coding errors.
+     */
     public boolean hasCodingErrors()
     {
         return _codingErrors;
     }
 
+    /**
+     * Reset the appendable, clearing the buffer, resetting decoding state and clearing any errors.
+     */
     public void reset()
     {
         _state = UTF8_ACCEPT;
         _codingErrors = false;
-        resetBuffer();
+        resetAppendable();
     }
 
+    /**
+     * Partially reset the appendable: clear the buffer and clear any errors, but retain the decoding state
+     * of any partially decoded sequences.
+     */
     public void partialReset()
     {
         int save = _state;
@@ -248,7 +258,8 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
 
             switch (next)
             {
-                case UTF8_ACCEPT:
+                case UTF8_ACCEPT ->
+                {
                     _state = next;
                     if (_codep < Character.MIN_HIGH_SURROGATE)
                     {
@@ -261,27 +272,31 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                             _appendable.append(c);
                         }
                     }
-                    break;
-
-                case UTF8_REJECT:
+                }
+                case UTF8_REJECT ->
+                {
                     _codep = 0;
                     _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
                     _codingErrors = true;
-                    break;
-
-                default:
-                    _state = next;
+                }
+                default -> _state = next;
             }
         }
     }
 
+    /**
+     * @return {@code True} if the appended sequences are complete UTF-8 sequences.
+     */
     public boolean isComplete()
     {
         return _state == UTF8_ACCEPT;
     }
 
-    private void complete()
+    /**
+     * Complete the appendable, adding a replacement character and coding error if the sequence is not currently complete.
+     */
+    public void complete()
     {
         if (!isComplete())
         {
@@ -299,28 +314,50 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         }
     }
 
+    /**
+     * @return The currently decoded string, excluding any partial sequences appended.
+     */
     @Override
     public String toString()
     {
         return _appendable.toString();
     }
 
+    /**
+     * Get the completely decoded string, which is equivalent to calling {@link #complete()} then {@link #toString()}.
+     * @return The completely decoded string.
+     */
     public String toCompleteString()
     {
         complete();
         return _appendable.toString();
     }
 
+    /**
+     * Take the completely decoded string, which is equivalent to calling {@link #complete()} then {@link #toString()}
+     * then {@link #reset()}.
+     * @param onCodingError A supplier of a {@link Throwable} to use if {@link #hasCodingErrors()} returns true,
+     *                      or null for no error action
+     * @param <X> The type of the exception thrown
+     * @return The complete string.
+     * @throws X if {@link #hasCodingErrors()} is true after {@link #complete()}.
+     */
     public <X extends Throwable> String takeString(Supplier<X> onCodingError) throws X
     {
         complete();
-        if (hasCodingErrors())
+        if (onCodingError != null && hasCodingErrors())
             throw onCodingError.get();
         String string = _appendable.toString();
         reset();
         return string;
     }
 
+    /**
+     * Take the completely decoded string, which is equivalent to calling {@link #complete()} then {@link #toString()}
+     * then {@link #reset()}.
+     * @return The complete string
+     * @throws CharacterCodingException if {@link #hasCodingErrors()} is true after {@link #complete()}.
+     */
     @Override
     public String takeString() throws CharacterCodingException
     {

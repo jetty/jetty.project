@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
+import java.nio.charset.CharacterCodingException;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.Callback;
@@ -42,12 +43,15 @@ public class PartialStringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.toString(), true);
+                String complete = out.takeString(CharacterCodingException::new);
+                methodHandle.invoke(complete, true);
                 out = null;
             }
             else
             {
                 String partial = out.toString();
+                if (out.hasCodingErrors())
+                    throw new CharacterCodingException();
                 out.partialReset();
                 methodHandle.invoke(partial, false);
             }

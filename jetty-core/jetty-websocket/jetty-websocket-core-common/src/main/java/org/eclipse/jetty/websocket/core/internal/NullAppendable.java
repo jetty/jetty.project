@@ -54,7 +54,7 @@ public class NullAppendable extends Utf8Appendable
     }
 
     @Override
-    protected void resetBuffer()
+    protected void resetAppendable()
     {
     }
 }
