@@ -22,7 +22,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -98,14 +97,16 @@ public class HttpChannelOverHTTP extends HttpChannel
 
         String method = exchange.getRequest().getMethod();
         Response response = result.getResponse();
+        int status = response.getStatus();
         HttpFields responseHeaders = response.getHeaders();
+        boolean isTunnel = isTunnel(method, status);
 
         String closeReason = null;
         if (result.isFailed())
             closeReason = "failure";
         else if (receiver.isShutdown())
             closeReason = "server close";
-        else if (sender.isShutdown() && response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
+        else if (sender.isShutdown() && status != HttpStatus.SWITCHING_PROTOCOLS_101)
             closeReason = "client close";
 
         if (closeReason == null)
@@ -113,16 +114,15 @@ public class HttpChannelOverHTTP extends HttpChannel
             if (response.getVersion().compareTo(HttpVersion.HTTP_1_1) < 0)
             {
                 // HTTP 1.0 must close the connection unless it has
-                // an explicit keep alive or it's a CONNECT method.
+                // an explicit keep alive or it is a CONNECT tunnel.
                 boolean keepAlive = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                boolean connect = HttpMethod.CONNECT.is(method);
-                if (!keepAlive && !connect)
+                if (!keepAlive && !isTunnel)
                     closeReason = "http/1.0";
             }
             else
             {
-                // HTTP 1.1 closes only if it has an explicit close.
-                if (responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
+                // HTTP 1.1 closes only if it has an explicit close, unless it is a CONNECT tunnel.
+                if (responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) && !isTunnel)
                     closeReason = "http/1.1";
             }
         }
@@ -138,8 +138,7 @@ public class HttpChannelOverHTTP extends HttpChannel
         }
         else
         {
-            int status = response.getStatus();
-            if (status == HttpStatus.SWITCHING_PROTOCOLS_101 || isTunnel(method, status))
+            if (status == HttpStatus.SWITCHING_PROTOCOLS_101 || isTunnel)
                 connection.remove();
             else
                 release();
