@@ -963,7 +963,19 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      */
     protected void runJob(Runnable job)
     {
-        job.run();
+        try
+        {
+            job.run();
+        }
+        catch (Throwable e)
+        {
+            LOG.warn("Job failed", e);
+        }
+        finally
+        {
+            // Clear any thread interrupted status.
+            Thread.interrupted();
+        }
     }
 
     /**
@@ -1057,22 +1069,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             try
             {
                 Runnable job = null;
-                exit: while (true)
+                exit: while (_counts.getHi() > Integer.MIN_VALUE)
                 {
-                    // If we had a job,
-                    if (!idle)
-                    {
-                        // signal that we are idle again,
-                        idle = true;
-                        if (!addCounts(0, 1))
-                            break;
-                    }
-                    // else check we are still running.
-                    else if (_counts.getHi() == Integer.MIN_VALUE)
-                    {
-                        break;
-                    }
-
                     try
                     {
                         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
@@ -1088,9 +1086,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                                 LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
 
                             // signal that we are idle again,
-                            idle = true;
                             if (!addCounts(0, 1))
                                 break;
+                            idle = true;
 
                             // Look for another job
                             job = _jobs.poll();
@@ -1140,18 +1138,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     }
                     catch (InterruptedException e)
                     {
+                        boolean interrupted = Thread.interrupted();
                         if (LOG.isDebugEnabled())
-                            LOG.debug("interrupted {} in {}", job, QueuedThreadPool.this);
+                            LOG.debug("interrupted {} {} in {}", interrupted, job, QueuedThreadPool.this);
                         LOG.trace("IGNORED", e);
-                    }
-                    catch (Throwable e)
-                    {
-                        LOG.warn("Job failed", e);
-                    }
-                    finally
-                    {
-                        // Clear any thread interrupted status.
-                        Thread.interrupted();
                     }
                 }
             }
