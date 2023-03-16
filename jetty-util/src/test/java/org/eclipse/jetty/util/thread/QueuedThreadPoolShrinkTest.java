@@ -40,8 +40,8 @@ public class QueuedThreadPoolShrinkTest
      * (in order to support straightforward evalutation against QTP impl that doesn't have `maxShrinkCount`
      * method available).
      */
-    //    private static final BiConsumer<QueuedThreadPool, Integer> SET_MAX_SHRINK_COUNT = QueuedThreadPool::setIdleTimeoutMaxShrinkCount;
-    private static final BiConsumer<QueuedThreadPool, Integer> SET_MAX_SHRINK_COUNT = new AssertingBiConsumer<>();
+     private static final BiConsumer<QueuedThreadPool, Integer> SET_MAX_SHRINK_COUNT = QueuedThreadPool::setIdleTimeoutMaxShrinkCount;
+//    private static final BiConsumer<QueuedThreadPool, Integer> SET_MAX_SHRINK_COUNT = new AssertingBiConsumer<>();
 
     private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPoolShrinkTest.class);
 
@@ -132,7 +132,7 @@ public class QueuedThreadPoolShrinkTest
         Random r = new Random(seed);
         final boolean busy = r.nextBoolean();
         final int maxThreads = 1000;
-        int raw1 = r.nextInt();
+        int raw1 = r.nextInt(Integer.MAX_VALUE);
         int raw2 = r.nextInt(50);
         int tmp = (raw1 % (r.nextBoolean() ? maxThreads : (maxThreads >> 1))) + 1;
         if (FORCE_DEFAULT_SHRINK) {
