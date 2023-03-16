@@ -13,28 +13,29 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+import static org.junit.jupiter.api.Assertions.fail;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Utf8AppendableTest
@@ -285,44 +286,93 @@ public class Utf8AppendableTest
         assertThat("Seq3", ret3, is("쎤쎼쎠쎡-UTF-8!!"));
     }
 
-    @TestFactory
-    public Iterator<DynamicTest> testBadUtf8()
+    public static Stream<Arguments> appendWithReplacementSource()
     {
-        String[] samples = new String[]{
-            "c0af",
-            "EDA080",
-            "f08080af",
-            "f8808080af",
-            "e080af",
-            "F4908080",
-            "fbbfbfbfbf",
-            "10FFFF",
-            "CeBaE1BdB9Cf83CeBcCeB5EdA080656469746564",
-            // use of UTF-16 High Surrogates (in codepoint form)
-            "da07",
-            "d807",
-            // decoded UTF-16 High Surrogate "\ud807" (in UTF-8 form)
-            "EDA087"
-        };
+        List<Arguments> sources = new ArrayList<>();
 
-        List<DynamicTest> tests = new ArrayList<>();
+        boolean matchJavaBehavior = true;
 
-        implementations().forEach(impl ->
+        sources.add(Arguments.of("00", "\u0000", matchJavaBehavior)); // null control char
+        sources.add(Arguments.of("E282AC", "€", matchJavaBehavior)); // euro symbol
+        sources.add(Arguments.of("EFBFBD", "�", matchJavaBehavior)); // the replacement character itself
+        // "overlong" UTF-8 sequences - (the utf-8 codepage specifies that C0/C1 should be rejected for "overlong" encoding)
+        // "hi" (ascii) is bytes 0x68 0x69, which can be represented in overlong encoding of
+        // C1 (11000001) + A8 (10101000) = 'h'
+        // C1 (11000001) + A9 (10101001) = 'i'
+        sources.add(Arguments.of("C1A8C1A9", "����", matchJavaBehavior));
+        // "()" (ascii) is bytes 0x28 0x29, which can be represented in overlong encoding of
+        // C0 (11000001) + A8 (10101000) = '('
+        // C0 (11000001) + A9 (10101001) = ')'
+        sources.add(Arguments.of("C0A8C0A9", "����", matchJavaBehavior));
+        // the following expected results are gathered from URI.create(input).getPath()
+        // which is consistent with StandardCharsets.UTF_8.newDecoder().onMalformed(REPLACE).decode()
+        sources.add(Arguments.of("D8002F", "�\u0000/", matchJavaBehavior));
+        sources.add(Arguments.of("D82F", "�/", matchJavaBehavior)); // incomplete sequence followed by normal char
+        sources.add(Arguments.of("C328", "�(", matchJavaBehavior)); // incomplete sequence followed by normal char
+        sources.add(Arguments.of("A0A1", "��", matchJavaBehavior)); // invalid 2 octet sequence
+        sources.add(Arguments.of("E228A1", "�(�", matchJavaBehavior)); // incomplete + normal + incomplete
+        sources.add(Arguments.of("E28228", "�(", matchJavaBehavior));  // invalid 3 octet sequence
+        sources.add(Arguments.of("F0288CBC", "�(��", matchJavaBehavior)); // invalid 4 octet sequence
+        sources.add(Arguments.of("F09028BC", "�(�", matchJavaBehavior)); // invalid 4 octet sequence
+        sources.add(Arguments.of("F0288C28", "�(�(", matchJavaBehavior));  // invalid 4 octet sequence
+        sources.add(Arguments.of("F8A1A1A1A1", "�����", matchJavaBehavior));  // valid sequence, but not unicode
+        sources.add(Arguments.of("FCA1A1A1A1A1", "������", matchJavaBehavior));  // valid sequence, but not unicode
+        sources.add(Arguments.of("F8A1A1A1", "����", matchJavaBehavior)); // F8 codepage not supported
+        sources.add(Arguments.of("C0AF", "��", matchJavaBehavior));
+        sources.add(Arguments.of("F08080AF", "����", matchJavaBehavior));
+        sources.add(Arguments.of("FFFFFF", "���", matchJavaBehavior)); // FF codepage never assigned meaning in utf-8
+        sources.add(Arguments.of("f8808080af", "�����", matchJavaBehavior)); // F8 codepage not supported
+        sources.add(Arguments.of("e080af", "���", matchJavaBehavior));
+        sources.add(Arguments.of("F4908080", "����", matchJavaBehavior));
+        sources.add(Arguments.of("fbbfbfbfbf", "�����", matchJavaBehavior)); // FB codepage not supported
+        sources.add(Arguments.of("10FFFF", "\u0010��", matchJavaBehavior));
+        // use of UTF-16 High Surrogates (in codepoint form)
+        sources.add(Arguments.of("da07", "�\u0007", matchJavaBehavior));
+        sources.add(Arguments.of("d807", "�\u0007", matchJavaBehavior));
+
+        // The following are outliers, and produce extra replacement characters when
+        // compared the Java replacement character behaviors.
+        sources.add(Arguments.of("EDA080", "���", !matchJavaBehavior));
+        sources.add(Arguments.of("CeBaE1BdB9Cf83CeBcCeB5EdA080656469746564", "κόσμε���edited", !matchJavaBehavior));
+        // decoded UTF-16 High Surrogate "\ud807" (in UTF-8 form)
+        sources.add(Arguments.of("EDA087", "���", !matchJavaBehavior));
+        return sources.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("appendWithReplacementSource")
+    public void testBadUtf8(String inputHex, String expectedResult, boolean compareWithJavaCharsetDecoder)
+    {
+        byte[] inputBytes = StringUtil.fromHexString(inputHex);
+        if (compareWithJavaCharsetDecoder)
         {
-            for (String hex : samples)
+            CharsetDecoder utf8Decoder = StandardCharsets.UTF_8.newDecoder();
+            utf8Decoder.onMalformedInput(CodingErrorAction.REPLACE);
+            try
             {
-                tests.add(dynamicTest(impl.getSimpleName() + " : " + hex, () ->
-                {
-                    Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
-                    utf8.append(StringUtil.fromHexString(hex));
-
-                    assertThat(utf8.toString(), containsString("�"));
-                    assertThat(utf8.toCompleteString(), containsString("�"));
-                    assertThrows(CharacterCodingException.class, utf8::takeString);
-                }));
+                CharBuffer charBuffer = utf8Decoder.decode(ByteBuffer.wrap(inputBytes));
+                String charsetDecoderResult = charBuffer.toString();
+                assertThat("CharsetDecoder result", charsetDecoderResult, is(expectedResult));
             }
-        });
+            catch (CharacterCodingException e)
+            {
+                fail("Should not have thrown while in REPLACE mode", e);
+            }
+        }
 
-        return tests.iterator();
+        Utf8StringBuilder utf8Builder = new Utf8StringBuilder();
+        for (byte b: inputBytes)
+        {
+            try
+            {
+                utf8Builder.appendByte(b);
+            }
+            catch (IOException e)
+            {
+                fail("Should not have thrown while in REPLACE mode", e);
+            }
+        }
+        String ourResult = utf8Builder.toString();
+        assertThat("Utf8Appendable with REPLACE mode", ourResult, is(expectedResult));
     }
 }

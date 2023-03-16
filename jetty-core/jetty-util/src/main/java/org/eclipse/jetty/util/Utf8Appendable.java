@@ -22,27 +22,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Utf8 Appendable abstract base class
- * </p><p>
- * This abstract class wraps a standard {@link Appendable} and provides methods to append UTF-8 encoded bytes, that are converted into characters.
- * </p><p>
+ * <p>
+ * Utf8 Appendable abstract base class
+ * </p>
+ *
+ * <p>
+ * This abstract class wraps a standard {@link java.lang.Appendable} and provides methods to append UTF-8 encoded bytes, that are converted into characters.
+ * </p>
+ *
+ * <p>
  * This class is stateful and up to 4 calls to {@link #append(byte)} may be needed before state a character is appended to the string buffer.
- * </p><p>
+ * </p>
+ *
+ * <p>
  * The UTF-8 decoding is done by this class and no additional buffers or Readers are used. The UTF-8 code was inspired by
- * <a href="http://bjoern.hoehrmann.de/utf-8/decoder/dfa/">bjoern.hoehrmann.de</a>
- * </p><p>
+ * <a href ="http://bjoern.hoehrmann.de/utf-8/decoder/dfa/">http://bjoern.hoehrmann.de/utf-8/decoder/dfa/</a>
+ * </p>
+ *
+ * <p>
  * License information for Bjoern Hoehrmann's code:
- * </p><p>
- * Copyright (c) 2008-2009 Bjoern Hoehrmann &lt;bjoern@hoehrmann.de&gt;
+ * </p>
+ *
+ * <p>
+ * Copyright (c) 2008-2009 Bjoern Hoehrmann &lt;bjoern@hoehrmann.de&gt;<br/>
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * </p><p>
+ * </p>
+ *
+ * <p>
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * </p><p>
+ * </p>
+ *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * </p>
  **/
 public abstract class Utf8Appendable implements CharsetStringBuilder
 {
@@ -108,6 +124,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     public void reset()
     {
         _state = UTF8_ACCEPT;
+        _codep = 0;
         _codingErrors = false;
         resetAppendable();
     }
@@ -260,7 +277,6 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
             {
                 case UTF8_ACCEPT ->
                 {
-                    _state = next;
                     if (_codep < Character.MIN_HIGH_SURROGATE)
                     {
                         _appendable.append((char)_codep);
@@ -272,13 +288,19 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                             _appendable.append(c);
                         }
                     }
+                    _codep = 0;
+                    _state = next;
                 }
                 case UTF8_REJECT ->
                 {
-                    _codep = 0;
-                    _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
                     _codingErrors = true;
+                    _codep = 0;
+                    if (_state != UTF8_ACCEPT)
+                    {
+                        _state = UTF8_ACCEPT;
+                        appendByte(b);
+                    }
                 }
                 default -> _state = next;
             }
