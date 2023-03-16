@@ -270,7 +270,7 @@ public class CloseStatus
         for (int i = 0; i < maxBytes; i++)
         {
             a.append(bytes[i]);
-            if (a.isUtf8SequenceComplete())
+            if (a.isComplete())
                 lastIndex = i;
         }
 

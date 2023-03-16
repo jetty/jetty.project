@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.charset.CharacterCodingException;
-
 /**
- * UTF-8 StringBuilder.
- *
- * This class wraps a standard {@link java.lang.StringBuilder} and provides methods to append
+ * <p>UTF-8 StringBuilder.</p>
+ * <p>
+ * This class wraps a standard {@link StringBuilder} and provides methods to append
  * UTF-8 encoded bytes, that are converted into characters.
- *
+ * </p><p>
  * This class is stateful and up to 4 calls to {@link #append(byte)} may be needed before
  * state a character is appended to the string buffer.
- *
+ * </p><p>
  * The UTF-8 decoding is done by this class and no additional buffers or Readers are used.
- * The UTF-8 code was inspired by http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+ * </p>
  */
 public class Utf8StringBuilder extends Utf8Appendable
 {
@@ -50,48 +48,8 @@ public class Utf8StringBuilder extends Utf8Appendable
     }
 
     @Override
-    public void reset()
+    protected void resetBuffer()
     {
-        super.reset();
         _buffer.setLength(0);
-    }
-
-    @Override
-    public String getPartialString()
-    {
-        return _buffer.toString();
-    }
-
-    public StringBuilder getStringBuilder()
-    {
-        checkState();
-        return _buffer;
-    }
-
-    @Override
-    public String toString()
-    {
-        checkState();
-        return _buffer.toString();
-    }
-
-    @Override
-    public String takeString() throws CharacterCodingException
-    {
-        try
-        {
-            checkState();
-        }
-        catch (NotUtf8Exception e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e);
-        }
-        catch (RuntimeException e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e.getCause());
-        }
-        String s = _buffer.toString();
-        reset();
-        return s;
     }
 }

@@ -47,7 +47,9 @@ public class PartialStringMessageSink extends AbstractMessageSink
             }
             else
             {
-                methodHandle.invoke(out.takePartialString(), false);
+                String partial = out.toString();
+                out.partialReset();
+                methodHandle.invoke(partial, false);
             }
 
             callback.succeeded();

@@ -38,6 +38,12 @@ public class NullAppendable extends Utf8Appendable
             {
                 return null;
             }
+
+            @Override
+            public String toString()
+            {
+                return null;
+            }
         });
     }
 
@@ -48,14 +54,7 @@ public class NullAppendable extends Utf8Appendable
     }
 
     @Override
-    public String getPartialString()
+    protected void resetBuffer()
     {
-        return null;
-    }
-
-    @Override
-    public String takeString()
-    {
-        return null;
     }
 }

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.charset.CharacterCodingException;
-
 /**
  * UTF-8 StringBuffer.
  *
@@ -50,48 +48,13 @@ public class Utf8StringBuffer extends Utf8Appendable
     }
 
     @Override
-    public void reset()
+    protected void resetBuffer()
     {
-        super.reset();
         _buffer.setLength(0);
-    }
-
-    @Override
-    public String getPartialString()
-    {
-        return _buffer.toString();
     }
 
     public StringBuffer getStringBuffer()
     {
-        checkState();
         return _buffer;
-    }
-
-    @Override
-    public String toString()
-    {
-        checkState();
-        return _buffer.toString();
-    }
-
-    @Override
-    public String takeString() throws CharacterCodingException
-    {
-        try
-        {
-            checkState();
-        }
-        catch (NotUtf8Exception e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e);
-        }
-        catch (RuntimeException e)
-        {
-            throw (CharacterCodingException)new CharacterCodingException().initCause(e.getCause());
-        }
-        String s = _buffer.toString();
-        reset();
-        return s;
     }
 }

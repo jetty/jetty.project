@@ -329,8 +329,7 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.toReplacedString();
-                    buffer.reset();
+                    value = buffer.takeString(IllegalArgumentException::new);
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -348,8 +347,7 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.toReplacedString();
-                    buffer.reset();
+                    key = buffer.takeString(IllegalArgumentException::new);
                     break;
 
                 case '+':
@@ -365,7 +363,7 @@ public class UrlEncoded
                     }
                     else
                     {
-                        throw new Utf8Appendable.NotUtf8Exception("Incomplete % encoding");
+                        throw new IllegalArgumentException("Incomplete % encoding");
                     }
                     break;
 
@@ -377,13 +375,12 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.toReplacedString();
-            buffer.reset();
+            value = buffer.takeString(IllegalArgumentException::new);
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)
         {
-            adder.accept(buffer.toReplacedString(), "");
+            adder.accept(buffer.toCompleteString(), "");
         }
     }
 
@@ -489,7 +486,7 @@ public class UrlEncoded
             switch ((char)b)
             {
                 case '&':
-                    value = buffer.toReplacedString();
+                    value = buffer.toCompleteString();
                     buffer.reset();
                     if (key != null)
                     {
@@ -509,7 +506,7 @@ public class UrlEncoded
                         buffer.append((byte)b);
                         break;
                     }
-                    key = buffer.toReplacedString();
+                    key = buffer.toCompleteString();
                     buffer.reset();
                     break;
 
@@ -532,13 +529,13 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.toReplacedString();
+            value = buffer.toCompleteString();
             buffer.reset();
             map.add(key, value);
         }
         else if (buffer.length() > 0)
         {
-            map.add(buffer.toReplacedString(), "");
+            map.add(buffer.toCompleteString(), "");
         }
         checkMaxKeys(map, maxKeys);
     }
@@ -787,7 +784,7 @@ public class UrlEncoded
                 return encoded.substring(offset, offset + length);
             }
 
-            return buffer.toReplacedString();
+            return buffer.toCompleteString();
         }
         else
         {

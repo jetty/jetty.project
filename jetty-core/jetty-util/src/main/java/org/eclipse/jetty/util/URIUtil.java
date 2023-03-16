@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -547,12 +546,14 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.toString();
+            {
+                return builder.takeString();
+            }
             if (offset == 0 && length == path.length())
                 return path;
             return path.substring(offset, end);
         }
-        catch (NotUtf8Exception e)
+        catch (IOException e)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
@@ -770,14 +771,8 @@ public final class URIUtil
                 slash = c == '/';
             }
 
-            String canonical = (builder != null) ? builder.toString() : encodedPath;
+            String canonical = (builder != null) ? builder.toCompleteString() : encodedPath;
             return normal ? canonical : normalizePath(canonical);
-        }
-        catch (NotUtf8Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} {}", encodedPath, e.toString());
-            throw e;
         }
         catch (IllegalArgumentException e)
         {

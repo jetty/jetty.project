@@ -15,8 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
-
 /**
  * Stateful parser for lines of UTF8 formatted text, looking for <code>"\n"</code> as a line termination character.
  * <p>
@@ -45,7 +43,7 @@ public class Utf8LineParser
      * @param buf the buffer to parse (could be an incomplete buffer)
      * @return the line of UTF8 parsed text, or null if no line end termination has been reached within the {@link ByteBuffer#remaining() remaining} bytes of
      * the provided ByteBuffer. (In the case of a null, a subsequent ByteBuffer with a line end termination should be provided)
-     * @throws NotUtf8Exception if the input buffer has bytes that do not conform to UTF8 validation (validation performed by {@link Utf8StringBuilder}
+     * @throws IllegalArgumentException if the input buffer has bytes that do not conform to UTF8 validation (validation performed by {@link Utf8StringBuilder}
      */
     public String parse(ByteBuffer buf)
     {
@@ -56,6 +54,8 @@ public class Utf8LineParser
             if (parseByte(b))
             {
                 state = State.START;
+                if (utf.hasCodingErrors())
+                    throw new IllegalStateException("Coding errors in " + utf);
                 return utf.toString();
             }
         }
@@ -74,7 +74,7 @@ public class Utf8LineParser
 
             case PARSE:
                 // not waiting on more UTF sequence parts.
-                if (utf.isUtf8SequenceComplete() && ((b == '\r') || (b == '\n')))
+                if (utf.isComplete() && ((b == '\r') || (b == '\n')))
                 {
                     state = State.END;
                     return parseByte(b);
