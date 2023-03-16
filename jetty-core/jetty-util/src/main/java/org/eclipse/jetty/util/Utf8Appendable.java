@@ -135,9 +135,8 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
      */
     public void partialReset()
     {
-        int save = _state;
-        reset();
-        _state = save;
+        _codingErrors = false;
+        resetAppendable();
     }
 
     private void checkCharAppend() throws IOException
@@ -260,6 +259,27 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         }
     }
 
+    private int decode(int state, byte b)
+    {
+        int i = b & 0xFF;
+        int type = BYTE_TABLE[i];
+        _codep = _state == UTF8_ACCEPT ? (0xFF >> type) & i : (i & 0x3F) | (_codep << 6);
+        int s = TRANS_TABLE[_state + type];
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.info("decode(state={}, b={}: {}) _codep={}, i={}, type={}, s={}",
+                String.format("%2d", state),
+                String.format("0x%02X", (b & 0xFF)),
+                String.format("%8s", Integer.toBinaryString(b & 0xFF)),
+                _codep,
+                i, type, (s == UTF8_REJECT) ? "REJECT" : (s == UTF8_ACCEPT) ? "ACCEPT" : s
+            );
+        }
+
+        return s;
+    }
+
     public void appendByte(byte b) throws IOException
     {
         if (b > 0 && _state == UTF8_ACCEPT)
@@ -268,12 +288,8 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         }
         else
         {
-            int i = b & 0xFF;
-            int type = BYTE_TABLE[i];
-            _codep = _state == UTF8_ACCEPT ? (0xFF >> type) & i : (i & 0x3F) | (_codep << 6);
-            int next = TRANS_TABLE[_state + type];
-
-            switch (next)
+            int current = decode(_state, b);
+            switch (current)
             {
                 case UTF8_ACCEPT ->
                 {
@@ -289,7 +305,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                         }
                     }
                     _codep = 0;
-                    _state = next;
+                    _state = current;
                 }
                 case UTF8_REJECT ->
                 {
@@ -302,7 +318,7 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                         appendByte(b);
                     }
                 }
-                default -> _state = next;
+                default -> _state = current;
             }
         }
     }

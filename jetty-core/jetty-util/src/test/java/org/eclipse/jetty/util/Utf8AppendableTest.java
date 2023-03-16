@@ -139,10 +139,10 @@ public class Utf8AppendableTest
     public void testInvalidUTF8(Class<Utf8Appendable> impl) throws Exception
     {
         Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
-        buffer.append((byte)0xC2);
-        buffer.append((byte)0xC2);
-        assertThat(buffer.toString(), equalTo("�"));
-        assertThat(buffer.toCompleteString(), equalTo("�"));
+        buffer.append((byte)0xC2); // start of sequence
+        buffer.append((byte)0xC2); // start of another sequence
+        assertThat(buffer.toString(), equalTo("�")); // only first sequence is reported as BAD
+        assertThat(buffer.toCompleteString(), equalTo("��")); // now both sequences are reported as BAD
         assertThrows(CharacterCodingException.class, buffer::takeString);
     }
 
@@ -212,6 +212,34 @@ public class Utf8AppendableTest
         // Part 2 is invalid
         buffer.append(part2, 0, part2.length);
         assertTrue(buffer.hasCodingErrors());
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementationArgs")
+    public void testPartialSplitSingleCodepoint(Class<Utf8Appendable> impl) throws Exception
+    {
+        // GOTHIC LETTER HWAIR
+        final String gothicUnicode = "𐍈";
+        // Lets use a 4 byte utf-8 sequence
+        byte[] utf8Bytes = gothicUnicode.getBytes(StandardCharsets.UTF_8);
+        assertThat(utf8Bytes.length, is(4));
+
+        // First payload is 2 bytes, second payload is 2 bytes
+        ByteBuffer codepointStart = BufferUtil.toBuffer(utf8Bytes, 0, 2);
+        ByteBuffer codepointFinish = BufferUtil.toBuffer(utf8Bytes, 2, 2);
+
+        Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
+
+        utf8.append(codepointStart);
+        String partial1 = utf8.toString();
+        utf8.partialReset();
+
+        utf8.append(codepointFinish);
+        String partial2 = utf8.toString();
+        utf8.partialReset();
+
+        assertThat("Seq1", partial1, is("")); // nothing decoded yet
+        assertThat("Seq2", partial2, is(gothicUnicode)); // completed decode
     }
 
     @ParameterizedTest
