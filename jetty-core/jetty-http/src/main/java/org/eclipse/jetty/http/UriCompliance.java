@@ -72,7 +72,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
          */
         UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding"),
         /**
-         * Allow Bad UTF-8 encodings to be substituted by the replacement character.</code>.
+         * Allow Bad UTF-8 encodings to be substituted by the replacement character.
          */
         BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF8 encoding");
 
