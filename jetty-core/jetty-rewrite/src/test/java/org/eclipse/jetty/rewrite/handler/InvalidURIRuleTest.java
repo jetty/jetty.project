@@ -218,6 +218,24 @@ public class InvalidURIRuleTest extends AbstractRuleTest
     }
 
     @Test
+    public void testInvalidPercentEncoding() throws Exception
+    {
+        InvalidURIRule rule = new InvalidURIRule();
+        rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
+        start(rule);
+
+        String request = """
+            GET /jsp/shamrock-%xx%zz.jsp HTTP/1.1
+            Host: localhost
+                        
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        // The rule is not invoked because the UTF-8 sequence is invalid.
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+    }
+
+    @Test
     public void testInvalidUTF8() throws Exception
     {
         InvalidURIRule rule = new InvalidURIRule();
@@ -231,8 +249,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-        // The rule is not invoked because the UTF-8 sequence is invalid.
-        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+        assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
     }
 
     @Test
@@ -249,7 +266,6 @@ public class InvalidURIRuleTest extends AbstractRuleTest
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-        // The rule is not invoked because the UTF-8 sequence is incomplete.
-        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+        assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
     }
 }
