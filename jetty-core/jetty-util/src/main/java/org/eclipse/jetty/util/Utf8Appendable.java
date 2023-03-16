@@ -378,7 +378,11 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     {
         complete();
         if (onCodingError != null && hasCodingErrors())
-            throw onCodingError.get();
+        {
+            X x = onCodingError.get();
+            if (x != null)
+                throw x;
+        }
         String string = _appendable.toString();
         reset();
         return string;

@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -663,6 +664,28 @@ public final class URIUtil
      */
     public static String canonicalPath(String encodedPath)
     {
+        return canonicalPath(encodedPath, null);
+    }
+
+    /**
+     * Canonicalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * <p>
+     * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
+     * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
+     * Unsafe characters, other than '{@code /}' will be encoded.  Encodings will be uppercase hex.
+     * Canonical paths are also normalized and may be used in string comparisons with other canonical paths.
+     * <p>
+     * For example the path {@code /fo %2fo/b%61r} will be normalized to {@code /fo%20%2Fo/bar},
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal {@code /fo /o/bar}.
+     * @param encodedPath An encoded URI path
+     * @param onBadUtf8 A supplier of exceptions if bad UTF8 is encountered, or null for no exception thrown.
+     * @return the canonical path or null if it is non-normal
+     * @see #decodePath(String)
+     * @see #normalizePath(String)
+     * @see URI
+     */
+    public static <X extends Throwable> String canonicalPath(String encodedPath, Supplier<X> onBadUtf8) throws X
+    {
         if (encodedPath == null)
             return null;
 
@@ -763,8 +786,9 @@ public final class URIUtil
             slash = c == '/';
         }
 
-        // TODO need a version that checks the builder for coding errors and throws (used if lacking new compliance violation)
-        String canonical = (builder != null) ? builder.toCompleteString() : encodedPath;
+        String canonical = (builder != null)
+            ? (onBadUtf8 == null ? builder.toCompleteString() : builder.takeString(onBadUtf8))
+            : encodedPath;
         return normal ? canonical : normalizePath(canonical);
     }
 
