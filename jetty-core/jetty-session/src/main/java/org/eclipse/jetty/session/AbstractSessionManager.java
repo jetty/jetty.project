@@ -239,6 +239,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         final Server server = getServer();
 
         _context = ContextHandler.getCurrentContext();
+        if (_context == null)
+            _context = server.getContext();
         _loader = Thread.currentThread().getContextClassLoader();
 
         // ensure a session path is set

@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.SessionHandler.SessionRequest;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +45,6 @@ public class SessionHandlerTest
 {
     private Server _server;
     private LocalConnector _connector;
-    ContextHandler _context;
 
     @BeforeEach
     public void beforeEach() throws Exception
@@ -56,15 +54,12 @@ public class SessionHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        _context = new ContextHandler("/");
-        _server.setHandler(_context);
-
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionCookie("SIMPLE");
         sessionHandler.setUsingCookies(true);
         sessionHandler.setUsingURLs(false);
         sessionHandler.setSessionPath("/");
-        _context.setHandler(sessionHandler);
+        _server.setHandler(sessionHandler);
 
         sessionHandler.setHandler(new Handler.Abstract()
         {
@@ -351,7 +346,7 @@ public class SessionHandlerTest
     public void testSessionLifeCycleListener() throws Exception
     {
         List<String> history = new CopyOnWriteArrayList<>();
-        _context.setAttribute("slcl", new Session.LifeCycleListener()
+        _server.getContext().setAttribute("slcl", new Session.LifeCycleListener()
         {
             @Override
             public void onSessionIdChanged(Session session, String oldId)
@@ -396,7 +391,7 @@ public class SessionHandlerTest
     public void testSessionValueAttributeListener() throws Exception
     {
         List<String> history = new CopyOnWriteArrayList<>();
-        _context.setAttribute("slcl", new Session.LifeCycleListener()
+        _server.getContext().setAttribute("slcl", new Session.LifeCycleListener()
         {
             @Override
             public void onSessionCreated(Session session)
