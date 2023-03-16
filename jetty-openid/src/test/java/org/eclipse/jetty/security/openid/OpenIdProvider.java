@@ -61,6 +61,8 @@ public class OpenIdProvider extends ContainerLifeCycle
     private String provider;
     private User preAuthedUser;
     private final CounterStatistic loggedInUsers = new CounterStatistic();
+    private long _idTokenExpiry = 10000;
+
 
     public static void main(String[] args) throws Exception
     {
@@ -101,6 +103,16 @@ public class OpenIdProvider extends ContainerLifeCycle
         server.setHandler(contextHandler);
 
         addBean(server);
+    }
+
+    public void setIdTokenExpiry(long expiry)
+    {
+        _idTokenExpiry = expiry;
+    }
+
+    public long getIdTokenExpiry()
+    {
+        return _idTokenExpiry;
     }
 
     public void join() throws InterruptedException
@@ -289,7 +301,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             long expiry = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis();
             String response = "{" +
                 "\"access_token\": \"" + accessToken + "\"," +
-                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId)) + "\"," +
+                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId, _idTokenExpiry)) + "\"," +
                 "\"expires_in\": " + expiry + "," +
                 "\"token_type\": \"Bearer\"" +
                 "}";
@@ -374,10 +386,11 @@ public class OpenIdProvider extends ContainerLifeCycle
             return subject;
         }
 
-        public String getIdToken(String provider, String clientId)
+        public String getIdToken(String provider, String clientId, long expiry)
         {
-            long expiry = System.currentTimeMillis() + Duration.ofMinutes(1).toMillis();
-            return JwtEncoder.createIdToken(provider, clientId, subject, name, expiry);
+            long currentTimeMillis = System.currentTimeMillis();
+            long expiryTime = (currentTimeMillis + expiry) / 1000;
+            return JwtEncoder.createIdToken(provider, clientId, subject, name, expiryTime);
         }
 
         @Override

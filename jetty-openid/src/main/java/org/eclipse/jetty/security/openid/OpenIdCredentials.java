@@ -137,10 +137,19 @@ public class OpenIdCredentials implements Serializable
             throw new AuthenticationException("Authorized party claim value should be the client_id");
 
         // Check that the ID token has not expired by checking the exp claim.
-        long expiry = (Long)claims.get("exp");
-        long currentTimeSeconds = (long)(System.currentTimeMillis() / 1000F);
-        if (currentTimeSeconds > expiry)
+        if (isExpired())
             throw new AuthenticationException("ID Token has expired");
+    }
+
+    public boolean isExpired()
+    {
+        if (claims == null)
+            return true;
+
+        // Check that the ID token has not expired by checking the exp claim.
+        long expiry = (Long)claims.get("exp");
+        long currentTimeSeconds = System.currentTimeMillis() / 1000;
+        return (currentTimeSeconds > expiry);
     }
 
     private void validateAudience(OpenIdConfiguration configuration) throws AuthenticationException

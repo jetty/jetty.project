@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -50,6 +51,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 @SuppressWarnings("unchecked")
 public class OpenIdAuthenticationTest
@@ -252,17 +254,67 @@ public class OpenIdAuthenticationTest
         response = client.GET(appUriString + "/admin");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
-        // This causes any validation of UserIdentity in the LoginService to fail.
+        // This causes any validation of UserIdentity in the LoginService to fail
+        // causing subsequent requests to be redirected to the auth endpoint for login again.
         loggedIn.set(false);
-
-        // This results in a logout redirect to the Provider, and then user will no longer be authenticated.
+        client.setFollowRedirects(false);
         response = client.GET(appUriString + "/admin");
+        assertThat(response.getStatus(), is(HttpStatus.SEE_OTHER_303));
+        String location = response.getHeaders().get(HttpHeader.LOCATION);
+        assertThat(location, containsString(openIdProvider.getProvider() + "/auth"));
+
+        // Note that we couldn't follow "OpenID Connect RP-Initiated Logout 1.0" because we redirect straight to auth endpoint.
+        assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(1L));
+        assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
+        assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
+    }
+
+    @Test
+    public void testExpiredIdToken() throws Exception
+    {
+        setup(null);
+        long idTokenExpiryTime = 2000;
+        openIdProvider.setIdTokenExpiry(idTokenExpiryTime);
+        openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
+
+        String appUriString = "http://localhost:" + connector.getLocalPort();
+
+        // Initially not authenticated
+        ContentResponse response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
+
+        // Request to login is success
+        response = client.GET(appUriString + "/login");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("success"));
+
+        // Now authenticated we can get info
+        client.setFollowRedirects(false);
+        response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
+
+        // After waiting past ID_Token expiry time we are no longer authenticated.
+        // Even though this page is non-mandatory authentication the OpenId attributes should be cleared.
+        Thread.sleep(idTokenExpiryTime * 2);
+        response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         content = response.getContentAsString();
         assertThat(content, containsString("not authenticated"));
 
-        // Test that the user was logged out successfully on the openid provider.
-        assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(0L));
+        // Attempting to access a secured page requires you to re-login.
+        response = client.GET(appUriString + "/profile");
+        assertThat(response.getStatus(), is(HttpStatus.SEE_OTHER_303));
+        assertThat(response.getHeaders().get(HttpHeader.LOCATION), startsWith(openIdProvider.getProvider() + "/auth"));
+
+        // User was never redirected to logout page.
+        assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
     }
