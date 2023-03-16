@@ -259,27 +259,6 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         }
     }
 
-    private int decode(int state, byte b)
-    {
-        int i = b & 0xFF;
-        int type = BYTE_TABLE[i];
-        _codep = _state == UTF8_ACCEPT ? (0xFF >> type) & i : (i & 0x3F) | (_codep << 6);
-        int s = TRANS_TABLE[_state + type];
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.info("decode(state={}, b={}: {}) _codep={}, i={}, type={}, s={}",
-                String.format("%2d", state),
-                String.format("0x%02X", (b & 0xFF)),
-                String.format("%8s", Integer.toBinaryString(b & 0xFF)),
-                _codep,
-                i, type, (s == UTF8_REJECT) ? "REJECT" : (s == UTF8_ACCEPT) ? "ACCEPT" : s
-            );
-        }
-
-        return s;
-    }
-
     public void appendByte(byte b) throws IOException
     {
         if (b > 0 && _state == UTF8_ACCEPT)
@@ -288,8 +267,23 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
         }
         else
         {
-            int current = decode(_state, b);
-            switch (current)
+            int i = b & 0xFF;
+            int type = BYTE_TABLE[i];
+            _codep = _state == UTF8_ACCEPT ? (0xFF >> type) & i : (i & 0x3F) | (_codep << 6);
+            int next = TRANS_TABLE[_state + type];
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("decode(state={}, b={}: {}) _codep={}, i={}, type={}, s={}",
+                    String.format("%2d", _state),
+                    String.format("0x%02X", (b & 0xFF)),
+                    String.format("%8s", Integer.toBinaryString(b & 0xFF)),
+                    _codep,
+                    i, type, (next == UTF8_REJECT) ? "REJECT" : (next == UTF8_ACCEPT) ? "ACCEPT" : next
+                );
+            }
+
+            switch (next)
             {
                 case UTF8_ACCEPT ->
                 {
@@ -305,20 +299,20 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
                         }
                     }
                     _codep = 0;
-                    _state = current;
+                    _state = next;
                 }
                 case UTF8_REJECT ->
                 {
+                    _codep = 0;
                     _appendable.append(REPLACEMENT);
                     _codingErrors = true;
-                    _codep = 0;
                     if (_state != UTF8_ACCEPT)
                     {
                         _state = UTF8_ACCEPT;
                         appendByte(b);
                     }
                 }
-                default -> _state = current;
+                default -> _state = next;
             }
         }
     }
@@ -399,11 +393,16 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     @Override
     public String takeString() throws CharacterCodingException
     {
-        return takeString(() ->
+        return takeString(Utf8Appendable::badUTF8);
+    }
+
+    private static CharacterCodingException badUTF8()
+    {
+        return new CharacterCodingException()
         {
-            CharacterCodingException error = new CharacterCodingException();
-            error.initCause(new IllegalArgumentException("Bad UTF-8 encoding"));
-            return error;
-        });
+            {
+                initCause(new IllegalArgumentException("Bad UTF-8 encoding"));
+            }
+        };
     }
 }
