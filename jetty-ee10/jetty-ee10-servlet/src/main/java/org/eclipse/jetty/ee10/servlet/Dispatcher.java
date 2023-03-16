@@ -270,7 +270,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getRequestURI()
         {
-            return _uri == null ? super.getRequestURI() : _uri.getPath();
+            return _uri == null ? super.getRequestURI() : _uri.getPathQuery();
         }
 
         @Override
