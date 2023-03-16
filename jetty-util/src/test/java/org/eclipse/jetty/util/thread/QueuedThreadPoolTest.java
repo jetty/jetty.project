@@ -19,6 +19,7 @@ import java.net.URLClassLoader;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -236,6 +237,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(3L * tp.getIdleTimeout() / 2);
         assertThat(tp.getThreads(), is(2));
         assertThat(tp.getIdleThreads(), is(2));
+        assertThat(tp.getQueueSize(), is(0));
 
         // Run job0
         RunningJob job0 = new RunningJob("JOB0");
@@ -243,6 +245,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job0._run.await(10, TimeUnit.SECONDS));
         assertThat(tp.getThreads(), is(2));
         assertThat(tp.getIdleThreads(), is(1));
+        assertThat(tp.getQueueSize(), is(0));
 
         // Run job1
         RunningJob job1 = new RunningJob("JOB1");
@@ -250,6 +253,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job1._run.await(10, TimeUnit.SECONDS));
         assertThat(tp.getThreads(), is(2));
         assertThat(tp.getIdleThreads(), is(0));
+        assertThat(tp.getQueueSize(), is(0));
 
         // Run job2
         RunningJob job2 = new RunningJob("JOB2");
@@ -257,6 +261,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job2._run.await(10, TimeUnit.SECONDS));
         assertThat(tp.getThreads(), is(3));
         assertThat(tp.getIdleThreads(), is(0));
+        assertThat(tp.getQueueSize(), is(0));
 
         // Run job3
         RunningJob job3 = new RunningJob("JOB3");
@@ -264,11 +269,13 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job3._run.await(10, TimeUnit.SECONDS));
         assertThat(tp.getThreads(), is(4));
         assertThat(tp.getIdleThreads(), is(0));
+        assertThat(tp.getQueueSize(), is(0));
 
         // Check no short term change
         Thread.sleep(100);
         assertThat(tp.getThreads(), is(4));
         assertThat(tp.getIdleThreads(), is(0));
+        assertThat(tp.getQueueSize(), is(0));
 
         // Run job4. will be queued
         RunningJob job4 = new RunningJob("JOB4");
@@ -1062,6 +1069,77 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         Thread.sleep(idleTimeout);
         assertEquals(minThreads, tp.getThreads());
+    }
+
+    @Test
+    public void testRealistic() throws Exception
+    {
+        final int spikeThreads = 1000;
+        final int busyThreads = 200;
+        final int idleTimeout = 2000;
+        final int shrinkCount = 200;
+        final int jobDuration = 10;
+        final Random random = new Random();
+
+        QueuedThreadPool qtp = new QueuedThreadPool(2 * spikeThreads, busyThreads / 2);
+        qtp.setIdleTimeout(idleTimeout);
+        qtp.setIdleTimeoutMaxShrinkCount(shrinkCount);
+        qtp.start();
+
+        CountDownLatch spike = new CountDownLatch(spikeThreads);
+        for (int i = 0; i < spikeThreads; i++)
+            qtp.execute(job(spike, 100 + random.nextInt(2 * jobDuration)));
+        spike.await();
+        System.err.printf("busy=%d %s\n", qtp.getBusyThreads(), qtp);
+
+        // keep threads busy
+        long last = System.nanoTime();
+        while (true)
+        {
+            if (NanoTime.secondsSince(last) > 1)
+            {
+                last = System.nanoTime();
+                System.err.printf("busy=%d %s\n", qtp.getBusyThreads(), qtp);
+                if (qtp.getThreads() < (busyThreads * 3 / 2))
+                    break;
+            }
+            try
+            {
+                if (qtp.getBusyThreads() < busyThreads)
+                {
+                    CountDownLatch start = new CountDownLatch(1);
+                    qtp.execute(job(start, random.nextInt(jobDuration) + jobDuration / 2));
+                    start.await();
+                    continue;
+                }
+                Thread.sleep(random.nextInt(jobDuration / 4));
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        qtp.stop();
+    }
+
+    Runnable job(CountDownLatch started, int duration)
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    started.countDown();
+                    Thread.sleep(duration);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 
     private int count(String s, String p)
