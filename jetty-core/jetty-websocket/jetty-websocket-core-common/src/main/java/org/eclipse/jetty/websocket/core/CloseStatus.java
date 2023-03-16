@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -171,7 +170,7 @@ public class CloseStatus
                 Utf8StringBuilder utf = new Utf8StringBuilder();
                 // if this throws, we know we have bad UTF8
                 utf.append(reasonBytes, 0, reasonBytes.length);
-                String reason = utf.takeString(() -> new BadPayloadException("Invalid UTF8 in CLOSE Reason", new CharacterCodingException()));
+                String reason = utf.takeString(() -> new BadPayloadException("Invalid UTF8 in CLOSE Reason"));
 
                 this.code = statusCode;
                 this.reason = reason;
