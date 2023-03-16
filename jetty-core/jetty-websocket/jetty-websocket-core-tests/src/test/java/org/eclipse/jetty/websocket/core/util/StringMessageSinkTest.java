@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -98,7 +99,7 @@ public class StringMessageSinkTest
         messageSink.accept(new Frame(OpCode.TEXT, invalidUtf8Payload).setFin(true), callback);
 
         // Callback should fail and we don't receive the message in the sink.
-        RuntimeException error = assertThrows(RuntimeException.class, () -> callback.block(5, TimeUnit.SECONDS));
+        IOException error = assertThrows(IOException.class, () -> callback.block(5, TimeUnit.SECONDS));
         assertThat(error.getCause(), instanceOf(CharacterCodingException.class));
         assertNull(endpoint.messages.poll());
     }
@@ -118,7 +119,7 @@ public class StringMessageSinkTest
         messageSink.accept(new Frame(OpCode.TEXT, continuationUtf8Payload).setFin(true), continuationCallback);
 
         // Callback should fail and we don't receive the message in the sink.
-        RuntimeException error = assertThrows(RuntimeException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
+        IOException error = assertThrows(IOException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
         assertThat(error.getCause(), instanceOf(CharacterCodingException.class));
         assertNull(endpoint.messages.poll());
     }

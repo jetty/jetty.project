@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
 import java.util.Map;
 
@@ -121,7 +122,7 @@ public class ValidationExtension extends AbstractExtension
             outgoingUtf8Validation = new NullAppendable();
     }
 
-    private void validateUTF8(Frame frame, NullAppendable appendable, byte continuedOpCode)
+    private void validateUTF8(Frame frame, NullAppendable appendable, byte continuedOpCode) throws IOException
     {
         //TODO this relies on sequencing being set
 
@@ -140,7 +141,7 @@ public class ValidationExtension extends AbstractExtension
                 if (frame.isFin())
                     appendable.complete();
                 if (appendable.hasCodingErrors())
-                    throw new IllegalArgumentException(new CharacterCodingException());
+                    throw new CharacterCodingException();
             }
         }
     }

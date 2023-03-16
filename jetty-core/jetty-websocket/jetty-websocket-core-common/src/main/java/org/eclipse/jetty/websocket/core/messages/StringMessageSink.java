@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
+import java.nio.charset.CharacterCodingException;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -50,8 +51,9 @@ public class StringMessageSink extends AbstractMessageSink
 
             out.append(frame.getPayload());
             if (frame.isFin())
-                methodHandle.invoke(out.toString());
-
+            {
+                methodHandle.invoke(out.takeString(CharacterCodingException::new));
+            }
             callback.succeeded();
             session.demand(1);
         }
