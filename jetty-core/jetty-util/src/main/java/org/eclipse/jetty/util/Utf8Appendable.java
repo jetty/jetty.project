@@ -383,6 +383,11 @@ public abstract class Utf8Appendable implements CharsetStringBuilder
     @Override
     public String takeString() throws CharacterCodingException
     {
-        return takeString(CharacterCodingException::new);
+        return takeString(() ->
+        {
+            CharacterCodingException error = new CharacterCodingException();
+            error.initCause(new IllegalArgumentException("Bad UTF-8 encoding"));
+            return error;
+        });
     }
 }
