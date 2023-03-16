@@ -14,12 +14,12 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.nio.charset.CharacterCodingException;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
 public class StringMessageSink extends AbstractMessageSink
@@ -52,7 +52,7 @@ public class StringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.takeString(CharacterCodingException::new));
+                methodHandle.invoke(out.takeString(() -> new BadPayloadException("Invalid UTF-8")));
             }
             callback.succeeded();
             session.demand(1);

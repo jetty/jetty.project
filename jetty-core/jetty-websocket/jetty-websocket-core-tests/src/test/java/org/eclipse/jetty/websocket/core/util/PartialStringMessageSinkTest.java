@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,8 +69,15 @@ public class PartialStringMessageSinkTest
     @Test
     public void testUtf8Continuation() throws Exception
     {
-        ByteBuffer firstUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90});
-        ByteBuffer continuationUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0x8D, (byte)0x88});
+        // GOTHIC LETTER HWAIR
+        final String gothicUnicode = "𐍈";
+        // Lets use a 4 byte utf-8 sequence
+        byte[] utf8Bytes = gothicUnicode.getBytes(StandardCharsets.UTF_8);
+        assertThat(utf8Bytes.length, is(4));
+
+        // First payload is 2 bytes, second payload is 2 bytes
+        ByteBuffer firstUtf8Payload = BufferUtil.toBuffer(utf8Bytes, 0, 2);
+        ByteBuffer continuationUtf8Payload = BufferUtil.toBuffer(utf8Bytes, 2, 2);
 
         FutureCallback callback = new FutureCallback();
         messageSink.accept(new Frame(OpCode.TEXT, firstUtf8Payload).setFin(false), callback);
@@ -82,8 +89,8 @@ public class PartialStringMessageSinkTest
 
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertThat(message.size(), is(2));
-        assertThat(message.get(0), is(""));
-        assertThat(message.get(1), is("\uD800\uDF48")); // UTF-8 encoded payload.
+        assertThat(message.get(0), is("")); // a not yet complete codepoint
+        assertThat(message.get(1), is(gothicUnicode)); // the complete unicode codepoint
     }
 
     @Test
@@ -95,8 +102,8 @@ public class PartialStringMessageSinkTest
         messageSink.accept(new Frame(OpCode.TEXT, invalidUtf8Payload).setFin(true), callback);
 
         // Callback should fail and we don't receive the message in the sink.
-        IOException error = assertThrows(IOException.class, () -> callback.block(5, TimeUnit.SECONDS));
-        assertThat(error.getCause(), instanceOf(CharacterCodingException.class));
+        RuntimeException error = assertThrows(RuntimeException.class, () -> callback.block(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(BadPayloadException.class));
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertTrue(message.isEmpty());
     }
@@ -115,8 +122,8 @@ public class PartialStringMessageSinkTest
         messageSink.accept(new Frame(OpCode.TEXT, continuationUtf8Payload).setFin(true), continuationCallback);
 
         // Callback should fail and we only received the first frame which had no full character.
-        IOException error = assertThrows(IOException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
-        assertThat(error.getCause(), instanceOf(CharacterCodingException.class));
+        RuntimeException error = assertThrows(RuntimeException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(BadPayloadException.class));
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertThat(message.size(), is(1));
         assertThat(message.get(0), is(""));

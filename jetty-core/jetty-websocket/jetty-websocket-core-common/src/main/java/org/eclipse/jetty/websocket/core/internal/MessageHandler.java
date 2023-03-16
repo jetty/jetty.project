@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -205,19 +204,15 @@ public class MessageHandler implements FrameHandler
 
             if (frame.isFin())
             {
-                onText(textBuffer.takeString(CharacterCodingException::new), callback);
+                onText(textBuffer.takeString(() -> new BadPayloadException("Invalid UTF-8")), callback);
                 textBuffer.reset();
             }
             else
             {
                 if (textBuffer.hasCodingErrors())
-                    throw new CharacterCodingException();
+                    throw new BadPayloadException("Invalid UTF-8");
                 callback.succeeded();
             }
-        }
-        catch (CharacterCodingException e)
-        {
-            callback.failed(new BadPayloadException(e));
         }
         catch (Throwable t)
         {

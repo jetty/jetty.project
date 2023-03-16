@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.IOException;
-import java.nio.charset.CharacterCodingException;
 import java.util.Map;
 
 import org.eclipse.jetty.util.Callback;
@@ -22,6 +21,7 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.slf4j.Logger;
@@ -141,7 +141,7 @@ public class ValidationExtension extends AbstractExtension
                 if (frame.isFin())
                     appendable.complete();
                 if (appendable.hasCodingErrors())
-                    throw new CharacterCodingException();
+                    throw new BadPayloadException("Invalid UTF-8 encountered");
             }
         }
     }
