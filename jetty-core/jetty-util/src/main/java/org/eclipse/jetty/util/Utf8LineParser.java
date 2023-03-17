@@ -54,7 +54,7 @@ public class Utf8LineParser
             if (parseByte(b))
             {
                 state = State.START;
-                String str = utf.takeString(() -> new IllegalStateException("Bad UTF-8"));
+                return utf.takeString(() -> new IllegalStateException("Bad UTF-8"));
             }
         }
         // have not reached end of line (yet)
