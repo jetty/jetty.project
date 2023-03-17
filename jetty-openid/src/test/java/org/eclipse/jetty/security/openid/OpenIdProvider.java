@@ -63,7 +63,6 @@ public class OpenIdProvider extends ContainerLifeCycle
     private final CounterStatistic loggedInUsers = new CounterStatistic();
     private long _idTokenExpiry = 10000;
 
-
     public static void main(String[] args) throws Exception
     {
         String clientId = "CLIENT_ID123";
