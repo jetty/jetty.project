@@ -234,7 +234,7 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.toString());
+                messages.offer(activeMessage.takeString(IllegalArgumentException::new));
                 activeMessage = null;
             }
             callback.succeeded();

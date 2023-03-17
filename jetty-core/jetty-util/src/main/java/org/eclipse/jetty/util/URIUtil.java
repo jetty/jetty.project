@@ -412,7 +412,7 @@ public final class URIUtil
                 ret.append(c);
             }
         }
-        return ret.toString();
+        return ret.toCompleteString();
     }
 
     /**
@@ -1557,7 +1557,7 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.toString();
+                return builder.toCompleteString();
             return path;
         }
         catch (IllegalArgumentException e)

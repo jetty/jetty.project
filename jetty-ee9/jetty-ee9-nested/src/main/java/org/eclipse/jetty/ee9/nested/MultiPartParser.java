@@ -164,12 +164,12 @@ public class MultiPartParser
         _length = s.length();
     }
 
-    /*
+    /**
      * Mime Field strings are treated as UTF-8 as per https://tools.ietf.org/html/rfc7578#section-5.1
      */
     private String takeString()
     {
-        String s = _string.toString();
+        String s = _string.toCompleteString();
         // trim trailing whitespace.
         if (s.length() > _length)
             s = s.substring(0, _length);

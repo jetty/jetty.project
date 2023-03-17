@@ -49,7 +49,7 @@ public class PartialStringMessageSink extends AbstractMessageSink
             }
             else
             {
-                String partial = out.toString();
+                String partial = out.toString(); // partial
                 if (out.hasCodingErrors())
                     throw new BadPayloadException("Invalid UTF-8");
                 out.partialReset();

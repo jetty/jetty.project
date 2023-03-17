@@ -181,7 +181,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         {
             // extract auctions from the results
             @SuppressWarnings("unchecked")
-            Map<String, Object> query = (Map<String, Object>)new JSON().fromJSON(_content.toString());
+            Map<String, Object> query = (Map<String, Object>)new JSON().fromJSON(_content.toCompleteString());
             Object[] auctions = (Object[])query.get("Item");
             if (auctions != null)
             {

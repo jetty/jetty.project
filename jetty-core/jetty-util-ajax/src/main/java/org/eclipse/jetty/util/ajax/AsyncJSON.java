@@ -1173,7 +1173,7 @@ public class AsyncJSON
         builder.append(indent);
         builder.append("^ ");
         builder.append(message);
-        return new IllegalArgumentException(builder.toString());
+        return new IllegalArgumentException(builder.toCompleteString());
     }
 
     private static boolean isWhitespace(byte ws)

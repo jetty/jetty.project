@@ -110,7 +110,7 @@ public class HttpWriterTest
 
         Utf8StringBuilder buf = new Utf8StringBuilder();
         buf.append(BufferUtil.toArray(_bytes), 0, _bytes.remaining());
-        assertEquals(data, buf.toString());
+        assertEquals(data, buf.takeString(IllegalArgumentException::new));
     }
 
     @Test
