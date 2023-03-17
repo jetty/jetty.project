@@ -363,7 +363,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                     byte[] bytes = _sslSession.getId();
                     String idStr = StringUtil.toHexString(bytes);
 
-                    sslSessionData = new SslSessionData(idStr, keySize, certs);
+                    sslSessionData = new SslSessionData(idStr, keySize, certs, cipherSuite);
                     _sslSession.putValue(key, sslSessionData);
                 }
                 catch (Exception e)
@@ -411,7 +411,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     /**
      * Simple bundle of data that is cached in the SSLSession.
      */
-    public record SslSessionData(String sessionId, int keySize, X509Certificate[] peerCertificates)
+    public record SslSessionData(String sessionId, int keySize, X509Certificate[] peerCertificates, String cipherSuite)
     {
     }
 }

@@ -18,6 +18,7 @@ import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Objects;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
@@ -70,15 +71,20 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
             Response.writeError(req, res, callback, HttpServletResponse.SC_FORBIDDEN);
             return Authentication.SEND_FAILURE;
         }
-        
+
+        if(sslSessionData.cipherSuite()!=null)
+        {
+            req.setAttribute("jakarta.servlet.request.cipher_suite", sslSessionData.cipherSuite());
+        }
+        req.setAttribute("jakarta.servlet.request.key_size", sslSessionData.keySize());
         X509Certificate[] certs = sslSessionData.peerCertificates();
-        
+
         try
         {
             // Need certificates.
             if (certs != null && certs.length > 0)
             {
-
+                req.setAttribute("jakarta.servlet.request.X509Certificate", certs);
                 if (validateCerts)
                 {
                     sslContextFactory.validateCerts(certs);
