@@ -204,12 +204,19 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             return exact.getPreMatched();
 
         // Try a prefix match
-        MappedResource<E> prefix = _prefixMap.getBest(path);
-        if (prefix != null)
+        if (!_prefixMap.isEmpty())
         {
-            MatchedPath matchedPath = prefix.getPathSpec().matched(path);
-            if (matchedPath != null)
-                return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
+            int i = path.length();
+            while (i >= 0)
+            {
+                MappedResource<E> candidate = _prefixMap.getBest(path, 0, i--);
+                if (candidate == null)
+                    continue;
+
+                MatchedPath matchedPath = candidate.getPathSpec().matched(path);
+                if (matchedPath != null)
+                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+            }
         }
 
         // Try a suffix match
@@ -223,13 +230,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             //  Loop 3: "foo"
             while ((i = path.indexOf('.', i + 1)) > 0)
             {
-                prefix = _suffixMap.get(path, i + 1, path.length() - i - 1);
-                if (prefix == null)
+                MappedResource<E> suffix = _suffixMap.get(path, i + 1, path.length() - i - 1);
+                if (suffix == null)
                     continue;
 
-                MatchedPath matchedPath = prefix.getPathSpec().matched(path);
+                MatchedPath matchedPath = suffix.getPathSpec().matched(path);
                 if (matchedPath != null)
-                    return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
+                    return new MatchedResource<>(suffix.getResource(), suffix.getPathSpec(), matchedPath);
             }
         }
 

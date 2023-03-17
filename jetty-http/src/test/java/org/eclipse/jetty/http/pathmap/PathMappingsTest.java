@@ -93,6 +93,24 @@ public class PathMappingsTest
     }
 
     /**
+     * Test the match order rules imposed by the Servlet API (any vs specific sub-dir)
+     */
+    @Test
+    public void testServletMatchPrefix()
+    {
+        PathMappings<String> p = new PathMappings<>();
+
+        p.put(new ServletPathSpec("/*"), "any");
+        p.put(new ServletPathSpec("/foo/*"), "foo");
+
+//        assertMatch(p, "/abs/path", "any");
+//        assertMatch(p, "/abs/foo/bar", "any");
+//        assertMatch(p, "/foo/bar", "foo");
+//        assertMatch(p, "/", "any");
+        assertMatch(p, "/foobar", "any");
+    }
+
+    /**
      * Test the match order rules with a mixed Servlet and URI Template path specs
      *
      * <ul>
