@@ -963,7 +963,19 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      */
     protected void runJob(Runnable job)
     {
-        job.run();
+        try
+        {
+            job.run();
+        }
+        catch (Throwable e)
+        {
+            LOG.warn("Job failed", e);
+        }
+        finally
+        {
+            // Clear any thread interrupted status.
+            Thread.interrupted();
+        }
     }
 
     /**
@@ -1057,94 +1069,79 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             try
             {
                 Runnable job = null;
-                exit: while (true)
+                exit: while (_counts.getHi() > Integer.MIN_VALUE)
                 {
-                    // If we had a job,
-                    if (job != null)
-                    {
-                        // signal that we are idle again,
-                        idle = true;
-                        if (!addCounts(0, 1))
-                            break;
-                    }
-                    // else check we are still running.
-                    else if (_counts.getHi() == Integer.MIN_VALUE)
-                    {
-                        break;
-                    }
-
                     try
                     {
                         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
                         job = idleJobPoll(idleTimeoutNanos);
-                        if (job == null)
+                        while (job != null)
                         {
-                            // No job available
-                            int threads = getThreads();
-                            if (idleTimeoutNanos > 0 && threads > getMinThreads())
+                            idle = false;
+                            // Run the jobs.
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("run {} in {}", job, QueuedThreadPool.this);
+                            runJob(job);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
+
+                            // signal that we are idle again,
+                            if (!addCounts(0, 1))
+                                break;
+                            idle = true;
+
+                            // Look for another job
+                            job = _jobs.poll();
+                        }
+
+                        // No jobs available, should we shrink?
+                        int threads = getThreads();
+                        if (threads > getMinThreads())
+                        {
+                            // We have an idle timeout and excess threads, so check if we should shrink?
+                            long now = NanoTime.now();
+                            long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Shrink check, {} > {} period={}ms {}", threads, getMinThreads(), TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
+                            while (true)
                             {
-                                // We have an idle timeout and excess threads, so check if we should shrink?
-                                long now = NanoTime.now();
-                                long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Shrink check, {} > {} period={}ms {}", threads, getMinThreads(), TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
-                                while (true)
+                                long shrinkThreshold = _shrinkThreshold.get();
+                                long threshold = shrinkThreshold;
+
+                                // If the threshold is too far in the past,
+                                // advance it to be one idle timeout before now plus a bit of shrink period.
+                                if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
+                                    threshold = now - idleTimeoutNanos;
+
+                                // advance the threshold by one shrink period
+                                threshold += shrinkPeriod;
+
+                                // Is the new threshold in the future?
+                                if (NanoTime.isBefore(now, threshold))
                                 {
-                                    long shrinkThreshold = _shrinkThreshold.get();
-                                    long threshold = shrinkThreshold;
+                                    // Yes - we cannot shrink yet, so break and continue looking for jobs
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
+                                    break;
+                                }
 
-                                    // If the threshold is too far in the past,
-                                    // advance it to be one idle timeout before now plus a bit of shrink period.
-                                    if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
-                                        threshold = now - idleTimeoutNanos;
-
-                                    // advance the threshold by one shrink period
-                                    threshold += shrinkPeriod;
-
-                                    // Is the new threshold in the future?
-                                    if (NanoTime.isBefore(now, threshold))
-                                    {
-                                        // Yes - we cannot shrink yet, so break and continue looking for jobs
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
-                                        break;
-                                    }
-
-                                    // We can shrink if we can update the atomic shrink threshold?
-                                    if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
-                                    {
-                                        // Yes - we have shrunk, so exit.
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
-                                        break exit;
-                                    }
+                                // We can shrink if we can update the atomic shrink threshold?
+                                if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
+                                {
+                                    // Yes - we have shrunk, so exit.
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
+                                    break exit;
                                 }
                             }
-                            continue;
                         }
-                        idle = false;
-
-                        // Run the job.
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("run {} in {}", job, QueuedThreadPool.this);
-                        runJob(job);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
                     }
                     catch (InterruptedException e)
                     {
+                        boolean interrupted = Thread.interrupted();
                         if (LOG.isDebugEnabled())
-                            LOG.debug("interrupted {} in {}", job, QueuedThreadPool.this);
+                            LOG.debug("interrupted {} {} in {}", interrupted, job, QueuedThreadPool.this);
                         LOG.trace("IGNORED", e);
-                    }
-                    catch (Throwable e)
-                    {
-                        LOG.warn("Job failed", e);
-                    }
-                    finally
-                    {
-                        // Clear any thread interrupted status.
-                        Thread.interrupted();
                     }
                 }
             }
