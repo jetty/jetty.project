@@ -103,10 +103,10 @@ public class PathMappingsTest
         p.put(new ServletPathSpec("/*"), "any");
         p.put(new ServletPathSpec("/foo/*"), "foo");
 
-//        assertMatch(p, "/abs/path", "any");
-//        assertMatch(p, "/abs/foo/bar", "any");
-//        assertMatch(p, "/foo/bar", "foo");
-//        assertMatch(p, "/", "any");
+        assertMatch(p, "/abs/path", "any");
+        assertMatch(p, "/abs/foo/bar", "any");
+        assertMatch(p, "/foo/bar", "foo");
+        assertMatch(p, "/", "any");
         assertMatch(p, "/foobar", "any");
     }
 
