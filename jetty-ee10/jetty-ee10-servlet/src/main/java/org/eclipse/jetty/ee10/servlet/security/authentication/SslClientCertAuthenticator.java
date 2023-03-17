@@ -72,7 +72,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
             return Authentication.SEND_FAILURE;
         }
 
-        if(sslSessionData.cipherSuite()!=null)
+        if (sslSessionData.cipherSuite() != null)
         {
             req.setAttribute("jakarta.servlet.request.cipher_suite", sslSessionData.cipherSuite());
         }
