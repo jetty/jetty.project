@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -63,14 +64,27 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        X509Certificate[] certs = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+        //X509Certificate[] certs = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+        SecureRequestCustomizer.SslSessionData sslSessionData = (SecureRequestCustomizer.SslSessionData)req.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
+
+        if (sslSessionData == null)
+        {
+            return Authentication.SEND_FAILURE;
+        }
+
+        if (sslSessionData.cipherSuite() != null)
+        {
+            req.setAttribute("jakarta.servlet.request.cipher_suite", sslSessionData.cipherSuite());
+        }
+        req.setAttribute("jakarta.servlet.request.key_size", sslSessionData.keySize());
+        X509Certificate[] certs = sslSessionData.peerCertificates();
 
         try
         {
             // Need certificates.
             if (certs != null && certs.length > 0)
             {
-
+                req.setAttribute("jakarta.servlet.request.X509Certificate", certs);
                 if (validateCerts)
                 {
                     sslContextFactory.validateCerts(certs);
