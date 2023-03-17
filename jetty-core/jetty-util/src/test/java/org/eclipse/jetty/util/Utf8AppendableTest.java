@@ -400,7 +400,7 @@ public class Utf8AppendableTest
                 fail("Should not have thrown while in REPLACE mode", e);
             }
         }
-        String ourResult = utf8Builder.toString();
+        String ourResult = utf8Builder.toCompleteString();
         assertThat("Utf8Appendable with REPLACE mode", ourResult, is(expectedResult));
     }
 }
