@@ -102,12 +102,30 @@ public class PathMappingsTest
 
         p.put(new ServletPathSpec("/*"), "any");
         p.put(new ServletPathSpec("/foo/*"), "foo");
+        p.put(new ServletPathSpec("/a/*"), "a");
+        p.put(new ServletPathSpec("/a/b/*"), "ab");
 
         assertMatch(p, "/abs/path", "any");
         assertMatch(p, "/abs/foo/bar", "any");
         assertMatch(p, "/foo/bar", "foo");
         assertMatch(p, "/", "any");
         assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/a/bc", "a");
+        assertMatch(p, "/a/b/c", "ab");
+        assertMatch(p, "/a/", "a");
+        assertMatch(p, "/a", "a");
+
+        // Try now with order important
+        p.put(new RegexPathSpec("/other.*/"), "other");
+        assertMatch(p, "/abs/path", "any");
+        assertMatch(p, "/abs/foo/bar", "any");
+        assertMatch(p, "/foo/bar", "foo");
+        assertMatch(p, "/", "any");
+        assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/a/bc", "a");
+        assertMatch(p, "/a/b/c", "ab");
+        assertMatch(p, "/a/", "a");
+        assertMatch(p, "/a", "a");
     }
 
     /**
