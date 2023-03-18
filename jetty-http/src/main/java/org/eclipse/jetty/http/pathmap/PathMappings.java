@@ -204,19 +204,14 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             return exact.getPreMatched();
 
         // Try a prefix match
-        if (!_prefixMap.isEmpty())
+        MappedResource<E> prefix = _prefixMap.getBest(path);
+        while (prefix != null)
         {
-            int i = path.length();
-            while (i >= 0)
-            {
-                MappedResource<E> candidate = _prefixMap.getBest(path, 0, i--);
-                if (candidate == null)
-                    continue;
-
-                MatchedPath matchedPath = candidate.getPathSpec().matched(path);
-                if (matchedPath != null)
-                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-            }
+            MatchedPath matchedPath = prefix.getPathSpec().matched(path);
+            if (matchedPath != null)
+                return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
+            int specLength = prefix.getPathSpec().getSpecLength();
+            prefix = specLength > 3 ? _prefixMap.getBest(path, 0, specLength - 3) : null;
         }
 
         // Try a suffix match
@@ -293,12 +288,14 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     {
                         if (_optimizedPrefix)
                         {
-                            MappedResource<E> candidate = _prefixMap.getBest(path);
-                            if (candidate != null)
+                            MappedResource<E> prefix = _prefixMap.getBest(path);
+                            while (prefix != null)
                             {
-                                matchedPath = candidate.getPathSpec().matched(path);
+                                matchedPath = prefix.getPathSpec().matched(path);
                                 if (matchedPath != null)
-                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                                    return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
+                                int specLength = prefix.getPathSpec().getSpecLength();
+                                prefix = specLength > 3 ? _prefixMap.getBest(path, 0, specLength - 3) : null;
                             }
 
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
@@ -319,13 +316,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                             //  Loop 3: "foo"
                             while ((i = path.indexOf('.', i + 1)) > 0)
                             {
-                                MappedResource<E> candidate = _suffixMap.get(path, i + 1, path.length() - i - 1);
-                                if (candidate == null)
+                                MappedResource<E> suffix = _suffixMap.get(path, i + 1, path.length() - i - 1);
+                                if (suffix == null)
                                     continue;
 
-                                matchedPath = candidate.getPathSpec().matched(path);
+                                matchedPath = suffix.getPathSpec().matched(path);
                                 if (matchedPath != null)
-                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                                    return new MatchedResource<>(suffix.getResource(), suffix.getPathSpec(), matchedPath);
                             }
                             // If we reached here, there's NO optimized SUFFIX Match possible, skip simple match below
                             skipRestOfGroup = true;
