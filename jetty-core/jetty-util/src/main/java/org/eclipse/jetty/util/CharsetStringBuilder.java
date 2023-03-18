@@ -249,7 +249,8 @@ public interface CharsetStringBuilder
         {
             String s = toCompleteString();
             _buffer.clear();
-            _stringBuilder.setLength(0);
+            if (_stringBuilder != null)
+                _stringBuilder.setLength(0);
             return s;
         }
     }
