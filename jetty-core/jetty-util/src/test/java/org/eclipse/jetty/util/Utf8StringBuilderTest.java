@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -38,70 +39,56 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-public class Utf8AppendableTest
+public class Utf8StringBuilderTest
 {
-    public static Stream<Class<? extends Utf8Appendable>> implementations()
-    {
-        return Stream.of(Utf8StringBuilder.class, Utf8StringBuffer.class);
-    }
-
-    public static Stream<Arguments> implementationArgs()
-    {
-        return implementations().map(Arguments::of);
-    }
-
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testUtf(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testUtf() throws Exception
     {
         String source = "abcd012345\n\r\u0000¤჻\ufffdjetty";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
         for (byte aByte : bytes)
         {
-            buffer.append(aByte);
+            utf8.append(aByte);
         }
-        assertEquals(source, buffer.toString());
-        assertTrue(buffer.toString().endsWith("jetty"));
+        assertEquals(source, utf8.toCompleteString());
+        assertTrue(utf8.toCompleteString().endsWith("jetty"));
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testUtf8WithMissingByte(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testUtf8WithMissingByte() throws Exception
     {
         String source = "abc჻";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
         for (int i = 0; i < bytes.length - 1; i++)
         {
-            buffer.append(bytes[i]);
+            utf8.append(bytes[i]);
         }
-        assertThat(buffer.toString(), equalTo("abc"));
-        assertThat(buffer.toCompleteString(), equalTo("abc�"));
-        assertThrows(CharacterCodingException.class, buffer::takeString);
+        assertThat(utf8.toPartialString(), equalTo("abc"));
+        assertThat(utf8.toCompleteString(), equalTo("abc�"));
+        assertThrows(CharacterCodingException.class, utf8::takeString);
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testUtf8WithAdditionalByte(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testUtf8WithAdditionalByte() throws Exception
     {
         String source = "abcXX";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         bytes[3] = (byte)0xc0;
         bytes[4] = (byte)0x00;
 
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
         for (byte aByte : bytes)
-            buffer.append(aByte);
+            utf8.append(aByte);
 
-        assertThat(buffer.toString(), equalTo("abc�\000"));
-        assertThat(buffer.toCompleteString(), equalTo("abc�\000"));
-        assertThrows(CharacterCodingException.class, buffer::takeString);
+        assertThat(utf8.toPartialString(), equalTo("abc�\000"));
+        assertThat(utf8.toCompleteString(), equalTo("abc�\000"));
+        assertThrows(CharacterCodingException.class, utf8::takeString);
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testUTF32codes(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testUTF32codes() throws Exception
     {
         String source = "\uD842\uDF9F";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -109,15 +96,14 @@ public class Utf8AppendableTest
         String jvmcheck = new String(bytes, 0, bytes.length, StandardCharsets.UTF_8);
         assertEquals(source, jvmcheck);
 
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
-        buffer.append(bytes, 0, bytes.length);
-        String result = buffer.toString();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
+        utf8.append(bytes, 0, bytes.length);
+        String result = utf8.toCompleteString();
         assertEquals(source, result);
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testGermanUmlauts(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testGermanUmlauts() throws Exception
     {
         byte[] bytes = new byte[6];
         bytes[0] = (byte)0xC3;
@@ -127,96 +113,90 @@ public class Utf8AppendableTest
         bytes[4] = (byte)0xC3;
         bytes[5] = (byte)0xA4;
 
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
         for (byte aByte : bytes)
-            buffer.append(aByte);
+            utf8.append(aByte);
 
-        assertEquals("üöä", buffer.toString());
+        assertEquals("üöä", utf8.toCompleteString());
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testInvalidUTF8(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testInvalidUTF8() throws Exception
     {
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
-        buffer.append((byte)0xC2); // start of sequence
-        buffer.append((byte)0xC2); // start of another sequence
-        assertThat(buffer.toString(), equalTo("�")); // only first sequence is reported as BAD
-        assertThat(buffer.toCompleteString(), equalTo("��")); // now both sequences are reported as BAD
-        assertThrows(CharacterCodingException.class, buffer::takeString);
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
+        utf8.append((byte)0xC2); // start of sequence
+        utf8.append((byte)0xC2); // start of another sequence
+        assertThat(utf8.toPartialString(), equalTo("�")); // only first sequence is reported as BAD
+        assertThat(utf8.toCompleteString(), equalTo("��")); // now both sequences are reported as BAD
+        assertThrows(CharacterCodingException.class, utf8::takeString);
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testInvalidZeroUTF8(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testInvalidZeroUTF8() throws Exception
     {
         // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
-        buffer.append((byte)0xC0);
-        buffer.append((byte)0x80);
-        assertThat(buffer.toString(), equalTo("��"));
-        assertThat(buffer.toCompleteString(), equalTo("��"));
-        assertThrows(CharacterCodingException.class, buffer::takeString);
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
+        utf8.append((byte)0xC0);
+        utf8.append((byte)0x80);
+        assertThat(utf8.toPartialString(), equalTo("��"));
+        assertThat(utf8.toCompleteString(), equalTo("��"));
+        assertThrows(CharacterCodingException.class, utf8::takeString);
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testInvalidAlternateDotEncodingUTF8(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testInvalidAlternateDotEncodingUTF8() throws Exception
     {
         // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
-        buffer.append((byte)0x2f);
-        buffer.append((byte)0xc0);
-        buffer.append((byte)0xae);
-        buffer.append((byte)0x2e);
-        buffer.append((byte)0x2f);
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
+        utf8.append((byte)0x2f);
+        utf8.append((byte)0xc0);
+        utf8.append((byte)0xae);
+        utf8.append((byte)0x2e);
+        utf8.append((byte)0x2f);
 
-        assertThat(buffer.toString(), equalTo("/��./"));
-        assertThat(buffer.toCompleteString(), equalTo("/��./"));
-        assertThrows(CharacterCodingException.class, buffer::takeString);
+        assertThat(utf8.toPartialString(), equalTo("/��./"));
+        assertThat(utf8.toCompleteString(), equalTo("/��./"));
+        assertThrows(CharacterCodingException.class, utf8::takeString);
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testFastFail1(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testFastFail1() throws Exception
     {
         byte[] part1 = StringUtil.fromHexString("cebae1bdb9cf83cebcceb5");
         byte[] part2 = StringUtil.fromHexString("f4908080"); // INVALID
         // Here for test tracking reasons, not needed to satisfy test
         // byte[] part3 = TypeUtil.fromHexString("656469746564");
 
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
         // Part 1 is valid
-        buffer.append(part1, 0, part1.length);
-        assertFalse(buffer.hasCodingErrors());
+        utf8.append(part1, 0, part1.length);
+        assertFalse(utf8.hasCodingErrors());
 
         // Part 2 is invalid
-        buffer.append(part2, 0, part2.length);
-        assertTrue(buffer.hasCodingErrors());
+        utf8.append(part2, 0, part2.length);
+        assertTrue(utf8.hasCodingErrors());
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testFastFail2(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testFastFail2() throws Exception
     {
         byte[] part1 = StringUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
         byte[] part2 = StringUtil.fromHexString("90"); // INVALID
         // Here for test search/tracking reasons, not needed to satisfy test
         // byte[] part3 = TypeUtil.fromHexString("8080656469746564");
 
-        Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
         // Part 1 is valid
-        buffer.append(part1, 0, part1.length);
-        assertFalse(buffer.hasCodingErrors());
+        utf8.append(part1, 0, part1.length);
+        assertFalse(utf8.hasCodingErrors());
 
         // Part 2 is invalid
-        buffer.append(part2, 0, part2.length);
-        assertTrue(buffer.hasCodingErrors());
+        utf8.append(part2, 0, part2.length);
+        assertTrue(utf8.hasCodingErrors());
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testPartialSplitSingleCodepoint(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testPartialSplitSingleCodepoint() throws Exception
     {
         // GOTHIC LETTER HWAIR
         final String gothicUnicode = "𐍈";
@@ -228,36 +208,35 @@ public class Utf8AppendableTest
         ByteBuffer codepointStart = BufferUtil.toBuffer(utf8Bytes, 0, 2);
         ByteBuffer codepointFinish = BufferUtil.toBuffer(utf8Bytes, 2, 2);
 
-        Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
 
         utf8.append(codepointStart);
-        String partial1 = utf8.toString();
+        String partial1 = utf8.toPartialString();
         utf8.partialReset();
 
         utf8.append(codepointFinish);
-        String partial2 = utf8.toString();
+        String partial2 = utf8.toPartialString();
         utf8.partialReset();
 
         assertThat("Seq1", partial1, is("")); // nothing decoded yet
         assertThat("Seq2", partial2, is(gothicUnicode)); // completed decode
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testPartialUnsplitCodepoint(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testPartialUnsplitCodepoint() throws Exception
     {
-        Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
 
         String seq1 = "Hello-습@쎟쎤";
         String seq2 = "쎼쎠쎡-UTF-8!!";
 
         utf8.append(BufferUtil.toBuffer(seq1, StandardCharsets.UTF_8));
-        String partial1 = utf8.toString();
+        String partial1 = utf8.toPartialString();
         utf8.partialReset();
         String ret1 = partial1;
 
         utf8.append(BufferUtil.toBuffer(seq2, StandardCharsets.UTF_8));
-        String partial = utf8.toString();
+        String partial = utf8.toPartialString();
         utf8.partialReset();
         String ret2 = partial;
 
@@ -265,22 +244,21 @@ public class Utf8AppendableTest
         assertThat("Seq2", ret2, is(seq2));
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testPartialSplitCodepoint(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testPartialSplitCodepoint() throws Exception
     {
-        Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
 
         String seq1 = "48656C6C6F2DEC8AB540EC8E9FEC8E";
         String seq2 = "A4EC8EBCEC8EA0EC8EA12D5554462D382121";
 
         utf8.append(StringUtil.fromHexString(seq1));
-        String partial1 = utf8.toString();
+        String partial1 = utf8.toPartialString();
         utf8.partialReset();
         String ret1 = partial1;
 
         utf8.append(StringUtil.fromHexString(seq2));
-        String partial = utf8.toString();
+        String partial = utf8.toPartialString();
         utf8.partialReset();
         String ret2 = partial;
 
@@ -288,24 +266,23 @@ public class Utf8AppendableTest
         assertThat("Seq2", ret2, is("쎤쎼쎠쎡-UTF-8!!"));
     }
 
-    @ParameterizedTest
-    @MethodSource("implementationArgs")
-    public void testPartialSplitCodepointWithNoBuf(Class<Utf8Appendable> impl) throws Exception
+    @Test
+    public void testPartialSplitCodepointWithNoBuf() throws Exception
     {
-        Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
+        Utf8StringBuilder utf8 = new Utf8StringBuilder();
 
         String seq1 = "48656C6C6F2DEC8AB540EC8E9FEC8E";
         String seq2 = "A4EC8EBCEC8EA0EC8EA12D5554462D382121";
 
         utf8.append(StringUtil.fromHexString(seq1));
-        String partial2 = utf8.toString();
+        String partial2 = utf8.toPartialString();
         utf8.partialReset();
         String ret1 = partial2;
-        String partial1 = utf8.toString();
+        String partial1 = utf8.toPartialString();
         utf8.partialReset();
         String ret2 = partial1;
         utf8.append(StringUtil.fromHexString(seq2));
-        String partial = utf8.toString();
+        String partial = utf8.toPartialString();
         utf8.partialReset();
         String ret3 = partial;
 

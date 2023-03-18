@@ -28,6 +28,8 @@ public interface CharsetStringBuilder
 {
     void append(byte b);
 
+    void append(char c);
+
     default void append(byte[] bytes)
     {
         append(bytes, 0, bytes.length);
@@ -40,12 +42,21 @@ public interface CharsetStringBuilder
             append(b[i]);
     }
 
+    default void append(CharSequence chars, int offset, int length)
+    {
+        int end = offset + length;
+        for (int i = offset; i < end; i++)
+            append(chars.charAt(i));
+    }
+
     default void append(ByteBuffer buf)
     {
         int end = buf.position() + buf.remaining();
         while (buf.position() < end)
             append(buf.get());
     }
+
+    String toCompleteString();
 
     String takeString() throws CharacterCodingException;
 
@@ -72,6 +83,24 @@ public interface CharsetStringBuilder
         }
 
         @Override
+        public void append(char c)
+        {
+            _builder.append(c);
+        }
+
+        @Override
+        public void append(CharSequence chars, int offset, int length)
+        {
+            _builder.append(chars, offset, length);
+        }
+
+        @Override
+        public String toCompleteString()
+        {
+            return _builder.toString();
+        }
+
+        @Override
         public String takeString()
         {
             String s = _builder.toString();
@@ -93,6 +122,24 @@ public interface CharsetStringBuilder
         }
 
         @Override
+        public void append(char c)
+        {
+            _builder.append(c);
+        }
+
+        @Override
+        public void append(CharSequence chars, int offset, int length)
+        {
+            _builder.append(chars, offset, length);
+        }
+
+        @Override
+        public String toCompleteString()
+        {
+            return _builder.toString();
+        }
+
+        @Override
         public String takeString()
         {
             String s = _builder.toString();
@@ -104,6 +151,7 @@ public interface CharsetStringBuilder
     class DecoderStringBuilder implements CharsetStringBuilder
     {
         private final CharsetDecoder _decoder;
+        private StringBuilder _stringBuilder;
         private ByteBuffer _buffer = ByteBuffer.allocate(32);
         
         public DecoderStringBuilder(CharsetDecoder charsetDecoder)
@@ -129,6 +177,42 @@ public interface CharsetStringBuilder
         }
 
         @Override
+        public void append(char c)
+        {
+            try
+            {
+                if (_stringBuilder == null)
+                    _stringBuilder = new StringBuilder();
+                _stringBuilder.append(_decoder.decode(_buffer.flip()));
+                _buffer.clear();
+            }
+            catch (CharacterCodingException e)
+            {
+                // Should do replacement and remember issue.
+                throw new RuntimeException(e);
+            }
+            _stringBuilder.append(c);
+        }
+
+        @Override
+        public void append(CharSequence chars, int offset, int length)
+        {
+            try
+            {
+                if (_stringBuilder == null)
+                    _stringBuilder = new StringBuilder();
+                _stringBuilder.append(_decoder.decode(_buffer.flip()));
+                _buffer.clear();
+            }
+            catch (CharacterCodingException e)
+            {
+                // Should do replacement and remember issue.
+                throw new RuntimeException(e);
+            }
+            _stringBuilder.append(chars, offset, offset + length);
+        }
+
+        @Override
         public void append(byte[] b, int offset, int length)
         {
             ensureSpace(length);
@@ -143,11 +227,30 @@ public interface CharsetStringBuilder
         }
 
         @Override
+        public String toCompleteString()
+        {
+            try
+            {
+                CharSequence decoded = _decoder.decode(_buffer.flip());
+                if (_stringBuilder == null)
+                    return decoded.toString();
+                _buffer.clear();
+                _stringBuilder.append(decoded);
+                return _stringBuilder.toString();
+            }
+            catch (CharacterCodingException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
         public String takeString() throws CharacterCodingException
         {
-            CharSequence chars = _decoder.decode(_buffer.flip());
+            String s = toCompleteString();
             _buffer.clear();
-            return chars.toString();
+            _stringBuilder.setLength(0);
+            return s;
         }
     }
 }

@@ -773,8 +773,7 @@ public class AsyncJSON
                     }
                     else
                     {
-                        String string = stringBuilder.toString();
-                        stringBuilder.reset();
+                        String string = stringBuilder.takeString(null);
                         stack.pop();
                         stack.peek().value(string);
                         return true;

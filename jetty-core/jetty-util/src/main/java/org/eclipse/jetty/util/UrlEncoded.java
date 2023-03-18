@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -727,7 +728,7 @@ public class UrlEncoded
     {
         if (charset == null || StandardCharsets.UTF_8.equals(charset))
         {
-            Utf8StringBuffer buffer = null;
+            Utf8StringBuilder buffer = null;
 
             for (int i = 0; i < length; i++)
             {
@@ -736,28 +737,28 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new Utf8StringBuffer(length);
-                        buffer.getStringBuffer().append(encoded, offset, offset + i + 1);
+                        buffer = new Utf8StringBuilder(length);
+                        buffer.append(encoded, offset, i + 1);
                     }
                     else
-                        buffer.getStringBuffer().append(c);
+                        buffer.append(c);
                 }
                 else if (c == '+')
                 {
                     if (buffer == null)
                     {
-                        buffer = new Utf8StringBuffer(length);
-                        buffer.getStringBuffer().append(encoded, offset, offset + i);
+                        buffer = new Utf8StringBuilder(length);
+                        buffer.append(encoded, offset, i);
                     }
 
-                    buffer.getStringBuffer().append(' ');
+                    buffer.append(' ');
                 }
                 else if (c == '%')
                 {
                     if (buffer == null)
                     {
-                        buffer = new Utf8StringBuffer(length);
-                        buffer.getStringBuffer().append(encoded, offset, offset + i);
+                        buffer = new Utf8StringBuilder(length);
+                        buffer.append(encoded, offset, i);
                     }
 
                     if ((i + 2) < length)
@@ -769,12 +770,12 @@ public class UrlEncoded
                     }
                     else
                     {
-                        buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT);
+                        buffer.append(Utf8StringBuilder.REPLACEMENT);
                         i = length;
                     }
                 }
                 else if (buffer != null)
-                    buffer.getStringBuffer().append(c);
+                    buffer.append(c);
             }
 
             if (buffer == null)
@@ -788,7 +789,7 @@ public class UrlEncoded
         }
         else
         {
-            StringBuffer buffer = null;
+            CharsetStringBuilder buffer = null;
 
             for (int i = 0; i < length; i++)
             {
@@ -797,8 +798,8 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new StringBuffer(length);
-                        buffer.append(encoded, offset, offset + i + 1);
+                        buffer = CharsetStringBuilder.forCharset(charset);
+                        buffer.append(encoded, offset, i + 1);
                     }
                     else
                         buffer.append(c);
@@ -807,8 +808,8 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new StringBuffer(length);
-                        buffer.append(encoded, offset, offset + i);
+                        buffer = CharsetStringBuilder.forCharset(charset);
+                        buffer.append(encoded, offset, i);
                     }
 
                     buffer.append(' ');
@@ -817,8 +818,8 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new StringBuffer(length);
-                        buffer.append(encoded, offset, offset + i);
+                        buffer = CharsetStringBuilder.forCharset(charset);
+                        buffer.append(encoded, offset, i);
                     }
 
                     byte[] ba = new byte[length];
@@ -857,7 +858,8 @@ public class UrlEncoded
                     }
 
                     i--;
-                    buffer.append(new String(ba, 0, n, charset));
+                    String s = new String(ba, 0, n, charset);
+                    buffer.append(s, 0, s.length());
                 }
                 else if (buffer != null)
                     buffer.append(c);
@@ -870,7 +872,14 @@ public class UrlEncoded
                 return encoded.substring(offset, offset + length);
             }
 
-            return buffer.toString();
+            try
+            {
+                return buffer.takeString();
+            }
+            catch (CharacterCodingException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 

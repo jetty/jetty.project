@@ -1178,9 +1178,8 @@ public class MultiPart
                     {
                         // End of field name.
                         incrementAndCheckPartHeadersLength();
-                        fieldName = text.toString();
+                        fieldName = text.takeCompleteString();
                         trailingWhiteSpaces = 0;
-                        text.reset();
                         return true;
                     }
                     case ALPHA, DIGIT, TCHAR ->
