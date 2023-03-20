@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
+    // In prefix matches, this is the length ("/*".length() + 1) - used for the best prefix match loop
+    private static final int PREFIX_TAIL_LEN = 3;
     private final Set<MappedResource<E>> _mappings = new TreeSet<>(Comparator.comparing(MappedResource::getPathSpec));
 
     /**
@@ -211,7 +213,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             if (matchedPath != null)
                 return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
             int specLength = prefix.getPathSpec().getSpecLength();
-            prefix = specLength > 3 ? _prefixMap.getBest(path, 0, specLength - 3) : null;
+            prefix = specLength > PREFIX_TAIL_LEN ? _prefixMap.getBest(path, 0, specLength - PREFIX_TAIL_LEN) : null;
         }
 
         // Try a suffix match
