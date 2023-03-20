@@ -32,6 +32,8 @@ import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,6 +61,7 @@ public class AttributeNameTest
     }
 
     @Test
+    @DisabledForJreRange(min = JRE.JAVA_19) // mongo fails on JDK 19
     public void testAttributeNamesWithDots() throws Exception
     {
         String contextPath = "";
