@@ -102,6 +102,7 @@ public class PathMappingsTest
 
         p.put(new ServletPathSpec("/*"), "any");
         p.put(new ServletPathSpec("/foo/*"), "foo");
+        p.put(new ServletPathSpec("/food/*"), "food");
         p.put(new ServletPathSpec("/a/*"), "a");
         p.put(new ServletPathSpec("/a/b/*"), "ab");
 
@@ -109,7 +110,11 @@ public class PathMappingsTest
         assertMatch(p, "/abs/foo/bar", "any");
         assertMatch(p, "/foo/bar", "foo");
         assertMatch(p, "/", "any");
+        assertMatch(p, "/foo", "foo");
         assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/food", "food");
+        assertMatch(p, "/food/zed", "food");
+        assertMatch(p, "/foodie", "any");
         assertMatch(p, "/a/bc", "a");
         assertMatch(p, "/a/b/c", "ab");
         assertMatch(p, "/a/", "a");
@@ -121,7 +126,11 @@ public class PathMappingsTest
         assertMatch(p, "/abs/foo/bar", "any");
         assertMatch(p, "/foo/bar", "foo");
         assertMatch(p, "/", "any");
+        assertMatch(p, "/foo", "foo");
         assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/food", "food");
+        assertMatch(p, "/food/zed", "food");
+        assertMatch(p, "/foodie", "any");
         assertMatch(p, "/a/bc", "a");
         assertMatch(p, "/a/b/c", "ab");
         assertMatch(p, "/a/", "a");
