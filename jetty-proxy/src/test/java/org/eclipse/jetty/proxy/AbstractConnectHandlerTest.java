@@ -31,7 +31,7 @@ public abstract class AbstractConnectHandlerTest
     protected void prepareProxy() throws Exception
     {
         proxy = new Server();
-        proxyConnector = new ServerConnector(proxy);
+        proxyConnector = new ServerConnector(proxy, 1, 1);
         proxy.addConnector(proxyConnector);
         connectHandler = new ConnectHandler();
         proxy.setHandler(connectHandler);
