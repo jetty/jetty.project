@@ -209,10 +209,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         MappedResource<E> prefix = _prefixMap.getBest(path);
         while (prefix != null)
         {
-            MatchedPath matchedPath = prefix.getPathSpec().matched(path);
+            PathSpec pathSpec = prefix.getPathSpec();
+            MatchedPath matchedPath = pathSpec.matched(path);
             if (matchedPath != null)
-                return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
-            int specLength = prefix.getPathSpec().getSpecLength();
+                return new MatchedResource<>(prefix.getResource(), pathSpec, matchedPath);
+            int specLength = pathSpec.getSpecLength();
             prefix = specLength > PREFIX_TAIL_LEN ? _prefixMap.getBest(path, 0, specLength - PREFIX_TAIL_LEN) : null;
         }
 
@@ -293,11 +294,12 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                             MappedResource<E> prefix = _prefixMap.getBest(path);
                             while (prefix != null)
                             {
-                                matchedPath = prefix.getPathSpec().matched(path);
+                                PathSpec pathSpec = prefix.getPathSpec();
+                                matchedPath = pathSpec.matched(path);
                                 if (matchedPath != null)
-                                    return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
-                                int specLength = prefix.getPathSpec().getSpecLength();
-                                prefix = specLength > 3 ? _prefixMap.getBest(path, 0, specLength - 3) : null;
+                                    return new MatchedResource<>(prefix.getResource(), pathSpec, matchedPath);
+                                int specLength = pathSpec.getSpecLength();
+                                prefix = specLength > PREFIX_TAIL_LEN ? _prefixMap.getBest(path, 0, specLength - PREFIX_TAIL_LEN) : null;
                             }
 
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below

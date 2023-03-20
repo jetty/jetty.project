@@ -111,7 +111,9 @@ public class PathMappingsTest
         assertMatch(p, "/foo/bar", "foo");
         assertMatch(p, "/", "any");
         assertMatch(p, "/foo", "foo");
+        assertMatch(p, "/fo", "any");
         assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/foob", "any");
         assertMatch(p, "/food", "food");
         assertMatch(p, "/food/zed", "food");
         assertMatch(p, "/foodie", "any");
@@ -127,7 +129,9 @@ public class PathMappingsTest
         assertMatch(p, "/foo/bar", "foo");
         assertMatch(p, "/", "any");
         assertMatch(p, "/foo", "foo");
+        assertMatch(p, "/fo", "any");
         assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/foob", "any");
         assertMatch(p, "/food", "food");
         assertMatch(p, "/food/zed", "food");
         assertMatch(p, "/foodie", "any");
