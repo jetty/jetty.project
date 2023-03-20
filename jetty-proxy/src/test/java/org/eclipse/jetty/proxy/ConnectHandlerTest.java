@@ -58,7 +58,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void prepare() throws Exception
     {
         server = new Server();
-        serverConnector = new ServerConnector(server);
+        serverConnector = new ServerConnector(server, 1, 1);
         server.addConnector(serverConnector);
         server.setHandler(new ServerHandler());
         server.start();
@@ -140,7 +140,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     }
 
     @Test
-    public void testCONNECTwithIPv6() throws Exception
+    public void testCONNECTWithIPv6() throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         String hostPort = "[::1]:" + serverConnector.getLocalPort();
