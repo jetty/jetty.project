@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -169,7 +169,13 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.cm").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.component").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.device").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.event").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.metatype").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.provisioning").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.upnp").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.useradmin").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.wireadmin").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.function").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.function").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.promise").versionAsInProject());

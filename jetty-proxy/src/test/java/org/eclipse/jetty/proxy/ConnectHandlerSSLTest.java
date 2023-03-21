@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -27,8 +28,18 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -39,6 +50,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
@@ -48,11 +60,11 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public void prepare() throws Exception
     {
         sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
-        sslContextFactory.setKeyStorePath(keyStorePath);
+        Path keyStorePath = MavenTestingUtils.getTestResourcePath("server_keystore.p12").toAbsolutePath();
+        sslContextFactory.setKeyStorePath(keyStorePath.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         server = new Server();
-        serverConnector = new ServerConnector(server, sslContextFactory);
+        serverConnector = new ServerConnector(server, 1, 1, sslContextFactory);
         server.addConnector(serverConnector);
         server.setHandler(new ServerHandler());
         server.start();
@@ -76,6 +88,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
             // Expect 200 OK from the CONNECT request
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
+            assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
@@ -91,6 +104,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 output.flush();
 
                 response = HttpTester.parseResponse(HttpTester.from(sslSocket.getInputStream()));
+                assertNotNull(response);
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertEquals("GET /echo", response.getContent());
             }
@@ -114,6 +128,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
             // Expect 200 OK from the CONNECT request
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
+            assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
@@ -133,11 +148,46 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                     output.flush();
 
                     response = HttpTester.parseResponse(HttpTester.from(sslSocket.getInputStream()));
+                    assertNotNull(response);
                     assertEquals(HttpStatus.OK_200, response.getStatus());
                     assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getContent());
                 }
             }
         }
+    }
+
+    @Test
+    public void testCONNECTWithConnectionClose() throws Exception
+    {
+        disposeProxy();
+        connectHandler = new ConnectHandler()
+        {
+            @Override
+            protected void onConnectSuccess(ConnectContext connectContext, UpstreamConnection upstreamConnection)
+            {
+                // Add Connection: close to the 200 response.
+                connectContext.getResponse().setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                super.onConnectSuccess(connectContext, upstreamConnection);
+            }
+        };
+        proxy.setHandler(connectHandler);
+        proxy.start();
+
+        ClientConnector connector = new ClientConnector();
+        connector.setSslContextFactory(new SslContextFactory.Client(true));
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(connector);
+        HttpClient httpClient = new HttpClient(transport);
+        httpClient.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .path("/echo")
+            .body(new StringRequestContent("hello"))
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals("GET /echo\r\nhello", response.getContentAsString());
     }
 
     private SSLSocket wrapSocket(Socket socket) throws Exception

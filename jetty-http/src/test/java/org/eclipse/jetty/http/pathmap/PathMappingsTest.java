@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -90,6 +90,55 @@ public class PathMappingsTest
         assertMatch(p, "/abs/path/xxx", "any");
         assertMatch(p, "/animal/bird/eagle/bald", "any");
         assertMatch(p, "/", "any");
+    }
+
+    /**
+     * Test the match order rules imposed by the Servlet API (any vs specific sub-dir)
+     */
+    @Test
+    public void testServletMatchPrefix()
+    {
+        PathMappings<String> p = new PathMappings<>();
+
+        p.put(new ServletPathSpec("/*"), "any");
+        p.put(new ServletPathSpec("/foo/*"), "foo");
+        p.put(new ServletPathSpec("/food/*"), "food");
+        p.put(new ServletPathSpec("/a/*"), "a");
+        p.put(new ServletPathSpec("/a/b/*"), "ab");
+
+        assertMatch(p, "/abs/path", "any");
+        assertMatch(p, "/abs/foo/bar", "any");
+        assertMatch(p, "/foo/bar", "foo");
+        assertMatch(p, "/", "any");
+        assertMatch(p, "/foo", "foo");
+        assertMatch(p, "/fo", "any");
+        assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/foob", "any");
+        assertMatch(p, "/food", "food");
+        assertMatch(p, "/food/zed", "food");
+        assertMatch(p, "/foodie", "any");
+        assertMatch(p, "/a/bc", "a");
+        assertMatch(p, "/a/b/c", "ab");
+        assertMatch(p, "/a/", "a");
+        assertMatch(p, "/a", "a");
+
+        // Try now with order important
+        p.put(new RegexPathSpec("/other.*/"), "other");
+        assertMatch(p, "/abs/path", "any");
+        assertMatch(p, "/abs/foo/bar", "any");
+        assertMatch(p, "/foo/bar", "foo");
+        assertMatch(p, "/", "any");
+        assertMatch(p, "/foo", "foo");
+        assertMatch(p, "/fo", "any");
+        assertMatch(p, "/foobar", "any");
+        assertMatch(p, "/foob", "any");
+        assertMatch(p, "/food", "food");
+        assertMatch(p, "/food/zed", "food");
+        assertMatch(p, "/foodie", "any");
+        assertMatch(p, "/a/bc", "a");
+        assertMatch(p, "/a/b/c", "ab");
+        assertMatch(p, "/a/", "a");
+        assertMatch(p, "/a", "a");
     }
 
     /**

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -54,7 +54,7 @@ public class CookieCutterTest
     {
         String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
@@ -70,7 +70,7 @@ public class CookieCutterTest
             "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
@@ -88,7 +88,7 @@ public class CookieCutterTest
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
             "Shipping=\"FedEx\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(3));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
@@ -106,7 +106,7 @@ public class CookieCutterTest
             "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "Part_Number", "Riding_Rocket_0023", 1, "/acme/ammo");
@@ -123,7 +123,7 @@ public class CookieCutterTest
             "session_id=\"1234\"; " +
             "session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
@@ -139,13 +139,13 @@ public class CookieCutterTest
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
             "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
 
-        cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
@@ -159,7 +159,7 @@ public class CookieCutterTest
     {
         String rawCookie = "SID=31d4d96e407aad42";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 0, null);
@@ -173,7 +173,7 @@ public class CookieCutterTest
     {
         String rawCookie = "SID=31d4d96e407aad42; lang=en-US";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 0, null);
@@ -188,7 +188,7 @@ public class CookieCutterTest
     {
         String rawCookie = "key=value";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "key", "value", 0, null);
@@ -202,7 +202,7 @@ public class CookieCutterTest
     {
         String rawCookie = "$key=value";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(0));
     }
@@ -214,7 +214,7 @@ public class CookieCutterTest
 
         // The first cookie "testcookie" should be ignored, per RFC6265, as it's missing the "=" sign.
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "server.id", "abcd", 0, null);
@@ -228,7 +228,7 @@ public class CookieCutterTest
         Arrays.fill(excessive, ';');
         String rawCookie = "foo=bar; " + excessive + "; xyz=pdq";
 
-        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265_LEGACY, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "foo", "bar", 0, null);
@@ -285,24 +285,25 @@ public class CookieCutterTest
         }
     }
 
-    class TestCutter extends CookieCutter
+    class TestCutter implements CookieParser.Handler
     {
         List<Cookie> cookies = new ArrayList<>();
+        CookieCutter cutter;
 
         public TestCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
         {
-            super(compliance, complianceListener);
+            cutter = new CookieCutter(this, compliance, complianceListener);
         }
 
         @Override
-        protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
+        public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
         {
             cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
         }
 
         public void parseFields(String... fields)
         {
-            super.parseFields(Arrays.asList(fields));
+            cutter.parseFields(Arrays.asList(fields));
         }
     }
 }
