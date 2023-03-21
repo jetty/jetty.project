@@ -225,7 +225,7 @@ public class FormAuthenticator extends LoginAuthenticator
         ServletContextRequest servletContextRequest = Request.as(req, ServletContextRequest.class);
         ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
 
-        String pathInContext = servletContextRequest.getPathInContext();
+        String pathInContext = servletContextRequest.getDecodedPathInContext();
         boolean jSecurityCheck = isJSecurityCheck(pathInContext);
         mandatory |= jSecurityCheck;
         if (!mandatory)

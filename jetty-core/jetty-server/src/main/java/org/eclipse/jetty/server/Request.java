@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -726,14 +725,14 @@ public interface Request extends Attributes, Content.Source
      * {@code newPathInContext=/newPath}, the returned HttpURI is {@code http://host/ctx/newPath?a=b}.</p>
      *
      * @param request The request to base the new HttpURI on.
-     * @param newPathInContext The new path in context for the new HttpURI
+     * @param newEncodedPathInContext The new path in context for the new HttpURI
      * @return A new immutable HttpURI with the path in context replaced, but query string and path
      * parameters retained.
      */
-    static HttpURI newHttpURIFrom(Request request, String newPathInContext)
+    static HttpURI newHttpURIFrom(Request request, String newEncodedPathInContext)
     {
         return HttpURI.build(request.getHttpURI())
-            .path(URIUtil.addPaths(getContextPath(request), newPathInContext))
+            .path(URIUtil.addPaths(getContextPath(request), newEncodedPathInContext))
             .asImmutable();
     }
 }

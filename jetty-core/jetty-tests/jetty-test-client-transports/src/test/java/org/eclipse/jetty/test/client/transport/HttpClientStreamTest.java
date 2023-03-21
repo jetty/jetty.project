@@ -528,7 +528,8 @@ public class HttpClientStreamTest extends AbstractTest
 
         latch.countDown();
 
-        assertThrows(AsynchronousCloseException.class, input::read);
+        IOException ioException = assertThrows(IOException.class, input::read);
+        assertTrue(ioException instanceof AsynchronousCloseException || ioException.getCause() instanceof AsynchronousCloseException);
     }
 
     @ParameterizedTest

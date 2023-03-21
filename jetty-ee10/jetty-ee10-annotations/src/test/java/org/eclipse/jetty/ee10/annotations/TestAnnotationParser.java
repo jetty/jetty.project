@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.annotations;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -41,6 +42,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -217,12 +220,17 @@ public class TestAnnotationParser
     {
         Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("jdk9/log4j-api-2.9.0.jar");
         AnnotationParser parser = new AnnotationParser();
-        Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
-
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            parser.parse(emptySet, resourceFactory.newResource(badClassesJar));
             // Should throw no exceptions and work with the META-INF/versions without incident
+            parser.parse(Collections.emptySet(), resourceFactory.newResource(badClassesJar));
+
+            //check for a class that is only in versions 9
+            Map<String, URI> parsed = parser.getParsedClassNames();
+            URI processIdUtilURI = parsed.get("org.apache.logging.log4j.util.ProcessIdUtil");
+            assertNotNull(processIdUtilURI);
+            if (Runtime.version().feature() > 17)
+                assertThat(processIdUtilURI.toString(), containsString("META-INF/versions/9"));
         }
     }
 
@@ -231,13 +239,17 @@ public class TestAnnotationParser
     {
         Path jdk10Jar = MavenTestingUtils.getTestResourcePathFile("jdk10/multirelease-10.jar");
         AnnotationParser parser = new AnnotationParser();
-        DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
-        Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            parser.parse(handlers, resourceFactory.newResource(jdk10Jar));
             // Should throw no exceptions
+            parser.parse(Collections.emptySet(), resourceFactory.newResource(jdk10Jar));
+
+            Map<String, URI> parsed = parser.getParsedClassNames();
+            assertEquals(3, parsed.size());           
+            assertThat(parsed.keySet(), containsInAnyOrder("hello.DetailedVer", "hello.Greetings", "hello.Hello"));
+            if (Runtime.version().feature() > 17)
+                assertThat(parsed.get("hello.Greetings").toString(), containsString("META-INF/versions/10"));
         }
     }
 

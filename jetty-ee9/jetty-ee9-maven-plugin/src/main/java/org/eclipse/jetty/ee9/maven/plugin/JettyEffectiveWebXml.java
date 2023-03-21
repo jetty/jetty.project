@@ -60,12 +60,11 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
             }
         }
 
-        Path start = path.getName(0);
-        int count = path.getNameCount();
-        Path end = path.getName(count > 0 ? count - 1 : count);
-        //if the war is not assembled, we must configure it
-        if (start.startsWith("src") || !end.toString().endsWith(".war"))
+        
+        if ((path == null) || (path.startsWith("src") || !path.endsWith(".war")))
+        {
             super.configureUnassembledWebApp();
+        }
     }
     
     /**

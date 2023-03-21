@@ -19,6 +19,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -655,7 +656,7 @@ public class AnnotationParser
             ClassReader reader = new ClassReader(in);
             reader.accept(new MyClassVisitor(handlers, containingResource, _asmVersion), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
-            String classname = reader.getClassName();
+            String classname = normalize(reader.getClassName());
             URI existing = _parsedClassNames.putIfAbsent(classname, location);
             if (existing != null)
                 LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
@@ -664,5 +665,14 @@ public class AnnotationParser
         {
             throw new IOException("Unable to parse class: " + classFile.toUri(), e);
         }
+    }
+    
+    /**
+     * Useful mostly for testing to expose the list of parsed classes.
+     * @return the map of classnames to their URIs
+     */
+    Map<String, URI> getParsedClassNames()
+    {
+        return Collections.unmodifiableMap(_parsedClassNames);
     }
 }
