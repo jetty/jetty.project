@@ -18,11 +18,29 @@ import java.util.List;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 
+/**
+ * <p>The HTTP request to upgrade to WebSocket.</p>
+ * <p>An instance of this class is given as a parameter to a
+ * {@link WebSocketCreator}, so that applications can interact
+ * with the request.</p>
+ *
+ * @see ServerUpgradeResponse
+ */
 public interface ServerUpgradeRequest extends Request
 {
+    /**
+     * @return the list of extensions provided by the client
+     */
     List<ExtensionConfig> getExtensions();
 
+    /**
+     * @return the list of sub-protocols provided by the client
+     */
     List<String> getSubProtocols();
 
+    /**
+     * @param subProtocol the sub-protocol to search
+     * @return whether this request contains the given sub-protocol
+     */
     boolean hasSubProtocol(String subProtocol);
 }

@@ -18,13 +18,31 @@ import java.util.List;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 
+/**
+ * <p>The HTTP response to upgrade to WebSocket.</p>
+ * <p>An instance of this class is given as a parameter to a
+ * {@link WebSocketCreator}, so that applications can interact
+ * with the response.</p>
+ */
 public interface ServerUpgradeResponse extends Response
 {
+    /**
+     * @return the negotiated sub-protocol
+     */
     String getAcceptedSubProtocol();
 
+    /**
+     * @param protocol the negotiated sub-protocol
+     */
     void setAcceptedSubProtocol(String protocol);
 
+    /**
+     * @return the list of negotiated extensions
+     */
     List<ExtensionConfig> getExtensions();
 
+    /**
+     * @param configs the list of negotiated extensions
+     */
     void setExtensions(List<ExtensionConfig> configs);
 }
