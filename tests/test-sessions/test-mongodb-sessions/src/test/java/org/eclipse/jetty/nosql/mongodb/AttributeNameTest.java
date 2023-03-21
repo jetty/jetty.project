@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * See bug: https://bugs.eclipse.org/bugs/show_bug.cgi?id=444595
  */
 @Testcontainers(disabledWithoutDocker = true)
+@DisabledForJreRange(min = JRE.JAVA_19) // mongo fails on JDK 19
 public class AttributeNameTest
 {
     @BeforeAll
@@ -61,7 +62,6 @@ public class AttributeNameTest
     }
 
     @Test
-    @DisabledForJreRange(min = JRE.JAVA_19) // mongo fails on JDK 19
     public void testAttributeNamesWithDots() throws Exception
     {
         String contextPath = "";
