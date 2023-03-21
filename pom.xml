@@ -33,7 +33,7 @@
     <mina.core.version>2.2.1</mina.core.version>
     <asm.version>9.4</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>6.3.1</bndlib.version>
+    <bndlib.version>6.4.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -45,12 +45,12 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <google.errorprone.version>2.18.0</google.errorprone.version>
-    <grpc.version>1.52.1</grpc.version>
+    <grpc.version>1.53.0</grpc.version>
     <gson.version>2.10.1</gson.version>
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hazelcast.version>5.2.1</hazelcast.version>
+    <hazelcast.version>5.2.2</hazelcast.version>
     <infinispan.protostream.version>4.6.1.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
     <jackson.version>2.14.2</jackson.version>
@@ -80,7 +80,7 @@
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
-    <jboss-logmanager.version>2.1.19.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>2.3.0.Alpha1</jboss-logmanager.version>
     <jboss-threads.version>3.5.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -91,12 +91,12 @@
     <jmh.version>1.36</jmh.version>
     <jna.version>5.13.0</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.4.8</json-smart.version>
+    <json-smart.version>2.4.9</json-smart.version>
     <junit.version>5.9.2</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.20.0</log4j2.version>
     <logback.version>1.4.5</logback.version>
-    <mariadb.version>3.0.10</mariadb.version>
+    <mariadb.version>3.1.2</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.7</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -105,9 +105,9 @@
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
-    <org.osgi.core.version>6.0.0</org.osgi.core.version>
+    <org.osgi.core.version>8.0.0</org.osgi.core.version>
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
-    <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
+    <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
 
     <osgi-version>3.18.200</osgi-version>
     <!-- really used -->
@@ -129,7 +129,7 @@
     <injection.bundle.version>1.2</injection.bundle.version>
 
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
-    <plexus-utils.version>3.5.0</plexus-utils.version>
+    <plexus-utils.version>3.5.1</plexus-utils.version>
     <slf4j.version>2.0.6</slf4j.version>
     <spifly.version>1.3.6</spifly.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
@@ -999,6 +999,11 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna-jpms</artifactId>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
         <version>${jna.version}</version>
       </dependency>
       <dependency>
@@ -2081,6 +2086,71 @@
                     <filenameExclude>.*\.txt$</filenameExclude>
                     <filenameExclude>Jenkinsfile</filenameExclude>
                   </filenameExcludes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        $ mvn -Pdependency-updates-reports validate
+        # once done, check the /target/site/dependency-updates-aggregate-report.html
+        -->
+      <id>dependency-updates-reports</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>root-report</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>dependency-updates-aggregate-report</goal>
+                </goals>
+                <configuration>
+                  <formats>
+                    <format>html</format>
+                  </formats>
+                  <onlyProjectDependencies>false</onlyProjectDependencies>
+                  <onlyUpgradable>true</onlyUpgradable>
+                  <ruleSet>
+                    <rules>
+                      <rule>
+                        <!-- ignore maven alpha/beta releases -->
+                        <groupId>org.apache.maven</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-(alpha|beta).?[0-9]+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty core level version changes -->
+                        <groupId>org.eclipse.jetty</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty nested level version changes -->
+                        <groupId>org.eclipse.jetty.*</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                    </rules>
+                  </ruleSet>
                 </configuration>
               </execution>
             </executions>
