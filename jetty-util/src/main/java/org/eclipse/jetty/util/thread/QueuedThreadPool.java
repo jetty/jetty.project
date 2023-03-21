@@ -90,7 +90,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if the pool is stopping</dd>
      * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size.  Essentially if positive,
      * this represents the effective number of idle threads, and if negative it represents the
-     * demand for more threads</dd>
+     * demand for more threads, aka the job queue's size.</dd>
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
@@ -778,7 +778,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             // and we are not at max threads.
             startThread = (idle <= 0 && threads < _maxThreads) ? 1 : 0;
 
-            // The job will be run by an idle thread when available
+            // Add 1|0 or 0|-1 to counts depending upon the decision to start a thread or not;
+            // idle can become negative which means there are queued tasks.
             if (!_counts.compareAndSet(counts, threads + startThread, idle + startThread - 1))
                 continue;
 
@@ -973,8 +974,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         finally
         {
-            // Clear any thread interrupted status.
-            Thread.interrupted();
+            // Clear any thread interrupted status,
+            // interrupted() is relatively slow so the
+            // isInterrupted() check helps with perf.
+            if (Thread.currentThread().isInterrupted())
+                Thread.interrupted();
         }
     }
 
@@ -1068,13 +1072,12 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             boolean idle = true;
             try
             {
-                Runnable job = null;
                 exit: while (_counts.getHi() > Integer.MIN_VALUE)
                 {
                     try
                     {
                         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
-                        job = idleJobPoll(idleTimeoutNanos);
+                        Runnable job = idleJobPoll(idleTimeoutNanos);
                         while (job != null)
                         {
                             idle = false;
@@ -1085,7 +1088,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
 
-                            // signal that we are idle again,
+                            // Signal that we are idle again; since execute() subtracts
+                            // 1 from idle each time a job is submitted, we have to add
+                            // 1 for each executed job here to compensate.
                             if (!addCounts(0, 1))
                                 break;
                             idle = true;
@@ -1138,9 +1143,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     }
                     catch (InterruptedException e)
                     {
-                        boolean interrupted = Thread.interrupted();
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("interrupted {} {} in {}", interrupted, job, QueuedThreadPool.this);
                         LOG.trace("IGNORED", e);
                     }
                 }

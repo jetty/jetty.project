@@ -20,8 +20,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -1028,6 +1032,76 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         stopping._thread.interrupt(); // spurious interrupt
         assertTrue(interrupted.await(5, TimeUnit.SECONDS));
         assertTrue(stopping._completed.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testInterruptFlagClearedBetweenDelayedExecutions() throws Exception
+    {
+        QueuedThreadPool tp = new QueuedThreadPool(1, 1);
+        tp.setReservedThreads(0);
+        tp.start();
+
+        AtomicInteger executions = new AtomicInteger();
+
+        tp.execute(() ->
+        {
+            Thread.currentThread().interrupt();
+            executions.incrementAndGet();
+        });
+        await().atMost(5, TimeUnit.SECONDS).until(() -> executions.get() == 1);
+
+        AtomicBoolean intr = new AtomicBoolean();
+        tp.execute(() ->
+        {
+            intr.set(Thread.currentThread().isInterrupted());
+            executions.incrementAndGet();
+        });
+        await().atMost(5, TimeUnit.SECONDS).until(() -> executions.get() == 2);
+
+        assertThat(intr.get(), is(false));
+    }
+
+    @Test
+    public void testInterruptFlagClearedBetweenQueuedJobsExecutions() throws Exception
+    {
+        QueuedThreadPool tp = new QueuedThreadPool(1, 1);
+        tp.setReservedThreads(0);
+        tp.start();
+
+        AtomicBoolean intr = new AtomicBoolean();
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
+        tp.execute(() ->
+        {
+            try
+            {
+                barrier.await(); // wait until the main thread enqueued another job
+            }
+            catch (InterruptedException | BrokenBarrierException e)
+            {
+                e.printStackTrace();
+                intr.set(true);
+            }
+            Thread.currentThread().interrupt();
+        });
+
+        tp.execute(() ->
+        {
+            intr.set(Thread.interrupted());
+            try
+            {
+                barrier.await(); // notify that this thread is over
+            }
+            catch (InterruptedException | BrokenBarrierException e)
+            {
+                e.printStackTrace();
+                intr.set(true);
+            }
+        });
+
+        barrier.await(); // tell the 1st execute we enqueued the 2nd job
+        barrier.await(); // wait until 2nd execute is done
+        assertThat(intr.get(), is(false));
     }
 
     @Test
