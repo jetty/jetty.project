@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -97,7 +97,7 @@ public class Sha1Sum
 
     public static String loadSha1(File sha1File) throws IOException
     {
-        String contents = IO.readToString(sha1File);
+        String contents = Files.readString(sha1File.toPath());
         Pattern pat = Pattern.compile("^[0-9A-Fa-f]*");
         Matcher mat = pat.matcher(contents);
         assertTrue(mat.find(), "Should have found HEX code in SHA1 file: " + sha1File);

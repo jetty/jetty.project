@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-infinispan-embedded</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: Infinispan Session Manager Embedded</name>
+  <name>Integrations :: Infinispan :: Embedded</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.embedded</bundle-symbolic-name>
   </properties>
@@ -81,10 +81,10 @@
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
       <exclusions>
-          <exclusion>
-              <groupId>org.wildfly.common</groupId>
-              <artifactId>wildfly-common</artifactId>
-          </exclusion>
+        <exclusion>
+          <groupId>org.wildfly.common</groupId>
+          <artifactId>wildfly-common</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
   </dependencies>

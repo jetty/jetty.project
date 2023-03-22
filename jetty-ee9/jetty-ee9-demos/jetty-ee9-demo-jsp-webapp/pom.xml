@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
-  <name>EE9 :: Jetty Demo :: JSP :: Webapp</name>
+  <name>EE9 :: Demo :: JSP WebApp</name>
   <packaging>war</packaging>
 
   <properties>
@@ -30,6 +30,7 @@
             <Export-Package>!org.example.*</Export-Package>
             <Web-ContextPath>/ee9-demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+            <Jetty-Environment>ee9</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>

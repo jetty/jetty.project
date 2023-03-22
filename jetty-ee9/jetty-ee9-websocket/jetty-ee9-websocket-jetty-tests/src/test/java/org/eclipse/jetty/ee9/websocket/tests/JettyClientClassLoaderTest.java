@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,9 +23,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
@@ -39,7 +39,7 @@ import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
@@ -169,7 +169,7 @@ public class JettyClientClassLoaderTest
         app.copyLib(CoreClientUpgradeRequest.class, "jetty-websocket-core-client.jar");
         app.copyLib(WebSocketComponents.class, "jetty-websocket-core-common.jar");
         app.copyLib(Response.class, "jetty-client.jar");
-        app.copyLib(ByteBufferPool.class, "jetty-io.jar");
+        app.copyLib(EndPoint.class, "jetty-io.jar");
         app.copyLib(BadMessageException.class, "jetty-http.jar");
         app.copyLib(XmlConfiguration.class, "jetty-xml.jar");
 

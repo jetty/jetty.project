@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,6 +33,7 @@ import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
@@ -681,7 +682,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         throws IOException
     {
         ServletContextRequest screquest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest sarequest = (screquest == null ? null : screquest.getServletApiRequest());
+        ServletApiRequest sarequest = (screquest == null ? null : screquest.getServletApiRequest());
         
         if (constraintInfo == null)
         {

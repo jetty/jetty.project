@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -30,9 +30,10 @@ import org.eclipse.jetty.util.BufferUtil;
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
  * @see #ensureBuffer(int, int)
  */
+// TODO: rename to *Aggregator to avoid confusion with RBBP.Accumulator?
 public class ByteBufferAccumulator implements AutoCloseable
 {
-    private final List<ByteBuffer> _buffers = new ArrayList<>();
+    private final List<RetainableByteBuffer> _buffers = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
     private final boolean _direct;
 
@@ -43,7 +44,7 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     public ByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct)
     {
-        _bufferPool = (bufferPool == null) ? ByteBufferPool.NOOP : bufferPool;
+        _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
         _direct = direct;
     }
 
@@ -55,14 +56,9 @@ public class ByteBufferAccumulator implements AutoCloseable
     public int getLength()
     {
         int length = 0;
-        for (ByteBuffer buffer : _buffers)
+        for (RetainableByteBuffer buffer : _buffers)
             length = Math.addExact(length, buffer.remaining());
         return length;
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return _bufferPool;
     }
 
     /**
@@ -70,7 +66,7 @@ public class ByteBufferAccumulator implements AutoCloseable
      * @param minAllocationSize new buffers will be allocated to have at least this size.
      * @return a buffer with at least {@code minSize} space to write into.
      */
-    public ByteBuffer ensureBuffer(int minAllocationSize)
+    public RetainableByteBuffer ensureBuffer(int minAllocationSize)
     {
         return ensureBuffer(1, minAllocationSize);
     }
@@ -81,15 +77,14 @@ public class ByteBufferAccumulator implements AutoCloseable
      * @param minAllocationSize new buffers will be allocated to have at least this size.
      * @return a buffer with at least {@code minSize} space to write into.
      */
-    public ByteBuffer ensureBuffer(int minSize, int minAllocationSize)
+    public RetainableByteBuffer ensureBuffer(int minSize, int minAllocationSize)
     {
-        ByteBuffer buffer = _buffers.isEmpty() ? BufferUtil.EMPTY_BUFFER : _buffers.get(_buffers.size() - 1);
-        if (BufferUtil.space(buffer) < minSize)
+        RetainableByteBuffer buffer = _buffers.isEmpty() ? null : _buffers.get(_buffers.size() - 1);
+        if (buffer == null || BufferUtil.space(buffer.getByteBuffer()) < minSize)
         {
             buffer = _bufferPool.acquire(minAllocationSize, _direct);
             _buffers.add(buffer);
         }
-
         return buffer;
     }
 
@@ -98,26 +93,27 @@ public class ByteBufferAccumulator implements AutoCloseable
         copyBuffer(BufferUtil.toBuffer(buf, offset, length));
     }
 
-    public void copyBuffer(ByteBuffer buffer)
+    public void copyBuffer(ByteBuffer source)
     {
-        while (buffer.hasRemaining())
+        while (source.hasRemaining())
         {
-            ByteBuffer b = ensureBuffer(buffer.remaining());
-            int pos = BufferUtil.flipToFill(b);
-            BufferUtil.put(buffer, b);
-            BufferUtil.flipToFlush(b, pos);
+            RetainableByteBuffer buffer = ensureBuffer(source.remaining());
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            int pos = BufferUtil.flipToFill(byteBuffer);
+            BufferUtil.put(source, byteBuffer);
+            BufferUtil.flipToFlush(byteBuffer, pos);
         }
     }
 
     /**
      * Take the combined buffer containing all content written to the accumulator.
-     * The caller is responsible for releasing this {@link ByteBuffer} back into the {@link ByteBufferPool}.
+     * The caller is responsible for releasing this {@link RetainableByteBuffer}.
      * @return a buffer containing all content written to the accumulator.
-     * @see #toByteBuffer()
+     * @see #toRetainableByteBuffer()
      */
-    public ByteBuffer takeByteBuffer()
+    public RetainableByteBuffer takeRetainableByteBuffer()
     {
-        ByteBuffer combinedBuffer;
+        RetainableByteBuffer combinedBuffer;
         if (_buffers.size() == 1)
         {
             combinedBuffer = _buffers.get(0);
@@ -127,28 +123,36 @@ public class ByteBufferAccumulator implements AutoCloseable
 
         int length = getLength();
         combinedBuffer = _bufferPool.acquire(length, _direct);
-        BufferUtil.clearToFill(combinedBuffer);
-        for (ByteBuffer buffer : _buffers)
+        ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
+        for (RetainableByteBuffer buffer : _buffers)
         {
-            combinedBuffer.put(buffer);
-            _bufferPool.release(buffer);
+            byteBuffer.put(buffer.getByteBuffer());
+            buffer.release();
         }
-        BufferUtil.flipToFlush(combinedBuffer, 0);
+        BufferUtil.flipToFlush(byteBuffer, 0);
         _buffers.clear();
         return combinedBuffer;
     }
 
+    public ByteBuffer takeByteBuffer()
+    {
+        byte[] bytes = toByteArray();
+        close();
+        return ByteBuffer.wrap(bytes);
+    }
+
     /**
      * Take the combined buffer containing all content written to the accumulator.
-     * The returned buffer is still contained within the accumulator and will be released back to the {@link ByteBufferPool}
+     * The returned buffer is still contained within the accumulator and will be released
      * when the accumulator is closed.
      * @return a buffer containing all content written to the accumulator.
-     * @see #takeByteBuffer()
+     * @see #takeRetainableByteBuffer()
      * @see #close()
      */
-    public ByteBuffer toByteBuffer()
+    public RetainableByteBuffer toRetainableByteBuffer()
     {
-        ByteBuffer combinedBuffer = takeByteBuffer();
+        RetainableByteBuffer combinedBuffer = takeRetainableByteBuffer();
         _buffers.add(combinedBuffer);
         return combinedBuffer;
     }
@@ -169,28 +173,28 @@ public class ByteBufferAccumulator implements AutoCloseable
         return bytes;
     }
 
-    public void writeTo(ByteBuffer buffer)
+    public void writeTo(ByteBuffer byteBuffer)
     {
-        int pos = BufferUtil.flipToFill(buffer);
-        for (ByteBuffer bb : _buffers)
+        int pos = BufferUtil.flipToFill(byteBuffer);
+        for (RetainableByteBuffer buffer : _buffers)
         {
-            buffer.put(bb.slice());
+            byteBuffer.put(buffer.getByteBuffer().slice());
         }
-        BufferUtil.flipToFlush(buffer, pos);
+        BufferUtil.flipToFlush(byteBuffer, pos);
     }
 
     public void writeTo(OutputStream out) throws IOException
     {
-        for (ByteBuffer bb : _buffers)
+        for (RetainableByteBuffer buffer : _buffers)
         {
-            BufferUtil.writeTo(bb.slice(), out);
+            BufferUtil.writeTo(buffer.getByteBuffer().slice(), out);
         }
     }
 
     @Override
     public void close()
     {
-        _buffers.forEach(_bufferPool::release);
+        _buffers.forEach(RetainableByteBuffer::release);
         _buffers.clear();
     }
 }

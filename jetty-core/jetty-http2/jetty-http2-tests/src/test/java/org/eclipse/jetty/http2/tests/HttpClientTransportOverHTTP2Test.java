@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,24 +31,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -62,15 +63,14 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.http2.internal.parser.ServerParser;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -192,14 +192,15 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void testRequestHasHTTP2Version() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -217,10 +218,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void testDelayDemandAfterHeaders() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Callback.Completable.with(c -> response.write(false, ByteBuffer.allocate(1), c))
                     .whenComplete((r, x) ->
@@ -230,30 +231,39 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         else
                             response.write(true, ByteBuffer.allocate(2), callback);
                     });
+                return true;
             }
         });
 
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Runnable> demanderRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         AtomicInteger contentCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
         httpClient.newRequest("localhost", connector.getLocalPort())
-            .onResponseContentDemanded(new org.eclipse.jetty.client.api.Response.DemandedContentListener()
+            .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
-                public void onBeforeContent(org.eclipse.jetty.client.api.Response response, LongConsumer demand)
+                public void onContentSource(Response response, Content.Source contentSource)
                 {
-                    // Do not demand.
-                    demandRef.set(demand);
-                    beforeContentLatch.countDown();
-                }
+                    Runnable demander = () -> contentSource.demand(() -> onContentSource(response, contentSource));
+                    if (demanderRef.getAndSet(demander) == null)
+                    {
+                        // 1st time, do not demand.
+                        beforeContentLatch.countDown();
+                        return;
+                    }
 
-                @Override
-                public void onContent(org.eclipse.jetty.client.api.Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-                {
-                    contentCount.incrementAndGet();
-                    callback.succeeded();
-                    demand.accept(1);
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        demander.run();
+                        return;
+                    }
+                    if (chunk.hasRemaining())
+                        contentCount.incrementAndGet();
+                    chunk.release();
+                    if (!chunk.isLast())
+                        demander.run();
                 }
             })
             .timeout(5, TimeUnit.SECONDS)
@@ -271,7 +281,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertEquals(0, contentCount.get());
 
         // Demand to receive the content.
-        demandRef.get().accept(1);
+        demanderRef.get().run();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(2, contentCount.get());
@@ -318,14 +328,14 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
         {
             @Override
-            protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+            protected Connection newConnection(Destination destination, Session session)
             {
                 return new HttpConnectionOverHTTP2(destination, session)
                 {
                     @Override
                     protected HttpChannelOverHTTP2 newHttpChannel()
                     {
-                        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
+                        return new HttpChannelOverHTTP2(this, getSession())
                         {
                             @Override
                             public void setStream(Stream stream)
@@ -343,7 +353,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
 
             @Override
-            protected void onClose(HttpConnection connection, GoAwayFrame frame)
+            protected void onClose(Connection connection, GoAwayFrame frame)
             {
                 super.onClose(connection, frame);
                 lastStream.set(frame.getLastStreamId());
@@ -362,7 +372,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        org.eclipse.jetty.client.api.Request request = httpClient.newRequest("localhost", connector.getLocalPort())
+        org.eclipse.jetty.client.Request request = httpClient.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.HEAD)
             .path("/one");
         request.send(result ->
@@ -384,15 +394,16 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
                 assertEquals(query, httpURI.getQuery());
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -409,15 +420,16 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
                 assertEquals(query, httpURI.getQuery());
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -510,10 +522,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)
             {
                 @Override
-                protected HttpConnection newHttpConnection(HttpDestination destination, Session session)
+                protected Connection newConnection(Destination destination, Session session)
                 {
                     sessions.add(session);
-                    return super.newHttpConnection(destination, session);
+                    return super.newConnection(destination, session);
                 }
             });
             QueuedThreadPool clientExecutor = new QueuedThreadPool();
@@ -529,9 +541,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         resultLatch.countDown();
                 });
 
-            ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            Generator generator = new Generator(byteBufferPool);
+            ByteBufferPool bufferPool = new ArrayByteBufferPool();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())
             {
@@ -539,7 +551,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 OutputStream output = socket.getOutputStream();
                 InputStream input = socket.getInputStream();
 
-                ServerParser parser = new ServerParser(byteBufferPool, new ServerParser.Listener.Adapter()
+                ServerParser parser = new ServerParser(bufferPool, new ServerParser.Listener.Adapter()
                 {
                     @Override
                     public void onPreface()
@@ -547,9 +559,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Server's preface.
-                            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+                            generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
                             // Reply to client's SETTINGS.
-                            generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                            generator.control(accumulator, new SettingsFrame(new HashMap<>(), true));
                             writeFrames();
                         }
                         catch (HpackException x)
@@ -566,7 +578,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             // Response.
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
-                            generator.control(lease, response);
+                            generator.control(accumulator, response);
                             writeFrames();
                         }
                         catch (HpackException x)
@@ -580,11 +592,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Write the frames.
-                            for (ByteBuffer buffer : lease.getByteBuffers())
+                            for (ByteBuffer buffer : accumulator.getByteBuffers())
                             {
                                 output.write(BufferUtil.toArray(buffer));
                             }
-                            lease.recycle();
+                            accumulator.release();
                         }
                         catch (Throwable x)
                         {

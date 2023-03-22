@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,13 +36,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.server.internal.HttpConnection;
@@ -393,7 +393,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -405,7 +405,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             LOG.info("Expecting Exception: TEST handler exception...");
             os.write(request.toString().getBytes());
@@ -422,7 +422,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -434,7 +434,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             LOG.info("Expecting Exception: TEST handler exception...");
             os.write(request.toString().getBytes());
@@ -450,10 +450,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final CountDownLatch earlyEOFException = new CountDownLatch(1);
-        startServer(new Handler.Processor.Blocking()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 long contentLength = request.getLength();
                 long read = 0;
@@ -480,10 +480,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     {
                         read += chunk.remaining();
                         chunk.getByteBuffer().clear();
-                        chunk.release();
                         if (!fourBytesRead.get() && read >= 4)
                             fourBytesRead.set(true);
                     }
+
+                    chunk.release();
 
                     if (chunk.isLast())
                     {
@@ -491,6 +492,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         break;
                     }
                 }
+                return true;
             }
         });
 
@@ -519,7 +521,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFullHeader() throws Exception
     {
-
         startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -967,7 +968,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         startServer(new DataHandler());
 
-        try (StacklessLogging ignored = new StacklessLogging(Server.class))
+        try (StacklessLogging ignored = new StacklessLogging(AbstractConnection.class))
         {
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
@@ -1113,7 +1114,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
-    protected static class BigBlockHandler extends Handler.Processor.Blocking
+    protected static class BigBlockHandler extends Handler.Abstract
     {
         byte[] buf = new byte[128 * 1024];
 
@@ -1126,7 +1127,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -1151,6 +1152,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             response.write(true, BufferUtil.toBuffer(out.toString()), callback);
+            return true;
         }
     }
 
@@ -1161,10 +1163,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new HelloHandler("Hello\n")
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 served.incrementAndGet();
-                return super.handle(request);
+                return super.handle(request, response, callback);
             }
         });
 
@@ -1332,12 +1334,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorHandler extends Handler.Processor.Blocking
+    public static class CommittedErrorHandler extends Handler.Abstract
     {
         public EndPoint _endp;
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.getHeaders().put("test", "value");
@@ -1556,31 +1558,30 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(line, not(containsString("Transfer-Encoding")));
         }
 
-        do
-        {
+        while (line != null)
             line = in.readLine();
-        }
-        while (line != null);
     }
 
-    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Processor
+    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(304);
             response.write(false, BufferUtil.toBuffer("yuck"), callback);
+            return true;
         }
     }
 
-    public static class NoopHandler extends Handler.Processor
+    public static class NoopHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             //don't read the input, just send something back
             response.setStatus(200);
             callback.succeeded();
+            return true;
         }
     }
 
@@ -1678,10 +1679,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         final int bufferSize = 1024;
         _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
         CountDownLatch closed = new CountDownLatch(1);
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
                 {
@@ -1707,6 +1708,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (chunk.hasRemaining())
                         contents.add(chunk);
+                    else
+                        chunk.release();
 
                     if (chunk.isLast())
                         break;
@@ -1714,6 +1717,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 response.setStatus(200);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -1762,8 +1766,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
 
-        RetainableByteBufferPool rbbp = _connector.getBean(RetainableByteBufferPool.class);
-        if (rbbp instanceof ArrayRetainableByteBufferPool pool)
+        ByteBufferPool rbbp = _connector.getByteBufferPool();
+        if (rbbp instanceof ArrayByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
             contents.forEach(Content.Chunk::release);
@@ -1773,7 +1777,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         else
         {
-            assertThat(rbbp, instanceOf(ArrayRetainableByteBufferPool.class));
+            assertThat(rbbp, instanceOf(ArrayByteBufferPool.class));
         }
     }
 
@@ -1792,7 +1796,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             AtomicBoolean hasContent = new AtomicBoolean();
             Request.Wrapper wrapper = new Request.Wrapper(request)
@@ -1807,18 +1811,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             };
 
-            Request.Processor processor = super.handle(request);
-            if (processor == null)
-                return null;
-
-            return (ignored, response, callback) ->
-                processor.process(wrapper, response, Callback.from(() ->
-                {
-                    if (_mustHaveContent && !hasContent.get())
-                        callback.failed(new IllegalStateException("No Test Content"));
-                    else
-                        callback.succeeded();
-                }, callback::failed));
+            return super.handle(wrapper, response, Callback.from(() ->
+            {
+                if (_mustHaveContent && !hasContent.get())
+                    callback.failed(new IllegalStateException("No Test Content"));
+                else
+                    callback.succeeded();
+            }, callback::failed));
         }
     }
 
@@ -1826,21 +1825,20 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testProcessingAfterCompletion() throws Exception
     {
         AtomicReference<String> result = new AtomicReference<>();
-        Handler.Wrapper wrapper = new Handler.Wrapper()
+        Handler.Singleton wrapper = new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                Request.Processor processor = super.handle(request);
-                if (processor == null)
-                    return null;
                 request.setAttribute("test", "value");
-
-                return (req, resp, callback) ->
+                try
                 {
-                    processor.process(req, resp, callback);
-                    result.set(String.valueOf(req.getAttribute("test")));
-                };
+                    return super.handle(request, response, callback);
+                }
+                finally
+                {
+                    result.set(String.valueOf(request.getAttribute("test")));
+                }
             }
         };
 

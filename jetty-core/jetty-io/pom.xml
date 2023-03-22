@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-io</artifactId>
-  <name>Jetty Core :: IO Utility</name>
+  <name>Core :: IO</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.io</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.io.*</spotbugs.onlyAnalyze>
@@ -18,7 +18,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.io=org.eclipse.jetty.logging
+            @{argLine} ${jetty.surefire.argLine} 
+            --add-reads org.eclipse.jetty.io=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>

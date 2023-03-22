@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +21,7 @@ import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -36,7 +36,7 @@ public class GZIPContentDecoder implements Destroyable
     // Unsigned Integer Max == 2^32
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
-    private final List<ByteBuffer> _inflateds = new ArrayList<>();
+    private final List<RetainableByteBuffer> _inflateds = new ArrayList<>();
     private final ByteBufferPool _pool;
     private final int _bufferSize;
     private InflaterPool.Entry _inflaterEntry;
@@ -45,7 +45,7 @@ public class GZIPContentDecoder implements Destroyable
     private int _size;
     private long _value;
     private byte _flags;
-    private ByteBuffer _inflated;
+    private RetainableByteBuffer _inflated;
 
     public GZIPContentDecoder()
     {
@@ -57,24 +57,24 @@ public class GZIPContentDecoder implements Destroyable
         this(null, bufferSize);
     }
 
-    public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
+    public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)
     {
-        this(new InflaterPool(0, true), pool, bufferSize);
+        this(new InflaterPool(0, true), byteBufferPool, bufferSize);
     }
 
-    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
+    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool byteBufferPool, int bufferSize)
     {
         _inflaterEntry = inflaterPool.acquire();
         _inflater = _inflaterEntry.get();
         _bufferSize = bufferSize;
-        _pool = pool;
+        _pool = byteBufferPool != null ? byteBufferPool : new ByteBufferPool.NonPooling();
         reset();
     }
 
     /**
      * <p>Inflates compressed data from a buffer.</p>
-     * <p>The buffers returned by this method should be released
-     * via {@link #release(ByteBuffer)}.</p>
+     * <p>The {@link RetainableByteBuffer} returned by this method
+     * <b>must</b> be released via {@link RetainableByteBuffer#release()}.</p>
      * <p>This method may fully consume the input buffer, but return
      * only a chunk of the inflated bytes, to allow applications to
      * consume the inflated chunk before performing further inflation,
@@ -83,21 +83,21 @@ public class GZIPContentDecoder implements Destroyable
      * it's already fully consumed) and that will produce another
      * chunk of inflated bytes. Termination happens when the input
      * buffer is fully consumed, and the returned buffer is empty.</p>
-     * <p>See {@link #decodedChunk(ByteBuffer)} to perform inflating
+     * <p>See {@link #decodedChunk(RetainableByteBuffer)} to perform inflating
      * in a non-blocking way that allows to apply backpressure.</p>
      *
      * @param compressed the buffer containing compressed data.
      * @return a buffer containing inflated data.
      */
-    public ByteBuffer decode(ByteBuffer compressed)
+    public RetainableByteBuffer decode(ByteBuffer compressed)
     {
         decodeChunks(compressed);
 
         if (_inflateds.isEmpty())
         {
-            if (BufferUtil.isEmpty(_inflated) || _state == State.CRC || _state == State.ISIZE)
-                return BufferUtil.EMPTY_BUFFER;
-            ByteBuffer result = _inflated;
+            if ((_inflated == null || !_inflated.hasRemaining()) || _state == State.CRC || _state == State.ISIZE)
+                return acquire(0);
+            RetainableByteBuffer result = _inflated;
             _inflated = null;
             return result;
         }
@@ -105,12 +105,12 @@ public class GZIPContentDecoder implements Destroyable
         {
             _inflateds.add(_inflated);
             _inflated = null;
-            int length = _inflateds.stream().mapToInt(Buffer::remaining).sum();
-            ByteBuffer result = acquire(length);
-            for (ByteBuffer buffer : _inflateds)
+            int length = _inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
+            RetainableByteBuffer result = acquire(length);
+            for (RetainableByteBuffer buffer : _inflateds)
             {
-                BufferUtil.append(result, buffer);
-                release(buffer);
+                BufferUtil.append(result.getByteBuffer(), buffer.getByteBuffer());
+                buffer.release();
             }
             _inflateds.clear();
             return result;
@@ -132,38 +132,26 @@ public class GZIPContentDecoder implements Destroyable
      * should return, allowing to consume the inflated chunk and apply
      * backpressure
      */
-    protected boolean decodedChunk(ByteBuffer chunk)
+    protected boolean decodedChunk(RetainableByteBuffer chunk)
     {
-        if (_inflated == null)
-        {
-            _inflated = chunk;
-        }
-        else
-        {
-            if (BufferUtil.space(_inflated) >= chunk.remaining())
-            {
-                BufferUtil.append(_inflated, chunk);
-                release(chunk);
-            }
-            else
-            {
-                _inflateds.add(_inflated);
-                _inflated = chunk;
-            }
-        }
+        // Retain the chunk because it is stored for later use.
+        chunk.retain();
+        if (_inflated != null)
+            _inflateds.add(_inflated);
+        _inflated = chunk;
         return false;
     }
 
     /**
      * <p>Inflates compressed data.</p>
      * <p>Inflation continues until the compressed block end is reached, there is no
-     * more compressed data or a call to {@link #decodedChunk(ByteBuffer)} returns true.</p>
+     * more compressed data or a call to {@link #decodedChunk(RetainableByteBuffer)} returns true.</p>
      *
      * @param compressed the buffer of compressed data to inflate
      */
     protected void decodeChunks(ByteBuffer compressed)
     {
-        ByteBuffer buffer = null;
+        RetainableByteBuffer buffer = null;
         try
         {
             while (true)
@@ -211,9 +199,10 @@ public class GZIPContentDecoder implements Destroyable
 
                             try
                             {
-                                int pos = BufferUtil.flipToFill(buffer);
-                                _inflater.inflate(buffer);
-                                BufferUtil.flipToFlush(buffer, pos);
+                                ByteBuffer decoded = buffer.getByteBuffer();
+                                int pos = BufferUtil.flipToFill(decoded);
+                                _inflater.inflate(decoded);
+                                BufferUtil.flipToFlush(decoded, pos);
                             }
                             catch (DataFormatException x)
                             {
@@ -222,9 +211,10 @@ public class GZIPContentDecoder implements Destroyable
 
                             if (buffer.hasRemaining())
                             {
-                                ByteBuffer chunk = buffer;
+                                boolean stop = decodedChunk(buffer);
+                                buffer.release();
                                 buffer = null;
-                                if (decodedChunk(chunk))
+                                if (stop)
                                     return;
                             }
                             else if (_inflater.needsInput())
@@ -395,7 +385,7 @@ public class GZIPContentDecoder implements Destroyable
         finally
         {
             if (buffer != null)
-                release(buffer);
+                buffer.release();
         }
     }
 
@@ -430,23 +420,8 @@ public class GZIPContentDecoder implements Destroyable
      * @param capacity capacity of the ByteBuffer to acquire
      * @return a heap buffer of the configured capacity either from the pool or freshly allocated.
      */
-    public ByteBuffer acquire(int capacity)
+    public RetainableByteBuffer acquire(int capacity)
     {
-        return _pool == null ? BufferUtil.allocate(capacity) : _pool.acquire(capacity, false);
-    }
-
-    /**
-     * <p>Releases an allocated buffer.</p>
-     * <p>This method calls {@link ByteBufferPool#release(ByteBuffer)} if a buffer pool has
-     * been configured.</p>
-     * <p>This method should be called once for all buffers returned from {@link #decode(ByteBuffer)}
-     * or passed to {@link #decodedChunk(ByteBuffer)}.</p>
-     *
-     * @param buffer the buffer to release.
-     */
-    public void release(ByteBuffer buffer)
-    {
-        if (_pool != null && !BufferUtil.isTheEmptyBuffer(buffer))
-            _pool.release(buffer);
+        return _pool.acquire(capacity, false);
     }
 }

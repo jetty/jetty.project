@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-cdi</artifactId>
-  <name>EE10 :: Jetty :: CDI</name>
+  <name>EE10 :: CDI</name>
   <packaging>jar</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi</bundle-symbolic-name>

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -31,8 +32,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -201,10 +201,10 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame3 = new HeadersFrame(streamId3, metaData, null, false);
         DataFrame data3 = new DataFrame(streamId3, BufferUtil.EMPTY_BUFFER, true);
         Generator generator = ((HTTP2Session)session).getGenerator();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(generator.getByteBufferPool());
-        generator.control(lease, frame3);
-        generator.data(lease, data3, data3.remaining());
-        ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, lease.getByteBuffers().toArray(new ByteBuffer[0]));
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        generator.control(accumulator, frame3);
+        generator.data(accumulator, data3, data3.remaining());
+        ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
         // Expect 2 RST_STREAM frames.
         assertTrue(sessionResetLatch.await(5, TimeUnit.SECONDS));
 

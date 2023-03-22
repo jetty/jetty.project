@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.session;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 
@@ -112,7 +113,7 @@ public class SessionListenerTest
             store.store("1234", data);
 
             //try to get the expired session, ensure that it wasn't used and that listeners were called for its expiry
-            Session session = sessionManager.getSession("1234");
+            Session session = sessionManager.getManagedSession("1234");
             assertNull(session);
             assertEquals(1L, sessionManager._sessionDestroyedListenersCalled.stream().filter(s -> s.equals("1234")).count());
             assertEquals(1L, sessionManager._sessionUnboundListenersCalled.stream().filter(s -> s.equals("1234")).count());

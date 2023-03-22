@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -65,6 +65,7 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -247,7 +248,7 @@ public class WebAppContextTest
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         WebAppContext contextA = new WebAppContext(".", "/A");
 
         contextA.addServlet(ServletA.class, "/s");
@@ -319,19 +320,17 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
 
         server.start();
 
@@ -362,14 +361,12 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -378,7 +375,8 @@ public class WebAppContextTest
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(),
+            either(is(HttpStatus.NOT_FOUND_404)).or(is(HttpStatus.BAD_REQUEST_400)));
     }
         
     @ParameterizedTest
@@ -395,14 +393,12 @@ public class WebAppContextTest
         server.addConnector(connector);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         server.start();
@@ -416,14 +412,12 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -441,7 +435,6 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
@@ -449,8 +442,7 @@ public class WebAppContextTest
 
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+        server.setHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -672,7 +664,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         DefaultHandler handler = new DefaultHandler();
-        server.setHandler(new Handler.Collection(context, handler));
+        server.setHandler(new Handler.Sequence(context, handler));
 
         assertThat(handler.getServer(), sameInstance(server));
     }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -58,7 +58,7 @@ public class MultiPartTest
 
         assertEquals(0, listener.events.size());
 
-        parser.parse(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, true));
+        parser.parse(Content.Chunk.EOF);
 
         assertEquals(1, listener.events.size());
         assertEquals("complete", listener.events.poll());
@@ -361,11 +361,11 @@ public class MultiPartTest
 
         MultiPart.Part part1 = listener.parts.get(0);
         assertEquals("value", part1.getHeaders().get("name"));
-        assertEquals("Hello", Content.Source.asString(part1.getContent()));
+        assertEquals("Hello", Content.Source.asString(part1.getContentSource()));
 
         MultiPart.Part part2 = listener.parts.get(1);
         assertEquals("9001", part2.getHeaders().get("powerLevel"));
-        assertEquals("secondary\r\ncontent", Content.Source.asString(part2.getContent()));
+        assertEquals("secondary\r\ncontent", Content.Source.asString(part2.getContentSource()));
 
         assertEquals(0, data.remaining());
     }
@@ -397,11 +397,11 @@ public class MultiPartTest
 
         MultiPart.Part part1 = listener.parts.get(0);
         assertEquals("value", part1.getHeaders().get("name"));
-        assertEquals("Hello", Content.Source.asString(part1.getContent()));
+        assertEquals("Hello", Content.Source.asString(part1.getContentSource()));
 
         MultiPart.Part part2 = listener.parts.get(1);
         assertEquals("9001", part2.getHeaders().get("powerLevel"));
-        assertEquals("secondary\ncontent", Content.Source.asString(part2.getContent()));
+        assertEquals("secondary\ncontent", Content.Source.asString(part2.getContentSource()));
 
         assertEquals(0, data.remaining());
     }
@@ -457,7 +457,7 @@ public class MultiPartTest
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
         assertEquals("value", part.getHeaders().get("name"));
-        assertEquals("", Content.Source.asString(part.getContent()));
+        assertEquals("", Content.Source.asString(part.getContentSource()));
     }
 
     @Test
@@ -477,7 +477,7 @@ public class MultiPartTest
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
         assertEquals("value", part.getHeaders().get("name"));
-        assertEquals("", Content.Source.asString(part.getContent()));
+        assertEquals("", Content.Source.asString(part.getContentSource()));
     }
 
     @Test
@@ -508,7 +508,7 @@ public class MultiPartTest
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
         assertEquals("value", part.getHeaders().get("name"));
-        assertThat(Content.Source.asString(part.getContent()), is("""
+        assertThat(Content.Source.asString(part.getContentSource()), is("""
             Hello\r
             this is not a --BOUNDARY\r
             that's a boundary"""));
@@ -517,12 +517,7 @@ public class MultiPartTest
     @Test
     public void testBinaryPart() throws Exception
     {
-        byte[] random = new byte[8192];
-        ThreadLocalRandom.current().nextBytes(random);
-        // Make sure the last 2 bytes are not \r\n,
-        // otherwise the multipart parser gets confused.
-        random[random.length - 2] = 0;
-        random[random.length - 1] = 0;
+        byte[] random = randomBytes(8192);
 
         TestPartsListener listener = new TestPartsListener();
         MultiPart.Parser parser = new MultiPart.Parser("BOUNDARY", listener);
@@ -537,7 +532,7 @@ public class MultiPartTest
         assertThat(epilogueBuffer.remaining(), is(0));
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
-        assertThat(Content.Source.asByteBuffer(part.getContent()), is(ByteBuffer.wrap(random)));
+        assertThat(Content.Source.asByteBuffer(part.getContentSource()), is(ByteBuffer.wrap(random)));
     }
 
     @Test
@@ -561,7 +556,7 @@ public class MultiPartTest
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
         assertEquals("value", part.getHeaders().get("name"));
-        assertEquals("Hello", Content.Source.asString(part.getContent()));
+        assertEquals("Hello", Content.Source.asString(part.getContentSource()));
     }
 
     @Test
@@ -621,6 +616,17 @@ public class MultiPartTest
         assertThat(listener.failure.getMessage(), containsStringIgnoringCase("invalid header name"));
     }
 
+    private static byte[] randomBytes(int length)
+    {
+        byte[] random = new byte[length];
+        ThreadLocalRandom.current().nextBytes(random);
+        // Make sure the last 2 bytes are not \r\n,
+        // otherwise the multipart parser gets confused.
+        random[length - 2] = 0;
+        random[length - 1] = 0;
+        return random;
+    }
+
     private static class TestListener implements MultiPart.Parser.Listener
     {
         private final Deque<String> events = new ArrayDeque<>();
@@ -652,7 +658,6 @@ public class MultiPartTest
         public void onPartContent(Content.Chunk chunk)
         {
             events.offer("content last: %b length: %d".formatted(chunk.isLast(), chunk.getByteBuffer().remaining()));
-            chunk.release();
         }
 
         @Override
@@ -684,6 +689,8 @@ public class MultiPartTest
         @Override
         public void onPartContent(Content.Chunk chunk)
         {
+            // Retain the chunk because it is stored for later use.
+            chunk.retain();
             partContent.add(chunk);
         }
 

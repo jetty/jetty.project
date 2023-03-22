@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,11 +24,11 @@ import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.InputStreamRequestContent;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.Callback;
@@ -199,8 +199,9 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void onContent(Response proxyResponse, ByteBuffer content, Callback callback)
+        public void onContent(Response proxyResponse, Content.Chunk chunk, Runnable demander)
         {
+            ByteBuffer content = chunk.getByteBuffer();
             byte[] buffer;
             int offset;
             int length = content.remaining();
@@ -215,16 +216,9 @@ public class ProxyServlet extends AbstractProxyServlet
                 content.get(buffer);
                 offset = 0;
             }
-
-            onResponseContent(request, response, proxyResponse, buffer, offset, length, new Callback.Nested(callback)
-            {
-                @Override
-                public void failed(Throwable x)
-                {
-                    super.failed(x);
-                    proxyResponse.abort(x);
-                }
-            });
+            chunk.retain();
+            Callback callback = Callback.from(chunk::release, Callback.from(demander, proxyResponse::abort));
+            onResponseContent(request, response, proxyResponse, buffer, offset, length, callback);
         }
 
         @Override

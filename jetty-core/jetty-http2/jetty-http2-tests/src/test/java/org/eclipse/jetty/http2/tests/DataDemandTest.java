@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,15 +28,15 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -119,7 +119,7 @@ public class DataDemandTest extends AbstractTest
             await().atMost(1, TimeUnit.SECONDS).until(() -> serverQueue.size() == count.get() + 1);
             count.incrementAndGet();
             long sum = serverQueue.stream()
-                .mapToLong(data -> data.frame().getData().remaining())
+                .mapToLong(data -> data.frame().getByteBuffer().remaining())
                 .sum();
             if (sum == length)
                 break;
@@ -155,7 +155,7 @@ public class DataDemandTest extends AbstractTest
             await().atMost(1, TimeUnit.SECONDS).until(() -> clientQueue.size() == count.get() + 1);
             count.incrementAndGet();
             long sum = clientQueue.stream()
-                .mapToLong(data -> data.frame().getData().remaining())
+                .mapToLong(data -> data.frame().getByteBuffer().remaining())
                 .sum();
             if (sum == length)
                 break;
@@ -365,17 +365,17 @@ public class DataDemandTest extends AbstractTest
         // Generate a lot of small DATA frames and write them in a single
         // write so that the server will continuously be notified and demand,
         // which will test that it won't throw StackOverflowError.
-        MappedByteBufferPool byteBufferPool = new MappedByteBufferPool();
-        Generator generator = new Generator(byteBufferPool);
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        Generator generator = new Generator(bufferPool);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (int i = 512; i >= 0; --i)
-            generator.data(lease, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
+            generator.data(accumulator, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
 
         // Since this is a naked write, we need to wait that the
         // client finishes writing the SETTINGS reply to the server
         // during connection initialization, or we risk a WritePendingException.
         Thread.sleep(1000);
-        ((HTTP2Session)clientStream.getSession()).getEndPoint().write(Callback.NOOP, lease.getByteBuffers().toArray(new ByteBuffer[0]));
+        ((HTTP2Session)clientStream.getSession()).getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
     }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,10 +36,11 @@ own custom link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/sp
 [[og-jaas-module]]
 ===== The `jaas` module
 
-Enable the `jaas` module:
+Enable the `{ee-all}-jaas` module appropriate for your EE platform:
 
+[subs=attributes]
 ----
-include::{JETTY_HOME}/modules/jaas.mod[]
+include::{jetty-home}/modules/{ee-current}-jaas.mod[]
 ----
 
 The configurable items in the resulting `$jetty.base/start.d/jaas.ini` file are:

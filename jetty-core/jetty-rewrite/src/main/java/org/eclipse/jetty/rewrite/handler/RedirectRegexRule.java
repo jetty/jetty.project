@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -76,17 +76,18 @@ public class RedirectRegexRule extends RegexRule
     }
 
     @Override
-    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
+    protected Handler apply(Handler input, Matcher matcher) throws IOException
     {
-        return new Request.WrapperProcessor(input)
+        return new Handler(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback)
+            public boolean handle(Response response, Callback callback)
             {
                 String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);
                 response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
                 callback.succeeded();
+                return true;
             }
         };
     }

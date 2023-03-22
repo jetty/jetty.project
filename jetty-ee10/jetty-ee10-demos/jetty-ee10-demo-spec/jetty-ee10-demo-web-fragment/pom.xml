@@ -7,7 +7,7 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <name>EE10 :: Jetty Demo :: Servlet Spec :: Fragment Jar</name>
+  <name>EE10 :: Demo :: Servlet Spec :: Fragment Jar</name>
   <artifactId>jetty-ee10-demo-web-fragment</artifactId>
   <packaging>jar</packaging>
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,21 +25,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
-import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -47,8 +48,6 @@ import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Connection;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -248,13 +247,14 @@ public class ForwardProxyWithDynamicTransportTest
     public void testProxy(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
     {
         int status = HttpStatus.NO_CONTENT_204;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -281,10 +281,10 @@ public class ForwardProxyWithDynamicTransportTest
         assertEquals(status, response2.getStatus());
 
         List<Destination> destinations = client.getDestinations().stream()
-            .filter(d -> d.getPort() == serverPort)
+            .filter(d -> d.getOrigin().getAddress().getPort() == serverPort)
             .toList();
         assertEquals(1, destinations.size());
-        HttpDestination destination = (HttpDestination)destinations.get(0);
+        Destination destination = destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(1, connectionPool.getConnectionCount());
     }
@@ -316,10 +316,10 @@ public class ForwardProxyWithDynamicTransportTest
         Thread.sleep(2 * idleTimeout);
 
         List<Destination> destinations = client.getDestinations().stream()
-            .filter(d -> d.getPort() == serverPort)
+            .filter(d -> d.getOrigin().getAddress().getPort() == serverPort)
             .toList();
         assertEquals(1, destinations.size());
-        HttpDestination destination = (HttpDestination)destinations.get(0);
+        Destination destination = destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
 
@@ -392,10 +392,10 @@ public class ForwardProxyWithDynamicTransportTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<Destination> destinations = client.getDestinations().stream()
-            .filter(d -> d.getPort() == proxyPort)
+            .filter(d -> d.getOrigin().getAddress().getPort() == proxyPort)
             .toList();
         assertEquals(1, destinations.size());
-        HttpDestination destination = (HttpDestination)destinations.get(0);
+        Destination destination = destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
     }
@@ -462,7 +462,7 @@ public class ForwardProxyWithDynamicTransportTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
                 data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();
@@ -550,7 +550,7 @@ public class ForwardProxyWithDynamicTransportTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
                 data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();

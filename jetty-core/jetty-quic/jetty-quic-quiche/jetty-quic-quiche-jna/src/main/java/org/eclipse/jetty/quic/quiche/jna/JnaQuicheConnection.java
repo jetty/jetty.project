@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -441,7 +441,6 @@ public class JnaQuicheConnection extends QuicheConnection
      * Fill the given buffer with cipher text to be sent.
      * @param buffer the buffer to fill.
      * @return how many bytes were added to the buffer.
-     * @throws IOException
      */
     @Override
     public int drainCipherBytes(ByteBuffer buffer) throws IOException

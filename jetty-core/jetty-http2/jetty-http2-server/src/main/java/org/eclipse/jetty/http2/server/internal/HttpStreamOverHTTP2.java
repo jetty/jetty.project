@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,14 +27,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public long getNanoTimeStamp()
+    public long getNanoTime()
     {
         return _nanoTime;
     }
@@ -117,21 +118,34 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     System.lineSeparator(), fields);
             }
 
-            return handler;
-        }
-        catch (BadMessageException x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onRequest", x);
-            return () -> onBadMessage(x);
+            InvocationType invocationType = Invocable.getInvocationType(handler);
+            return new ReadyTask(invocationType, handler)
+            {
+                @Override
+                public void run()
+                {
+                    if (_stream.isClosed())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
+                                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                                _stream);
+                    }
+                    else
+                    {
+                        super.run();
+                    }
+                }
+            };
         }
         catch (Throwable x)
         {
-            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
+            HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
+            return () -> onBadMessage(httpException);
         }
     }
 
-    private void onBadMessage(BadMessageException x)
+    private void onBadMessage(HttpException x)
     {
         // TODO
     }
@@ -139,6 +153,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Content.Chunk read()
     {
+        // Tunnel requests do not have HTTP content, avoid
+        // returning chunks meant for a different protocol.
+        if (tunnelSupport != null)
+            return null;
+
         while (true)
         {
             Content.Chunk chunk;
@@ -154,8 +173,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (data == null)
                 return null;
 
+            // The data instance should be released after readData() above;
+            // the chunk is stored below for later use, so should be retained;
+            // the two actions cancel each other, no need to further retain or release.
             chunk = createChunk(data);
-            data.release();
 
             // Some content is read, but the 100 Continue interim
             // response has not been sent yet, then don't bother
@@ -231,8 +252,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}, trailer:{}{}",
-                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                    System.lineSeparator(), trailers);
+                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                System.lineSeparator(), trailers);
         }
 
         return _httpChannel.onContentAvailable();
@@ -242,11 +263,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         DataFrame frame = data.frame();
         if (frame.isEndStream() && frame.remaining() == 0)
+        {
+            data.release();
             return Content.Chunk.EOF;
-
-        // We need to retain because we are passing the ByteBuffer to the Chunk.
-        data.retain();
-        return Content.Chunk.from(frame.getData(), frame.isEndStream(), data);
+        }
+        return Content.Chunk.asChunk(frame.getByteBuffer(), frame.isEndStream(), data);
     }
 
     @Override
@@ -311,7 +332,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
                 else if (hasContent && contentLength != realContentLength)
                 {
-                    callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
                     return;
                 }
             }
@@ -383,6 +404,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
         if (hasContent || (last && !isTunnel(request, _responseMetaData)))
         {
+            if (!hasContent)
+                content = BufferUtil.EMPTY_BUFFER;
             if (last)
             {
                 HttpFields trailers = retrieveTrailers();
@@ -431,37 +454,31 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return _stream.getSession().isPushEnabled();
-    }
-
-    @Override
-    public void push(MetaData.Request request)
+    public void push(MetaData.Request resource)
     {
         if (!_stream.getSession().isPushEnabled())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("HTTP/2 push disabled for {}", request);
+                LOG.debug("HTTP/2 push disabled for {}", resource);
             return;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP/2 push {}", request);
+            LOG.debug("HTTP/2 push {}", resource);
 
-        _stream.push(new PushPromiseFrame(_stream.getId(), request), new Promise<>()
+        _stream.push(new PushPromiseFrame(_stream.getId(), resource), new Promise<>()
         {
             @Override
             public void succeeded(Stream pushStream)
             {
-                _connection.push((HTTP2Stream)pushStream, request);
+                _connection.push((HTTP2Stream)pushStream, resource);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not HTTP/2 push {}", request, x);
+                    LOG.debug("Could not HTTP/2 push {}", resource, x);
             }
         }, null); // TODO: handle reset from the client ?
     }
@@ -470,26 +487,24 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         try
         {
+            _requestMetaData = request;
             Runnable task = _httpChannel.onRequest(request);
             _httpChannel.getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
 
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
-                        _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getHttpVersion(),
-                        System.lineSeparator(), request.getFields());
+                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
+                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    System.lineSeparator(), request.getFields());
             }
 
             return task;
         }
-        catch (BadMessageException x)
-        {
-            return () -> onBadMessage(x);
-        }
         catch (Throwable x)
         {
-            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
+            HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
+            return () -> onBadMessage(httpException);
         }
     }
 
@@ -539,9 +554,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Throwable consumeAvailable()
     {
-        if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+        if (tunnelSupport != null)
             return null;
-        return HttpStream.super.consumeAvailable();
+        return HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
     }
 
     @Override

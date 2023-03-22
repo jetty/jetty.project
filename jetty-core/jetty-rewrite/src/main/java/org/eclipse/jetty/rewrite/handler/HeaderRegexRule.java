@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.regex.Matcher;
 
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
@@ -75,18 +74,18 @@ public class HeaderRegexRule extends RegexRule
     }
 
     @Override
-    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
+    protected Handler apply(Handler input, Matcher matcher) throws IOException
     {
-        return new Request.WrapperProcessor(input)
+        return new Handler(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback) throws Exception
+            public boolean handle(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), matcher.replaceAll(getHeaderValue()));
                 else
                     response.getHeaders().put(getHeaderName(), matcher.replaceAll(getHeaderValue()));
-                super.process(ignored, response, callback);
+                return super.handle(response, callback);
             }
         };
     }

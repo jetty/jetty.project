@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -73,10 +73,10 @@ public class MultiPartByteRangesTest
         Path resourcePath = resourceDir.resolve("range.txt");
         Files.writeString(resourcePath, resourceChars);
 
-        start(new Handler.Processor()
+        start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertTrue(request.getHeaders().contains(HttpHeader.ACCEPT_RANGES));
                 assertTrue(request.getHeaders().contains(HttpHeader.RANGE));
@@ -86,13 +86,14 @@ public class MultiPartByteRangesTest
                 String boundary = "boundary";
                 try (MultiPartByteRanges.ContentSource content = new MultiPartByteRanges.ContentSource(boundary))
                 {
-                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part("text/plain", resourcePath, range)));
+                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part("text/plain", resourcePath, range, content.getLength())));
                     content.close();
 
                     response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/byteranges; boundary=" + QuotedStringTokenizer.quote(boundary));
                     Content.copy(content, response, callback);
                 }
+                return true;
             }
         });
 
@@ -118,11 +119,11 @@ public class MultiPartByteRangesTest
 
             assertEquals(3, parts.size());
             MultiPart.Part part1 = parts.get(0);
-            assertEquals("12", Content.Source.asString(part1.getContent()));
+            assertEquals("12", Content.Source.asString(part1.getContentSource()));
             MultiPart.Part part2 = parts.get(1);
-            assertEquals("456", Content.Source.asString(part2.getContent()));
+            assertEquals("456", Content.Source.asString(part2.getContentSource()));
             MultiPart.Part part3 = parts.get(2);
-            assertEquals("CDEF", Content.Source.asString(part3.getContent()));
+            assertEquals("CDEF", Content.Source.asString(part3.getContentSource()));
         }
     }
 }

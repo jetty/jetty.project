@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,17 +15,17 @@ package org.eclipse.jetty.session;
 
 import java.util.function.Consumer;
 
-public class TestableSessionConsumer implements Consumer<Session>
+public class TestableSessionConsumer implements Consumer<ManagedSession>
 {
-    private Session _session;
+    private ManagedSession _session;
     
     @Override
-    public void accept(Session s)
+    public void accept(ManagedSession s)
     {
         _session = s;
     }
     
-    public Session getSession()
+    public ManagedSession getSession()
     {
         return _session;
     }

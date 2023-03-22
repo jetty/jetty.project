@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -162,7 +162,7 @@ public class ContextFactory implements ObjectFactory
                 LOG.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
             try (AutoLock l = __lock.lock())
             {
-                loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
+                loader = ContextHandler.getCurrentContext().getClassLoader();
                 ctx = (Context)__contextMap.get(loader);
 
                 if (ctx == null && loader != null)

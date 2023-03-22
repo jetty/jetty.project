@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,11 +25,11 @@ import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSessionListener;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee9.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -60,7 +60,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalServer.class);
-    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
     private Server server;
     private ServerConnector connector;
     private LocalConnector localConnector;
@@ -190,7 +190,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             httpConfig.setSendDateHeader(false);
 
             sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/keystore.p12").getAbsolutePath());
+            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTargetPath("test-classes/keystore.p12").toAbsolutePath().toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA", "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
                 "SSL_RSA_EXPORT_WITH_RC4_40_MD5", "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA", "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",

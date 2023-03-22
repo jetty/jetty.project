@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,12 +19,12 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyServerHandler extends Handler.Processor.Blocking
+public class EmptyServerHandler extends Handler.Abstract
 {
     protected Blocker.Shared _blocking = new Blocker.Shared();
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         try
         {
@@ -35,6 +35,7 @@ public class EmptyServerHandler extends Handler.Processor.Blocking
         {
             callback.failed(t);
         }
+        return true;
     }
 
     protected void service(Request request, Response response) throws Throwable

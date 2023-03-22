@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -35,20 +35,22 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.HouseKeeper;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.NullSessionDataStoreFactory;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
@@ -73,12 +75,12 @@ public class SessionHandlerTest
 {
     public WorkDir workDir;
     
-    public static class SessionConsumer implements Consumer<Session>
+    public static class SessionConsumer implements Consumer<ManagedSession>
     {
-        private Session _session;
+        private ManagedSession _session;
         
         @Override
-        public void accept(Session s)
+        public void accept(ManagedSession s)
         {
             _session = s;
         }
@@ -208,7 +210,7 @@ public class SessionHandlerTest
             }
         }
         
-        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, Session.class))
+        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ManagedSession.class))
         {
             Listener1 listener = new Listener1();
             sessionHandler.addEventListener(listener);
@@ -283,7 +285,7 @@ public class SessionHandlerTest
             sessionHandler.addEventListener(new Listener2());
             sessionHandler.setServer(server);
             server.start();
-            Session session = new Session(sessionHandler, new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
+            Session session = new ManagedSession(sessionHandler, new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
             sessionHandler.callSessionCreatedListeners(session);
             sessionHandler.callSessionDestroyedListeners(session);
             assertEquals("Listener1 create;Listener2 create;Listener2 destroy;Listener1 destroy;", result.toString());
@@ -297,7 +299,7 @@ public class SessionHandlerTest
     @Test
     public void testSimpleSessionCreation() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
 
         Server server = new Server();
@@ -337,7 +339,8 @@ public class SessionHandlerTest
             client.start();
 
             //make a session
-            String url = "http://localhost:" + port + contextPath + servletMapping + "?action=create";
+            String path = contextPath + (contextPath.endsWith("/") && servletMapping.startsWith("/") ? servletMapping.substring(1) : servletMapping);
+            String url = "http://localhost:" + port + path + "?action=create";
 
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
@@ -345,8 +348,9 @@ public class SessionHandlerTest
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
+            assertThat(sessionCookie, containsString("Path=/"));
 
-            ContentResponse response2 = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=test");
+            ContentResponse response2 = client.GET("http://localhost:" + port + path + "?action=test");
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
         }
         finally
@@ -396,37 +400,37 @@ public class SessionHandlerTest
         }
 
         @Override
-        public Session doGet(String key)
+        public ManagedSession doGet(String key)
         {
             return null;
         }
 
         @Override
-        public Session doPutIfAbsent(String key, Session session)
+        public Session doPutIfAbsent(String key, ManagedSession session)
         {
             return null;
         }
 
         @Override
-        public Session doDelete(String key)
+        public ManagedSession doDelete(String key)
         {
             return null;
         }
 
         @Override
-        public boolean doReplace(String id, Session oldValue, Session newValue)
+        public boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
         {
             return false;
         }
 
         @Override
-        public Session newSession(SessionData data)
+        public ManagedSession newSession(SessionData data)
         {
             return null;
         }
 
         @Override
-        protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+        protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
         {
             return mappingFunction.apply(id);
         }
@@ -472,7 +476,7 @@ public class SessionHandlerTest
 
         long now = System.currentTimeMillis();
 
-        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
+        ManagedSession session = new ManagedSession(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
         session.setExtendedId("123.node1");
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setName("SPECIAL");
@@ -484,7 +488,7 @@ public class SessionHandlerTest
         sessionCookieConfig.setAttribute("SameSite", "Strict");
         sessionCookieConfig.setAttribute("ham", "cheese");
         
-        HttpCookie cookie = mgr.getSessionCookie(session, "/bar", false);
+        HttpCookie cookie = mgr.getSessionCookie(session, false);
         assertEquals("SPECIAL", cookie.getName());
         assertEquals("universe", cookie.getDomain());
         assertEquals("/foo", cookie.getPath());
@@ -492,8 +496,8 @@ public class SessionHandlerTest
         assertFalse(cookie.isSecure());
         assertEquals(99, cookie.getMaxAge());
         assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
-        
-        String cookieStr = cookie.getRFC6265SetCookie();
+
+        String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict; ham=cheese"));
     }
 
@@ -511,38 +515,38 @@ public class SessionHandlerTest
 
         long now = System.currentTimeMillis();
 
-        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
+        ManagedSession session = new ManagedSession(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
 
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setSecure(true);
 
         //sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
-        HttpCookie cookie = mgr.getSessionCookie(session, "/foo", true);
+        HttpCookie cookie = mgr.getSessionCookie(session, true);
         assertTrue(cookie.isSecure());
         //sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
-        cookie = mgr.getSessionCookie(session, "/foo", false);
+        cookie = mgr.getSessionCookie(session, false);
         assertTrue(cookie.isSecure());
 
         //sessionCookieConfig.secure==false, setSecureRequestOnly==true, requestIsSecure==true
         //cookie should be secure: see SessionCookieConfig.setSecure() javadoc
         sessionCookieConfig.setSecure(false);
-        cookie = mgr.getSessionCookie(session, "/foo", true);
+        cookie = mgr.getSessionCookie(session, true);
         assertTrue(cookie.isSecure());
 
         //sessionCookieConfig.secure=false, setSecureRequestOnly==true, requestIsSecure==false
         //cookie is not secure: see SessionCookieConfig.setSecure() javadoc
-        cookie = mgr.getSessionCookie(session, "/foo", false);
+        cookie = mgr.getSessionCookie(session, false);
         assertFalse(cookie.isSecure());
 
         //sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==false
         //cookie is not secure: not a secure request
         mgr.setSecureRequestOnly(false);
-        cookie = mgr.getSessionCookie(session, "/foo", false);
+        cookie = mgr.getSessionCookie(session, false);
         assertFalse(cookie.isSecure());
 
         //sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==true
         //cookie is not secure: not on secured requests and request is secure
-        cookie = mgr.getSessionCookie(session, "/foo", true);
+        cookie = mgr.getSessionCookie(session, true);
         assertFalse(cookie.isSecure());
     }
 }

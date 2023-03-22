@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * A <code>HandlerContainer</code> that allows a hot swap of a wrapped handler.
  */
-public class HotSwapHandler extends Handler.AbstractContainer implements Handler.Nested
+public class HotSwapHandler extends Handler.AbstractContainer implements Handler.Singleton
 {
     // TODO unit tests
 
@@ -35,6 +34,7 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
      */
     public HotSwapHandler()
     {
+        super(true);
     }
 
     /**
@@ -46,22 +46,12 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     }
 
     /**
-     * @return Returns the handlers.
-     */
-    @Override
-    public List<Handler> getHandlers()
-    {
-        Handler next = _handler;
-        return (next == null) ? Collections.emptyList() : Collections.singletonList(next);
-    }
-
-    /**
      * @param handler Set the {@link Handler} which should be wrapped.
      */
     public void setHandler(Handler handler)
     {
         // check state
-        Server server1 = ((Nested)this).getServer();
+        Server server1 = ((Singleton)this).getServer();
         if (server1 != null && server1.isStarted() && handler != null &&
             server1.getInvocationType() != Invocable.combine(server1.getInvocationType(), handler.getInvocationType()))
             throw new IllegalArgumentException("Cannot change invocation type of started server");
@@ -96,10 +86,10 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = _handler;
-        return next == null ? null : next.handle(request);
+        return next != null && next.handle(request, response, callback);
     }
 
     @Override

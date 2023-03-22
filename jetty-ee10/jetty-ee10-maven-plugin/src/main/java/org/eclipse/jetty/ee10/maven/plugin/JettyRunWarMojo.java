@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,7 +19,6 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Set;
 
-import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -68,7 +67,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     protected Path war;
     
     @Override
-    public void configureWebApp() throws AbstractMojoExecutionException
+    public void configureWebApp() throws Exception
     {
         super.configureWebApp();
         //if no war has been explicitly configured, use the one from the webapp project

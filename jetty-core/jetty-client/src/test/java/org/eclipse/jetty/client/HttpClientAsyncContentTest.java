@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,10 +19,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -32,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
@@ -57,21 +56,21 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         });
 
         AtomicInteger contentCount = new AtomicInteger();
-        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        AtomicReference<Runnable> demanderRef = new AtomicReference<>();
         AtomicReference<CountDownLatch> contentLatch = new AtomicReference<>(new CountDownLatch(1));
         CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
                 contentCount.incrementAndGet();
-                callbackRef.set(callback);
+                demanderRef.set(demander);
                 contentLatch.get().countDown();
             })
             .send(result -> completeLatch.countDown());
 
         assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
-        Callback callback = callbackRef.get();
+        Runnable demander = demanderRef.get();
 
         // Wait a while to be sure that the parsing does not proceed.
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -79,12 +78,12 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         assertEquals(1, contentCount.get());
 
         // Succeed the content callback to proceed with parsing.
-        callbackRef.set(null);
+        demanderRef.set(null);
         contentLatch.set(new CountDownLatch(1));
-        callback.succeeded();
+        demander.run();
 
         assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
-        callback = callbackRef.get();
+        demander = demanderRef.get();
 
         // Wait a while to be sure that the parsing does not proceed.
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -93,9 +92,9 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         assertEquals(1, completeLatch.getCount());
 
         // Succeed the content callback to proceed with parsing.
-        callbackRef.set(null);
+        demanderRef.set(null);
         contentLatch.set(new CountDownLatch(1));
-        callback.succeeded();
+        demander.run();
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertEquals(2, contentCount.get());
@@ -202,19 +201,20 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAsyncContentAbort(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[1024]), callback);
+                return true;
             }
         });
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentDemanded((response, demand, content, callback) -> response.abort(new Throwable()))
+            .onResponseContentSource((response, contentSource) -> response.abort(new Throwable()))
             .send(result ->
             {
                 if (result.isFailed())
@@ -241,21 +241,29 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             }
         });
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch errorContentLatch = new CountDownLatch(1);
+        CountDownLatch successLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentDemanded((response, demand, content, callback) ->
+            .onResponseContentSource((response, contentSource) -> response.abort(new Throwable()).whenComplete((failed, x) ->
             {
-                response.abort(new Throwable());
-                demand.accept(1);
-            })
+                Content.Chunk chunk = contentSource.read();
+                assertInstanceOf(Content.Chunk.Error.class, chunk);
+                contentSource.demand(() ->
+                {
+                    Content.Chunk c = contentSource.read();
+                    assertInstanceOf(Content.Chunk.Error.class, c);
+                    errorContentLatch.countDown();
+                });
+            }))
             .send(result ->
             {
                 if (result.isFailed())
-                    latch.countDown();
+                    successLatch.countDown();
             });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(errorContentLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -276,26 +284,16 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             }
         });
 
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
         CountDownLatch headersLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentDemanded(new Response.DemandedContentListener()
+            .onResponseContentSource((response, contentSource) ->
             {
-                @Override
-                public void onBeforeContent(Response response, LongConsumer demand)
-                {
-                    // Don't demand yet.
-                    demandRef.set(demand);
-                    headersLatch.countDown();
-                }
-
-                @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-                {
-                    demand.accept(1);
-                }
+                // Don't demand yet.
+                contentSourceRef.set(contentSource);
+                headersLatch.countDown();
             })
             .send(result ->
             {
@@ -306,7 +304,8 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         // Wait to make sure the demand is really delayed.
         Thread.sleep(500);
-        demandRef.get().accept(1);
+        Content.Source cs = contentSourceRef.get();
+        cs.demand(() -> Content.Source.consumeAll(cs, Callback.NOOP));
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }

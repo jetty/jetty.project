@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,21 +20,16 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.MimeTypes;
 
 /**
  * Test servlet for testing against unusual minGzip configurable.
  */
-@SuppressWarnings("serial")
 public class TestMinGzipSizeServlet extends AbstractFileContentServlet
 {
-    private MimeTypes mimeTypes;
-
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
-        mimeTypes = new MimeTypes();
     }
 
     @Override
@@ -52,7 +47,7 @@ public class TestMinGzipSizeServlet extends AbstractFileContentServlet
         }
         else
         {
-            String mime = mimeTypes.getMimeByExtension(fileName);
+            String mime = request.getServletContext().getMimeType(fileName);
             if (mime != null)
                 response.setContentType(mime);
         }

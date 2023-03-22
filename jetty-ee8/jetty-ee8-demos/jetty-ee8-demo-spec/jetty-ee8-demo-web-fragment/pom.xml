@@ -6,7 +6,7 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>EE8 :: Jetty Demo :: Servlet Spec :: Fragment Jar</name>
+  <name>EE8 :: Demo :: Servlet Spec :: Fragment Jar</name>
   <artifactId>jetty-ee8-demo-web-fragment</artifactId>
   <packaging>jar</packaging>
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,7 +26,6 @@ import java.nio.file.StandardOpenOption;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -41,7 +40,7 @@ public class PathContentSource implements Content.Source
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final Path path;
     private final long length;
-    private final RetainableByteBufferPool byteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private int bufferSize = 4096;
     private boolean useDirectByteBuffers = true;
     private SeekableByteChannel channel;
@@ -51,15 +50,10 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path)
     {
-        this(path, (ByteBufferPool)null);
+        this(path, null);
     }
 
     public PathContentSource(Path path, ByteBufferPool byteBufferPool)
-    {
-        this(path, (byteBufferPool == null ? ByteBufferPool.NOOP : byteBufferPool).asRetainableByteBufferPool());
-    }
-
-    public PathContentSource(Path path, RetainableByteBufferPool byteBufferPool)
     {
         try
         {
@@ -69,7 +63,7 @@ public class PathContentSource implements Content.Source
                 throw new AccessDeniedException(path.toString());
             this.path = path;
             this.length = Files.size(path);
-            this.byteBufferPool = byteBufferPool == null ? ByteBufferPool.NOOP.asRetainableByteBufferPool() : byteBufferPool;
+            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : new ByteBufferPool.NonPooling();
         }
         catch (IOException x)
         {
@@ -135,7 +129,7 @@ public class PathContentSource implements Content.Source
             return Content.Chunk.EOF;
 
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
-        ByteBuffer byteBuffer = retainableByteBuffer.getBuffer();
+        ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
 
         int read;
         try
@@ -146,6 +140,7 @@ public class PathContentSource implements Content.Source
         }
         catch (Throwable x)
         {
+            retainableByteBuffer.release();
             return failure(x);
         }
 
@@ -156,7 +151,7 @@ public class PathContentSource implements Content.Source
         if (last)
             IO.close(channel);
 
-        return Content.Chunk.from(byteBuffer, last, retainableByteBuffer);
+        return Content.Chunk.asChunk(byteBuffer, last, retainableByteBuffer);
     }
 
     protected SeekableByteChannel open() throws IOException

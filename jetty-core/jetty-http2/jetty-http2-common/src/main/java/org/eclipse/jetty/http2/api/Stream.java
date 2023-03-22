@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -313,10 +313,10 @@ public interface Stream
          * <p>It is always guaranteed that invoking {@link Stream#demand()}
          * from within this method will not cause a {@link StackOverflowError}.</p>
          * <p>Typical usage:</p>
-         * <pre>
+         * <pre>{@code
          * class MyStreamListener implements Stream.Listener
          * {
-         *     &#64;Override
+         *     @Override
          *     public void onDataAvailable(Stream stream)
          *     {
          *         // Read a chunk of the content.
@@ -329,7 +329,7 @@ public interface Stream
          *         else
          *         {
          *             // Process the content.
-         *             process(data.getByteBuffer());
+         *             process(data.frame().getByteBuffer());
          *             // Notify that the content has been consumed.
          *             data.release();
          *             if (!data.frame().isEndStream())
@@ -340,7 +340,7 @@ public interface Stream
          *         }
          *     }
          * }
-         * </pre>
+         * }</pre>
          *
          * @param stream the stream
          * @see Stream#demand()
@@ -431,18 +431,6 @@ public interface Stream
             public EOF(int streamId)
             {
                 super(new DataFrame(streamId, BufferUtil.EMPTY_BUFFER, true));
-            }
-
-            @Override
-            public void retain()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean release()
-            {
-                return true;
             }
         }
     }

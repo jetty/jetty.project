@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,12 +17,14 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -30,7 +32,6 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -334,10 +336,10 @@ public class IdleTimeoutTest extends AbstractTest
     {
         int idleTimeout = 1000;
         AtomicReference<Throwable> thrownByCallback = new AtomicReference<>();
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 sleep(2 * idleTimeout);
 
@@ -361,6 +363,8 @@ public class IdleTimeoutTest extends AbstractTest
                     // Callback.failed() must not throw.
                     thrownByCallback.set(x);
                 }
+
+                return true;
             }
         });
 
@@ -579,17 +583,18 @@ public class IdleTimeoutTest extends AbstractTest
     {
         int bufferSize = 8192;
         long delay = 1000;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             private Request _request;
             private Callback _callback;
 
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 _request = request;
                 _callback = callback;
                 request.demand(this::onContentAvailable);
+                return true;
             }
 
             private void onContentAvailable()
@@ -652,7 +657,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerIdleTimeoutIsEnforcedForQueuedRequest() throws Exception
     {
-        long idleTimeout = 2000;
+        long idleTimeout = 750;
         // Use a small thread pool to cause request queueing.
         QueuedThreadPool serverExecutor = new QueuedThreadPool(5);
         serverExecutor.setName("server");
@@ -664,17 +669,23 @@ public class IdleTimeoutTest extends AbstractTest
         connector = new ServerConnector(server, 1, 1, h2);
         connector.setIdleTimeout(10 * idleTimeout);
         server.addConnector(connector);
+        AtomicInteger requests = new AtomicInteger();
+        AtomicInteger handled = new AtomicInteger();
         AtomicReference<CountDownLatch> phaser = new AtomicReference<>();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 System.err.println("processing request " + request.getHttpURI().getPath());
+                requests.incrementAndGet();
+                handled.incrementAndGet();
                 phaser.get().countDown();
                 // Hold the dispatched requests enough for the idle requests to idle timeout.
                 sleep(2 * idleTimeout);
                 callback.succeeded();
+                handled.decrementAndGet();
+                return true;
             }
         });
         server.start();
@@ -684,6 +695,7 @@ public class IdleTimeoutTest extends AbstractTest
 
         Session client = newClientSession(new Session.Listener() {});
 
+        AtomicInteger responses = new AtomicInteger();
         // Send requests until one is queued on the server but not dispatched.
         int count = 0;
         while (true)
@@ -694,12 +706,19 @@ public class IdleTimeoutTest extends AbstractTest
             MetaData.Request request = newRequest("GET", "/" + count, HttpFields.EMPTY);
             HeadersFrame frame = new HeadersFrame(request, null, false);
             FuturePromise<Stream> promise = new FuturePromise<>();
-            client.newStream(frame, promise, null);
+            client.newStream(frame, promise, new Stream.Listener()
+            {
+                @Override
+                public void onHeaders(Stream stream, HeadersFrame frame)
+                {
+                    responses.incrementAndGet();
+                }
+            });
             Stream stream = promise.get(5, TimeUnit.SECONDS);
             ByteBuffer data = ByteBuffer.allocate(10);
             stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
 
-            if (!phaser.get().await(1, TimeUnit.SECONDS))
+            if (!phaser.get().await(idleTimeout / 2, TimeUnit.MILLISECONDS))
                 break;
         }
 
@@ -724,9 +743,13 @@ public class IdleTimeoutTest extends AbstractTest
         assertTrue(resetLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Wait for WINDOW_UPDATEs to be processed by the client.
-        sleep(1000);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
 
-        assertThat(((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+        // Wait for the server to finish serving requests.
+        await().atMost(5, TimeUnit.SECONDS).until(handled::get, Matchers.is(0));
+        assertThat(requests.get(), Matchers.is(count - 1));
+
+        await().atMost(5, TimeUnit.SECONDS).until(responses::get, Matchers.is(count - 1));
     }
 
     private void sleep(long value)

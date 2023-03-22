@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
@@ -44,7 +48,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -53,9 +58,11 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,9 +114,8 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-
-        File extraJarResources = MavenTestingUtils.getTestResourceFile(ODD_JAR);
-        URL[] urls = new URL[]{extraJarResources.toURI().toURL()};
+        Path extraJarResources = MavenPaths.findTestResourceFile(ODD_JAR);
+        URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
         ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
@@ -166,8 +172,44 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testGetBinaryWithUtfResponseEncoding() throws Exception
+    {
+        Path path = docRoot.resolve("keystore.p12");
+        byte[] originalBytes;
+
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12");
+             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             OutputStream fos = Files.newOutputStream(path))
+        {
+            IO.copy(is, baos);
+            originalBytes = baos.toByteArray();
+            fos.write(originalBytes);
+        }
+
+        context.setDefaultResponseCharacterEncoding("utf-8");
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            GET /context/keystore.p12 HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        byte[] readContentBytes = response.getContentBytes();
+
+        assertThat(Arrays.equals(readContentBytes, originalBytes), is(true));
+    }
+
+    @Test
     public void testGetPercent2F() throws Exception
     {
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+
         Path file = docRoot.resolve("file.txt");
         Files.writeString(file, "How now brown cow", UTF_8);
 
@@ -217,6 +259,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getContent(), is("In a while"));
 
         // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 404
+        // as neither getServletPath and getPathInfo are used and thus they don't throw.
         rawResponse = connector.getResponse("""
             GET /context/dirFoo%2Fother.txt HTTP/1.1\r
             Host: local\r
@@ -728,7 +771,7 @@ public class DefaultServletTest
                 (response) ->
                 {
                     String body = response.getContent();
-                    assertThat(body, containsString("/../../"));
+                    assertThat(body, containsString("Not Found"));
                     assertThat(body, not(containsString("Directory: ")));
                 }
             );
@@ -1092,12 +1135,10 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled("Not working as RequestDispatcher.include() isn't behaving as expected")
     public void testIncludedWelcomeDifferentBase() throws Exception
     {
         Path altRoot = workDir.getPath().resolve("altroot");
         FS.ensureDirExists(altRoot);
-        Path altIndex = altRoot.resolve("index.html");
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
         defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
@@ -1109,10 +1150,10 @@ public class DefaultServletTest
         ServletHolder gwholder = new ServletHolder("gateway", new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-                    throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                req.getRequestDispatcher("/alt/").include(req, resp);
+                String includeTarget = req.getParameter("includeTarget");
+                req.getRequestDispatcher(includeTarget).include(req, resp);
             }
         });
         context.addServlet(gwholder, "/gateway");
@@ -1120,9 +1161,9 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        // Test included alt default
+        // Test an included a resource which does not exist.
         rawResponse = connector.getResponse("""
-            GET /context/gateway HTTP/1.1\r
+            GET /context/gateway?includeTarget=/alt/thisResourceDoesNotExist HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
@@ -1137,9 +1178,20 @@ public class DefaultServletTest
          */
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
-        Files.writeString(altIndex, "<h1>Alt Index</h1>", UTF_8);
+        // This resource does exist but directory listings are not allowed and there are no welcome files.
         rawResponse = connector.getResponse("""
-            GET /context/gateway HTTP/1.1\r
+            GET /context/gateway?includeTarget=/alt/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
+
+        // Once index.html has been created we can include this same target and see it as a welcome file.
+        Files.writeString(altRoot.resolve("index.html"), "<h1>Alt Index</h1>", UTF_8);
+        rawResponse = connector.getResponse("""
+            GET /context/gateway?includeTarget=/alt/ HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
@@ -1951,7 +2003,6 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("rangeScenarios")
-    @Disabled
     public void testRangeRequests(Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);

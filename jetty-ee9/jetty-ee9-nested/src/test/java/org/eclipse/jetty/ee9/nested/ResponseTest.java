@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,6 +29,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -49,7 +50,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -58,18 +58,22 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
+import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionDataStore;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -446,7 +450,7 @@ public class ResponseTest
     public void testLocaleAndContentTypeEncoding() throws Exception
     {
         _server.stop();
-        MimeTypes.getInferredEncodings().put("text/html", "iso-8859-1");
+        _context.getMimeTypes().addInferred("text/html", "iso-8859-1");
         _context.addLocaleEncoding("ja", "euc-jp");
         _context.addLocaleEncoding("zh_CN", "gb18030");
         _server.start();
@@ -617,7 +621,7 @@ public class ResponseTest
         sessionHandler.setUsingCookies(true);
         _context.setHandler(sessionHandler);
         _server.start();
-        request.setSessionManager(sessionHandler.getSessionManager());
+        response.getHttpChannel().getCoreRequest().setSessionManager(sessionHandler.getSessionManager());
         HttpSession session = request.getSession(true);
 
         assertThat(session, not(nullValue()));
@@ -1603,9 +1607,9 @@ public class ResponseTest
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
-        request.setSessionManager(sessionHandler.getSessionManager());
-        request.setRequestedSessionId("12345");
-        request.setRequestedSessionIdFromCookie(false);
+        ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+        coreRequest.setSessionManager(sessionHandler.getSessionManager());
+        coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", false));
         assertNotNull(request.getSession(true));
         assertThat(request.getSession(false).getId(), is("12345"));
 
@@ -1712,15 +1716,12 @@ public class ResponseTest
                     uri.host(host).port(port);
                 request.onDispatch(uri, "/path/info");
 
-                request.setSessionManager(sessionHandler.getSessionManager());
-                request.setRequestedSessionId("12345");
-                request.setRequestedSessionIdFromCookie(cookie);
-
-                Session session = sessionHandler.getSessionManager().getSession("12345");
+                ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+                coreRequest.setSessionManager(sessionHandler.getSessionManager());
+                ManagedSession session = sessionHandler.getSessionManager().getManagedSession("12345");
+                coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(session, "12345", cookie));
                 if (session == null)
                     request.getSession(true);
-                else
-                    request.setCoreSession(session);
 
                 assertThat(request.getSession(false).getId(), is("12345"));
 
@@ -1784,8 +1785,9 @@ public class ResponseTest
                         uri.authority(host, port);
                     uri.pathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
                     request.onDispatch(uri, "/info");
-                    request.setRequestedSessionId("12345");
-                    request.setRequestedSessionIdFromCookie(i > 2);
+
+                    ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+                    coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", i > 2));
                     SessionHandler handler = new SessionHandler();
 
                     NullSessionDataStore dataStore = new NullSessionDataStore();
@@ -1795,7 +1797,7 @@ public class ResponseTest
                     DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
                     sessionIdManager.setWorkerName(null);
                     handler.getSessionManager().setSessionIdManager(sessionIdManager);
-                    request.setSessionManager(handler.getSessionManager());
+                    coreRequest.setSessionManager(handler.getSessionManager());
                     handler.setCheckingRemoteSessionIdEncoding(false);
 
                     response.sendRedirect(tests[i][0]);
@@ -1939,10 +1941,27 @@ public class ResponseTest
     }
 
     @Test
+    public void testAddCookieSameSiteByComment() throws Exception
+    {
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
+
+        Response response = getResponse();
+        Cookie cookie = new Cookie("name", "value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY____SAME_SITE_LAX__");
+
+        response.addCookie(cookie);
+        String set = response.getHttpFields().get("Set-Cookie");
+        assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly; SameSite=Lax", set);
+    }
+
+    @Test
     public void testAddCookieSameSiteDefault() throws Exception
     {
         Response response = getResponse();
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
         Cookie cookie = new Cookie("name", "value");
         cookie.setDomain("domain");
         cookie.setPath("/path");
@@ -1956,7 +1975,7 @@ public class ResponseTest
         response.getHttpFields().remove("Set-Cookie");
 
         //test bad default samesite value
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
 
         assertThrows(IllegalStateException.class,
             () -> response.addCookie(cookie));
@@ -1978,7 +1997,7 @@ public class ResponseTest
 
         String set = response.getHttpFields().get("Set-Cookie");
 
-        assertEquals("name=value;Version=1;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
+        assertEquals("name=value;Version=1;Domain=domain;Path=/path;Secure;HttpOnly;Comment=comment", set);
     }
 
     /**
@@ -2072,21 +2091,21 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        response.replaceCookie(new HttpCookie("Foo", "123456"));
-        response.replaceCookie(new HttpCookie("Foo", "123456", "A", "/path"));
-        response.replaceCookie(new HttpCookie("Foo", "123456", "B", "/path"));
+        response.replaceCookie(HttpCookie.from("Foo", "123456"));
+        response.replaceCookie(HttpCookie.from("Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from("Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
 
-        response.replaceCookie(new HttpCookie("Bar", "123456"));
-        response.replaceCookie(new HttpCookie("Bar", "123456", null, "/left"));
-        response.replaceCookie(new HttpCookie("Bar", "123456", null, "/right"));
+        response.replaceCookie(HttpCookie.from("Bar", "123456"));
+        response.replaceCookie(HttpCookie.from("Bar", "123456", Map.of(HttpCookie.PATH_ATTRIBUTE, "/left")));
+        response.replaceCookie(HttpCookie.from("Bar", "123456", Map.of(HttpCookie.PATH_ATTRIBUTE, "/right")));
 
-        response.replaceCookie(new HttpCookie("Bar", "value", null, "/right"));
-        response.replaceCookie(new HttpCookie("Bar", "value", null, "/left"));
-        response.replaceCookie(new HttpCookie("Bar", "value"));
+        response.replaceCookie(HttpCookie.from("Bar", "value", Map.of(HttpCookie.PATH_ATTRIBUTE, "/right")));
+        response.replaceCookie(HttpCookie.from("Bar", "value", Map.of(HttpCookie.PATH_ATTRIBUTE, "/left")));
+        response.replaceCookie(HttpCookie.from("Bar", "value"));
 
-        response.replaceCookie(new HttpCookie("Foo", "value", "B", "/path"));
-        response.replaceCookie(new HttpCookie("Foo", "value", "A", "/path"));
-        response.replaceCookie(new HttpCookie("Foo", "value"));
+        response.replaceCookie(HttpCookie.from("Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from("Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from("Foo", "value"));
 
         String[] expected = new String[]{
             "Foo=value",
@@ -2105,13 +2124,13 @@ public class ResponseTest
     public void testReplaceHttpCookieSameSite()
     {
         Response response = getResponse();
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
         //replace with no prior does an add
-        response.replaceCookie(new HttpCookie("Foo", "123456"));
+        response.replaceCookie(HttpCookie.from("Foo", "123456"));
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=123456; SameSite=Lax", set);
         //check replacement
-        response.replaceCookie(new HttpCookie("Foo", "other"));
+        response.replaceCookie(HttpCookie.from("Foo", "other"));
         set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=other; SameSite=Lax", set);
     }
@@ -2122,21 +2141,21 @@ public class ResponseTest
         Response response = getResponse();
 
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
-        response.replaceCookie(new HttpCookie("Foo", "value"));
+        response.replaceCookie(HttpCookie.from("Foo", "value"));
         List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=value"));
 
         response.setHeader(HttpHeader.SET_COOKIE, "Foo=123456; domain=Bah; Path=/path");
-        response.replaceCookie(new HttpCookie("Foo", "other"));
+        response.replaceCookie(HttpCookie.from("Foo", "other"));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=123456; domain=Bah; Path=/path", "Foo=other"));
 
-        response.replaceCookie(new HttpCookie("Foo", "replaced", "Bah", "/path"));
+        response.replaceCookie(HttpCookie.from("Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah", "Foo=other"));
 
         response.setHeader(HttpHeader.SET_COOKIE, "Foo=123456; domain=Bah; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; Path=/path");
-        response.replaceCookie(new HttpCookie("Foo", "replaced", "Bah", "/path"));
+        response.replaceCookie(HttpCookie.from("Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah"));
     }
@@ -2145,10 +2164,10 @@ public class ResponseTest
     public void testReplaceParsedHttpCookieSiteDefault()
     {
         Response response = getResponse();
-        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
+        _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
 
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
-        response.replaceCookie(new HttpCookie("Foo", "value"));
+        response.replaceCookie(HttpCookie.from("Foo", "value"));
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=value; SameSite=Lax", set);
     }
@@ -2244,7 +2263,7 @@ public class ResponseTest
         org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, now, _context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
-        _channel.onRequest(coreRequest);
+        _channel.onRequest(new ContextHandler.CoreContextRequest(coreRequest, _context.getCoreContextHandler().getContext(), _channel));
         _channel.onProcess(coreResponse, Callback.NOOP);
 
         BufferUtil.clear(_content);
@@ -2255,6 +2274,7 @@ public class ResponseTest
     {
         private final MetaData.Request _reqMeta;
         private final long _now;
+        private final long _nanoTime = NanoTime.now();
         private final Context _context;
 
         public MockRequest(MetaData.Request reqMeta, long now)
@@ -2324,6 +2344,12 @@ public class ResponseTest
         }
 
         @Override
+        public long getNanoTime()
+        {
+            return _nanoTime;
+        }
+
+        @Override
         public boolean isSecure()
         {
             return false;
@@ -2342,6 +2368,12 @@ public class ResponseTest
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            return true;
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
             demandCallback.run();
@@ -2349,17 +2381,6 @@ public class ResponseTest
 
         @Override
         public void fail(Throwable failure)
-        {
-        }
-
-        @Override
-        public boolean isPushSupported()
-        {
-            return false;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
         {
         }
 
@@ -2376,8 +2397,14 @@ public class ResponseTest
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            return null;
         }
     }
 

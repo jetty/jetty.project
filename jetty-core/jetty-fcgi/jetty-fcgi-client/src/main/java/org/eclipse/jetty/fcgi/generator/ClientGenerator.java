@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,8 +23,8 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 
 public class ClientGenerator extends Generator
 {
@@ -33,17 +33,17 @@ public class ClientGenerator extends Generator
     // 0x7F_FF - 4 (the 4 is to make room for the name (or value) length).
     public static final int MAX_PARAM_LENGTH = 0x7F_FF - 4;
 
-    public ClientGenerator(ByteBufferPool byteBufferPool)
+    public ClientGenerator(ByteBufferPool bufferPool)
     {
-        this(byteBufferPool, true);
+        this(bufferPool, true);
     }
 
-    public ClientGenerator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers)
+    public ClientGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
-        super(byteBufferPool, useDirectByteBuffers);
+        super(bufferPool, useDirectByteBuffers);
     }
 
-    public Result generateRequestHeaders(int request, HttpFields fields, Callback callback)
+    public void generateRequestHeaders(ByteBufferPool.Accumulator accumulator, int request, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -79,30 +79,31 @@ public class ClientGenerator extends Generator
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
 
-        ByteBuffer beginRequestBuffer = acquire(16);
-        BufferUtil.clearToFill(beginRequestBuffer);
-        Result result = new Result(getByteBufferPool(), callback);
-        result = result.append(beginRequestBuffer, true);
+        RetainableByteBuffer beginBuffer = getByteBufferPool().acquire(16, isUseDirectByteBuffers());
+        accumulator.append(beginBuffer);
+        ByteBuffer beginByteBuffer = beginBuffer.getByteBuffer();
+        BufferUtil.clearToFill(beginByteBuffer);
 
         // Generate the FCGI_BEGIN_REQUEST frame
-        beginRequestBuffer.putInt(0x01_01_00_00 + request);
-        beginRequestBuffer.putInt(0x00_08_00_00);
+        beginByteBuffer.putInt(0x01_01_00_00 + request);
+        beginByteBuffer.putInt(0x00_08_00_00);
         // Hardcode RESPONDER role and KEEP_ALIVE flag
-        beginRequestBuffer.putLong(0x00_01_01_00_00_00_00_00L);
-        BufferUtil.flipToFlush(beginRequestBuffer, 0);
+        beginByteBuffer.putLong(0x00_01_01_00_00_00_00_00L);
+        BufferUtil.flipToFlush(beginByteBuffer, 0);
 
         int index = 0;
         while (fieldsLength > 0)
         {
             int capacity = 8 + Math.min(maxCapacity, fieldsLength);
-            ByteBuffer buffer = acquire(capacity);
-            BufferUtil.clearToFill(buffer);
-            result = result.append(buffer, true);
+            RetainableByteBuffer buffer = getByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
+            accumulator.append(buffer);
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
 
             // Generate the FCGI_PARAMS frame
-            buffer.putInt(0x01_04_00_00 + request);
-            buffer.putShort((short)0);
-            buffer.putShort((short)0);
+            byteBuffer.putInt(0x01_04_00_00 + request);
+            byteBuffer.putShort((short)0);
+            byteBuffer.putShort((short)0);
             capacity -= 8;
 
             int length = 0;
@@ -117,10 +118,10 @@ public class ClientGenerator extends Generator
                 if (required > capacity)
                     break;
 
-                putParamLength(buffer, nameLength);
-                putParamLength(buffer, valueLength);
-                buffer.put(nameBytes);
-                buffer.put(valueBytes);
+                putParamLength(byteBuffer, nameLength);
+                putParamLength(byteBuffer, valueLength);
+                byteBuffer.put(nameBytes);
+                byteBuffer.put(valueBytes);
 
                 length += required;
                 fieldsLength -= required;
@@ -128,20 +129,19 @@ public class ClientGenerator extends Generator
                 index += 2;
             }
 
-            buffer.putShort(4, (short)length);
-            BufferUtil.flipToFlush(buffer, 0);
+            byteBuffer.putShort(4, (short)length);
+            BufferUtil.flipToFlush(byteBuffer, 0);
         }
 
-        ByteBuffer lastParamsBuffer = acquire(8);
-        BufferUtil.clearToFill(lastParamsBuffer);
-        result = result.append(lastParamsBuffer, true);
+        RetainableByteBuffer lastBuffer = getByteBufferPool().acquire(8, isUseDirectByteBuffers());
+        accumulator.append(lastBuffer);
+        ByteBuffer lastByteBuffer = lastBuffer.getByteBuffer();
+        BufferUtil.clearToFill(lastByteBuffer);
 
         // Generate the last FCGI_PARAMS frame
-        lastParamsBuffer.putInt(0x01_04_00_00 + request);
-        lastParamsBuffer.putInt(0x00_00_00_00);
-        BufferUtil.flipToFlush(lastParamsBuffer, 0);
-
-        return result;
+        lastByteBuffer.putInt(0x01_04_00_00 + request);
+        lastByteBuffer.putInt(0x00_00_00_00);
+        BufferUtil.flipToFlush(lastByteBuffer, 0);
     }
 
     private int putParamLength(ByteBuffer buffer, int length)
@@ -159,8 +159,8 @@ public class ClientGenerator extends Generator
         return length > 127 ? 4 : 1;
     }
 
-    public Result generateRequestContent(int request, ByteBuffer content, boolean lastContent, Callback callback)
+    public void generateRequestContent(ByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent)
     {
-        return generateContent(request, content, false, lastContent, callback, FCGI.FrameType.STDIN);
+        generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDIN);
     }
 }

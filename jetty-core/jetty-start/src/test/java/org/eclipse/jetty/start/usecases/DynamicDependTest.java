@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -58,14 +58,14 @@ public class DynamicDependTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = Arrays.asList(
             "java.version=1.7.0_31",
-            "--module=dynamic"
+            "--modules=dynamic"
         );
         ExecResults results = exec(runArgs, false);
 
@@ -122,14 +122,14 @@ public class DynamicDependTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = Arrays.asList(
             "java.version=1.8.0_05",
-            "--module=dynamic"
+            "--modules=dynamic"
         );
         ExecResults results = exec(runArgs, false);
 

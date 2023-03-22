@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,7 +34,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
@@ -435,7 +435,7 @@ public abstract class QuicSession extends ContainerLifeCycle
     private class Flusher extends IteratingCallback
     {
         private final CyclicTimeout timeout;
-        private ByteBuffer cipherBuffer;
+        private RetainableByteBuffer cipherBuffer;
 
         public Flusher(Scheduler scheduler)
         {
@@ -466,8 +466,9 @@ public abstract class QuicSession extends ContainerLifeCycle
         protected Action process() throws IOException
         {
             cipherBuffer = byteBufferPool.acquire(connection.getOutputBufferSize(), connection.isUseOutputDirectByteBuffers());
-            int pos = BufferUtil.flipToFill(cipherBuffer);
-            int drained = quicheConnection.drainCipherBytes(cipherBuffer);
+            ByteBuffer cipherByteBuffer = cipherBuffer.getByteBuffer();
+            int pos = BufferUtil.flipToFill(cipherByteBuffer);
+            int drained = quicheConnection.drainCipherBytes(cipherByteBuffer);
             if (LOG.isDebugEnabled())
                 LOG.debug("drained {} byte(s) of cipher bytes from {}", drained, QuicSession.this);
             long nextTimeoutInMs = quicheConnection.nextTimeout();
@@ -484,13 +485,13 @@ public abstract class QuicSession extends ContainerLifeCycle
                 if (LOG.isDebugEnabled())
                     LOG.debug("connection draining={} closed={}, action={} on {}", quicheConnection.isDraining(), connectionClosed, action, QuicSession.this);
                 if (action == Action.IDLE)
-                    byteBufferPool.release(cipherBuffer);
+                    cipherBuffer.release();
                 return action;
             }
-            BufferUtil.flipToFlush(cipherBuffer, pos);
+            BufferUtil.flipToFlush(cipherByteBuffer, pos);
             if (LOG.isDebugEnabled())
                 LOG.debug("writing cipher bytes for {} on {}", remoteAddress, QuicSession.this);
-            connection.write(this, remoteAddress, cipherBuffer);
+            connection.write(this, remoteAddress, cipherByteBuffer);
             return Action.SCHEDULED;
         }
 
@@ -499,7 +500,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("written cipher bytes on {}", QuicSession.this);
-            byteBufferPool.release(cipherBuffer);
+            cipherBuffer.release();
             super.succeeded();
         }
 
@@ -514,7 +515,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("connection closed {}", QuicSession.this);
-            byteBufferPool.release(cipherBuffer);
+            cipherBuffer.release();
             finishOutwardClose(new ClosedChannelException());
         }
 
@@ -523,7 +524,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to write cipher bytes, closing session on {}", QuicSession.this, failure);
-            byteBufferPool.release(cipherBuffer);
+            cipherBuffer.release();
             finishOutwardClose(failure);
         }
     }

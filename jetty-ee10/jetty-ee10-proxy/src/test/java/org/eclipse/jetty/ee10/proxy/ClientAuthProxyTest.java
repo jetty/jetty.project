@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,12 +31,12 @@ import javax.net.ssl.X509ExtendedKeyManager;
 import javax.security.auth.x500.X500Principal;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpScheme;
@@ -134,10 +134,10 @@ public class ClientAuthProxyTest
 
     private void startServer() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
                 Assertions.assertNotNull(certificates);
@@ -145,6 +145,7 @@ public class ClientAuthProxyTest
                 X500Principal principal = certificate.getSubjectX500Principal();
                 String body = "%s\r\n%d\r\n".formatted(principal.toString(), org.eclipse.jetty.server.Request.getRemotePort(request));
                 Content.Sink.write(response, true, body, callback);
+                return true;
             }
         });
     }
@@ -559,7 +560,7 @@ public class ClientAuthProxyTest
         @Override
         public SSLEngine newSslEngine(String host, int port, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             String user = (String)destination.getOrigin().getTag();
             return factories.compute(user, (key, value) -> value != null ? value : this).newSSLEngine(host, port);
         }

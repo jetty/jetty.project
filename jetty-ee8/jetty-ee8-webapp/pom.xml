@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-webapp</artifactId>
-  <name>EE8 :: Jetty :: Webapp Application Support</name>
+  <name>EE8 :: WebApp</name>
   <description>Jetty web application support</description>
 
   <properties>

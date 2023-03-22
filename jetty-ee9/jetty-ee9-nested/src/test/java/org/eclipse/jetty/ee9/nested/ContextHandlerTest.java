@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,11 +26,11 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -60,11 +60,9 @@ public class ContextHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        Handler.Collection handlers = new Handler.Collection();
-        _server.setHandler(handlers);
 
         _contextHandler = new ContextHandler();
-        handlers.setHandlers(_contextHandler.getCoreContextHandler());
+        _server.setHandler(_contextHandler);
     }
 
     @AfterEach
@@ -76,17 +74,7 @@ public class ContextHandlerTest
     @Test
     public void testSimple() throws Exception
     {
-        _contextHandler.setHandler(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                baseRequest.setHandled(true);
-                response.setStatus(200);
-                response.setContentType("text/plain");
-                response.getOutputStream().print("Hello\n");
-            }
-        });
+        _contextHandler.setHandler(new HelloHandler());
         _server.start();
 
         String rawResponse = _connector.getResponse("""
@@ -97,6 +85,72 @@ public class ContextHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
+    public void testStopStart() throws Exception
+    {
+        _contextHandler.setHandler(new HelloHandler());
+        _server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Hello"));
+
+        _contextHandler.stop();
+        _contextHandler.setContextPath("/ctx");
+        _contextHandler.start();
+
+        response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /ctx/ HTTP/1.0
+            
+            """));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
+    public void testNullPath() throws Exception
+    {
+        _contextHandler.setHandler(new HelloHandler());
+        _server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+            GET http://localhost:8080 HTTP/1.0
+            
+            """));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Hello"));
+
+        _contextHandler.stop();
+        _contextHandler.setContextPath("/ctx");
+        _contextHandler.start();
+
+        response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /ctx HTTP/1.0
+            
+            """));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_PERMANENTLY_301));
+        assertThat(response.getField(HttpHeader.LOCATION).getValue(), is("/ctx/"));
+
+        _contextHandler.setAllowNullPathInfo(true);
+
+        response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /ctx HTTP/1.0
+            
+            """));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), containsString("Hello"));
     }
@@ -700,12 +754,7 @@ public class ContextHandlerTest
         assertThat(response.getContent(), containsString("Hello"));
 
         assertThat(history, contains(
-            // Enter once for handle(request)
-            "Core enter http://0.0.0.0/",
-            "EE9 enter /",
-            "EE9 exit /",
-            "Core exit http://0.0.0.0/",
-            // Enter again for process(request, response, callback)
+            // Enter for handle(request, response, callback)
             "Core enter http://0.0.0.0/",
             "EE9 enter /",
             "Handling",
@@ -719,6 +768,18 @@ public class ContextHandlerTest
         public String getErrorPage(HttpServletRequest request)
         {
             return "/errorPage";
+        }
+    }
+
+    private static class HelloHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            response.setContentType("text/plain");
+            response.getOutputStream().print("Hello\n");
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,13 +24,13 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.internal.generator.HeadersGenerator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,11 +42,11 @@ public class ContinuationParseTest
     @Test
     public void testParseOneByteAtATime() throws Exception
     {
-        ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onHeaders(HeadersFrame frame)
@@ -71,10 +71,10 @@ public class ContinuationParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateHeaders(lease, streamId, metaData, null, true);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
-            List<ByteBuffer> byteBuffers = lease.getByteBuffers();
+            List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();
             assertEquals(2, byteBuffers.size());
 
             ByteBuffer headersBody = byteBuffers.remove(1);
@@ -131,7 +131,7 @@ public class ContinuationParseTest
             byteBuffers.add(headersBody.slice());
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {

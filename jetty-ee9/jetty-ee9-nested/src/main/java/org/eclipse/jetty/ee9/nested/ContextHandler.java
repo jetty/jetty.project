@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -58,10 +58,12 @@ import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspConfigDescriptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -72,8 +74,12 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -115,7 +121,6 @@ import org.slf4j.LoggerFactory;
  * this alias checker is not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * </p>
  */
-// TODO make this work
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
 {
@@ -123,15 +128,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
-        {
-            ServletContextListener.class,
-            ServletContextAttributeListener.class,
-            ServletRequestListener.class,
-            ServletRequestAttributeListener.class,
-            HttpSessionIdListener.class,
-            HttpSessionListener.class,
-            HttpSessionAttributeListener.class
-        };
+            {
+                    ServletContextListener.class,
+                    ServletContextAttributeListener.class,
+                    ServletRequestListener.class,
+                    ServletRequestAttributeListener.class,
+                    HttpSessionIdListener.class,
+                    HttpSessionListener.class,
+                    HttpSessionAttributeListener.class
+            };
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
 
@@ -194,12 +199,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
     private Logger _logger;
-    private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _compactPath = false;
@@ -239,12 +242,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                              String contextPath)
     {
         _coreContextHandler = new CoreContextHandler();
+        addBean(_coreContextHandler, false);
         _apiContext = context == null ? new APIContext() : context;
         _initParams = new HashMap<>();
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent != null)
-            parent.addHandler(_coreContextHandler);
+        Handler.Container.setAsParent(parent, _coreContextHandler);
     }
 
     @Override
@@ -253,7 +256,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _coreContextHandler;
     }
 
-    public org.eclipse.jetty.server.handler.ContextHandler getCoreContextHandler()
+    public CoreContextHandler getCoreContextHandler()
     {
         return _coreContextHandler;
     }
@@ -275,19 +278,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @ManagedAttribute("Checks if the /context is not redirected to /context/")
     public boolean getAllowNullPathInfo()
     {
-        return _allowNullPathInfo;
-    }
-
-    // TODO this is a thought bubble
-    public void setCanonicalEncodingURIs(boolean encoding)
-    {
-        _canonicalEncodingURIs = encoding;
-    }
-
-    // TODO this is a thought bubble
-    public boolean isCanonicalEncodingURIs()
-    {
-        return _canonicalEncodingURIs;
+        return _coreContextHandler.getAllowNullPathInContext();
     }
 
     /**
@@ -295,7 +286,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setAllowNullPathInfo(boolean allowNullPathInfo)
     {
-        _allowNullPathInfo = allowNullPathInfo;
+        _coreContextHandler.setAllowNullPathInContext(allowNullPathInfo);
     }
 
     @Override
@@ -613,10 +604,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         // we need to run ourselves in the core context
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
-            _coreContextHandler.getContext().call(this::doStart, null);
-            return;
+            _coreContextHandler.unmanage(this);
+            _coreContextHandler.start();
+            _coreContextHandler.manage(this);
         }
 
+        _coreContextHandler.getContext().call(this::doStartInContext, null);
+    }
+
+    protected void doStartInContext() throws Exception
+    {
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
@@ -625,14 +622,62 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
-
         _durableListeners.addAll(getEventListeners());
 
         // allow the call to super.doStart() to be deferred by extended implementations.
         startContext();
         contextInitialized();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        // If we are being stopped directly (rather than via a start of the CoreContextHandler), then
+        // we need to stop ourselves in the core context
+        if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
+        {
+            _coreContextHandler.unmanage(this);
+            _coreContextHandler.stop();
+            _coreContextHandler.manage(this);
+        }
+        _coreContextHandler.getContext().call(this::doStopInContext, null);
+    }
+
+    protected void doStopInContext() throws Exception
+    {
+        try
+        {
+            stopContext();
+            contextDestroyed();
+
+            // retain only durable listeners
+            setEventListeners(_durableListeners);
+            _durableListeners.clear();
+
+            if (_errorHandler != null)
+                _errorHandler.stop();
+
+            for (EventListener l : _programmaticListeners)
+            {
+                removeEventListener(l);
+                if (l instanceof ContextScopeListener)
+                {
+                    try
+                    {
+                        ((ContextScopeListener)l).exitScope(_apiContext, null);
+                    }
+                    catch (Throwable e)
+                    {
+                        LOG.warn("Unable to exit scope", e);
+                    }
+                }
+            }
+            _programmaticListeners.clear();
+        }
+        finally
+        {
+            _contextStatus = ContextStatus.NOTSET;
+        }
     }
 
     private String getLogNameSuffix()
@@ -772,44 +817,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (LOG.isDebugEnabled())
             LOG.debug("contextDestroyed: {}->{}", e, l);
         l.contextDestroyed(e);
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        try
-        {
-            stopContext();
-            contextDestroyed();
-
-            // retain only durable listeners
-            setEventListeners(_durableListeners);
-            _durableListeners.clear();
-
-            if (_errorHandler != null)
-                _errorHandler.stop();
-
-            for (EventListener l : _programmaticListeners)
-            {
-                removeEventListener(l);
-                if (l instanceof ContextScopeListener)
-                {
-                    try
-                    {
-                        ((ContextScopeListener)l).exitScope(_apiContext, null);
-                    }
-                    catch (Throwable e)
-                    {
-                        LOG.warn("Unable to exit scope", e);
-                    }
-                }
-            }
-            _programmaticListeners.clear();
-        }
-        finally
-        {
-            _contextStatus = ContextStatus.NOTSET;
-        }
     }
 
     @Override
@@ -1182,19 +1189,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * @return Returns the mimeTypes.
      */
-    public MimeTypes getMimeTypes()
+    public MimeTypes.Mutable getMimeTypes()
     {
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
-        return _mimeTypes;
-    }
-
-    /**
-     * @param mimeTypes The mimeTypes to set.
-     */
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
+        return _coreContextHandler.getMimeTypes();
     }
 
     public void setWelcomeFiles(String[] files)
@@ -1293,20 +1290,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         StringBuilder b = new StringBuilder();
 
-        Package pkg = getClass().getPackage();
-        if (pkg != null)
-        {
-            String p = pkg.getName();
-            if (p.length() > 0)
-            {
-                String[] ss = p.split("\\.");
-                for (String s : ss)
-                {
-                    b.append(s.charAt(0)).append('.');
-                }
-            }
-        }
-        b.append(getClass().getSimpleName()).append('@').append(Integer.toString(hashCode(), 16));
+        b.append(TypeUtil.toShortName(getClass())).append('@').append(Integer.toString(hashCode(), 16));
         b.append('{');
         if (getDisplayName() != null)
             b.append(getDisplayName()).append(',');
@@ -1631,8 +1615,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (servletContext != null)
                 {
                     String encodedContextPath = servletContext instanceof APIContext
-                        ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded()
-                        : URIUtil.encodePath(servletContext.getContextPath());
+                            ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded()
+                            : URIUtil.encodePath(servletContext.getContextPath());
                     if (!StringUtil.isEmpty(encodedContextPath))
                     {
                         encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
@@ -1656,7 +1640,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
                 baseRequest.onDispatch(uri, pathInContext);
                 if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
-                    // TODO why can't the old map be passed?
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }
 
@@ -1693,7 +1676,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public class APIContext implements ServletContext
     {
-        private final org.eclipse.jetty.server.handler.ContextHandler.Context _coreContext;
+        private final org.eclipse.jetty.server.handler.ContextHandler.ScopedContext _coreContext;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
@@ -1766,9 +1749,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getMimeType(String file)
         {
-            if (_mimeTypes == null)
-                return null;
-            return _mimeTypes.getMimeByExtension(file);
+            return _coreContext.getMimeTypes().getMimeByExtension(file);
         }
 
         @Override
@@ -2068,7 +2049,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return _extendedListenerTypes;
         }
 
-        // TODO  Empty implementations - should we merge in ServletContextHandler?
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
@@ -2157,8 +2137,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                // TODO object factory!
-                return clazz.getDeclaredConstructor().newInstance();
+                T instance = clazz.getDeclaredConstructor().newInstance();
+                return getCoreContext().decorate(instance);
             }
             catch (Exception e)
             {
@@ -2361,23 +2341,105 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static class CoreContextRequest extends ContextRequest
     {
         private final HttpChannel _httpChannel;
+        private SessionManager _sessionManager;
+        private ManagedSession _managedSession;
+        AbstractSessionManager.RequestedSession _requestedSession;
 
-        protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
-                                     org.eclipse.jetty.server.handler.ContextHandler.Context context,
-                                     org.eclipse.jetty.server.Request wrapped,
+        protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
+                                     org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context,
                                      HttpChannel httpChannel)
         {
-            super(contextHandler, context, wrapped);
+            super(context, wrapped);
             _httpChannel = httpChannel;
+        }
+
+        public String changeSessionId()
+        {
+            if (_managedSession == null)
+                return null;
+            if (!_managedSession.isValid())
+                return _managedSession.getId();
+
+            HttpSession httpSession = _managedSession.getApi();
+            if (httpSession == null)
+                throw new IllegalStateException("No session");
+
+            ManagedSession session = _managedSession;
+            session.renewId(this, _httpChannel.getCoreResponse());
+
+            return httpSession.getId();
         }
 
         public HttpChannel getHttpChannel()
         {
             return _httpChannel;
         }
+
+        public ManagedSession getManagedSession()
+        {
+            return _managedSession;
+        }
+
+        public void setManagedSession(ManagedSession managedSession)
+        {
+            _managedSession = managedSession;
+        }
+
+        public SessionManager getSessionManager()
+        {
+            return _sessionManager;
+        }
+
+        public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
+        {
+            _requestedSession = requestedSession;
+            _managedSession = requestedSession.session();
+        }
+
+        public AbstractSessionManager.RequestedSession getRequestedSession()
+        {
+            return _requestedSession;
+        }
+
+        public void setSessionManager(SessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            if (_managedSession != null)
+            {
+                if (_sessionManager != null && !_managedSession.isValid())
+                    _managedSession = null;
+                else
+                    return _managedSession;
+            }
+
+            if (!create)
+                return null;
+
+            if (_httpChannel.getResponse().isCommitted())
+                throw new IllegalStateException("Response is committed");
+
+            if (_sessionManager == null)
+                throw new IllegalStateException("No SessionManager");
+
+            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+
+            if (_managedSession == null)
+                throw new IllegalStateException("Create session failed");
+
+            HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
+            if (cookie != null)
+                _httpChannel.getResponse().replaceCookie(cookie);
+
+            return _managedSession;
+        }
     }
 
-    public class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler implements org.eclipse.jetty.server.Request.Processor
+    public class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler implements org.eclipse.jetty.server.Request.Handler
     {
         CoreContextHandler()
         {
@@ -2400,6 +2462,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
+        /*
+         * Expose configureTempDirectory so it can be triggered early by WebInfConfiguration#preConfigure
+         */
+        @Override
+        public void createTempDirectory()
+        {
+            super.createTempDirectory();
+        }
+
         @Override
         protected void doStop() throws Exception
         {
@@ -2414,20 +2485,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 Thread.currentThread().setContextClassLoader(old);
             }
         }
-        
+
         @Override
-        public void insertHandler(Nested handler)
+        public void insertHandler(Singleton handler)
         {
-            Nested tail = handler;
-            while (tail.getHandler() instanceof Handler.Wrapper)
-                tail = (Handler.Wrapper)tail.getHandler();
+            Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
-        
+
             tail.setHandler(getHandler());
             super.setHandler(handler);
         }
-        
+
         @Override
         public void setHandler(Handler handler)
         {
@@ -2448,13 +2517,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
+        protected ContextRequest wrapRequest(org.eclipse.jetty.server.Request request, Response response)
         {
-            HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().get(HttpChannel.class.getName());
+            HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
             if (httpChannel == null)
             {
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
-                request.getComponents().getCache().put(HttpChannel.class.getName(), httpChannel);
+                request.getComponents().getCache().setAttribute(HttpChannel.class.getName(), httpChannel);
             }
             else if (httpChannel.getContextHandler() == ContextHandler.this)
             {
@@ -2466,41 +2535,32 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(request, this.getContext(), httpChannel);
             httpChannel.onRequest(coreContextRequest);
             return coreContextRequest;
         }
 
         @Override
-        protected void enterScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyEnterScope(org.eclipse.jetty.server.Request coreRequest)
         {
             __context.set(_apiContext);
-            super.enterScope(coreRequest);
+            super.notifyEnterScope(coreRequest);
             Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                ? coreContextRequest.getHttpChannel().getRequest()
-                : null;
+                    ? coreContextRequest.getHttpChannel().getRequest()
+                    : null;
             ContextHandler.this.enterScope(request, "Entered core context");
         }
 
         @Override
-        public void process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
-        {
-            HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-            httpChannel.onProcess(response, callback);
-
-            httpChannel.handle();
-        }
-
-        @Override
-        protected void exitScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyExitScope(org.eclipse.jetty.server.Request coreRequest)
         {
             try
             {
                 Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                    ? coreContextRequest.getHttpChannel().getRequest()
-                    : null;
+                        ? coreContextRequest.getHttpChannel().getRequest()
+                        : null;
                 ContextHandler.this.exitScope(request);
-                super.exitScope(coreRequest);
+                super.notifyExitScope(coreRequest);
             }
             finally
             {
@@ -2508,7 +2568,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        class CoreContext extends org.eclipse.jetty.server.handler.ContextHandler.Context
+        public ContextHandler getContextHandler()
+        {
+
+            return ContextHandler.this;
+        }
+
+        class CoreContext extends ScopedContext
         {
             public APIContext getAPIContext()
             {
@@ -2519,9 +2585,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
             {
-                return CoreContextHandler.this;
+                HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
+                httpChannel.onProcess(response, callback);
+                httpChannel.handle();
+                return true;
             }
         }
     }

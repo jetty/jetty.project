@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -98,7 +98,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
         if (error instanceof ServletException && _unwrapServletException)
         {
-            Throwable unwrapped = getFirstNonServletException(error);
+            Throwable unwrapped = unwrapServletException(error, matchedThrowable);
             if (unwrapped != null)
             {
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION, unwrapped);
@@ -180,13 +180,16 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     /**
      *
      * @param t the initial exception
+     * @param matchedThrowable the class we found matching the error page (can be null)
      * @return the first non {@link ServletException} from root cause chain
      */
-    private Throwable getFirstNonServletException(Throwable t)
+    private Throwable unwrapServletException(Throwable t, Class<?> matchedThrowable)
     {
+        if (matchedThrowable != null && t.getClass() == matchedThrowable)
+            return t;
         if (t instanceof ServletException && t.getCause() != null)
         {
-            return getFirstNonServletException(t.getCause());
+            return unwrapServletException(t.getCause(), matchedThrowable);
         }
         return t;
     }

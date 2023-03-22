@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -163,7 +163,7 @@ public class NcsaRequestLogTest
 
         _connector.getResponse(
             "GET http://hostname:8888/foo?name=value HTTP/1.1\n" +
-                "Host: servername\n" +
+                "Host: hostname:8888\n" +
                 "\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET http://hostname:8888/foo?name=value"));
@@ -400,7 +400,7 @@ public class NcsaRequestLogTest
         setup(logType);
         RequestLogHandler handler = new RequestLogHandler();
         handler.setRequestLog(_log);
-        HandlerList handlers = new HandlerList(handler, testHandler);
+        Handler.Collection handlers = new Handler.Collection(handler, testHandler);
         _server.setHandler(handlers);
         startServer();
         makeRequest(requestPath);

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -75,10 +75,10 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new Handler.Processor.Blocking()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // First: read the whole content exactly
                 int length = bytes.length;
@@ -95,10 +95,9 @@ public class SSLReadEOFAfterResponseTest
                         continue;
                     }
                     if (c.hasRemaining())
-                    {
                         length -= c.remaining();
-                        c.release();
-                    }
+                    c.release();
+                    // TODO: should not compare to EOF.
                     if (c == Content.Chunk.EOF)
                         callback.failed(new IllegalStateException());
                 }
@@ -115,9 +114,11 @@ public class SSLReadEOFAfterResponseTest
 
                 // Third, read the EOF.
                 Content.Chunk chunk = request.read();
+                chunk.release();
                 if (!chunk.isLast())
                     throw new IllegalStateException();
                 callback.succeeded();
+                return true;
             }
         });
         server.start();

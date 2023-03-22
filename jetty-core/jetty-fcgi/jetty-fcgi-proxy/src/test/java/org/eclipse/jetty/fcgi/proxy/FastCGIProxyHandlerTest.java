@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,9 +19,9 @@ import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http.HttpHeader;
@@ -146,30 +146,31 @@ public class FastCGIProxyHandlerTest
         new Random().nextBytes(data);
 
         String path = "/foo/index.php";
-        start(sendStatus200, new Handler.Processor()
+        start(sendStatus200, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
                 assertEquals(path, Request.getPathInContext(request));
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
         var request = client.newRequest("localhost", proxyConnector.getLocalPort())
-            .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
                 try
                 {
                     if (delay > 0)
                         TimeUnit.MILLISECONDS.sleep(delay);
-                    callback.succeeded();
+                    demander.run();
                 }
                 catch (InterruptedException x)
                 {
-                    callback.failed(x);
+                    response.abort(x);
                 }
             })
             .path(proxyContext.getContextPath() + path);
@@ -191,15 +192,16 @@ public class FastCGIProxyHandlerTest
         String remotePath = "/remote/index.php";
         String pathAttribute = "_path_attribute";
         String queryAttribute = "_query_attribute";
-        start(sendStatus200, new Handler.Processor()
+        start(sendStatus200, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), startsWith(originalPath));
                 assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
                 assertThat(Request.getPathInContext(request), endsWith(remotePath));
                 callback.succeeded();
+                return true;
             }
         });
         fcgiHandler.setOriginalPathAttribute(pathAttribute);
@@ -209,14 +211,14 @@ public class FastCGIProxyHandlerTest
         proxyContext.insertHandler(new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/remote/"))
                 {
                     request.setAttribute(pathAttribute, originalPath);
                     request.setAttribute(queryAttribute, originalQuery);
                 }
-                return super.handle(request);
+                return super.handle(request, response, callback);
             }
         });
         proxyContext.start();
@@ -238,12 +240,13 @@ public class FastCGIProxyHandlerTest
         unixDomainPath = path;
         byte[] content = new byte[512];
         new Random().nextBytes(content);
-        start(true, new Handler.Processor()
+        start(true, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 

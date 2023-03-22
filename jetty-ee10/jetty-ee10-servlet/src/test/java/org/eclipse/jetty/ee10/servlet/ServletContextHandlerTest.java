@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +53,7 @@ import jakarta.servlet.ServletRequestEvent;
 import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -64,7 +67,10 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.RoleInfo;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -254,9 +260,9 @@ public class ServletContextHandlerTest
     public static class MySCIStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
     {
         ServletContainerInitializer _sci;
-        ServletContextHandler.Context _ctx;
+        ServletContextHandler.ServletScopedContext _ctx;
 
-        MySCIStarter(ServletContextHandler.Context ctx, ServletContainerInitializer sci)
+        MySCIStarter(ServletContextHandler.ServletScopedContext ctx, ServletContainerInitializer sci)
         {
             _ctx = ctx;
             _sci = sci;
@@ -906,6 +912,7 @@ public class ServletContextHandlerTest
         _server.setHandler(contexts);
 
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.getSessionHandler().setSessionDomain("testing");
         ListenerHolder initialListener = new ListenerHolder();
         initialListener.setListener(new InitialListener());
         root.getServletHandler().addListener(initialListener);
@@ -948,6 +955,7 @@ public class ServletContextHandlerTest
 
         //test HttpSessionAttributeListener
         response = _connector.getResponse("GET /test?session=create HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("JSESSIONID"));
         String sessionid = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";"));
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals(1, MySListener.creates);
@@ -1720,7 +1728,7 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
-        Handler.Wrapper extra = new Handler.Wrapper();
+        Handler.Singleton extra = new Handler.Wrapper();
 
         context.getSessionHandler().insertHandler(extra);
 
@@ -1782,10 +1790,10 @@ public class ServletContextHandlerTest
         SecurityHandler securityHandler = context.getSecurityHandler();
 
         //check the handler linking order
-        Handler.Nested h = (Handler.Nested)context.getHandler();
+        Handler.Singleton h = (Handler.Singleton)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Nested)h.getHandler();
+        h = (Handler.Singleton)h.getHandler();
         assertSame(h, securityHandler);
 
         //replace the security handler
@@ -1822,10 +1830,10 @@ public class ServletContextHandlerTest
         context.setSecurityHandler(myHandler);
         assertSame(myHandler, context.getSecurityHandler());
 
-        h = (Handler.Nested)context.getHandler();
+        h = (Handler.Singleton)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (Handler.Nested)h.getHandler();
+        h = (Handler.Singleton)h.getHandler();
         assertSame(h, myHandler);
     }
 
@@ -1907,7 +1915,7 @@ public class ServletContextHandlerTest
     @Test
     public void testFallThrough() throws Exception
     {
-        Handler.Collection list = new Handler.Collection();
+        Handler.Sequence list = new Handler.Sequence();
         _server.setHandler(list);
 
         ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);
@@ -1916,12 +1924,13 @@ public class ServletContextHandlerTest
         servlet.setEnsureDefaultServlet(false);
         servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
 
-        list.addHandler(new Handler.Processor()
+        list.addHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Response.writeError(request, response, callback, 404, "Fell Through");
+                return true;
             }
         });
 
@@ -2366,5 +2375,82 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("/three"));
+    }
+
+    static class CookieTweakResponseApi extends ServletApiResponse
+    {
+        CookieTweakResponseApi(ServletApiResponse response)
+        {
+            super(response.getResponse());
+        }
+
+        @Override
+        public void addCookie(Cookie cookie)
+        {
+            addCookie(new HttpCookieFacade(cookie));
+        }
+
+        @Override
+        public void addCookie(HttpCookie cookie)
+        {
+            // Let's force SameSite to STRICT
+            Map<String, String> attrs = new HashMap<>(cookie.getAttributes());
+            attrs.put(HttpCookie.SAME_SITE_ATTRIBUTE, HttpCookie.SameSite.STRICT.getAttributeValue());
+            super.addCookie(HttpCookie.from(cookie.getName(), cookie.getValue(), attrs));
+        }
+    }
+
+    @Test
+    public void testCustomServletResponseWrapping() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler()
+        {
+            @Override
+            protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel, Request request, Response response, String decodedPathInContext, MatchedResource<ServletHandler.MappedServlet> matchedResource)
+            {
+                return new ServletContextRequest(getContext().getServletContext(), servletChannel, request, response, decodedPathInContext, matchedResource, getSessionHandler())
+                {
+                    @Override
+                    protected ServletContextResponse newServletContextResponse(Response response)
+                    {
+                        return new ServletContextResponse(servletChannel, this, response)
+                        {
+                            @Override
+                            protected ServletApiResponse newServletApiResponse()
+                            {
+                                ServletApiResponse servletApiResponse = super.newServletApiResponse();
+                                return new CookieTweakResponseApi(super.newServletApiResponse());
+                            }
+                        };
+                    }
+                };
+            }
+        };
+
+        ServletHolder holder = new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                Cookie cookie = new Cookie("example", "bogus");
+                resp.addCookie(cookie);
+                super.doGet(req, resp);
+            }
+        });
+        context.addServlet(holder, "/cookies/*");
+        _server.setHandler(context);
+        _server.start();
+
+        String rawRequest = """
+            GET /cookies/ HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        String setCookieValue = response.get(HttpHeader.SET_COOKIE);
+        assertThat(setCookieValue, containsString("example=bogus; SameSite=Strict"));
     }
 }

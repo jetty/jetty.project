@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -75,27 +75,25 @@ public class DatabaseLoginServiceTestServer
 
     protected static File _dbRoot;
 
-    static
+    public static void beforeAll() throws Exception
     {
-        try
-        {
-            MARIA_DB =
-                new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
-                .withUsername(MARIA_DB_USER)
-                .withPassword(MARIA_DB_PASSWORD);
-            MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
-            MARIA_DB = (MariaDBContainer)MARIA_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG));
-            MARIA_DB.start();
-            String containerIpAddress =  MARIA_DB.getContainerIpAddress();
-            int mariadbPort = MARIA_DB.getMappedPort(3306);
-            MARIA_DB_URL = MARIA_DB.getJdbcUrl();
-            MARIA_DB_FULL_URL = MARIA_DB_URL + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
-            MARIA_DB_DRIVER_CLASS = MARIA_DB.getDriverClassName();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e.getMessage(), e);
-        }
+        MARIA_DB =
+            new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+            .withUsername(MARIA_DB_USER)
+            .withPassword(MARIA_DB_PASSWORD);
+        MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
+        MARIA_DB = (MariaDBContainer)MARIA_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG));
+        MARIA_DB.start();
+        String containerIpAddress =  MARIA_DB.getContainerIpAddress();
+        int mariadbPort = MARIA_DB.getMappedPort(3306);
+        MARIA_DB_URL = MARIA_DB.getJdbcUrl();
+        MARIA_DB_FULL_URL = MARIA_DB_URL + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
+        MARIA_DB_DRIVER_CLASS = MARIA_DB.getDriverClassName();
+    }
+
+    public static void afterAll() throws Exception
+    {
+        MARIA_DB.close();
     }
     
     public static class ExtendedDefaultServlet extends DefaultServlet
@@ -141,11 +139,9 @@ public class DatabaseLoginServiceTestServer
             {
                 //remove leading slash from pathinfo
                 Path p = _resourcePath.resolve(URLDecoder.decode(req.getPathInfo().substring(1), "utf-8"));
+                FS.ensureDirExists(p.getParent());
 
-                File file = p.toFile();
-                FS.ensureDirExists(file.getParentFile());
-
-                out = new FileOutputStream(file);
+                out = new FileOutputStream(p.toFile());
                 res.setStatus(HttpServletResponse.SC_CREATED);
             }
 

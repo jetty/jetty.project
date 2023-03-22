@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-apache-jsp</artifactId>
-  <name>EE10 :: Jetty :: Apache JSP Implementation</name>
+  <name>EE10 :: Apache JSP</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.apache-jsp</bundle-symbolic-name>
@@ -24,7 +24,7 @@
           <instructions>
             <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
             <Export-Package>
-              org.eclipse.jetty.ee10.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+              org.eclipse.jetty.ee10.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", org.eclipse.jetty.ee10.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
             </Require-Capability>
@@ -77,10 +77,6 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.el</groupId>
-      <artifactId>jakarta.el-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

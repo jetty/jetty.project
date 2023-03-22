@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-runner</artifactId>
-  <name>EE9 :: Jetty :: Runner</name>
+  <name>EE9 :: Runner</name>
 
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
@@ -60,7 +60,8 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
+      <!-- TODO -->
+      <!--plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <executions>
@@ -86,7 +87,7 @@
             <goal>clean</goal>
           </goals>
         </configuration>
-      </plugin>
+      </plugin-->
     </plugins>
     <pluginManagement>
       <plugins>
@@ -106,7 +107,7 @@
           <configuration>
             <archive>
               <manifest>
-                <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
+                <mainClass>org.eclipse.jetty.ee9.runner.Runner</mainClass>
               </manifest>
               <manifestEntries>
                 <Comment>Jetty Runner</Comment>
@@ -132,7 +133,7 @@
       <artifactId>jetty-ee9-jaas</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>
@@ -158,7 +159,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>demo-simple-webapp</artifactId>
+      <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
     </dependency>

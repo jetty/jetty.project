@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -49,7 +49,6 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         if (request.getLength() == 0 || StringUtil.isBlank(contentType))
             return null;
 
-        // TODO mimeTypes from context
         MimeTypes.Type type = MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
         if (MimeTypes.Type.FORM_ENCODED != type)
             return null;
@@ -60,21 +59,20 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
     public static CompletableFuture<Fields> from(Request request)
     {
-        Object attr = request.getAttribute(FormFields.class.getName());
-        if (attr instanceof FormFields futureFormFields)
-            return futureFormFields;
-
-        Charset charset = getFormEncodedCharset(request);
-        if (charset == null)
-            return EMPTY;
-
+        // TODO make this attributes provided by the ContextRequest wrapper
         int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
         int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
 
-        FormFields futureFormFields = new FormFields(request, charset, maxFields, maxLength);
-        futureFormFields.run();
-        request.setAttribute(FormFields.class.getName(), futureFormFields);
-        return futureFormFields;
+        return from(request, maxFields, maxLength);
+    }
+
+    public static CompletableFuture<Fields> from(Request request, Charset charset)
+    {
+        // TODO make this attributes provided by the ContextRequest wrapper
+        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
+        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+
+        return from(request, charset, maxFields, maxLength);
     }
 
     public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
@@ -87,9 +85,14 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         if (charset == null)
             return EMPTY;
 
+        return from(request, charset, maxFields, maxLength);
+    }
+
+    public static CompletableFuture<Fields> from(Request request, Charset charset, int maxFields, int maxLength)
+    {
         FormFields futureFormFields = new FormFields(request, charset, maxFields, maxLength);
-        futureFormFields.run();
         request.setAttribute(FormFields.class.getName(), futureFormFields);
+        futureFormFields.run();
         return futureFormFields;
     }
 
@@ -135,11 +138,12 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
     @Override
     public void run()
     {
+        Content.Chunk chunk = null;
         try
         {
             while (true)
             {
-                Content.Chunk chunk = _source.read();
+                chunk = _source.read();
                 if (chunk == null)
                 {
                     _source.demand(this);
@@ -160,6 +164,8 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
                     {
                         chunk.release();
+                        // Do not double release if completeExceptionally() throws.
+                        chunk = null;
                         completeExceptionally(new IllegalStateException("form with too many fields"));
                         return;
                     }
@@ -169,6 +175,8 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                 chunk.release();
                 if (chunk.isLast())
                 {
+                    // Do not double release if complete() throws.
+                    chunk = null;
                     complete(_fields);
                     return;
                 }
@@ -176,6 +184,8 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         }
         catch (Throwable x)
         {
+            if (chunk != null)
+                chunk.release();
             completeExceptionally(x);
         }
     }
@@ -211,7 +221,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     case '=' ->
                     {
                         _name = _builder.takeString();
-                        checkLength(chunk, _name);
+                        checkLength(_name);
                     }
                     case '+' -> _builder.append((byte)' ');
                     case '%' -> _percent++;
@@ -225,7 +235,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     case '&' ->
                     {
                         value = _builder.takeString();
-                        checkLength(chunk, value);
+                        checkLength(value);
                         break loop;
                     }
                     case '+' -> _builder.append((byte)' ');
@@ -245,7 +255,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     _builder.append(_percentCode);
                 }
                 value = _builder.takeString();
-                checkLength(chunk, value);
+                checkLength(value);
             }
 
             if (value != null)
@@ -259,16 +269,13 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         return null;
     }
 
-    private void checkLength(Content.Chunk chunk, String nameOrValue)
+    private void checkLength(String nameOrValue)
     {
         if (_maxLength >= 0)
         {
             _length += nameOrValue.length();
             if (_length > _maxLength)
-            {
-                chunk.release();
                 throw new IllegalStateException("form too large");
-            }
         }
     }
 }

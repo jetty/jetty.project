@@ -9,12 +9,27 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-proxy</artifactId>
   <packaging>jar</packaging>
-  <name>Jetty Core :: Proxy</name>
+  <name>Core :: Proxy</name>
   <description>Jetty Core Proxy</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            ${jetty.surefire.argLine}
+            --add-exports org.eclipse.jetty.client/org.eclipse.jetty.client.internal=ALL-UNNAMED
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>

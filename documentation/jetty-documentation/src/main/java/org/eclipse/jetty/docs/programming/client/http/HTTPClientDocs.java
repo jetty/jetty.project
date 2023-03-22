@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,44 +17,43 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.CookieStore;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongConsumer;
 
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.Authentication;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ConnectionPool;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.DigestAuthentication;
+import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.OutputStreamRequestContent;
+import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
-import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
-import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.DigestAuthentication;
-import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.InputStreamRequestContent;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.OutputStreamRequestContent;
-import org.eclipse.jetty.client.util.PathRequestContent;
-import org.eclipse.jetty.client.util.StringRequestContent;
-import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -64,11 +63,10 @@ import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -129,7 +127,7 @@ public class HTTPClientDocs
     {
         // tag::tlsNoValidation[]
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        // Disable certificate validation at the TLS level.
+        // Disable the validation of the server host name at the TLS level.
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
         // end::tlsNoValidation[]
     }
@@ -138,7 +136,7 @@ public class HTTPClientDocs
     {
         // tag::tlsAppValidation[]
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        // Only allow subdomains of domain.com.
+        // Only allow to connect to subdomains of domain.com.
         sslContextFactory.setHostnameVerifier((hostName, session) -> hostName.endsWith(".domain.com"));
         // end::tlsAppValidation[]
     }
@@ -265,7 +263,7 @@ public class HTTPClientDocs
             .onResponseBegin(response -> { /* ... */ })
             .onResponseHeader((response, field) -> true)
             .onResponseHeaders(response -> { /* ... */ })
-            .onResponseContentAsync((response, buffer, callback) -> callback.succeeded())
+            .onResponseContentAsync((response, chunk, demander) -> demander.run())
             .onResponseFailure((response, failure) -> { /* ... */ })
             .onResponseSuccess(response -> { /* ... */ })
             // Result hook.
@@ -334,14 +332,13 @@ public class HTTPClientDocs
         // An event happens in some other class, in some other thread.
         class ContentPublisher
         {
-            void publish(ByteBufferPool bufferPool, byte[] bytes, boolean lastContent)
+            void publish(byte[] bytes, boolean lastContent)
             {
                 // Wrap the bytes into a new ByteBuffer.
                 ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-                // Offer the content, and release the ByteBuffer
-                // to the pool when the Callback is completed.
-                content.write(buffer, Callback.from(() -> bufferPool.release(buffer)));
+                // Write the content.
+                content.write(buffer, Callback.NOOP);
 
                 // Close AsyncRequestContent when all the content is arrived.
                 if (lastContent)
@@ -449,7 +446,7 @@ public class HTTPClientDocs
         // end::inputStreamResponseListener[]
     }
 
-    public void demandedContentListener() throws Exception
+    public void contentSourceListener() throws Exception
     {
         HttpClient httpClient = new HttpClient();
         httpClient.start();
@@ -458,7 +455,7 @@ public class HTTPClientDocs
         String host2 = "localhost";
         int port1 = 8080;
         int port2 = 8080;
-        // tag::demandedContentListener[]
+        // tag::contentSourceListener[]
         // Prepare a request to server1, the source.
         Request request1 = httpClient.newRequest(host1, port1)
             .path("/source");
@@ -469,34 +466,62 @@ public class HTTPClientDocs
             .path("/sink")
             .body(content2);
 
-        request1.onResponseContentDemanded(new Response.DemandedContentListener()
+        request1.onResponseContentSource(new Response.ContentSourceListener()
         {
             @Override
-            public void onBeforeContent(Response response, LongConsumer demand)
+            public void onContentSource(Response response, Content.Source contentSource)
             {
+                // Only execute this method the very first time
+                // to initialize the request to server2.
+
                 request2.onRequestCommit(request ->
                 {
                     // Only when the request to server2 has been sent,
                     // then demand response content from server1.
-                    demand.accept(1);
+                    contentSource.demand(() -> forwardContent(response, contentSource));
                 });
 
                 // Send the request to server2.
                 request2.send(result -> System.getLogger("forwarder").log(INFO, "Forwarding to server2 complete"));
             }
 
-            @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            private void forwardContent(Response response, Content.Source contentSource)
             {
-                // When response content is received from server1, forward it to server2.
-                content2.write(content, Callback.from(() ->
+                // Read one chunk of content.
+                Content.Chunk chunk = contentSource.read();
+                if (chunk == null)
                 {
-                    // When the request content to server2 is sent,
-                    // succeed the callback to recycle the buffer.
-                    callback.succeeded();
+                    // The read chunk is null, demand to be called back
+                    // when the next one is ready to be read.
+                    contentSource.demand(() -> forwardContent(response, contentSource));
+                    // Once a demand is in progress, the content source must not be read
+                    // nor demanded again until the demand callback is invoked.
+                    return;
+                }
+                // Check if the chunk is last and empty, in which case the
+                // read/demand loop is done. Demanding again when the terminal
+                // chunk has been read will invoke the demand callback with
+                // the same terminal chunk, so this check must be present to
+                // avoid infinitely demanding and reading the terminal chunk.
+                if (chunk.isLast() && !chunk.hasRemaining())
+                {
+                    chunk.release();
+                    return;
+                }
+
+                // When a response chunk is received from server1, forward it to server2.
+                content2.write(chunk.getByteBuffer(), Callback.from(() ->
+                {
+                    // When the request chunk is successfully sent to server2,
+                    // release the chunk to recycle the buffer.
+                    chunk.release();
                     // Then demand more response content from server1.
-                    demand.accept(1);
-                }, callback::failed));
+                    contentSource.demand(() -> forwardContent(response, contentSource));
+                }, x ->
+                {
+                    chunk.release();
+                    response.abort(x);
+                }));
             }
         });
 
@@ -506,7 +531,7 @@ public class HTTPClientDocs
 
         // Send the request to server1.
         request1.send(result -> System.getLogger("forwarder").log(INFO, "Sourcing from server1 complete"));
-        // end::demandedContentListener[]
+        // end::contentSourceListener[]
     }
 
     public void getCookies() throws Exception
@@ -515,8 +540,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::getCookies[]
-        CookieStore cookieStore = httpClient.getCookieStore();
-        List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"));
+        HttpCookieStore cookieStore = httpClient.getHttpCookieStore();
+        List<HttpCookie> cookies = cookieStore.match(URI.create("http://domain.com/path"));
         // end::getCookies[]
     }
 
@@ -526,11 +551,12 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::setCookie[]
-        CookieStore cookieStore = httpClient.getCookieStore();
-        HttpCookie cookie = new HttpCookie("foo", "bar");
-        cookie.setDomain("domain.com");
-        cookie.setPath("/");
-        cookie.setMaxAge(TimeUnit.DAYS.toSeconds(1));
+        HttpCookieStore cookieStore = httpClient.getHttpCookieStore();
+        HttpCookie cookie = HttpCookie.build("foo", "bar")
+            .domain("domain.com")
+            .path("/")
+            .maxAge(TimeUnit.DAYS.toSeconds(1))
+            .build();
         cookieStore.add(URI.create("http://domain.com"), cookie);
         // end::setCookie[]
     }
@@ -542,7 +568,7 @@ public class HTTPClientDocs
 
         // tag::requestCookie[]
         ContentResponse response = httpClient.newRequest("http://domain.com/path")
-            .cookie(new HttpCookie("foo", "bar"))
+            .cookie(HttpCookie.from("foo", "bar"))
             .send();
         // end::requestCookie[]
     }
@@ -553,9 +579,9 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::removeCookie[]
-        CookieStore cookieStore = httpClient.getCookieStore();
+        HttpCookieStore cookieStore = httpClient.getHttpCookieStore();
         URI uri = URI.create("http://domain.com");
-        List<HttpCookie> cookies = cookieStore.get(uri);
+        List<HttpCookie> cookies = cookieStore.match(uri);
         for (HttpCookie cookie : cookies)
         {
             cookieStore.remove(uri, cookie);
@@ -569,7 +595,7 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::emptyCookieStore[]
-        httpClient.setCookieStore(new HttpCookieStore.Empty());
+        httpClient.setHttpCookieStore(new HttpCookieStore.Empty());
         // end::emptyCookieStore[]
     }
 
@@ -579,17 +605,18 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::filteringCookieStore[]
-        class GoogleOnlyCookieStore extends HttpCookieStore
+        class GoogleOnlyCookieStore extends HttpCookieStore.Default
         {
             @Override
-            public void add(URI uri, HttpCookie cookie)
+            public boolean add(URI uri, HttpCookie cookie)
             {
                 if (uri.getHost().endsWith("google.com"))
-                    super.add(uri, cookie);
+                    return super.add(uri, cookie);
+                return false;
             }
         }
 
-        httpClient.setCookieStore(new GoogleOnlyCookieStore());
+        httpClient.setHttpCookieStore(new GoogleOnlyCookieStore());
         // end::filteringCookieStore[]
     }
 
@@ -838,13 +865,11 @@ public class HTTPClientDocs
         httpClient.start();
 
         ConnectionPool connectionPool = httpClient.getDestinations().stream()
-            // Cast to HttpDestination.
-            .map(HttpDestination.class::cast)
             // Find the destination by filtering on the Origin.
             .filter(destination -> destination.getOrigin().getAddress().getHost().equals("domain.com"))
             .findAny()
             // Get the ConnectionPool.
-            .map(HttpDestination::getConnectionPool)
+            .map(Destination::getConnectionPool)
             .orElse(null);
         // end::getConnectionPool[]
     }
@@ -869,7 +894,6 @@ public class HTTPClientDocs
         transport.setConnectionPoolFactory(destination ->
             new RoundRobinConnectionPool(destination,
                 maxConnectionsPerDestination,
-                destination,
                 maxRequestsPerConnection));
         // end::setConnectionPool[]
     }

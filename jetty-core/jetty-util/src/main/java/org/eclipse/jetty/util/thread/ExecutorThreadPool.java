@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +48,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     private int _priority = Thread.NORM_PRIORITY;
     private boolean _daemon;
     private boolean _detailedDump;
-    private boolean _useVirtualThreads;
+    private Executor _virtualThreadsExecutor;
 
     public ExecutorThreadPool()
     {
@@ -271,18 +272,18 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     }
 
     @Override
-    public boolean isUseVirtualThreads()
+    public Executor getVirtualThreadsExecutor()
     {
-        return _useVirtualThreads;
+        return _virtualThreadsExecutor;
     }
 
     @Override
-    public void setUseVirtualThreads(boolean useVirtualThreads)
+    public void setVirtualThreadsExecutor(Executor executor)
     {
         try
         {
-            VirtualThreads.Configurable.super.setUseVirtualThreads(useVirtualThreads);
-            _useVirtualThreads = useVirtualThreads;
+            VirtualThreads.Configurable.super.setVirtualThreadsExecutor(executor);
+            _virtualThreadsExecutor = executor;
         }
         catch (UnsupportedOperationException ignored)
         {

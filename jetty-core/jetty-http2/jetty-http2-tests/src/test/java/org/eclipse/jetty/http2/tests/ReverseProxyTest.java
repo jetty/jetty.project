@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -119,13 +119,14 @@ public class ReverseProxyTest
     @Test
     public void testHTTPVersion() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertEquals(HttpVersion.HTTP_1_1.asString(), request.getConnectionMetaData().getProtocol());
                 callback.succeeded();
+                return true;
             }
         });
         startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
@@ -156,16 +157,17 @@ public class ReverseProxyTest
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         byte[] content = new byte[1024 * 1024];
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), Callback.from(() ->
                 {
                     callback.succeeded();
                     serverLatch.countDown();
                 }, callback::failed));
+                return true;
             }
         });
         startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->

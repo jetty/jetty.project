@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -101,10 +101,9 @@ public class StandardDescriptorProcessorTest
         assertEquals("false", wac.getSessionHandler().getSessionCookieConfig().getAttribute("HttpOnly"));
         assertEquals(false, wac.getSessionHandler().isHttpOnly());
 
-        Map<String, String> attributes = wac.getSessionHandler().getSessionCookieConfig().getAttributes();
-
         //SessionCookieConfig javadoc states that all setters must be also represented as attributes
-        assertThat(wac.getSessionHandler().getSessionCookieConfig().getAttributes().keySet(), 
+        Map<String, String> attributes = wac.getSessionHandler().getSessionCookieConfig().getAttributes();
+        assertThat(attributes.keySet(),
             containsInAnyOrder(Arrays.asList(
                 equalToIgnoringCase("name"),
                 equalToIgnoringCase("comment"), 
@@ -117,9 +116,17 @@ public class StandardDescriptorProcessorTest
                 equalToIgnoringCase("width"),
                 equalToIgnoringCase("SameSite"))));
 
-        //test the attributes on SessionHandler do NOT contain the well-known ones of Name, Comment, Domain etc etc
-        assertThat(wac.getSessionHandler().getSessionAttributes().keySet(), 
+        //test the attributes on SessionHandler do NOT contain the name
+        Map<String, String> sessionAttributes = wac.getSessionHandler().getSessionAttributes();
+        sessionAttributes.keySet().forEach(System.err::println);
+        assertThat(sessionAttributes.keySet(),
             containsInAnyOrder(Arrays.asList(
+                equalToIgnoringCase("comment"),
+                equalToIgnoringCase("domain"),
+                equalToIgnoringCase("path"),
+                equalToIgnoringCase("max-age"),
+                equalToIgnoringCase("secure"),
+                equalToIgnoringCase("httponly"),
                 equalToIgnoringCase("length"),
                 equalToIgnoringCase("width"),
                 equalToIgnoringCase("SameSite"))));

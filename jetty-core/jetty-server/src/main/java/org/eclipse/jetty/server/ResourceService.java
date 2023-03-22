@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,27 +30,26 @@ import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.EtagUtils;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
-import org.eclipse.jetty.http.PreCompressedHttpContent;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.PreCompressedHttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,26 +74,9 @@ public class ResourceService
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
     private HttpField _cacheControl;
-    private Resource _stylesheet;
 
     public ResourceService()
     {
-    }
-
-    /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
-     */
-    public void setStylesheet(Resource stylesheet)
-    {
-        _stylesheet = stylesheet;
-    }
-
-    /**
-     * @return Returns the stylesheet as a Resource.
-     */
-    public Resource getStylesheet()
-    {
-        return _stylesheet;
     }
 
     public HttpContent getContent(String path, Request request) throws IOException
@@ -132,12 +112,6 @@ public class ResourceService
                     }
                 }
             }
-        }
-        else
-        {
-            // TODO: can this go in a "StaticContentFactory" that goes after ResourceContentFactory?
-            if ((_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
-                content = new ResourceHttpContent(_stylesheet, "text/css");
         }
 
         return content;
@@ -178,6 +152,12 @@ public class ResourceService
 
         boolean endsWithSlash = pathInContext.endsWith("/");
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug(".doGet(req={}, resp={}, callback={}, content={}) pathInContext={}, reqRanges={}, endsWithSlash={}",
+                request, response, callback, content, pathInContext, reqRanges, endsWithSlash);
+        }
+
         try
         {
             // Directory?
@@ -215,18 +195,13 @@ public class ResourceService
             // Send the data
             sendData(request, response, callback, content, reqRanges);
         }
-        // Can be thrown from contentFactory.getContent() call when using invalid characters
-        catch (InvalidPathException e) // TODO: this cannot trigger here, as contentFactory.getContent() isn't called in this try block
+        catch (Throwable t)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
-            writeHttpError(request, response, callback, HttpStatus.NOT_FOUND_404);
-        }
-        catch (IllegalArgumentException e)
-        {
-            LOG.warn("Failed to serve resource: {}", pathInContext, e);
+            LOG.warn("Failed to serve resource: {}", pathInContext, t);
             if (!response.isCommitted())
-                writeHttpError(request, response, callback, e);
+                writeHttpError(request, response, callback, t);
+            else
+                callback.failed(t);
         }
     }
 
@@ -247,6 +222,12 @@ public class ResourceService
 
     protected void sendRedirect(Request request, Response response, Callback callback, String target)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendRedirect(req={}, resp={}, callback={}, target={})",
+                request, response, callback, target);
+        }
+
         Response.sendRedirect(request, response, callback, target);
     }
 
@@ -324,7 +305,7 @@ public class ResourceService
             String ifm = null;
             String ifnm = null;
             String ifms = null;
-            long ifums = -1;
+            String ifums = null;
 
             // Find multiple fields by iteration as an optimization
             for (HttpField field : request.getHeaders())
@@ -336,7 +317,7 @@ public class ResourceService
                         case IF_MATCH -> ifm = field.getValue();
                         case IF_NONE_MATCH -> ifnm = field.getValue();
                         case IF_MODIFIED_SINCE -> ifms = field.getValue();
-                        case IF_UNMODIFIED_SINCE -> ifums = DateParser.parseDate(field.getValue());
+                        case IF_UNMODIFIED_SINCE -> ifums = field.getValue();
                         default ->
                         {
                         }
@@ -346,7 +327,6 @@ public class ResourceService
 
             if (_etags)
             {
-
                 String etag = content.getETagValue();
                 if (etag != null)
                 {
@@ -379,7 +359,7 @@ public class ResourceService
             }
 
             // Handle if modified since
-            if (ifms != null)
+            if (ifms != null && ifnm == null)
             {
                 //Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
@@ -389,19 +369,31 @@ public class ResourceService
                     return true;
                 }
 
-                long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE);
-                if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
+                long ifmsl = DateParser.parseDate(ifms);
+                if (ifmsl != -1)
                 {
-                    writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                    return true;
+                    long lm = content.getResource().lastModified().toEpochMilli();
+                    if (lm != -1 && lm / 1000 <= ifmsl / 1000)
+                    {
+                        writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                        return true;
+                    }
                 }
             }
 
             // Parse the if[un]modified dates and compare to resource
-            if (ifums != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 > ifums / 1000)
+            if (ifums != null && ifm == null)
             {
-                writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
-                return true;
+                long ifumsl = DateParser.parseDate(ifums);
+                if (ifumsl != -1)
+                {
+                    long lm = content.getResource().lastModified().toEpochMilli();
+                    if (lm != -1 && lm / 1000 > ifumsl / 1000)
+                    {
+                        writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                        return true;
+                    }
+                }
             }
         }
         catch (IllegalArgumentException iae)
@@ -447,6 +439,12 @@ public class ResourceService
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendWelcome(content={}, pathInContext={}, endsWithSlash={}, req={}, resp={}, callback={})",
+                content, pathInContext, endsWithSlash, request, response, callback);
+        }
+
         // Redirect to directory
         if (!endsWithSlash)
         {
@@ -503,13 +501,16 @@ public class ResourceService
     private boolean welcome(Request request, Response response, Callback callback) throws Exception
     {
         WelcomeAction welcomeAction = processWelcome(request);
+        if (LOG.isDebugEnabled())
+            LOG.debug("welcome(req={}, rsp={}, cbk={}) welcomeAction={}", request, response, callback, welcomeAction);
+
         if (welcomeAction == null)
             return false;
 
-        return processWelcomeAction(request, response, callback, welcomeAction);
+        return handleWelcomeAction(request, response, callback, welcomeAction);
     }
 
-    protected boolean processWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
+    protected boolean handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
     {
         return switch (welcomeAction.mode)
         {
@@ -563,7 +564,7 @@ public class ResourceService
 
     /**
      * <p>Rehandles the given welcome target.</p>
-     * <p>Implementations should call {@link Handler#handle(Request)}
+     * <p>Implementations should call {@link Handler#handle(Request, Response, Callback)}
      * on a {@code Handler} that may handle the welcome target
      * differently from the original request.</p>
      * <p>For example, a request for {@code /ctx/} may be rewritten
@@ -611,6 +612,11 @@ public class ResourceService
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendDirectory(req={}, resp={}, content={}, callback={}, pathInContext={})",
+                request, response, httpContent, callback, pathInContext);
+        }
         if (!_dirAllowed)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -633,6 +639,12 @@ public class ResourceService
 
     private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendData(req={}, resp={}, callback={}) content={}, reqRanges={})",
+                request, response, callback, content, reqRanges);
+        }
+
         long contentLength = content.getContentLengthValue();
         callback = Callback.from(callback, content::release);
 
@@ -680,7 +692,7 @@ public class ResourceService
         String boundary = MultiPart.generateBoundary(null, 24);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
-        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range)));
+        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range, contentLength)));
         byteRanges.close();
         Content.copy(byteRanges, response, callback);
     }
@@ -689,20 +701,11 @@ public class ResourceService
     {
         try
         {
-            ByteBuffer buffer = content.getByteBuffer();
+            ByteBuffer buffer = content.getByteBuffer(); // this buffer is going to be consumed by response.write()
             if (buffer != null)
-            {
                 response.write(true, buffer, callback);
-            }
             else
-            {
-                // TODO: is it possible to do zero-copy transfer?
-                // WritableByteChannel c = Response.asWritableByteChannel(target);
-                // FileChannel fileChannel = (FileChannel) source;
-                // fileChannel.transferTo(0, contentLength, c);
-
                 new ContentWriterIteratingCallback(content, response, callback).iterate();
-            }
         }
         catch (Throwable x)
         {
@@ -876,6 +879,12 @@ public class ResourceService
         _welcomeMode = Objects.requireNonNull(welcomeMode);
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, welcomeMode=%s)", this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._welcomeMode);
+    }
+
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)
     {
         _welcomeFactory = welcomeFactory;
@@ -898,18 +907,17 @@ public class ResourceService
         private final ReadableByteChannel source;
         private final Content.Sink sink;
         private final Callback callback;
-        private final ByteBuffer byteBuffer;
-        private final ByteBufferPool byteBufferPool;
+        private final RetainableByteBuffer buffer;
 
         public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
-            this.byteBufferPool = target.getRequest().getComponents().getByteBufferPool();
             this.source = content.getResource().newReadableByteChannel();
             this.sink = target;
             this.callback = callback;
+            ByteBufferPool bufferPool = target.getRequest().getComponents().getByteBufferPool();
             int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
             boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-            this.byteBuffer = byteBufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);
+            this.buffer = bufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);
         }
 
         @Override
@@ -918,6 +926,7 @@ public class ResourceService
             if (!source.isOpen())
                 return Action.SUCCEEDED;
 
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
             int read = source.read(byteBuffer);
             if (read == -1)
@@ -934,14 +943,14 @@ public class ResourceService
         @Override
         protected void onCompleteSuccess()
         {
-            byteBufferPool.release(byteBuffer);
+            buffer.release();
             callback.succeeded();
         }
 
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            byteBufferPool.release(byteBuffer);
+            buffer.release();
             callback.failed(x);
         }
     }

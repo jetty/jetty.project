@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet.security.authentication;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
@@ -221,9 +223,9 @@ public class FormAuthenticator extends LoginAuthenticator
     public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
     {
         ServletContextRequest servletContextRequest = Request.as(req, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
 
-        String pathInContext = servletContextRequest.getPathInContext();
+        String pathInContext = servletContextRequest.getDecodedPathInContext();
         boolean jSecurityCheck = isJSecurityCheck(pathInContext);
         mandatory |= jSecurityCheck;
         if (!mandatory)
@@ -263,7 +265,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
                 res.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 //TODO yuck - should use Response the whole way
-                Response.sendRedirect(req, res, callback, servletContextRequest.getHttpServletResponse().encodeRedirectURL(nuri));
+                Response.sendRedirect(req, res, callback, HttpStatus.FOUND_302, servletContextRequest.getHttpServletResponse().encodeRedirectURL(nuri), true);
                 return formAuth;
             }
 
@@ -287,7 +289,7 @@ public class FormAuthenticator extends LoginAuthenticator
             else
             {
                 LOG.debug("auth failed {}->{}", username, _formErrorPage);
-                Response.sendRedirect(req, res, callback, servletContextRequest.getHttpServletResponse().encodeRedirectURL(URIUtil.addPaths(req.getContext().getContextPath(), _formErrorPage)));
+                Response.sendRedirect(req, res, callback, HttpStatus.FOUND_302, servletContextRequest.getHttpServletResponse().encodeRedirectURL(URIUtil.addPaths(req.getContext().getContextPath(), _formErrorPage)), true);
             }
 
             return Authentication.SEND_FAILURE;
@@ -373,7 +375,7 @@ public class FormAuthenticator extends LoginAuthenticator
             else
             {*/
         LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-        Response.sendRedirect(req, res, callback, servletContextRequest.getHttpServletResponse().encodeRedirectURL(URIUtil.addPaths(req.getContext().getContextPath(), _formLoginPage)));
+        Response.sendRedirect(req, res, callback, HttpStatus.FOUND_302, servletContextRequest.getHttpServletResponse().encodeRedirectURL(URIUtil.addPaths(req.getContext().getContextPath(), _formLoginPage)), true);
         //}
         return Authentication.SEND_CONTINUE;
     }

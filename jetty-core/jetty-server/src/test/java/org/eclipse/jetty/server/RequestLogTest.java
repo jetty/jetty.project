@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -54,13 +54,14 @@ public class RequestLogTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestLogTest.class);
 
-    private static class NormalResponse extends Handler.Processor
+    private static class NormalResponse extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=UTF-8");
             Content.Sink.write(response, true, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()), callback);
+            return true;
         }
     }
 

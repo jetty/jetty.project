@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -40,6 +40,7 @@ public class ChunksContentSource implements Content.Source
 
     public ChunksContentSource(Collection<Content.Chunk> chunks)
     {
+        chunks.forEach(Content.Chunk::retain);
         this.chunks = chunks;
         this.length = chunks.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
     }
@@ -73,7 +74,7 @@ public class ChunksContentSource implements Content.Source
             if (last)
                 terminated = Content.Chunk.EOF;
         }
-        return Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast(), chunk);
+        return chunk;
     }
 
     @Override
@@ -115,7 +116,7 @@ public class ChunksContentSource implements Content.Source
     @Override
     public void fail(Throwable failure)
     {
-        List<Content.Chunk> toFail = List.of();
+        List<Content.Chunk> chunksToRelease;
         try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
@@ -123,10 +124,14 @@ public class ChunksContentSource implements Content.Source
             terminated = Content.Chunk.from(failure);
             if (iterator != null)
             {
-                toFail = new ArrayList<>();
-                iterator.forEachRemaining(toFail::add);
+                chunksToRelease = new ArrayList<>();
+                iterator.forEachRemaining(chunksToRelease::add);
+            }
+            else
+            {
+                chunksToRelease = List.copyOf(chunks);
             }
         }
-        toFail.forEach(Content.Chunk::release);
+        chunksToRelease.forEach(Content.Chunk::release);
     }
 }

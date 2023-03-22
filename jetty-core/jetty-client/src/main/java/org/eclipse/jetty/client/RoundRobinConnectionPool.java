@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
@@ -44,14 +43,14 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class RoundRobinConnectionPool extends MultiplexConnectionPool
 {
-    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+    public RoundRobinConnectionPool(Destination destination, int maxConnections)
     {
-        this(destination, maxConnections, requester, 1);
+        this(destination, maxConnections, 1);
     }
 
-    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
+    public RoundRobinConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        super(destination, Pool.StrategyType.ROUND_ROBIN, maxConnections, false, requester, maxMultiplex);
+        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.ROUND_ROBIN, maxConnections, false, newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
         // If there are queued requests and connections get
         // closed due to idle timeout or overuse, we want to
         // aggressively try to open new connections to replace

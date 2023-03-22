@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,7 +26,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Attributes;
@@ -170,7 +170,7 @@ public class Dispatcher implements RequestDispatcher
                 checkUriViolations(_uri, baseRequest);
 
                 // If we have already been forwarded previously, then keep using the established
-                // original value. Otherwise, this is the first forward and we need to establish the values.
+                // original value. Otherwise, this is the first forward, and we need to establish the values.
                 // Note: the established value on the original request for pathInfo and
                 // for queryString is allowed to be null, but cannot be null for the other values.
                 // Note: the pathInfo is passed as the pathInContext since it is only used when there is
@@ -178,7 +178,7 @@ public class Dispatcher implements RequestDispatcher
                 if (old_attr.getAttribute(FORWARD_REQUEST_URI) == null)
                     baseRequest.setAttributes(new ForwardAttributes(old_attr,
                         old_uri.getPath(),
-                        old_context.getContextHandler().getContextPathEncoded(),
+                        baseRequest.getContextPath(),
                         baseRequest.getPathInContext(),
                         source_mapping,
                         old_uri.getQuery()));
@@ -196,17 +196,17 @@ public class Dispatcher implements RequestDispatcher
                     {
                         baseRequest.mergeQueryParameters(old_uri.getQuery(), _uri.getQuery());
                     }
-                    catch (BadMessageException e)
+                    catch (Throwable e)
                     {
-                        // Only throw BME if not in Error Dispatch Mode
-                        // This allows application ErrorPageErrorHandler to handle BME messages
-                        if (dispatch != DispatcherType.ERROR)
+                        // Only throw HttpException if not in Error Dispatch Mode
+                        // This allows application ErrorPageErrorHandler to handle HttpException messages
+                        if (e instanceof HttpException && dispatch == DispatcherType.ERROR)
                         {
-                            throw e;
+                            LOG.warn("Ignoring Original Bad Request Query String: {}", old_uri, e);
                         }
                         else
                         {
-                            LOG.warn("Ignoring Original Bad Request Query String: {}", old_uri, e);
+                            throw e;
                         }
                     }
                 }

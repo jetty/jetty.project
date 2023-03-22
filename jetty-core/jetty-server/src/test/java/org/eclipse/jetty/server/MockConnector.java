@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,36 +16,17 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.thread.Scheduler;
 
 public class MockConnector extends AbstractConnector
 {
-    private final Server _server;
-
     public MockConnector(Server server)
     {
-        super(server, server.getThreadPool(), server.getBean(Scheduler.class), ByteBufferPool.NOOP, 0);
-        _server = server;
+        super(server, server.getThreadPool(), server.getScheduler(), new ByteBufferPool.NonPooling(), 0);
     }
 
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-    }
-
-    @Override
-    public Scheduler getScheduler()
-    {
-        return _server.getBean(Scheduler.class);
-    }
-
-    @Override
-    public ByteBufferPool getByteBufferPool()
-    {
-        ByteBufferPool pool = _server.getBean(ByteBufferPool.class);
-        if (pool != null)
-            return pool;
-        return super.getByteBufferPool();
     }
 
     @Override

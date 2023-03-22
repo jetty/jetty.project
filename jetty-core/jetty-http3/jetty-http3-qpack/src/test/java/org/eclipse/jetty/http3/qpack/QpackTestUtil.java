@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,7 +22,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matcher;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,14 +32,14 @@ public class QpackTestUtil
 {
     public static ByteBuffer toBuffer(Instruction... instructions)
     {
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (Instruction instruction : instructions)
         {
-            instruction.encode(lease);
+            instruction.encode(accumulator);
         }
-        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(lease.getTotalLength()));
+        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()));
         BufferUtil.clearToFill(combinedBuffer);
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             combinedBuffer.put(buffer);
         }
@@ -55,12 +55,12 @@ public class QpackTestUtil
 
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
-        instructions.forEach(i -> i.encode(lease));
-        assertThat(lease.getSize(), is(instructions.size()));
-        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(lease.getTotalLength()), false);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        instructions.forEach(i -> i.encode(accumulator));
+        assertThat(accumulator.getSize(), is(instructions.size()));
+        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()), false);
         BufferUtil.clearToFill(combinedBuffer);
-        lease.getByteBuffers().forEach(combinedBuffer::put);
+        accumulator.getByteBuffers().forEach(combinedBuffer::put);
         BufferUtil.flipToFlush(combinedBuffer, 0);
         return combinedBuffer;
     }
@@ -68,7 +68,7 @@ public class QpackTestUtil
     public static ByteBuffer hexToBuffer(String hexString)
     {
         hexString = hexString.replaceAll("\\s+", "");
-        return ByteBuffer.wrap(TypeUtil.fromHexString(hexString));
+        return ByteBuffer.wrap(StringUtil.fromHexString(hexString));
     }
 
     public static String toHexString(Instruction instruction)

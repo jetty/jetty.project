@@ -33,7 +33,7 @@
         </Arg>
         <Call name="addEventListener">
           <Arg>
-            <New class="org.eclipse.jetty.ee10.osgi.boot.utils.ServerConnectorListener">
+            <New class="org.eclipse.jetty.osgi.util.ServerConnectorListener">
               <Set name="sysPropertyName">boot.annotations.port</Set>
             </New>
           </Arg>

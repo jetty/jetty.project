@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -223,7 +223,7 @@ public class RawHTTP2ProxyTest
                 DataFrame frame = data.frame();
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("CLIENT received {}", frame);
-                assertEquals(buffer1.slice(), frame.getData());
+                assertEquals(buffer1.slice(), frame.getByteBuffer());
                 data.release();
                 latch1.countDown();
                 if (!data.frame().isEndStream())
@@ -461,7 +461,7 @@ public class RawHTTP2ProxyTest
                     case DATA ->
                     {
                         DataFrame clientToProxyFrame = (DataFrame)frameInfo.frame;
-                        DataFrame proxyToServerFrame = new DataFrame(proxyToServerStream.getId(), clientToProxyFrame.getData(), clientToProxyFrame.isEndStream());
+                        DataFrame proxyToServerFrame = new DataFrame(proxyToServerStream.getId(), clientToProxyFrame.getByteBuffer(), clientToProxyFrame.isEndStream());
                         proxyToServerStream.data(proxyToServerFrame, this);
                         yield Action.SCHEDULED;
                     }
@@ -609,7 +609,7 @@ public class RawHTTP2ProxyTest
                 case DATA ->
                 {
                     DataFrame clientToProxyFrame = (DataFrame)frameInfo.frame;
-                    DataFrame proxyToServerFrame = new DataFrame(serverToProxyStream.getId(), clientToProxyFrame.getData(), clientToProxyFrame.isEndStream());
+                    DataFrame proxyToServerFrame = new DataFrame(serverToProxyStream.getId(), clientToProxyFrame.getByteBuffer(), clientToProxyFrame.isEndStream());
                     proxyToClientStream.data(proxyToServerFrame, this);
                     yield Action.SCHEDULED;
                 }

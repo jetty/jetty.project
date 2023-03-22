@@ -75,7 +75,7 @@ etc/jetty.xml
 ## URI Compliance: DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE
 # jetty.httpConfig.uriCompliance=DEFAULT
 
-## Cookie compliance mode for parsing request Cookie headers: RFC2965, RFC6265
+## Cookie compliance mode for parsing request Cookie headers: RFC6265_STRICT, RFC6265, RFC6265_LEGACY, RFC2965, RFC2965_LEGACY
 # jetty.httpConfig.requestCookieCompliance=RFC6265
 
 ## Cookie compliance mode for generating response Set-Cookie: RFC2965, RFC6265
@@ -93,6 +93,9 @@ etc/jetty.xml
 ## Dump the state of the Jetty server, components, and webapps after startup
 # jetty.server.dumpAfterStart=false
 
+## The temporary directory used by the Jetty server and as a root for its contexts
+# jetty.server.tempDirectory=
+
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
 # end::documentation-server-config[]
@@ -108,3 +111,13 @@ etc/jetty.xml
 ## The number of server scheduler threads.
 # jetty.scheduler.threads=1
 # end::documentation-scheduler-config[]
+
+## Whether the handlers of the ContextHandlerCollection can be updated once the server is started
+## If set to false, then eeN-deploy module jetty.deploy.scanInterval should also be set to 0.
+# jetty.server.contexts.dynamic=true
+
+## Should the DefaultHandler serve the jetty favicon.ico from the root.
+# jetty.server.default.serveFavIcon=true
+
+## Should the DefaultHandler show a list of known contexts in a root 404 response.
+# jetty.server.default.showContexts=true

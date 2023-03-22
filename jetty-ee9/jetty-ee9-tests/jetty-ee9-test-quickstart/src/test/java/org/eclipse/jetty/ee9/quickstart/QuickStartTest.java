@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -149,13 +149,21 @@ public class QuickStartTest
 
         server.setHandler(webapp);
         server.start();
-
-        URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
+        
+        //test fragment static resource
+        URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/fragmentA/index.html");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+        assertEquals(200, connection.getResponseCode());
+        String content = IO.toString((InputStream)connection.getContent());
+        assertThat(content, Matchers.containsString("Welcome to a Fragment"));
+        
+        //test annotations etc etc
+        url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
+        connection = (HttpURLConnection)url.openConnection();
         connection.setRequestMethod("POST");
         
         assertEquals(200, connection.getResponseCode());
-        String content = IO.toString((InputStream)connection.getContent());
+        content = IO.toString((InputStream)connection.getContent());
         assertThat(content, Matchers.containsString("Results"));
         assertThat(content, Matchers.not(Matchers.containsString("FAIL")));
         server.stop();

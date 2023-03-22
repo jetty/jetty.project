@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,13 +28,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.servlet.StatisticsServlet;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -45,13 +45,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -323,15 +320,15 @@ public class Runner
                         }
 
                         //check that everything got configured, and if not, make the handlers
-                        HandlerCollection handlers = _server.getChildHandlerByClass(HandlerCollection.class);
+                        Handler.Sequence handlers = _server.getDescendant(Handler.Sequence.class);
                         if (handlers == null)
                         {
-                            handlers = new HandlerList();
+                            handlers = new Handler.Sequence();
                             _server.setHandler(handlers);
                         }
 
                         //check if contexts already configured
-                        _contexts = handlers.getChildHandlerByClass(ContextHandlerCollection.class);
+                        _contexts = handlers.getDescendant(ContextHandlerCollection.class);
                         if (_contexts == null)
                         {
                             _contexts = new ContextHandlerCollection();
@@ -341,16 +338,16 @@ public class Runner
                         if (_enableStats)
                         {
                             //if no stats handler already configured
-                            if (handlers.getChildHandlerByClass(StatisticsHandler.class) == null)
+                            if (handlers.getDescendant(StatisticsHandler.class) == null)
                             {
                                 StatisticsHandler statsHandler = new StatisticsHandler();
-
+                                
+                                
                                 Handler oldHandler = _server.getHandler();
                                 statsHandler.setHandler(oldHandler);
                                 _server.setHandler(statsHandler);
 
                                 ServletContextHandler statsContext = new ServletContextHandler(_contexts, "/stats");
-                                statsContext.addServlet(new ServletHolder(new StatisticsServlet()), "/");
                                 statsContext.setSessionHandler(new SessionHandler());
                                 if (_statsPropFile != null)
                                 {
@@ -376,7 +373,7 @@ public class Runner
                         }
 
                         //ensure a DefaultHandler is present
-                        if (handlers.getChildHandlerByClass(DefaultHandler.class) == null)
+                        if (handlers.getDescendant(DefaultHandler.class) == null)
                         {
                             handlers.addHandler(new DefaultHandler());
                         }
@@ -494,15 +491,15 @@ public class Runner
         }
     }
 
-    protected void prependHandler(Handler handler, HandlerCollection handlers)
+    protected void prependHandler(Handler handler, Handler.Sequence handlers)
     {
         if (handler == null || handlers == null)
             return;
 
-        Handler[] existing = handlers.getChildHandlers();
-        Handler[] children = new Handler[existing.length + 1];
-        children[0] = handler;
-        System.arraycopy(existing, 0, children, 1, existing.length);
+        List<Handler> existing = handlers.getHandlers();
+        List<Handler> children = new ArrayList<>(existing.size() + 1);
+        children.add(handler);
+        children.addAll(existing);
         handlers.setHandlers(children);
     }
 

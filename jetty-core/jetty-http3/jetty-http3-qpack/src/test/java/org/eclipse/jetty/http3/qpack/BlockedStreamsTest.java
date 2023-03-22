@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,6 +23,8 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementIn
 import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,8 +56,9 @@ public class BlockedStreamsTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS);
-        _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        _encoder = new QpackEncoder(bufferPool, _encoderHandler, MAX_BLOCKED_STREAMS);
+        _decoder = new QpackDecoder(bufferPool, _decoderHandler, MAX_HEADER_SIZE);
     }
 
     @Test

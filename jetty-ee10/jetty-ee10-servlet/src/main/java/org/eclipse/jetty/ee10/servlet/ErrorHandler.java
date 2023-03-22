@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,9 +48,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ErrorHandler implements Request.Processor
+public class ErrorHandler implements Request.Handler
 {
-
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
@@ -81,12 +80,12 @@ public class ErrorHandler implements Request.Processor
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (!errorPageForMethod(request.getMethod()))
         {
             callback.succeeded();
-            return;
+            return true;
         }
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
@@ -99,7 +98,7 @@ public class ErrorHandler implements Request.Processor
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
         String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(servletContextRequest.getHttpServletRequest()) : null;
-        ServletContextHandler.Context context = servletContextRequest.getErrorContext();
+        ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
 
@@ -109,7 +108,7 @@ public class ErrorHandler implements Request.Processor
             {
                 errorDispatcher.error(servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse());
                 callback.succeeded();
-                return;
+                return true;
             }
             catch (ServletException e)
             {
@@ -117,7 +116,7 @@ public class ErrorHandler implements Request.Processor
                 if (response.isCommitted())
                 {
                     callback.failed(e);
-                    return;
+                    return true;
                 }
             }
         }
@@ -127,6 +126,7 @@ public class ErrorHandler implements Request.Processor
             message = HttpStatus.getMessage(response.getStatus());
         generateAcceptableResponse(servletContextRequest, servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse(), response.getStatus(), message);
         callback.succeeded();
+        return true;
     }
 
     /**
@@ -293,7 +293,7 @@ public class ErrorHandler implements Request.Processor
                 // TODO error page may cause a BufferOverflow.  In which case we try
                 // TODO again with stacks disabled. If it still overflows, it is
                 // TODO written without a body.
-                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
+                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getByteBuffer();
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
@@ -388,7 +388,7 @@ public class ErrorHandler implements Request.Processor
         if (showStacks && !_disableStacks)
             writeErrorPageStacks(request, writer);
 
-        ((ServletContextRequest.ServletApiRequest)request).getRequest().getServletChannel().getHttpConfiguration()
+        ((ServletApiRequest)request).getServletContextRequest().getServletChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
@@ -604,13 +604,13 @@ public class ErrorHandler implements Request.Processor
         String getErrorPage(HttpServletRequest request);
     }
 
-    public static Request.Processor getErrorProcessor(Server server, ContextHandler context)
+    public static Request.Handler getErrorHandler(Server server, ContextHandler context)
     {
-        Request.Processor errorProcessor = null;
+        Request.Handler errorHandler = null;
         if (context != null)
-            errorProcessor = context.getErrorProcessor();
-        if (errorProcessor == null && server != null)
-            errorProcessor = server.getErrorProcessor();
-        return errorProcessor;
+            errorHandler = context.getErrorHandler();
+        if (errorHandler == null && server != null)
+            errorHandler = server.getErrorHandler();
+        return errorHandler;
     }
 }

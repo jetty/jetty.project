@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -60,9 +58,9 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     private final long timeout;
     private final Map<Connection, Holder> quarantine;
 
-    public ValidatingConnectionPool(HttpDestination destination, int maxConnections, Callback requester, Scheduler scheduler, long timeout)
+    public ValidatingConnectionPool(Destination destination, int maxConnections, Scheduler scheduler, long timeout)
     {
-        super(destination, maxConnections, requester);
+        super(destination, maxConnections);
         this.scheduler = scheduler;
         this.timeout = timeout;
         this.quarantine = new ConcurrentHashMap<>(maxConnections);
@@ -131,7 +129,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
         {
             if (done.compareAndSet(false, true))
             {
-                boolean closed = isClosed();
+                boolean closed = isStopped();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Validated {}", connection);
                 quarantine.remove(connection);

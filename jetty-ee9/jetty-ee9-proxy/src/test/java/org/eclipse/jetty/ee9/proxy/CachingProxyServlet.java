@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,9 +21,8 @@ import java.util.Map;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpContentResponse;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -72,7 +71,7 @@ public class CachingProxyServlet extends ProxyServlet
     protected void onProxyResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
         byte[] content = temp.remove(request.getRequestURI()).toByteArray();
-        ContentResponse cached = new HttpContentResponse(proxyResponse, content, null, null);
+        ContentResponse cached = ContentResponse.from(proxyResponse, content, null, null);
         cache.put(request.getRequestURI(), cached);
         super.onProxyResponseSuccess(request, response, proxyResponse);
     }

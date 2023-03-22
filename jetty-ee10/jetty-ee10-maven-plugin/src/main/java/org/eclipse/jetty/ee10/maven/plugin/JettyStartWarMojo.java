@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.File;
 import java.nio.file.Path;
 
-import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -60,7 +59,7 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
     protected JettyHomeForker homeForker;
 
     @Override
-    public void configureWebApp() throws AbstractMojoExecutionException
+    public void configureWebApp() throws Exception
     {
         super.configureWebApp();
         //if a war has not been explicitly configured, use the one from the project

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,19 +13,44 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.Map;
+
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("Mapped Resource")
-public class MappedResource<E> implements Comparable<MappedResource<E>>
+public class MappedResource<E> implements Comparable<MappedResource<E>>, Map.Entry<PathSpec, E>
 {
     private final PathSpec pathSpec;
     private final E resource;
+    private final MatchedResource<E> preMatched;
 
     public MappedResource(PathSpec pathSpec, E resource)
     {
         this.pathSpec = pathSpec;
         this.resource = resource;
+
+        MatchedResource<E> matched;
+        switch (pathSpec.getGroup())
+        {
+            case ROOT:
+                matched = new MatchedResource<>(resource, pathSpec, pathSpec.matched("/"));
+                break;
+            case EXACT:
+                matched = new MatchedResource<>(resource, pathSpec, pathSpec.matched(pathSpec.getDeclaration()));
+                break;
+            default:
+                matched = null;
+        }
+        this.preMatched = matched;
+    }
+
+    /**
+     * @return A pre match {@link MatchedResource} for ROOT and EXACT matches, else null;
+     */
+    public MatchedResource<E> getPreMatched()
+    {
+        return preMatched;
     }
 
     /**
@@ -65,6 +90,24 @@ public class MappedResource<E> implements Comparable<MappedResource<E>>
             return false;
         }
         return true;
+    }
+
+    @Override
+    public PathSpec getKey()
+    {
+        return getPathSpec();
+    }
+
+    @Override
+    public E getValue()
+    {
+        return getResource();
+    }
+
+    @Override
+    public E setValue(E value)
+    {
+        throw new UnsupportedOperationException();
     }
 
     @ManagedAttribute(value = "path spec", readonly = true)

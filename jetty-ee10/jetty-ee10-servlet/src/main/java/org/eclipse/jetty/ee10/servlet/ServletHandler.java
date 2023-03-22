@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -51,10 +51,13 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -113,12 +116,28 @@ public class ServletHandler extends Handler.Wrapper
 
     @SuppressWarnings("unchecked")
     protected final ConcurrentMap<String, FilterChain>[] _chainCache = new ConcurrentMap[FilterMapping.ALL];
+    private boolean _decodeAmbiguousURIs = false;
 
     /**
      * Constructor.
      */
     public ServletHandler()
     {
+    }
+
+    @ManagedAttribute(value = "True if URIs with violations are decoded")
+    public boolean isDecodeAmbiguousURIs()
+    {
+        return _decodeAmbiguousURIs;
+    }
+
+    /**
+     * @param decodeAmbiguousURIs {@code True} if ambiguous URIs are decoded by {@link ServletApiRequest#getServletPath()}
+     *                            and {@link ServletApiRequest#getPathInfo()}.
+     */
+    public void setDecodeAmbiguousURIs(boolean decodeAmbiguousURIs)
+    {
+        _decodeAmbiguousURIs = decodeAmbiguousURIs;
     }
 
     AutoLock lock()
@@ -156,11 +175,11 @@ public class ServletHandler extends Handler.Wrapper
     {
         try (AutoLock ignored = lock())
         {
-            ContextHandler.Context context = ContextHandler.getCurrentContext();
-            if (!(context instanceof ServletContextHandler.Context))
+            Context context = ContextHandler.getCurrentContext();
+            if (!(context instanceof ServletContextHandler.ServletScopedContext))
                 throw new IllegalStateException("Cannot use ServletHandler without ServletContextHandler");
-            _servletContext = ((ServletContextHandler.Context)context).getServletContext();
-            _servletContextHandler = ((ServletContextHandler.Context)context).getServletContextHandler();
+            _servletContext = ((ServletContextHandler.ServletScopedContext)context).getServletContext();
+            _servletContextHandler = ((ServletContextHandler.ServletScopedContext)context).getServletContextHandler();
 
             if (_servletContextHandler != null)
             {
@@ -431,15 +450,13 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        // TODO avoid lambda creation
-        return (req, resp, cb) ->
-        {
-            // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
-            ServletContextRequest servletRequest = Request.as(request, ServletContextRequest.class);
-            servletRequest.getServletChannel().handle();
-        };
+        // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        servletContextRequest.getServletChannel().setCallback(callback);
+        servletContextRequest.getServletChannel().handle();
+        return true;
     }
 
     /**

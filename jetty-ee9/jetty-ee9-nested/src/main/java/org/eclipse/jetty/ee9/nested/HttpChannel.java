@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,14 +34,15 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -92,7 +93,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Bytes written after interception (eg after compression)
      */
     private long _written;
-    private org.eclipse.jetty.server.Request _coreRequest;
+    private ContextHandler.CoreContextRequest _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
     private boolean _expects100Continue;
@@ -137,6 +138,72 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public ConnectionMetaData getConnectionMetaData()
     {
         return _connectionMetaData;
+    }
+
+    /**
+     * Notify the channel that content is needed. If some content is immediately available, true is returned and
+     * {@link #produceContent()} has to be called and will return a non-null object.
+     * If no content is immediately available, an attempt to produce content must be made; if new content has been
+     * produced, true is returned; otherwise {@link HttpInput#onContentProducible()} is called once some content
+     * arrives and {@link #produceContent()} can be called without returning {@code null}.
+     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will
+     * return the error on the next call to {@link #produceContent()}.
+     * @return true if content is immediately available.
+     */
+    public boolean needContent()
+    {
+        // TODO: optimize by attempting a read?
+        getCoreRequest().demand(() ->
+        {
+            if (getRequest().getHttpInput().onContentProducible())
+                handle();
+        });
+        return false;
+    }
+
+    /**
+     * Produce a {@link HttpInput.Content} object with data currently stored within the channel. The produced content
+     * can be special (meaning calling {@link HttpInput.Content#isSpecial()} returns true) if the channel reached a special
+     * state, like EOF or an error.
+     * Once a special content has been returned, all subsequent calls to this method will always return a special content
+     * of the same kind and {@link #needContent()} will always return true.
+     * The returned content is "raw", i.e.: not decoded.
+     * @return a {@link HttpInput.Content} object if one is immediately available without blocking, null otherwise.
+     */
+    public HttpInput.Content produceContent()
+    {
+        Content.Chunk chunk = getCoreRequest().read();
+        if (chunk == null)
+            return null;
+
+        if (chunk.hasRemaining())
+            onContent(chunk);
+        if (chunk instanceof Trailers trailers)
+            onTrailers(trailers.getTrailers());
+        if (chunk.isLast())
+            onContentComplete();
+
+        return HttpInput.Content.asChunk(chunk);
+    }
+
+    /**
+     * Fail all content that is currently stored within the channel.
+     * @param failure the failure to fail the content with.
+     * @return true if EOF was reached while failing all content, false otherwise.
+     */
+    public boolean failAllContent(Throwable failure)
+    {
+        while (true)
+        {
+            HttpInput.Content content = produceContent();
+            if (content == null)
+                return false;
+            if (content.isSpecial())
+                return content.isEof();
+            content.failed(failure);
+            if (content.isEof())
+                return true;
+        }
     }
 
     /**
@@ -260,7 +327,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _connector.getServer();
     }
 
-    public org.eclipse.jetty.server.Request getCoreRequest()
+    public ContextHandler.CoreContextRequest getCoreRequest()
     {
         return _coreRequest;
     }
@@ -830,7 +897,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _request.setHandled(true);
             _state.completing();
-            sendResponse(null, _response.getHttpOutput().getBuffer(), true, Callback.from(() -> _state.completed(null), _state::completed));
+            sendResponse(null, _response.getHttpOutput().getByteBuffer(), true, Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {
@@ -859,7 +926,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
-    public void onRequest(org.eclipse.jetty.server.Request coreRequest)
+    public void onRequest(ContextHandler.CoreContextRequest coreRequest)
     {
         _coreRequest = coreRequest;
         _requests.incrementAndGet();
@@ -898,7 +965,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
-        _combinedListener.onRequestContent(_request, content.getByteBuffer());
+        _combinedListener.onRequestContent(_request, content.getByteBuffer().slice());
     }
 
     void onContentComplete()
@@ -973,7 +1040,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         int status = failure.getCode();
         String reason = failure.getReason();
         if (status < HttpStatus.BAD_REQUEST_400 || status > 599)
-            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
+            failure = new BadMessageException(reason, failure);
 
         _combinedListener.onRequestFailure(_request, failure);
 
@@ -1460,9 +1527,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (LOG.isDebugEnabled())
                 LOG.debug("Commit failed", x);
 
-            if (x instanceof BadMessageException)
+            if (x instanceof HttpException httpException)
             {
-                send(_request.getMetaData(), HttpGenerator.RESPONSE_500_INFO, null, true, new Nested(this)
+                MetaData.Response responseMeta = new MetaData.Response(HttpVersion.HTTP_1_1, httpException.getCode(), httpException.getReason(), HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
+                send(_request.getMetaData(), responseMeta, null, true, new Nested(this)
                 {
                     @Override
                     public void succeeded()

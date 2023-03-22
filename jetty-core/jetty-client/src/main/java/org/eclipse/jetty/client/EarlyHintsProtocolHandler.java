@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.List;
-
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -53,8 +52,6 @@ public class EarlyHintsProtocolHandler implements ProtocolHandler
 
     private class EarlyHintsListener extends BufferingResponseListener
     {
-        private final ResponseNotifier notifier = new ResponseNotifier();
-
         @Override
         public void onSuccess(Response response)
         {
@@ -82,9 +79,9 @@ public class EarlyHintsProtocolHandler implements ProtocolHandler
             HttpExchange exchange = conversation.getExchanges().peekLast();
             if (exchange != null)
             {
-                List<Response.ResponseListener> listeners = exchange.getResponseListeners();
+                ResponseListeners listeners = exchange.getResponseListeners();
                 HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
-                notifier.forwardFailureComplete(listeners, exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure);
+                listeners.emitFailureComplete(new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
             }
         }
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -124,7 +124,16 @@ public class TrieTest
         {
             impls.add(new ArrayTrie<Integer>(caseSensitive, 128));
             impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
-            impls.add(new TreeTrie<>(caseSensitive));
+
+            TreeTrie<Integer> treeTry = new TreeTrie<>(caseSensitive);
+            // create tree and then delete keys
+            treeTry.put("abc", -1);
+            treeTry.put("ade", -2);
+            treeTry.put("a[]", -3);
+            treeTry.remove("abc");
+            treeTry.remove("ade");
+            treeTry.remove("a[]");
+            impls.add(treeTry);
         }
 
         return impls.stream().map(Arguments::of);
@@ -396,6 +405,20 @@ public class TrieTest
         String y = "y".repeat(Character.MAX_VALUE / 2);
         String z = "z".repeat(Character.MAX_VALUE / 2);
         assertThat(requiredCapacity(Set.of(x, y, z), true), is(1 + 3 * (Character.MAX_VALUE / 2)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("emptyImplementations")
+    public void testIsEmpty(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertTrue(trie.isEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testIsNotEmpty(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertFalse(trie.isEmpty());
     }
 
     @ParameterizedTest

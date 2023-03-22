@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,14 +25,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
@@ -115,10 +112,10 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
     public void testGZIPContentSentTwiceInOneWrite(Scenario scenario) throws Exception
     {
         final byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
 
@@ -132,6 +129,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 System.arraycopy(gzipBytes, 0, content, gzipBytes.length, gzipBytes.length);
 
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 
@@ -201,14 +199,15 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testGZIPContentCorrupted(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
                 Content.Sink.write(response, true, "0123456789", callback);
+                return true;
             }
         });
 
@@ -244,8 +243,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         });
 
         ByteBufferPool pool = client.getByteBufferPool();
-        assumeTrue(pool instanceof MappedByteBufferPool);
-        MappedByteBufferPool bufferPool = (MappedByteBufferPool)pool;
+        assumeTrue(pool instanceof ArrayByteBufferPool);
+        ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)pool;
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -255,9 +254,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(content, response.getContent());
 
-        long directMemory = bufferPool.getMemory(true);
+        long directMemory = bufferPool.getDirectMemory();
         assertThat(directMemory, lessThan((long)content.length));
-        long heapMemory = bufferPool.getMemory(false);
+        long heapMemory = bufferPool.getHeapMemory();
         assertThat(heapMemory, lessThan((long)content.length));
     }
 

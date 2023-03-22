@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,7 +48,7 @@ public class DirtyAttributeTest
         //make a session
         TestableSessionConsumer consumer = new TestableSessionConsumer();
         sessionManager.newSession(null, "1234", consumer);
-        Session session = consumer.getSession();
+        ManagedSession session = consumer.getSession();
         String id = session.getId();
         assertTrue(session.isValid());
         assertTrue(sessionDataStore.exists(id));

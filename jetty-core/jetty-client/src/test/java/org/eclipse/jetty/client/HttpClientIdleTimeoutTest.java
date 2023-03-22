@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,9 +18,12 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.IConnection;
+import org.eclipse.jetty.client.transport.SendFailure;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
@@ -74,7 +77,7 @@ public class HttpClientIdleTimeoutTest
                 if (cookies == null || cookies.size() == 0)
                 {
                     // Send a cookie in the first response.
-                    Response.addCookie(response, new HttpCookie("name", "value"));
+                    Response.addCookie(response, HttpCookie.from("name", "value"));
                 }
                 else
                 {
@@ -93,7 +96,7 @@ public class HttpClientIdleTimeoutTest
         client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
-            public HttpDestination newHttpDestination(Origin origin)
+            public Destination newDestination(Origin origin)
             {
                 return new HttpDestination(getHttpClient(), origin, false)
                 {

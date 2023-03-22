@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,13 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
 /**
  * {@link ContentDecoder} decodes content bytes of a response.
@@ -23,21 +30,14 @@ import java.nio.ByteBuffer;
 public interface ContentDecoder
 {
     /**
-     * <p>Decodes the bytes in the given {@code buffer} and returns decoded bytes, if any.</p>
+     * <p>Decodes the bytes in the given {@code buffer} and returns the decoded bytes.</p>
+     * <p>The returned {@link RetainableByteBuffer} containing the decoded bytes may
+     * be empty and <b>must</b> be released via {@link RetainableByteBuffer#release()}.</p>
      *
      * @param buffer the buffer containing encoded bytes
-     * @return a buffer containing decoded bytes, if any
+     * @return a buffer containing decoded bytes that must be released
      */
-    public abstract ByteBuffer decode(ByteBuffer buffer);
-
-    /**
-     * <p>Releases the ByteBuffer returned by {@link #decode(ByteBuffer)}.</p>
-     *
-     * @param decoded the ByteBuffer returned by {@link #decode(ByteBuffer)}
-     */
-    public default void release(ByteBuffer decoded)
-    {
-    }
+    public abstract RetainableByteBuffer decode(ByteBuffer buffer);
 
     /**
      * Factory for {@link ContentDecoder}s; subclasses must implement {@link #newContentDecoder()}.
@@ -88,5 +88,36 @@ public interface ContentDecoder
          * @return a new instance of a {@link ContentDecoder}
          */
         public abstract ContentDecoder newContentDecoder();
+    }
+
+    public static class Factories implements Iterable<ContentDecoder.Factory>
+    {
+        private final Map<String, Factory> factories = new LinkedHashMap<>();
+        private HttpField acceptEncodingField;
+
+        public HttpField getAcceptEncodingField()
+        {
+            return acceptEncodingField;
+        }
+
+        @Override
+        public Iterator<Factory> iterator()
+        {
+            return factories.values().iterator();
+        }
+
+        public void clear()
+        {
+            factories.clear();
+            acceptEncodingField = null;
+        }
+
+        public Factory put(Factory factory)
+        {
+            Factory result = factories.put(factory.getEncoding(), factory);
+            String value = String.join(",", factories.keySet());
+            acceptEncodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, value);
+            return result;
+        }
     }
 }

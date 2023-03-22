@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,15 +19,14 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -99,7 +98,7 @@ public class ServletRequestState
     }
 
     /*
-     * The input readiness state, which works together with {@link HttpInput.State}
+     * The input readiness state.
      */
     private enum InputState
     {
@@ -109,12 +108,11 @@ public class ServletRequestState
     }
 
     /*
-     * The output committed state, which works together with {@link HttpOutput.State}
+     * The output state.
      */
     private enum OutputState
     {
         OPEN,
-        COMMITTED,
         COMPLETED,
         ABORTED,
     }
@@ -167,7 +165,7 @@ public class ServletRequestState
 
     public State getState()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _state;
         }
@@ -175,7 +173,7 @@ public class ServletRequestState
 
     public void addListener(AsyncListener listener)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_asyncListeners == null)
                 _asyncListeners = new ArrayList<>();
@@ -204,7 +202,7 @@ public class ServletRequestState
 
     public boolean isSendError()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _sendError;
         }
@@ -212,7 +210,7 @@ public class ServletRequestState
 
     public void setTimeout(long ms)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             _timeoutMs = ms;
         }
@@ -220,7 +218,7 @@ public class ServletRequestState
 
     public long getTimeout()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _timeoutMs;
         }
@@ -228,7 +226,7 @@ public class ServletRequestState
 
     public AsyncContextEvent getAsyncContextEvent()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _event;
         }
@@ -237,7 +235,7 @@ public class ServletRequestState
     @Override
     public String toString()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return toStringLocked();
         }
@@ -266,52 +264,19 @@ public class ServletRequestState
 
     public String getStatusString()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return getStatusStringLocked();
         }
     }
 
-    public boolean commitResponse()
-    {
-        try (AutoLock l = lock())
-        {
-            switch (_outputState)
-            {
-                case OPEN:
-                    _outputState = OutputState.COMMITTED;
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
-    }
-
-    public boolean partialResponse()
-    {
-        try (AutoLock l = lock())
-        {
-            switch (_outputState)
-            {
-                case COMMITTED:
-                    _outputState = OutputState.OPEN;
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
-    }
-
     public boolean completeResponse()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             switch (_outputState)
             {
                 case OPEN:
-                case COMMITTED:
                     _outputState = OutputState.COMPLETED;
                     return true;
 
@@ -323,21 +288,12 @@ public class ServletRequestState
 
     public boolean isResponseCommitted()
     {
-        try (AutoLock l = lock())
-        {
-            switch (_outputState)
-            {
-                case OPEN:
-                    return false;
-                default:
-                    return true;
-            }
-        }
+        return _servletChannel.getResponse().isCommitted();
     }
 
     public boolean isResponseCompleted()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _outputState == OutputState.COMPLETED;
         }
@@ -345,7 +301,7 @@ public class ServletRequestState
 
     public boolean abortResponse()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             switch (_outputState)
             {
@@ -370,7 +326,7 @@ public class ServletRequestState
      */
     public Action handling()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("handling {}", toStringLocked());
@@ -408,11 +364,11 @@ public class ServletRequestState
      * been suspended (startAsync called).
      *
      * @return next actions
-     * be handled again (eg because of a resume that happened before unhandle was called)
+     * be handled again (e.g. because of a resume that happened before unhandle was called)
      */
     protected Action unhandle()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("unhandle {}", toStringLocked());
@@ -480,7 +436,7 @@ public class ServletRequestState
                     return Action.WRITE_CALLBACK;
                 }
 
-                Scheduler scheduler = _servletChannel.getRequest()
+                Scheduler scheduler = _servletChannel.getServletContextRequest()
                     .getConnectionMetaData().getConnector().getScheduler();
                 if (scheduler != null && _timeoutMs > 0 && !_event.hasTimeoutTask())
                     _event.setTimeoutTask(scheduler.schedule(_event, _timeoutMs, TimeUnit.MILLISECONDS));
@@ -525,7 +481,7 @@ public class ServletRequestState
     {
         final List<AsyncListener> lastAsyncListeners;
 
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}", toStringLocked());
@@ -575,7 +531,7 @@ public class ServletRequestState
         boolean dispatch = false;
         AsyncContextEvent event;
 
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("dispatch {} -> {}", toStringLocked(), path);
@@ -614,7 +570,7 @@ public class ServletRequestState
     protected void timeout()
     {
         boolean dispatch = false;
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timeout {}", toStringLocked());
@@ -642,7 +598,7 @@ public class ServletRequestState
     {
         final List<AsyncListener> listeners;
         AsyncContextEvent event;
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onTimeout {}", toStringLocked());
@@ -671,9 +627,9 @@ public class ServletRequestState
                             catch (Throwable x)
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener, x);
+                                    LOG.warn("{} while invoking onTimeout listener {}", x, listener, x);
                                 else
-                                    LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
+                                    LOG.warn("{} while invoking onTimeout listener {}", x, listener);
                             }
                         }
                     }
@@ -690,7 +646,7 @@ public class ServletRequestState
         }
         finally
         {
-            try (AutoLock l = lock())
+            try (AutoLock ignored = lock())
             {
                 _onTimeoutThread = null;
             }
@@ -701,7 +657,7 @@ public class ServletRequestState
     {
         boolean handle = false;
         AsyncContextEvent event;
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("complete {}", toStringLocked());
@@ -733,18 +689,19 @@ public class ServletRequestState
 
         cancelTimeout(event);
         if (handle)
-            runInContext(event, _servletChannel);
+            runInContext(event, _servletChannel::handle);
     }
 
+    /**
+     * This method is called when a failure occurs asynchronously to normal handling.
+     * If the request is async, we arrange for the exception to be thrown from the
+     * normal handling loop and then actually handled by {@link #onError(Throwable)}
+     * @param failure the error.
+     */
     public void asyncError(Throwable failure)
     {
-        // This method is called when an failure occurs asynchronously to
-        // normal handling.  If the request is async, we arrange for the
-        // exception to be thrown from the normal handling loop and then
-        // actually handled by #thrownException
-
         AsyncContextEvent event = null;
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("asyncError {}", toStringLocked(), failure);
@@ -767,7 +724,7 @@ public class ServletRequestState
         if (event != null)
         {
             cancelTimeout(event);
-            runInContext(event, _servletChannel);
+            runInContext(event, _servletChannel::handle);
         }
     }
 
@@ -775,7 +732,7 @@ public class ServletRequestState
     {
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("thrownException {}", getStatusStringLocked(), th);
@@ -799,8 +756,8 @@ public class ServletRequestState
                     sendError(th);
                     return;
 
-                case DISPATCH: // Dispatch has already been called but we ignore and handle exception below
-                case COMPLETE: // Complete has already been called but we ignore and handle exception below
+                case DISPATCH: // Dispatch has already been called, but we ignore and handle exception below
+                case COMPLETE: // Complete has already been called, but we ignore and handle exception below
                 case ASYNC:
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
@@ -831,15 +788,15 @@ public class ServletRequestState
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.warn("{} while invoking onError listener {}", x.toString(), listener, x);
+                        LOG.warn("{} while invoking onError listener {}", x, listener, x);
                     else
-                        LOG.warn("{} while invoking onError listener {}", x.toString(), listener);
+                        LOG.warn("{} while invoking onError listener {}", x, listener);
                 }
             }
         });
 
         // check the actions of the listeners
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_requestState == RequestState.ASYNC && !_sendError)
             {
@@ -859,20 +816,19 @@ public class ServletRequestState
         // No sync as this is always called with lock held
 
         // Determine the actual details of the exception
-        final Request request = _servletChannel.getRequest();
+        final Request request = _servletChannel.getServletContextRequest();
         final int code;
         final String message;
-        Throwable cause = _servletChannel.unwrap(th, BadMessageException.class, UnavailableException.class);
+        Throwable cause = _servletChannel.unwrap(th, HttpException.class, UnavailableException.class);
         if (cause == null)
         {
             code = HttpStatus.INTERNAL_SERVER_ERROR_500;
             message = th.toString();
         }
-        else if (cause instanceof BadMessageException)
+        else if (cause instanceof HttpException httpException)
         {
-            BadMessageException bme = (BadMessageException)cause;
-            code = bme.getCode();
-            message = bme.getReason();
+            code = httpException.getCode();
+            message = httpException.getReason();
         }
         else if (cause instanceof UnavailableException)
         {
@@ -895,7 +851,7 @@ public class ServletRequestState
         request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
 
         // Set Jetty specific attributes.
-        request.setAttribute(ErrorProcessor.ERROR_EXCEPTION, null);
+        request.setAttribute(ErrorHandler.ERROR_EXCEPTION, th);
 
         // Ensure any async lifecycle is ended!
         _requestState = RequestState.BLOCKING;
@@ -910,15 +866,15 @@ public class ServletRequestState
         //       - after unhandle for sync
         //       - after both unhandle and complete for async
 
-        ServletContextRequest servletContextRequest = _servletChannel.getRequest();
+        ServletContextRequest servletContextRequest = _servletChannel.getServletContextRequest();
         HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
 
-        final Request request = _servletChannel.getRequest();
+        final Request request = _servletChannel.getServletContextRequest();
         final Response response = _servletChannel.getResponse();
         if (message == null)
             message = HttpStatus.getMessage(code);
 
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
@@ -939,16 +895,16 @@ public class ServletRequestState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
+            request.setAttribute(org.eclipse.jetty.ee10.servlet.ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, httpServletRequest.getRequestURI());
             request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
             request.setAttribute(ERROR_STATUS_CODE, code);
             request.setAttribute(ERROR_MESSAGE, message);
 
             // Set Jetty Specific Attributes.
-            request.setAttribute(ErrorProcessor.ERROR_CONTEXT, servletContextRequest.getContext());
-            request.setAttribute(ErrorProcessor.ERROR_MESSAGE, message);
-            request.setAttribute(ErrorProcessor.ERROR_STATUS, code);
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getContext());
+            request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
+            request.setAttribute(ErrorHandler.ERROR_STATUS, code);
 
             _sendError = true;
             if (_event != null)
@@ -962,7 +918,7 @@ public class ServletRequestState
 
     protected void completing()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("completing {}", toStringLocked());
@@ -983,7 +939,7 @@ public class ServletRequestState
         final AsyncContextEvent event;
         boolean handle = false;
 
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
@@ -1028,16 +984,16 @@ public class ServletRequestState
                         catch (Throwable x)
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener, x);
+                                LOG.warn("{} while invoking onComplete listener {}", x, listener, x);
                             else
-                                LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener);
+                                LOG.warn("{} while invoking onComplete listener {}", x, listener);
                         }
                     }
                 });
             }
             event.completed();
 
-            try (AutoLock l = lock())
+            try (AutoLock ignored = lock())
             {
                 _requestState = RequestState.COMPLETED;
                 if (_state == State.WAITING)
@@ -1055,7 +1011,7 @@ public class ServletRequestState
     protected void recycle()
     {
         cancelTimeout();
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("recycle {}", toStringLocked());
@@ -1084,7 +1040,7 @@ public class ServletRequestState
     public void upgrade()
     {
         cancelTimeout();
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}", toStringLocked());
@@ -1109,8 +1065,7 @@ public class ServletRequestState
 
     protected void scheduleDispatch()
     {
-        // TODO long winded!!!
-        _servletChannel.getRequest().getConnectionMetaData().getConnector().getExecutor().execute(_servletChannel);
+        _servletChannel.execute(_servletChannel::handle);
     }
 
     protected void cancelTimeout()
@@ -1126,7 +1081,7 @@ public class ServletRequestState
 
     public boolean isIdle()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _state == State.IDLE;
         }
@@ -1134,7 +1089,7 @@ public class ServletRequestState
 
     public boolean isExpired()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             // TODO review
             return _requestState == RequestState.EXPIRE || _requestState == RequestState.EXPIRING;
@@ -1143,7 +1098,7 @@ public class ServletRequestState
 
     public boolean isInitial()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _initial;
         }
@@ -1151,7 +1106,7 @@ public class ServletRequestState
 
     public boolean isSuspended()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _state == State.WAITING || _state == State.HANDLING && _requestState == RequestState.ASYNC;
         }
@@ -1159,7 +1114,7 @@ public class ServletRequestState
 
     boolean isCompleted()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _requestState == RequestState.COMPLETED;
         }
@@ -1167,7 +1122,7 @@ public class ServletRequestState
 
     public boolean isAsyncStarted()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_state == State.HANDLING)
                 return _requestState != RequestState.BLOCKING;
@@ -1177,7 +1132,7 @@ public class ServletRequestState
 
     public boolean isAsync()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return !_initial || _requestState != RequestState.BLOCKING;
         }
@@ -1188,40 +1143,24 @@ public class ServletRequestState
         return _servletChannel.getContextHandler();
     }
 
-    public ServletResponse getServletResponse()
-    {
-        return getServletResponse(getAsyncContextEvent());
-    }
-
-    public ServletResponse getServletResponse(AsyncContextEvent event)
-    {
-        if (event != null && event.getSuppliedResponse() != null)
-            return event.getSuppliedResponse();
-
-        ServletContextRequest servletContextRequest = _servletChannel.getRequest();
-        if (servletContextRequest != null)
-            return servletContextRequest.getHttpServletResponse();
-        return null;
-    }
-
     void runInContext(AsyncContextEvent event, Runnable runnable)
     {
-        _servletChannel.getContext().run(runnable);
+        event.getContext().run(runnable);
     }
 
     public Object getAttribute(String name)
     {
-        return _servletChannel.getRequest().getAttribute(name);
+        return _servletChannel.getServletContextRequest().getAttribute(name);
     }
 
     public void removeAttribute(String name)
     {
-        _servletChannel.getRequest().removeAttribute(name);
+        _servletChannel.getServletContextRequest().removeAttribute(name);
     }
 
     public void setAttribute(String name, Object attribute)
     {
-        _servletChannel.getRequest().setAttribute(name, attribute);
+        _servletChannel.getServletContextRequest().setAttribute(name, attribute);
     }
 
     /**
@@ -1232,7 +1171,7 @@ public class ServletRequestState
     public boolean onReadReady()
     {
         boolean woken = false;
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadReady {}", toStringLocked());
@@ -1240,7 +1179,6 @@ public class ServletRequestState
             switch (_inputState)
             {
                 case READY:
-                    _inputState = InputState.READY;
                     break;
                 case IDLE:
                 case UNREADY:
@@ -1262,7 +1200,7 @@ public class ServletRequestState
     public boolean onReadEof()
     {
         boolean woken = false;
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadEof {}", toStringLocked());
@@ -1293,7 +1231,7 @@ public class ServletRequestState
      */
     public void onContentAdded()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onContentAdded {}", toStringLocked());
@@ -1317,7 +1255,7 @@ public class ServletRequestState
      */
     public void onReadIdle()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadIdle {}", toStringLocked());
@@ -1343,7 +1281,7 @@ public class ServletRequestState
      */
     public void onReadUnready()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadUnready {}", toStringLocked());
@@ -1364,7 +1302,7 @@ public class ServletRequestState
 
     public boolean isInputUnready()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _inputState == InputState.UNREADY;
         }
@@ -1374,7 +1312,7 @@ public class ServletRequestState
     {
         boolean wake = false;
 
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onWritePossible {}", toStringLocked());

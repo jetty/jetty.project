@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -136,7 +136,7 @@ public class StartArgs
 
     // jetty.base - build out commands
     /**
-     * --add-module=[module,[module]]
+     * --add-modules=[module,[module]]
      */
     private final List<String> startModules = new ArrayList<>();
 
@@ -383,7 +383,7 @@ public class StartArgs
     }
 
     /**
-     * Expand any command line added {@code --lib} lib references.
+     * Expand any command line added {@code --libs} lib references.
      */
     public void expandSystemProperties()
     {
@@ -472,7 +472,7 @@ public class StartArgs
      *     For full list of enabled modules, use {@link Modules#getEnabled()}
      * </p>
      *
-     * @return the list of selected modules (by name) that the configuration has.
+     * @return the set of selected modules (by name) that the configuration has.
      * @see Modules#getEnabled()
      */
     public Set<String> getSelectedModules()
@@ -1234,7 +1234,7 @@ public class StartArgs
             if (arg.startsWith("--add-to-start=") || arg.startsWith("--add-to-startd="))
             {
                 String value = Props.getValue(arg);
-                StartLog.warn("Option " + arg.split("=")[0] + " is deprecated! Instead use: --add-module=%s", value);
+                StartLog.warn("Option " + arg.split("=")[0] + " is deprecated! Instead use: --add-modules=%s", value);
             }
             startModules.addAll(Props.getValues(arg));
             run = false;
@@ -1244,7 +1244,7 @@ public class StartArgs
         }
 
         // Select a module to eventually be enabled
-        if (arg.startsWith("--module="))
+        if (arg.startsWith("--module=") || arg.startsWith("--modules="))
         {
             List<String> moduleNames = Props.getValues(arg);
             selectModules(source, moduleNames);
@@ -1273,7 +1273,7 @@ public class StartArgs
             environment = getCoreEnvironment();
 
         // Arbitrary Libraries
-        if (arg.startsWith("--lib="))
+        if (arg.startsWith("--lib=") || arg.startsWith("--libs="))
         {
             String cp = Props.getValue(arg);
             StringTokenizer t = new StringTokenizer(cp, FS.pathSeparator());

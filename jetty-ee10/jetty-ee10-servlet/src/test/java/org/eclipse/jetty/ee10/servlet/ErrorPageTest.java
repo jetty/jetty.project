@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -42,10 +42,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -100,22 +101,22 @@ public class ErrorPageTest
         _context.addServlet(DeleteServlet.class, "/delete/*");
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
+        _context.addServlet(ExceptionServlet.class, "/exception-servlet");
 
-        Handler.Wrapper noopHandler = new Handler.Wrapper()
+        Handler.Singleton noopHandler = new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/noop"))
-                    return null;
-                else
-                    return super.handle(request);
+                    return false;
+                return super.handle(request, response, callback);
             }
         };
         _context.insertHandler(noopHandler);
 
         _errorPageErrorHandler = new ErrorPageErrorHandler();
-        _context.setErrorProcessor(_errorPageErrorHandler);
+        _context.setErrorHandler(_errorPageErrorHandler);
         _errorPageErrorHandler.addErrorPage(595, "/error/595");
         _errorPageErrorHandler.addErrorPage(597, "/sync");
         _errorPageErrorHandler.addErrorPage(599, "/error/599");
@@ -124,6 +125,7 @@ public class ErrorPageTest
         _errorPageErrorHandler.addErrorPage(IllegalStateException.class.getCanonicalName(), "/error/TestException");
         _errorPageErrorHandler.addErrorPage(BadMessageException.class, "/error/BadMessageException");
         _errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
+        _errorPageErrorHandler.addErrorPage(TestServletException.class, "/error");
 
         _server.start();
         _stackless = new StacklessLogging(ServletHandler.class);
@@ -151,7 +153,6 @@ public class ErrorPageTest
         rawRequest.append("\r\n");
 
         String rawResponse = _connector.getResponse(rawRequest.toString());
-        System.out.println(rawResponse);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(595));
@@ -311,7 +312,7 @@ public class ErrorPageTest
     public void testErrorException() throws Exception
     {
         _errorPageErrorHandler.setUnwrapServletException(false);
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
         {
             String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
@@ -332,7 +333,7 @@ public class ErrorPageTest
         }
 
         _errorPageErrorHandler.setUnwrapServletException(true);
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
         {
             String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
@@ -369,7 +370,7 @@ public class ErrorPageTest
     @Test
     public void testGlobalErrorException() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
         {
             String response = _connector.getResponse("GET /fail/global?code=NAN HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
@@ -454,7 +455,7 @@ public class ErrorPageTest
     @Test
     public void testNoop() throws Exception
     {
-        // The ServletContextHandler does not handle so should go to the servers ErrorProcessor.
+        // The ServletContextHandler does not handle so should go to the servers ErrorHandler.
         String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, not(Matchers.containsString("DISPATCH: ERROR")));
@@ -494,7 +495,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(_context.getLogger()))
         {
-            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
+            try (StacklessLogging ignore2 = new StacklessLogging(ServletChannel.class))
             {
                 __destroyed = new AtomicBoolean(false);
                 String response = _connector.getResponse("GET /unavailable/info HTTP/1.0\r\n\r\n");
@@ -510,7 +511,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(_context.getLogger()))
         {
-            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
+            try (StacklessLogging ignore2 = new StacklessLogging(ServletChannel.class))
             {
                 __destroyed = new AtomicBoolean(false);
                 String response = _connector.getResponse("GET /unavailable/info?for=1 HTTP/1.0\r\n\r\n");
@@ -527,6 +528,18 @@ public class ErrorPageTest
                 assertThat(response, Matchers.containsString("HTTP/1.1 200 "));
                 assertFalse(__destroyed.get());
             }
+        }
+    }
+
+    @Test
+    public void testNonUnwrappedMatchExceptionWithErrorPage() throws Exception
+    {
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
+        {
+            String response = _connector.getResponse("GET /exception-servlet HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
         }
     }
 
@@ -849,6 +862,31 @@ public class ErrorPageTest
         @Override
         public void destroy()
         {
+        }
+    }
+
+    public static class ExceptionServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            throw new TestServletException(new TestException("error page invoked"));
+        }
+    }
+
+    private static class TestException extends Exception
+    {
+        public TestException(String message)
+        {
+            super(message);
+        }
+    }
+
+    public static class TestServletException extends ServletException
+    {
+        public TestServletException(Throwable rootCause)
+        {
+            super(rootCause);
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,8 +25,10 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,6 +59,9 @@ public class ContextHandlerCollectionTest
             Arguments.of(1, "www.example.com.", "/ctx/info", "A", HttpStatus.OK_200),
             Arguments.of(1, "www.example.com", "/ctx/info", "A", HttpStatus.OK_200),
             Arguments.of(1, "alias.example.com", "/ctx/info", "A", HttpStatus.OK_200),
+
+            Arguments.of(0, "simple.example.com", "/ctxsimple/info", "H", HttpStatus.OK_200),
+            Arguments.of(1, "simple.example.com", "/ctxsimple/info", "G", HttpStatus.OK_200),
 
             Arguments.of(1, "www.other.com", "/ctx", "-", HttpStatus.MOVED_PERMANENTLY_301),
             Arguments.of(1, "www.other.com", "/ctx/", "B", HttpStatus.OK_200),
@@ -103,12 +108,21 @@ public class ContextHandlerCollectionTest
         ContextHandler contextF = new ContextHandler("/ctxlong");
         contextF.setHandler(new IsHandledHandler("F"));
 
+        ContextHandler contextG = new ContextHandler("/ctxsimple");
+        contextG.setHandler(new IsHandledHandler("G"));
+        contextG.setVirtualHosts(List.of("@connector1")); // simple named connector
+
+        ContextHandler contextH = new ContextHandler("/ctxsimple");
+        contextH.setHandler(new IsHandledHandler("H"));
+
         ContextHandlerCollection c = new ContextHandlerCollection();
         c.addHandler(contextA);
         c.addHandler(contextB);
         c.addHandler(contextC);
+        c.addHandler(contextG);
+        c.addHandler(contextH);
 
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         handlers.addHandler(contextE);
         handlers.addHandler(contextF);
         handlers.addHandler(contextD);
@@ -283,7 +297,7 @@ public class ContextHandlerCollectionTest
             String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-            assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("<h2>HTTP ERROR 404 Not Found</h2>"));
+            assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("Not Found"));
             assertThat("Response Header for [GET " + requestHost + "]", response.get("X-IsHandled-Name"), nullValue());
 
             connector.getResponse(rawRequest);
@@ -306,7 +320,7 @@ public class ContextHandlerCollectionTest
 
         ContextHandler contextB = new ContextHandler("/b");
         IsHandledHandler handlerB = new IsHandledHandler("B");
-        Handler.Wrapper wrapperB = new Handler.Wrapper();
+        Handler.Singleton wrapperB = new Handler.Wrapper();
         wrapperB.setHandler(handlerB);
         contextB.setHandler(wrapperB);
 
@@ -320,7 +334,7 @@ public class ContextHandlerCollectionTest
         collection.addHandler(contextB);
         collection.addHandler(contextC);
 
-        Handler.Wrapper wrapper = new Handler.Wrapper();
+        Handler.Singleton wrapper = new Handler.Wrapper();
         wrapper.setHandler(collection);
         server.setHandler(wrapper);
 
@@ -345,75 +359,72 @@ public class ContextHandlerCollectionTest
         ContextHandler left = new ContextHandler("/left");
         left.setHandler(new IsHandledHandler("left"));
 
-        Handler.Collection centre = new Handler.Collection();
+        Handler.Sequence centre = new Handler.Sequence();
         ContextHandler centreLeft = new ContextHandler("/leftcentre");
         centreLeft.setHandler(new IsHandledHandler("left of centre"));
         ContextHandler centreRight = new ContextHandler("/rightcentre");
         centreRight.setHandler(new IsHandledHandler("right of centre"));
-        centre.setHandlers(List.of(centreLeft, new WrappedHandler(centreRight)));
+        centre.setHandlers(List.of(centreLeft, new WrappedHandler(centreRight, "centreRight")));
 
         ContextHandler right = new ContextHandler("/right");
         right.setHandler(new IsHandledHandler("right"));
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        contexts.setHandlers(List.of(root, left, centre, new WrappedHandler(right)));
+        contexts.setHandlers(List.of(root, left, centre, new WrappedHandler(right, "right")));
 
         server.setHandler(contexts);
         server.start();
 
-        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        String response;
+        response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
-        assertThat(response, not(containsString("Wrapped: TRUE")));
+        assertThat(response, not(containsString("Wrapped:")));
 
         response = connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
-        assertThat(response, not(containsString("Wrapped: TRUE")));
+        assertThat(response, not(containsString("Wrapped:")));
 
         response = connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left"));
-        assertThat(response, not(containsString("Wrapped: TRUE")));
+        assertThat(response, not(containsString("Wrapped:")));
 
         response = connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left of centre"));
-        assertThat(response, not(containsString("Wrapped: TRUE")));
+        assertThat(response, not(containsString("Wrapped:")));
 
         response = connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right of centre"));
-        assertThat(response, containsString("Wrapped: TRUE"));
+        assertThat(response, containsString("Wrapped: centreRight"));
 
         response = connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right"));
-        assertThat(response, containsString("Wrapped: TRUE"));
+        assertThat(response, containsString("Wrapped: right"));
     }
 
     private static final class WrappedHandler extends Handler.Wrapper
     {
-        WrappedHandler(Handler handler)
+        private final String tag;
+
+        WrappedHandler(Handler handler, String tag)
         {
+            this.tag = tag;
             setHandler(handler);
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.handle(request);
-            if (processor == null)
-                return null;
-
-            return (req, resp, callback) ->
-            {
-                if (resp.getHeaders().contains("Wrapped"))
-                    resp.getHeaders().put("Wrapped", "ASYNC");
-                else
-                    resp.getHeaders().put("Wrapped", "TRUE");
-                processor.process(req, resp, callback);
-            };
+            response.getHeaders().put("Wrapped", tag);
+            if (super.handle(request, response, callback))
+                return true;
+            response.getHeaders().remove("Wrapped");
+            return false;
         }
     }
 
@@ -433,15 +444,13 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public Request.Processor handle(Request request)
+        public boolean handle(Request request, Response response, Callback callback)
         {
-            return (req, resp, callback) ->
-            {
-                this.handled = true;
-                resp.getHeaders().put("X-IsHandled-Name", name);
-                ByteBuffer nameBuffer = BufferUtil.toBuffer(name, StandardCharsets.UTF_8);
-                resp.write(true, nameBuffer, callback);
-            };
+            this.handled = true;
+            response.getHeaders().put("X-IsHandled-Name", name);
+            ByteBuffer nameBuffer = BufferUtil.toBuffer(name, StandardCharsets.UTF_8);
+            response.write(true, nameBuffer, callback);
+            return true;
         }
 
         public void reset()

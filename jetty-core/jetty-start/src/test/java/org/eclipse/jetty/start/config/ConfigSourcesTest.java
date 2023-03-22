@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -455,7 +455,7 @@ public class ConfigSourcesTest
         Path devops = testdir.getPathFile("devops");
         FS.ensureEmpty(devops);
         TestEnv.makeFile(devops, "start.ini",
-            "--module=logging",
+            "--modules=logging",
             "jetty.http.port=2222");
 
         // Create corp

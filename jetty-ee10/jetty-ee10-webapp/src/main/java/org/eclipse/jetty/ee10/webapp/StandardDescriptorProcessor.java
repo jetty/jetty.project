@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -964,8 +964,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String location = node.getString("location", false, true);
         if (!location.startsWith("/"))
             throw new IllegalStateException("Missing leading '/' for location: " + location);
-        //TODO is the ErrorProcessor always going to be an ErrorPageErrorHandler?
-        ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorProcessor();
+        //TODO is the ErrorHandler always going to be an ErrorPageErrorHandler?
+        ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
         String originName = "error." + error;
         Origin origin = context.getMetaData().getOrigin(originName);
         switch (origin)

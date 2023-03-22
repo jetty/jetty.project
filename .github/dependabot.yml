@@ -27,6 +27,8 @@ updates:
         versions: [ ">=2.0.0" ]
       - dependency-name: "jakarta.websocket:*"
         versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp:*"
+        versions: [ ">=2.4.0" ]
       - dependency-name: "jakarta.servlet.jsp.jstl:*"
         versions: [ ">=2.0.0" ]
       - dependency-name: "org.jboss.weld.servlet:*"
@@ -43,6 +45,8 @@ updates:
         versions: [ ">=3.0.0" ]
       - dependency-name: "org.glassfish.jaxb:*"
         versions: [ ">=3.0.0"]
+      - dependency-name: "ch.qos.logback:*"
+        versions: [ ">=1.4.0"]
 
   - package-ecosystem: "maven"
     directory: "/"

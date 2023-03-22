@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,9 +39,9 @@ public class EmptyAddToStartCreateStartdTest extends AbstractUseCase
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
-            "--add-module=extra",
+            "--add-modules=extra",
             "--create-startd",
-            "--add-module=optional"
+            "--add-modules=optional"
         );
         ExecResults prepareResults = exec(prepareArgs, true);
 

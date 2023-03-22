@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,8 +15,10 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -26,15 +28,15 @@ import org.slf4j.LoggerFactory;
  * Cookie parser
  * <p>Optimized stateful cookie parser.
  * If the added fields are identical to those last added (as strings), then the
- * cookies are not re parsed.
+ * cookies are not re-parsed.
  * 
  */
-public class CookieCache
+public class CookieCache implements CookieParser.Handler
 {
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
     protected final List<String> _rawFields = new ArrayList<>();
     protected List<HttpCookie> _cookieList;
-    private final CookieCutter _cookieCutter;
+    private final CookieParser _parser;
 
     public CookieCache()
     {
@@ -43,14 +45,22 @@ public class CookieCache
 
     public CookieCache(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
-        _cookieCutter = new CookieCutter(compliance, complianceListener)
+        _parser = CookieParser.newParser(this, compliance, complianceListener);
+    }
+
+    @Override
+    public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
+    {
+        if (StringUtil.isEmpty(cookieDomain) && StringUtil.isEmpty(cookiePath) && cookieVersion <= 0 && StringUtil.isEmpty(cookieComment))
+            _cookieList.add(HttpCookie.from(cookieName, cookieValue));
+        else
         {
-            @Override
-            protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
-            {
-                _cookieList.add(new HttpCookie(cookieName, cookieValue));
-            }
-        };
+            Map<String, String> attributes = new HashMap<>();
+            attributes.put(HttpCookie.DOMAIN_ATTRIBUTE, cookieDomain);
+            attributes.put(HttpCookie.PATH_ATTRIBUTE, cookiePath);
+            attributes.put(HttpCookie.COMMENT_ATTRIBUTE, cookieComment);
+            _cookieList.add(HttpCookie.from(cookieName, cookieValue, cookieVersion, attributes));
+        }
     }
 
     public List<HttpCookie> getCookies(HttpFields headers)
@@ -121,7 +131,14 @@ public class CookieCache
         if (building)
         {
             _cookieList = new ArrayList<>();
-            _cookieCutter.parseFields(_rawFields);
+            try
+            {
+                _parser.parseFields(_rawFields);
+            }
+            catch (CookieParser.InvalidCookieException invalidCookieException)
+            {
+                throw new BadMessageException(invalidCookieException.getMessage(), invalidCookieException);
+            }
         }
 
         return _cookieList == null ? Collections.emptyList() : _cookieList;

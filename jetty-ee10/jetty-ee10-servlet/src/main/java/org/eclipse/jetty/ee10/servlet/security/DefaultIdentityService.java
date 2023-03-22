@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,6 +24,7 @@ import javax.security.auth.Subject;
  * that uses the role references in the
  * {@link UserIdentity#isUserInRole(String)}
  * implementation. All other operations are effectively noops.
+ * TODO associate on demand and write callbacks?
  */
 public class DefaultIdentityService implements IdentityService
 {

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -63,16 +63,16 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
     }
 
     @Override
-    public boolean isUseVirtualThreads()
+    public Executor getVirtualThreadsExecutor()
     {
-        return VirtualThreads.isUseVirtualThreads(_executor);
+        return VirtualThreads.getVirtualThreadsExecutor(_executor);
     }
 
     @Override
-    public void setUseVirtualThreads(boolean useVirtualThreads)
+    public void setVirtualThreadsExecutor(Executor executor)
     {
         if (_executor instanceof VirtualThreads.Configurable)
-            ((VirtualThreads.Configurable)_executor).setUseVirtualThreads(useVirtualThreads);
+            ((VirtualThreads.Configurable)_executor).setVirtualThreadsExecutor(executor);
     }
 
     @Override

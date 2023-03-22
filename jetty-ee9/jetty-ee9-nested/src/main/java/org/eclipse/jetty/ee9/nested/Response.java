@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import jakarta.servlet.ServletOutputStream;
@@ -34,10 +35,8 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
-import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -50,8 +49,11 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.server.HttpCookieUtils;
+import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
@@ -67,6 +69,18 @@ public class Response implements HttpServletResponse
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
     public static final int NO_CONTENT_LENGTH = -1;
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
+
+    /**
+     * If this string is found within a cookie comment, then the cookie is HttpOnly
+     **/
+    private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
+    /**
+     * These strings are used by to check for a SameSite specifier in a cookie comment
+     **/
+    private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
+    private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
+    private static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
+    private static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
 
     public enum OutputType
     {
@@ -239,20 +253,11 @@ public class Response implements HttpServletResponse
             return cookie;
 
         //sameSite is not set, use the default configured for the context, if one exists
-        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext().getCoreContext());
+        SameSite contextDefault = HttpCookieUtils.getSameSiteDefault(_channel.getRequest().getContext().getCoreContext());
         if (contextDefault == null)
             return cookie; //no default set
 
-        return new HttpCookie(cookie.getName(),
-            cookie.getValue(),
-            cookie.getDomain(),
-            cookie.getPath(),
-            cookie.getMaxAge(),
-            cookie.isHttpOnly(),
-            cookie.isSecure(),
-            cookie.getComment(),
-            cookie.getVersion(),
-            contextDefault);
+        return HttpCookie.from(cookie, HttpCookie.SAME_SITE_ATTRIBUTE, contextDefault.getAttributeValue());
     }
 
     @Override
@@ -264,23 +269,7 @@ public class Response implements HttpServletResponse
             if (StringUtil.isBlank(cookie.getName()))
                 throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
-            String comment = cookie.getComment();
-            // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
-            boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
-            SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
-            comment = HttpCookie.getCommentWithoutAttributes(comment);
-
-            addCookie(new HttpCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                httpOnly,
-                cookie.getSecure(),
-                comment,
-                cookie.getVersion(),
-                sameSite));
+            addCookie(new HttpCookieFacade(cookie));
         }
     }
 
@@ -300,14 +289,14 @@ public class Response implements HttpServletResponse
             {
                 CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
                 
-                if (field instanceof HttpCookie.SetCookieHttpField)
+                if (field instanceof HttpCookieUtils.SetCookieHttpField)
                 {
-                    if (!HttpCookie.match(((HttpCookie.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
                 else
                 {
-                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
 
@@ -329,7 +318,7 @@ public class Response implements HttpServletResponse
     public String encodeURL(String url)
     {
         final Request request = _channel.getRequest();
-        SessionManager sessionManager = request.getSessionManager();
+        SessionManager sessionManager = _channel.getCoreRequest().getSessionManager();
 
         if (sessionManager == null)
             return url;
@@ -386,7 +375,7 @@ public class Response implements HttpServletResponse
 
         // invalid session
         Session coreSession = Session.getSession(httpSession);
-        if (coreSession.isInvalid())
+        if (!coreSession.isValid())
             return url;
 
         String id = coreSession.getExtendedId();
@@ -792,13 +781,16 @@ public class Response implements HttpServletResponse
         if (_mimeType != null && _mimeType.isCharsetAssumed())
             return _mimeType.getCharsetString();
 
+        // Get MimeTypes from context
+        MimeTypes mimeTypes = _channel.getRequest().getCoreRequest().getContext().getMimeTypes();
+
         // Try charset assumed from content type (assumed charsets are not added to content type header).
-        encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+        encoding = mimeTypes.getCharsetAssumedFromContentType(_contentType);
         if (encoding != null)
             return encoding;
 
         // Try char set inferred from content type.
-        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+        encoding = mimeTypes.getCharsetInferredFromContentType(_contentType);
         if (encoding != null)
         {
             if (setContentType)
@@ -1179,14 +1171,15 @@ public class Response implements HttpServletResponse
         }
 
         // recreate session cookies
+        ContextHandler.CoreContextRequest coreRequest =  getHttpChannel().getCoreRequest();
         Request request = getHttpChannel().getRequest();
         HttpSession httpSession = request.getSession(false);
         if (httpSession != null && httpSession.isNew())
         {
-            SessionManager sessionManager = request.getSessionManager();
-            if (sessionManager != null && httpSession instanceof Session.APISession apiSession)
+            SessionManager sessionManager = coreRequest.getSessionManager();
+            if (sessionManager != null)
             {
-                HttpCookie cookie = sessionManager.getSessionCookie(apiSession.getCoreSession(), request.getContextPath(), request.isSecure());
+                HttpCookie cookie = sessionManager.getSessionCookie(coreRequest.getManagedSession(), request.isSecure());
                 if (cookie != null)
                     addCookie(cookie);
             }
@@ -1489,6 +1482,165 @@ public class Response implements HttpServletResponse
         public Supplier<Map<String, String>> getSupplier()
         {
             return _supplier;
+        }
+    }
+
+    private static class HttpCookieFacade implements HttpCookie
+    {
+        private final Cookie _cookie;
+        private final String _comment;
+        private final boolean _httpOnly;
+        private final SameSite _sameSite;
+
+        public HttpCookieFacade(Cookie cookie)
+        {
+            _cookie = cookie;
+
+            String comment = cookie.getComment();
+
+            // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+            _httpOnly = cookie.isHttpOnly() || isHttpOnlyInComment(comment);
+            _sameSite = getSameSiteFromComment(comment);
+            _comment = getCommentWithoutAttributes(comment);
+        }
+
+        @Override
+        public String getComment()
+        {
+            return _comment;
+        }
+
+        @Override
+        public String getDomain()
+        {
+            return _cookie.getDomain();
+        }
+
+        @Override
+        public long getMaxAge()
+        {
+            return _cookie.getMaxAge();
+        }
+
+        @Override
+        public String getPath()
+        {
+            return _cookie.getPath();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return _cookie.getSecure();
+        }
+
+        @Override
+        public String getName()
+        {
+            return _cookie.getName();
+        }
+
+        @Override
+        public String getValue()
+        {
+            return _cookie.getValue();
+        }
+
+        @Override
+        public int getVersion()
+        {
+            return _cookie.getVersion();
+        }
+
+        @Override
+        public SameSite getSameSite()
+        {
+            return _sameSite;
+        }
+
+        @Override
+        public boolean isHttpOnly()
+        {
+            return _httpOnly;
+        }
+
+        @Override
+        public Map<String, String> getAttributes()
+        {
+            Map<String, String> attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            attributes.put(COMMENT_ATTRIBUTE, _comment);
+            attributes.put(DOMAIN_ATTRIBUTE, getDomain());
+            if (_httpOnly)
+                attributes.put(HTTP_ONLY_ATTRIBUTE, Boolean.TRUE.toString());
+            if (_cookie.getMaxAge() >= 0)
+                attributes.put(MAX_AGE_ATTRIBUTE, Long.toString(getMaxAge()));
+            attributes.put(PATH_ATTRIBUTE, getPath());
+            if (_sameSite != null)
+                attributes.put(SAME_SITE_ATTRIBUTE, _sameSite.getAttributeValue());
+            if (isSecure())
+                attributes.put(SECURE_ATTRIBUTE, Boolean.TRUE.toString());
+            return attributes;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return HttpCookie.hashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            return HttpCookie.equals(this, obj);
+        }
+
+        @Override
+        public String toString()
+        {
+            return HttpCookie.toString(this);
+        }
+
+        static boolean isHttpOnlyInComment(String comment)
+        {
+            return comment != null && comment.contains(HTTP_ONLY_COMMENT);
+        }
+
+        static SameSite getSameSiteFromComment(String comment)
+        {
+            if (comment != null)
+            {
+                if (comment.contains(SAME_SITE_STRICT_COMMENT))
+                {
+                    return SameSite.STRICT;
+                }
+                if (comment.contains(SAME_SITE_LAX_COMMENT))
+                {
+                    return SameSite.LAX;
+                }
+                if (comment.contains(SAME_SITE_NONE_COMMENT))
+                {
+                    return SameSite.NONE;
+                }
+            }
+
+            return null;
+        }
+
+        private static String getCommentWithoutAttributes(String comment)
+        {
+            if (comment == null)
+            {
+                return null;
+            }
+
+            String strippedComment = comment.trim();
+
+            strippedComment = StringUtil.strip(strippedComment, HTTP_ONLY_COMMENT);
+            strippedComment = StringUtil.strip(strippedComment, SAME_SITE_NONE_COMMENT);
+            strippedComment = StringUtil.strip(strippedComment, SAME_SITE_LAX_COMMENT);
+            strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
+
+            return strippedComment.length() == 0 ? null : strippedComment;
         }
     }
 }

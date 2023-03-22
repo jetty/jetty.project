@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +140,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
     private class DetectorConnection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
     {
         private final Connector _connector;
-        private final ByteBuffer _buffer;
+        private final RetainableByteBuffer _buffer;
 
         private DetectorConnection(EndPoint endp, Connector connector)
         {
@@ -148,11 +150,12 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         }
 
         @Override
-        public void onUpgradeTo(ByteBuffer buffer)
+        public void onUpgradeTo(ByteBuffer byteBuffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Detector {} copying unconsumed buffer {}", getProtocol(), BufferUtil.toDetailString(buffer));
-            BufferUtil.append(_buffer, buffer);
+                LOG.debug("Detector {} adopting {}", getProtocol(), BufferUtil.toDetailString(byteBuffer));
+            // Throws if the ByteBuffer to adopt is too big, but it is handled.
+            BufferUtil.append(_buffer.getByteBuffer(), byteBuffer);
         }
 
         @Override
@@ -161,9 +164,10 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             if (_buffer.hasRemaining())
             {
                 ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
-                unconsumed.put(_buffer);
+                unconsumed.put(_buffer.getByteBuffer());
                 unconsumed.flip();
-                _connector.getByteBufferPool().release(_buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Detector {} abandoning {}", getProtocol(), BufferUtil.toDetailString(unconsumed));
                 return unconsumed;
             }
             return null;
@@ -173,8 +177,18 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         public void onOpen()
         {
             super.onOpen();
-            if (!detectAndUpgrade())
-                fillInterested();
+            try
+            {
+                boolean upgraded = detectAndUpgrade();
+                if (upgraded)
+                    _buffer.release();
+                else
+                    fillInterested();
+            }
+            catch (Throwable x)
+            {
+                releaseAndClose(x);
+            }
         }
 
         @Override
@@ -182,15 +196,16 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         {
             try
             {
-                while (BufferUtil.space(_buffer) > 0)
+                ByteBuffer byteBuffer = _buffer.getByteBuffer();
+                while (BufferUtil.space(byteBuffer) > 0)
                 {
                     // Read data
-                    int fill = getEndPoint().fill(_buffer);
+                    int fill = getEndPoint().fill(byteBuffer);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Detector {} filled buffer with {} bytes", getProtocol(), fill);
                     if (fill < 0)
                     {
-                        _connector.getByteBufferPool().release(_buffer);
+                        _buffer.release();
                         getEndPoint().shutdownOutput();
                         return;
                     }
@@ -201,17 +216,20 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                     }
 
                     if (detectAndUpgrade())
+                    {
+                        _buffer.release();
                         return;
+                    }
                 }
 
                 // all Detecting instances want more bytes than this buffer can store
                 LOG.warn("Detector {} failed to detect upgrade target on {} for {}", getProtocol(), _detectingConnectionFactories, getEndPoint());
-                releaseAndClose();
+                releaseAndClose(new IOException("Detector %s buffer overflow %d".formatted(getProtocol(), _buffer.capacity())));
             }
             catch (Throwable x)
             {
                 LOG.warn("Detector {} error for {}", getProtocol(), getEndPoint(), x);
-                releaseAndClose();
+                releaseAndClose(x);
             }
         }
 
@@ -220,7 +238,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
          */
         private boolean detectAndUpgrade()
         {
-            if (BufferUtil.isEmpty(_buffer))
+            if (!_buffer.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Detector {} skipping detection on an empty buffer", getProtocol());
@@ -232,9 +250,9 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             boolean notRecognized = true;
             for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
             {
-                Detection detection = detectingConnectionFactory.detect(_buffer);
+                Detection detection = detectingConnectionFactory.detect(_buffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Detector {} performed detection from {} with {} which returned {}", getProtocol(), BufferUtil.toDetailString(_buffer), detectingConnectionFactory, detection);
+                    LOG.debug("Detector {} performed detection from {} with {} which returned {}", getProtocol(), _buffer, detectingConnectionFactory, detection);
                 if (detection == Detection.RECOGNIZED)
                 {
                     try
@@ -248,23 +266,21 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                             LOG.debug("Detector {} upgraded to {}", getProtocol(), nextConnection);
                         return true;
                     }
-                    catch (DetectionFailureException e)
+                    catch (DetectionFailureException x)
                     {
                         // It's just bubbling up from a nested Detector, so it's already handled, just rethrow it.
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Detector {} failed to upgrade, rethrowing", getProtocol(), e);
-                        throw e;
+                            LOG.debug("Detector {} failed to upgrade, rethrowing", getProtocol(), x);
+                        throw x;
                     }
-                    catch (Exception e)
+                    catch (Throwable x)
                     {
                         // Two reasons that can make us end up here:
-                        //   1) detectingConnectionFactory.newConnection() failed? probably because it cannot find the next protocol
-                        //   2) nextConnection is not instanceof UpgradeTo
-                        // -> release the resources before rethrowing as DetectionFailureException
+                        // 1) detectingConnectionFactory.newConnection() failed, probably because it cannot find the next protocol
+                        // 2) nextConnection is not instanceof UpgradeTo, rethrow as DetectionFailureException
                         if (LOG.isDebugEnabled())
                             LOG.debug("Detector {} failed to upgrade", getProtocol());
-                        releaseAndClose();
-                        throw new DetectionFailureException(e);
+                        throw new DetectionFailureException(x);
                     }
                 }
                 notRecognized &= detection == Detection.NOT_RECOGNIZED;
@@ -275,7 +291,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                 // No DetectingConnectionFactory recognized those bytes -> call unsuccessful detection callback.
                 if (LOG.isDebugEnabled())
                     LOG.debug("Detector {} failed to detect a known protocol, falling back to nextProtocol()", getProtocol());
-                nextProtocol(_connector, getEndPoint(), _buffer);
+                nextProtocol(_connector, getEndPoint(), _buffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Detector {} call to nextProtocol() succeeded, assuming upgrade performed", getProtocol());
                 return true;
@@ -284,12 +300,12 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             return false;
         }
 
-        private void releaseAndClose()
+        private void releaseAndClose(Throwable failure)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Detector {} releasing buffer and closing", getProtocol());
-            _connector.getByteBufferPool().release(_buffer);
-            close();
+            _buffer.release();
+            getEndPoint().close(failure);
         }
     }
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,13 +18,13 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
@@ -52,9 +52,9 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
         failConnectionPromise(failure);
     }
 
-    private HttpDestination destination()
+    private Destination destination()
     {
-        return (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+        return (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
     }
 
     @SuppressWarnings("unchecked")
@@ -72,12 +72,12 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
 
     private void onServerPreface(Session session)
     {
-        HttpConnectionOverHTTP2 connection = newHttpConnection(destination(), session);
+        HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination(), session);
         if (this.connection.compareAndSet(null, connection, false, true))
             httpConnectionPromise().succeeded(connection);
     }
 
-    protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+    protected Connection newConnection(Destination destination, Session session)
     {
         return new HttpConnectionOverHTTP2(destination, session);
     }

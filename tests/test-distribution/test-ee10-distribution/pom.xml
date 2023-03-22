@@ -7,6 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-ee10-distribution</artifactId>
+  <name>Tests :: Distribution :: EE10</name>
   <packaging>jar</packaging>
 
   <properties>
@@ -48,6 +49,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

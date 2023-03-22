@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-proxy</artifactId>
-  <name>EE9 :: Jetty :: Proxy</name>
+  <name>EE9 :: Proxy</name>
   <description>Jetty Proxy</description>
 
   <properties>
@@ -20,7 +20,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee9.proxy=org.eclipse.jetty.logging
+            @{argLine} ${jetty.surefire.argLine} 
+            --add-reads org.eclipse.jetty.ee9.proxy=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>

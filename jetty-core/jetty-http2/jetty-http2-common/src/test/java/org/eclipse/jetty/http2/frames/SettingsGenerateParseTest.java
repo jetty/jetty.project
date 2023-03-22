@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,12 +22,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.internal.generator.SettingsGenerator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.SettingsGenerator;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SettingsGenerateParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testGenerateParseNoSettings()
@@ -69,10 +69,10 @@ public class SettingsGenerateParseTest
 
     private List<SettingsFrame> testGenerateParse(Map<Integer, Integer> settings)
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onSettings(SettingsFrame frame)
@@ -85,11 +85,11 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateSettings(lease, settings, true);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.generateSettings(accumulator, settings, true);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -104,10 +104,10 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseInvalidSettings()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -119,13 +119,13 @@ public class SettingsGenerateParseTest
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateSettings(lease, settings1, true);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        generator.generateSettings(accumulator, settings1, true);
         // Modify the length of the frame to make it invalid
-        ByteBuffer bytes = lease.getByteBuffers().get(0);
+        ByteBuffer bytes = accumulator.getByteBuffers().get(0);
         bytes.putShort(1, (short)(bytes.getShort(1) - 1));
 
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {
@@ -139,10 +139,10 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onSettings(SettingsFrame frame)
@@ -160,11 +160,11 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateSettings(lease, settings1, true);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.generateSettings(accumulator, settings1, true);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -184,10 +184,10 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseTooManyDifferentSettingsInOneFrame()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -205,10 +205,10 @@ public class SettingsGenerateParseTest
             settings.put(i + 10, i);
         }
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateSettings(lease, settings, false);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        generator.generateSettings(accumulator, settings, false);
 
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {
@@ -227,7 +227,7 @@ public class SettingsGenerateParseTest
         int maxSettingsKeys = pairs / 2;
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter(), 4096, 8192);
         parser.setMaxSettingsKeys(maxSettingsKeys);
         parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
         parser.init(listener -> new Parser.Listener.Wrapper(listener)
@@ -265,10 +265,10 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseTooManySettingsInMultipleFrames()
     {
-        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -283,13 +283,13 @@ public class SettingsGenerateParseTest
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(13, 17);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
         {
-            generator.generateSettings(lease, settings, false);
+            generator.generateSettings(accumulator, settings, false);
         }
 
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

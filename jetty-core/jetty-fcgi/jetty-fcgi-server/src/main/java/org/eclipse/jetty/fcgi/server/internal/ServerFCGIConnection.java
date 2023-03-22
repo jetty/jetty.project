@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,14 +23,13 @@ import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -48,7 +47,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
-    private final RetainableByteBufferPool networkByteBufferPool;
+    private final ByteBufferPool networkByteBufferPool;
     private final boolean sendStatus200;
     private final Flusher flusher;
     private final HttpConfiguration configuration;
@@ -63,7 +62,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;
-        this.networkByteBufferPool = connector.getByteBufferPool().asRetainableByteBufferPool();
+        this.networkByteBufferPool = connector.getByteBufferPool();
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;
         this.sendStatus200 = sendStatus200;
@@ -212,7 +211,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
                     LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
                 if (read > 0)
                 {
-                    if (parse(networkBuffer.getBuffer()))
+                    if (parse(networkBuffer.getByteBuffer()))
                         return;
                 }
                 else if (read == 0)
@@ -252,7 +251,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
         // See also HttpConnection.parseAndFillForContent().
         while (stream != null)
         {
-            if (parse(networkBuffer.getBuffer()))
+            if (parse(networkBuffer.getByteBuffer()))
                 return;
             // Check if the request was completed by the parsing.
             if (stream == null)
@@ -281,7 +280,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     {
         try
         {
-            return getEndPoint().fill(networkBuffer.getBuffer());
+            return getEndPoint().fill(networkBuffer.getByteBuffer());
         }
         catch (Throwable x)
         {
@@ -371,8 +370,10 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
             if (stream != null)
             {
-                networkBuffer.retain();
-                stream.onContent(Content.Chunk.from(buffer, false, networkBuffer));
+                // No need to call networkBuffer.retain() here.
+                // The receiver of the chunk decides whether to consume/retain it.
+                Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
+                stream.onContent(chunk);
                 // Signal that the content is processed asynchronously, to ensure backpressure.
                 return true;
             }
@@ -399,7 +400,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} failure on {}: {}", request, stream, failure);
             if (stream != null)
-                stream.getHttpChannel().onFailure(new BadMessageException(HttpStatus.BAD_REQUEST_400, null, failure));
+                stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
             stream = null;
         }
     }

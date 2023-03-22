@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,7 +33,20 @@ import org.eclipse.jetty.util.NanoTime;
 public class MockHttpStream implements HttpStream
 {
     private static final Throwable SUCCEEDED = new Throwable();
-    private static final Content.Chunk DEMAND = Content.Chunk.from(BufferUtil.EMPTY_BUFFER, false);
+    private static final Content.Chunk DEMAND = new Content.Chunk()
+    {
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+
+        @Override
+        public boolean isLast()
+        {
+            return false;
+        }
+    };
     private final long _nanoTime = NanoTime.now();
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
@@ -65,7 +78,7 @@ public class MockHttpStream implements HttpStream
 
     public Runnable addContent(ByteBuffer buffer, boolean last)
     {
-        return addContent((last && BufferUtil.isEmpty(buffer)) ? Content.Chunk.EOF : Content.Chunk.from(buffer, last));
+        return addContent(Content.Chunk.from(buffer, last));
     }
 
     public Runnable addContent(String content, boolean last)
@@ -73,8 +86,9 @@ public class MockHttpStream implements HttpStream
         return addContent(BufferUtil.toBuffer(content), last);
     }
 
-    public Runnable addContent(Content.Chunk chunk)
+    private Runnable addContent(Content.Chunk chunk)
     {
+        chunk.retain();
         chunk = _content.getAndSet(chunk);
         if (chunk == DEMAND)
             return _channel.onContentAvailable();
@@ -126,7 +140,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public long getNanoTimeStamp()
+    public long getNanoTime()
     {
         return _nanoTime;
     }
@@ -192,7 +206,7 @@ public class MockHttpStream implements HttpStream
                     _responseTrailers = HttpFields.build(trailers);
             }
 
-            if (!_out.compareAndSet(null, _accumulator.takeByteBuffer()))
+            if (!_out.compareAndSet(null, _accumulator.takeRetainableByteBuffer().getByteBuffer()))
             {
                 if (response != null || content != null)
                 {
@@ -205,22 +219,16 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(MetaData.Request request)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean isCommitted()
     {
         MetaData.Response response = _response.get();
         return response != null && response.getStatus() >= 200;
+    }
+
+    @Override
+    public Throwable consumeAvailable()
+    {
+        return HttpStream.consumeAvailable(this, new HttpConfiguration());
     }
 
     public boolean isComplete()

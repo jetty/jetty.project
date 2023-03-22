@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
@@ -23,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -45,11 +47,20 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -58,6 +69,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,6 +77,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextHandlerTest
 {
+    public static final File TEST_BAD = MavenTestingUtils.getTargetTestingPath("testBad").toFile();
+    public static final File TEST_OK = MavenTestingUtils.getTargetTestingPath("testOK").toFile();
     Server _server;
     ClassLoader _loader;
     ContextHandler _contextHandler;
@@ -91,6 +105,15 @@ public class ContextHandlerTest
         assertTrue(_inContext.get());
         if (_server != null)
             _server.stop();
+    }
+
+    @AfterAll
+    public static void afterAll()
+    {
+        ensureWritable(TEST_OK);
+        FS.ensureDeleted(TEST_OK.toPath());
+        ensureWritable(TEST_BAD);
+        FS.ensureDeleted(TEST_BAD.toPath());
     }
 
     @Test
@@ -142,6 +165,44 @@ public class ContextHandlerTest
     }
 
     @Test
+    public void testNullPath() throws Exception
+    {
+        HelloHandler helloHandler = new HelloHandler();
+        _contextHandler.setHandler(helloHandler);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+        MockHttpStream stream = new MockHttpStream(channel);
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+        task.run();
+
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(301));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.LOCATION), equalTo("/ctx/"));
+
+        _contextHandler.stop();
+        _contextHandler.setAllowNullPathInContext(true);
+        _contextHandler.start();
+
+        stream = new MockHttpStream(channel);
+        fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        task = channel.onRequest(request);
+        task.run();
+
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        // The original fields have been recycled.
+        assertThat(stream.getResponse().getFields().size(), equalTo(0));
+        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+    }
+
+    @Test
     public void testSetAvailable() throws Exception
     {
         HelloHandler helloHandler = new HelloHandler();
@@ -179,8 +240,6 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
-
-
     }
 
     private void assertInContext(Request request)
@@ -208,15 +267,16 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
                 response.setStatus(200);
                 callback.succeeded();
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -243,19 +303,14 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
-                return super.handle(request);
-            }
 
-            @Override
-            public void process(Request request, Response response, Callback callback)
-            {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
                     @Override
@@ -284,9 +339,11 @@ public class ContextHandlerTest
                         },
                         t ->
                         {
-                            throw new IllegalStateException();
+                            chunk.release();
+                            throw new IllegalStateException(t);
                         }));
                 });
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -329,10 +386,10 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor.Blocking()
+        Handler handler = new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demand(() ->
@@ -351,6 +408,7 @@ public class ContextHandlerTest
                 chunk.release();
                 response.setStatus(200);
                 callback.succeeded();
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -382,10 +440,10 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -402,6 +460,7 @@ public class ContextHandlerTest
                         complete.countDown();
                     });
                 });
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -489,17 +548,17 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testThrownUsesContextErrorProcessor() throws Exception
+    public void testThrownUsesContextErrorHandler() throws Exception
     {
-        _contextHandler.setHandler(new Handler.Processor()
+        _contextHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }
         });
-        _contextHandler.setErrorProcessor(new ErrorProcessor()
+        _contextHandler.setErrorHandler(new ErrorHandler()
         {
             @Override
             protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
@@ -558,13 +617,14 @@ public class ContextHandlerTest
             }
         });
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, null, callback);
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -598,7 +658,7 @@ public class ContextHandlerTest
     public void testSetHandlerLoopDeepWrapper()
     {
         ContextHandler contextHandlerA = new ContextHandler();
-        Handler.Wrapper handlerWrapper = new Handler.Wrapper();
+        Handler.Singleton handlerWrapper = new Handler.Wrapper();
         contextHandlerA.setHandler(handlerWrapper);
         assertThrows(IllegalStateException.class, () -> handlerWrapper.setHandler(contextHandlerA));
     }
@@ -607,9 +667,198 @@ public class ContextHandlerTest
     public void testAddHandlerLoopDeep()
     {
         ContextHandler contextHandlerA = new ContextHandler();
-        Handler.Collection handlerCollection = new Handler.Collection();
+        Handler.Sequence handlerCollection = new Handler.Sequence();
         contextHandlerA.setHandler(handlerCollection);
         assertThrows(IllegalStateException.class, () -> handlerCollection.addHandler(contextHandlerA));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSetTempDirectoryNotExists(boolean persistTempDir) throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectoryPersistent(persistTempDir);
+
+        // The temp directory is defined but has not been created.
+        File tempDir = MavenTestingUtils.getTargetTestingPath("tempDir").toFile();
+        IO.delete(tempDir);
+        context.setTempDirectory(tempDir);
+        assertThat(context.getTempDirectory(), is(tempDir));
+        assertFalse(context.getTempDirectory().exists());
+
+        // Once server is started the WebApp temp directory exists and is valid directory.
+        server.start();
+        File tempDirectory = context.getTempDirectory();
+        assertNotNull(tempDirectory);
+        assertTrue(tempDirectory.exists());
+        assertTrue(tempDirectory.isDirectory());
+
+        // Once server is stopped the WebApp temp should be deleted if persistTempDir is false.
+        server.stop();
+        tempDirectory = context.getTempDirectory();
+        assertThat(tempDirectory != null && tempDirectory.exists(), is(persistTempDir));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSetTempDirectoryExists(boolean persistTempDir) throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectoryPersistent(persistTempDir);
+
+        // The temp directory is defined and has already been created.
+        File tempDir = MavenTestingUtils.getTargetTestingPath("tempDir").toFile();
+        IO.delete(tempDir);
+        assertFalse(tempDir.exists());
+        assertTrue(tempDir.mkdir());
+        context.setTempDirectory(tempDir);
+        assertThat(context.getTempDirectory(), is(tempDir));
+        assertTrue(tempDir.exists());
+
+        // create some content
+        File someFile = new File(tempDir, "somefile.txt");
+        assertTrue(someFile.createNewFile());
+        assertTrue(someFile.exists());
+
+        // Once server is started the WebApp temp directory exists and is valid directory.
+        server.start();
+        File tempDirectory = context.getTempDirectory();
+        assertNotNull(tempDirectory);
+        assertTrue(tempDirectory.exists());
+        assertTrue(tempDirectory.isDirectory());
+
+        // Contents exists if persistent else it was deleted
+        if (persistTempDir)
+            assertTrue(someFile.exists());
+        else
+            assertFalse(someFile.exists());
+
+        // Once server is stopped the WebApp temp should be deleted if persistTempDir is false.
+        server.stop();
+        tempDirectory = context.getTempDirectory();
+        assertThat(tempDirectory != null && tempDirectory.exists(), is(persistTempDir));
+    }
+
+    private static void ensureWritable(File file)
+    {
+        if (file.exists())
+        {
+            assertTrue(file.setWritable(true));
+            if (file.isDirectory())
+            {
+                File[] files = file.listFiles();
+                if (files != null)
+                   for (File child : files)
+                        ensureWritable(child);
+            }
+        }
+    }
+
+    public static Stream<Arguments> okTempDirs() throws Exception
+    {
+        ensureWritable(TEST_OK);
+        FS.ensureDeleted(TEST_OK.toPath());
+        assertFalse(TEST_OK.exists());
+        assertTrue(TEST_OK.mkdir());
+        TEST_OK.deleteOnExit();
+
+        File notDirectory = new File(TEST_OK, "notDirectory.txt");
+        assertTrue(notDirectory.createNewFile());
+
+        File notWritable = new File(TEST_OK, "notWritable");
+        assertTrue(notWritable.mkdir());
+        assertTrue(notWritable.setWritable(false));
+
+        File notWriteableParent = new File(TEST_OK, "notWritableParent");
+        assertTrue(notWriteableParent.mkdir());
+        File cantDelete = new File(notWriteableParent, "cantDelete");
+        assertTrue(cantDelete.mkdirs());
+        assertTrue(notWriteableParent.setWritable(false));
+
+        return Stream.of(
+            Arguments.of(false, notDirectory),
+            Arguments.of(false, notWritable),
+            Arguments.of(true, cantDelete)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("okTempDirs")
+    public void testSetTempDirectoryOK(boolean persistent, File okTempDir) throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectory(okTempDir);
+        context.setTempDirectoryPersistent(persistent);
+
+        server.start();
+
+        assertTrue(context.getTempDirectory().exists());
+        assertTrue(context.getTempDirectory().isDirectory());
+        assertThat(context.getTempDirectory().getAbsolutePath(), equalTo(okTempDir.getAbsolutePath()));
+
+        server.stop();
+
+        if (persistent)
+        {
+            assertTrue(context.getTempDirectory().exists());
+            assertTrue(context.getTempDirectory().isDirectory());
+            assertThat(context.getTempDirectory().getAbsolutePath(), equalTo(okTempDir.getAbsolutePath()));
+        }
+        else
+        {
+            assertFalse(context.getTempDirectory().exists());
+        }
+    }
+
+    public static Stream<Arguments> badTempDirs() throws Exception
+    {
+        ensureWritable(TEST_BAD);
+        FS.ensureDeleted(TEST_BAD.toPath());
+        assertFalse(TEST_BAD.exists());
+        assertTrue(TEST_BAD.mkdir());
+        TEST_BAD.deleteOnExit();
+
+        File notDirectory = new File(TEST_BAD, "notDirectory.txt");
+        assertTrue(notDirectory.createNewFile());
+
+        File notWritable = new File(TEST_BAD, "notWritable");
+        assertTrue(notWritable.mkdir());
+        assertTrue(notWritable.setWritable(false));
+
+        File notWriteableParent = new File(TEST_BAD, "notWritableParent");
+        assertTrue(notWriteableParent.mkdir());
+        File cantCreate = new File(notWriteableParent, "temp");
+        File cantDelete = new File(notWriteableParent, "cantDelete");
+        assertTrue(cantDelete.mkdirs());
+        assertTrue(notWriteableParent.setWritable(false));
+
+        return Stream.of(
+            Arguments.of(true, notDirectory),
+            Arguments.of(true, notWritable),
+            Arguments.of(true, cantCreate),
+            Arguments.of(false, cantCreate),
+            Arguments.of(false, cantDelete)
+        );
+    }
+
+    @Disabled // TODO doesn't work on jenkins?
+    @ParameterizedTest
+    @MethodSource("badTempDirs")
+    public void testSetTempDirectoryBad(boolean persistent, File badTempDir)
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectory(badTempDir);
+        context.setTempDirectoryPersistent(persistent);
+
+        assertThrows(IllegalArgumentException.class, server::start);
     }
 
     private static class ScopeListener implements ContextHandler.ContextScopeListener

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
@@ -37,8 +36,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -95,60 +92,79 @@ public class URIUtilTest
 
     public static Stream<Arguments> decodePathSource()
     {
-        List<Arguments> arguments = new ArrayList<>();
-        arguments.add(Arguments.of("/foo/bar", "/foo/bar", "/foo/bar"));
+        return Stream.of(
+            Arguments.of("/foo/bar", "/foo/bar", "/foo/bar"),
 
-        // Simple encoding
-        arguments.add(Arguments.of("/f%20%6f/b%20r", "/f%20o/b%20r", "/f o/b r"));
+            // Simple encoding
+            Arguments.of("/f%20%6f/b%20r", "/f%20o/b%20r", "/f o/b r"),
 
-        // UTF8 and unicode handling
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        arguments.add(Arguments.of("/foo/b\u00e4\u00e4", "/foo/b\u00e4\u00e4", "/foo/b\u00e4\u00e4"));
-        arguments.add(Arguments.of("/f%d8%a9%D8%A9/bar", "/f\u0629\u0629/bar", "/f\u0629\u0629/bar"));
+            // UTF8 and unicode handling
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+            Arguments.of("/foo/b\u00e4\u00e4", "/foo/bää", "/foo/bää"),
+            Arguments.of("/f\u20ac\u20ac/bar", "/f€€/bar", "/f€€/bar"),
+            Arguments.of("/f%d8%a9%D8%A9/bar", "/f\u0629\u0629/bar", "/f\u0629\u0629/bar"),
 
-        // Encoded delimiters
-        arguments.add(Arguments.of("/foo%2fbar", "/foo%2Fbar", "/foo/bar"));
-        arguments.add(Arguments.of("/foo%252fbar", "/foo%252fbar", "/foo%2fbar"));
-        arguments.add(Arguments.of("/foo%3bbar", "/foo%3Bbar", "/foo;bar"));
-        arguments.add(Arguments.of("/foo%3fbar", "/foo%3Fbar", "/foo?bar"));
+            // Encoded UTF-8 unicode (euro)
+            Arguments.of("/f%e2%82%ac%E2%82%AC/bar", "/f€€/bar", "/f€€/bar"),
 
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        arguments.add(Arguments.of("/f%20o/b%20r", "/f%20o/b%20r", "/f o/b r"));
-        arguments.add(Arguments.of("f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%2523%3B,:=b%20a%20r=", "f\u00e4\u00e4%23;,:=b a r="));
-        arguments.add(Arguments.of("f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%2523%3B,:=b%20a%20r", "f\u0629\u0629%23;,:=b a r"));
+            // Encoded delimiters
+            Arguments.of("/foo%2fbar", "/foo%2Fbar", "/foo/bar"),
+            Arguments.of("/foo%252fbar", "/foo%252fbar", "/foo%2fbar"),
+            Arguments.of("/foo%3bbar", "/foo%3Bbar", "/foo;bar"),
+            Arguments.of("/foo%3fbar", "/foo%3Fbar", "/foo?bar"),
 
-        // path parameters should be ignored
-        arguments.add(Arguments.of("/foo;ignore/bar;ignore", "/foo/bar", "/foo/bar"));
-        arguments.add(Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar", "/fää/bar"));
-        arguments.add(Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%2523/bar", "/f\u0629\u0629%23/bar"));
-        arguments.add(Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%2523%3B,:=b%20a%20r", "foo%23;,:=b a r"));
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+            Arguments.of("/f%20o/b%20r", "/f%20o/b%20r", "/f o/b r"),
+            Arguments.of("f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%2523%3B,:=b%20a%20r=", "f\u00e4\u00e4%23;,:=b a r="),
+            Arguments.of("f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%2523%3B,:=b%20a%20r", "f\u0629\u0629%23;,:=b a r"),
 
-        // test for chars that are somehow already decoded, but shouldn't be
-        arguments.add(Arguments.of("/foo bar\n", "/foo%20bar%0A", "/foo bar\n"));
-        arguments.add(Arguments.of("/foo\u0000bar", "/foo%00bar", "/foo\u0000bar"));
-        arguments.add(Arguments.of("/foo/bär", "/foo/bär", "/foo/bär"));
-        arguments.add(Arguments.of("/foo/€/bar", "/foo/€/bar", "/foo/€/bar"));
-        arguments.add(Arguments.of("/fo %2fo/b%61r", "/fo%20%2Fo/bar", "/fo /o/bar"));
+            // path parameters should be ignored
+            Arguments.of("/foo;ignore/bar;ignore", "/foo/bar", "/foo/bar"),
+            Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar", "/fää/bar"),
+            Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%2523/bar", "/f\u0629\u0629%23/bar"),
+            Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%2523%3B,:=b%20a%20r", "foo%23;,:=b a r"),
 
-        // Test for null character (real world ugly test case)
-        byte[] oddBytes = {'/', 0x00, '/'};
-        String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
-        arguments.add(Arguments.of("/%00/", "/%00/", odd));
+            // test for chars that are somehow already decoded, but shouldn't be
+            Arguments.of("/foo bar\n", "/foo%20bar%0A", "/foo bar\n"),
+            Arguments.of("/foo\u0000bar", "/foo%00bar", "/foo\u0000bar"),
+            Arguments.of("/foo/bär", "/foo/bär", "/foo/bär"),
+            Arguments.of("/foo/€/bar", "/foo/€/bar", "/foo/€/bar"),
+            Arguments.of("/fo %2fo/b%61r", "/fo%20%2Fo/bar", "/fo /o/bar"),
 
-        // Deprecated Microsoft Percent-U encoding
-        arguments.add(Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"));
+            // Test for null character (real world ugly test case)
+            Arguments.of("/%00/", "/%00/", "/\u0000/"),
 
-        // Canonical paths are also normalized
-        arguments.add(Arguments.of("./bar", "bar", "./bar"));
-        arguments.add(Arguments.of("/foo/./bar", "/foo/bar", "/foo/./bar"));
-        arguments.add(Arguments.of("/foo/../bar", "/bar", "/foo/../bar"));
-        arguments.add(Arguments.of("/foo/.../bar", "/foo/.../bar", "/foo/.../bar"));
-        arguments.add(Arguments.of("/foo/%2e/bar", "/foo/bar", "/foo/./bar")); // Not by the RFC, but safer
-        arguments.add(Arguments.of("/foo/%2e%2e/bar", "/bar", "/foo/../bar")); // Not by the RFC, but safer
-        arguments.add(Arguments.of("/foo/%2e%2e%2e/bar", "/foo/.../bar", "/foo/.../bar"));
+            // Deprecated Microsoft Percent-U encoding
+            Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"),
 
-        return arguments.stream();
+            // Invalid UTF-8 - replacement characters should be present on invalid sequences
+            // URI paths do not support ISO-8859-1, so this should not be a fallback of our decodePath implementation
+            /* TODO: remove ISO-8859-1 fallback mode in decodePath - Issue #9489
+            Arguments.of("/a%D8%2fbar", "/a�%2Fbar", "/a�%2Fbar"), // invalid 2 octet sequence
+            Arguments.of("/abc%C3%28", "/abc�", "/abc�"), // invalid 2 octet sequence
+            Arguments.of("/abc%A0%A1", "/abc��", "/abc��"), // invalid 2 octet sequence
+            Arguments.of("/abc%e2%28%a1", "/abc��", "/abc��"), // invalid 3 octet sequence
+            Arguments.of("/abc%e2%82%28", "/abc�", "/abc�"), // invalid 3 octet sequence
+            Arguments.of("/abc%f0%28%8c%bc", "/abc���", "/abc���"), // invalid 4 octet sequence
+            Arguments.of("/abc%f0%90%28%bc", "/abc��", "/abc��"), // invalid 4 octet sequence
+            Arguments.of("/abc%f0%28%8c%28", "/abc��(", "/abc��("), // invalid 4 octet sequence
+            Arguments.of("/abc%f8%a1%a1%a1%a1", "/abc�����", "/abc�����"), // valid sequence, but not unicode
+            Arguments.of("/abc%fc%a1%a1%a1%a1%a1", "/abc������", "/abc������"), // valid sequence, but not unicode
+            Arguments.of("/abc%f8%a1%a1%a1", "/abc����", "/abc����"), // incomplete sequence
+             */
 
+            // Deprecated Microsoft Percent-U encoding
+            Arguments.of("/abc%u3040", "/abc\u3040", "/abc\u3040"),
+
+            // Canonical paths are also normalized
+            Arguments.of("./bar", "bar", "./bar"),
+            Arguments.of("/foo/./bar", "/foo/bar", "/foo/./bar"),
+            Arguments.of("/foo/../bar", "/bar", "/foo/../bar"),
+            Arguments.of("/foo/.../bar", "/foo/.../bar", "/foo/.../bar"),
+            Arguments.of("/foo/%2e/bar", "/foo/bar", "/foo/./bar"), // Not by the RFC, but safer
+            Arguments.of("/foo/%2e%2e/bar", "/bar", "/foo/../bar"), // Not by the RFC, but safer
+            Arguments.of("/foo/%2e%2e%2e/bar", "/foo/.../bar", "/foo/.../bar")
+        );
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -171,14 +187,6 @@ public class URIUtilTest
     {
         List<Arguments> arguments = new ArrayList<>();
 
-        // Test for null character (real world ugly test case)
-        // TODO is this a bad decoding or a bad URI ?
-        // arguments.add(Arguments.of("/%00/"));
-
-        // Deprecated Microsoft Percent-U encoding
-        // TODO still supported for now ?
-        // arguments.add(Arguments.of("abc%u3040"));
-
         // Bad %## encoding
         arguments.add(Arguments.of("abc%xyz"));
 
@@ -195,21 +203,6 @@ public class URIUtilTest
         arguments.add(Arguments.of("abc%uAB"));
         arguments.add(Arguments.of("abc%uA"));
         arguments.add(Arguments.of("abc%u"));
-
-        // Invalid UTF-8 and ISO8859-1
-        // TODO currently ISO8859 is too forgiving to detect these
-        /*
-        arguments.add(Arguments.of("abc%C3%28")); // invalid 2 octext sequence
-        arguments.add(Arguments.of("abc%A0%A1")); // invalid 2 octext sequence
-        arguments.add(Arguments.of("abc%e2%28%a1")); // invalid 3 octext sequence
-        arguments.add(Arguments.of("abc%e2%82%28")); // invalid 3 octext sequence
-        arguments.add(Arguments.of("abc%f0%28%8c%bc")); // invalid 4 octext sequence
-        arguments.add(Arguments.of("abc%f0%90%28%bc")); // invalid 4 octext sequence
-        arguments.add(Arguments.of("abc%f0%28%8c%28")); // invalid 4 octext sequence
-        arguments.add(Arguments.of("abc%f8%a1%a1%a1%a1")); // valid sequence, but not unicode
-        arguments.add(Arguments.of("abc%fc%a1%a1%a1%a1%a1")); // valid sequence, but not unicode
-        arguments.add(Arguments.of("abc%f8%a1%a1%a1")); // incomplete sequence
-         */
 
         return arguments.stream();
     }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -78,9 +78,9 @@ public class UnixDomainServerConnector extends AbstractConnector
         this(server, null, null, null, acceptors, selectors, factories);
     }
 
-    public UnixDomainServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, int selectors, ConnectionFactory... factories)
+    public UnixDomainServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, int selectors, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, pool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
+        super(server, executor, scheduler, bufferPool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
         selectorManager = newSelectorManager(getExecutor(), getScheduler(), selectors);
         addBean(selectorManager, true);
     }

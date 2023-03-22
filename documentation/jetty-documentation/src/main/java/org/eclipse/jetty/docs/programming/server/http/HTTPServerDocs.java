@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -93,13 +94,14 @@ public class HTTPServerDocs
         server.addConnector(connector);
 
         // Set a simple Handler to handle requests/responses.
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Succeed the callback to write the response.
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -204,7 +206,7 @@ public class HTTPServerDocs
         ServletContextHandler otherContext = new ServletContextHandler();
         mainContext.setContextPath("/other");
 
-        server.setHandler(new HandlerList(requestLogHandler, otherContext));
+        server.setHandler(new Handler.Collection(requestLogHandler, otherContext));
 */
         // end::contextRequestLog[]
     }
@@ -473,55 +475,59 @@ public class HTTPServerDocs
 
     public void handlerTree()
     {
-        class LoggingHandler extends Handler.Processor
+        class LoggingHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
+                return true;
             }
         }
 
-        class App1Handler extends Handler.Processor
+        class App1Handler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
+                return true;
             }
         }
 
-        class App2Handler extends Handler.Processor
+        class App2Handler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
+                return true;
             }
         }
 
         // tag::handlerTree[]
-        // Create a Server instance.
         Server server = new Server();
 
-        LoggingHandler loggingHandler = new LoggingHandler();
-        // Link the root Handler with the Server.
-        server.setHandler(loggingHandler);
+        GzipHandler gzipHandler = new GzipHandler();
+        server.setHandler(gzipHandler);
 
-        Handler.Collection collection = new Handler.Collection();
-        collection.addHandler(new App1Handler());
-        collection.addHandler(new App2Handler());
+        Handler.Sequence sequence = new Handler.Sequence();
+        gzipHandler.setHandler(sequence);
+
+        sequence.addHandler(new App1Handler());
+        sequence.addHandler(new App2Handler());
         // end::handlerTree[]
     }
 
     public void handlerAPI()
     {
-        class MyHandler extends Handler.Processor
+        class MyHandler extends Handler.Abstract
         {
             @Override
             // tag::handlerAPI[]
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
+                return true;
             }
             // end::handlerAPI[]
         }
@@ -530,10 +536,10 @@ public class HTTPServerDocs
     public void handlerHello() throws Exception
     {
         // tag::handlerHello[]
-        class HelloWorldHandler extends Handler.Processor
+        class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
@@ -550,6 +556,7 @@ public class HTTPServerDocs
                     </body>
                     </html>
                     """, callback);
+                return true;
             }
         }
 
@@ -566,38 +573,42 @@ public class HTTPServerDocs
 
     public void handlerFilter() throws Exception
     {
-        class HelloWorldHandler extends Handler.Processor
+        class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
+                return true;
             }
         }
 
         // tag::handlerFilter[]
-        // TODO: This needs to be rewritten using a custom Processor
-/*
-        class FilterHandler extends HandlerWrapper
+        class FilterHandler extends Handler.Wrapper
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                String path = request.getRequestURI();
+                String path = Request.getPathInContext(request);
                 if (path.startsWith("/old_path/"))
                 {
                     // Rewrite old paths to new paths.
-                    HttpURI uri = jettyRequest.getHttpURI();
+                    HttpURI uri = request.getHttpURI();
                     String newPath = "/new_path/" + path.substring("/old_path/".length());
-                    HttpURI newURI = HttpURI.build(uri).path(newPath);
-                    // Modify the request object.
-                    jettyRequest.setHttpURI(newURI);
+                    HttpURI newURI = HttpURI.build(uri).path(newPath).asImmutable();
+
+                    // Modify the request object by wrapping the HttpURI
+                    request = new Request.Wrapper(request)
+                    {
+                        @Override
+                        public HttpURI getHttpURI()
+                        {
+                            return newURI;
+                        }
+                    };
                 }
 
-                // This Handler is not handling the request, so
-                // it does not call jettyRequest.setHandled(true).
-
                 // Forward to the next Handler.
-                super.handle(target, jettyRequest, request, response);
+                return super.handle(request, response, callback);
             }
         }
 
@@ -611,19 +622,19 @@ public class HTTPServerDocs
         server.setHandler(filter);
 
         server.start();
-*/
         // end::handlerFilter[]
     }
 
     public void contextHandler() throws Exception
     {
         // tag::contextHandler[]
-        class ShopHandler extends Handler.Processor
+        class ShopHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
+                return true;
             }
         }
 
@@ -646,21 +657,23 @@ public class HTTPServerDocs
     public void contextHandlerCollection() throws Exception
     {
         // tag::contextHandlerCollection[]
-        class ShopHandler extends Handler.Processor
+        class ShopHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
+                return true;
             }
         }
 
-        class RESTHandler extends Handler.Processor
+        class RESTHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
+                return true;
             }
         }
 
@@ -833,21 +846,23 @@ public class HTTPServerDocs
 
     public void contextGzipHandler() throws Exception
     {
-        class ShopHandler extends Handler.Processor
+        class ShopHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
+                return true;
             }
         }
 
-        class RESTHandler extends Handler.Processor
+        class RESTHandler extends Handler.Abstract
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
+                return true;
             }
         }
 
@@ -912,9 +927,9 @@ public class HTTPServerDocs
         // end::rewriteHandler[]
     }
 
-    public void statsHandler() throws Exception
+    public void statisticsHandler() throws Exception
     {
-        // tag::statsHandler[]
+        // tag::statisticsHandler[]
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -930,7 +945,29 @@ public class HTTPServerDocs
         statsHandler.setHandler(contextCollection);
 
         server.start();
-        // end::statsHandler[]
+        // end::statisticsHandler[]
+    }
+
+    public void dataRateHandler() throws Exception
+    {
+        // tag::dataRateHandler[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
+        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+
+        // Link the MinimumDataRateHandler to the Server.
+        server.setHandler(dataRateHandler);
+
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the MinimumDataRateHandler.
+        dataRateHandler.setHandler(contextCollection);
+
+        server.start();
+        // end::dataRateHandler[]
     }
 
     public void securedHandler() throws Exception
@@ -987,22 +1024,16 @@ public class HTTPServerDocs
     {
         // tag::defaultHandler[]
         Server server = new Server();
+        server.setDefaultHandler(new DefaultHandler(false, true));
+
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Create a Handler collection.
-        Handler.Collection handlerList = new Handler.Collection();
-
-        // Add as first a ContextHandlerCollection to manage contexts.
+        // Add a ContextHandlerCollection to manage contexts.
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlerList.addHandler(contexts);
 
-        // Add as last a DefaultHandler.
-        DefaultHandler defaultHandler = new DefaultHandler();
-        handlerList.addHandler(defaultHandler);
-
-        // Link the HandlerList to the Server.
-        server.setHandler(handlerList);
+        // Link the contexts to the Server.
+        server.setHandler(contexts);
 
         server.start();
         // end::defaultHandler[]

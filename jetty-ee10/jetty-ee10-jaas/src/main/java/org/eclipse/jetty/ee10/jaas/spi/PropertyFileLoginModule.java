@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -77,32 +77,33 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         _store = mgr.getPropertyUserStore(filename);
         if (_store == null)
         {
-            boolean hotReload = false;  
-            String tmp = (String)options.get("hotReload");
+            int refreshInterval = 0;
+            String tmp = (String)options.get("refreshInterval");
             if (tmp != null)
-                hotReload = Boolean.parseBoolean(tmp);
+            {
+                try
+                {
+                    refreshInterval = Integer.parseInt(tmp);
+                }
+                catch (NumberFormatException e)
+                {
+                    LOG.warn("'refreshInterval' is not an integer");
+                }
+            }
             else
             {
-                //refreshInterval is deprecated, use hotReload instead
-                tmp = (String)options.get("refreshInterval");
+                tmp = (String)options.get("hotReload");
                 if (tmp != null)
                 {
-                    LOG.warn("Use 'hotReload' boolean property instead of 'refreshInterval'");
-                    try
-                    {
-                        hotReload = (Integer.parseInt(tmp) > 0);
-                    }
-                    catch (NumberFormatException e)
-                    {
-                        LOG.warn("'refreshInterval' is not an integer");
-                    }
+                    LOG.warn("Use 'refreshInterval' boolean property instead of 'hotReload'");
+                    refreshInterval = Boolean.parseBoolean(tmp) ? 1 : 0;
                 }
             }
             PropertyUserStore newStore = new PropertyUserStore();
             ResourceFactory resourceFactory = ResourceFactory.of(newStore);
             Resource config = resourceFactory.newResource(filename);
             newStore.setConfig(config);
-            newStore.setHotReload(hotReload);
+            newStore.setRefreshInterval(refreshInterval);
             _store = mgr.addPropertyUserStore(filename, newStore);
             try
             {

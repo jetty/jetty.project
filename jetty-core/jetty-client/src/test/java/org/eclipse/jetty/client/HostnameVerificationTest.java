@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,7 @@ import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -72,14 +72,16 @@ public class HostnameVerificationTest
         SslConnectionFactory ssl = new SslConnectionFactory(serverSslContextFactory, http.getProtocol());
         connector = new ServerConnector(server, 1, 1, ssl, http);
         server.addConnector(connector);
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
                     Content.Sink.write(response, true, "foobar", blocker);
+                    blocker.block();
+                    return true;
                 }
             }
         });

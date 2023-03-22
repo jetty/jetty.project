@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -44,6 +44,7 @@ import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -113,14 +114,11 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     @Override
     protected void startServer(Handler handler) throws Exception
     {
-        org.eclipse.jetty.server.Handler.Nested terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
+        org.eclipse.jetty.server.Handler.Singleton terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
-                org.eclipse.jetty.server.Request.Processor processor = super.handle(request);
-                if (processor == null)
-                    return null;
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
                     @Override
@@ -137,7 +135,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         super.failed(x);
                     }
                 });
-                return processor;
+                return super.handle(request, response, callback);
             }
         };
         _server.insertHandler(terminateHandler);

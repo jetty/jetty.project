@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -62,8 +63,8 @@ public class FrameFlusher extends IteratingCallback
     private final List<Entry> previousEntries;
     private final List<Entry> failedEntries;
 
-    private List<ByteBuffer> releasableBuffers = new ArrayList<>();
-    private ByteBuffer batchBuffer;
+    private List<RetainableByteBuffer> releasableBuffers = new ArrayList<>();
+    private RetainableByteBuffer batchBuffer;
     private boolean canEnqueue = true;
     private boolean flushed = true;
     private Throwable closedCause;
@@ -209,7 +210,7 @@ public class FrameFlusher extends IteratingCallback
             entries.clear();
 
             if (flushed && batchBuffer != null)
-                BufferUtil.clear(batchBuffer);
+                batchBuffer.clear();
 
             while (!queue.isEmpty() && entries.size() <= maxGather)
             {
@@ -223,7 +224,7 @@ public class FrameFlusher extends IteratingCallback
 
                 messagesOut.increment();
 
-                int batchSpace = batchBuffer == null ? bufferSize : BufferUtil.space(batchBuffer);
+                int batchSpace = batchBuffer == null ? bufferSize : BufferUtil.space(batchBuffer.getByteBuffer());
 
                 boolean batch = entry.batch &&
                     !entry.frame.isControlFrame() &&
@@ -236,26 +237,26 @@ public class FrameFlusher extends IteratingCallback
                     if (batchBuffer == null)
                     {
                         batchBuffer = acquireBuffer(bufferSize);
-                        buffers.add(batchBuffer);
+                        buffers.add(batchBuffer.getByteBuffer());
                     }
 
                     // Generate the frame into the batchBuffer.
-                    generator.generateWholeFrame(entry.frame, batchBuffer);
+                    generator.generateWholeFrame(entry.frame, batchBuffer.getByteBuffer());
                 }
                 else
                 {
                     if (batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
                     {
                         // Use the batch space for our header.
-                        generator.generateHeader(entry.frame, batchBuffer);
+                        generator.generateHeader(entry.frame, batchBuffer.getByteBuffer());
                     }
                     else
                     {
                         // Add headers to the list of buffers.
-                        ByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
+                        RetainableByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
                         releasableBuffers.add(headerBuffer);
-                        generator.generateHeader(entry.frame, headerBuffer);
-                        buffers.add(headerBuffer);
+                        generator.generateHeader(entry.frame, headerBuffer.getByteBuffer());
+                        buffers.add(headerBuffer.getByteBuffer());
                     }
 
                     // Add the payload to the list of buffers.
@@ -264,11 +265,11 @@ public class FrameFlusher extends IteratingCallback
                     {
                         if (entry.frame.isMasked())
                         {
-                            payload = acquireBuffer(entry.frame.getPayloadLength());
-                            releasableBuffers.add(payload);
+                            RetainableByteBuffer masked = acquireBuffer(entry.frame.getPayloadLength());
+                            payload = masked.getByteBuffer();
+                            releasableBuffers.add(masked);
                             generator.generatePayload(entry.frame, payload);
                         }
-
                         buffers.add(payload.slice());
                     }
                     flush = true;
@@ -280,15 +281,9 @@ public class FrameFlusher extends IteratingCallback
             // If we are going to flush we should release any buffers we have allocated after the callback completes.
             if (flush)
             {
-                final List<ByteBuffer> callbackBuffers = releasableBuffers;
+                List<RetainableByteBuffer> callbackBuffers = releasableBuffers;
                 releasableBuffers = new ArrayList<>();
-                releasingCallback = Callback.from(releasingCallback, () ->
-                {
-                    for (ByteBuffer buffer : callbackBuffers)
-                    {
-                        bufferPool.release(buffer);
-                    }
-                });
+                releasingCallback = Callback.from(releasingCallback, () -> callbackBuffers.forEach(RetainableByteBuffer::release));
             }
         }
 
@@ -297,7 +292,7 @@ public class FrameFlusher extends IteratingCallback
                 this,
                 entries.size(),
                 flush,
-                BufferUtil.toDetailString(batchBuffer),
+                batchBuffer,
                 entries);
 
         // succeed previous entries
@@ -339,7 +334,7 @@ public class FrameFlusher extends IteratingCallback
         return Action.SCHEDULED;
     }
 
-    private ByteBuffer acquireBuffer(int capacity)
+    private RetainableByteBuffer acquireBuffer(int capacity)
     {
         return bufferPool.acquire(capacity, isUseDirectByteBuffers());
     }
@@ -404,7 +399,8 @@ public class FrameFlusher extends IteratingCallback
     @Override
     public void onCompleteFailure(Throwable failure)
     {
-        BufferUtil.clear(batchBuffer);
+        if (batchBuffer != null)
+            batchBuffer.clear();
         releaseAggregate();
         try (AutoLock l = lock.lock())
         {
@@ -414,10 +410,7 @@ public class FrameFlusher extends IteratingCallback
             failedEntries.addAll(entries);
             entries.clear();
 
-            for (ByteBuffer buffer : releasableBuffers)
-            {
-                bufferPool.release(buffer);
-            }
+            releasableBuffers.forEach(RetainableByteBuffer::release);
             releasableBuffers.clear();
 
             if (closedCause == null)
@@ -437,9 +430,9 @@ public class FrameFlusher extends IteratingCallback
 
     private void releaseAggregate()
     {
-        if (BufferUtil.isEmpty(batchBuffer))
+        if (batchBuffer != null && !batchBuffer.hasRemaining())
         {
-            bufferPool.release(batchBuffer);
+            batchBuffer.release();
             batchBuffer = null;
         }
     }
@@ -502,12 +495,11 @@ public class FrameFlusher extends IteratingCallback
         return String.format("%s[queueSize=%d,aggregate=%s]",
             super.toString(),
             getQueueSize(),
-            BufferUtil.toDetailString(batchBuffer));
+            batchBuffer);
     }
 
-    private class Entry extends FrameEntry
+    private static class Entry extends FrameEntry
     {
-        private ByteBuffer headerBuffer;
         private final long timeOfCreation = System.currentTimeMillis();
 
         private Entry(Frame frame, Callback callback, boolean batch)

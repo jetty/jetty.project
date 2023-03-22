@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -166,9 +166,10 @@ public class JakartaWebSocketCreator implements WebSocketCreator
             Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
             return new ConfiguredEndpoint(endpoint, config);
         }
-        catch (InstantiationException e)
+        catch (Throwable x)
         {
-            LOG.warn("Unable to create websocket: {}", config.getEndpointClass().getName(), e);
+            LOG.warn("Unable to create websocket: {}", config.getEndpointClass().getName(), x);
+            callback.failed(x);
             return null;
         }
     }

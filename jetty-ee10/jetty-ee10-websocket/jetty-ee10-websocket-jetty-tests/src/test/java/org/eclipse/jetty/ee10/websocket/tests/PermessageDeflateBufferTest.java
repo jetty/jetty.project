@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -40,10 +40,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -202,10 +203,10 @@ public class PermessageDeflateBufferTest
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @Test
@@ -230,10 +231,10 @@ public class PermessageDeflateBufferTest
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @Test
@@ -256,10 +257,10 @@ public class PermessageDeflateBufferTest
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @Test
@@ -284,10 +285,10 @@ public class PermessageDeflateBufferTest
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @WebSocket

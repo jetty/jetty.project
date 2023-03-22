@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -23,6 +22,8 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,16 +38,14 @@ public class PathMappingsHandler extends Handler.AbstractContainer
 
     private final PathMappings<Handler> mappings = new PathMappings<>();
 
-    @Override
-    public void addHandler(Handler handler)
+    public PathMappingsHandler()
     {
-        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
+        this(true);
     }
 
-    @Override
-    public void addHandler(Supplier<Handler> supplier)
+    public PathMappingsHandler(boolean dynamic)
     {
-        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
+        super(dynamic);
     }
 
     @Override
@@ -61,22 +60,17 @@ public class PathMappingsHandler extends Handler.AbstractContainer
             throw new IllegalStateException("Cannot add mapping: " + this);
 
         // check that self isn't present
-        if (handler == this || handler instanceof Handler.Container container && container.getDescendants().contains(this))
+        if (handler == this)
             throw new IllegalStateException("Unable to addHandler of self: " + handler);
 
-        // check existing mappings
-        for (MappedResource<Handler> entry : mappings)
-        {
-            Handler entryHandler = entry.getResource();
+        // check for loops
+        if (handler instanceof Handler.Container container && container.getDescendants().contains(this))
+            throw new IllegalStateException("loop detected: " + handler);
 
-            if (entryHandler == this ||
-                entryHandler == handler ||
-                (entryHandler instanceof Handler.Container container && container.getDescendants().contains(this)))
-                throw new IllegalStateException("addMapping loop detected: " + handler);
-        }
-
+        // add new mapping and remove any old
+        Handler old = mappings.get(pathSpec);
         mappings.put(pathSpec, handler);
-        addBean(handler);
+        updateBean(old, handler);
     }
 
     @Override
@@ -86,7 +80,7 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         String pathInContext = Request.getPathInContext(request);
         MatchedResource<Handler> matchedResource = mappings.getMatched(pathInContext);
@@ -94,10 +88,10 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("No match on pathInContext of {}", pathInContext);
-            return null;
+            return false;
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Matched pathInContext of {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), matchedResource.getResource());
-        return matchedResource.getResource().handle(request);
+        return matchedResource.getResource().handle(request, response, callback);
     }
 }

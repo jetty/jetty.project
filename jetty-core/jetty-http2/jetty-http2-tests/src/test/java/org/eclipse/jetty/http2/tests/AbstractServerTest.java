@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,12 +25,12 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -42,7 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 public class AbstractServerTest
 {
     protected ServerConnector connector;
-    protected ByteBufferPool byteBufferPool;
+    protected ByteBufferPool bufferPool;
     protected Generator generator;
     protected Server server;
     protected String path;
@@ -68,8 +68,8 @@ public class AbstractServerTest
         connector = new ServerConnector(server, connectionFactory);
         server.addConnector(connector);
         path = "/test";
-        byteBufferPool = new MappedByteBufferPool();
-        generator = new Generator(byteBufferPool);
+        bufferPool = new ArrayByteBufferPool();
+        generator = new Generator(bufferPool);
     }
 
     protected MetaData.Request newRequest(String method, HttpFields fields)

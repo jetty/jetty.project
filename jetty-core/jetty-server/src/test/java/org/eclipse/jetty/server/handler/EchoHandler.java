@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,10 +27,14 @@ import org.eclipse.jetty.util.StringUtil;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class EchoHandler extends Handler.Processor.NonBlocking
+public class EchoHandler extends Handler.Abstract.NonBlocking
 {
+    public EchoHandler()
+    {
+    }
+    
     @Override
-    public void process(Request request, Response response, Callback callback)
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
@@ -48,8 +52,9 @@ public class EchoHandler extends Handler.Processor.NonBlocking
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
 
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
-            Content.copy(request, response, response::writeTrailers, callback);
+            Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
         else
             callback.succeeded();
+        return true;
     }
 }

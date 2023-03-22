@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,9 +22,9 @@ import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContextResponse extends Response.Wrapper
 {
-    private final ContextHandler.Context _context;
+    private final ContextHandler.ScopedContext _context;
 
-    public ContextResponse(ContextHandler.Context context, Request request, Response response)
+    public ContextResponse(ContextHandler.ScopedContext context, Request request, Response response)
     {
         super(request, response);
         _context = context;
@@ -33,11 +33,26 @@ public class ContextResponse extends Response.Wrapper
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        Callback contextCallback = Callback.from(
-            Invocable.getInvocationType(callback),
-            () -> _context.run(callback::succeeded, getRequest()),
-            x -> _context.accept(callback::failed, x, getRequest())
-        );
+        Callback contextCallback = new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                _context.run(callback::succeeded, getRequest());
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                _context.accept(callback::failed, x, getRequest());
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return Invocable.getInvocationType(callback);
+            }
+        };
         super.write(last, content, contextCallback);
     }
 }

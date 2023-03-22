@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,10 +27,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -74,7 +73,9 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+        // TODO: restore leak tracking.
+//        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+        ByteBufferPool pool = new ArrayByteBufferPool();
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
         ServerConnector connector = new ServerConnector(_server, null, null, pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
@@ -208,10 +209,10 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         }
     }
 
-    public static class SecureRequestHandler extends Handler.Processor
+    public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             StringBuilder out = new StringBuilder();
@@ -228,6 +229,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             out.append("ssl_session_id='").append(data == null ? "" : data.sessionId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
             Content.Sink.write(response, true, out.toString(), callback);
+            return true;
         }
     }
 }

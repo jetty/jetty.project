@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 public class DemandingIncomingFramesCapture extends IncomingFramesCapture
 {
@@ -34,7 +33,7 @@ public class DemandingIncomingFramesCapture extends IncomingFramesCapture
         }
         finally
         {
-            if (!_coreSession.isDemanding())
+            if (_coreSession.isAutoDemanding())
                 _coreSession.autoDemand();
         }
     }

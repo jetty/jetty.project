@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,7 +38,7 @@ import org.xml.sax.SAXException;
  * <dd>minimum requirement (type defaults to <code>jar</code>, with no classifier)</dd>
  * <dt>{@code maven://<groupId>/<artifactId>/<version>/<type>}</dt>
  * <dd>optional type requirement</dd>
- * <dt><code>{@code maven://<groupId>/<artifactId>/<version>/<type>/<classifier>}</code></dt>
+ * <dt>{@code maven://<groupId>/<artifactId>/<version>/<type>/<classifier>}</dt>
  * <dd>optional type and classifier requirement</dd>
  * </dl>
  */

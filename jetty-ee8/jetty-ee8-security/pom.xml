@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-security</artifactId>
-  <name>EE8 :: Jetty :: Security</name>
+  <name>EE8 :: Security</name>
   <description>Jetty security infrastructure</description>
 
   <properties>

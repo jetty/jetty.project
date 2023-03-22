@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     private final ServletContext _servletContext;
-    private final ContextHandler.Context _context;
+    private final ContextHandler.ScopedContext _context;
     private final AsyncContextState _asyncContext;
     private final HttpURI _baseURI;
     private final ServletRequestState _state;
@@ -35,7 +35,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(ContextHandler.Context context, AsyncContextState asyncContext, ServletRequestState state, ServletRequest request, ServletResponse response)
+    public AsyncContextEvent(ContextHandler.ScopedContext context, AsyncContextState asyncContext, ServletRequestState state, ServletRequest request, ServletResponse response)
     {
         super(null, request, response, null);
         _context = context;
@@ -76,7 +76,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         return _dispatchContext == null ? _servletContext : _dispatchContext;
     }
 
-    public ContextHandler.Context getContext()
+    public ContextHandler.ScopedContext getContext()
     {
         return _context;
     }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,20 +13,19 @@
 
 package org.eclipse.jetty.http2.client.transport.internal;
 
-import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpReceiver;
-import org.eclipse.jetty.client.HttpSender;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpReceiver;
+import org.eclipse.jetty.client.transport.HttpSender;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -43,9 +42,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     private final HttpReceiverOverHTTP2 receiver;
     private Stream stream;
 
-    public HttpChannelOverHTTP2(HttpDestination destination, HttpConnectionOverHTTP2 connection, Session session)
+    public HttpChannelOverHTTP2(HttpConnectionOverHTTP2 connection, Session session)
     {
-        super(destination);
+        super(connection.getHttpDestination());
         this.connection = connection;
         this.session = session;
         this.sender = new HttpSenderOverHTTP2(this);

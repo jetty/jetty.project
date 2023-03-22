@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,15 +25,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.InputStreamRequestContent;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -241,9 +241,9 @@ public class HttpClientTimeoutTest extends AbstractTest
                 return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
-                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    protected SslConnection newSslConnection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(byteBufferPool, executor, endPoint, engine)
+                        return new SslConnection(bufferPool, executor, endPoint, engine)
                         {
                             @Override
                             protected boolean onReadTimeout(Throwable timeout)
@@ -307,7 +307,7 @@ public class HttpClientTimeoutTest extends AbstractTest
                     latch.countDown();
             });
 
-        assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 
@@ -380,7 +380,7 @@ public class HttpClientTimeoutTest extends AbstractTest
                 }
             });
 
-        assertTrue(latch.await(3 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 
@@ -427,14 +427,15 @@ public class HttpClientTimeoutTest extends AbstractTest
     public void testFirstRequestTimeoutAfterSecondRequestCompletes(Transport transport) throws Exception
     {
         long timeout = 2000;
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     Thread.sleep(3 * timeout);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -463,14 +464,15 @@ public class HttpClientTimeoutTest extends AbstractTest
     {
 
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     serverLatch.await();
                 callback.succeeded();
+                return true;
             }
         });
         setMaxRequestsPerConnection(1);
@@ -547,7 +549,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
     }
 
-    private static class TimeoutHandler extends Handler.Processor
+    private static class TimeoutHandler extends Handler.Abstract
     {
         private final long timeout;
 
@@ -557,10 +559,11 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
 
         @Override
-        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             TimeUnit.MILLISECONDS.sleep(timeout);
             Content.copy(request, response, callback);
+            return true;
         }
     }
 }

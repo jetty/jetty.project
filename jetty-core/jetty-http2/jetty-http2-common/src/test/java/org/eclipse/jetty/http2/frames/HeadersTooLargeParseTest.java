@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,14 +22,14 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.internal.generator.HeadersGenerator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HeadersTooLargeParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testProtocolErrorURITooLong() throws HpackException
@@ -64,10 +64,10 @@ public class HeadersTooLargeParseTest
 
     private void assertProtocolError(int maxHeaderSize, MetaData.Request metaData) throws HpackException
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -78,11 +78,11 @@ public class HeadersTooLargeParseTest
         parser.init(UnaryOperator.identity());
 
         int streamId = 48;
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
-        int len = generator.generateHeaders(lease, streamId, metaData, priorityFrame, true);
+        int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             while (buffer.hasRemaining() && failure.get() == 0)
             {

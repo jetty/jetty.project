@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,10 +15,7 @@ package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,11 +23,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,13 +46,13 @@ import org.slf4j.LoggerFactory;
  * <p>If DIGEST Authentication is used, the password must be in a recoverable
  * format, either plain text or obfuscated.</p>
  */
-public class PropertyUserStore extends UserStore implements PathWatcher.Listener
+public class PropertyUserStore extends UserStore implements Scanner.DiscreteListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(PropertyUserStore.class);
 
     protected Resource _configResource;
-    protected PathWatcher _pathWatcher;
-    protected boolean _hotReload = false; // default is not to reload
+    protected Scanner _scanner;
+    protected int _refreshInterval = 0;
     protected boolean _firstLoad = true; // true if first load, false from that point on
     protected List<UserListener> _listeners;
 
@@ -81,34 +77,6 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         _configResource = config;
     }
 
-    private Path extractPackedFile(Resource configResource) throws IOException
-    {
-        String uri = configResource.getURI().toASCIIString();
-        int colon = uri.lastIndexOf(":");
-        int bangSlash = uri.indexOf("!/");
-        if (colon < 0 || bangSlash < 0 || colon > bangSlash)
-            throw new IllegalArgumentException("Not resolved JarFile resource: " + uri);
-
-        String entryPath = StringUtil.sanitizeFileSystemName(uri.substring(colon + 2));
-
-        Path tmpDirectory = Files.createTempDirectory("users_store");
-        tmpDirectory.toFile().deleteOnExit();
-        Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
-        Files.deleteIfExists(extractedPath);
-        extractedPath.toFile().deleteOnExit();
-        try (InputStream is = Files.newInputStream(configResource.getPath());
-             OutputStream os = Files.newOutputStream(extractedPath))
-        {
-            IO.copy(is, os);
-        }
-        if (isHotReload())
-        {
-            LOG.warn("Cannot hot reload from packed configuration: {}", configResource);
-            setHotReload(false);
-        }
-        return extractedPath;
-    }
-
     /**
      * @return the resource associated with the configured properties file, creating it if necessary
      * @deprecated
@@ -123,24 +91,46 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      * Is hot reload enabled on this user store
      *
      * @return true if hot reload was enabled before startup
+     * @deprecated use {@link #getRefreshInterval()}
      */
+    @Deprecated
     public boolean isHotReload()
     {
-        return _hotReload;
+        return getRefreshInterval() > 0;
     }
 
     /**
      * Enable Hot Reload of the Property File
      *
-     * @param enable true to enable, false to disable
+     * @param enable true to enable to a 1 second scan, false to disable
+     * @deprecated use {@link #setRefreshInterval(int)}
      */
+    @Deprecated
     public void setHotReload(boolean enable)
+    {
+        setRefreshInterval(enable ? 1 : 0);
+    }
+
+    /**
+     * Enable Hot Reload of the Property File
+     *
+     * @param scanSeconds the period in seconds to scan for property file changes, or 0 for no scanning
+     */
+    public void setRefreshInterval(int scanSeconds)
     {
         if (isRunning())
         {
-            throw new IllegalStateException("Cannot set hot reload while user store is running");
+            throw new IllegalStateException("Cannot set scan period while user store is running");
         }
-        this._hotReload = enable;
+        this._refreshInterval = scanSeconds;
+    }
+
+    /**
+     * @return the period in seconds to scan for property file changes, or 0 for no scanning
+     */
+    public int getRefreshInterval()
+    {
+        return _refreshInterval;
     }
 
     @Override
@@ -149,6 +139,10 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         return String.format("%s[cfg=%s]", super.toString(), _configResource);
     }
 
+    /**
+     * Load the user data from the property file.
+     * @throws IOException If the users cannot be loaded
+     */
     protected void loadUsers() throws IOException
     {
         Resource config = getConfig();
@@ -159,12 +153,14 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         if (LOG.isDebugEnabled())
             LOG.debug("Loading {} from {}", this, config);
 
-        if (!config.exists())
+        if (Resources.missing(config))
             throw new IllegalStateException("Config does not exist: " + config);
 
         Properties properties = new Properties();
         try (InputStream inputStream = config.newInputStream())
         {
+            if (inputStream == null)
+                throw new IllegalStateException("Config does have properties: " + config);
             properties.load(inputStream);
         }
 
@@ -224,43 +220,45 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     @Override
     protected void doStart() throws Exception
     {
-        super.doStart();
+        Resource config = getConfig();
+        if (getRefreshInterval() > 0 && (config != null))
+        {
+            _scanner = new Scanner(null, false);
+            _scanner.addFile(config.getPath());
+            _scanner.setScanInterval(_refreshInterval);
+            _scanner.setReportExistingFilesOnStartup(false);
+            _scanner.addListener(this);
+            addBean(_scanner);
+        }
 
         loadUsers();
-
-        Resource config = getConfig();
-        if (isHotReload() && (config != null))
-        {
-            this._pathWatcher = new PathWatcher();
-            this._pathWatcher.watch(config.getPath());
-            this._pathWatcher.addListener(this);
-            this._pathWatcher.setNotifyExistingOnStart(false);
-            this._pathWatcher.start();
-        }
+        super.doStart();
     }
 
     @Override
-    public void onPathWatchEvent(PathWatchEvent event)
+    public void pathChanged(Path path) throws Exception
     {
-        try
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Path watch event: {}", event.getType());
-            loadUsers();
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Unable to load users", e);
-        }
+        loadUsers();
+    }
+
+    @Override
+    public void pathAdded(Path path) throws Exception
+    {
+        loadUsers();
+    }
+
+    @Override
+    public void pathRemoved(Path path) throws Exception
+    {
+        loadUsers();
     }
 
     @Override
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (this._pathWatcher != null)
-            this._pathWatcher.stop();
-        this._pathWatcher = null;
+        removeBean(_scanner);
+        _scanner = null;
     }
 
     /**

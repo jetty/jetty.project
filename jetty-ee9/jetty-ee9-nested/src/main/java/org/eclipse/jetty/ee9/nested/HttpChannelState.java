@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,7 +21,7 @@ import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -853,17 +853,16 @@ public class HttpChannelState
         final Request request = _channel.getRequest();
         final int code;
         final String message;
-        Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
+        Throwable cause = _channel.unwrap(th, HttpException.class, UnavailableException.class);
         if (cause == null)
         {
             code = HttpStatus.INTERNAL_SERVER_ERROR_500;
             message = th.toString();
         }
-        else if (cause instanceof BadMessageException)
+        else if (cause instanceof HttpException httpException)
         {
-            BadMessageException bme = (BadMessageException)cause;
-            code = bme.getCode();
-            message = bme.getReason();
+            code = httpException.getCode();
+            message = httpException.getReason();
         }
         else if (cause instanceof UnavailableException)
         {

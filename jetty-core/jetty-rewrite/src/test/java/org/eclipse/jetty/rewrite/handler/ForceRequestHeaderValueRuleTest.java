@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,10 +34,10 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
     public void start(ForceRequestHeaderValueRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 for (HttpField httpField : request.getHeaders())
@@ -45,6 +45,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
                     Content.Sink.write(response, false, "Request Header[%s]: [%s]%n".formatted(httpField.getName(), httpField.getValue()), Callback.NOOP);
                 }
                 response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                return true;
             }
         });
     }

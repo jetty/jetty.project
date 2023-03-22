@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,8 +16,8 @@ package org.eclipse.jetty.websocket.core;
 import java.util.concurrent.Executor;
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
@@ -54,7 +54,7 @@ public class WebSocketComponents extends ContainerLifeCycle
     {
         _extensionRegistry = (extensionRegistry == null) ? new WebSocketExtensionRegistry() : extensionRegistry;
         _objectFactory = (objectFactory == null) ? new DecoratedObjectFactory() : objectFactory;
-        _bufferPool = (bufferPool == null) ? new MappedByteBufferPool() : bufferPool;
+        _bufferPool = (bufferPool == null) ? new ArrayByteBufferPool() : bufferPool;
         _inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
         _deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
 
@@ -77,7 +77,7 @@ public class WebSocketComponents extends ContainerLifeCycle
         addBean(_executor);
     }
 
-    public ByteBufferPool getBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
     }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -37,7 +37,7 @@ import static java.util.EnumSet.of;
  */
 public final class HttpCompliance implements ComplianceViolation.Mode
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
 
     // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
     // the relevant section of the RFC is not strictly adhered to.
@@ -103,7 +103,28 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * line of a single token with neither a colon nor value following, to be interpreted as a field name with no value.
          * A deployment may include this violation to allow such fields to be in a received request.
          */
-        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon");
+        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon"),
+
+        /**
+         * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-5.4">RFC 7230: Section 5.4</a>, the HTTP protocol
+         * says that a Server must reject a request duplicate host headers.
+         * A deployment may include this violation to allow duplicate host headers on a received request.
+         */
+        DUPLICATE_HOST_HEADERS("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Duplicate Host Header"),
+
+        /**
+         * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1">RFC 7230</a>, the HTTP protocol
+         * should reject a request if the Host headers contains an invalid / unsafe authority.
+         * A deployment may include this violation to allow unsafe host headesr on a received request.
+         */
+        UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority"),
+
+        /**
+         * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-5.4">RFC 7230: Section 5.4</a>, the HTTP protocol
+         * must reject a request if the target URI has an authority that is different than a provided Host header.
+         * A deployment may include this violation to allow different values on the target URI and the Host header on a received request.
+         */
+        MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority");
 
         private final String url;
         private final String description;
@@ -148,7 +169,11 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
      * with only the violations that differ from {@link #RFC7230}.
      */
-    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
+    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(
+        Violation.HTTP_0_9,
+        Violation.MULTILINE_FIELD_VALUE,
+        Violation.MISMATCHED_AUTHORITY
+    ));
 
     /**
      * A legacy HttpCompliance mode that allows all violations except case-insensitive methods.
@@ -197,9 +222,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
-     * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc2616,
-     * but not https://tools.ietf.org/html/rfc7230</dd>
-     * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc7230</dd>
+     * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to <a href="https://tools.ietf.org/html/rfc2616">RFC2616</a>,
+     * but not <a href="https://tools.ietf.org/html/rfc7230">RFC7230</a></dd>
+     * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to <a href="https://tools.ietf.org/html/rfc7230">RFC7230</a></dd>
      * <dt>name</dt><dd>Any of the known modes defined in {@link HttpCompliance#KNOWN_MODES}</dd>
      * </dl>
      * <p>
@@ -212,39 +237,37 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      */
     public static HttpCompliance from(String spec)
     {
-        Set<Violation> sections;
-        String[] elements = spec.split("\\s*,\\s*");
-        switch (elements[0])
+        HttpCompliance compliance = valueOf(spec);
+        if (compliance == null)
         {
-            case "0":
-                sections = noneOf(Violation.class);
-                break;
+            String[] elements = spec.split("\\s*,\\s*");
+            Set<Violation> sections = switch (elements[0])
+                {
+                    case "0" -> noneOf(Violation.class);
+                    case "*" -> allOf(Violation.class);
+                    default ->
+                    {
+                        HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
+                        yield (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                    }
+                };
 
-            case "*":
-                sections = allOf(Violation.class);
-                break;
-
-            default:
+            for (int i = 1; i < elements.length; i++)
             {
-                HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
-                sections = (mode == null) ? noneOf(HttpCompliance.Violation.class) : copyOf(mode.getAllowed());
+                String element = elements[i];
+                boolean exclude = element.startsWith("-");
+                if (exclude)
+                    element = element.substring(1);
+                Violation section = Violation.valueOf(element);
+                if (exclude)
+                    sections.remove(section);
+                else
+                    sections.add(section);
             }
-        }
 
-        for (int i = 1; i < elements.length; i++)
-        {
-            String element = elements[i];
-            boolean exclude = element.startsWith("-");
-            if (exclude)
-                element = element.substring(1);
-            Violation section = Violation.valueOf(element);
-            if (exclude)
-                sections.remove(section);
-            else
-                sections.add(section);
+            compliance = new HttpCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
         }
-
-        return new HttpCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
+        return compliance;
     }
 
     private final String _name;

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -43,7 +43,7 @@ public class AbstractExtension implements Extension
     public void init(ExtensionConfig config, WebSocketComponents components)
     {
         this.config = config;
-        this.bufferPool = components.getBufferPool();
+        this.bufferPool = components.getByteBufferPool();
         this.deflaterPool = components.getDeflaterPool();
         this.inflaterPool = components.getInflaterPool();
     }
@@ -60,7 +60,7 @@ public class AbstractExtension implements Extension
         nextOutgoingFrame(frame, callback, batch);
     }
 
-    public ByteBufferPool getBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }

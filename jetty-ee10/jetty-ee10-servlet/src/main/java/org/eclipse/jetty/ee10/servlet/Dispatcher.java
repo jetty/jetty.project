@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -55,33 +55,38 @@ public class Dispatcher implements RequestDispatcher
      * Dispatch include attribute names
      */
     public static final String __FORWARD_PREFIX = "jakarta.servlet.forward.";
+    
+    /**
+     * Name of original request attribute
+     */ 
+    public static final String __ORIGINAL_REQUEST = "org.eclipse.jetty.originalRequest";
 
     private final ServletContextHandler _contextHandler;
     private final HttpURI _uri;
-    private final String _pathInContext;
+    private final String _decodedPathInContext;
     private final String _named;
     private final ServletHandler.MappedServlet _mappedServlet;
     private final ServletHandler _servletHandler;
     private final ServletPathMapping _servletPathMapping;
 
-    public Dispatcher(ServletContextHandler contextHandler, HttpURI uri, String pathInContext)
+    public Dispatcher(ServletContextHandler contextHandler, HttpURI uri, String decodedPathInContext)
     {
         _contextHandler = contextHandler;
         _uri = uri.asImmutable();
-        _pathInContext = pathInContext;
+        _decodedPathInContext = decodedPathInContext;
         _named = null;
 
         _servletHandler = _contextHandler.getServletHandler();
-        MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(pathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(decodedPathInContext);
         _mappedServlet = matchedServlet.getResource();
-        _servletPathMapping = _mappedServlet.getServletPathMapping(_pathInContext, matchedServlet.getMatchedPath());
+        _servletPathMapping = _mappedServlet.getServletPathMapping(_decodedPathInContext, matchedServlet.getMatchedPath());
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
     {
         _contextHandler = contextHandler;
         _uri = null;
-        _pathInContext = null;
+        _decodedPathInContext = null;
         _named = name;
 
         _servletHandler = _contextHandler.getServletHandler();
@@ -94,7 +99,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, _pathInContext, new ErrorRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ErrorRequest(httpRequest), httpResponse);
     }
 
     @Override
@@ -105,7 +110,7 @@ public class Dispatcher implements RequestDispatcher
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
         servletContextRequest.getResponse().resetForForward();
-        _mappedServlet.handle(_servletHandler, _pathInContext, new ForwardRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
         if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getHttpOutput().isClosed())
@@ -126,15 +131,15 @@ public class Dispatcher implements RequestDispatcher
     {
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
-        ServletContextResponse baseResponse = ServletContextResponse.getBaseResponse(response);
+        ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(response);
 
         try
         {
-            _mappedServlet.handle(_servletHandler, _pathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
         }
         finally
         {
-            baseResponse.included();
+            servletContextResponse.included();
         }
     }
 
@@ -143,7 +148,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, _pathInContext, new AsyncRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new AsyncRequest(httpRequest), httpResponse);
     }
 
     public class ParameterRequestWrapper extends HttpServletRequestWrapper
@@ -271,21 +276,44 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Object getAttribute(String name)
         {
+            if (name == null)
+                return null;
+            
+            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
+            if (_named != null && name.startsWith(__FORWARD_PREFIX))
+                return null;
+
+            //Servlet Spec 9.4.2 must return the values from the original request
+            if (name.startsWith(__FORWARD_PREFIX))
+            {
+                HttpServletRequest originalRequest = (HttpServletRequest)super.getAttribute(__ORIGINAL_REQUEST);
+                if (originalRequest == null)
+                    originalRequest = _httpServletRequest;
+                
+                switch (name)
+                {
+                    case RequestDispatcher.FORWARD_REQUEST_URI:
+                        return originalRequest.getRequestURI();
+                    case RequestDispatcher.FORWARD_SERVLET_PATH:
+                        return originalRequest.getServletPath();
+                    case RequestDispatcher.FORWARD_PATH_INFO:
+                        return originalRequest.getPathInfo();
+                    case RequestDispatcher.FORWARD_CONTEXT_PATH:
+                        return originalRequest.getContextPath();
+                    case RequestDispatcher.FORWARD_MAPPING:
+                        return originalRequest.getHttpServletMapping();
+                    case RequestDispatcher.FORWARD_QUERY_STRING:
+                        return originalRequest.getQueryString();
+                    default:
+                        return super.getAttribute(name);      
+                }
+            }
+
             switch (name)
             {
-                case RequestDispatcher.FORWARD_REQUEST_URI:
-                    return _httpServletRequest.getRequestURI();
-                case RequestDispatcher.FORWARD_SERVLET_PATH:
-                    return _httpServletRequest.getServletPath();
-                case RequestDispatcher.FORWARD_PATH_INFO:
-                    return _httpServletRequest.getPathInfo();
-                case RequestDispatcher.FORWARD_CONTEXT_PATH:
-                    return _httpServletRequest.getContextPath();
-                case RequestDispatcher.FORWARD_MAPPING:
-                    return _httpServletRequest.getHttpServletMapping();
-                case RequestDispatcher.FORWARD_QUERY_STRING:
-                    return _httpServletRequest.getQueryString();
-
+                case __ORIGINAL_REQUEST:
+                    HttpServletRequest originalRequest = (HttpServletRequest)super.getAttribute(name);
+                    return originalRequest == null ? _httpServletRequest : originalRequest;
                 // Forward should hide include.
                 case RequestDispatcher.INCLUDE_MAPPING:
                 case RequestDispatcher.INCLUDE_SERVLET_PATH:
@@ -304,6 +332,11 @@ public class Dispatcher implements RequestDispatcher
         public Enumeration<String> getAttributeNames()
         {
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+            
+            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
+            if (_named != null)
+                return Collections.enumeration(names);
+            
             names.add(RequestDispatcher.FORWARD_REQUEST_URI);
             names.add(RequestDispatcher.FORWARD_SERVLET_PATH);
             names.add(RequestDispatcher.FORWARD_PATH_INFO);
@@ -333,6 +366,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Object getAttribute(String name)
         {
+            if (name == null)
+                return null;
+            
+            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
+            if (_named != null && name.startsWith(__INCLUDE_PREFIX))
+                return null;
+            
             switch (name)
             {
                 case RequestDispatcher.INCLUDE_MAPPING:
@@ -355,7 +395,11 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Enumeration<String> getAttributeNames()
         {
+            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+            if (_named != null)
+                return Collections.enumeration(names);
+            
             names.add(RequestDispatcher.INCLUDE_MAPPING);
             names.add(RequestDispatcher.INCLUDE_SERVLET_PATH);
             names.add(RequestDispatcher.INCLUDE_PATH_INFO);

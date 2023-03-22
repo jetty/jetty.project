@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,9 +15,12 @@ package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -28,7 +31,7 @@ public class Flusher
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<Generator.Result> queue = new ArrayDeque<>();
+    private final Queue<Entry> queue = new ArrayDeque<>();
     private final IteratingCallback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
 
@@ -37,24 +40,21 @@ public class Flusher
         this.endPoint = endPoint;
     }
 
-    public void flush(Generator.Result... results)
+    public void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
     {
-        for (Generator.Result result : results)
-        {
-            offer(result);
-        }
+        offer(new Entry(accumulator, callback));
         flushCallback.iterate();
     }
 
-    private void offer(Generator.Result result)
+    private void offer(Entry entry)
     {
         try (AutoLock ignored = lock.lock())
         {
-            queue.offer(result);
+            queue.offer(entry);
         }
     }
 
-    private Generator.Result poll()
+    private Entry poll()
     {
         try (AutoLock ignored = lock.lock())
         {
@@ -64,35 +64,32 @@ public class Flusher
 
     public void shutdown()
     {
-        flush(new ShutdownResult());
+        flush(null, Callback.from(() ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutting down {}", endPoint);
+            endPoint.shutdownOutput();
+        }));
     }
 
     private class FlushCallback extends IteratingCallback
     {
-        private Generator.Result active;
+        private Entry active;
 
         @Override
         protected Action process() throws Exception
         {
             // Look if other writes are needed.
-            Generator.Result result = poll();
-            if (result == null)
+            Entry entry = poll();
+            if (entry == null)
             {
                 // No more writes to do, return.
                 return Action.IDLE;
             }
 
-            // Attempt to gather another result.
-            // Most often there is another result in the
-            // queue so this is a real optimization because
-            // it sends both results in just one TCP packet.
-            Generator.Result other = poll();
-            if (other != null)
-                result = result.join(other);
-
-            active = result;
-            ByteBuffer[] buffers = result.getByteBuffers();
-            endPoint.write(this, buffers);
+            active = entry;
+            List<ByteBuffer> buffers = entry.accumulator.getByteBuffers();
+            endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
             return Action.SCHEDULED;
         }
 
@@ -121,38 +118,30 @@ public class Flusher
 
             while (true)
             {
-                Generator.Result result = poll();
-                if (result == null)
+                Entry entry = poll();
+                if (entry == null)
                     break;
-                result.failed(x);
+                entry.failed(x);
             }
         }
     }
 
-    private class ShutdownResult extends Generator.Result
+    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback) implements Callback
     {
-        private ShutdownResult()
-        {
-            super(null, null);
-        }
-
         @Override
         public void succeeded()
         {
-            shutdown();
+            if (accumulator != null)
+                accumulator.release();
+            callback.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            shutdown();
-        }
-
-        private void shutdown()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Shutting down {}", endPoint);
-            endPoint.shutdownOutput();
+            if (accumulator != null)
+                accumulator.release();
+            callback.failed(x);
         }
     }
 }

@@ -1,16 +1,20 @@
-BODY
+body
 {
-  font-family: Arial, Verdana, Helvetica, sans-serif;
-  background-color: #FFFFFF;
+  font-family: sans-serif;
+  background-color: white;
   font-size: 14pt;
   color: #444444;
+}
+
+code
+{
+    font-family: monospace;
 }
 
 img
 {
   border: 0px;
 }
-
 
 div#header
 {
@@ -25,7 +29,6 @@ div#header
   margin-left: auto;
   margin-right: auto;
 }
-
 
 div#content
 {
@@ -73,6 +76,21 @@ div#links h1,h2,p
   font-family: Helvetica, sans-serif;
   text-align:left;
   margin: 5px;
+}
+
+div#links ul
+{
+  padding-left: 20px;
+}
+
+div#links li
+{
+  font-size: 10pt;
+}
+
+div#links code
+{
+  font-size: 9pt;
 }
 
 div#links h2

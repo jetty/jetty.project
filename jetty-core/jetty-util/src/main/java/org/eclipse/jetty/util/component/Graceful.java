@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -141,7 +141,7 @@ public interface Graceful
         gracefuls.addAll(component.getContainedBeans(Graceful.class));
 
         if (log.isDebugEnabled())
-            gracefuls.forEach(g -> log.debug("graceful {}", g));
+            gracefuls.forEach(g -> log.debug("Graceful {}", g));
 
         return CompletableFuture.allOf(gracefuls.stream().map(Graceful::shutdown).toArray(CompletableFuture[]::new));
     }

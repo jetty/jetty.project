@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,9 +38,9 @@ public class SessionInactivityTimer
     private final SessionManager _sessionManager;
     private final Scheduler _scheduler;
     private final CyclicTimeout _timer;
-    private final Session _session;
+    private final ManagedSession _session;
 
-    public SessionInactivityTimer(SessionManager sessionManager, Session session, Scheduler scheduler)
+    public SessionInactivityTimer(SessionManager sessionManager, ManagedSession session, Scheduler scheduler)
     {
         _sessionManager = sessionManager;
         _session = session;

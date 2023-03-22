@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -29,10 +29,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public long getNanoTimeStamp()
+    public long getNanoTime()
     {
         return nanoTime;
     }
@@ -110,21 +111,36 @@ public class HttpStreamOverHTTP3 implements HttpStream
                     System.lineSeparator(), fields);
             }
 
-            return handler;
-        }
-        catch (BadMessageException x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onRequest() failure", x);
-            return () -> onBadMessage(x);
+            InvocationType invocationType = Invocable.getInvocationType(handler);
+            return new ReadyTask(invocationType, handler)
+            {
+                @Override
+                public void run()
+                {
+                    if (stream.isClosed())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
+                                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                                stream);
+                    }
+                    else
+                    {
+                        super.run();
+                    }
+                }
+            };
         }
         catch (Throwable x)
         {
-            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequest() failure", x);
+            HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
+            return () -> onBadMessage(httpException);
         }
     }
 
-    private void onBadMessage(BadMessageException x)
+    private void onBadMessage(HttpException x)
     {
         // TODO
     }
@@ -147,8 +163,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (data == null)
                 return null;
 
+            // The data instance should be released after readData() above;
+            // the chunk is stored below for later use, so should be retained;
+            // the two actions cancel each other, no need to further retain or release.
             chunk = createChunk(data);
-            data.release();
 
             // Some content is read, but the 100 Continue interim
             // response has not been sent yet, then don't bother
@@ -204,8 +222,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
             return null;
         }
 
+        // The data instance should be released after readData() above;
+        // the chunk is stored below for later use, so should be retained;
+        // the two actions cancel each other, no need to further retain or release.
         Content.Chunk chunk = createChunk(data);
-        data.release();
 
         try (AutoLock ignored = lock.lock())
         {
@@ -234,11 +254,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private Content.Chunk createChunk(Stream.Data data)
     {
         if (data == Stream.Data.EOF)
+        {
+            data.release();
             return Content.Chunk.EOF;
-
-        // As we are passing the ByteBuffer to the Chunk we need to retain.
-        data.retain();
-        return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data);
+        }
+        return Content.Chunk.asChunk(data.getByteBuffer(), data.isLast(), data);
     }
 
     @Override
@@ -302,7 +322,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 }
                 else if (hasContent && contentLength != realContentLength)
                 {
-                    callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
                     return;
                 }
             }
@@ -384,6 +404,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
         if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
         {
+            if (!hasContent)
+                content = BufferUtil.EMPTY_BUFFER;
             if (lastContent)
             {
                 HttpFields trailers = retrieveTrailers();
@@ -457,21 +479,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(MetaData.Request request)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean isCommitted()
     {
         return committed;
+    }
+
+    @Override
+    public Throwable consumeAvailable()
+    {
+        if (getTunnelSupport() != null)
+            return null;
+        return HttpStream.consumeAvailable(this, httpChannel.getConnectionMetaData().getHttpConfiguration());
     }
 
     public boolean isIdle()

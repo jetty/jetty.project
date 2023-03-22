@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.util.Arrays;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -41,19 +45,31 @@ public class VirtualThreadsTest extends AbstractTest
         // No virtual thread support in FCGI server-side.
         Assumptions.assumeTrue(transport != Transport.FCGI);
 
-        prepareServer(transport, new Handler.Processor()
+        String virtualThreadsName = "green-";
+        prepareServer(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 if (!VirtualThreads.isVirtualThread())
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);
+                if (!Thread.currentThread().getName().startsWith(virtualThreadsName))
+                    response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);
                 callback.succeeded();
+                return true;
             }
         });
         ThreadPool threadPool = server.getThreadPool();
         if (threadPool instanceof VirtualThreads.Configurable)
-            ((VirtualThreads.Configurable)threadPool).setUseVirtualThreads(true);
+        {
+            // CAUTION: Java 19 specific reflection code, might change in future Java versions.
+            Object builder = Thread.class.getMethod("ofVirtual").invoke(null);
+            Class<?> builderClass = Arrays.stream(Thread.class.getClasses()).filter(klass -> klass.getName().endsWith("$Builder")).findFirst().orElseThrow();
+            builder = builderClass.getMethod("name", String.class, long.class).invoke(builder, virtualThreadsName, 0L);
+            ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(builder);
+            Executor virtualThreadsExecutor = (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
+            ((VirtualThreads.Configurable)threadPool).setVirtualThreadsExecutor(virtualThreadsExecutor);
+        }
         server.start();
         startClient(transport);
 

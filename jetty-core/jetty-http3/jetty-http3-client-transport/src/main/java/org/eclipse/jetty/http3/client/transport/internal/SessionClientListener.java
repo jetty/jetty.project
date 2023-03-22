@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,13 +18,14 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.util.Promise;
 
 public class SessionClientListener implements Session.Client.Listener
@@ -47,7 +48,7 @@ public class SessionClientListener implements Session.Client.Listener
     public void onSettings(Session session, SettingsFrame frame)
     {
         HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-        HttpConnectionOverHTTP3 connection = newHttpConnection(destination, (HTTP3SessionClient)session);
+        HttpConnectionOverHTTP3 connection = (HttpConnectionOverHTTP3)newConnection(destination, (HTTP3SessionClient)session);
         if (this.connection.compareAndSet(null, connection, false, true))
             httpConnectionPromise().succeeded(connection);
     }
@@ -81,7 +82,7 @@ public class SessionClientListener implements Session.Client.Listener
             connection.close(failure);
     }
 
-    protected HttpConnectionOverHTTP3 newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+    protected Connection newConnection(Destination destination, HTTP3SessionClient session)
     {
         return new HttpConnectionOverHTTP3(destination, session);
     }

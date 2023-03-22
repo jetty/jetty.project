@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,13 +38,14 @@ public class TerminatingPatternRuleTest extends AbstractRuleTest
         RedirectRegexRule rule2 = new RedirectRegexRule("^/login.*$", "http://login.company.com/");
         rule2.setStatusCode(HttpStatus.SEE_OTHER_303);
         _rewriteHandler.addRule(rule2);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.CREATED_201);
                 callback.succeeded();
+                return true;
             }
         });
     }

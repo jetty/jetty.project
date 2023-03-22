@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,6 +16,7 @@ package org.eclipse.jetty.deploy.providers;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -144,6 +146,31 @@ public class ContextProvider extends ScanningAppProvider
         return _properties;
     }
 
+    public void loadProperties(Resource resource) throws IOException
+    {
+        Properties props = new Properties();
+        try (InputStream inputStream = resource.newInputStream())
+        {
+            props.load(inputStream);
+            props.forEach((key, value) -> _properties.put((String)key, (String)value));
+        }
+    }
+
+    public void loadPropertiesFromPath(Path path) throws IOException
+    {
+        Properties props = new Properties();
+        try (InputStream inputStream = Files.newInputStream(path))
+        {
+            props.load(inputStream);
+            props.forEach((key, value) -> _properties.put((String)key, (String)value));
+        }
+    }
+
+    public void loadPropertiesFromString(String path) throws IOException
+    {
+        loadPropertiesFromPath(Path.of(path));
+    }
+
     /**
      * Get the extractWars.
      * This is equivalent to getting the {@link Deployable#EXTRACT_WARS} property.
@@ -243,46 +270,6 @@ public class ContextProvider extends ScanningAppProvider
     {
         String cc = _properties.get(Deployable.CONFIGURATION_CLASSES);
         return cc == null ? new String[0] : cc.split(",");
-    }
-
-    /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(String directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory);
-    }
-
-    /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(File directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory.getAbsolutePath());
-    }
-
-    /**
-     * Get the temporary directory for deployment.
-     * <p>
-     * This is equivalent to getting the {@link Deployable#BASE_TEMP_DIR} property.
-     *
-     * @return the user supplied work directory (null if user has not set Temp Directory yet)
-     */
-    @ManagedAttribute("temp directory for use, null if no user set temp directory")
-    public File getTempDir()
-    {
-        String tmpDir = _properties.get(Deployable.BASE_TEMP_DIR);
-        return tmpDir == null ? null : new File(tmpDir);
     }
 
     protected ContextHandler initializeContextHandler(Object context, Path path, Map<String, String> properties)
@@ -527,23 +514,9 @@ public class ContextProvider extends ScanningAppProvider
     }
 
     @Override
-    protected void pathChanged(Path path) throws Exception
-    {
-        if (Files.exists(path) && isDeployable(path))
-            super.pathChanged(path);
-    }
-
-    @Override
     protected void pathAdded(Path path) throws Exception
     {
-        if (Files.exists(path) && isDeployable(path))
-            super.pathAdded(path);
-    }
-
-    @Override
-    protected void pathRemoved(Path path) throws Exception
-    {
         if (isDeployable(path))
-            super.pathRemoved(path);
+            super.pathAdded(path);
     }
 }

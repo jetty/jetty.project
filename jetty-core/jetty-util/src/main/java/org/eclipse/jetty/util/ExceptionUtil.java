@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -91,15 +91,15 @@ public class ExceptionUtil
      * @throws Error If the passed {@link Throwable} is an {@link Error}.
      * @throws RuntimeException Otherwise, if the passed {@link Throwable} is not null.
      */
-    public static void ifExceptionThrowRuntime(Throwable throwable)
+    public static void ifExceptionThrowUnchecked(Throwable throwable)
         throws Error, RuntimeException
     {
         if (throwable == null)
             return;
-        if (throwable instanceof Error error)
-            throw error;
         if (throwable instanceof RuntimeException runtimeException)
             throw runtimeException;
+        if (throwable instanceof Error error)
+            throw error;
         throw new RuntimeException(throwable);
     }
 
@@ -152,20 +152,23 @@ public class ExceptionUtil
      */
     public static boolean areNotAssociated(Throwable t1, Throwable t2)
     {
+        if (t1 == null || t2 == null)
+            return false;
         while (t1 != null)
         {
-            while (t2 != null)
+            Throwable two = t2;
+            while (two != null)
             {
-                if (t1 == t2)
+                if (t1 == two)
                     return false;
-                if (t1.getCause() == t2)
+                if (t1.getCause() == two)
                     return false;
-                if (Arrays.asList(t1.getSuppressed()).contains(t2))
+                if (Arrays.asList(t1.getSuppressed()).contains(two))
                     return false;
-                if (Arrays.asList(t2.getSuppressed()).contains(t1))
+                if (Arrays.asList(two.getSuppressed()).contains(t1))
                     return false;
 
-                t2 = t2.getCause();
+                two = two.getCause();
             }
             t1 = t1.getCause();
         }
@@ -228,7 +231,7 @@ public class ExceptionUtil
 
         public void ifExceptionThrowRuntime()
         {
-            ExceptionUtil.ifExceptionThrowRuntime(_multiException);
+            ExceptionUtil.ifExceptionThrowUnchecked(_multiException);
         }
 
         public <T extends Throwable> void ifExceptionThrowAs(Class<T> type) throws T

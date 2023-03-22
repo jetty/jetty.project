@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,13 +25,8 @@ import org.eclipse.jetty.util.Callback;
 /**
  * Represents the outgoing Frames.
  */
-public interface CoreSession extends OutgoingFrames, Configuration
+public interface CoreSession extends OutgoingFrames, IncomingFrames, Configuration
 {
-    /**
-     * The negotiated WebSocket Sub-Protocol for this session.
-     *
-     * @return the negotiated WebSocket Sub-Protocol for this session.
-     */
     String getNegotiatedSubProtocol();
 
     /**
@@ -120,11 +115,8 @@ public interface CoreSession extends OutgoingFrames, Configuration
      */
     boolean isOutputOpen();
 
-    /**
-     * If using BatchMode.ON or BatchMode.AUTO, trigger a flush of enqueued / batched frames.
-     *
-     * @param callback the callback to track close frame sent (or failed)
-     */
+    boolean isClosed();
+
     void flush(Callback callback);
 
     /**
@@ -163,7 +155,7 @@ public interface CoreSession extends OutgoingFrames, Configuration
      * Manage flow control by indicating demand for handling Frames.  A call to
      * {@link FrameHandler#onFrame(Frame, Callback)} will only be made if a
      * corresponding demand has been signaled.   It is an error to call this method
-     * if {@link FrameHandler#isDemanding()} returns false.
+     * if {@link FrameHandler#isAutoDemanding()} returns true.
      *
      * @param n The number of frames that can be handled (in sequential calls to
      * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
@@ -271,6 +263,12 @@ public interface CoreSession extends OutgoingFrames, Configuration
         }
 
         @Override
+        public boolean isClosed()
+        {
+            return false;
+        }
+
+        @Override
         public void flush(Callback callback)
         {
             callback.succeeded();
@@ -291,6 +289,12 @@ public interface CoreSession extends OutgoingFrames, Configuration
         @Override
         public void demand(long n)
         {
+        }
+
+        @Override
+        public void onFrame(Frame frame, Callback callback)
+        {
+            callback.succeeded();
         }
 
         @Override

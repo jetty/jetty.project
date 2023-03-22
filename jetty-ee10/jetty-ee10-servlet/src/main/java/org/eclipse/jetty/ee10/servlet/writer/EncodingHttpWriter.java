@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,17 +27,10 @@ public class EncodingHttpWriter extends HttpWriter
 {
     final Writer _converter;
 
-    public EncodingHttpWriter(HttpOutput out, String encoding)
+    public EncodingHttpWriter(HttpOutput out, String encoding) throws IOException
     {
         super(out);
-        try
-        {
-            _converter = new OutputStreamWriter(_bytes, encoding);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
+        _converter = new OutputStreamWriter(_bytes, encoding);
     }
 
     @Override

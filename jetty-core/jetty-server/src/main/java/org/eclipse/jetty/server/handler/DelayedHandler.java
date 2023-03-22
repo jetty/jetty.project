@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayDeque;
-import java.util.Queue;
-import java.util.function.BiConsumer;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
@@ -30,316 +34,326 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.StringUtil;
 
-public abstract class DelayedHandler extends Handler.Wrapper
+public class DelayedHandler extends Handler.Wrapper
 {
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor processor = super.handle(request);
-        if (processor == null)
+        Handler next = getHandler();
+        if (next == null)
+            return false;
+
+        boolean contentExpected = false;
+        String contentType = null;
+        loop: for (HttpField field : request.getHeaders())
+        {
+            HttpHeader header = field.getHeader();
+            if (header == null)
+                continue;
+            switch (header)
+            {
+                case CONTENT_TYPE:
+                    contentType = field.getValue();
+                    break;
+
+                case CONTENT_LENGTH:
+                    contentExpected = field.getLongValue() > 0;
+                    break;
+
+                case TRANSFER_ENCODING:
+                    contentExpected = field.contains(HttpHeaderValue.CHUNKED.asString());
+                    break;
+
+                case EXPECT:
+                    if (field.contains(HttpHeaderValue.CONTINUE.asString()))
+                    {
+                        contentExpected = false;
+                        break loop;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
+        DelayedProcess delayed = newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
+        if (delayed == null)
+            return next.handle(request, response, callback);
+
+        delayed.delay();
+        return true;
+    }
+
+    protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+    {
+        // if no content is expected, then no delay
+        if (!contentExpected)
             return null;
-        return delayed(request, processor);
-    }
 
-    protected abstract Request.Processor delayed(Request request, Request.Processor processor);
+        // if we are not configured to delay dispatch, then no delay
+        if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
+            return null;
 
-    public static class UntilContent extends DelayedHandler
-    {
-        @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
+        // If there is no known content type, then delay only until content is available
+        if (mimeType == null)
+            return new UntilContentDelayedProcess(handler, request, response, callback);
+
+        // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
+        return switch (mimeType)
         {
-            // TODO remove this setting from HttpConfig?
-            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-                return processor;
-            if (request.getLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-                return processor;
-            // TODO: add logic to not delay if it's a CONNECT request.
-            // TODO: also add logic to not delay if it's a request that expects 100 Continue.
-
-            return new UntilContentProcessor(request, processor);
-        }
+            case FORM_ENCODED -> new UntilFormDelayedProcess(handler, request, response, callback, contentType);
+            case MULTIPART_FORM_DATA -> new UntilMultiPartDelayedProcess(handler, request, response, callback, contentType);
+            default -> new UntilContentDelayedProcess(handler, request, response, callback);
+        };
     }
 
-    private static class UntilContentProcessor implements Request.Processor, Runnable
+    protected abstract static class DelayedProcess
     {
-        private final Request.Processor _processor;
+        private final Handler _handler;
         private final Request _request;
-        private Response _response;
-        private Callback _callback;
+        private final Response _response;
+        private final Callback _callback;
 
-        public UntilContentProcessor(Request request, Request.Processor processor)
+        protected DelayedProcess(Handler handler, Request request, Response response, Callback callback)
         {
-            _request = request;
-            _processor = processor;
+            _handler = Objects.requireNonNull(handler);
+            _request = Objects.requireNonNull(request);
+            _response = Objects.requireNonNull(response);
+            _callback = Objects.requireNonNull(callback);
         }
 
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        protected Handler getHandler()
         {
-            _response = response;
-            _callback = callback;
-            _request.demand(this);
+            return _handler;
         }
 
-        @Override
-        public void run()
+        protected Request getRequest()
+        {
+            return _request;
+        }
+
+        protected Response getResponse()
+        {
+            return _response;
+        }
+
+        protected Callback getCallback()
+        {
+            return _callback;
+        }
+
+        protected void process()
         {
             try
             {
-                _processor.process(_request, _response, _callback);
+                if (!getHandler().handle(getRequest(), getResponse(), getCallback()))
+                    Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {
-                Response.writeError(_request, _response, _callback, t);
+                Response.writeError(getRequest(), getResponse(), getCallback(), t);
             }
         }
+
+        protected abstract void delay() throws Exception;
     }
 
-    public static class UntilFormFields extends DelayedHandler
+    protected static class UntilContentDelayedProcess extends DelayedProcess
     {
-        @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
+        public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
         {
-            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-                return processor;
-
-            Charset charset = FormFields.getFormEncodedCharset(request);
-            if (charset == null)
-                return processor;
-
-            return new UntilFormFieldsProcessor(request, processor);
-        }
-    }
-
-    private static class UntilFormFieldsProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
-    {
-        private final Request _request;
-        private final Request.Processor _processor;
-        private Response _response;
-        private Callback _callback;
-
-        public UntilFormFieldsProcessor(Request request, Request.Processor processor)
-        {
-            _processor = processor;
-            _request = request;
+            super(handler, request, response, callback);
         }
 
         @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        protected void delay()
         {
-            _response = response;
-            _callback = callback;
-            FormFields.from(_request).whenComplete(this);
-        }
-
-        @Override
-        public void accept(Fields fields, Throwable throwable)
-        {
-            try
+            Content.Chunk chunk = super.getRequest().read();
+            if (chunk == null)
             {
-                _processor.process(_request, _response, _callback);
+                getRequest().demand(this::onContent);
             }
-            catch (Throwable t)
+            else
             {
-                Response.writeError(_request, _response, _callback, t);
-            }
-        }
-    }
-
-    public static class UntilMultiPartFormData extends DelayedHandler
-    {
-        @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
-        {
-            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-                return processor;
-
-            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-            if (contentType == null)
-                return processor;
-
-            String contentTypeValue = HttpField.valueParameters(contentType, null);
-            if (!MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
-                return processor;
-            String boundary = MultiPart.extractBoundary(contentType);
-            if (boundary == null)
-                return processor;
-
-            return new Processor(request, processor, boundary);
-        }
-
-        private static class Processor implements Request.Processor, Runnable, BiConsumer<MultiPartFormData.Parts, Throwable>
-        {
-            private final Request _request;
-            private final Request.Processor _processor;
-            private final String _boundary;
-            private Response _response;
-            private Callback _callback;
-            private MultiPartFormData _formData;
-
-            private Processor(Request request, Request.Processor processor, String boundary)
-            {
-                _request = request;
-                _processor = processor;
-                _boundary = boundary;
-            }
-
-            @Override
-            public void process(Request ignored, Response response, Callback callback) throws Exception
-            {
-                _response = response;
-                _callback = callback;
-
-                String contentType = _request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-                _formData = new MultiPartFormData(_boundary);
-                // TODO: configure _formData.
-                _request.setAttribute(MultiPartFormData.class.getName(), _formData);
-
-                run();
-
-                if (_formData.isDone())
-                    _processor.process(_request, response, callback);
-                else
-                    _formData.whenComplete(this);
-            }
-
-            @Override
-            public void run()
-            {
-                while (true)
-                {
-                    Content.Chunk chunk = _request.read();
-                    if (chunk == null)
-                    {
-                        _request.demand(this);
-                        return;
-                    }
-                    if (chunk instanceof Content.Chunk.Error error)
-                    {
-                        _formData.completeExceptionally(error.getCause());
-                        return;
-                    }
-                    _formData.parse(chunk);
-                    chunk.release();
-                    if (chunk.isLast())
-                        return;
-                }
-            }
-
-            @Override
-            public void accept(MultiPartFormData.Parts parts, Throwable throwable)
-            {
+                RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
                 try
                 {
-                    _processor.process(_request, _response, _callback);
+                    getHandler().handle(request, getResponse(), getCallback());
                 }
                 catch (Throwable x)
                 {
-                    Response.writeError(_request, _response, _callback, x);
+                    // Use the wrapped request so that the error handling can
+                    // consume the request content and release the already read chunk.
+                    Response.writeError(request, getResponse(), getCallback(), x);
                 }
+            }
+        }
+
+        public void onContent()
+        {
+            // We must execute here, because demand callbacks are serialized and process may block on a demand callback
+            getRequest().getContext().execute(this::process);
+        }
+
+        private static class RewindChunkRequest extends Request.Wrapper
+        {
+            private final AtomicReference<Content.Chunk> _chunk;
+
+            public RewindChunkRequest(Request wrapped, Content.Chunk chunk)
+            {
+                super(wrapped);
+                _chunk = new AtomicReference<>(chunk);
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                Content.Chunk chunk = _chunk.getAndSet(null);
+                if (chunk != null)
+                    return chunk;
+                return super.read();
             }
         }
     }
 
-    public static class QualityOfService extends DelayedHandler
+    protected static class UntilFormDelayedProcess extends DelayedProcess
     {
-        private final int _maxPermits;
-        private final Queue<QualityOfServiceProcessor> _queue = new ArrayDeque<>();
-        private int _permits;
+        private final Charset _charset;
 
-        public QualityOfService(int permits)
+        public UntilFormDelayedProcess(Handler handler, Request wrapped, Response response, Callback callback, String contentType)
         {
-            _maxPermits = permits;
+            super(handler, wrapped, response, callback);
+
+            String cs = MimeTypes.getCharsetFromContentType(contentType);
+            _charset = StringUtil.isEmpty(cs) ? StandardCharsets.UTF_8 : Charset.forName(cs);
         }
 
         @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
+        protected void delay()
         {
-            return new QualityOfServiceProcessor(request, processor);
+            CompletableFuture<Fields> futureFormFields = FormFields.from(getRequest(), _charset);
+
+            // if we are done already, then we are still in the scope of the original process call and can
+            // process directly, otherwise we must execute a call to process as we are within a serialized
+            // demand callback.
+            futureFormFields.whenComplete(futureFormFields.isDone() ? this::process : this::executeProcess);
         }
 
-        private class QualityOfServiceProcessor implements Request.Processor, Callback
+        private void process(Fields fields, Throwable x)
         {
-            private final Request.Processor _processor;
-            private final Request _request;
-            private Response _response;
-            private Callback _callback;
+            if (x == null)
+                super.process();
+            else
+                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+        }
 
-            private QualityOfServiceProcessor(Request request, Request.Processor processor)
+        private void executeProcess(Fields fields, Throwable x)
+        {
+            if (x == null)
+                // We must execute here as even though we have consumed all the input, we are probably
+                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
+                getRequest().getContext().execute(super::process);
+            else
+                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+        }
+    }
+
+    protected static class UntilMultiPartDelayedProcess extends DelayedProcess
+    {
+        private final MultiPartFormData _formData;
+
+        public UntilMultiPartDelayedProcess(Handler handler, Request wrapped, Response response, Callback callback, String contentType)
+        {
+            super(handler, wrapped, response, callback);
+            String boundary = MultiPart.extractBoundary(contentType);
+            _formData = boundary == null ? null : new MultiPartFormData(boundary);
+        }
+
+        private void process(MultiPartFormData.Parts parts, Throwable x)
+        {
+            if (x == null)
             {
-                _processor = processor;
-                _request = request;
+                getRequest().setAttribute(MultiPartFormData.Parts.class.getName(), parts);
+                super.process();
             }
-
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            else
             {
-                boolean accepted;
-                synchronized (QualityOfService.this)
-                {
-                    _callback = callback;
-                    accepted = _permits < _maxPermits;
-                    if (accepted)
-                        _permits++;
-                    else
-                    {
-                        _response = response;
-                        _queue.add(this);
-                    }
-                }
-                if (accepted)
-                    _processor.process(request, response, this);
+                Response.writeError(getRequest(), getResponse(), getCallback(), x);
             }
+        }
 
-            @Override
-            public void succeeded()
+        private void executeProcess(MultiPartFormData.Parts parts, Throwable x)
+        {
+            if (x == null)
             {
-                try
-                {
-                    _callback.succeeded();
-                    release();
-                }
-                finally
-                {
-                    release();
-                }
+                // We must execute here as even though we have consumed all the input, we are probably
+                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
+                getRequest().getContext().execute(() -> process(parts, x));
             }
-
-            @Override
-            public void failed(Throwable x)
+            else
             {
-                try
-                {
-                    _callback.failed(x);
-                    release();
-                }
-                finally
-                {
-                    release();
-                }
+                Response.writeError(getRequest(), getResponse(), getCallback(), x);
             }
+        }
 
-            private void release()
+        @Override
+        public void delay()
+        {
+            if (_formData == null)
             {
-                QualityOfServiceProcessor processor;
-                synchronized (QualityOfService.this)
-                {
-                    processor = _queue.poll();
-                    if (processor == null)
-                        _permits--;
-                }
-
-                if (processor != null)
+                this.process();
+            }
+            else
+            {
+                _formData.setFilesDirectory(getRequest().getContext().getTempDirectory().toPath());
+                readAndParse();
+                // if we are done already, then we are still in the scope of the original process call and can
+                // process directly, otherwise we must execute a call to process as we are within a serialized
+                // demand callback.
+                if (_formData.isDone())
                 {
                     try
                     {
-                        processor._processor.process(processor._request, processor._response, processor);
+                        MultiPartFormData.Parts parts = _formData.join();
+                        process(parts, null);
                     }
                     catch (Throwable t)
                     {
-                        Response.writeError(processor._request, processor._response, processor, t);
+                        process(null, t);
                     }
+                }
+                else
+                {
+                    _formData.whenComplete(this::executeProcess);
+                }
+            }
+        }
+
+        private void readAndParse()
+        {
+            while (!_formData.isDone())
+            {
+                Content.Chunk chunk = getRequest().read();
+                if (chunk == null)
+                {
+                    getRequest().demand(this::readAndParse);
+                    return;
+                }
+                if (chunk instanceof Content.Chunk.Error error)
+                {
+                    _formData.completeExceptionally(error.getCause());
+                    return;
+                }
+                _formData.parse(chunk);
+                chunk.release();
+                if (chunk.isLast())
+                {
+                    if (!_formData.isDone())
+                        process(null, new IOException("Incomplete multipart"));
+                    return;
                 }
             }
         }

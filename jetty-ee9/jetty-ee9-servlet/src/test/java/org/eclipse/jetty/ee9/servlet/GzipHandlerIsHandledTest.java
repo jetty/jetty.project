@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,16 +15,17 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -79,7 +80,7 @@ public class GzipHandlerIsHandledTest
     @Test
     public void testRequest() throws Exception
     {
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
 
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setBaseResource(ResourceFactory.root().newResource(workDir.getPath()));
@@ -90,7 +91,7 @@ public class GzipHandlerIsHandledTest
         gzipHandler.setMinGzipSize(32);
         gzipHandler.setHandler(new EventHandler(events, "GzipHandler-wrapped-handler"));
 
-        handlers.setHandlers(resourceHandler, gzipHandler, new DefaultHandler());
+        handlers.setHandlers(resourceHandler, gzipHandler);
 
         startServer(handlers);
 
@@ -115,10 +116,11 @@ public class GzipHandlerIsHandledTest
         }
 
         @Override
-        public Request.Processor handle(Request request)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             events.offer(action);
-            return null;
+            callback.succeeded();
+            return true;
         }
     }
 }

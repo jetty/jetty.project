@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,8 +17,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GeneratorParserRoundTripTest
 {
-    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testParserAndGenerator() throws Exception
@@ -38,20 +39,21 @@ public class GeneratorParserRoundTripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(8192, false);
+        RetainableByteBuffer out = bufferPool.acquire(8192, false);
         try
         {
             // Generate Buffer
+            ByteBuffer byteBuffer = out.getByteBuffer();
             Frame frame = new Frame(OpCode.TEXT).setPayload(message);
-            gen.generateHeader(frame, out);
-            gen.generatePayload(frame, out);
+            gen.generateHeader(frame, byteBuffer);
+            gen.generatePayload(frame, byteBuffer);
 
             // Parse Buffer
-            capture.parse(out);
+            capture.parse(byteBuffer);
         }
         finally
         {
-            bufferPool.release(out);
+            out.release();
         }
 
         // Validate
@@ -67,9 +69,11 @@ public class GeneratorParserRoundTripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(8192, false);
+        RetainableByteBuffer out = bufferPool.acquire(8192, false);
         try
         {
+            ByteBuffer byteBuffer = out.getByteBuffer();
+
             // Setup Frame
             Frame frame = new Frame(OpCode.TEXT).setPayload(message);
 
@@ -79,15 +83,15 @@ public class GeneratorParserRoundTripTest
             frame.setMask(mask);
 
             // Generate Buffer
-            gen.generateHeader(frame, out);
-            gen.generatePayload(frame, out);
+            gen.generateHeader(frame, byteBuffer);
+            gen.generatePayload(frame, byteBuffer);
 
             // Parse Buffer
-            capture.parse(out);
+            capture.parse(byteBuffer);
         }
         finally
         {
-            bufferPool.release(out);
+            out.release();
         }
 
         // Validate

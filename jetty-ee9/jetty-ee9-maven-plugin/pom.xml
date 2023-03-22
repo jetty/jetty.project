@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>EE9 :: Jetty :: Jetty Maven Plugin</name>
+  <name>EE9 :: Jetty Maven Plugin</name>
   <description>Jetty maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
@@ -61,6 +61,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
+        <configuration>
+          <goalPrefix>jetty</goalPrefix>
+        </configuration>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
@@ -110,6 +113,8 @@
             <pomExclude>jetty-start-gwt-it/pom.xml</pomExclude>
             <!-- bean-validation-webapp-2.25.1.war is not jakarta namespace ready -->
             <pomExclude>jetty-start-war-mojo-it/pom.xml</pomExclude>
+            <!-- enable when normalization of META-INF resources is removed -->
+            <!-- pomExclude>jetty-effective-web-xml-it/pom.xml</pomExclude -->
           </pomExcludes>
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
@@ -239,16 +244,16 @@
       <artifactId>jetty-ee9-annotations</artifactId>
       <optional>true</optional>
     </dependency>
-    <!-- dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
       <optional>true</optional>
-    </dependency -->
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-apache-jsp</artifactId>

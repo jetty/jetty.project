@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -58,6 +58,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.AttributeNormalizer;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlAppendable;
 import org.slf4j.Logger;
@@ -165,9 +166,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             out.tag("display-name", context.getDisplayName());
 
         // Set some special context parameters
-
-        // The location of the war file on disk
-        AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
+        Resource base = context.getBaseResource();
+        base = (base != null ? base.iterator().next() : null);
+        AttributeNormalizer normalizer = new AttributeNormalizer(base);
 
         // The library order
         addContextParamFromAttribute(context, out, ServletContext.ORDERED_LIBS);
@@ -465,7 +466,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //error-pages
-        Map<String, String> errorPages = ((ErrorPageErrorHandler)context.getErrorProcessor()).getErrorPages();
+        Map<String, String> errorPages = ((ErrorPageErrorHandler)context.getErrorHandler()).getErrorPages();
         if (errorPages != null)
         {
             for (Map.Entry<String, String> entry : errorPages.entrySet())
@@ -817,7 +818,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         {
             generateQuickStartWebXml(context, os);
             LOG.info("Generated {}", _quickStartWebXml);
-            if (context.getAttribute(WebInfConfiguration.TEMPORARY_RESOURCE_BASE) != null && !context.isPersistTempDirectory())
+            if (context.getAttribute(WebInfConfiguration.TEMPORARY_RESOURCE_BASE) != null && !context.isTempDirectoryPersistent())
                 LOG.warn("Generated to non persistent location: {}", _quickStartWebXml);
         }
     }

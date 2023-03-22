@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -44,10 +44,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.FileMappingHttpContentFactory;
-import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -55,12 +53,15 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
-import org.eclipse.jetty.http.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
@@ -106,12 +107,13 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setWelcomeFactory(_resourceService);
 
         _baseResource = servletContextHandler.getBaseResource();
+        _resourceFactory = ResourceFactory.closeable();
+
         String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
             {
-                _resourceFactory = ResourceFactory.closeable();
                 _baseResource = _resourceFactory.newResource(rb);
             }
             catch (Exception e)
@@ -130,10 +132,34 @@ public class DefaultServlet extends HttpServlet
         {
             MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
             contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
-            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
+
+            // Use the servers default stylesheet unless there is one explicitly set by an init param.
+            Resource styleSheet = servletContextHandler.getServer().getDefaultStyleSheet();
+            String stylesheetParam = getInitParameter("stylesheet");
+            if (stylesheetParam != null)
+            {
+                try
+                {
+                    Resource s = _resourceFactory.newResource(stylesheetParam);
+                    if (Resources.isReadableFile(s))
+                        styleSheet = s;
+                    else
+                        LOG.warn("Stylesheet {} does not exist", stylesheetParam);
+                }
+                catch (Exception e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Unable to use stylesheet: {}", stylesheetParam, e);
+                    else
+                        LOG.warn("Unable to use stylesheet: {} - {}", stylesheetParam, e.toString());
+                }
+            }
 
             if (getInitBoolean("useFileMappedBuffer", false))
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
+
+            contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css");
+            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
@@ -141,9 +167,9 @@ public class DefaultServlet extends HttpServlet
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                ByteBufferPool byteBufferPool = getByteBufferPool(servletContextHandler);
+                ByteBufferPool bufferPool = getByteBufferPool(servletContextHandler);
                 ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
-                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), byteBufferPool);
+                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                 contentFactory = cached;
                 if (maxCacheSize >= 0)
                     cached.setMaxCacheSize(maxCacheSize);
@@ -175,32 +201,6 @@ public class DefaultServlet extends HttpServlet
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
-        // Use the servers default stylesheet unless there is one explicitly set by an init param.
-        _resourceService.setStylesheet(servletContextHandler.getServer().getDefaultStyleSheet());
-        String stylesheetParam = getInitParameter("stylesheet");
-        if (stylesheetParam != null)
-        {
-            try
-            {
-                Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
-                if (Resources.isReadableFile(stylesheet))
-                {
-                    _resourceService.setStylesheet(stylesheet);
-                }
-                else
-                {
-                    LOG.warn("Stylesheet {} does not exist", stylesheetParam);
-                }
-            }
-            catch (Exception e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Unable to use stylesheet: {}", stylesheetParam, e);
-                else
-                    LOG.warn("Unable to use stylesheet: {} - {}", stylesheetParam, e.toString());
-            }
-        }
-
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
         if (encodingHeaderCacheSize >= 0)
             _resourceService.setEncodingCacheSize(encodingHeaderCacheSize);
@@ -228,21 +228,25 @@ public class DefaultServlet extends HttpServlet
         }
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
 
-        // TODO: remove? _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
-
         if (LOG.isDebugEnabled())
-            LOG.debug("base resource = {}", _baseResource);
+        {
+            LOG.debug("  .baseResource = {}", _baseResource);
+            LOG.debug("  .resourceFactory = {}", _resourceFactory);
+            LOG.debug("  .resourceService = {}", _resourceService);
+            LOG.debug("  .isPathInfoOnly = {}", _isPathInfoOnly);
+            LOG.debug("  .welcomeExactServlets = {}", _welcomeExactServlets);
+            LOG.debug("  .welcomeServlets = {}", _welcomeServlets);
+        }
     }
 
     private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new NoopByteBufferPool();
+            return new ByteBufferPool.NonPooling();
         Server server = contextHandler.getServer();
         if (server == null)
-            return new NoopByteBufferPool();
-        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
-        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+            return new ByteBufferPool.NonPooling();
+        return server.getByteBufferPool();
     }
 
     private String getInitParameter(String name, String... deprecated)
@@ -254,7 +258,7 @@ public class DefaultServlet extends HttpServlet
         for (String d : deprecated)
         {
             value = super.getInitParameter(d);
-            if (value != name)
+            if (value != null)
             {
                 LOG.warn("Deprecated {} used instead of {}", d, name);
                 return value;
@@ -338,12 +342,12 @@ public class DefaultServlet extends HttpServlet
         if (servletContext instanceof ServletContextHandler.ServletContextApi api)
             return api.getContext().getServletContextHandler();
 
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
-        if (context != null)
-            return context.getContextHandler();
+        Context context = ContextHandler.getCurrentContext();
+        if (context instanceof ContextHandler.ScopedContext scopedContext)
+            return scopedContext.getContextHandler();
 
         throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-            servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
+            servletContext.getClass().getName() + " is not " + ContextHandler.ScopedContext.class.getName());
     }
 
     protected boolean isPathInfoOnly()
@@ -354,11 +358,27 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        String pathInContext = isPathInfoOnly() ? req.getPathInfo() : URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
-        boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+        String includedServletPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+        boolean included = includedServletPath != null;
+        String encodedPathInContext;
+        if (included)
+            encodedPathInContext = URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, isPathInfoOnly()));
+        else if (isPathInfoOnly())
+            encodedPathInContext = URIUtil.encodePath(req.getPathInfo());
+        else if (req instanceof ServletApiRequest apiRequest)
+            encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getServletContextRequest().getHttpURI().getCanonicalPath());
+        else
+            encodedPathInContext = Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("doGet(req={}, resp={}) pathInContext={}, included={}", req, resp, encodedPathInContext, included);
+
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getServletContextRequest(req));
+            HttpContent content = _resourceService.getContent(encodedPathInContext, ServletContextRequest.getServletContextRequest(req));
+            if (LOG.isDebugEnabled())
+                LOG.debug("content = {}", content);
+
             if (content == null || Resources.missing(content.getResource()))
             {
                 if (included)
@@ -369,11 +389,11 @@ public class DefaultServlet extends HttpServlet
                      * If the exception isn’t caught and handled, and the response
                      * hasn’t been committed, the status code MUST be set to 500.
                      */
-                    throw new FileNotFoundException(pathInContext);
+                    throw new FileNotFoundException(encodedPathInContext);
                 }
 
                 // no content
-                resp.setStatus(404);
+                resp.sendError(404);
             }
             else
             {
@@ -417,9 +437,9 @@ public class DefaultServlet extends HttpServlet
         catch (InvalidPathException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
+                LOG.debug("InvalidPathException for pathInContext: {}", encodedPathInContext, e);
             if (included)
-                throw new FileNotFoundException(pathInContext);
+                throw new FileNotFoundException(encodedPathInContext);
             resp.setStatus(404);
         }
     }
@@ -427,6 +447,8 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("doHead(req={}, resp={}) (calling doGet())", req, resp);
         doGet(req, resp);
     }
 
@@ -457,10 +479,16 @@ public class DefaultServlet extends HttpServlet
                     fields.add(new HttpField(headerName, headerValue));
                 }
             }
+
             _httpFields = fields.asImmutable();
-            _uri = (request.getDispatcherType() == DispatcherType.REQUEST)
-                ? getWrapped().getHttpURI()
-                : Request.newHttpURIFrom(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
+            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            boolean included = includedServletPath != null;
+            if (request.getDispatcherType() == DispatcherType.REQUEST)
+                _uri = getWrapped().getHttpURI();
+            else if (included)
+                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(getIncludedPathInContext(request, includedServletPath, false)));
+            else
+                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo())));
         }
 
         @Override
@@ -500,7 +528,7 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
         }
 
@@ -740,7 +768,7 @@ public class DefaultServlet extends HttpServlet
         {
             _coreRequest = coreRequest;
             _response = response;
-            _coreResponse = ServletContextResponse.getBaseResponse(response);
+            _coreResponse = ServletContextResponse.getServletContextResponse(response);
             _httpFields = new HttpServletResponseHttpFields(response);
         }
 
@@ -752,9 +780,9 @@ public class DefaultServlet extends HttpServlet
 
         public ServletContextResponse getServletContextResponse()
         {
-            if (_response instanceof ServletContextResponse.ServletApiResponse)
+            if (_response instanceof ServletApiResponse)
             {
-                ServletContextResponse.ServletApiResponse apiResponse = (ServletContextResponse.ServletApiResponse)_response;
+                ServletApiResponse apiResponse = (ServletApiResponse)_response;
                 return apiResponse.getResponse();
             }
             return null;
@@ -788,10 +816,10 @@ public class DefaultServlet extends HttpServlet
             return servletContextResponse.isWritingOrStreaming();
         }
 
-        public boolean isStreaming()
+        public boolean isWriting()
         {
             ServletContextResponse servletContextResponse = Response.as(_coreResponse, ServletContextResponse.class);
-            return servletContextResponse.isStreaming();
+            return servletContextResponse.isWriting();
         }
 
         @Override
@@ -801,13 +829,7 @@ public class DefaultServlet extends HttpServlet
             {
                 if (BufferUtil.hasContent(byteBuffer))
                 {
-                    if (isStreaming())
-                    {
-                        BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
-                        if (last)
-                            _response.getOutputStream().close();
-                    }
-                    else
+                    if (isWriting())
                     {
                         String characterEncoding = _response.getCharacterEncoding();
                         try (ByteBufferInputStream bbis = new ByteBufferInputStream(byteBuffer);
@@ -818,6 +840,12 @@ public class DefaultServlet extends HttpServlet
 
                         if (last)
                             _response.getWriter().close();
+                    }
+                    else
+                    {
+                        BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
+                        if (last)
+                            _response.getOutputStream().close();
                     }
                 }
 
@@ -844,6 +872,8 @@ public class DefaultServlet extends HttpServlet
         @Override
         public void setStatus(int code)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}.setStatus({})", this.getClass().getSimpleName(), code);
             _response.setStatus(code);
         }
 
@@ -881,31 +911,27 @@ public class DefaultServlet extends HttpServlet
     {
         private final ServletContextHandler _servletContextHandler;
 
-        ServletResourceService(ServletContextHandler servletContextHandler)
+        private ServletResourceService(ServletContextHandler servletContextHandler)
         {
             _servletContextHandler = servletContextHandler;
         }
 
         @Override
-        public String getWelcomeTarget(Request coreRequest) throws IOException
+        public String getWelcomeTarget(Request coreRequest)
         {
             String[] welcomes = _servletContextHandler.getWelcomeFiles();
-
             if (welcomes == null)
                 return null;
 
             HttpServletRequest request = getServletRequest(coreRequest);
-
-            boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
-
-            if (included)
-            {
-                // Servlet 9.3 - don't process welcome target from INCLUDE dispatch
-                return null;
-            }
-
             String pathInContext = Request.getPathInContext(coreRequest);
-            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
+            String requestTarget;
+            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            boolean included = includedServletPath != null;
+            if (included)
+                requestTarget = getIncludedPathInContext(request, includedServletPath, isPathInfoOnly());
+            else
+                requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
 
             String welcomeServlet = null;
             Resource base = _baseResource.resolve(requestTarget);
@@ -937,7 +963,7 @@ public class DefaultServlet extends HttpServlet
             HttpServletRequest servletRequest = getServletRequest(request);
             HttpServletResponse servletResponse = getServletResponse(response);
 
-            boolean included = servletRequest.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            boolean included = isIncluded(servletRequest);
 
             String servletPath = included ? (String)servletRequest.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
                 : servletRequest.getServletPath();
@@ -946,7 +972,7 @@ public class DefaultServlet extends HttpServlet
                 welcomeTarget = URIUtil.addPaths(servletPath, welcomeTarget);
 
             servletResponse.setContentLength(0);
-            servletResponse.sendRedirect(welcomeTarget); // Call API (might be overridden)
+            servletResponse.sendRedirect(welcomeTarget);
             callback.succeeded();
             return true;
         }
@@ -957,7 +983,7 @@ public class DefaultServlet extends HttpServlet
             HttpServletRequest servletRequest = getServletRequest(request);
             HttpServletResponse servletResponse = getServletResponse(response);
 
-            boolean included = servletRequest.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            boolean included = isIncluded(servletRequest);
 
             RequestDispatcher dispatcher = servletRequest.getServletContext().getRequestDispatcher(welcomeTarget);
             if (dispatcher == null)
@@ -992,18 +1018,23 @@ public class DefaultServlet extends HttpServlet
         @Override
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={})", coreRequest, coreResponse, callback, statusCode);
             writeHttpError(coreRequest, coreResponse, callback, statusCode, null, null);
         }
 
         @Override
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, Throwable cause)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause, cause);
+
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
-            if (cause instanceof BadMessageException badMessageException)
+            if (cause instanceof HttpException httpException)
             {
-                statusCode = badMessageException.getCode();
-                reason = badMessageException.getReason();
+                statusCode = httpException.getCode();
+                reason = httpException.getReason();
             }
             writeHttpError(coreRequest, coreResponse, callback, statusCode, reason, cause);
         }
@@ -1011,6 +1042,8 @@ public class DefaultServlet extends HttpServlet
         @Override
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String reason, Throwable cause)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause, cause);
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
             try
@@ -1034,9 +1067,9 @@ public class DefaultServlet extends HttpServlet
         @Override
         protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
         {
-            boolean included = getServletRequest(request).getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            boolean included = isIncluded(getServletRequest(request));
             if (included)
-                return true;
+                return false;
             return super.passConditionalHeaders(request, response, content, callback);
         }
 
@@ -1051,6 +1084,18 @@ public class DefaultServlet extends HttpServlet
             // TODO, this unwrapping is fragile
             return ((ServletCoreResponse)response)._response;
         }
+    }
+
+    private static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
+    {
+        String servletPath = isPathInfoOnly ? "/" : includedServletPath;
+        String pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
+        return URIUtil.addPaths(servletPath, pathInfo);
+    }
+
+    private static boolean isIncluded(HttpServletRequest request)
+    {
+        return request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
     }
 
     /**

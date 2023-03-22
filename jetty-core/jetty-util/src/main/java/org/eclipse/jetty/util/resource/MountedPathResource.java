@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,9 +16,7 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.eclipse.jetty.util.URIUtil;
 
@@ -28,14 +26,6 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class MountedPathResource extends PathResource
 {
-    public static MountedPathResource of(URI uri) throws IOException
-    {
-        Path path = Paths.get(uri.normalize());
-        if (!Files.exists(path))
-            return null;
-        return new MountedPathResource(path, uri);
-    }
-
     private final URI containerUri;
 
     MountedPathResource(URI uri) throws IOException

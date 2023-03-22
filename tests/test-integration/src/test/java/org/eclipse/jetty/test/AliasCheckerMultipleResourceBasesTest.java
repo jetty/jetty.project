@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,8 +19,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Handler;
@@ -130,10 +130,10 @@ public class AliasCheckerMultipleResourceBasesTest
     @Test
     public void test() throws Exception
     {
-        Handler.Collection collection = new Handler.Collection();
-        collection.addHandler(newResourceHandler(_altDir1Symlink));
-        collection.addHandler(newResourceHandler(_altDir2Symlink));
-        _context.setHandler(collection);
+        Handler.Sequence handlers = new Handler.Sequence();
+        handlers.addHandler(newResourceHandler(_altDir1Symlink));
+        handlers.addHandler(newResourceHandler(_altDir2Symlink));
+        _context.setHandler(handlers);
         _server.start();
 
         // With no alias checkers we cannot access file 1.

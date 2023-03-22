@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-tests</artifactId>
-  <name>EE10 :: Tests :: Parent</name>
+  <name>EE10 :: Tests</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -20,9 +20,9 @@
   <modules>
     <module>jetty-ee10-test-bad-websocket-webapp</module>
     <module>jetty-ee10-test-cdi</module>
-<!-- TODO   <module>jetty-ee10-test-http2-webapp</module>-->
+    <module>jetty-ee10-test-http2-webapp</module>
     <module>jetty-ee10-test-client-transports</module>
-<!-- TODO   <module>jetty-ee10-test-integration</module>-->
+    <module>jetty-ee10-test-integration</module>
     <module>jetty-ee10-test-jmx</module>
     <module>jetty-ee10-test-jndi</module>
     <module>jetty-ee10-test-loginservice</module>
@@ -38,5 +38,6 @@
     <module>jetty-ee10-test-webapp-rfc2616</module>
     <module>jetty-ee10-test-weld-cdi-webapp</module>
     <module>jetty-ee10-test-badinit-webapp</module>
+    <module>jetty-ee10-test-sessions</module>
   </modules>
 </project>

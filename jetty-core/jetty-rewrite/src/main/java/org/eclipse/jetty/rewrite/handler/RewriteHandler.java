@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,6 +17,8 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>{@code RewriteHandler} rewrites incoming requests through a set of {@link Rule}s.</p>
@@ -103,19 +105,20 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (!isStarted())
-            return null;
+            return false;
 
-        Request.WrapperProcessor input = new Request.WrapperProcessor(request);
-        Request.WrapperProcessor output = _rules.matchAndApply(input);
+        Rule.Handler input = new Rule.Handler(request);
+        Rule.Handler output = _rules.matchAndApply(input);
 
         // No rule matched, call super with the original request.
         if (output == null)
-            return super.handle(request);
+            return super.handle(request, response, callback);
 
         // At least one rule matched, call super with the result of the rule applications.
-        return output.wrapProcessor(super.handle(output));
+        output.setHandler(getHandler());
+        return output.handle(output, response, callback);
     }
 }

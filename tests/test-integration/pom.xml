@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-integration</artifactId>
   <packaging>jar</packaging>
-  <name>Jetty Tests :: Integrations</name>
+  <name>Tests :: Integration</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.integrations</bundle-symbolic-name>
   </properties>

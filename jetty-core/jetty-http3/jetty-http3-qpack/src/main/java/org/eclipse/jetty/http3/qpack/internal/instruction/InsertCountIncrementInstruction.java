@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,17 +15,18 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class InsertCountIncrementInstruction implements Instruction
+public class InsertCountIncrementInstruction extends AbstractInstruction
 {
     private final int _increment;
 
-    public InsertCountIncrementInstruction(int increment)
+    public InsertCountIncrementInstruction(ByteBufferPool bufferPool, int increment)
     {
+        super(bufferPool);
         _increment = increment;
     }
 
@@ -35,14 +36,16 @@ public class InsertCountIncrementInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Lease lease)
+    public void encode(ByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _increment) + 1;
-        ByteBuffer buffer = lease.acquire(size, false);
-        buffer.put((byte)0x00);
-        NBitIntegerEncoder.encode(buffer, 6, _increment);
-        BufferUtil.flipToFlush(buffer, 0);
-        lease.append(buffer, true);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.clearToFill(byteBuffer);
+        byteBuffer.put((byte)0x00);
+        NBitIntegerEncoder.encode(byteBuffer, 6, _increment);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(buffer);
     }
 
     @Override

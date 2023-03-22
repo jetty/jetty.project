@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,8 +17,8 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -48,26 +47,22 @@ import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
- * <p>A {@code Request} instance is given to a {@link Handler}, that decides whether it handles
- * the request or not.</p>
- * <p>During the handling phase, the {@code Request} APIs can be used, but its content cannot be read.
- * Attempting to read the {@code Request} content during the handling phase results in an
- * {@link IllegalStateException} to be thrown.</p>
- * <p>A {@code Handler} that handles the request returns a {@link Processor}, that is then invoked
- * to process the request and the response (the processing phase).</p>
- * <p>Only during the processing phase the {@code Request} content can be read.</p>
  * <p>The typical idiom to read request content is the following:</p>
  * <pre>{@code
- * public void process(Request request, Response response, Callback callback)
+ * public boolean handle(Request request, Response response, Callback callback)
  * {
+ *     // Reject requests not appropriate for this handler.
+ *     if (!request.getHttpURI().getPath().startsWith("/yourPath"))
+ *         return false;
+ *
  *     while (true)
  *     {
  *         Content.Chunk chunk = request.read();
  *         if (chunk == null)
  *         {
  *             // The chunk is not currently available, demand to be called back.
- *             request.demand(() -> process(request, response, callback));
- *             return;
+ *             request.demand(() -> handle(request, response, callback));
+ *             return true;
  *         }
  *
  *         if (chunk instanceof Content.Chunk.Error error)
@@ -75,10 +70,10 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             Throwable failure = error.getCause();
  *
  *             // Handle errors.
- *             // Mark the processing as complete, either generating a custom
+ *             // Mark the handling as complete, either generating a custom
  *             // response and succeeding the callback, or failing the callback.
  *             callback.failed(failure);
- *             return;
+ *             return true;
  *         }
  *
  *         if (chunk instanceof Trailers trailers)
@@ -89,10 +84,10 @@ import org.eclipse.jetty.util.thread.Invocable;
  *
  *             // Generate a response.
  *
- *             // Mark the processing as complete.
+ *             // Mark the handling as complete.
  *             callback.succeeded();
  *
- *             return;
+ *             return true;
  *         }
  *
  *         // Normal chunk, process it.
@@ -105,10 +100,10 @@ import org.eclipse.jetty.util.thread.Invocable;
  *         {
  *             // Generate a response.
  *
- *             // Mark the processing as complete.
+ *             // Mark the handling as complete.
  *             callback.succeeded();
  *
- *             return;
+ *             return true;
  *         }
  *     }
  * }
@@ -116,7 +111,8 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface Request extends Attributes, Content.Source
 {
-    List<Locale> __defaultLocale = Collections.singletonList(Locale.getDefault());
+    String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
+    String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
 
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
@@ -186,11 +182,37 @@ public interface Request extends Attributes, Content.Source
     HttpFields getHeaders();
 
     /**
+     * {@inheritDoc}
+     * @param demandCallback the demand callback to invoke when there is a content chunk available.
+     *                       In addition to the invocation guarantees of {@link Content.Source#demand(Runnable)},
+     *                       this implementation serializes the invocation of the {@code Runnable} with
+     *                       invocations of any {@link Response#write(boolean, ByteBuffer, Callback)}
+     *                       {@code Callback} invocations.
+     * @see Content.Source#demand(Runnable)
+     */
+    @Override
+    void demand(Runnable demandCallback);
+
+    /**
      * @return the HTTP trailers of this request, or {@code null} if they are not present
      */
     HttpFields getTrailers();
 
+    /**
+     * <p>Get the millisecond timestamp at which the request was created, obtained via {@link System#currentTimeMillis()}.
+     * This method should be used for wall clock time, rather than {@link #getNanoTime()},
+     * which is appropriate for measuring latencies.</p>
+     * @return The timestamp that the request was received/created in milliseconds
+     */
     long getTimeStamp();
+
+    /**
+     * <p>Get the nanoTime at which the request was created, obtained via {@link System#nanoTime()}.
+     * This method should be used when measuring latencies, rather than {@link #getTimeStamp()},
+     * which is appropriate for wall clock time.</p>
+     * @return The nanoTime at which the request was received/created in nanoseconds
+     */
+    long getNanoTime();
 
     // TODO: see above.
     boolean isSecure();
@@ -203,19 +225,33 @@ public interface Request extends Attributes, Content.Source
     @Override
     Content.Chunk read();
 
-    // TODO should this be on the connectionMetaData?
-    default boolean isPushSupported()
-    {
-        return false; // TODO
-    }
+    /**
+     * Consume any available content. This bypasses any request wrappers to process the content in
+     * {@link Request#read()} and reads directly from the {@link HttpStream}. This reads until
+     * there is no content currently available or it reaches EOF.
+     * The {@link HttpConfiguration#setMaxUnconsumedRequestContentReads(int)} configuration can be used
+     * to configure how many reads will be attempted by this method.
+     * @return true if the content was fully consumed.
+     */
+    boolean consumeAvailable();
 
-    void push(MetaData.Request request); // TODO
+    /**
+     * <p>Pushes the given {@code resource} to the client.</p>
+     *
+     * @param resource the resource to push
+     * @throws UnsupportedOperationException if the push functionality is not supported
+     * @see ConnectionMetaData#isPushSupported()
+     */
+    default void push(MetaData.Request resource)
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * <p>Adds a listener for asynchronous errors.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
      * that the function has completed (either successfully or with a failure) the callback
-     * received from {@link Handler.Processor#process(Request, Response, Callback)}, or
+     * received from {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}, or
      * {@code false} otherwise.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}
      * stops the processing of subsequent listeners, which are therefore not invoked.</p>
@@ -227,7 +263,16 @@ public interface Request extends Attributes, Content.Source
 
     TunnelSupport getTunnelSupport();
 
-    void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
+    void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
+
+    /**
+     * <p>Get a {@link Session} associated with the request.
+     * Sessions may not be supported by a given configuration, in which case
+     * {@code null} will be returned.</p>
+     * @param create True if the session should be created for the request.
+     * @return The session associated with the request or {@code null}.
+     */
+    Session getSession(boolean create);
 
     static String getLocalAddr(Request request)
     {
@@ -334,13 +379,13 @@ public interface Request extends Attributes, Content.Source
     {
         HttpFields fields = request.getHeaders();
         if (fields == null)
-            return __defaultLocale;
+            return List.of(Locale.getDefault());
 
         List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
         // handle no locale
         if (acceptable.isEmpty())
-            return __defaultLocale;
+            return List.of(Locale.getDefault());
 
         return acceptable.stream().map(language ->
         {
@@ -384,21 +429,21 @@ public interface Request extends Attributes, Content.Source
     static List<HttpCookie> getCookies(Request request)
     {
         // TODO modify Request and HttpChannel to be optimised for the known attributes
-        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(Request.class.getCanonicalName() + ".Cookies");
+        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(COOKIE_ATTRIBUTE);
         if (cookies != null)
             return cookies;
 
         // TODO: review whether to store the cookie cache at the connection level, or whether to cache them at all.
-        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().get(Request.class.getCanonicalName() + ".CookieCache");
+        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(CACHE_ATTRIBUTE);
         if (cookieCache == null)
         {
             // TODO compliance listeners?
             cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
-            request.getComponents().getCache().put(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
+            request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
         }
 
         cookies = cookieCache.getCookies(request.getHeaders());
-        request.setAttribute(Request.class.getCanonicalName() + ".Cookies", cookies);
+        request.setAttribute(COOKIE_ATTRIBUTE, cookies);
         return cookies;
     }
 
@@ -446,45 +491,48 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * <p>A processor for an HTTP request and response.</p>
-     * <p>The processing typically involves reading the request content (if any) and producing a response.</p>
+     * <p>A handler for an HTTP request and response.</p>
+     * <p>The handling typically involves reading the request content (if any) and producing a response.</p>
      */
     @FunctionalInterface
-    interface Processor extends Invocable
+    interface Handler extends Invocable
     {
         /**
-         * <p>Invoked to process the given HTTP request and response.</p>
-         * <p>The processing <em>must</em> be concluded by completing the given callback.</p>
-         * <p>The processing may be asynchronous, i.e. this method may return early and
-         * complete the given callback later, possibly from a different thread.</p>
-         * <p>Within an implementation of this method it is possible to read the
-         * request content (that was forbidden in {@link Handler#handle(Request)}.</p>
-         * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
+         * <p>Invoked to handle the passed HTTP request and response.</p>
+         * <p>The request is accepted by returning true, then handling <em>must</em> be concluded by
+         * completing the passed callback. The handling may be asynchronous, i.e. this method may return true and
+         * complete the given callback later, possibly from a different thread.  If this method returns false,
+         * then the callback must not be invoked and any mutation on the response reversed.</p>
+         * <p>Exceptions thrown by this method may be subsequently handled by an error {@link Request.Handler},
          * if present, otherwise a default HTTP 500 error is generated and the
          * callback completed while writing the error response.</p>
          * <p>The simplest implementation is:</p>
          * <pre>
-         * public void process(Request request, Response response, Callback callback)
+         * public boolean handle(Request request, Response response, Callback callback)
          * {
-         *     // Implicitly respond with 200 OK.
          *     callback.succeeded();
+         *     return true;
          * }
          * </pre>
          * <p>A HelloWorld implementation is:</p>
          * <pre>
-         * public void process(Request request, Response response, Callback callback)
+         * public boolean handle(Request request, Response response, Callback callback)
          * {
-         *     // The callback is completed when the write completes.
-         *     response.write(true, callback, "hello, world!");
+         *     response.write(true, ByteBuffer.wrap("Hello World\n".getBytes(StandardCharsets.UTF_8)), callback);
+         *     return true;
          * }
          * </pre>
          *
-         * @param request the HTTP request to process
-         * @param response the HTTP response to process
-         * @param callback the callback to complete when the processing is complete
-         * @throws Exception if there is a failure during the processing
+         * @param request the HTTP request to handle
+         * @param response the HTTP response to handle
+         * @param callback the callback to complete when the handling is complete
+         * @return True if an only if the request will be handled, a response generated and the callback eventually called.
+         *         This may occur within the scope of the call to this method, or asynchronously some time later. If false
+         *         is returned, then this method must not generate a response, nor complete the callback.
+         * @throws Exception if there is a failure during the handling. Catchers cannot assume that the callback will be
+         *                   called and thus should attempt to complete the request as if a false had been returned.
          */
-        void process(Request request, Response response, Callback callback) throws Exception;
+        boolean handle(Request request, Response response, Callback callback) throws Exception;
     }
 
     /**
@@ -552,6 +600,12 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public long getNanoTime()
+        {
+            return getWrapped().getNanoTime();
+        }
+
+        @Override
         public boolean isSecure()
         {
             return getWrapped().isSecure();
@@ -570,6 +624,12 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            return getWrapped().consumeAvailable();
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
             getWrapped().demand(demandCallback);
@@ -582,15 +642,9 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public boolean isPushSupported()
+        public void push(MetaData.Request resource)
         {
-            return getWrapped().isPushSupported();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getWrapped().push(request);
+            getWrapped().push(resource);
         }
 
         @Override
@@ -606,9 +660,15 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getWrapped().addHttpStreamWrapper(wrapper);
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            return getWrapped().getSession(create);
         }
 
         @Override
@@ -660,68 +720,19 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * <p>A {@code Request.Wrapper} that is a {@code Request.Processor}.</p>
-     * <p>This class wraps both a {@code Request} and a {@code Processor}
-     * with the same instance.</p>
-     * <p>Typical usage:</p>
-     * <pre>
-     * class YourHandler extends Handler.Wrapper
-     * {
-     *     public Processor handle(Request request)
-     *     {
-     *         // Wrap the request.
-     *         WrapperProcessor wrapped = new YourWrapperProcessor(request);
-     *
-     *         // Delegate processing using the wrapped request to wrap a Processor.
-     *         return wrapped.wrapProcessor(super.handle(wrapped));
-     *     }
-     * }
-     * </pre>
-     */
-    class WrapperProcessor extends Wrapper implements Processor
-    {
-        private volatile Processor _processor;
-
-        public WrapperProcessor(Request request)
-        {
-            super(request);
-        }
-
-        /**
-         * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
-         *
-         * @param processor the {@code Processor} to wrap
-         * @return this instance
-         */
-        public WrapperProcessor wrapProcessor(Processor processor)
-        {
-            _processor = processor;
-            return processor == null ? null : this;
-        }
-
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
-        {
-            Processor processor = _processor;
-            if (processor != null)
-                processor.process(this, response, callback);
-        }
-    }
-
-    /**
      * <p>Creates a new {@link HttpURI} from the given Request's HttpURI and the given path in context.</p>
      * <p>For example, for {@code contextPath=/ctx}, {@code request.httpURI=http://host/ctx/path?a=b}, and
      * {@code newPathInContext=/newPath}, the returned HttpURI is {@code http://host/ctx/newPath?a=b}.</p>
      *
      * @param request The request to base the new HttpURI on.
-     * @param newPathInContext The new path in context for the new HttpURI
+     * @param newEncodedPathInContext The new path in context for the new HttpURI
      * @return A new immutable HttpURI with the path in context replaced, but query string and path
      * parameters retained.
      */
-    static HttpURI newHttpURIFrom(Request request, String newPathInContext)
+    static HttpURI newHttpURIFrom(Request request, String newEncodedPathInContext)
     {
         return HttpURI.build(request.getHttpURI())
-            .path(URIUtil.addPaths(getContextPath(request), newPathInContext))
+            .path(URIUtil.addPaths(getContextPath(request), newEncodedPathInContext))
             .asImmutable();
     }
 }

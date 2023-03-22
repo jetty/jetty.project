@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,11 +33,11 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
@@ -276,13 +276,13 @@ public class ServerTimeoutsTest extends AbstractTest
         long idleTimeout = 2500;
         setStreamIdleTimeout(idleTimeout);
 
-        BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
+        BlockingQueue<Runnable> demanders = new LinkedBlockingQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
                 // Do not succeed the callback so the server will block writing.
-                callbacks.offer(callback);
+                demanders.offer(demander);
             })
             .send(result ->
             {
@@ -295,10 +295,10 @@ public class ServerTimeoutsTest extends AbstractTest
         // After the server stopped sending, consume on the client to read the early EOF.
         while (true)
         {
-            Callback callback = callbacks.poll(1, TimeUnit.SECONDS);
-            if (callback == null)
+            Runnable demander = demanders.poll(1, TimeUnit.SECONDS);
+            if (demander == null)
                 break;
-            callback.succeeded();
+            demander.run();
         }
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
@@ -325,9 +325,10 @@ public class ServerTimeoutsTest extends AbstractTest
                             break;
                     }
                 }
-                catch (BadMessageException x)
+                catch (Exception x)
                 {
-                    handlerLatch.countDown();
+                    if (x instanceof HttpException)
+                        handlerLatch.countDown();
                     throw x;
                 }
             }
@@ -597,15 +598,15 @@ public class ServerTimeoutsTest extends AbstractTest
         BlockingQueue<Object> objects = new LinkedBlockingQueue<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
-                objects.offer(content.remaining());
-                objects.offer(callback);
+                objects.offer(chunk.remaining());
+                objects.offer(demander);
             })
             .send(result ->
             {
                 objects.offer(-1);
-                objects.offer(Callback.NOOP);
+                objects.offer((Runnable)() -> {});
                 if (result.isFailed())
                     clientLatch.countDown();
             });
@@ -618,8 +619,8 @@ public class ServerTimeoutsTest extends AbstractTest
                 break;
             long ms = bytes * 1000L / readRate;
             Thread.sleep(ms);
-            Callback callback = (Callback)objects.poll();
-            callback.succeeded();
+            Runnable demander = (Runnable)objects.poll();
+            demander.run();
         }
 
         assertTrue(serverLatch.await(15, TimeUnit.SECONDS));

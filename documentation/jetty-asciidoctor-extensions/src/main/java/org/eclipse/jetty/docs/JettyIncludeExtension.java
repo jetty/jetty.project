@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,7 +29,7 @@ import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.IncludeProcessor;
 import org.asciidoctor.extension.PreprocessorReader;
 import org.asciidoctor.jruby.extension.spi.ExtensionRegistry;
-import org.eclipse.jetty.tests.distribution.JettyHomeTester;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 
 /**
  * <p>Asciidoctor <em>include</em> extension that includes into

@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests</artifactId>
-  <name>Jetty Tests :: Parent</name>
+  <name>Tests</name>
   <packaging>pom</packaging>
   <properties>
     <spotbugs.skip>true</spotbugs.skip>
@@ -17,6 +17,7 @@
     <maven.source.skip>true</maven.source.skip>
   </properties>
   <modules>
+    <module>jetty-home-tester</module>
     <module>jetty-jmh</module>
     <module>test-distribution</module>
     <module>test-integration</module>

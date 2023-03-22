@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Callback;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class HelloHandler extends Handler.Processor.NonBlocking
+public class HelloHandler extends Handler.Abstract.NonBlocking
 {
     private final String _message;
 
@@ -46,10 +46,11 @@ public class HelloHandler extends Handler.Processor.NonBlocking
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
         Content.Sink.write(response, true, _message, callback);
+        return true;
     }
 }

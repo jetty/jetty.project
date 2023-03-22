@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -59,8 +59,9 @@ public class SslConnectionTest
     private static final Logger LOG = LoggerFactory.getLogger(SslConnectionTest.class);
 
     private static final int TIMEOUT = 1000000;
-    private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
+    // TODO: track leaks
+    private final ByteBufferPool _bufferPool = new ArrayByteBufferPool();
     private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill = true;
@@ -86,11 +87,12 @@ public class SslConnectionTest
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(__byteBufferPool, getExecutor(), endpoint, engine);
+            SslConnection sslConnection = new SslConnection(_bufferPool, getExecutor(), endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
-            Connection appConnection = new TestConnection(sslConnection.getDecryptedEndPoint());
-            sslConnection.getDecryptedEndPoint().setConnection(appConnection);
+            SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+            Connection appConnection = new TestConnection(sslEndPoint);
+            sslEndPoint.setConnection(appConnection);
             return sslConnection;
         }
 

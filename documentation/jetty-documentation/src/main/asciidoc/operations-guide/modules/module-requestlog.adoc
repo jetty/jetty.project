@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,9 +19,9 @@ The `requestlog` module provides HTTP request/response logging in the standard l
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/requestlog.mod[tags=documentation]
+include::{jetty-home}/modules/requestlog.mod[tags=documentation]
 ----
 
 The property `jetty.requestlog.formatString` can be customized using format codes.
 
-include::javadoc[file=jetty-server/src/main/java/org/eclipse/jetty/server/CustomRequestLog.java,xsl=src/main/asciidoc/operations-guide/modules/module-requestlog.xsl,tags=documentation,replace="\|,\\|"]
+include::javadoc[file=jetty-core/jetty-server/src/main/java/org/eclipse/jetty/server/CustomRequestLog.java,xsl=src/main/asciidoc/operations-guide/modules/module-requestlog.xsl,tags=documentation,replace="\|,\\|"]

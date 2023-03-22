@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,10 +19,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnector;
@@ -108,10 +108,10 @@ public class UnixDomainTest
     public void testHTTPOverUnixDomain() throws Exception
     {
         String uri = "http://localhost:1234/path";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Verify the URI is preserved.
                 assertEquals(uri, request.getHttpURI().asString());
@@ -133,6 +133,7 @@ public class UnixDomainTest
                 assertDoesNotThrow(endPoint::toString);
 
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -158,16 +159,17 @@ public class UnixDomainTest
     {
         int fakeProxyPort = 4567;
         int fakeServerPort = 5678;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Proxied requests must have an absolute URI.
                 HttpURI uri = request.getHttpURI();
                 assertNotNull(uri.getScheme());
                 assertEquals(fakeServerPort, uri.getPort());
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -196,10 +198,10 @@ public class UnixDomainTest
         String srcAddr = "/proxySrcAddr";
         String dstAddr = "/proxyDstAddr";
         factories = new ConnectionFactory[]{new ProxyConnectionFactory(), new HttpConnectionFactory()};
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
@@ -222,6 +224,7 @@ public class UnixDomainTest
                     Assertions.fail("Invalid PROXY protocol version " + target);
                 }
                 callback.succeeded();
+                return true;
             }
         });
 

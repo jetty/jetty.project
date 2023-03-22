@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -37,7 +36,6 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest.ServletApiRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.Syntax;
@@ -45,14 +43,15 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
-import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionHandler extends AbstractSessionManager implements Handler.Nested
+public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {    
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
     
@@ -64,7 +63,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
     private final SessionCookieConfig _cookieConfig = new CookieConfig();
 
-    private ServletContextHandler.Context _servletContextHandlerContext;
+    private ServletContextHandler.ServletScopedContext _servletContextHandlerContext;
 
     private Server _server;
     private Handler _handler;
@@ -79,6 +78,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
+    public InvocationType getInvocationType()
+    {
+        // Session operations may be blocking
+        return InvocationType.BLOCKING;
+    }
+
+    @Override
     public Handler getHandler()
     {
         return _handler;
@@ -87,7 +93,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = Nested.updateHandler(this, handler);
+        _handler = Handler.Singleton.updateHandler(this, handler);
     }
 
     @Override
@@ -264,29 +270,29 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         }
     }
 
-    public static class ServletAPISession implements HttpSession, Session.APISession
+    public static class ServletSessionApi implements HttpSession, Session.API
     {
-        public static ServletAPISession wrapSession(Session session)
+        public static ServletSessionApi wrapSession(ManagedSession session)
         {
-            return new ServletAPISession(session);
+            return new ServletSessionApi(session);
         }
         
-        public static Session getSession(HttpSession httpSession)
+        public static ManagedSession getSession(HttpSession httpSession)
         {
-            if (httpSession instanceof ServletAPISession apiSession)
-                return apiSession.getCoreSession();
+            if (httpSession instanceof ServletSessionApi apiSession)
+                return apiSession.getSession();
             return null;
         }
         
-        private final Session _session;
+        private final ManagedSession _session;
         
-        private ServletAPISession(Session session)
+        private ServletSessionApi(ManagedSession session)
         {
             _session = session;           
         }
 
         @Override
-        public Session getCoreSession()
+        public ManagedSession getSession()
         {
             return _session;
         }
@@ -312,7 +318,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public ServletContext getServletContext()
         {
-            return ServletContextHandler.getServletContext((ContextHandler.Context)_session.getSessionManager().getContext());
+            return ServletContextHandler.getServletContext((ContextHandler.ScopedContext)_session.getSessionManager().getContext());
         }
 
         @Override
@@ -336,7 +342,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            final Iterator<String> itor = _session.getNames().iterator();
+            final Iterator<String> itor = _session.getAttributeNameSet().iterator();
             return new Enumeration<>()
             {
 
@@ -385,64 +391,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
-    public Session getSession(Request request)
+    public ManagedSession getManagedSession(Request request)
     {
         ServletApiRequest apiRequest = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletApiRequest);
-        return apiRequest == null ? null : apiRequest.getCoreSession();
-    }
-
-    /**
-     * A session cookie is marked as secure IFF any of the following conditions are true:
-     * <ol>
-     * <li>SessionCookieConfig.setSecure == true</li>
-     * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
-     * </ol>
-     * According to SessionCookieConfig javadoc, case 1 can be used when:
-     * "... even though the request that initiated the session came over HTTP,
-     * is to support a topology where the web container is front-ended by an
-     * SSL offloading load balancer. In this case, the traffic between the client
-     * and the load balancer will be over HTTPS, whereas the traffic between the
-     * load balancer and the web container will be over HTTP."
-     * <p>
-     * For case 2, you can use _secureRequestOnly to determine if you want the
-     * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
-     * which is:
-     * <cite>
-     * "they shall be marked as secure only if the request that initiated the
-     * corresponding session was also secure"
-     * </cite>
-     * <p>
-     * The default for _secureRequestOnly is true, which gives the above behavior. If
-     * you set it to false, then a session cookie is NEVER marked as secure, even if
-     * the initiating request was secure.
-     *
-     * @param session the session to which the cookie should refer.
-     * @param contextPath the context to which the cookie should be linked.
-     * The client will only send the cookie value when requesting resources under this path.
-     * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
-     * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
-     * {@link HttpCookie cookie object} that should be set on the client in order to link future HTTP requests
-     * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
-     */
-    @Override
-    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
-    {
-        if (isUsingCookies())
-        {
-            String sessionPath = getSessionPath();
-            sessionPath = (sessionPath == null) ? contextPath : sessionPath;
-            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
-            return session.generateSetCookie((getSessionCookie() == null ? __DefaultSessionCookie : getSessionCookie()),
-                getSessionDomain(),
-                sessionPath,
-                getMaxCookieAge(),
-                isHttpOnly(),
-                isSecureCookies() || (isSecureRequestOnly() && requestIsSecure),
-                null,
-                0,
-                getSessionAttributes());
-        }
-        return null;
+        return apiRequest == null ? null : apiRequest.getServletContextRequest().getManagedSession();
     }
 
     /**
@@ -494,55 +446,22 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     public void doStart() throws Exception
     {
         super.doStart();
-        if (!(getContext() instanceof ServletContextHandler.Context))
+        if (!(getContext() instanceof ServletContextHandler.ServletScopedContext))
             throw new IllegalStateException("!ServlerContextHandler.Context");
-        _servletContextHandlerContext = (ServletContextHandler.Context)getContext();
+        _servletContextHandlerContext = (ServletContextHandler.ServletScopedContext)getContext();
         configureCookies();
     }
 
     /**
-     * Set up cookie configuration based on init params, if
-     * the SessionCookieConfig has not been set.
+     * Set up cookie configuration based on init params
      */
     protected void configureCookies()
     {
-        // Look for a session cookie name
-        if (_servletContextHandlerContext != null)
-        {
-            ServletContext servletContext = _servletContextHandlerContext.getServletContext();
-            String tmp = servletContext.getInitParameter(__SessionCookieProperty);
-            if (tmp != null)
-                setSessionCookie(tmp);
-
-            tmp = servletContext.getInitParameter(__SessionIdPathParameterNameProperty);
-            if (tmp != null)
-                setSessionIdPathParameterName(tmp);
-
-            // set up the max session cookie age if it isn't already
-            if (getMaxCookieAge() == -1)
-            {
-                tmp = servletContext.getInitParameter(__MaxAgeProperty);
-                if (tmp != null)
-                    setMaxCookieAge(Integer.parseInt(tmp.trim()));
-            }
-
-            // set up the session domain if it isn't already
-            if (getSessionDomain() == null)
-                setSessionDomain(servletContext.getInitParameter(__SessionDomainProperty));
-
-            // set up the sessionPath if it isn't already
-            if (getSessionPath() == null)
-                setSessionPath(servletContext.getInitParameter(__SessionPathProperty));
-
-            tmp = servletContext.getInitParameter(__CheckRemoteSessionEncoding);
-            if (tmp != null)
-                setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
-        }
     }
 
-    public Session.APISession newSessionAPIWrapper(Session session)
+    public Session.API newSessionAPIWrapper(ManagedSession session)
     {
-        return ServletAPISession.wrapSession(session);
+        return ServletSessionApi.wrapSession(session);
     }
 
     @Override
@@ -550,7 +469,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (!_sessionAttributeListeners.isEmpty())
         {
-            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getAPISession(), name, old == null ? value : old);
+            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
 
             for (HttpSessionAttributeListener l : _sessionAttributeListeners)
             {
@@ -576,7 +495,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         if (session == null)
             return;
 
-        HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+        HttpSessionEvent event = new HttpSessionEvent(session.getApi());
         for (HttpSessionListener  l : _sessionListeners)
         {
             l.sessionCreated(event);
@@ -600,7 +519,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         //come from the scavenger, rather than a request thread
         getSessionContext().run(() ->
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (int i = _sessionListeners.size() - 1; i >= 0; i--)
             {
                 _sessionListeners.get(i).sessionDestroyed(event);
@@ -614,7 +533,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         //inform the listeners
         if (!_sessionIdListeners.isEmpty())
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             for (HttpSessionIdListener l : _sessionIdListeners)
             {
                 l.sessionIdChanged(event, oldId);
@@ -626,14 +545,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     public void callUnboundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getAPISession(), name));
+            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
     }
     
     @Override
     public void callBoundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name)); 
+            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getApi(), name));
     }
     
     @Override
@@ -641,7 +560,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (value instanceof HttpSessionActivationListener listener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             listener.sessionDidActivate(event);
         }
     }
@@ -651,7 +570,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         if (value instanceof HttpSessionActivationListener listener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            HttpSessionEvent event = new HttpSessionEvent(session.getApi());
             listener.sessionWillPassivate(event);
         }
     }
@@ -715,43 +634,27 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
+        Handler next = getHandler();
+        if (next == null)
+            return false;
+
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest =
-            (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
-        if (servletApiRequest == null)
-            throw new IllegalStateException("Request is not a valid ServletContextRequest");
-
-        Request.Processor processor = getHandler().handle(request);
-        if (processor == null)
-            return null;
-
         addSessionStreamWrapper(request);
 
-        // TODO rather than wrapping the processor yet again here, we could just inject the
-        //      SessionManager to the servletContextRequest, which already has the ability to
-        //      extend the processor as the ContextRequest is-a Request.WrapperProcessor
-        return (req, res, callback) ->
+        // find and set the session if one exists
+        RequestedSession requestedSession = resolveRequestedSessionId(request);
+        servletContextRequest.setRequestedSession(requestedSession);
+
+        // Handle changed ID or max-age refresh, but only if this is not a redispatched request
+        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
+        if (cookie != null)
         {
-            // find and set the session if one exists
-            RequestedSession requestedSession = resolveRequestedSessionId(req);
+            ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+            Response.replaceCookie(servletContextResponse, cookie);
+        }
 
-            servletApiRequest.setCoreSession(requestedSession.session());
-            servletApiRequest.setSessionManager(this);
-            servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
-            servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
-
-            HttpCookie cookie = access(requestedSession.session(), req.getConnectionMetaData().isSecure());
-
-            // Handle changed ID or max-age refresh, but only if this is not a redispatched request
-            if (cookie != null)
-            {
-                ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
-                Response.replaceCookie(servletContextResponse, cookie);
-            }
-
-            processor.process(req, res, callback);
-        };
+        return next.handle(request, response, callback);
     }
 }

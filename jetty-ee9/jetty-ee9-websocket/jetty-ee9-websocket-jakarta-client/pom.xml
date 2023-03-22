@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>
-  <name>EE9 :: Jetty :: Websocket :: jakarta.websocket :: Client</name>
+  <name>EE9 :: Websocket :: Jakarta Client</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jakarta.client</bundle-symbolic-name>

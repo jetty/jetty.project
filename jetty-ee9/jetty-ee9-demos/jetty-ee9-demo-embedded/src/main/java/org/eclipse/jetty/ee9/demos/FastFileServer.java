@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,19 +15,13 @@ package org.eclipse.jetty.ee9.demos;
 
 import java.io.File;
 
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Fast FileServer.
@@ -63,9 +57,7 @@ public class FastFileServer
     {
         Server server = new Server(port);
 
-        server.setHandler(new HandlerList(
-            new FastFileHandler(resourceBase),
-            new DefaultHandler()));
+        server.setHandler(new FastFileHandler(resourceBase));
         return server;
     }
 
@@ -80,18 +72,15 @@ public class FastFileServer
 
     static class FastFileHandler extends Handler.Abstract
     {
-        private final MimeTypes mimeTypes = new MimeTypes();
-        private final File dir;
-
         private FastFileHandler(File dir)
         {
-            this.dir = dir;
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            return null;
+            return false;
+            // TODO
 //            return (req, response, callback) ->
 //            {
 //                response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");

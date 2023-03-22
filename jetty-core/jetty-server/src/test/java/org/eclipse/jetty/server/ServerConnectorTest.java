@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -62,10 +62,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConnectorTest
 {
-    public static class ReuseInfoHandler extends Handler.Processor
+    public static class ReuseInfoHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -94,6 +94,7 @@ public class ServerConnectorTest
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
             response.write(true, BufferUtil.toBuffer(buffer.toByteArray()), callback);
+            return true;
         }
     }
 
@@ -239,12 +240,13 @@ public class ServerConnectorTest
             connector2.setPort(port);
             server.addConnector(connector2);
 
-            server.setHandler(new Handler.Processor()
+            server.setHandler(new Handler.Abstract.NonBlocking()
             {
                 @Override
-                public void process(Request request, Response response, Callback callback)
+                public boolean handle(Request request, Response response, Callback callback)
                 {
                     callback.succeeded();
+                    return true;
                 }
             });
 

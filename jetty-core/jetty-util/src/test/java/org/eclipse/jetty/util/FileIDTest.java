@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -106,6 +106,7 @@ public class FileIDTest
             Arguments.of(URI.create("file:zed/"), ""),
             Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
             Arguments.of(URI.create("file:///path/to/dir/"), ""),
+            Arguments.of(URI.create("jar:file:///home/user/libs/jetty-server-12.jar!/org/eclipse/jetty/server/jetty-dir.css"), "jetty-dir.css"),
             Arguments.of(URI.create("http://eclipse.org/jetty/"), ""),
             Arguments.of(URI.create("http://eclipse.org/jetty/index.html"), "index.html"),
             Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html")
@@ -228,11 +229,17 @@ public class FileIDTest
     public static Stream<Arguments> extensionCases()
     {
         return Stream.of(
-            Arguments.of("foo.xml", ".xml"),
-            Arguments.of("dir/foo.xml", ".xml"),
-            Arguments.of("foo.jar", ".jar"),
-            Arguments.of("FOO.WAR", ".war"),
-            Arguments.of("Foo.Zip", ".zip")
+            Arguments.of("foo.xml", "xml"),
+            Arguments.of("dir/foo.xml", "xml"),
+            Arguments.of("foo.jar", "jar"),
+            Arguments.of("FOO.WAR", "war"),
+            Arguments.of("Foo.Zip", "zip"),
+            // From JDK 20 examples
+            Arguments.of("foo.tar.gz", "gz"),
+            Arguments.of("foo.bar", "bar"),
+            Arguments.of("foo.", ""),
+            Arguments.of("foo", null),
+            Arguments.of(".bar", null)
         );
     }
 

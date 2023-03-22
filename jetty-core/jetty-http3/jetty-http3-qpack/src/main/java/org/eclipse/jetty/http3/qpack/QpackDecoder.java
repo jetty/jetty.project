@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,6 +34,7 @@ import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public class QpackDecoder implements Dumpable
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
     private final InstructionHandler _instructionHandler = new InstructionHandler();
     private final Map<Long, AtomicInteger> _blockedStreams = new HashMap<>();
+    private final ByteBufferPool _bufferPool;
     private int _maxHeaderSize;
     private int _maxBlockedStreams;
 
@@ -80,12 +82,18 @@ public class QpackDecoder implements Dumpable
     /**
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
-    public QpackDecoder(Instruction.Handler handler, int maxHeaderSize)
+    public QpackDecoder(ByteBufferPool bufferPool, Instruction.Handler handler, int maxHeaderSize)
     {
+        _bufferPool = bufferPool;
         _context = new QpackContext();
         _handler = handler;
         _parser = new DecoderInstructionParser(_instructionHandler);
         _maxHeaderSize = maxHeaderSize;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _bufferPool;
     }
 
     QpackContext getQpackContext()
@@ -171,7 +179,7 @@ public class QpackDecoder implements Dumpable
                     LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
                 _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, handler));
                 if (requiredInsertCount > 0)
-                    _instructions.add(new SectionAcknowledgmentInstruction(streamId));
+                    _instructions.add(new SectionAcknowledgmentInstruction(_bufferPool, streamId));
             }
             else
             {
@@ -237,7 +245,7 @@ public class QpackDecoder implements Dumpable
         _encodedFieldSections.removeIf(encodedFieldSection -> encodedFieldSection.getStreamId() == streamId);
         _blockedStreams.remove(streamId);
         _metaDataNotifications.removeIf(notification -> notification._streamId == streamId);
-        _instructions.add(new StreamCancellationInstruction(streamId));
+        _instructions.add(new StreamCancellationInstruction(_bufferPool, streamId));
         notifyInstructionHandler();
     }
 
@@ -261,7 +269,7 @@ public class QpackDecoder implements Dumpable
 
                 _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, encodedFieldSection.getHandler()));
                 if (requiredInsertCount > 0)
-                    _instructions.add(new SectionAcknowledgmentInstruction(streamId));
+                    _instructions.add(new SectionAcknowledgmentInstruction(_bufferPool, streamId));
             }
         }
     }
@@ -352,7 +360,7 @@ public class QpackDecoder implements Dumpable
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(referencedEntry.getHttpField());
             dynamicTable.add(entry);
-            _instructions.add(new InsertCountIncrementInstruction(1));
+            _instructions.add(new InsertCountIncrementInstruction(_bufferPool, 1));
             checkEncodedFieldSections();
         }
 
@@ -369,7 +377,7 @@ public class QpackDecoder implements Dumpable
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
             dynamicTable.add(entry);
-            _instructions.add(new InsertCountIncrementInstruction(1));
+            _instructions.add(new InsertCountIncrementInstruction(_bufferPool, 1));
             checkEncodedFieldSections();
         }
 
@@ -384,7 +392,7 @@ public class QpackDecoder implements Dumpable
             // Add the new Entry to the DynamicTable.
             DynamicTable dynamicTable = _context.getDynamicTable();
             dynamicTable.add(entry);
-            _instructions.add(new InsertCountIncrementInstruction(1));
+            _instructions.add(new InsertCountIncrementInstruction(_bufferPool, 1));
             checkEncodedFieldSections();
         }
     }

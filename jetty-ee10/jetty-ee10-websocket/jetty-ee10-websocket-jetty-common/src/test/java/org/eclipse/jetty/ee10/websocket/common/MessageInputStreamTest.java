@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,8 +27,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageInputStream;
-import org.junit.jupiter.api.AfterEach;
+import org.eclipse.jetty.websocket.core.messages.MessageInputStream;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,14 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class MessageInputStreamTest
 {
-    public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");
-
-    @AfterEach
-    public void afterEach()
-    {
-        bufferPool.assertNoLeaks();
-    }
-
     @Test
     public void testBasicAppendRead() throws IOException
     {

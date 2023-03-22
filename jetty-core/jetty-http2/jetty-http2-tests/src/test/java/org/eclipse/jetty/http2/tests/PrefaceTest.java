@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -46,13 +47,12 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -148,26 +148,26 @@ public class PrefaceTest extends AbstractTest
             }
         });
 
-        ByteBufferPool byteBufferPool = http2Client.getByteBufferPool();
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
-            Generator generator = new Generator(byteBufferPool);
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.control(lease, new PrefaceFrame());
+            Generator generator = new Generator(bufferPool);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 0);
-            generator.control(lease, new SettingsFrame(clientSettings, false));
+            generator.control(accumulator, new SettingsFrame(clientSettings, false));
             // The PING frame just to make sure the client stops reading.
-            generator.control(lease, new PingFrame(true));
+            generator.control(accumulator, new PingFrame(true));
 
-            List<ByteBuffer> buffers = lease.getByteBuffers();
+            List<ByteBuffer> buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
             AtomicBoolean closed = new AtomicBoolean();
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -183,7 +183,7 @@ public class PrefaceTest extends AbstractTest
             }, 4096, 8192);
             parser.init(UnaryOperator.identity());
 
-            ByteBuffer buffer = byteBufferPool.acquire(1024, true);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
             while (true)
             {
                 BufferUtil.clearToFill(buffer);
@@ -247,7 +247,7 @@ public class PrefaceTest extends AbstractTest
         });
         server.start();
 
-        ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
@@ -268,7 +268,7 @@ public class PrefaceTest extends AbstractTest
             assertTrue(serverSettingsLatch.get().await(5, TimeUnit.SECONDS));
 
             // The 101 response is the reply to the client preface SETTINGS frame.
-            ByteBuffer buffer = byteBufferPool.acquire(1024, true);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
             http1:
             while (true)
             {
@@ -295,13 +295,13 @@ public class PrefaceTest extends AbstractTest
             serverSettingsLatch.set(new CountDownLatch(1));
 
             // After the 101, the client must send the connection preface.
-            Generator generator = new Generator(byteBufferPool);
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.control(lease, new PrefaceFrame());
+            Generator generator = new Generator(bufferPool);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
-            generator.control(lease, new SettingsFrame(clientSettings, false));
-            List<ByteBuffer> buffers = lease.getByteBuffers();
+            generator.control(accumulator, new SettingsFrame(clientSettings, false));
+            List<ByteBuffer> buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
 
             // However, we should not call onPreface() again.
@@ -311,7 +311,7 @@ public class PrefaceTest extends AbstractTest
 
             CountDownLatch clientSettingsLatch = new CountDownLatch(1);
             AtomicBoolean responded = new AtomicBoolean();
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -38,7 +39,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * The cache of sessions in a concurrent map
      */
-    private final ConcurrentMap<String, Session> _sessions;
+    private final ConcurrentMap<String, ManagedSession> _sessions;
 
     private final CounterStatistic _stats = new CounterStatistic();
 
@@ -54,7 +55,7 @@ public class DefaultSessionCache extends AbstractSessionCache
      * @param manager The SessionHandler related to this SessionCache
      * @param sessions The session map implementation to use
      */
-    public DefaultSessionCache(SessionManager manager, ConcurrentMap<String, Session> sessions)
+    public DefaultSessionCache(SessionManager manager, ConcurrentMap<String, ManagedSession> sessions)
     {
         super(manager);
         _sessions = Objects.requireNonNull(sessions, "Session Map may not be null");
@@ -94,7 +95,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     }
 
     @Override
-    public Session doGet(String id)
+    public ManagedSession doGet(String id)
     {
         if (id == null)
             return null;
@@ -102,7 +103,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     }
 
     @Override
-    public Session doPutIfAbsent(String id, Session session)
+    public Session doPutIfAbsent(String id, ManagedSession session)
     {
         Session s = _sessions.putIfAbsent(id, session);
         if (s == null)
@@ -111,11 +112,11 @@ public class DefaultSessionCache extends AbstractSessionCache
     }
 
     @Override
-    protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+    protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
     {
         return _sessions.computeIfAbsent(id, k ->
         {
-            Session s = mappingFunction.apply(k);
+            ManagedSession s = mappingFunction.apply(k);
             if (s != null)
                 _stats.increment();
             return s;
@@ -123,9 +124,9 @@ public class DefaultSessionCache extends AbstractSessionCache
     }
 
     @Override
-    public Session doDelete(String id)
+    public ManagedSession doDelete(String id)
     {
-        Session s = _sessions.remove(id);
+        ManagedSession s = _sessions.remove(id);
         if (s != null)
             _stats.decrement();
         return s;
@@ -143,7 +144,7 @@ public class DefaultSessionCache extends AbstractSessionCache
 
         while (!_sessions.isEmpty() && loop-- > 0)
         {
-            for (Session session : _sessions.values())
+            for (ManagedSession session : _sessions.values())
             {
                 if (isInvalidateOnShutdown())
                 {
@@ -178,14 +179,14 @@ public class DefaultSessionCache extends AbstractSessionCache
     }
 
     @Override
-    public Session newSession(SessionData data)
+    public ManagedSession newSession(SessionData data)
     {
-        Session session = new Session(getSessionManager(), data);
+        ManagedSession session = new ManagedSession(getSessionManager(), data);
         return session;
     }
 
     @Override
-    public boolean doReplace(String id, Session oldValue, Session newValue)
+    public boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
     {
         return _sessions.replace(id, oldValue, newValue);
     }

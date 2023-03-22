@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -55,13 +55,13 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
@@ -74,6 +74,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -82,6 +83,7 @@ import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
@@ -133,6 +135,7 @@ public class RequestTest
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
@@ -218,7 +221,7 @@ public class RequestTest
                 request.getParameterMap();
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Throwable e)
             {
                 // Should be able to retrieve the raw query
                 String rawQuery = request.getQueryString();
@@ -324,12 +327,11 @@ public class RequestTest
         _handler._checker = (request, response) ->
         {
             request.getParameterMap();
-            // should have thrown a BadMessageException
+            //
             return false;
         };
 
-        //Send a request with query string with illegal hex code to cause
-        //an exception parsing the params
+        //Send a request with a form body that is smaller than Content-Length.
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\n" +
@@ -396,7 +398,7 @@ public class RequestTest
                 assertTrue(e.getMessage().startsWith("No multipart config"));
                 return true;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 return false;
             }
@@ -574,7 +576,7 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Throwable e)
             {
                 // Should still be able to get the raw query.
                 String rawQuery = request.getQueryString();
@@ -606,9 +608,11 @@ public class RequestTest
                 request.getParameter("param");
                 return false;
             }
-            catch (BadMessageException e)
+            catch (Throwable e)
             {
-                return e.getCode() == 415;
+                if (e instanceof HttpException httpException)
+                    return httpException.getCode() == 415;
+                throw e;
             }
         };
 
@@ -903,6 +907,19 @@ public class RequestTest
 
         results.clear();
         response = _connector.getResponse(
+            "GET http://myhost:8888/ HTTP/1.1\n" +
+                "Host: myhost:8888\n" +
+                "Connection: close\n" +
+                "\n");
+        i = 0;
+        assertThat(response, containsString("200 OK"));
+        assertEquals("http://myhost:8888/", results.get(i++));
+        assertEquals("0.0.0.0", results.get(i++));
+        assertEquals("myhost", results.get(i++));
+        assertEquals("8888", results.get(i));
+
+        results.clear();
+        response = _connector.getResponse(
             "GET / HTTP/1.1\n" +
                 "Host: 1.2.3.4\n" +
                 "Connection: close\n" +
@@ -997,10 +1014,10 @@ public class RequestTest
         });
         final InetSocketAddress remoteAddr = new InetSocketAddress(local, 32768);
 
-        org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.Wrapper()
+        org.eclipse.jetty.server.Handler.Singleton handler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
                 {
@@ -1011,7 +1028,7 @@ public class RequestTest
                     }
                 };
 
-                org.eclipse.jetty.server.Request.WrapperProcessor wrapper = new org.eclipse.jetty.server.Request.WrapperProcessor(request)
+                org.eclipse.jetty.server.Request wrapper = new org.eclipse.jetty.server.Request.Wrapper(request)
                 {
                     @Override
                     public ConnectionMetaData getConnectionMetaData()
@@ -1020,7 +1037,7 @@ public class RequestTest
                     }
                 };
 
-                return wrapper.wrapProcessor(super.handle(wrapper));
+                return super.handle(wrapper, response, callback);
             }
         };
 
@@ -1307,7 +1324,7 @@ public class RequestTest
                 {
                     //expected
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
                     fail("Session creation after response commit should throw IllegalStateException");
                 }
@@ -1820,7 +1837,7 @@ public class RequestTest
     @Test
     public void testNotSupportedCharacterEncoding()
     {
-        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(new MockConnector())), null);
+        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(_connector)), null);
         assertThrows(UnsupportedEncodingException.class, () -> request.setCharacterEncoding("doesNotExist"));
     }
 
@@ -1828,7 +1845,7 @@ public class RequestTest
     public void testGetterSafeFromNullPointerException()
     {
         // This is only needed for tests that mock with null values.
-        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(new MockConnector())), null);
+        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(_connector)), null);
 
         assertNull(request.getAuthType());
         assertNull(request.getAuthentication());
@@ -1869,12 +1886,12 @@ public class RequestTest
     public void testPushBuilder()
     {
         String uri = "http://host/foo/something";
-        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(new MockConnector()));
+        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good", "thumbsup", 100), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza", "bewdy", 1), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bad", "thumbsdown", 0), CookieCompliance.RFC6265));
-        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, new HttpCookie("ugly", "duckling", 100).getSetCookie(CookieCompliance.RFC6265)));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, HttpCookieUtils.getSetCookie(HttpCookie.from("ugly", "duckling", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265)));
         request.getResponse().getHttpFields().add(new HttpField(HttpHeader.SET_COOKIE, "flow=away; Max-Age=0; Secure; HttpOnly; SameSite=None"));
         HttpFields.Mutable fields = HttpFields.build();
         fields.add(HttpHeader.AUTHORIZATION, "Basic foo");
@@ -1909,7 +1926,7 @@ public class RequestTest
     public void testPushBuilderWithIdNoAuth()
     {
         String uri = "http://host/foo/something";
-        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(new MockConnector()));
+        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel))
         {
             @Override
@@ -2212,7 +2229,7 @@ public class RequestTest
                 assertTrue(e.getMessage().startsWith("No multipart config"));
                 response.setStatus(200);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 response.sendError(500);
             }
@@ -2254,7 +2271,7 @@ public class RequestTest
         }
     }
 
-    private static class TestCoreRequest implements org.eclipse.jetty.server.Request
+    private static class TestCoreRequest extends ContextHandler.CoreContextRequest
     {
         private final Server _server = new Server();
         private final ConnectionMetaData _connectionMetaData;
@@ -2263,6 +2280,7 @@ public class RequestTest
 
         public TestCoreRequest(String uri, HttpFields.Mutable fields)
         {
+            super(null, null, null);
             _uri = uri;
             _fields = fields;
             _connectionMetaData = new MockConnectionMetaData();
@@ -2323,6 +2341,12 @@ public class RequestTest
         }
 
         @Override
+        public long getNanoTime()
+        {
+            return 0;
+        }
+
+        @Override
         public boolean isSecure()
         {
             return false;
@@ -2341,23 +2365,18 @@ public class RequestTest
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            return false;
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
         }
 
         @Override
         public void fail(Throwable failure)
-        {
-        }
-
-        @Override
-        public boolean isPushSupported()
-        {
-            return false;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
         {
         }
 
@@ -2374,7 +2393,7 @@ public class RequestTest
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
         }
 

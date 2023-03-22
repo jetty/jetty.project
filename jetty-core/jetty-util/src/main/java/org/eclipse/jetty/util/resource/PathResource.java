@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -44,19 +44,11 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
+    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>()
         .caseSensitive(false)
         .with("file")
         .with("jrt")
         .build();
-
-    public static PathResource of(URI uri) throws IOException
-    {
-        Path path = Paths.get(uri.normalize());
-        if (!Files.exists(path))
-            return null;
-        return new PathResource(path, uri, false);
-    }
 
     // The path object represented by this instance
     private final Path path;
@@ -176,7 +168,7 @@ public class PathResource extends Resource
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme()))
+        if (!bypassAllowedSchemeCheck && !SUPPORTED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
         if (Files.isDirectory(path))
@@ -366,6 +358,7 @@ public class PathResource extends Resource
      * </p>
      *
      * <table>
+     * <caption>Alias Check Logic</caption>
      * <thead>
      * <tr>
      * <th>path</th>
@@ -518,10 +511,10 @@ public class PathResource extends Resource
      * @param path the path to convert to URI
      * @return the appropriate URI for the path
      */
-    private static URI toUri(Path path)
+    protected URI toUri(Path path)
     {
         URI pathUri = path.toUri();
-        String rawUri = path.toUri().toASCIIString();
+        String rawUri = pathUri.toASCIIString();
 
         if (Files.isDirectory(path) && !rawUri.endsWith("/"))
         {

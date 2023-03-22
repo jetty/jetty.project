@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -131,7 +131,7 @@ public class QuotesEncoderTest
         Quotes quotes = new Quotes();
 
         // read file
-        File qfile = MavenTestingUtils.getTargetFile("test-classes/" + filename);
+        File qfile = MavenTestingUtils.getTargetPath("test-classes/" + filename).toFile();
         try (FileReader reader = new FileReader(qfile);
              BufferedReader buf = new BufferedReader(reader))
         {

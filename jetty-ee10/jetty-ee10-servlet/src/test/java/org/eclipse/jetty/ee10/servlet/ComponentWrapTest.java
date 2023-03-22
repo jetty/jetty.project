@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.EventListener;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -34,8 +35,8 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -48,6 +49,8 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ComponentWrapTest
 {
@@ -98,12 +101,15 @@ public class ComponentWrapTest
             @Override
             public void init(FilterConfig filterConfig)
             {
+                events.addEvent("TestFilter.init");
             }
 
             @Override
             public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
             {
+                events.addEvent("TestFilter.doFilter");
                 chain.doFilter(request, response);
+                events.addEvent("TestFilter.filtered");
             }
 
             @Override
@@ -125,16 +131,21 @@ public class ComponentWrapTest
 
         List<String> expectedEvents = new ArrayList<>();
         expectedEvents.add("TestWrapFilter.init()");
+        expectedEvents.add("TestFilter.init");
         expectedEvents.add("TestWrapServlet.init()");
         expectedEvents.add("TestWrapListener.requestInitialized()");
         expectedEvents.add("TestWrapFilter.doFilter()");
+        expectedEvents.add("TestFilter.doFilter");
         expectedEvents.add("TestWrapServlet.service()");
+        expectedEvents.add("TestFilter.filtered");
         expectedEvents.add("TestWrapListener.requestDestroyed()");
 
-        List<String> actualEvents = new ArrayList<>();
-        actualEvents.addAll(events);
-
-        assertThat("Metrics Events Count", actualEvents.size(), is(expectedEvents.size()));
+        Iterator<String> i = events.iterator();
+        for (String s: expectedEvents)
+        {
+            assertEquals(s, i.next());
+        }
+        assertFalse(i.hasNext());
     }
 
     public static class LoggingRequestListener implements ServletRequestListener

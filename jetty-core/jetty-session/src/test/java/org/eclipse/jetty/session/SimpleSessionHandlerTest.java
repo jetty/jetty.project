@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.SimpleSessionHandler.SessionAPI;
 import org.eclipse.jetty.session.SimpleSessionHandler.SessionRequest;
 import org.eclipse.jetty.util.Callback;
@@ -55,18 +56,20 @@ public class SimpleSessionHandlerTest
         sessionManager.setSessionCookie("SIMPLE");
         sessionManager.setUsingCookies(true);
         sessionManager.setUsingURLs(false);
+        sessionManager.setSessionPath("/");
         _server.setHandler(sessionManager);
 
-        sessionManager.setHandler(new Handler.Processor()
+        sessionManager.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String pathInContext = Request.getPathInContext(request);
                 String[] split = pathInContext.substring(1).split("/");
 
                 SessionRequest sessionRequest = Request.as(request, SessionRequest.class);
-                SessionAPI session = sessionRequest.getSession(false);
+                Session session = sessionRequest.getSession(false);
+                SessionAPI api = session == null ? null : session.getApi();
 
                 if (split.length > 0)
                 {
@@ -77,7 +80,7 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
 
                             if (split.length > 2)
@@ -89,7 +92,7 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
 
                             if (split.length > 1)
@@ -101,7 +104,7 @@ public class SimpleSessionHandlerTest
                             if (session != null)
                             {
                                 callback.failed(new IllegalStateException("Session already created"));
-                                return;
+                                return true;
                             }
                             session = sessionRequest.getSession(true);
                         }
@@ -111,7 +114,7 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
                             session.invalidate();
                         }
@@ -121,9 +124,9 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
-                            session.renewId(request, response);
+                            api.renewId(request, response);
                         }
                     }
                 }
@@ -134,11 +137,12 @@ public class SimpleSessionHandlerTest
                 else
                 {
                     out.append("Session=").append(session.getId()).append('\n');
-                    for (String name : session.getAttributeNames())
+                    for (String name : session.getAttributeNameSet())
                         out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
                 }
 
                 Content.Sink.write(response, true, out.toString(), callback);
+                return true;
             }
         });
 

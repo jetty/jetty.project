@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -121,7 +121,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
         SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
 
-        EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
+        EndPoint appEndPoint = sslConnection.getSslEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
 
         sslConnection.addHandshakeListener(new HTTPSHandshakeListener(context));

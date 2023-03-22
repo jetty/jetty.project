@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,16 +17,17 @@ import java.time.Duration;
 import java.util.List;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.FileMappingHttpContentFactory;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
-import org.eclipse.jetty.http.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
@@ -58,6 +59,7 @@ public class ResourceHandler extends Handler.Wrapper
     private final ResourceService _resourceService = newResourceService();
     private ByteBufferPool _byteBufferPool;
     private Resource _baseResource;
+    private Resource _styleSheet;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
 
@@ -74,37 +76,33 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        Context context = ContextHandler.getCurrentContext();
         if (_baseResource == null)
         {
             if (context != null)
                 _baseResource = context.getBaseResource();
         }
 
-        // TODO: _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
+        setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());
 
         _byteBufferPool = getByteBufferPool(context);
-
         ResourceService resourceService = getResourceService();
         resourceService.setHttpContentFactory(newHttpContentFactory());
         resourceService.setWelcomeFactory(setupWelcomeFactory());
-        if (getStylesheet() == null)
-            setStylesheet(getServer().getDefaultStyleSheet());
+        if (getStyleSheet() == null)
+            setStyleSheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
     }
 
-    private static ByteBufferPool getByteBufferPool(ContextHandler.Context context)
+    private ByteBufferPool getByteBufferPool(Context context)
     {
         if (context == null)
-            return new NoopByteBufferPool();
-        Server server = context.getContextHandler().getServer();
+            return new ByteBufferPool.NonPooling();
+        Server server = getServer();
         if (server == null)
-            return new NoopByteBufferPool();
-        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
-        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+            return new ByteBufferPool.NonPooling();
+        return server.getByteBufferPool();
     }
 
     public HttpContent.Factory getHttpContentFactory()
@@ -114,10 +112,11 @@ public class ResourceHandler extends Handler.Wrapper
 
     protected HttpContent.Factory newHttpContentFactory()
     {
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), _mimeTypes);
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
+        contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
         return contentFactory;
     }
 
@@ -142,19 +141,22 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
             // try another handler
-            return super.handle(request);
+            return super.handle(request, response, callback);
         }
 
         HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
-            return super.handle(request); // no content - try other handlers
+        {
+            return super.handle(request, response, callback); // no content - try other handlers
+        }
 
-        return (rq, rs, cb) -> _resourceService.doGet(rq, rs, cb, content);
+        _resourceService.doGet(request, response, callback, content);
+        return true;
     }
 
     /**
@@ -163,6 +165,11 @@ public class ResourceHandler extends Handler.Wrapper
     public Resource getBaseResource()
     {
         return _baseResource;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _byteBufferPool;
     }
 
     /**
@@ -189,9 +196,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStylesheet()
+    public Resource getStyleSheet()
     {
-        return _resourceService.getStylesheet();
+        return (_styleSheet == null) ? getServer().getDefaultStyleSheet() : _styleSheet;
     }
 
     public List<String> getWelcomeFiles()
@@ -337,11 +344,11 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
+     * @param styleSheet The location of the style sheet to be used as a String.
      */
-    public void setStylesheet(Resource stylesheet)
+    public void setStyleSheet(Resource styleSheet)
     {
-        _resourceService.setStylesheet(stylesheet);
+        _styleSheet = styleSheet;
     }
 
     public void setWelcomeFiles(String... welcomeFiles)
@@ -370,8 +377,7 @@ public class ResourceHandler extends Handler.Wrapper
         @Override
         protected boolean rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
         {
-            HttpURI newHttpURI = HttpURI.build(request.getHttpURI())
-                .pathQuery(welcomeTarget);
+            HttpURI newHttpURI = HttpURI.build(request.getHttpURI()).pathQuery(welcomeTarget);
             Request newRequest = new Request.Wrapper(request)
             {
                 @Override
@@ -380,13 +386,7 @@ public class ResourceHandler extends Handler.Wrapper
                     return newHttpURI;
                 }
             };
-
-            Request.Processor processor = getServer().handle(newRequest);
-            if (processor == null)
-                return false;
-
-            processor.process(newRequest, response, callback);
-            return true;
+            return getServer().handle(newRequest, response, callback);
         }
     }
 }

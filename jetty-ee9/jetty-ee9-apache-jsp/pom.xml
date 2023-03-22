@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-apache-jsp</artifactId>
-  <name>EE9 :: Jetty :: Apache JSP Implementation</name>
+  <name>EE9 :: Apache JSP</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.apache-jsp</bundle-symbolic-name>

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -50,6 +50,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
@@ -101,7 +102,7 @@ public class XmlConfiguration
         .flatMap(p -> Stream.of(p.get()))
         .toList();
     private static final Pool<ConfigurationParser> __parsers =
-        new Pool<>(Pool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
+        new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters
@@ -204,7 +205,7 @@ public class XmlConfiguration
 
     ConfigurationParser getParser()
     {
-        Pool<ConfigurationParser>.Entry entry = __parsers.acquire(ConfigurationParser::new);
+        Pool.Entry<ConfigurationParser> entry = __parsers.acquire(ConfigurationParser::new);
         if (entry == null)
             return new ConfigurationParser(null);
         return entry.getPooled();
@@ -540,9 +541,7 @@ public class XmlConfiguration
             String propertyValue = null;
 
             Class<?> oClass = nodeClass(node);
-            if (oClass != null)
-                obj = null;
-            else
+            if (oClass == null)
                 oClass = obj.getClass();
 
             // Look for a property value
@@ -571,9 +570,9 @@ public class XmlConfiguration
                 value = propertyValue;
             Object[] arg = {value};
 
-            Class<?>[] vClass = {Object.class};
+            Class<?> vClass = Object.class;
             if (value != null)
-                vClass[0] = value.getClass();
+                vClass = value.getClass();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML {}.{} ({})", (obj != null ? obj.toString() : oClass.getName()), setter, value);
@@ -600,8 +599,8 @@ public class XmlConfiguration
                 // Try for native match
                 try
                 {
-                    Field type = vClass[0].getField("TYPE");
-                    vClass[0] = (Class<?>)type.get(null);
+                    Field type = vClass.getField("TYPE");
+                    vClass = (Class<?>)type.get(null);
                     Method set = oClass.getMethod(setter, vClass);
                     invokeMethod(set, obj, arg);
                     return;
@@ -733,7 +732,7 @@ public class XmlConfiguration
             }
 
             // No Joy
-            String message = oClass + "." + setter + "(" + vClass[0] + ")";
+            String message = oClass + "." + setter + "(" + vClass + ")";
             if (types != null)
                 message += ". Found setters for " + types;
 
@@ -842,19 +841,11 @@ public class XmlConfiguration
 
             Class<?> oClass;
             if (clazz != null)
-            {
-                // static call
                 oClass = Loader.loadClass(clazz);
-                obj = null;
-            }
             else if (obj != null)
-            {
                 oClass = obj.getClass();
-            }
             else
-            {
                 throw new IllegalArgumentException(node.toString());
-            }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML get {}", name);
@@ -920,19 +911,11 @@ public class XmlConfiguration
 
             Class<?> oClass;
             if (clazz != null)
-            {
-                // static call
                 oClass = Loader.loadClass(clazz);
-                obj = null;
-            }
             else if (obj != null)
-            {
                 oClass = obj.getClass();
-            }
             else
-            {
                 throw new IllegalArgumentException(node.toString());
-            }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML call {}", name);
@@ -968,10 +951,6 @@ public class XmlConfiguration
                     continue;
                 Object[] arguments = args.applyTo(method);
                 if (arguments == null)
-                    continue;
-                if (Modifier.isStatic(method.getModifiers()) != (obj == null))
-                    continue;
-                if ((obj == null) && method.getDeclaringClass() != oClass)
                     continue;
 
                 try
@@ -1191,13 +1170,16 @@ public class XmlConfiguration
         {
             AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Name", "Deprecated", "Default");
             String id = aoeNode.getString("Id");
-            String name = aoeNode.getString("Name", true);
+            String name = aoeNode.getString("Name", false);
             List<Object> deprecated = aoeNode.getList("Deprecated");
             String dftValue = aoeNode.getString("Default");
 
+            if (name == null && deprecated.isEmpty())
+                throw new IllegalStateException("Invalid <Property> element");
+
             // Look for a value
             Map<String, String> properties = _configuration.getProperties();
-            String value = properties.get(name);
+            String value = name == null ? null : properties.get(name);
 
             // Look for a deprecated name value
             String alternate = null;
@@ -1205,13 +1187,22 @@ public class XmlConfiguration
             {
                 for (Object d : deprecated)
                 {
-                    String v = properties.get(StringUtil.valueOf(d));
+                    if (d == null)
+                        continue;
+                    String v = properties.get(d.toString());
                     if (v != null)
                     {
                         if (value == null)
-                            LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
+                        {
+                            if (name == null)
+                                LOG.warn("Property '{}' is deprecated, no replacement available", d);
+                            else
+                                LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
+                        }
                         else
-                            LOG.warn("Property '{}' is deprecated, value from '{}' used", d, name);
+                        {
+                            LOG.warn("Property '{}' is deprecated, value from '{}' used instead", d, name);
+                        }
                     }
                     if (alternate == null)
                         alternate = v;
@@ -1242,12 +1233,15 @@ public class XmlConfiguration
         {
             AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Name", "Deprecated", "Default");
             String id = aoeNode.getString("Id");
-            String name = aoeNode.getString("Name", true);
+            String name = aoeNode.getString("Name", false);
             List<Object> deprecated = aoeNode.getList("Deprecated");
             String dftValue = aoeNode.getString("Default");
 
+            if (name == null && deprecated.isEmpty())
+                throw new IllegalStateException("Invalid <SystemProperty> element");
+
             // Look for a value
-            String value = System.getProperty(name);
+            String value = name == null ? null : System.getProperty(name);
 
             // Look for a deprecated name value
             String alternate = null;
@@ -1261,9 +1255,16 @@ public class XmlConfiguration
                     if (v != null)
                     {
                         if (value == null)
-                            LOG.warn("SystemProperty '{}' is deprecated, use '{}' instead", d, name);
+                        {
+                            if (name == null)
+                                LOG.warn("SystemProperty '{}' is deprecated, no replacement available", d);
+                            else
+                                LOG.warn("SystemProperty '{}' is deprecated, use '{}' instead", d, name);
+                        }
                         else
+                        {
                             LOG.warn("SystemProperty '{}' is deprecated, value from '{}' used", d, name);
+                        }
                     }
                     if (alternate == null)
                         alternate = v;
@@ -1295,22 +1296,30 @@ public class XmlConfiguration
         {
             AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Name", "Deprecated", "Default");
             String id = aoeNode.getString("Id");
-            String name = aoeNode.getString("Name", true);
+            String name = aoeNode.getString("Name", false);
             List<Object> deprecated = aoeNode.getList("Deprecated");
             String dftValue = aoeNode.getString("Default");
 
+            if (name == null && deprecated.isEmpty())
+                throw new IllegalStateException("Invalid <Env> element");
+
             // Look for a value
-            String value = System.getenv(name);
+            String value = name == null ? null : System.getenv(name);
 
             // Look for a deprecated name value
             if (value == null && !deprecated.isEmpty())
             {
                 for (Object d : deprecated)
                 {
-                    value = System.getenv(StringUtil.valueOf(d));
+                    if (d == null)
+                        continue;
+                    value = System.getenv(d.toString());
                     if (value != null)
                     {
-                        LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
+                        if (name == null)
+                            LOG.warn("Property '{}' is deprecated, no replacement available", d);
+                        else
+                            LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
                         break;
                     }
                 }
@@ -1997,9 +2006,9 @@ public class XmlConfiguration
 
     private static class ConfigurationParser extends XmlParser implements AutoCloseable
     {
-        private final Pool<ConfigurationParser>.Entry _entry;
+        private final Pool.Entry<ConfigurationParser> _entry;
 
-        private ConfigurationParser(Pool<ConfigurationParser>.Entry entry)
+        private ConfigurationParser(Pool.Entry<ConfigurationParser> entry)
         {
             _entry = entry;
 

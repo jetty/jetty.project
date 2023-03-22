@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,14 +13,14 @@
 
 module org.eclipse.jetty.ee9.websocket.jakarta.server
 {
-    requires org.eclipse.jetty.websocket.core.server;
-    requires org.eclipse.jetty.ee9.websocket.jakarta.common;
     requires org.eclipse.jetty.ee9.websocket.servlet;
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.ee9.webapp;
     requires transitive org.eclipse.jetty.ee9.websocket.jakarta.client;
+    requires transitive org.eclipse.jetty.websocket.core.server;
 
+    exports org.eclipse.jetty.ee9.websocket.jakarta.server;
     exports org.eclipse.jetty.ee9.websocket.jakarta.server.config;
 
     provides jakarta.servlet.ServletContainerInitializer with

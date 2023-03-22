@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -64,7 +64,7 @@ public class PropertyOverrideTest extends AbstractUseCase
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
         Files.write(baseDir.resolve("start.d/main.ini"),
             List.of(
-                "--module=ssl-ini"
+                "--modules=ssl-ini"
             ),
             StandardCharsets.UTF_8);
 
@@ -139,7 +139,7 @@ public class PropertyOverrideTest extends AbstractUseCase
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
         Files.write(baseDir.resolve("start.d/main.ini"),
             List.of(
-                "--module=ssl-ini",
+                "--modules=ssl-ini",
                 // this should override mod default
                 "jetty.sslContext.keyStorePassword=storepwd"
             ),

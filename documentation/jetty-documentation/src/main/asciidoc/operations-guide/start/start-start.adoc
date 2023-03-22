@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -79,7 +79,7 @@ startJVM --> forkedJVM: " waits for"
 
 It is worth mentioning that there are two standard Jetty modules that allow you to easily add entries to the Jetty server class-path:
 
-* The `resources` module, that adds the `$JETTY_BASE/resources/` directory to the server class-path.
+* The xref:og-module-resources[`resources` module], which adds the `$JETTY_BASE/resources` directory to the server class-path.
 This is useful if you have third party libraries that lookup resources from the class-path: just put those resources in the `$JETTY_BASE/resources/` directory. +
 Logging libraries often perform class-path lookup of their configuration files (for example, `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so `$JETTY_BASE/resources/` is the ideal place to add those files. +
 * The the `ext` module, that adds all the `+*.jar+` files under the `$JETTY_BASE/lib/ext/` directory, and subdirectories recursively, to the server class-path. +

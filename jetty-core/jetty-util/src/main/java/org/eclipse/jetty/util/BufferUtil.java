@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -645,6 +645,43 @@ public class BufferUtil
             tmp.position(0);
             tmp.limit(l);
             buffer.put(tmp);
+        }
+    }
+
+    public static int readFrom(InputStream is, ByteBuffer buffer) throws IOException
+    {
+        if (buffer.hasArray())
+        {
+            int read = is.read(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
+            buffer.limit(buffer.limit() + read);
+            return read;
+        }
+        else
+        {
+            int totalRead = 0;
+            ByteBuffer tmp = allocate(8192);
+            while (BufferUtil.space(tmp) > 0 && BufferUtil.space(buffer) > 0)
+            {
+                int read = is.read(tmp.array(), 0, Math.min(BufferUtil.space(tmp), BufferUtil.space(buffer)));
+                if (read == 0)
+                {
+                    break;
+                }
+                else if (read < 0)
+                {
+                    if (totalRead == 0)
+                        return -1;
+                    break;
+                }
+                totalRead += read;
+                tmp.position(0);
+                tmp.limit(read);
+
+                int pos = BufferUtil.flipToFill(buffer);
+                BufferUtil.put(tmp, buffer);
+                BufferUtil.flipToFlush(buffer, pos);
+            }
+            return totalRead;
         }
     }
 

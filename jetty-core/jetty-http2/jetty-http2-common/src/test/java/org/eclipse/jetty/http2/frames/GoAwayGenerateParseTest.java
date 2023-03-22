@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,11 +19,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.UnaryOperator;
 
-import org.eclipse.jetty.http2.internal.generator.GoAwayGenerator;
-import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.generator.GoAwayGenerator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -32,15 +32,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class GoAwayGenerateParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testGenerateParse() throws Exception
     {
-        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
+        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator(bufferPool));
 
         final List<GoAwayFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onGoAway(GoAwayFrame frame)
@@ -56,11 +56,11 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateGoAway(lease, lastStreamId, error, null);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.generateGoAway(accumulator, lastStreamId, error, null);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -79,10 +79,10 @@ public class GoAwayGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
+        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator(bufferPool));
 
         final List<GoAwayFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onGoAway(GoAwayFrame frame)
@@ -100,11 +100,11 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateGoAway(lease, lastStreamId, error, payload);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.generateGoAway(accumulator, lastStreamId, error, payload);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {

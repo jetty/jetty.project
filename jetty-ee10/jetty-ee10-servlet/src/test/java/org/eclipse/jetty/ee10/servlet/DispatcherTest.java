@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -138,6 +138,42 @@ public class DispatcherTest
     }
 
     @Test
+    public void testFowardThenForward() throws Exception
+    {
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(AlwaysForwardServlet.class, "/AlwaysForwardServlet/*");
+        _contextHandler.addServlet(ForwardEchoURIServlet.class, "/echo/*");
+
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/ForwardServlet?do=always HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Type: text/plain\r
+            Content-Length: 123\r
+            Connection: close\r
+            \r
+            /context\r
+            /echo\r
+            null\r
+            /context/echo\r
+            /context\r
+            ForwardServlet\r
+            null\r
+            do=always\r
+            /context/ForwardServlet\r
+            /ForwardServlet\r
+            """;
+
+        assertEquals(expected, rawResponse);
+    }
+    
+    @Test
     public void testForwardNonUTF8() throws Exception
     {
         _contextHandler.addServlet(ForwardNonUTF8Servlet.class, "/ForwardServlet/*");
@@ -176,12 +212,12 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Content-Type: text/plain\r
-            Content-Length: 56\r
+            Content-Length: 54\r
             Connection: close\r
             \r
             /context\r
             /EchoURI\r
-            /x%20x\r
+            /x x\r
             /context/EchoURI/x%20x;a=1\r
             """;
         assertEquals(expected, responses);
@@ -191,7 +227,7 @@ public class DispatcherTest
     public void testNamedForward() throws Exception
     {
         _contextHandler.addServlet(NamedForwardServlet.class, "/forward/*");
-        String echo = _contextHandler.addServlet(EchoURIServlet.class, "/echo/*").getName();
+        String echo = _contextHandler.addServlet(ForwardEchoURIServlet.class, "/echo/*").getName();
 
         String rawResponse = _connector.getResponse(("""
             GET /context/forward/info;param=value?name=@ECHO@ HTTP/1.1\r
@@ -203,13 +239,19 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Content-Type: text/plain\r
-            Content-Length: 62\r
+            Content-Length: 98\r
             Connection: close\r
             \r
             /context\r
             /forward\r
             /info\r
             /context/forward/info;param=value\r
+            null\r
+            null\r
+            null\r
+            null\r
+            null\r
+            null\r
             """;
 
         assertEquals(expected, rawResponse);
@@ -219,7 +261,7 @@ public class DispatcherTest
     public void testNamedInclude() throws Exception
     {
         _contextHandler.addServlet(NamedIncludeServlet.class, "/include/*");
-        String echo = _contextHandler.addServlet(EchoURIServlet.class, "/echo/*").getName();
+        String echo = _contextHandler.addServlet(IncludeEchoURIServlet.class, "/echo/*").getName();
 
         String responses = _connector.getResponse("""
             GET /context/include/info;param=value?name=@ECHO@ HTTP/1.1\r
@@ -230,13 +272,19 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 62\r
+            Content-Length: 98\r
             Connection: close\r
             \r
             /context\r
             /include\r
             /info\r
             /context/include/info;param=value\r
+            null\r
+            null\r
+            null\r
+            null\r
+            null\r
+            null\r
             """;
 
         assertEquals(expected, responses);
@@ -703,7 +751,7 @@ public class DispatcherTest
         _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatchTestServlet.class), "/DispatchServlet");
 
         ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
-        _contextHandler.setErrorProcessor(errorPageErrorHandler);
+        _contextHandler.setErrorHandler(errorPageErrorHandler);
         errorPageErrorHandler.addErrorPage(404, "/TestServlet");
 
         HttpTester.Response response;
@@ -811,6 +859,8 @@ public class DispatcherTest
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("uri"));
             else if (request.getParameter("do").equals("req.echo"))
                 dispatcher = request.getRequestDispatcher(request.getParameter("uri"));
+            else if (request.getParameter("do").equals("always"))
+                dispatcher = request.getRequestDispatcher("/AlwaysForwardServlet");
             assert dispatcher != null;
             dispatcher.forward(request, response);
         }
@@ -1118,6 +1168,48 @@ public class DispatcherTest
             response.getOutputStream().println(request.getServletPath());
             response.getOutputStream().println(request.getPathInfo());
             response.getOutputStream().println(request.getRequestURI());
+        }
+    }
+    
+    public static class IncludeEchoURIServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().println(request.getContextPath());
+            response.getOutputStream().println(request.getServletPath());
+            response.getOutputStream().println(request.getPathInfo());
+            response.getOutputStream().println(request.getRequestURI());
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
+            HttpServletMapping mapping = (HttpServletMapping)request.getAttribute(RequestDispatcher.INCLUDE_MAPPING);
+            response.getOutputStream().println(mapping == null ? null : mapping.getMatchValue());
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_QUERY_STRING));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH));
+        }
+    }
+    
+    public static class ForwardEchoURIServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().println(request.getContextPath());
+            response.getOutputStream().println(request.getServletPath());
+            response.getOutputStream().println(request.getPathInfo());
+            response.getOutputStream().println(request.getRequestURI());
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+            HttpServletMapping mapping = (HttpServletMapping)request.getAttribute(RequestDispatcher.FORWARD_MAPPING);
+            response.getOutputStream().println(mapping == null ? null : mapping.getMatchValue());
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
         }
     }
 

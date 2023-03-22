@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -43,12 +43,8 @@ public class HouseKeeper extends AbstractLifeCycle
     protected boolean _ownScheduler = false;
     private long _intervalMs = DEFAULT_PERIOD_MS;
 
-    /**
-     * Runner
-     */
     protected class Runner implements Runnable
     {
-
         @Override
         public void run()
         {
@@ -104,7 +100,7 @@ public class HouseKeeper extends AbstractLifeCycle
                 if (_sessionIdManager instanceof DefaultSessionIdManager)
                 {
                     //try and use a common scheduler, fallback to own
-                    _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
+                    _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getScheduler();
                 }
 
                 if (_scheduler == null)

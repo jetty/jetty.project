@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,14 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.ConnectionPool;
-import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.SendFailure;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpConnection;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +40,9 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HTTP3SessionClient session;
 
-    public HttpConnectionOverHTTP3(HttpDestination destination, HTTP3SessionClient session)
+    public HttpConnectionOverHTTP3(Destination destination, HTTP3SessionClient session)
     {
-        super(destination);
+        super((HttpDestination)destination);
         this.session = session;
     }
 
@@ -86,7 +87,7 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 
     protected HttpChannelOverHTTP3 newHttpChannel()
     {
-        return new HttpChannelOverHTTP3(getHttpDestination(), this, getSession());
+        return new HttpChannelOverHTTP3(this, getSession());
     }
 
     public void release(HttpChannelOverHTTP3 channel)

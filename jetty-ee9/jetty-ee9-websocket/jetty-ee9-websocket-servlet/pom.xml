@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-websocket-servlet</artifactId>
-  <name>EE9 :: Jetty :: Websocket :: Servlet</name>
+  <name>EE9 :: Websocket :: Servlet</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>

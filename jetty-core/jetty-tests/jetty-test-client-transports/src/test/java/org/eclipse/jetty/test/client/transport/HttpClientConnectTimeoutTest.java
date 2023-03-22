@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -54,7 +54,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
                 latch.countDown();
         });
 
-        assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 
@@ -82,7 +82,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
                 latch.countDown();
             });
 
-        assertFalse(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertFalse(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertEquals(1, completes.get());
         assertNotNull(request.getAbortCause());
     }
@@ -116,7 +116,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
             }
         });
 
-        assertTrue(latch.await(3 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 

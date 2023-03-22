@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,8 +21,6 @@ module org.eclipse.jetty.http2.common
     exports org.eclipse.jetty.http2.api;
     exports org.eclipse.jetty.http2.api.server;
     exports org.eclipse.jetty.http2.frames;
-
-    exports org.eclipse.jetty.http2.internal to org.eclipse.jetty.http2.client, org.eclipse.jetty.http2.http.client.transport, org.eclipse.jetty.http2.server;
-    exports org.eclipse.jetty.http2.internal.generator to org.eclipse.jetty.http2.client, org.eclipse.jetty.http2.http.client.transport, org.eclipse.jetty.http2.server;
-    exports org.eclipse.jetty.http2.internal.parser to org.eclipse.jetty.http2.client, org.eclipse.jetty.http2.http.client.transport, org.eclipse.jetty.http2.server;
+    exports org.eclipse.jetty.http2.generator;
+    exports org.eclipse.jetty.http2.parser;
 }

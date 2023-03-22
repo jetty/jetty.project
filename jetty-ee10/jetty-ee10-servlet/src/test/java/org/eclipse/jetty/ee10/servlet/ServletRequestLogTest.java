@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,7 +33,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -293,15 +292,12 @@ public class ServletRequestLogTest
         server.setConnectors(new Connector[]{connector});
 
         // First the behavior as defined in etc/jetty.xml
-        // id="Handlers"
-        Handler.Collection handlers = new Handler.Collection();
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
         DefaultHandler defaultHandler = new DefaultHandler();
 
-        handlers.setHandlers(contexts, defaultHandler);
-        server.setHandler(handlers);
+        server.setHandler(contexts);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -377,8 +373,7 @@ public class ServletRequestLogTest
         server.addBean(errorHandler);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        DefaultHandler defaultHandler = new DefaultHandler();
-        server.setHandler(new Handler.Collection(contexts, defaultHandler));
+        server.setHandler(contexts);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -451,7 +446,7 @@ public class ServletRequestLogTest
         server.setConnectors(new Connector[]{connector});
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(new Handler.Collection(contexts, new DefaultHandler()));
+        server.setHandler(contexts);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -472,7 +467,7 @@ public class ServletRequestLogTest
         // Add error page mapping
         ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
         errorMapper.addErrorPage(500, "/errorpage");
-        app.setErrorProcessor(errorMapper);
+        app.setErrorHandler(errorMapper);
 
         try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
@@ -531,9 +526,7 @@ public class ServletRequestLogTest
         // First the behavior as defined in etc/jetty.xml (as is)
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        // id="DefaultHandler"
-        DefaultHandler defaultHandler = new DefaultHandler();
-        server.setHandler(new Handler.Collection(contexts, defaultHandler));
+        server.setHandler(contexts);
 
         // Next the proposed behavioral change to etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -554,7 +547,7 @@ public class ServletRequestLogTest
         // Add error page mapping
         ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
         errorMapper.addErrorPage(500, "/errorpage");
-        app.setErrorProcessor(errorMapper);
+        app.setErrorHandler(errorMapper);
 
         try
         {

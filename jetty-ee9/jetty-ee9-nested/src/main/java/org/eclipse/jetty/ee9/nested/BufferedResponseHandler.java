@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -64,7 +64,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     public BufferedResponseHandler()
     {
         _methods.include(HttpMethod.GET.asString());
-        for (String type : MimeTypes.getKnownMimeTypes())
+        for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
             if (type.startsWith("image/") ||
                 type.startsWith("audio/") ||
@@ -165,7 +165,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         // If the mime type is known from the path then apply mime type filtering.
-        String mimeType = context == null ? MimeTypes.getDefaultMimeByExtension(path) : context.getMimeType(path);
+        String mimeType = context == null ? MimeTypes.DEFAULTS.getMimeByExtension(path) : context.getMimeType(path);
         if (mimeType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
@@ -266,7 +266,7 @@ public class BufferedResponseHandler extends HandlerWrapper
                     // Do we need a new aggregate buffer.
                     if (BufferUtil.space(_aggregate) == 0)
                     {
-                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the ByteBufferPool.
+                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the ByteBuffer pool.
                         int size = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content));
                         _aggregate = BufferUtil.allocate(size);
                         _buffers.offer(_aggregate);

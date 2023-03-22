@@ -12,12 +12,6 @@
           <Set name="contexts">
             <Ref refid="Contexts" />
           </Set>
-          <!--
-          <Call name="setContextAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
-          </Call>
-          -->
         </New>
       </Arg>
     </Call>

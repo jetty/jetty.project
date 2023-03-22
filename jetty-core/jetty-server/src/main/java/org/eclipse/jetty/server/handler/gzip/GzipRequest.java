@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,38 +14,101 @@
 package org.eclipse.jetty.server.handler.gzip;
 
 import java.nio.ByteBuffer;
+import java.util.regex.Pattern;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.GZIPContentDecoder;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
-public class GzipRequest extends Request.WrapperProcessor
+public class GzipRequest extends Request.Wrapper
 {
+    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
+    private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
+
     // TODO: use InflaterPool from somewhere.
     private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);
 
-    private final boolean _inflateInput;
-    private Decoder _decoder;
-    private GzipTransformer gzipTransformer;
-    private final int _inflateBufferSize;
-    private final GzipHandler _gzipHandler;
     private final HttpFields _fields;
+    private Decoder _decoder;
+    private GzipTransformer _gzipTransformer;
 
-    public GzipRequest(Request wrapped, GzipHandler gzipHandler, boolean inflateInput, HttpFields fields)
+    public GzipRequest(Request request, int inflateBufferSize)
     {
-        super(wrapped);
-        _gzipHandler = gzipHandler;
-        _inflateInput = inflateInput;
-        _inflateBufferSize = gzipHandler.getInflateBufferSize();
-        _fields = fields;
+        super(request);
+        _fields = updateRequestFields(request, inflateBufferSize > 0);
+
+        if (inflateBufferSize > 0)
+        {
+            Components components = getComponents();
+            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), inflateBufferSize);
+            _gzipTransformer = new GzipTransformer(getWrapped());
+        }
+    }
+
+    private HttpFields updateRequestFields(Request request, boolean inflatable)
+    {
+        HttpFields fields = request.getHeaders();
+        HttpFields.Mutable newFields = HttpFields.build(fields.size());
+        for (HttpField field : fields)
+        {
+            HttpHeader header = field.getHeader();
+            if (header == null)
+            {
+                newFields.add(field);
+                continue;
+            }
+
+            switch (header)
+            {
+                case CONTENT_ENCODING ->
+                {
+                    if (inflatable)
+                    {
+                        if (field.getValue().equalsIgnoreCase("gzip"))
+                        {
+                            newFields.add(X_CE_GZIP);
+                            continue;
+                        }
+
+                        if (COMMA_GZIP.matcher(field.getValue()).matches())
+                        {
+                            String v = field.getValue();
+                            v = v.substring(0, v.lastIndexOf(','));
+                            newFields.add(X_CE_GZIP);
+                            newFields.add(new HttpField(HttpHeader.CONTENT_ENCODING, v));
+                            continue;
+                        }
+                    }
+                    newFields.add(field);
+                }
+                case IF_MATCH, IF_NONE_MATCH ->
+                {
+                    String etags = field.getValue();
+                    String etagsNoSuffix = CompressedContentFormat.GZIP.stripSuffixes(etags);
+                    if (!etagsNoSuffix.equals(etags))
+                    {
+                        newFields.add(new HttpField(field.getHeader(), etagsNoSuffix));
+                        request.setAttribute(GzipHandler.GZIP_HANDLER_ETAGS, etags);
+                        continue;
+                    }
+                    newFields.add(field);
+                }
+                case CONTENT_LENGTH -> newFields.add(inflatable ? new HttpField("X-Content-Length", field.getValue()) : field);
+                default -> newFields.add(field);
+            }
+        }
+        fields = newFields.takeAsImmutable();
+        return fields;
     }
 
     @Override
@@ -57,49 +120,26 @@ public class GzipRequest extends Request.WrapperProcessor
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        if (_inflateInput)
-        {
-            Components components = request.getComponents();
-            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
-            gzipTransformer = new GzipTransformer(request);
-        }
-
-        int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        GzipResponse gzipResponse = new GzipResponse(this, response, _gzipHandler, _gzipHandler.getVary(), outputBufferSize, _gzipHandler.isSyncFlush());
-        Callback cb = Callback.from(() -> destroy(gzipResponse), callback);
-        super.process(this, gzipResponse, cb);
-    }
-
-    @Override
     public Content.Chunk read()
     {
-        if (_inflateInput)
-            return gzipTransformer.read();
+        if (_gzipTransformer != null)
+            return _gzipTransformer.read();
         return super.read();
     }
 
     @Override
     public void demand(Runnable demandCallback)
     {
-        if (_inflateInput)
-            gzipTransformer.demand(demandCallback);
+        if (_gzipTransformer != null)
+            _gzipTransformer.demand(demandCallback);
         else
             super.demand(demandCallback);
     }
 
-    private void destroy(GzipResponse response)
+    void destroy()
     {
-        // We need to do this to intercept the committing of the response
-        // and possibly change headers in case write is never called.
-        response.write(true, null, Callback.NOOP);
-
         if (_decoder != null)
-        {
             _decoder.destroy();
-            _decoder = null;
-        }
     }
 
     private class GzipTransformer extends ContentSourceTransformer
@@ -127,16 +167,18 @@ public class GzipRequest extends Request.WrapperProcessor
             // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
             if (retain)
                 _chunk.retain();
-            ByteBuffer decodedBuffer = _decoder.decode(_chunk);
+            RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk);
 
-            if (BufferUtil.hasContent(decodedBuffer))
+            if (decodedBuffer != null && decodedBuffer.hasRemaining())
             {
                 // The decoded ByteBuffer is a transformed "copy" of the
                 // compressed one, so it has its own reference counter.
-                return Content.Chunk.from(decodedBuffer, _chunk.isLast() && !_chunk.hasRemaining(), _decoder::release);
+                return Content.Chunk.from(decodedBuffer.getByteBuffer(), _chunk.isLast() && !_chunk.hasRemaining(), decodedBuffer::release);
             }
             else
             {
+                if (decodedBuffer != null)
+                    decodedBuffer.release();
                 // Could not decode more from this chunk, release it.
                 Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
                 _chunk.release();
@@ -148,24 +190,26 @@ public class GzipRequest extends Request.WrapperProcessor
 
     private static class Decoder extends GZIPContentDecoder
     {
-        private ByteBuffer _decoded;
+        private RetainableByteBuffer _decoded;
 
         private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
         {
             super(inflaterPool, bufferPool, bufferSize);
         }
 
-        public ByteBuffer decode(Content.Chunk content)
+        public RetainableByteBuffer decode(Content.Chunk chunk)
         {
-            decodeChunks(content.getByteBuffer());
-            ByteBuffer chunk = _decoded;
+            decodeChunks(chunk.getByteBuffer());
+            RetainableByteBuffer decoded = _decoded;
             _decoded = null;
-            return chunk;
+            return decoded;
         }
 
         @Override
-        protected boolean decodedChunk(ByteBuffer decoded)
+        protected boolean decodedChunk(RetainableByteBuffer decoded)
         {
+            // Retain the chunk because it is stored for later use.
+            decoded.retain();
             _decoded = decoded;
             return true;
         }

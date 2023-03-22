@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,20 +16,21 @@ package org.eclipse.jetty.http3.server.internal;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http3.ControlFlusher;
+import org.eclipse.jetty.http3.DecoderStreamConnection;
+import org.eclipse.jetty.http3.EncoderStreamConnection;
 import org.eclipse.jetty.http3.HTTP3Configuration;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.InstructionFlusher;
+import org.eclipse.jetty.http3.InstructionHandler;
+import org.eclipse.jetty.http3.MessageFlusher;
+import org.eclipse.jetty.http3.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.ControlFlusher;
-import org.eclipse.jetty.http3.internal.DecoderStreamConnection;
-import org.eclipse.jetty.http3.internal.EncoderStreamConnection;
-import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
-import org.eclipse.jetty.http3.internal.InstructionFlusher;
-import org.eclipse.jetty.http3.internal.InstructionHandler;
-import org.eclipse.jetty.http3.internal.MessageFlusher;
-import org.eclipse.jetty.http3.internal.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
@@ -62,7 +63,8 @@ public class ServerHTTP3Session extends ServerProtocolSession
         long encoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
-        this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
+        ByteBufferPool bufferPool = quicSession.getByteBufferPool();
+        this.encoder = new QpackEncoder(bufferPool, new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
         addBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
@@ -70,7 +72,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         long decoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
         InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
-        this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), configuration.getMaxRequestHeadersSize());
+        this.decoder = new QpackDecoder(bufferPool, new InstructionHandler(decoderInstructionFlusher), configuration.getMaxRequestHeadersSize());
         addBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);

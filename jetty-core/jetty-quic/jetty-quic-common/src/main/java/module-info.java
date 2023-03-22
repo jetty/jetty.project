@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,8 +19,4 @@ module org.eclipse.jetty.quic.common
     requires transitive org.eclipse.jetty.quic.quiche;
 
     exports org.eclipse.jetty.quic.common;
-
-    exports org.eclipse.jetty.quic.common.internal to
-        org.eclipse.jetty.quic.client,
-        org.eclipse.jetty.quic.server;
 }

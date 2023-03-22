@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,7 +18,6 @@ import java.util.Locale;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
-import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -83,7 +83,7 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public long getNanoTimeStamp()
+    public long getNanoTime()
     {
         return _nanoTime;
     }
@@ -191,6 +191,8 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public void onContent(Content.Chunk chunk)
     {
+        // Retain the chunk because it is stored for later reads.
+        chunk.retain();
         _chunk = chunk;
     }
 
@@ -227,8 +229,9 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 if (last)
                 {
-                    Generator.Result result = generateResponseContent(true, BufferUtil.EMPTY_BUFFER, callback);
-                    flusher.flush(result);
+                    ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+                    generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
+                    flusher.flush(accumulator, callback);
                 }
                 else
                 {
@@ -238,8 +241,9 @@ public class HttpStreamOverFCGI implements HttpStream
             }
             else
             {
-                Generator.Result result = generateResponseContent(last, content, callback);
-                flusher.flush(result);
+                ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+                generateResponseContent(accumulator, last, content);
+                flusher.flush(accumulator, callback);
             }
 
             if (last && _shutdown)
@@ -256,58 +260,54 @@ public class HttpStreamOverFCGI implements HttpStream
 
         boolean shutdown = _shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
+        ByteBufferPool bufferPool = _generator.getByteBufferPool();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
         if (head)
         {
             if (last)
             {
-                Generator.Result headersResult = generateResponseHeaders(info, Callback.NOOP);
-                Generator.Result contentResult = generateResponseContent(true, BufferUtil.EMPTY_BUFFER, callback);
-                flusher.flush(headersResult, contentResult);
+                generateResponseHeaders(accumulator, info);
+                generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
+                flusher.flush(accumulator, callback);
             }
             else
             {
-                Generator.Result headersResult = generateResponseHeaders(info, callback);
-                flusher.flush(headersResult);
+                generateResponseHeaders(accumulator, info);
+                flusher.flush(accumulator, callback);
             }
         }
         else
         {
-            Generator.Result headersResult = generateResponseHeaders(info, Callback.NOOP);
-            Generator.Result contentResult = generateResponseContent(last, content, callback);
-            flusher.flush(headersResult, contentResult);
+            generateResponseHeaders(accumulator, info);
+            generateResponseContent(accumulator, last, content);
+            flusher.flush(accumulator, callback);
         }
 
         if (last && shutdown)
             flusher.shutdown();
     }
 
-    private Generator.Result generateResponseHeaders(MetaData.Response info, Callback callback)
+    private void generateResponseHeaders(ByteBufferPool.Accumulator accumulator, MetaData.Response info)
     {
-        return _generator.generateResponseHeaders(_id, info.getStatus(), info.getReason(), info.getFields(), callback);
+        _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getFields());
     }
 
-    private Generator.Result generateResponseContent(boolean last, ByteBuffer buffer, Callback callback)
+    private void generateResponseContent(ByteBufferPool.Accumulator accumulator, boolean last, ByteBuffer buffer)
     {
-        return _generator.generateResponseContent(_id, buffer, last, _aborted, callback);
-    }
-
-    @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(MetaData.Request request)
-    {
-        throw new UnsupportedOperationException();
+        _generator.generateResponseContent(accumulator, _id, buffer, last, _aborted);
     }
 
     @Override
     public boolean isCommitted()
     {
         return _committed;
+    }
+
+    @Override
+    public Throwable consumeAvailable()
+    {
+        return HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,9 +39,9 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestAsyncFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -79,17 +79,17 @@ public class WebSocketProxyTest
         public boolean blockServerUpgradeRequests = false;
 
         @Override
-        public Request.Processor handle(Request request)
+        public boolean handle(Request request, Response response, Callback callback)
         {
             if (request.getHeaders().get("Upgrade") != null)
             {
                 if (blockServerUpgradeRequests && Request.getPathInContext(request).startsWith("/server"))
                 {
-                    return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    return true;
                 }
             }
-
-            return null;
+            return false;
         }
     }
 
@@ -100,7 +100,7 @@ public class WebSocketProxyTest
         ServerConnector connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
-        Handler.Collection handlers = new Handler.Collection();
+        Handler.Sequence handlers = new Handler.Sequence();
         testHandler = new TestHandler();
         handlers.addHandler(testHandler);
 

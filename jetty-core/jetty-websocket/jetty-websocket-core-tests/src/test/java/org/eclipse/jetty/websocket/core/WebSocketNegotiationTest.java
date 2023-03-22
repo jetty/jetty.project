@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,8 +23,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -35,7 +35,6 @@ import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -149,7 +148,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
             }
@@ -180,7 +179,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
             }
@@ -226,7 +225,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
             }
@@ -274,7 +273,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
             }
@@ -318,7 +317,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 headers.complete(response.getHeaders());
             }
@@ -380,13 +379,13 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeRequest(HttpRequest request)
+            public void onHandshakeRequest(Request request)
             {
                 request.headers(headers -> headers.put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate"));
             }
 
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
             }
@@ -411,7 +410,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeRequest(HttpRequest request)
+            public void onHandshakeRequest(Request request)
             {
                 request.headers(headers -> headers.put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate"));
             }
@@ -469,7 +468,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
             }

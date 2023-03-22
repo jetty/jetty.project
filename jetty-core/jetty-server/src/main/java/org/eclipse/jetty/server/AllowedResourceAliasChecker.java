@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -164,7 +164,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
     protected boolean isAllowed(Path path)
     {
-        // If the resource doesn't exist we cannot determine whether it is protected so we assume it is.
+        // If the resource doesn't exist we cannot determine whether it is protected, so we assume it is.
         if (path != null && Files.exists(path))
         {
             // Walk the path parent links looking for the base resource, but failing if any steps are protected

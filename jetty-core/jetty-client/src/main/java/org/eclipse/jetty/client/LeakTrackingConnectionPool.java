@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,10 +13,7 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.LeakDetector;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,17 +30,10 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
         }
     };
 
-    public LeakTrackingConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+    public LeakTrackingConnectionPool(Destination destination, int maxConnections)
     {
-        super(destination, maxConnections, requester);
+        super(destination, maxConnections);
         addBean(leakDetector);
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-        LifeCycle.stop(this);
     }
 
     @Override

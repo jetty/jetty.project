@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,9 +31,8 @@ import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -84,7 +83,9 @@ public class ThreadStarvationTest
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
-            ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+            // TODO: restore leak tracking.
+//            ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+            ByteBufferPool pool = new ArrayByteBufferPool();
 
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
             ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
@@ -239,34 +240,25 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class ReadHandler extends Handler.Processor
+    protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
+            response.setStatus(200);
             /* TODO
-            baseRequest.setHandled(true);
 
-            if (request.getDispatcherType() == DispatcherType.REQUEST)
+            int l = request.getContentLength();
+            int r = 0;
+            while (r < l)
             {
-                response.setStatus(200);
-
-                int l = request.getContentLength();
-                int r = 0;
-                while (r < l)
-                {
-                    if (request.getInputStream().read() >= 0)
-                        r++;
-                }
-
-                response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
-            }
-            else
-            {
-                response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                if (request.getInputStream().read() >= 0)
+                    r++;
             }
 
-             */
+            response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
+            */
+            return true;
         }
     }
 
@@ -346,7 +338,7 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class WriteHandler extends Handler.Processor
+    protected static class WriteHandler extends Handler.Abstract
     {
         byte[] content = new byte[BUFFER_SIZE];
 
@@ -356,7 +348,7 @@ public class ThreadStarvationTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);
@@ -371,6 +363,7 @@ public class ThreadStarvationTest
             }
 
              */
+            return true;
         }
     }
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
 
 public class TestableRequest implements Request
@@ -120,6 +121,12 @@ public class TestableRequest implements Request
     }
 
     @Override
+    public long getNanoTime()
+    {
+        return 0;
+    }
+
+    @Override
     public boolean isSecure()
     {
         return false;
@@ -135,6 +142,12 @@ public class TestableRequest implements Request
     public Content.Chunk read()
     {
         return null;
+    }
+
+    @Override
+    public boolean consumeAvailable()
+    {
+        return false;
     }
 
     @Override
@@ -154,24 +167,19 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {
-    }
-
-    @Override
     public TunnelSupport getTunnelSupport()
     {
         return null;
     }
 
     @Override
-    public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+    public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
     {
+    }
+
+    @Override
+    public Session getSession(boolean create)
+    {
+        return null;
     }
 }

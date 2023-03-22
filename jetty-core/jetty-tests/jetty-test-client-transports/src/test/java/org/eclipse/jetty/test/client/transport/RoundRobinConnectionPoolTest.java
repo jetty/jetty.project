@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,14 +26,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -51,14 +52,15 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
     {
         AtomicBoolean record = new AtomicBoolean();
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 if (record.get())
                     remotePorts.add(Request.getRemotePort(request));
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -66,7 +68,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         CompletableFuture<Void> setup = new CompletableFuture<>();
         client.getTransport().setConnectionPoolFactory(destination ->
         {
-            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
+            LifeCycle.start(pool);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });
@@ -118,10 +121,10 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         AtomicReference<CountDownLatch> requestLatch = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(count);
         CyclicBarrier barrier = new CyclicBarrier(count + 1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 try
                 {
@@ -138,13 +141,15 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
                 {
                     callback.failed(x);
                 }
+                return true;
             }
         });
 
         CompletableFuture<Void> setup = new CompletableFuture<>();
         client.getTransport().setConnectionPoolFactory(destination ->
         {
-            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
+            LifeCycle.start(pool);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });
@@ -209,20 +214,21 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         int count = 2 * maxConnections * maxMultiplex * maxUsage;
 
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 remotePorts.add(Request.getRemotePort(request));
                 callback.succeeded();
+                return true;
             }
         });
         if (transport == Transport.H3)
             ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
         client.getTransport().setConnectionPoolFactory(destination ->
         {
-            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex);
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, maxMultiplex);
             pool.setMaxUsage(maxUsage);
             return pool;
         });

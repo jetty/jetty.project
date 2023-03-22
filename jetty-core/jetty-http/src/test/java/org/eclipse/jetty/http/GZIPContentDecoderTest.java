@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,6 +24,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,28 +41,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GZIPContentDecoderTest
 {
-    private ArrayByteBufferPool pool;
-    private AtomicInteger buffers = new AtomicInteger(0);
+    private final AtomicInteger counter = new AtomicInteger();
+    private ByteBufferPool pool;
 
     @BeforeEach
     public void before()
     {
-        buffers.set(0);
-        pool = new ArrayByteBufferPool()
+        pool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
-
             @Override
-            public ByteBuffer acquire(int size, boolean direct)
+            public RetainableByteBuffer acquire(int size, boolean direct)
             {
-                buffers.incrementAndGet();
-                return super.acquire(size, direct);
-            }
-
-            @Override
-            public void release(ByteBuffer buffer)
-            {
-                buffers.decrementAndGet();
-                super.release(buffer);
+                counter.incrementAndGet();
+                return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        boolean released = super.release();
+                        if (released)
+                            counter.decrementAndGet();
+                        return released;
+                    }
+                };
             }
         };
     }
@@ -68,7 +71,7 @@ public class GZIPContentDecoderTest
     @AfterEach
     public void after()
     {
-        assertEquals(0, buffers.get());
+        assertThat(counter.get(), is(0));
     }
 
     @Test
@@ -126,8 +129,9 @@ public class GZIPContentDecoderTest
         byte[] bytes = baos.toByteArray();
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
-        ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
+        RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
         assertEquals(0, decoded.remaining());
+        decoded.release();
     }
 
     @Test
@@ -142,9 +146,9 @@ public class GZIPContentDecoderTest
         byte[] bytes = baos.toByteArray();
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
-        ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
-        decoder.release(decoded);
+        RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        decoded.release();
     }
 
     @Test
@@ -165,11 +169,12 @@ public class GZIPContentDecoderTest
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
-        ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
-        assertEquals(0, decoded.capacity());
+        RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
+        assertEquals(0, decoded.remaining());
+        decoded.release();
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
-        decoder.release(decoded);
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        decoded.release();
     }
 
     @Test
@@ -190,14 +195,14 @@ public class GZIPContentDecoderTest
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
-        ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
+        RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         assertFalse(decoder.isFinished());
-        decoder.release(decoded);
+        decoded.release();
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
         assertEquals(0, decoded.remaining());
         assertTrue(decoder.isFinished());
-        decoder.release(decoded);
+        decoded.release();
     }
 
     @Test
@@ -218,12 +223,12 @@ public class GZIPContentDecoderTest
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
-        ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
-        assertEquals(0, decoded.capacity());
-        decoder.release(decoded);
+        RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
+        assertEquals(0, decoded.remaining());
+        decoded.release();
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
-        decoder.release(decoded);
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        decoded.release();
     }
 
     @Test
@@ -249,16 +254,16 @@ public class GZIPContentDecoderTest
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        ByteBuffer decoded = decoder.decode(buffer);
-        assertEquals(data1, StandardCharsets.UTF_8.decode(decoded).toString());
+        RetainableByteBuffer decoded = decoder.decode(buffer);
+        assertEquals(data1, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         assertTrue(decoder.isFinished());
         assertTrue(buffer.hasRemaining());
-        decoder.release(decoded);
+        decoded.release();
         decoded = decoder.decode(buffer);
-        assertEquals(data2, StandardCharsets.UTF_8.decode(decoded).toString());
+        assertEquals(data2, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         assertTrue(decoder.isFinished());
         assertFalse(buffer.hasRemaining());
-        decoder.release(decoded);
+        decoded.release();
     }
 
     @Test
@@ -280,9 +285,9 @@ public class GZIPContentDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
         {
-            ByteBuffer decoded = decoder.decode(buffer);
-            result += StandardCharsets.UTF_8.decode(decoded).toString();
-            decoder.release(decoded);
+            RetainableByteBuffer decoded = decoder.decode(buffer);
+            result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
+            decoded.release();
         }
         assertEquals(data, result);
     }
@@ -306,10 +311,10 @@ public class GZIPContentDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
         {
-            ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(new byte[]{buffer.get()}));
+            RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(new byte[]{buffer.get()}));
             if (decoded.hasRemaining())
-                result += StandardCharsets.UTF_8.decode(decoded).toString();
-            decoder.release(decoded);
+                result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
+            decoded.release();
         }
         assertEquals(data, result);
         assertTrue(decoder.isFinished());
@@ -341,10 +346,10 @@ public class GZIPContentDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
         {
-            ByteBuffer decoded = decoder.decode(buffer);
+            RetainableByteBuffer decoded = decoder.decode(buffer);
             if (decoded.hasRemaining())
-                result += StandardCharsets.UTF_8.decode(decoded).toString();
-            decoder.release(decoded);
+                result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
+            decoded.release();
             if (decoder.isFinished())
                 break;
         }
@@ -414,12 +419,12 @@ public class GZIPContentDecoderTest
             ByteBuffer buf = ByteBuffer.wrap(b, off, len);
             while (buf.hasRemaining())
             {
-                ByteBuffer decoded = decoder.decode(buf);
+                RetainableByteBuffer decoded = decoder.decode(buf);
                 if (decoded.hasRemaining())
                 {
                     decodedByteCount += decoded.remaining();
                 }
-                decoder.release(decoded);
+                decoded.release();
             }
         }
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -153,21 +153,6 @@ public enum HttpMethod
     public static final int PUT_AS_INT = ('P' & 0xff) << 24 | ('U' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
     public static final int POST_AS_INT = ('P' & 0xff) << 24 | ('O' & 0xFF) << 16 | ('S' & 0xFF) << 8 | ('T' & 0xFF);
     public static final int HEAD_AS_INT = ('H' & 0xff) << 24 | ('E' & 0xFF) << 16 | ('A' & 0xFF) << 8 | ('D' & 0xFF);
-
-    /**
-     * Optimized lookup to find a method name and trailing space in a byte array.
-     *
-     * @param bytes Array containing ISO-8859-1 characters
-     * @param position The first valid index
-     * @param limit The first non valid index
-     * @return An HttpMethod if a match or null if no easy match.
-     * @deprecated Not used
-     */
-    @Deprecated
-    public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
-    {
-        return LOOK_AHEAD.getBest(bytes, position, limit - position);
-    }
 
     /**
      * Optimized lookup to find a method name and trailing space in a byte array.

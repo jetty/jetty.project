@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,7 +36,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -47,9 +50,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -571,6 +571,7 @@ public abstract class FlowControlStrategyTest
         assertTrue(prepareLatch.await(5, TimeUnit.SECONDS));
 
         // Second request will consume half of the remaining the session window.
+        List<Stream.Data> dataList2 = new ArrayList<>();
         MetaData.Request request2 = newRequest("GET", HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
@@ -581,11 +582,13 @@ public abstract class FlowControlStrategyTest
                 if (!data.frame().isEndStream())
                     stream.demand();
                 // Do not release it to stall flow control.
+                dataList2.add(data);
             }
         });
 
         // Third request will consume the whole session window, which is now stalled.
         // A fourth request will not be able to receive data.
+        List<Stream.Data> dataList3 = new ArrayList<>();
         MetaData.Request request3 = newRequest("GET", HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request3, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
@@ -596,6 +599,7 @@ public abstract class FlowControlStrategyTest
                 if (!data.frame().isEndStream())
                     stream.demand();
                 // Do not release it to stall flow control.
+                dataList3.add(data);
             }
         });
 
@@ -624,6 +628,9 @@ public abstract class FlowControlStrategyTest
         dataList1.forEach(Stream.Data::release);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        dataList2.forEach(Stream.Data::release);
+        dataList3.forEach(Stream.Data::release);
     }
 
     @Test
@@ -660,7 +667,7 @@ public abstract class FlowControlStrategyTest
                 Stream.Data data = stream.readData();
                 DataFrame frame = data.frame();
                 int remaining = frame.remaining();
-                frame.getData().get(bytes, received, remaining);
+                frame.getByteBuffer().get(bytes, received, remaining);
                 this.received += remaining;
                 data.release();
                 if (frame.isEndStream())
@@ -730,7 +737,7 @@ public abstract class FlowControlStrategyTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                responseContent.put(data.frame().getData());
+                responseContent.put(data.frame().getByteBuffer());
                 data.release();
                 if (data.frame().isEndStream())
                     latch.countDown();
@@ -754,6 +761,7 @@ public abstract class FlowControlStrategyTest
     public void testClientExceedingSessionWindow() throws Exception
     {
         // On server, we don't consume the data.
+        List<Stream.Data> dataList = new ArrayList<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener()
         {
@@ -769,6 +777,7 @@ public abstract class FlowControlStrategyTest
                         Stream.Data data = stream.readData();
                         if (!data.frame().isEndStream())
                             stream.demand();
+                        dataList.add(data);
                     }
                 };
             }
@@ -835,22 +844,25 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
-        List<ByteBuffer> buffers = lease.getByteBuffers();
+        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+
+        dataList.forEach(Stream.Data::release);
     }
 
     @Test
     public void testClientExceedingStreamWindow() throws Exception
     {
         // On server, we don't consume the data.
+        List<Stream.Data> dataList = new ArrayList<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener()
         {
@@ -874,6 +886,7 @@ public abstract class FlowControlStrategyTest
                         Stream.Data data = stream.readData();
                         if (!data.frame().isEndStream())
                             stream.demand();
+                        dataList.add(data);
                     }
                 };
             }
@@ -936,16 +949,18 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
-        List<ByteBuffer> buffers = lease.getByteBuffers();
+        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+
+        dataList.forEach(Stream.Data::release);
     }
 
     @Test

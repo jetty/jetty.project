@@ -7,7 +7,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>ee8 :: Jetty :: Simple Jsp Fail</name>
+  <name>EE8 :: Simple Jsp Fail</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

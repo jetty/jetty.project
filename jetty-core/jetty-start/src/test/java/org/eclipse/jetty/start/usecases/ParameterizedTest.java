@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -43,7 +43,7 @@ public class ParameterizedTest extends AbstractUseCase
             Arrays.asList(
                 "name0=changed0",
                 "name1=changed1",
-                "--add-module=parameterized",
+                "--add-modules=parameterized",
                 "# ignore this"
             ),
             StandardCharsets.UTF_8);
@@ -80,7 +80,7 @@ public class ParameterizedTest extends AbstractUseCase
             "name=changed",
             "name0=changed0",
             "name1=changed1",
-            "--add-module=parameterized"
+            "--add-modules=parameterized"
         );
         exec(prepareArgs, true);
 
@@ -133,7 +133,7 @@ public class ParameterizedTest extends AbstractUseCase
             Arrays.asList(
                 "name0=changed0",
                 "name1=changed1",
-                "--add-module=parameterized",
+                "--add-modules=parameterized",
                 "# ignore this"
             ),
             StandardCharsets.UTF_8);
@@ -221,7 +221,7 @@ public class ParameterizedTest extends AbstractUseCase
             Arrays.asList(
                 "name0=changed0",
                 "name1=changed1",
-                "--add-module=parameterized",
+                "--add-modules=parameterized",
                 "# ignore this"
             ),
             StandardCharsets.UTF_8);
@@ -258,7 +258,7 @@ public class ParameterizedTest extends AbstractUseCase
             "name=changed",
             "name0=changed0",
             "name1=changed1",
-            "--add-module=parameterized",
+            "--add-modules=parameterized",
             "--update-ini",
             "property0=changed0",
             "property1=changed1",

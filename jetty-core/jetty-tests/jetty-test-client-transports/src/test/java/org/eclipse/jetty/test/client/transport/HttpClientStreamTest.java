@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -36,15 +37,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.InputStreamRequestContent;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.OutputStreamRequestContent;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.MultiplexConnectionPool;
+import org.eclipse.jetty.client.OutputStreamRequestContent;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -55,13 +57,16 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +83,7 @@ public class HttpClientStreamTest extends AbstractTest
     public void testFileUpload(Transport transport) throws Exception
     {
         // Prepare a big file to upload
-        Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
+        Path targetTestsDir = MavenTestingUtils.getTargetTestingPath();
         Files.createDirectories(targetTestsDir);
         Path upload = Paths.get(targetTestsDir.toString(), "http_client_upload.big");
         try (OutputStream output = Files.newOutputStream(upload, StandardOpenOption.CREATE))
@@ -90,10 +95,10 @@ public class HttpClientStreamTest extends AbstractTest
             }
         }
 
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
@@ -102,6 +107,7 @@ public class HttpClientStreamTest extends AbstractTest
                 Content.Source.consumeAll(request);
 
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -128,12 +134,13 @@ public class HttpClientStreamTest extends AbstractTest
         byte[] data = new byte[128 * 1024];
         byte value = 1;
         Arrays.fill(data, value);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -168,12 +175,13 @@ public class HttpClientStreamTest extends AbstractTest
     public void testDownloadOfUTF8Content(Transport transport) throws Exception
     {
         byte[] data = new byte[]{(byte)0xC3, (byte)0xA8}; // UTF-8 representation of &egrave;
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -209,10 +217,10 @@ public class HttpClientStreamTest extends AbstractTest
         byte[] data = new byte[64 * 1024];
         byte value = 1;
         Arrays.fill(data, value);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Say we want to send this much...
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2 * data.length);
@@ -221,6 +229,7 @@ public class HttpClientStreamTest extends AbstractTest
                 // ...then shutdown output
                 request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -256,12 +265,13 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testInputStreamResponseListenerClosedBeforeReading(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -276,7 +286,7 @@ public class HttpClientStreamTest extends AbstractTest
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(200, response.getStatus());
 
-        assertThrows(AsynchronousCloseException.class, stream::read);
+        assertThrows(IOException.class, stream::read);
     }
 
     @ParameterizedTest
@@ -284,13 +294,14 @@ public class HttpClientStreamTest extends AbstractTest
     public void testInputStreamResponseListenerClosedBeforeContent(Transport transport) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 contextRef.set(new HandlerContext(request, response, callback));
                 Content.Sink.write(response, false, null);
+                return true;
             }
         });
 
@@ -298,17 +309,10 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                super.onContent(response, content, new Callback()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        latch.countDown();
-                        callback.failed(x);
-                    }
-                });
+                super.onContent(response, chunk, demander);
+                latch.countDown();
             }
         };
         client.newRequest(newURI(transport))
@@ -325,7 +329,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertThrows(AsynchronousCloseException.class, input::read);
+        assertThrows(IOException.class, input::read);
     }
 
     @ParameterizedTest
@@ -334,14 +338,15 @@ public class HttpClientStreamTest extends AbstractTest
     {
         byte[] chunk1 = new byte[]{0, 1};
         byte[] chunk2 = new byte[]{2, 3};
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, chunk1.length + chunk2.length);
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
                 response.write(true, ByteBuffer.wrap(chunk2), callback);
+                return true;
             }
         });
 
@@ -350,18 +355,17 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                super.onContent(response, content, new Callback()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        failedLatch.countDown();
-                        callback.failed(x);
-                    }
-                });
+                super.onContent(response, chunk, demander);
                 contentLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Response response, Throwable failure)
+            {
+                super.onFailure(response, failure);
+                failedLatch.countDown();
             }
         };
         client.newRequest(newURI(transport))
@@ -384,14 +388,15 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testInputStreamResponseListenerFailedWhileWaiting(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 byte[] data = new byte[1024];
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -400,18 +405,17 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                super.onContent(response, content, new Callback()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        failedLatch.countDown();
-                        callback.failed(x);
-                    }
-                });
+                super.onContent(response, chunk, demander);
                 contentLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Response response, Throwable failure)
+            {
+                super.onFailure(response, failure);
+                failedLatch.countDown();
             }
         };
         client.newRequest(newURI(transport))
@@ -453,12 +457,13 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -489,10 +494,10 @@ public class HttpClientStreamTest extends AbstractTest
         byte value = 3;
         Arrays.fill(data, value);
         CountDownLatch latch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, false, null);
 
@@ -506,6 +511,7 @@ public class HttpClientStreamTest extends AbstractTest
                 }
 
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -522,7 +528,8 @@ public class HttpClientStreamTest extends AbstractTest
 
         latch.countDown();
 
-        assertThrows(AsynchronousCloseException.class, input::read);
+        IOException ioException = assertThrows(IOException.class, input::read);
+        assertTrue(ioException instanceof AsynchronousCloseException || ioException.getCause() instanceof AsynchronousCloseException);
     }
 
     @ParameterizedTest
@@ -532,10 +539,10 @@ public class HttpClientStreamTest extends AbstractTest
         byte[] data1 = new byte[1024];
         byte[] data2 = new byte[1024];
         CountDownLatch latch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, false, ByteBuffer.wrap(data1));
 
@@ -549,6 +556,7 @@ public class HttpClientStreamTest extends AbstractTest
                 }
 
                 response.write(true, ByteBuffer.wrap(data2), callback);
+                return true;
             }
         });
 
@@ -579,12 +587,13 @@ public class HttpClientStreamTest extends AbstractTest
     public void testDownloadWithCloseEndOfContent(Transport transport) throws Exception
     {
         byte[] data = new byte[1024];
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -616,12 +625,13 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithDeferredContentProviderFromInputStream(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -658,12 +668,13 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithDeferredContentAvailableCallbacksNotifiedOnce(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -697,12 +708,13 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithDeferredContentProviderRacingWithSend(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -741,12 +753,13 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithOutputStream(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -782,12 +795,13 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testBigUploadWithOutputStreamFromInputStream(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -944,13 +958,14 @@ public class HttpClientStreamTest extends AbstractTest
     public void testUploadWithConcurrentServerCloseClosesStream(Transport transport) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 serverLatch.countDown();
                 // Do not complete the callback.
+                return true;
             }
         });
 
@@ -1016,13 +1031,14 @@ public class HttpClientStreamTest extends AbstractTest
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 contextRef.set(new HandlerContext(request, response, callback));
                 latch.countDown();
+                return true;
             }
         });
 
@@ -1064,14 +1080,15 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testInputStreamResponseListenerWithRedirect(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 if (Request.getPathInContext(request).startsWith("/303"))
                     org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, "/200");
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -1086,6 +1103,63 @@ public class HttpClientStreamTest extends AbstractTest
 
         Result result = listener.await(5, TimeUnit.SECONDS);
         assertTrue(result.isSucceeded());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMultiplexedConnectionsForcibleStop(Transport transport) throws Exception
+    {
+        Assumptions.assumeTrue(transport.isMultiplexed());
+
+        long timeoutInSeconds = 5;
+        AtomicInteger processCount = new AtomicInteger();
+        CountDownLatch processLatch = new CountDownLatch(1);
+        startServer(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                processCount.incrementAndGet();
+                processLatch.await(timeoutInSeconds * 2, TimeUnit.SECONDS);
+                callback.succeeded();
+                return true;
+            }
+        });
+        startClient(transport);
+        // Set up the client such as:
+        // - only one connection can be created;
+        // - the connection can be used by two concurrent requests;
+        // - the connection is pre-created.
+        client.setMaxConnectionsPerDestination(1);
+        client.getTransport().setConnectionPoolFactory(destination ->
+        {
+            MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, 1, 2);
+            LifeCycle.start(pool);
+            try
+            {
+                pool.preCreateConnections(1).get();
+            }
+            catch (InterruptedException | ExecutionException e)
+            {
+                throw new RuntimeException(e);
+            }
+            return pool;
+        });
+
+        // Send two parallel requests.
+        CountDownLatch clientLatch = new CountDownLatch(2);
+        client.newRequest(newURI(transport)).send(result -> clientLatch.countDown());
+        client.newRequest(newURI(transport)).send(result -> clientLatch.countDown());
+
+        // Wait until both requests are in-flight.
+        await().atMost(timeoutInSeconds, TimeUnit.SECONDS).until(processCount::get, is(2));
+
+        // Stop the client while it has requests in-flight.
+        Assertions.assertTimeout(Duration.ofSeconds(timeoutInSeconds), () -> LifeCycle.stop(client));
+
+        // Let the server threads go & wait for the requests to be processed.
+        processLatch.countDown();
+        assertTrue(clientLatch.await(timeoutInSeconds, TimeUnit.SECONDS));
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)

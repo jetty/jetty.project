@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,33 +36,28 @@ public class ByteBufferOutputStream2 extends OutputStream
 
     public ByteBufferOutputStream2(ByteBufferPool bufferPool, boolean direct)
     {
-        _accumulator = new ByteBufferAccumulator((bufferPool == null) ? ByteBufferPool.NOOP : bufferPool, direct);
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return _accumulator.getByteBufferPool();
+        _accumulator = new ByteBufferAccumulator(bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool, direct);
     }
 
     /**
      * Take the combined buffer containing all content written to the OutputStream.
-     * The caller is responsible for releasing this {@link ByteBuffer} back into the {@link ByteBufferPool}.
+     * The caller is responsible for releasing this {@link RetainableByteBuffer}.
      * @return a buffer containing all content written to the OutputStream.
      */
-    public ByteBuffer takeByteBuffer()
+    public RetainableByteBuffer takeByteBuffer()
     {
-        return _accumulator.takeByteBuffer();
+        return _accumulator.takeRetainableByteBuffer();
     }
 
     /**
      * Take the combined buffer containing all content written to the OutputStream.
-     * The returned buffer is still contained within the OutputStream and will be released back to the {@link ByteBufferPool}
+     * The returned buffer is still contained within the OutputStream and will be released
      * when the OutputStream is closed.
      * @return a buffer containing all content written to the OutputStream.
      */
-    public ByteBuffer toByteBuffer()
+    public RetainableByteBuffer toByteBuffer()
     {
-        return _accumulator.toByteBuffer();
+        return _accumulator.toRetainableByteBuffer();
     }
 
     /**

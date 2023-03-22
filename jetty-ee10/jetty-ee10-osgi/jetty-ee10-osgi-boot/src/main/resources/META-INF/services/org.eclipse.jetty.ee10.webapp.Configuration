@@ -1,2 +1,2 @@
 org.eclipse.jetty.ee10.osgi.annotations.AnnotationConfiguration
-org.eclipse.jetty.ee10.osgi.boot.OSGiWebInfConfiguration
+org.eclipse.jetty.ee10.osgi.boot.OSGiMetaInfConfiguration

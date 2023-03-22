@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,8 +24,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
@@ -180,7 +180,7 @@ public class BalancerServletTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%0A'"));
         assertThat(response.getContentAsString(), containsString("servletPath='/mapping'"));
-        assertThat(response.getContentAsString(), containsString("pathInfo='/test/%0A'"));
+        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\n'"));
     }
 
     private String readFirstLine(byte[] responseBytes) throws IOException

@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-client</artifactId>
-  <name>Jetty Core :: ALPN :: Client</name>
+  <name>Core :: ALPN :: Client</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.client</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.alpn.*</spotbugs.onlyAnalyze>

@@ -8,8 +8,12 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-asciidoctor-extensions</artifactId>
-  <name>Jetty :: Documentation :: AsciiDoctor Extensions</name>
+  <name>Documentation :: AsciiDoctor Extensions</name>
   <packaging>jar</packaging>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.asciidoctor.extensions</bundle-symbolic-name>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -33,7 +37,8 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-distribution-common</artifactId>
+      <artifactId>jetty-home-tester</artifactId>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 </project>

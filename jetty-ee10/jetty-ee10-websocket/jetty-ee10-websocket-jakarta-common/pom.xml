@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-websocket-jakarta-common</artifactId>
-  <name>EE10 :: Jetty :: Websocket :: jakarta.websocket :: Common</name>
+  <name>EE10 :: Websocket :: Jakarta Common</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jakarta.common</bundle-symbolic-name>
@@ -27,9 +27,9 @@
             </goals>
             <configuration>
               <instructions>
-                <Bundle-Description>jakarta.websocket.client Implementation</Bundle-Description>
+                <Bundle-Description>Jakarta Websocket Common Implementation</Bundle-Description>
                 <Export-Package>
-                  org.eclipse.jetty.websocket.jakarta.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                  org.eclipse.jetty.ee10.websocket.jakarta.common.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
               </instructions>
             </configuration>

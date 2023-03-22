@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -127,10 +127,10 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
 
         public void copyWebInf(String testResourceName) throws IOException
         {
-            File testWebXml = MavenTestingUtils.getTargetFile("test-classes/" + testResourceName);
+            Path testWebXml = MavenTestingUtils.getTargetPath("test-classes/" + testResourceName);
             Path webXml = webInf.resolve("web.xml");
             Files.deleteIfExists(webXml);
-            IO.copy(testWebXml, webXml.toFile());
+            IO.copy(testWebXml, webXml);
         }
 
         public void copyClass(Class<?> clazz) throws Exception
@@ -142,7 +142,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             Path destFile = classesDir.resolve(endpointPath);
             FS.ensureDirExists(destFile.getParent());
             File srcFile = new File(classUrl.toURI());
-            IO.copy(srcFile, destFile.toFile());
+            IO.copy(srcFile.toPath(), destFile);
         }
 
         public void copyLib(Class<?> clazz, String jarFileName) throws URISyntaxException, IOException
@@ -161,7 +161,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             else
             {
                 LOG.info("Copying " + sourceCodeSourceFile + " to " + jarFile);
-                IO.copy(sourceCodeSourceFile, jarFile.toFile());
+                IO.copy(sourceCodeSourceFile.toPath(), jarFile);
             }
         }
 

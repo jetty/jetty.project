@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -41,15 +41,16 @@ public class AsyncIOTest extends AbstractTest
     @Test
     public void testLastContentAvailableBeforeService() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the data to fully arrive.
                 sleep(1000);
                 Content.Source.consumeAll(request);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -77,13 +78,14 @@ public class AsyncIOTest extends AbstractTest
     @Test
     public void testLastContentAvailableAfterServiceReturns() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -118,10 +120,10 @@ public class AsyncIOTest extends AbstractTest
         fail();
 /*
         final AtomicInteger count = new AtomicInteger();
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 final AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);

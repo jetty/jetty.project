@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,7 @@ package org.eclipse.jetty.test.client.transport;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -36,14 +36,15 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
+                return true;
             }
         });
         client.setIdleTimeout(idleTimeout);
@@ -70,14 +71,15 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
+                return true;
             }
         });
 

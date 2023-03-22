@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -97,25 +97,19 @@ public class SniSslConnectionFactoryTest
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
 
-        Handler.Wrapper xCertHandler = new Handler.Wrapper()
+        Handler.Singleton xCertHandler = new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                Request.Processor processor = getHandler().handle(request);
-                if (processor == null)
-                    return null;
-                return (ignored, response, callback) ->
-                {
-                    EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-                    SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
-                    SslConnection sslConnection = sslEndPoint.getSslConnection();
-                    SSLEngine sslEngine = sslConnection.getSSLEngine();
-                    SSLSession session = sslEngine.getSession();
-                    for (Certificate c : session.getLocalCertificates())
-                        response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
-                    processor.process(request, response, callback);
-                };
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                SslConnection.SslEndPoint sslEndPoint = (SslConnection.SslEndPoint)endPoint;
+                SslConnection sslConnection = sslEndPoint.getSslConnection();
+                SSLEngine sslEngine = sslConnection.getSSLEngine();
+                SSLSession session = sslEngine.getSession();
+                for (Certificate c : session.getLocalCertificates())
+                    response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                return getHandler().handle(request, response, callback);
             }
         };
 
@@ -133,15 +127,16 @@ public class SniSslConnectionFactoryTest
             new HttpConnectionFactory(httpConfiguration));
         _server.addConnector(_connector);
         _server.setHandler(xCertHandler);
-        xCertHandler.setHandler(new Handler.Processor()
+        xCertHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put("X-URL", Request.getPathInContext(request));
                 response.getHeaders().put("X-HOST", Request.getServerName(request));
                 callback.succeeded();
+                return true;
             }
         });
 

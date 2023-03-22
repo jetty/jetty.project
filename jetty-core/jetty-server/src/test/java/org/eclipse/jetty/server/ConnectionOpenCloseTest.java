@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -60,10 +60,10 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     @Test
     public void testOpenClose() throws Exception
     {
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 throw new IllegalStateException();
             }
@@ -109,12 +109,13 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     @Test
     public void testOpenRequestClose() throws Exception
     {
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
         server.start();
@@ -180,12 +181,13 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         connector = new ServerConnector(server, sslContextFactory);
         server.addConnector(connector);
 
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
         server.start();

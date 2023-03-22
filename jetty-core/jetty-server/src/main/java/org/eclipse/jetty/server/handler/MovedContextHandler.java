@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -42,9 +42,9 @@ public class MovedContextHandler extends ContextHandler
         setAllowNullPathInContext(true);
     }
 
-    public MovedContextHandler(Handler.Collection parent, String contextPath, String redirectURI)
+    public MovedContextHandler(Handler.Container parent, String contextPath, String redirectURI)
     {
-        parent.addHandler(this);
+        Handler.Container.setAsParent(parent, this);
         setContextPath(contextPath);
         setRedirectURI(redirectURI);
     }
@@ -147,10 +147,10 @@ public class MovedContextHandler extends ContextHandler
         _cacheControl = cacheControl == null ? null : new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cacheControl);
     }
 
-    private class Redirector extends Handler.Processor
+    private class Redirector extends Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String redirectURI = getRedirectURI();
             if (redirectURI == null)
@@ -187,6 +187,7 @@ public class MovedContextHandler extends ContextHandler
                 response.getHeaders().put(cacheControl);
 
             callback.succeeded();
+            return true;
         }
     }
 }

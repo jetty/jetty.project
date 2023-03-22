@@ -286,7 +286,7 @@ System Property Element.
 This element allows JVM System properties to be retrieved as
 part of the value of elements such as Set, Put, Arg, etc.
 The name attribute specifies the property name and the optional
-default argument provides a default value.
+default attribute provides a default value.
 
  <SystemProperty name="Test" default="value" />
 
@@ -303,7 +303,7 @@ Environment variable Element.
 This element allows OS Environment variables to be retrieved as
 part of the value of elements such as Set, Put, Arg, etc.
 The name attribute specifies the env variable name and the optional
-default argument provides a default value.
+default attribute provides a default value.
 
  <Env name="Test" default="value" />
 
@@ -311,7 +311,6 @@ This is equivalent to:
 
  String v=System.getEnv("Test");
  if (v==null) v="value";
-
 -->
 <!ELEMENT Env (Id?,Name?,Deprecated*,Default?) >
 <!ATTLIST Env %ID_ATTR; %NAME_ATTR; %DEPRECATED_ATTR; %DEFAULT_ATTR; >
@@ -321,7 +320,7 @@ This is equivalent to:
 Property Element.
 This element allows arbitrary properties to be retrieved by name.
 The name attribute specifies the property name and the optional
-default argument provides a default value.
+default attribute provides a default value.
 -->
 <!ELEMENT Property (Id?,Name?,Deprecated*,Default?) >
 <!ATTLIST Property %ID_ATTR; %NAME_ATTR; %DEPRECATED_ATTR; %DEFAULT_ATTR; >

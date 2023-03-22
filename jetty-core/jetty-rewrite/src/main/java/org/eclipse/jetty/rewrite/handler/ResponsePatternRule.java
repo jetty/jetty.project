@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -76,15 +75,15 @@ public class ResponsePatternRule extends PatternRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    public Handler apply(Handler input) throws IOException
     {
         if (getCode() < HttpStatus.CONTINUE_100)
             return null;
 
-        return new Request.WrapperProcessor(input)
+        return new Handler(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback)
+            public boolean handle(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))
@@ -96,6 +95,7 @@ public class ResponsePatternRule extends PatternRule
                 {
                     Response.writeError(this, response, callback, getCode(), message);
                 }
+                return true;
             }
         };
     }

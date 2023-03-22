@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,7 +21,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.Flow;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
@@ -80,12 +79,12 @@ public class Content
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
-     * @param chunkHandler a (possibly {@code null}) predicate to handle the current chunk and its callback
+     * @param chunkProcessor a (possibly {@code null}) predicate to handle the current chunk and its callback
      * @param callback the callback to notify when the copy is complete
      */
-    public static void copy(Source source, Sink sink, BiPredicate<Chunk, Callback> chunkHandler, Callback callback)
+    public static void copy(Source source, Sink sink, Chunk.Processor chunkProcessor, Callback callback)
     {
-        new ContentCopier(source, sink, chunkHandler, callback).iterate();
+        new ContentCopier(source, sink, chunkProcessor, callback).iterate();
     }
 
     /**
@@ -306,9 +305,12 @@ public class Content
         /**
          * <p>Demands to invoke the given demand callback parameter when a chunk of content is available.</p>
          * <p>See how to use this method <a href="#idiom">idiomatically</a>.</p>
-         * <p>Implementations must guarantee that calls to this method are safely reentrant, to avoid
-         * stack overflows in the case of mutual recursion between the execution of the {@code Runnable}
-         * callback and a call to this method.</p>
+         * <p>Implementations guarantee that calls to this method are safely reentrant so that
+         * stack overflows are avoided in the case of mutual recursion between the execution of
+         * the {@code Runnable} callback and a call to this method.  Invocations of the passed
+         * {@code Runnable} are serialized and a callback for {@code demand} call is
+         * not invoked until any previous {@code demand} callback has returned.
+         * Thus the {@code Runnable} should not block waiting for a callback of a future demand call.</p>
          * <p>The demand callback may be invoked <em>spuriously</em>: a subsequent call to {@link #read()}
          * may return {@code null}.</p>
          * <p>Calling this method establishes a <em>pending demand</em>, which is fulfilled when the demand
@@ -400,7 +402,9 @@ public class Content
          *
          * @param last whether the String is the last to write
          * @param utf8Content the String to write
-         * @param callback the callback to notify when the write operation is complete
+         * @param callback the callback to notify when the write operation is complete.
+         *                 Implementations have the same guarantees for invocation of this
+         *                 callback as for {@link #write(boolean, ByteBuffer, Callback)}.
          */
         static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
@@ -410,6 +414,9 @@ public class Content
         /**
          * <p>Writes the given {@link ByteBuffer}, notifying the {@link Callback}
          * when the write is complete.</p>
+         * <p>Implementations guarantee that calls to this method are safely reentrant so that
+         * stack overflows are avoided in the case of mutual recursion between the execution of
+         * the {@code Callback} and a call to this method.</p>
          *
          * @param last whether the ByteBuffer is the last to write
          * @param byteBuffer the ByteBuffer to write
@@ -429,11 +436,50 @@ public class Content
         /**
          * <p>An empty, non-last, chunk.</p>
          */
-        Chunk EMPTY = ByteBufferChunk.EMPTY;
+        Chunk EMPTY = new Chunk()
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return BufferUtil.EMPTY_BUFFER;
+            }
+
+            @Override
+            public boolean isLast()
+            {
+                return false;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "EMPTY";
+            }
+        };
+
         /**
          * <p>An empty, last, chunk.</p>
          */
-        Content.Chunk EOF = ByteBufferChunk.EOF;
+        Content.Chunk EOF = new Chunk()
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return BufferUtil.EMPTY_BUFFER;
+            }
+
+            @Override
+            public boolean isLast()
+            {
+                return true;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "EOF";
+            }
+        };
 
         /**
          * <p>Creates a Chunk with the given ByteBuffer.</p>
@@ -445,7 +491,9 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
-            return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+            if (byteBuffer.hasRemaining())
+               return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+            return last ? EOF : EMPTY;
         }
 
         /**
@@ -454,11 +502,15 @@ public class Content
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
+         * @param releaser the code to run when this Chunk is released
          * @return a new Chunk
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
-            return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
+            if (byteBuffer.hasRemaining())
+                return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
+            releaser.run();
+            return last ? EOF : EMPTY;
         }
 
         /**
@@ -472,22 +524,33 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
         {
-            return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
+            if (byteBuffer.hasRemaining())
+                return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
+            releaser.accept(byteBuffer);
+            return last ? EOF : EMPTY;
         }
 
         /**
-         * <p>Creates a last/non-last Chunk with the given ByteBuffer, linked to the given Retainable.</p>
-         * <p>The {@link #retain()} and {@link #release()} methods of this Chunk will delegate to the
-         * given Retainable.</p>
+         * <p>Returns the given {@code ByteBuffer} and {@code last} arguments
+         * as a {@code Chunk}, linked to the given {@link Retainable}.</p>
+         * <p>The {@link #retain()} and {@link #release()} methods of this
+         * {@code Chunk} will delegate to the given {@code Retainable}.</p>
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
          * @param retainable the Retainable this Chunk links to
          * @return a new Chunk
+         * @throws IllegalArgumentException if the {@code Retainable}
+         * {@link Retainable#canRetain() cannot be retained}
          */
-        static Chunk from(ByteBuffer byteBuffer, boolean last, Retainable retainable)
+        static Chunk asChunk(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
-            return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+            if (!retainable.canRetain())
+                throw new IllegalArgumentException("Cannot create chunk from non-retainable " + retainable);
+            if (byteBuffer.hasRemaining())
+                return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+            retainable.release();
+            return last ? EOF : EMPTY;
         }
 
         /**
@@ -502,7 +565,7 @@ public class Content
         }
 
         /**
-         * <p>Returns the chunk that follows a chunk that has been consumed.</p>
+         * <p>Returns the chunk that follows the given chunk.</p>
          * <table>
          * <caption>Next Chunk</caption>
          * <thead>
@@ -551,34 +614,6 @@ public class Content
         boolean isLast();
 
         /**
-         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice, with the given
-         * position and limit, of the {@code ByteBuffer} of the source {@code Chunk}.</p>
-         * <p>The returned {@code Chunk} retains the source {@code Chunk} and it is linked
-         * to it via {@link #from(ByteBuffer, boolean, Retainable)}.</p>
-         *
-         * @param position the position at which the slice begins
-         * @param limit the limit at which the slice ends
-         * @param last whether the new Chunk is last
-         * @return a new {@code Chunk} retained from the source {@code Chunk} with a slice
-         * of the source {@code Chunk}'s {@code ByteBuffer}
-         */
-        default Chunk slice(int position, int limit, boolean last)
-        {
-            if (isTerminal())
-                return this;
-            ByteBuffer sourceBuffer = getByteBuffer();
-            int sourceLimit = sourceBuffer.limit();
-            sourceBuffer.limit(limit);
-            int sourcePosition = sourceBuffer.position();
-            sourceBuffer.position(position);
-            ByteBuffer slice = sourceBuffer.slice();
-            sourceBuffer.limit(sourceLimit);
-            sourceBuffer.position(sourcePosition);
-            retain();
-            return from(slice, last, this);
-        }
-
-        /**
          * @return the number of bytes remaining in this Chunk
          */
         default int remaining()
@@ -620,6 +655,8 @@ public class Content
          */
         default int skip(int length)
         {
+            if (length == 0)
+                return 0;
             ByteBuffer byteBuffer = getByteBuffer();
             length = Math.min(byteBuffer.remaining(), length);
             byteBuffer.position(byteBuffer.position() + length);
@@ -627,21 +664,9 @@ public class Content
         }
 
         /**
-         * <p>Returns whether this Chunk is a <em>terminal</em> chunk.</p>
-         * <p>A terminal chunk is either an {@link Error error chunk},
-         * or a Chunk that {@link #isLast()} is true and has no remaining
-         * bytes.</p>
-         *
-         * @return whether this Chunk is a terminal chunk
-         */
-        default boolean isTerminal()
-        {
-            return this instanceof Error || isLast() && !hasRemaining();
-        }
-
-        /**
          * <p>A chunk that wraps a failure.</p>
-         * <p>Error Chunks are always last and have no bytes to read.</p>
+         * <p>Error Chunks are always last and have no bytes to read,
+         * as such they are <em>terminal</em> Chunks.</p>
          *
          * @see #from(Throwable)
          */
@@ -672,16 +697,26 @@ public class Content
             }
 
             @Override
-            public void retain()
+            public String toString()
             {
-                throw new UnsupportedOperationException();
+                return String.format("%s@%x{c=%s}", getClass().getSimpleName(), hashCode(), cause);
             }
+        }
 
-            @Override
-            public boolean release()
-            {
-                return true;
-            }
+        /**
+         * <p>Implementations of this interface may process {@link Chunk}s being copied by the
+         * {@link Content#copy(Source, Sink, Processor, Callback)} method, so that
+         * {@link Chunk}s of unknown types can be copied.
+         * @see Content#copy(Source, Sink, Processor, Callback)
+         */
+        interface Processor
+        {
+            /**
+             * @param chunk The chunk to be considered for processing.
+             * @param callback The callback that will be called once the accepted chunk is processed.
+             * @return True if the chunk will be process and the callback will be called (or may have already been called), false otherwise.
+             */
+            boolean process(Chunk chunk, Callback callback);
         }
     }
 }

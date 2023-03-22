@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
@@ -42,13 +43,26 @@ import org.slf4j.LoggerFactory;
  * handles the request.
  */
 @ManagedObject("Context Handler Collection")
-public class ContextHandlerCollection extends Handler.Collection
+public class ContextHandlerCollection extends Handler.Sequence
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandlerCollection.class);
     private final SerializedExecutor _serializedExecutor = new SerializedExecutor();
 
     public ContextHandlerCollection(ContextHandler... contexts)
     {
+        this(true, contexts);
+    }
+
+    /**
+     * @param dynamic If true, then contexts may be added dynamically once started,
+     *                so the InvocationType is assumed to be BLOCKING, otherwise
+     *                the InvocationType is fixed once started and handlers cannot be
+     *                subsequently added.
+     * @param contexts The contexts to add.
+     */
+    public ContextHandlerCollection(boolean dynamic, ContextHandler... contexts)
+    {
+        super(dynamic);
         if (contexts.length > 0)
             setHandlers(contexts);
     }
@@ -118,33 +132,31 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         List<Handler> handlers = getHandlers();
-        //
-        // Handle no contexts
+
         if (handlers == null || handlers.isEmpty())
-            return null;
+            return false;
 
         if (!(handlers instanceof Mapping))
-            return super.handle(request);
+            return super.handle(request, response, callback);
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-            return handlers.get(0).handle(request);
+            return handlers.get(0).handle(request, response, callback);
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
         if (pathBranches == null)
-            return null;
+            return false;
 
         String path = Request.getPathInContext(request);
         if (!path.startsWith("/"))
         {
-            super.handle(request);
-            return null;
+            return super.handle(request, response, callback);
         }
 
         int limit = path.length() - 1;
@@ -164,9 +176,8 @@ public class ContextHandlerCollection extends Handler.Collection
                 {
                     try
                     {
-                        Request.Processor processor = branch.getHandler().handle(request);
-                        if (processor != null)
-                            return processor;
+                        if (branch.getHandler().handle(request, response, callback))
+                            return true;
                     }
                     catch (Throwable t)
                     {
@@ -177,7 +188,7 @@ public class ContextHandlerCollection extends Handler.Collection
 
             limit = l - 2;
         }
-        return null;
+        return false;
     }
 
     /**
@@ -185,8 +196,7 @@ public class ContextHandlerCollection extends Handler.Collection
      * <p>
      * This method is the equivalent of {@link #addHandler(Handler)},
      * but its execution is non-blocking and mutually excluded from all
-     * other calls to {@link #deployHandler(Handler, Callback)} and
-     * {@link #undeployHandler(Handler, Callback)}.
+     * other callers to itself and {@link #undeployHandler(Handler, Callback)}.
      * The handler may be added after this call returns.
      * </p>
      *
@@ -218,8 +228,7 @@ public class ContextHandlerCollection extends Handler.Collection
      * This method is the equivalent of {@link #removeHandler(Handler)},
      * but its execution is non-block and mutually excluded from all
      * other calls to {@link #deployHandler(Handler, Callback)} and
-     * {@link #undeployHandler(Handler, Callback)}.
-     * The handler may be removed after this call returns.
+     * itself. The handler may be removed after this call returns.
      * </p>
      *
      * @param handler The handler to undeploy
@@ -286,11 +295,6 @@ public class ContextHandlerCollection extends Handler.Collection
             return false;
         }
 
-        List<ContextHandler> getContextHandlers()
-        {
-            return _contexts;
-        }
-
         Handler getHandler()
         {
             return _handler;
@@ -305,7 +309,6 @@ public class ContextHandlerCollection extends Handler.Collection
 
     private static class Mapping extends ArrayList<Handler>
     {
-        private final Map<ContextHandler, Handler> _contextBranches;
         private final Index<Map.Entry<String, Branch[]>> _pathBranches;
 
         private Mapping(List<Handler> handlers, Map<String, Branch[]> path2Branches)
@@ -323,20 +326,6 @@ public class ContextHandlerCollection extends Handler.Collection
                     return result;
                 })
                 .build();
-
-            // add new context branches to map
-            Map<ContextHandler, Handler> contextBranches = new HashMap<>();
-            for (Branch[] branches : path2Branches.values())
-            {
-                for (Branch branch : branches)
-                {
-                    for (ContextHandler context : branch.getContextHandlers())
-                    {
-                        contextBranches.put(context, branch.getHandler());
-                    }
-                }
-            }
-            _contextBranches = Collections.unmodifiableMap(contextBranches);
         }
     }
 }

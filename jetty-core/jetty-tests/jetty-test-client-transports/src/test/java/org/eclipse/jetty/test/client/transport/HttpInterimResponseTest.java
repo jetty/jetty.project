@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,8 +16,8 @@ package org.eclipse.jetty.test.client.transport;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -40,14 +40,15 @@ public class HttpInterimResponseTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testImplicit100Continue(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Reading the request content immediately
                 // issues an implicit 100 Continue response.
                 Content.Source.consumeAll(request, callback);
+                return true;
             }
         });
 
@@ -64,10 +65,10 @@ public class HttpInterimResponseTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testMultipleDifferentInterimResponses(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
                     .thenCompose(ignored -> Callback.Completable.with(c -> Content.Source.consumeAll(request, c)))
@@ -109,6 +110,7 @@ public class HttpInterimResponseTest extends AbstractTest
                         return Callback.Completable.with(c -> Content.Sink.write(response, true, "response-content", c));
                     });
                 callback.completeWith(completable);
+                return true;
             }
         });
 

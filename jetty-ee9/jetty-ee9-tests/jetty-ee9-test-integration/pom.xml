@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-test-integration</artifactId>
   <packaging>jar</packaging>
-  <name>EE9 :: Jetty Test :: Integrations</name>
+  <name>EE9 :: Tests :: Integration</name>
   <properties>
     <test-wars-dir>${project.build.directory}/test-wars</test-wars-dir>
     <test-libs-dir>${project.build.directory}/test-libs</test-libs-dir>
@@ -25,35 +25,26 @@
             <id>copy-wars-for-testing</id>
             <phase>process-test-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeScope>test</includeScope>
-              <includeTypes>war</includeTypes>
-              <stripVersion>true</stripVersion>
-              <outputDirectory>${project.build.directory}/webapps</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-jetty-home</id>
-            <phase>process-test-resources</phase>
-            <goals>
-              <goal>unpack</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
               <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-home</artifactId>
-                  <version>${project.version}</version>
-                  <type>zip</type>
-                  <overWrite>true</overWrite>
-                </artifactItem>
+                 <artifactItem>
+                     <groupId>org.eclipse.jetty.ee9</groupId>
+                     <artifactId>jetty-ee9-test-webapp-rfc2616</artifactId>
+                     <version>${project.version}</version>
+                     <type>war</type>
+                     <destFileName>ee9-test-rfc2616.war</destFileName>
+                 </artifactItem>
+                 <artifactItem>
+                     <groupId>org.eclipse.jetty.ee9.demos</groupId>
+                     <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
+                     <type>war</type>
+                     <destFileName>ee9-demo-jetty.war</destFileName>
+                 </artifactItem>
               </artifactItems>
-              <outputAbsoluteArtifactFilename>true</outputAbsoluteArtifactFilename>
-              <outputDirectory>${test-home-dir}</outputDirectory>
-              <overWriteSnapshots>true</overWriteSnapshots>
-              <overWriteIfNewer>true</overWriteIfNewer>
+              <stripVersion>true</stripVersion>
+              <outputDirectory>${project.build.directory}/webapps</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -93,12 +84,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-home</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http-tools</artifactId>
       <scope>test</scope>
     </dependency>
@@ -131,30 +116,30 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-webapp-rfc2616</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-test-webapp-rfc2616</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>demo-jetty-webapp</artifactId>
+      <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
     </dependency>

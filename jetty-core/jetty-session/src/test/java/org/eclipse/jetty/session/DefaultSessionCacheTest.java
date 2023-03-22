@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -174,7 +175,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //put a session in the cache and store
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.add("1234", session);
         assertTrue(cache.contains("1234"));
         assertEquals(1, session.getRequests());
@@ -200,7 +201,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
             //Session may already be invalid depending on timing
             try
             {                    
-                s1.renewId(new TestableRequest());
+                s1.renewId(new TestableRequest(), null);
                 //After this call, the session must have changed id, and it may also be
                 //invalid, depending on timing.
                 assertFalse(oldid.equals(s1.getId()));
@@ -271,7 +272,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //put a session in the cache and store
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.add("1234", session);
         assertTrue(cache.contains("1234"));
 
@@ -307,7 +308,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
 
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
 
         //ensure the session is in the cache
         cache.add("1234", session);
@@ -340,7 +341,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         server.start();
        
         long now = System.currentTimeMillis();
-        Session session = cache.newSession("1234", now, -1); //create an immortal session
+        ManagedSession session = cache.newSession("1234", now, -1); //create an immortal session
         cache.add("1234", session); //add it to the cache
         
         //now fake another request coming in for the same session
@@ -377,7 +378,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         
         //create a session for the existing session data, add it to the cache
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.add("1234", session);
 
         assertEquals(1, session.getRequests());
@@ -415,7 +416,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         
         //make a session for the existing id, add to cache
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.add("1234", session);
         
         //release use of newly added session
@@ -466,7 +467,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //test one that is contained
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.add("1234", session);
         assertTrue(cache.contains("1234"));
     }
@@ -498,7 +499,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.checkInactiveSession(session);
         assertFalse(store.exists("1234"));
         assertFalse(cache.contains("1234"));
@@ -508,7 +509,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //test session that is resident but not valid
         cache.add("1234", session);
         cache.release(session); //this will write session
-        session._state = Session.State.INVALID;
+        session._state = ManagedSession.State.INVALID;
         cache.checkInactiveSession(session);
         assertTrue(store.exists("1234"));
         assertTrue(cache.contains("1234"));
@@ -517,7 +518,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //ie nothing happens to the session
 
         //test session that is resident, is valid, but NEVER_EVICT
-        session._state = Session.State.VALID;
+        session._state = ManagedSession.State.VALID;
         cache.checkInactiveSession(session);
         assertTrue(store.exists("1234"));
         assertTrue(cache.contains("1234"));
@@ -536,7 +537,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //this should not affect the session because it this is an idle test only
         SessionData data2 = store.newSessionData("567", now, now - TimeUnit.SECONDS.toMillis(30), now - TimeUnit.SECONDS.toMillis(40), TimeUnit.MINUTES.toMillis(10));
         data2.setExpiry(now + TimeUnit.DAYS.toMillis(1)); //not expired
-        Session session2 = cache.newSession(data2);
+        ManagedSession session2 = cache.newSession(data2);
         cache.add("567", session2); //ensure session is in cache
         cache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         session2.access(System.currentTimeMillis()); //simulate 1 request in session
@@ -581,7 +582,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         cache.add("1234", session); //make it resident
         assertTrue(cache.contains("1234"));
         long accessed = now - TimeUnit.SECONDS.toMillis(30); //make it idle
@@ -626,7 +627,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         long now = System.currentTimeMillis();
         SessionData data = sessionDataStore.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
-        Session session = cache.newSession(data);
+        ManagedSession session = cache.newSession(data);
         String id = session.getId();
         cache.add("1234", session); //make it resident
         session.setAttribute("aaa", "one");

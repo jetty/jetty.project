@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,23 +26,16 @@ import org.eclipse.jetty.util.URIUtil;
 public class CompactPathRule extends Rule
 {
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor request) throws IOException
+    public Handler matchAndApply(Handler input) throws IOException
     {
-        String path = request.getHttpURI().getCanonicalPath();
+        String path = input.getHttpURI().getCanonicalPath();
         String compacted = URIUtil.compactPath(path);
 
         if (path.equals(compacted))
             return null;
 
-        HttpURI uri = Request.newHttpURIFrom(request, compacted);
+        HttpURI uri = Request.newHttpURIFrom(input, compacted);
 
-        return new Request.WrapperProcessor(request)
-        {
-            @Override
-            public HttpURI getHttpURI()
-            {
-                return uri;
-            }
-        };
+        return new HttpURIHandler(input, uri);
     }
 }

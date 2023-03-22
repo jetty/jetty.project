@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Objects;
 
-import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

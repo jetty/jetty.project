@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,14 +29,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -73,13 +75,28 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
     /**
-     * Get the current ServletContext implementation.
+     * Get the current Context if any.
      *
-     * @return ServletContext implementation
+     * @return The {@link Context} from a {@link ContextHandler};
+     *         or {@link Server#getContext()} if the current {@link Thread} is not scoped to a {@link ContextHandler}.
      */
     public static Context getCurrentContext()
     {
         return __context.get();
+    }
+
+    public static ContextHandler getCurrentContextHandler()
+    {
+        Context context = getCurrentContext();
+        return (context instanceof ScopedContext scopedContext) ? scopedContext.getContextHandler() : null;
+    }
+
+    public static ContextHandler getContextHandler(Request request)
+    {
+        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
+        if (contextRequest == null)
+            return null;
+        return contextRequest.getContext() instanceof ScopedContext scoped ? scoped.getContextHandler() : null;
     }
 
     public static String getServerInfo()
@@ -87,9 +104,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return "jetty/" + Server.getVersion();
     }
 
-    // TODO should persistent attributes be an Attributes.Layer over server attributes?
+    /*
+     * The context (specifically it's attributes and mimeTypes) are not implemented as a layer over
+     * the server context, as  this handler's context replaces the context in the request, it does not
+     * wrap it. This is so that any cross context dispatch does not inherit attributes and types from
+     * the dispatching context.
+     */
+    private final ScopedContext _context;
     private final Attributes _persistentAttributes = new Mapped();
-    private final Context _context;
+    private final MimeTypes.Wrapper _mimeTypes = new MimeTypes.Wrapper();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -98,10 +121,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private boolean _rootContext = true;
     private Resource _baseResource;
     private ClassLoader _classLoader;
-    private Request.Processor _errorProcessor;
+    private Request.Handler _errorHandler;
     private boolean _allowNullPathInContext;
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
+    private File _tempDirectory;
+    private boolean _tempDirectoryPersisted = false;
+    private boolean _tempDirectoryCreated = false;
 
     public enum Availability
     {
@@ -122,12 +148,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         PREFIX
     }
 
-    public static ContextHandler getContextHandler(Request request)
-    {
-        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
-        return (contextRequest == null) ? null : contextRequest.getContext().getContextHandler();
-    }
-
     private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
     public ContextHandler()
@@ -146,16 +166,90 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _context = newContext();
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent != null)
-            parent.addHandler(this);
+        Container.setAsParent(parent, this);
 
         if (File.separatorChar == '/')
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
     }
 
-    protected Context newContext()
+    @Override
+    public void setServer(Server server)
     {
-        return new Context();
+        super.setServer(server);
+        _mimeTypes.setWrapped(server.getMimeTypes());
+    }
+    
+    protected ScopedContext newContext()
+    {
+        return new ScopedContext();
+    }
+
+    /**
+     * @return The temporary directory configured for the context, or null if none configured.
+     * @see Context#getTempDirectory()
+     */
+    @ManagedAttribute(value = "temporary directory location", readonly = true)
+    public File getTempDirectory()
+    {
+        return _tempDirectory;
+    }
+
+    /**
+     * <p>Set the temporary directory returned by {@link ScopedContext#getTempDirectory()}.  If not set here,
+     * then the {@link Server#getTempDirectory()} is returned by {@link ScopedContext#getTempDirectory()}.</p>
+     * <p>If {@link #isTempDirectoryPersistent()} is true, the directory set here is used directly but may
+     * be created if it does not exist. If {@link #isTempDirectoryPersistent()} is false, then any {@code File} set
+     * here will be deleted and recreated as a directory during {@link #start()} and will be deleted during
+     * {@link #stop()}.</p>
+     * @see #setTempDirectoryPersistent(boolean)
+     * @param tempDirectory A directory. If it does not exist, it must be able to be created during start.
+     */
+    public void setTempDirectory(File tempDirectory)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Started");
+
+        if (tempDirectory != null)
+        {
+            try
+            {
+                tempDirectory = new File(tempDirectory.getCanonicalPath());
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to find canonical path for {}", tempDirectory, e);
+            }
+        }
+        _tempDirectory = tempDirectory;
+    }
+
+    /**
+     * <p>Set if the temp directory for this context will be kept over a stop and start cycle.</p>
+     *
+     * @see #setTempDirectory(File)
+     * @param persist true to persist the temp directory on shutdown / exit of the context
+     */
+    public void setTempDirectoryPersistent(boolean persist)
+    {
+        _tempDirectoryPersisted = persist;
+    }
+
+    /**
+     * @return true if tmp directory will persist between startups of the context
+     */
+    public boolean isTempDirectoryPersistent()
+    {
+        return _tempDirectoryPersisted;
+    }
+
+    /**
+     * @return A mutable MimeTypes that wraps the {@link Server#getMimeTypes()}
+     *         once {@link ContextHandler#setServer(Server)} has been called.
+     * @see MimeTypes.Wrapper
+     */
+    public MimeTypes.Mutable getMimeTypes()
+    {
+        return _mimeTypes;
     }
 
     @Override
@@ -168,7 +262,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @ManagedAttribute(value = "Context")
-    public ContextHandler.Context getContext()
+    public ScopedContext getContext()
     {
         return _context;
     }
@@ -196,9 +290,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * matching virtual host name.
      *
      * @param vhosts List of virtual hosts that this context responds to. A null/empty list means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()}for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.
+     * representation of IP addresses. Host names may start with {@code "*."} to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     * {@code "@connectorname"} (eg: {@code "*.example.org@connectorname"}), in which case they will match only if the {@link Connector#getName()}
+     * for the request also matches. If an entry is just {@code "@connectorname"} it will match any host if that connector was used.
      */
     public void setVirtualHosts(List<String> vhosts)
     {
@@ -220,7 +314,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                     vhost = vhost.substring(0, at);
                 }
 
-                if (vhost.startsWith("*."))
+                if (StringUtil.isBlank(vhost))
+                {
+                    vhost = null;
+                }
+                else if (vhost.startsWith("*."))
                 {
                     vhost = vhost.substring(1);
                     wild = true;
@@ -279,7 +377,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
      * matching virtual host name.
      *
-     * @return Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     * @return list of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
      * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
      * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
      * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
@@ -408,10 +506,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return false;
     }
 
+    protected ClassLoader enterScope(Request contextRequest)
+    {
+        ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+        __context.set(_context);
+        if (_classLoader != null)
+            Thread.currentThread().setContextClassLoader(_classLoader);
+        notifyEnterScope(contextRequest);
+        return lastLoader;
+    }
+
     /**
      * @param request A request that is applicable to the scope, or null
      */
-    protected void enterScope(Request request)
+    protected void notifyEnterScope(Request request)
     {
         for (ContextScopeListener listener : _contextListeners)
         {
@@ -426,10 +534,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
+    protected void exitScope(Request request, Context lastContext, ClassLoader lastLoader)
+    {
+        notifyExitScope(request);
+        __context.set(lastContext == null && getServer() != null ? getServer().getContext() : lastContext);
+        Thread.currentThread().setContextClassLoader(lastLoader);
+    }
+
     /**
      * @param request A request that is applicable to the scope, or null
      */
-    protected void exitScope(Request request)
+    protected void notifyExitScope(Request request)
     {
         for (int i = _contextListeners.size(); i-- > 0; )
         {
@@ -531,9 +646,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (getContextPath() == null)
             throw new IllegalStateException("Null contextPath");
 
+        Server server = getServer();
+        if (server != null)
+            __context.set(server.getContext());
         _availability.set(Availability.STARTING);
         try
         {
+            createTempDirectory();
             _context.call(super::doStart, null);
             _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
             LOG.info("Started {}", this);
@@ -544,11 +663,53 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
+    /**
+     * <p>Create the temporary directory. If the directory exists, but is not persistent, then it is
+     * first deleted and then recreated.  Once created, this method is a noop if called again before
+     * stopping the context.</p>
+     */
+    protected void createTempDirectory()
+    {
+        File tempDirectory = getTempDirectory();
+        if (tempDirectory != null && !_tempDirectoryCreated)
+        {
+            _tempDirectoryCreated = true;
+            if (isTempDirectoryPersistent())
+            {
+                // Create the directory if it doesn't exist
+                if (!tempDirectory.exists() && !tempDirectory.mkdirs())
+                    throw new IllegalArgumentException("Unable to create temp dir: " + tempDirectory);
+            }
+            else
+            {
+                // Delete and recreate it to ensure it is empty
+                if (tempDirectory.exists() && !IO.delete(tempDirectory))
+                    throw new IllegalArgumentException("Failed to delete temp dir: " + tempDirectory);
+                if (!tempDirectory.mkdirs())
+                    throw new IllegalArgumentException("Unable to create temp dir: " + tempDirectory);
+
+                // ensure it is removed on exist
+                tempDirectory.deleteOnExit();
+            }
+
+            // is it usable
+            if (!tempDirectory.canWrite() || !tempDirectory.isDirectory())
+                throw new IllegalArgumentException("Temp dir " + tempDirectory + " not useable: writeable=" + tempDirectory.canWrite() + ", dir=" + tempDirectory.isDirectory());
+        }
+    }
+
     @Override
     protected void doStop() throws Exception
     {
-        // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
         _context.call(super::doStop, null);
+
+        File tempDirectory = getTempDirectory();
+
+        // if we're not persisting the temp dir contents delete it
+        if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
+            IO.delete(tempDirectory);
+
+        _tempDirectoryCreated = false;
     }
 
     public boolean checkVirtualHost(Request request)
@@ -602,56 +763,68 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        if (getHandler() == null)
-            return null;
+        Handler handler = getHandler();
+        if (handler == null || !isStarted())
+            return false;
 
         if (!checkVirtualHost(request))
-            return null;
+            return false;
 
-        // The root context handles all requests.
-        if (!_rootContext)
+        // check the path matches the context path
+        String path = request.getHttpURI().getCanonicalPath();
+        String pathInContext = _context.getPathInContext(path);
+        if (pathInContext == null)
+            return false;
+
+        if (!isAvailable())
         {
-            // Otherwise match the path.
-            String path = request.getHttpURI().getCanonicalPath();
-            if (path == null || !path.startsWith(_contextPath))
-                return null;
-
-            if (path.length() == _contextPath.length())
-            {
-                if (!getAllowNullPathInContext())
-                    return this::processMovedPermanently;
-            }
-            else
-            {
-                if (path.charAt(_contextPath.length()) != '/')
-                    return null;
-            }
+            handleUnavailable(request, response, callback);
+            return true;
         }
 
-        // TODO check availability and maybe return a 503
-        if (!isAvailable() && isStarted())
-            return this::processUnavailable;
+        if (pathInContext.length() == 0 && !getAllowNullPathInContext())
+        {
+            handleMovedPermanently(request, response, callback);
+            return true;
+        }
 
-        ContextRequest contextRequest = wrap(request);
-        // wrap might fail (eg ServletContextHandler could not match a servlet)
+        ContextRequest contextRequest = wrapRequest(request, response);
+
+        // wrap might return null (eg ServletContextHandler could not match a servlet)
         if (contextRequest == null)
-            return null;
+            return false;
 
-        // Does this handler want to process the request itself?
-        Request.Processor processor = processByContextHandler(contextRequest);
-        if (processor != null)
-            return processor;
+        if (handleByContextHandler(pathInContext, contextRequest, response, callback))
+            return true;
 
-        // The contextRequest is-a Supplier<Processor> that calls effectively calls getHandler().handle(request).
-        // Call this supplier in the scope of the context.
-        Request.Processor contextScopedProcessor = _context.get(contextRequest, contextRequest);
-        // Wrap the contextScopedProcessor with a wrapper that uses the wrapped request
-        return contextRequest.wrapProcessor(contextScopedProcessor);
+        // Past this point we are calling the downstream handler in scope.
+        ClassLoader lastLoader = enterScope(contextRequest);
+        ContextResponse contextResponse = wrapResponse(contextRequest, response);
+        try
+        {
+            return handler.handle(contextRequest, contextResponse, callback);
+        }
+        catch (Throwable t)
+        {
+            Response.writeError(contextRequest, contextResponse, callback, t);
+            return true;
+        }
+        finally
+        {
+            // We exit scope here, even though handle() is asynchronous,
+            // as we have wrapped all our callbacks to re-enter the scope.
+            exitScope(contextRequest, request.getContext(), lastLoader);
+        }
     }
 
-    protected void processMovedPermanently(Request request, Response response, Callback callback)
+    protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    {
+        return false;
+    }
+
+    protected void handleMovedPermanently(Request request, Response response, Callback callback)
     {
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)
@@ -664,26 +837,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         callback.succeeded();
     }
 
-    protected void processUnavailable(Request request, Response response, Callback callback)
+    protected void handleUnavailable(Request request, Response response, Callback callback)
     {
         Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, null);
-    }
-
-    protected Request.Processor processByContextHandler(ContextRequest contextRequest)
-    {
-        if (!_allowNullPathInContext && StringUtil.isEmpty(Request.getPathInContext(contextRequest)))
-        {
-            return (request, response, callback) ->
-            {
-                // context request must end with /
-                String queryString = request.getHttpURI().getQuery();
-                Response.sendRedirect(request, response, callback,
-                    HttpStatus.MOVED_TEMPORARILY_302,
-                    request.getHttpURI().getPath() + (queryString == null ? "/" : ("/?" + queryString)),
-                    true);
-            };
-        }
-        return null;
     }
 
     /**
@@ -742,7 +898,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (path == null)
         {
             // allow user to unset variable
-            setBaseResource((Resource)null);
+            setBaseResource(null);
             return;
         }
 
@@ -761,32 +917,37 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      */
     public void setBaseResourceAsString(String base)
     {
-        setBaseResource((Resource)(base == null ? null : ResourceFactory.of(this).newResource(base)));
+        setBaseResource((base == null ? null : ResourceFactory.of(this).newResource(base)));
     }
 
     /**
      * @return Returns the errorHandler.
      */
-    @ManagedAttribute("The error processor to use for the context")
-    public Request.Processor getErrorProcessor()
+    @ManagedAttribute("The error handler to use for the context")
+    public Request.Handler getErrorHandler()
     {
         // TODO, do we need to wrap this so that we can establish the context
         //       Classloader?  Or will the caller already do that?
-        return _errorProcessor;
+        return _errorHandler;
     }
 
     /**
-     * @param errorProcessor The error processor to set.
+     * @param errorHandler The error handler to set.
      */
-    public void setErrorProcessor(Request.Processor errorProcessor)
+    public void setErrorHandler(Request.Handler errorHandler)
     {
-        updateBean(_errorProcessor, errorProcessor, true);
-        _errorProcessor = errorProcessor;
+        updateBean(_errorHandler, errorHandler, true);
+        _errorHandler = errorHandler;
     }
 
-    protected ContextRequest wrap(Request request)
+    protected ContextRequest wrapRequest(Request request, Response response)
     {
-        return new ContextRequest(this, _context, request);
+        return new ContextRequest(_context, request);
+    }
+
+    protected ContextResponse wrapResponse(ContextRequest request, Response response)
+    {
+        return new ContextResponse(_context, request, response);
     }
 
     @Override
@@ -965,9 +1126,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return host;
     }
 
-    public class Context extends Attributes.Layer implements org.eclipse.jetty.server.Context
+    public class ScopedContext extends Attributes.Layer implements Context
     {
-        public Context()
+        public ScopedContext()
         {
             // TODO Should the ScopedContext attributes be a layer over the ServerContext attributes?
             super(_persistentAttributes);
@@ -988,18 +1149,24 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public Request.Processor getErrorProcessor()
+        public Request.Handler getErrorHandler()
         {
-            Request.Processor processor = ContextHandler.this.getErrorProcessor();
-            if (processor == null)
-                processor = getServer().getErrorProcessor();
-            return processor;
+            Request.Handler handler = ContextHandler.this.getErrorHandler();
+            if (handler == null)
+                handler = getServer().getErrorHandler();
+            return handler;
         }
 
         @Override
         public String getContextPath()
         {
             return _contextPath;
+        }
+
+        @Override
+        public MimeTypes getMimeTypes()
+        {
+            return _mimeTypes;
         }
 
         @Override
@@ -1021,35 +1188,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
+        public File getTempDirectory()
+        {
+            File tempDirectory = ContextHandler.this.getTempDirectory();
+            if (tempDirectory == null)
+                tempDirectory = getServer().getTempDirectory();
+            return tempDirectory;
+        }
+
+        @Override
         public List<String> getVirtualHosts()
         {
             return ContextHandler.this.getVirtualHosts();
-        }
-
-        public <T> T get(Supplier<T> supplier, Request request)
-        {
-            Context lastContext = __context.get();
-            if (lastContext == this)
-                return supplier.get();
-
-            ClassLoader loader = getClassLoader();
-            ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-            try
-            {
-                __context.set(this);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(loader);
-
-                enterScope(request);
-                return supplier.get();
-            }
-            finally
-            {
-                exitScope(request);
-                __context.set(lastContext);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(lastLoader);
-            }
         }
 
         public void call(Invocable.Callable callable, Request request) throws Exception
@@ -1059,23 +1209,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 callable.call();
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-
-                    enterScope(request);
                     callable.call();
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1087,22 +1228,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 consumer.accept(t);
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(request);
                     consumer.accept(t);
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1120,22 +1253,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 runnable.run();
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(request);
                     runnable.run();
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1172,17 +1297,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public String getPathInContext(String fullPath)
+        public String getPathInContext(String canonicallyEncodedPath)
         {
-            if (_rootContext)
-                return fullPath;
-            if (!fullPath.startsWith(_contextPath))
-                return null;
-            if (fullPath.length() == _contextPath.length())
-                return "";
-            if (fullPath.charAt(_contextPath.length()) != '/')
-                return null;
-            return fullPath.substring(_contextPath.length());
+            return _rootContext ? canonicallyEncodedPath : Context.getPathInContext(_contextPath, canonicallyEncodedPath);
         }
     }
 
@@ -1195,13 +1312,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        default void enterScope(org.eclipse.jetty.server.Context context, Request request) {}
+        default void enterScope(Context context, Request request) {}
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        default void exitScope(org.eclipse.jetty.server.Context context, Request request) {}
+        default void exitScope(Context context, Request request) {}
     }
 
     private static class VHost

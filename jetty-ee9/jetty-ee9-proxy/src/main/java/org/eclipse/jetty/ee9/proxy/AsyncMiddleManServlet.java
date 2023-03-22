@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -35,15 +35,17 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.GZIPContentDecoder;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -436,10 +438,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void onContent(final Response serverResponse, ByteBuffer content, final Callback callback)
+        public void onContent(Response serverResponse, Content.Chunk chunk, Runnable demander)
         {
+            chunk.retain();
+            Callback callback = Callback.from(chunk::release, Callback.from(demander, serverResponse::abort));
             try
             {
+                ByteBuffer content = chunk.getByteBuffer();
                 int contentBytes = content.remaining();
                 if (_log.isDebugEnabled())
                     _log.debug("{} received server content: {} bytes", getRequestId(clientRequest), contentBytes);
@@ -787,7 +792,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             if (logger.isDebugEnabled())
                 logger.debug("Ungzipping {} bytes, finished={}", input.remaining(), finished);
 
-            List<ByteBuffer> decodeds = Collections.emptyList();
+            List<RetainableByteBuffer> decodeds = Collections.emptyList();
             if (!input.hasRemaining())
             {
                 if (finished)
@@ -798,14 +803,14 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 decodeds = new ArrayList<>();
                 while (true)
                 {
-                    ByteBuffer decoded = decoder.decode(input);
+                    RetainableByteBuffer decoded = decoder.decode(input);
                     decodeds.add(decoded);
                     boolean decodeComplete = !input.hasRemaining() && !decoded.hasRemaining();
                     boolean complete = finished && decodeComplete;
                     if (logger.isDebugEnabled())
                         logger.debug("Ungzipped {} bytes, complete={}", decoded.remaining(), complete);
                     if (decoded.hasRemaining() || complete)
-                        transformer.transform(decoded, complete, buffers);
+                        transformer.transform(decoded.getByteBuffer(), complete, buffers);
                     if (decodeComplete)
                         break;
                 }
@@ -818,7 +823,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 output.add(result);
             }
 
-            decodeds.forEach(decoder::release);
+            decodeds.forEach(RetainableByteBuffer::release);
         }
 
         private ByteBuffer gzip(List<ByteBuffer> buffers, boolean finished) throws IOException

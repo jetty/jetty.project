@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -150,10 +150,10 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         return sslSocket;
     }
 
-    private static class ServerHandler extends Handler.Processor
+    private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))
@@ -190,11 +190,10 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                                 response.write(true, ByteBuffer.wrap(bytes), callback);
                         });
                 }
+
+                return true;
             }
-            else
-            {
-                throw new ServletException();
-            }
+            throw new ServletException();
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jakarta.servlet.AsyncContext;
 import jakarta.servlet.GenericServlet;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.Servlet;
@@ -39,12 +38,9 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.RunAsToken;
@@ -719,7 +715,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         {
             MultipartConfigElement mpce = ((Registration)_registration).getMultipartConfig();
             if (mpce != null)
-                request.setAttribute(ServletContextRequest.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, mpce);
         }
     }
 
@@ -1376,49 +1372,24 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         }
 
         @Override
-        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException
         {
-            if (req.isAsyncSupported())
+            if (request.isAsyncSupported())
             {
-                if (req instanceof HttpServletRequest httpServletRequest)
+                ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+                servletContextRequest.getServletApiRequest().setAsyncSupported(false);
+                try
                 {
-                    getWrapped().service(new HttpServletRequestWrapper(httpServletRequest)
-                    {
-                        @Override
-                        public boolean isAsyncSupported()
-                        {
-                            return false;
-                        }
-
-                        @Override
-                        public AsyncContext startAsync() throws IllegalStateException
-                        {
-                            throw new IllegalStateException("Async Not Supported");
-                        }
-                    }, res);
+                    getWrapped().service(request, response);
                 }
-                else
+                finally
                 {
-                    //TODO is this necessary to support?
-                    getWrapped().service(new ServletRequestWrapper(req)
-                    {
-                        @Override
-                        public boolean isAsyncSupported()
-                        {
-                            return false;
-                        }
-
-                        @Override
-                        public AsyncContext startAsync() throws IllegalStateException
-                        {
-                            throw new IllegalStateException("Async Not Supported");
-                        }
-                    }, res);
+                    servletContextRequest.getServletApiRequest().setAsyncSupported(true);
                 }
             }
             else
             {
-                getWrapped().service(req, res);
+                getWrapped().service(request, response);
             }
         }
     }

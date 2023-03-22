@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,7 +36,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
@@ -48,7 +48,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,15 +161,13 @@ public class ConnectHandler extends Handler.Wrapper
 
         if (scheduler == null)
         {
-            scheduler = getServer().getBean(Scheduler.class);
-            if (scheduler == null)
-                scheduler = new ScheduledExecutorScheduler(String.format("Proxy-Scheduler-%x", hashCode()), false);
+            scheduler = getServer().getScheduler();
             addBean(scheduler);
         }
 
         if (bufferPool == null)
         {
-            bufferPool = new MappedByteBufferPool();
+            bufferPool = getServer().getByteBufferPool();
             addBean(bufferPool);
         }
 
@@ -186,31 +183,28 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
             TunnelSupport tunnelSupport = request.getTunnelSupport();
-            if (tunnelSupport != null)
+            if (tunnelSupport == null)
             {
-                if (tunnelSupport.getProtocol() == null)
-                {
-                    return (req, res, cbk) ->
-                    {
-                        HttpURI httpURI = req.getHttpURI();
-                        String serverAddress = httpURI.getAuthority();
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("CONNECT request for {}", serverAddress);
-                        handleConnect(req, res, cbk, serverAddress);
-                    };
-                }
+                Response.writeError(request, response, callback, HttpStatus.NOT_IMPLEMENTED_501);
+                return true;
             }
-            else
+
+            if (tunnelSupport.getProtocol() == null)
             {
-                return (req, res, cbk) -> Response.writeError(req, res, cbk, HttpStatus.NOT_IMPLEMENTED_501);
+                HttpURI httpURI = request.getHttpURI();
+                String serverAddress = httpURI.getAuthority();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("CONNECT request for {}", serverAddress);
+                handleConnect(request, response, callback, serverAddress);
+                return true;
             }
         }
-        return super.handle(request);
+        return super.handle(request, response, callback);
     }
 
     /**
@@ -235,11 +229,11 @@ public class ConnectHandler extends Handler.Wrapper
                 sendConnectResponse(request, response, callback, HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                 return;
             }
-        
+
             HostPort hostPort = new HostPort(serverAddress);
             String host = hostPort.getHost();
             int port = hostPort.getPort(80);
-        
+
             if (!validateDestination(host, port))
             {
                 if (LOG.isDebugEnabled())
@@ -250,7 +244,7 @@ public class ConnectHandler extends Handler.Wrapper
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Connecting to {}:{}", host, port);
-        
+
             connectToServer(request, host, port, new Promise<>()
             {
                 @Override
@@ -262,7 +256,7 @@ public class ConnectHandler extends Handler.Wrapper
                     else
                         selector.connect(channel, connectContext);
                 }
-        
+
                 @Override
                 public void failed(Throwable x)
                 {
@@ -721,7 +715,7 @@ public class ConnectHandler extends Handler.Wrapper
 
         private class ProxyIteratingCallback extends IteratingCallback
         {
-            private ByteBuffer buffer;
+            private RetainableByteBuffer buffer;
             private int filled;
 
             @Override
@@ -730,21 +724,22 @@ public class ConnectHandler extends Handler.Wrapper
                 buffer = bufferPool.acquire(getInputBufferSize(), true);
                 try
                 {
-                    int filled = this.filled = read(getEndPoint(), buffer);
+                    ByteBuffer byteBuffer = buffer.getByteBuffer();
+                    int filled = this.filled = read(getEndPoint(), byteBuffer);
                     if (filled > 0)
                     {
-                        write(connection.getEndPoint(), buffer, this);
+                        write(connection.getEndPoint(), byteBuffer, this);
                         return Action.SCHEDULED;
                     }
                     else if (filled == 0)
                     {
-                        bufferPool.release(buffer);
+                        buffer.release();
                         fillInterested();
                         return Action.IDLE;
                     }
                     else
                     {
-                        bufferPool.release(buffer);
+                        buffer.release();
                         connection.getEndPoint().shutdownOutput();
                         return Action.SUCCEEDED;
                     }
@@ -753,7 +748,7 @@ public class ConnectHandler extends Handler.Wrapper
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Could not fill {}", TunnelConnection.this, x);
-                    bufferPool.release(buffer);
+                    buffer.release();
                     disconnect(x);
                     return Action.SUCCEEDED;
                 }
@@ -764,7 +759,7 @@ public class ConnectHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Wrote {} bytes {}", filled, TunnelConnection.this);
-                bufferPool.release(buffer);
+                buffer.release();
                 super.succeeded();
             }
 
@@ -778,7 +773,7 @@ public class ConnectHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, x);
-                bufferPool.release(buffer);
+                buffer.release();
                 disconnect(x);
             }
 

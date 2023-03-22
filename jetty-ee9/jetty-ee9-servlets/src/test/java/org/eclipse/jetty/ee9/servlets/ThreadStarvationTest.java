@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -225,10 +225,10 @@ public class ThreadStarvationTest
             _server.addConnector(connector);
 
             AtomicInteger count = new AtomicInteger(0);
-            _server.setHandler(new Handler.Processor()
+            _server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void process(Request request, Response response, Callback callback) throws Exception
+                public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
                     int c = count.getAndIncrement();
                     if (c < parties)
@@ -236,6 +236,7 @@ public class ThreadStarvationTest
                     response.setStatus(200);
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 13);
                     Content.Sink.write(response, true, "Hello World!\n", callback);
+                    return true;
                 }
             });
 

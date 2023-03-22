@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,9 +16,13 @@ package org.eclipse.jetty.ee9.websocket.common;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
+import org.eclipse.jetty.websocket.core.messages.MessageOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,27 +32,47 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(MessageOutputStreamTest.class);
     private static final int OUTPUT_BUFFER_SIZE = 4096;
 
-    public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");
+    private final AtomicInteger leaks = new AtomicInteger();
+    private ByteBufferPool bufferPool;
+    private OutgoingMessageCapture sessionCapture;
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        bufferPool = new ArrayByteBufferPool()
+        {
+            @Override
+            public RetainableByteBuffer acquire(int size, boolean direct)
+            {
+                leaks.incrementAndGet();
+                return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        boolean released = super.release();
+                        if (released)
+                            leaks.decrementAndGet();
+                        return released;
+                    }
+                };
+            }
+        };
+        sessionCapture = new OutgoingMessageCapture();
+        sessionCapture.setOutputBufferSize(OUTPUT_BUFFER_SIZE);
+    }
 
     @AfterEach
     public void afterEach()
     {
-        bufferPool.assertNoLeaks();
-    }
-
-    private OutgoingMessageCapture sessionCapture;
-
-    @BeforeEach
-    public void setupTest() throws Exception
-    {
-        sessionCapture = new OutgoingMessageCapture();
-        sessionCapture.setOutputBufferSize(OUTPUT_BUFFER_SIZE);
+        assertEquals(0, leaks.get(), "leak detected");
     }
 
     @Test

@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-annotations</artifactId>
-  <name>EE10 :: Jetty :: Servlet Annotations</name>
+  <name>EE10 :: Servlet Annotations</name>
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>
@@ -20,7 +20,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee10.annotations=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.ee10.annotations/org.eclipse.jetty.ee10.annotations.resources=org.eclipse.jetty.ee10.plus
+            @{argLine} ${jetty.surefire.argLine} 
+            --add-reads org.eclipse.jetty.ee10.annotations=org.eclipse.jetty.logging 
+            --add-opens org.eclipse.jetty.ee10.annotations/org.eclipse.jetty.ee10.annotations.resources=org.eclipse.jetty.ee10.plus
           </argLine>
         </configuration>
       </plugin>

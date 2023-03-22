@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FrameFlusherTest
 {
-    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
     private Scheduler scheduler;
 
     @BeforeEach
@@ -250,7 +250,7 @@ public class FrameFlusherTest
             {
                 for (ByteBuffer buffer : buffers)
                 {
-                    Parser.ParsedFrame frame = parser.parse(buffer);
+                    Frame.Parsed frame = parser.parse(buffer);
                     if (frame != null)
                     {
                         incomingFrames.offer(frame);

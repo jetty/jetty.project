@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -24,13 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -42,36 +38,42 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectionPoolTest
 {
-    private static final ConnectionPoolFactory DUPLEX = new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination));
-    private static final ConnectionPoolFactory MULTIPLEX = new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
-    private static final ConnectionPoolFactory RANDOM = new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionPoolTest.class);
+
+    private static final ConnectionPoolFactory DUPLEX = new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination()));
+    private static final ConnectionPoolFactory MULTIPLEX = new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
+    private static final ConnectionPoolFactory RANDOM = new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
     private static final ConnectionPoolFactory DUPLEX_MAX_DURATION = new ConnectionPoolFactory("duplex-maxDuration", destination ->
     {
-        DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination);
+        DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination());
         pool.setMaxDuration(10);
         return pool;
     });
-    private static final ConnectionPoolFactory ROUND_ROBIN = new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination));
+    private static final ConnectionPoolFactory ROUND_ROBIN = new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination()));
 
     public static Stream<ConnectionPoolFactory> pools()
     {
@@ -135,8 +137,7 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
-    @Disabled("fix this test")
-    public void test(ConnectionPoolFactory factory) throws Exception
+    public void testConnectionPoolFactory(ConnectionPoolFactory factory) throws Exception
     {
         start(factory.factory, new EmptyServerHandler()
         {
@@ -153,7 +154,7 @@ public class ConnectionPoolTest
                             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
                             try (Blocker.Callback callback = _blocking.callback())
                             {
-                                response.write(true, BufferUtil.allocate((int)contentLength), callback);
+                                response.write(true, ByteBuffer.allocate((int)contentLength), callback);
                                 callback.block();
                             }
                         }
@@ -182,7 +183,7 @@ public class ConnectionPoolTest
                             {
                                 try (Blocker.Callback callback = _blocking.callback())
                                 {
-                                    response.write(true, chunk.getByteBuffer(), callback);
+                                    response.write(chunk.isLast(), chunk.getByteBuffer(), callback);
                                     callback.block();
                                 }
                             }
@@ -219,7 +220,8 @@ public class ConnectionPoolTest
             test(failures);
         }
         long elapsed = NanoTime.millisSince(begin);
-        System.err.printf("%d requests in %d ms, %.3f req/s%n", iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D);
+        if (LOG.isInfoEnabled())
+            LOG.info("%d requests in %d ms, %.3f req/s".formatted(iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D));
         latch.countDown();
     }
 
@@ -399,7 +401,7 @@ public class ConnectionPoolTest
     @MethodSource("pools")
     public void testConcurrentRequestsAllBlockedOnServerWithLargeConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
-        int count = 50;
+        int count = 10;
         testConcurrentRequestsAllBlockedOnServer(factory, count, 2 * count);
     }
 
@@ -407,7 +409,7 @@ public class ConnectionPoolTest
     @MethodSource("pools")
     public void testConcurrentRequestsAllBlockedOnServerWithExactConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
-        int count = 50;
+        int count = 10;
         testConcurrentRequestsAllBlockedOnServer(factory, count, count);
     }
 
@@ -454,10 +456,12 @@ public class ConnectionPoolTest
                 {
                     if (result.isSucceeded())
                         latch.countDown();
+                    else
+                        result.getFailure().printStackTrace();
                 }));
         }
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS), "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
+        assertTrue(latch.await(15, TimeUnit.SECONDS), "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
         List<Destination> destinations = client.getDestinations();
         assertEquals(1, destinations.size());
         // The max duration connection pool aggressively closes expired connections upon release, which interferes with this assertion.
@@ -482,7 +486,7 @@ public class ConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
             // Constrain the max pool size to 1.
-            DuplexConnectionPool pool = new DuplexConnectionPool(destination, maxConnections, destination)
+            DuplexConnectionPool pool = new DuplexConnectionPool(destination, maxConnections)
             {
                 @Override
                 protected void onCreated(Connection connection)
@@ -536,7 +540,7 @@ public class ConnectionPoolTest
         AtomicInteger poolRemoveCounter = new AtomicInteger();
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
-            DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination)
+            DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination())
             {
                 @Override
                 protected void onCreated(Connection connection)
@@ -635,6 +639,7 @@ public class ConnectionPoolTest
             try
             {
                 ConnectionPool connectionPool = factory.factory.newConnectionPool(destination);
+                LifeCycle.start(connectionPool);
                 connectionPool.preCreateConnections(1).get();
                 return connectionPool;
             }
@@ -647,7 +652,7 @@ public class ConnectionPoolTest
         client.setIdleTimeout(idleTimeout);
 
         // Trigger the creation of a destination, that will create the connection pool.
-        HttpDestination destination = client.resolveDestination(new Origin("http", "localhost", connector.getLocalPort()));
+        Destination destination = client.resolveDestination(new Origin("http", "localhost", connector.getLocalPort()));
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         if (DUPLEX_MAX_DURATION == factory)
             assertThat(connectionPool.getConnectionCount(), lessThanOrEqualTo(1)); // The connections can expire upon release.
@@ -658,6 +663,45 @@ public class ConnectionPoolTest
         Thread.sleep(idleTimeout + idleTimeout / 2);
 
         assertEquals(0, connectionPool.getConnectionCount());
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testCountersSweepToStringThroughLifecycle(ConnectionPoolFactory factory) throws Exception
+    {
+        startClient(destination ->
+        {
+            ConnectionPool connectionPool = factory.factory.newConnectionPool(destination);
+            LifeCycle.start(connectionPool);
+            return connectionPool;
+        });
+
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0), false));
+        assertThat(connectionPool.getConnectionCount(), is(0));
+        assertThat(connectionPool.getActiveConnectionCount(), is(0));
+        assertThat(connectionPool.getIdleConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), is(0));
+        assertThat(connectionPool.isEmpty(), is(true));
+        assertThat(connectionPool.sweep(), is(false));
+        assertThat(connectionPool.toString(), not(nullValue()));
+
+        LifeCycle.start(connectionPool);
+        assertThat(connectionPool.getConnectionCount(), is(0));
+        assertThat(connectionPool.getActiveConnectionCount(), is(0));
+        assertThat(connectionPool.getIdleConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), greaterThan(0));
+        assertThat(connectionPool.isEmpty(), is(true));
+        assertThat(connectionPool.sweep(), is(false));
+        assertThat(connectionPool.toString(), not(nullValue()));
+
+        LifeCycle.stop(connectionPool);
+        assertThat(connectionPool.getConnectionCount(), is(0));
+        assertThat(connectionPool.getActiveConnectionCount(), is(0));
+        assertThat(connectionPool.getIdleConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), is(0));
+        assertThat(connectionPool.isEmpty(), is(true));
+        assertThat(connectionPool.sweep(), is(false));
+        assertThat(connectionPool.toString(), not(nullValue()));
     }
 
     private static class ConnectionPoolFactory

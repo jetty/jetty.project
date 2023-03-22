@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,8 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -63,19 +62,20 @@ public class ConnectionPoolMaxUsageTest
     @Test
     public void testMaxUsage() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                return true;
             }
         });
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        HttpDestination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
+        Destination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         int maxUsage = 3;
         connectionPool.setMaxUsage(maxUsage);
@@ -105,19 +105,20 @@ public class ConnectionPoolMaxUsageTest
     @Test
     public void testMaxUsageSetToSmallerValue() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                return true;
             }
         });
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        HttpDestination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
+        Destination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         int maxUsage = 3;
         connectionPool.setMaxUsage(maxUsage);

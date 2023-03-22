@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,14 +17,15 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTest
@@ -32,8 +33,9 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
     private final CountDownLatch callbackLatch = new CountDownLatch(1);
     private final CountDownLatch failureLatch = new CountDownLatch(1);
     private final CountDownLatch completeLatch = new CountDownLatch(1);
-    private final AtomicBoolean failureWasAsync = new AtomicBoolean();
+    private final AtomicBoolean failureWasSync = new AtomicBoolean();
     private final AtomicBoolean completeWasSync = new AtomicBoolean();
+    private final AtomicReference<Object> abortResult = new AtomicReference<>();
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
@@ -47,8 +49,9 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(failureWasAsync.get());
+        assertTrue(failureWasSync.get());
         assertTrue(completeWasSync.get());
+        await().atMost(5, TimeUnit.SECONDS).until(abortResult::get, is(Boolean.TRUE));
     }
 
     @ParameterizedTest
@@ -67,8 +70,9 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(failureWasAsync.get());
+        assertTrue(failureWasSync.get());
         assertTrue(completeWasSync.get());
+        await().atMost(5, TimeUnit.SECONDS).until(abortResult::get, is(Boolean.TRUE));
     }
 
     @ParameterizedTest
@@ -83,8 +87,9 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(failureWasAsync.get());
+        assertTrue(failureWasSync.get());
         assertTrue(completeWasSync.get());
+        await().atMost(5, TimeUnit.SECONDS).until(abortResult::get, is(Boolean.TRUE));
     }
 
     @ParameterizedTest
@@ -106,8 +111,9 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(failureWasAsync.get());
+        assertTrue(failureWasSync.get());
         assertTrue(completeWasSync.get());
+        await().atMost(5, TimeUnit.SECONDS).until(abortResult::get, is(Boolean.TRUE));
     }
 
     private void abort(final Response response)
@@ -117,17 +123,21 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
             @Override
             public void run()
             {
-                response.abort(new Exception());
+                response.abort(new Exception()).whenComplete((aborted, x) ->
+                {
+                    if (x != null)
+                        abortResult.set(x);
+                    else
+                        abortResult.set(aborted);
+                });
             }
         }.start();
 
         try
         {
-            // The failure callback is executed asynchronously, but
-            // here we are within the context of another response
-            // callback, which should detect that a failure happened
-            // and therefore this thread should complete the response.
-            failureWasAsync.set(failureLatch.await(2, TimeUnit.SECONDS));
+            // The failure callback must be executed by this thread,
+            // after we return from this response callback.
+            failureWasSync.set(!failureLatch.await(1, TimeUnit.SECONDS));
 
             // The complete callback must be executed by this thread,
             // after we return from this response callback.

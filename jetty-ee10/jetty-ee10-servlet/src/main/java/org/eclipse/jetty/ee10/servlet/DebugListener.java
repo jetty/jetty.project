@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -289,7 +289,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
     final ServletContextScopeListener _contextScopeListener = new ServletContextScopeListener()
     {
         @Override
-        public void enterScope(ServletContextHandler.Context context, ServletContextRequest request)
+        public void enterScope(ServletContextHandler.ServletScopedContext context, ServletContextRequest request)
         {
             String cname = findContextName(context.getServletContext());
             if (request == null)
@@ -309,7 +309,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         }
 
         @Override
-        public void exitScope(ServletContextHandler.Context context, ServletContextRequest request)
+        public void exitScope(ServletContextHandler.ServletScopedContext context, ServletContextRequest request)
         {
             String cname = findContextName(context.getServletContext());
             if (request == null)

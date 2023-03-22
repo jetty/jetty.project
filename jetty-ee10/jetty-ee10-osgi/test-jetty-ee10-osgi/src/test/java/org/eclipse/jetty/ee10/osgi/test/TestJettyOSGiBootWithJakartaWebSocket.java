@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -40,10 +40,10 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
- * Test using websocket in osgi
+ * Test using jakarta websocket in osgi
  */
-@Disabled //TODO
-//@RunWith(PaxExam.class)
+@Disabled //jakarta.websocket.client-api does not have declaration for serviceloader
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJakartaWebSocket
 {
     @Inject
@@ -59,7 +59,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         // options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-jakarta-websocket.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
             "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
             "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
@@ -77,7 +77,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
 
@@ -93,10 +93,10 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.common");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.client");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.server");
-        startBundle(bundleContext, "org.eclipse.jetty.demos.webapp");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.websocket.jakarta.common");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.websocket.jakarta.client");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.websocket.jakarta.server");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.demos.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
@@ -110,7 +110,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         Logger log = Logger.getLogger(this.getClass().getName());
 
         SimpleJakartaWebSocket socket = new SimpleJakartaWebSocket();
-        URI uri = new URI("ws://127.0.0.1:" + port + "/jakarta.websocket/");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ee10-demo-jetty/jakarta.websocket/");
         log.info("Attempting to connect to " + uri);
         try (Session session = container.connectToServer(socket, uri))
         {

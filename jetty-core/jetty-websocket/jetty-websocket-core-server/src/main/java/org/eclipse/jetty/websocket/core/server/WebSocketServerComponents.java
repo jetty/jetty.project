@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -62,7 +62,7 @@ public class WebSocketServerComponents extends WebSocketComponents
      */
     public static WebSocketComponents ensureWebSocketComponents(Server server, ContextHandler contextHandler)
     {
-        ContextHandler.Context context = contextHandler.getContext();
+        ContextHandler.ScopedContext context = contextHandler.getContext();
         WebSocketComponents components = (WebSocketComponents)context.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components != null)
             return components;
@@ -77,7 +77,7 @@ public class WebSocketServerComponents extends WebSocketComponents
 
         ByteBufferPool bufferPool = (ByteBufferPool)context.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
         if (bufferPool == null)
-            bufferPool = server.getBean(ByteBufferPool.class);
+            bufferPool = server.getByteBufferPool();
 
         Executor executor = (Executor)context.getAttribute("org.eclipse.jetty.server.Executor");
         if (executor == null)

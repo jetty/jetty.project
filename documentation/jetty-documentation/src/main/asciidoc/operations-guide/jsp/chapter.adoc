@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,10 +14,11 @@
 [[og-jsp]]
 === Java Server Pages
 
-Jetty supports JSP via the `jsp` module, which is based on Apache Jasper:
+Jetty supports JSP via the `{ee-all}-jsp` modules, which are based on Apache Jasper:
 
+[subs=attributes]
 ----
-include::{JETTY_HOME}/modules/jsp.mod[]
+include::{jetty-home}/modules/{ee-current}-jsp.mod[]
 ----
 
 Logging has been bridged to Jetty logging, so you can enable logging for the `org.apache.jasper` package, subpackages and classes as usual.
@@ -172,10 +173,11 @@ If the value you set doesn't take effect, try using all lower case instead of ca
 
 === JavaServer Pages Standard Tag Libraries
 
-The JavaServer Pages Standard Tag Library (JSTL) is part of the Jetty distribution, and is available via the `jstl` module:
+The JavaServer Pages Standard Tag Library (JSTL) is part of the Jetty distribution, and is available via the `{ee-all}-jstl` modules:
 
+[subs=attributes]
 ----
-include::{JETTY_HOME}/modules/jstl.mod[]
+include::{jetty-home}/modules/{ee-current}-jstl.mod[]
 ----
 
 When enabled, Jetty will make the JSTL tags available for your webapps.

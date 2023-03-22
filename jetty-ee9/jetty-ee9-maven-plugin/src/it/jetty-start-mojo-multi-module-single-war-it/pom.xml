@@ -13,7 +13,7 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>ee9 :: Jetty :: multi-module project</name>
+  <name>EE9 :: multi-module project</name>
 
   <modules>
     <module>common</module>

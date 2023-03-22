@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-websocket-core-client</artifactId>
-  <name>Jetty Core :: Websocket :: Core :: Client</name>
+  <name>Core :: Websocket :: Client</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.client</bundle-symbolic-name>
@@ -38,7 +38,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>*,org.eclipse.jetty.websocket.core.client.internal.*</Export-Package>
+            <Export-Package>*</Export-Package>
           </instructions>
         </configuration>
       </plugin>

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,15 +17,17 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
+import org.eclipse.jetty.ee10.servlet.ServletApiResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.servlet.security.Authenticator;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.ManagedSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +64,8 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         //TODO do we need to operate on a Response passed in, rather than the Response obtained from the Request
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
-        ServletContextResponse.ServletApiResponse servletApiResponse = servletContextRequest.getResponse().getServletApiResponse();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletApiResponse servletApiResponse = servletContextRequest.getResponse().getServletApiResponse();
         UserIdentity user = _loginService.login(username, password, servletApiRequest);
         if (user != null)
         {
@@ -76,12 +78,12 @@ public abstract class LoginAuthenticator implements Authenticator
     public void logout(Request request)
     {
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
         HttpSession session = servletApiRequest.getSession(false);
         if (session == null)
             return;
 
-        session.removeAttribute(Session.SESSION_CREATED_SECURE);
+        session.removeAttribute(ManagedSession.SESSION_CREATED_SECURE);
     }
 
     @Override
@@ -123,17 +125,12 @@ public abstract class LoginAuthenticator implements Authenticator
             {
                 //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (session.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
+                if (session.getAttribute(ManagedSession.SESSION_CREATED_SECURE) != Boolean.TRUE)
                 {
+                    session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
                     ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(httpRequest);
                     Response response = servletContextRequest.getResponse().getWrapped();
-                    String oldId = session.getId();
-                    session.renewId(servletContextRequest);
-                    session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                    if (session.isSetCookieNeeded())
-                        Response.replaceCookie(response, session.getSessionManager().getSessionCookie(session, httpRequest.getContextPath(), httpRequest.isSecure()));
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("renew {}->{}", oldId, session.getId());
+                    session.renewId(servletContextRequest, response);
                     return httpSession;
                 }
             }

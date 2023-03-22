@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
  * A utility implementation of FrameHandler that defragments
  * text frames into a String message before calling {@link #onText(String, Callback)}.
  * Flow control is by default automatic, but an implementation
- * may extend {@link #isDemanding()} to return true and then explicityly control
- * demand with calls to {@link CoreSession#demand(long)}
+ * may extend {@link #isAutoDemanding()} to return false and then explicitly control
+ * demand with calls to {@link CoreSession#demand(long)}.
  */
 public class MessageHandler implements FrameHandler
 {

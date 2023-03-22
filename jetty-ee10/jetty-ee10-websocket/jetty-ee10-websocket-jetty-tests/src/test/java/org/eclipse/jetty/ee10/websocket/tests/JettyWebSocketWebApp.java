@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -79,7 +79,7 @@ public class JettyWebSocketWebApp extends WebAppContext
 
     public void copyWebXml(Path webXml) throws IOException
     {
-        IO.copy(webXml.toFile(), webInf.resolve("web.xml").toFile());
+        IO.copy(webXml, webInf.resolve("web.xml"));
     }
 
     public void copyClass(Class<?> clazz) throws Exception
@@ -91,6 +91,6 @@ public class JettyWebSocketWebApp extends WebAppContext
         Path destFile = classesDir.resolve(endpointPath);
         FS.ensureDirExists(destFile.getParent());
         File srcFile = new File(classUrl.toURI());
-        IO.copy(srcFile, destFile.toFile());
+        IO.copy(srcFile.toPath(), destFile);
     }
 }

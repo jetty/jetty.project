@@ -7,7 +7,7 @@
     <version>12.0.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
-  <name>EE10 :: Jetty Demo :: Servlet Spec :: Webapp</name>
+  <name>EE10 :: Demo :: Servlet Spec :: WebApp</name>
   <artifactId>jetty-ee10-demo-spec-webapp</artifactId>
   <packaging>war</packaging>
   <properties>
@@ -70,9 +70,10 @@
             </Import-Package>
             <_nouses />
             <Export-Package>org.example.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>
-            <Web-ContextPath>/</Web-ContextPath>
+            <Web-ContextPath>/ee10-demo-spec</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
-            <Jetty-ContextFilePath>/META-INF/plugin-context.xml</Jetty-ContextFilePath>
+            <Jetty-ContextFilePath>META-INF/plugin-context.xml</Jetty-ContextFilePath>
+            <Jetty-Environment>ee10</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>
@@ -164,7 +165,7 @@
               <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
             </webApp>
             <loginServices>
-              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+              <loginService implementation="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
                 <name>Test Realm</name>
                 <config>src/etc/realm.properties</config>
               </loginService>

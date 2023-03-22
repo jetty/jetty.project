@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.annotation.Name;
@@ -158,9 +157,9 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
         configure(sslConnection, connector, endPoint);
 
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);
-        EndPoint decryptedEndPoint = sslConnection.getDecryptedEndPoint();
-        Connection connection = next.newConnection(connector, decryptedEndPoint);
-        decryptedEndPoint.setConnection(connection);
+        EndPoint sslEndPoint = sslConnection.getSslEndPoint();
+        Connection connection = next.newConnection(connector, sslEndPoint);
+        sslEndPoint.setConnection(connection);
 
         return sslConnection;
     }
@@ -168,21 +167,16 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        RetainableByteBufferPool retainableByteBufferPool = byteBufferPool.asRetainableByteBufferPool();
-        return new SslConnection(retainableByteBufferPool, byteBufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        return new SslConnection(byteBufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override
     protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
     {
-        if (connection instanceof SslConnection)
+        if (connection instanceof SslConnection sslConnection)
         {
-            SslConnection sslConnection = (SslConnection)connection;
-            if (connector instanceof ContainerLifeCycle)
-            {
-                ContainerLifeCycle container = (ContainerLifeCycle)connector;
+            if (connector instanceof ContainerLifeCycle container)
                 container.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
-            }
             getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
         return super.configure(connection, connector, endPoint);

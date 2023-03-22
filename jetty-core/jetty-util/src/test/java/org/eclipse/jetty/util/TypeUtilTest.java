@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.test10.ExampleClass;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,6 +28,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -236,4 +238,20 @@ public class TypeUtilTest
         String expectedJavaBase = "/java.base";
         assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
     }
+
+    public static Stream<Arguments> shortNames()
+    {
+        return Stream.of(
+            Arguments.of(TypeUtilTest.class, "oeju.TypeUtilTest"),
+            Arguments.of(ExampleClass.class, "oejut10.ExampleClass")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("shortNames")
+    public void testToShortName(Class<?> clazz, String shortName)
+    {
+        assertThat(TypeUtil.toShortName(clazz), is(shortName));
+    }
+
 }

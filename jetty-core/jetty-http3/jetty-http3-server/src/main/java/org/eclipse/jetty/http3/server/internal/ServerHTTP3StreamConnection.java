@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,10 +19,10 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http3.HTTP3Stream;
+import org.eclipse.jetty.http3.HTTP3StreamConnection;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Stream;
-import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;

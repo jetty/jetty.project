@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -35,7 +35,7 @@ import static java.util.EnumSet.of;
  */
 public final class UriCompliance implements ComplianceViolation.Mode
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(UriCompliance.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UriCompliance.class);
 
     /**
      * These are URI compliance "violations", which may be allowed by the compliance mode. These are actual
@@ -99,19 +99,29 @@ public final class UriCompliance implements ComplianceViolation.Mode
         }
     }
 
+    public static final Set<Violation> AMBIGUOUS_VIOLATIONS = EnumSet.of(
+        Violation.AMBIGUOUS_EMPTY_SEGMENT,
+        Violation.AMBIGUOUS_PATH_ENCODING,
+        Violation.AMBIGUOUS_PATH_PARAMETER,
+        Violation.AMBIGUOUS_PATH_SEGMENT,
+        Violation.AMBIGUOUS_PATH_SEPARATOR);
+
     /**
-     * The default compliance mode that extends <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a> compliance with
-     * additional violations to avoid most ambiguous URIs.
-     * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows all out {@link Violation}s.
+     * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
+     * excluding all URI Violations.
      */
-    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT",
-        of(Violation.AMBIGUOUS_PATH_SEPARATOR,
-            Violation.AMBIGUOUS_PATH_ENCODING));
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", noneOf(Violation.class));
+
+    /**
+     * The default compliance mode allows no violations from <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
+     * and is equivalent to {@link #RFC3986} compliance.
+     */
+    public static final UriCompliance DEFAULT = RFC3986;
 
     /**
      * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT},
      * {@link Violation#AMBIGUOUS_EMPTY_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, {@link Violation#AMBIGUOUS_PATH_ENCODING}
-     * and {@link Violation#UTF16_ENCODINGS}
+     * and {@link Violation#UTF16_ENCODINGS}.
      */
     public static final UriCompliance LEGACY = new UriCompliance("LEGACY",
         of(Violation.AMBIGUOUS_PATH_SEGMENT,
@@ -121,38 +131,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.UTF16_ENCODINGS));
 
     /**
-     * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
-     * including allowing all additional ambiguous URI Violations.
-     */
-    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", allOf(Violation.class));
-
-    /**
-     * Compliance mode that follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
-     * plus it does not allow any ambiguous URI {@link Violation}s.
-     */
-    public static final UriCompliance RFC3986_UNAMBIGUOUS = new UriCompliance("RFC3986_UNAMBIGUOUS", noneOf(Violation.class));
-
-    /**
-     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non canonicalized form.
+     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form.
      */
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
-    /**
-     * @deprecated equivalent to DEFAULT
-     */
-    @SuppressWarnings("DeprecatedIsStillUsed")
-    @Deprecated
-    public static final UriCompliance SAFE = new UriCompliance("SAFE", DEFAULT.getAllowed());
-
-    /**
-     * @deprecated equivalent to RFC3986
-     */
-    @SuppressWarnings("DeprecatedIsStillUsed")
-    @Deprecated
-    public static final UriCompliance STRICT = new UriCompliance("STRICT", RFC3986.getAllowed());
-
     private static final AtomicInteger __custom = new AtomicInteger();
-    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE, SAFE, STRICT);
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, UNSAFE);
 
     public static UriCompliance valueOf(String name)
     {
@@ -202,45 +186,42 @@ public final class UriCompliance implements ComplianceViolation.Mode
      */
     public static UriCompliance from(String spec)
     {
-        Set<Violation> violations;
-        String[] elements = spec.split("\\s*,\\s*");
-        switch (elements[0])
+        UriCompliance compliance = valueOf(spec);
+        if (compliance == null)
         {
-            case "0":
-                violations = noneOf(Violation.class);
-                break;
+            String[] elements = spec.split("\\s*,\\s*");
 
-            case "*":
-                violations = allOf(Violation.class);
-                break;
-
-            default:
+            Set<Violation> violations = switch (elements[0])
             {
-                UriCompliance mode = UriCompliance.valueOf(elements[0]);
-                violations = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
-                break;
+                case "0" -> noneOf(Violation.class);
+                case "*" -> allOf(Violation.class);
+                default ->
+                {
+                    UriCompliance mode = UriCompliance.valueOf(elements[0]);
+                    yield (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                }
+            };
+
+            for (int i = 1; i < elements.length; i++)
+            {
+                String element = elements[i];
+                boolean exclude = element.startsWith("-");
+                if (exclude)
+                    element = element.substring(1);
+
+                // Ignore removed name. TODO: remove in future release.
+                if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
+                    continue;
+
+                Violation section = Violation.valueOf(element);
+                if (exclude)
+                    violations.remove(section);
+                else
+                    violations.add(section);
             }
+
+            compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         }
-
-        for (int i = 1; i < elements.length; i++)
-        {
-            String element = elements[i];
-            boolean exclude = element.startsWith("-");
-            if (exclude)
-                element = element.substring(1);
-
-            // Ignore removed name. TODO: remove in future release.
-            if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
-                continue;
-
-            Violation section = Violation.valueOf(element);
-            if (exclude)
-                violations.remove(section);
-            else
-                violations.add(section);
-        }
-
-        UriCompliance compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         if (LOG.isDebugEnabled())
             LOG.debug("UriCompliance from {}->{}", spec, compliance);
         return compliance;

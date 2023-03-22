@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,13 +16,12 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -31,7 +30,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -39,52 +38,157 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An asynchronous HTTP response.
- * TODO Javadoc
+ * <p>The representation of an HTTP response, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
  */
 public interface Response extends Content.Sink
 {
-    // This is needed so that response methods can access the wrapped Request#getContext method
+    /**
+     * @return the {@link Request} associated with this {@code Response}
+     */
     Request getRequest();
 
+    /**
+     * @return the response HTTP status code
+     */
     int getStatus();
 
+    /**
+     * @param code the response HTTP status code
+     */
     void setStatus(int code);
 
+    /**
+     * @return the response HTTP headers
+     */
     HttpFields.Mutable getHeaders();
 
+    /**
+     * @return a supplier for the HTTP trailers
+     */
     Supplier<HttpFields> getTrailersSupplier();
 
+    /**
+     * @param trailers a supplier for the HTTP trailers
+     */
     void setTrailersSupplier(Supplier<HttpFields> trailers);
 
+    /**
+     * <p>Returns whether this response has already been committed.</p>
+     * <p>Committing a response means that the HTTP status code and HTTP headers
+     * cannot be modified anymore, typically because they have already been
+     * serialized and sent over the network.</p>
+     *
+     * @return whether this response has already been committed
+     */
     boolean isCommitted();
 
+    /**
+     * <p>Returns whether the response completed successfully.</p>
+     * <p>The response HTTP status code, HTTP headers and content
+     * have been successfully serialized and sent over the network
+     * without errors.</p>
+     *
+     * @return whether the response completed successfully
+     */
     boolean isCompletedSuccessfully();
 
+    /**
+     * <p>Resets this response, clearing the HTTP status code, HTTP headers
+     * and HTTP trailers.</p>
+     *
+     * @throws IllegalStateException if the response is already
+     * {@link #isCommitted() committed}
+     */
     void reset();
 
+    /**
+     * <p>Writes an {@link HttpStatus#isInterim(int) HTTP interim response},
+     * with the given HTTP status code and HTTP headers.</p>
+     * <p>It is possible to write more than one interim response, for example
+     * in case of {@link HttpStatus#EARLY_HINT_103}.</p>
+     * <p>The returned {@link CompletableFuture} is notified of the result
+     * of this write, whether it succeeded or failed.</p>
+     *
+     * @param status the interim HTTP status code
+     * @param headers the HTTP headers
+     * @return a {@link CompletableFuture} with the result of the write
+     */
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
-    // TODO: make it static, otherwise we must override it in Wrapper.
-    default boolean writeTrailers(Content.Chunk chunk, Callback ignored)
+    /**
+     * {@inheritDoc}
+     * <p>The invocation of the passed {@code Callback} is serialized
+     * with previous calls of this method, so that it is not invoked until
+     * any invocation of the callback of a previous call to this method
+     * has returned.</p>
+     * <p>Thus a {@code Callback} should not block waiting for a callback
+     * of a future call to this method.</p>
+     * <p>Furthermore, the invocation of the passed callback is serialized
+     * with invocations of the {@link Runnable} demand callback passed to
+     * {@link Request#demand(Runnable)}.</p>
+     *
+     * @param last whether the ByteBuffer is the last to write
+     * @param byteBuffer the ByteBuffer to write
+     * @param callback the callback to notify when the write operation is complete
+     */
+    @Override
+    void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+
+    /**
+     * <p>Returns a chunk processor suitable to be passed to the
+     * {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
+     * method, that will handle {@link Trailers} chunks
+     * by adding their fields to the {@link HttpFields} supplied by
+     * {@link Response#getTrailersSupplier()}.</p>
+     * <p>This is specifically useful for writing trailers that have been received via
+     * the {@link Content.Source#read()} API, for example when echoing a request to a response:</p>
+     * <pre>
+     *   Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
+     * </pre>
+     * @param response The response for which to process a trailers chunk.
+     *                 If the {@link Response#setTrailersSupplier(Supplier)}
+     *                 method has not been called prior to this method, then a noop processor is returned.
+     * @return A chunk processor that will add trailer chunks to the response's trailer supplied fields.
+     * @see Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)
+     * @see Trailers
+     */
+    static Content.Chunk.Processor newTrailersChunkProcessor(Response response)
     {
-        if (chunk instanceof Trailers trailers)
+        Supplier<HttpFields> supplier = response.getTrailersSupplier();
+        if (supplier == null)
+            return (chunk, callback) -> false;
+
+        return (chunk, callback) ->
         {
-            HttpFields requestTrailers = trailers.getTrailers();
-            if (requestTrailers != null)
+            if (chunk instanceof Trailers trailers)
             {
-                Supplier<HttpFields> supplier = getTrailersSupplier();
-                if (supplier != null)
+                HttpFields requestTrailers = trailers.getTrailers();
+                if (requestTrailers != null)
                 {
+                    // Call supplier in lambda to get latest responseTrailers
                     HttpFields responseTrailers = supplier.get();
                     if (responseTrailers instanceof HttpFields.Mutable mutable)
+                    {
                         mutable.add(requestTrailers);
+                        callback.succeeded();
+                        return true;
+                    }
                 }
             }
-        }
-        return false;
+            return false;
+        };
     }
 
+    /**
+     * <p>Unwraps the given response, recursively, until the wrapped instance
+     * is an instance of the given type, otherwise returns {@code null}.</p>
+     *
+     * @param response the response to unwrap
+     * @param type the response type to find
+     * @return the response as the given type, or {@code null}
+     * @param <T> the response type
+     * @see Wrapper
+     */
     @SuppressWarnings("unchecked")
     static <T extends Response.Wrapper> T as(Response response, Class<T> type)
     {
@@ -97,11 +201,34 @@ public interface Response extends Content.Sink
         return null;
     }
 
+    /**
+     * <p>Sends a {@code 302} HTTP redirect status code to the given location,
+     * without consuming the available request content.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param location the redirect location
+     * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
+     */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
     {
         sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, false);
     }
 
+    /**
+     * <p>Sends a {@code 302} HTTP redirect status code to the given location.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param code the redirect HTTP status code
+     * @param location the redirect location
+     * @param consumeAvailable whether to consumer the available request content
+     * @see Request#toRedirectURI(Request, String)
+     * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
+     * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
+     */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
         if (!HttpStatus.isRedirection(code))
@@ -113,14 +240,16 @@ public interface Response extends Content.Sink
         if (response.isCommitted())
             throw new IllegalStateException("Committed");
 
-        // TODO: can we remove this?
         if (consumeAvailable)
         {
             while (true)
             {
                 Content.Chunk chunk = response.getRequest().read();
                 if (chunk == null)
-                    break; // TODO really? shouldn't we just asynchronously wait?
+                {
+                    response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                    break;
+                }
                 chunk.release();
                 if (chunk.isLast())
                     break;
@@ -132,19 +261,31 @@ public interface Response extends Content.Sink
         response.write(true, null, callback);
     }
 
+    /**
+     * <p>Adds an HTTP cookie to the response.</p>
+     *
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to add
+     */
     static void addCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        response.getHeaders().add(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()),
+        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()),
             request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
 
         // Expire responses with set-cookie headers so they do not get cached.
         response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
     }
 
+    /**
+     * <p>Replaces (if already exists, otherwise adds) an HTTP cookie to the response.</p>
+     *
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to replace or add
+     */
     static void replaceCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
@@ -160,18 +301,18 @@ public interface Response extends Content.Sink
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
                 CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-                if (field instanceof HttpCookie.SetCookieHttpField)
+                if (field instanceof HttpCookieUtils.SetCookieHttpField)
                 {
-                    if (!HttpCookie.match(((HttpCookie.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
                 else
                 {
-                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
 
-                i.set(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()), compliance));
+                i.set(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
                 return;
             }
         }
@@ -180,30 +321,75 @@ public interface Response extends Content.Sink
         addCookie(response, cookie);
     }
 
+    /**
+     * <p>Writes an error response with HTTP status code {@code 500}.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param cause the cause of the error
+     */
     static void writeError(Request request, Response response, Callback callback, Throwable cause)
     {
         if (cause == null)
             cause = new Throwable("unknown cause");
         int status = HttpStatus.INTERNAL_SERVER_ERROR_500;
         String message = cause.toString();
-        if (cause instanceof BadMessageException bad)
+        if (cause instanceof HttpException httpException)
         {
-            status = bad.getCode();
-            message = bad.getReason();
+            status = httpException.getCode();
+            message = httpException.getReason();
         }
         writeError(request, response, callback, status, message, cause);
     }
 
+    /**
+     * <p>Writes an error response with the given HTTP status code.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param status the error HTTP status code
+     */
     static void writeError(Request request, Response response, Callback callback, int status)
     {
         writeError(request, response, callback, status, null, null);
     }
 
+    /**
+     * <p>Writes an error response with the given HTTP status code,
+     * and the given message in the response content.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param status the error HTTP status code
+     * @param message the error message to write in the response content
+     */
     static void writeError(Request request, Response response, Callback callback, int status, String message)
     {
         writeError(request, response, callback, status, message, null);
     }
 
+    /**
+     * <p>Writes an error response with the given HTTP status code,
+     * and the given message in the response content.</p>
+     * <p>The error {@link Request.Handler} returned by {@link Context#getErrorHandler()},
+     * if any, is invoked.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param status the error HTTP status code
+     * @param message the error message to write in the response content
+     * @param cause the cause of the error
+     */
     static void writeError(Request request, Response response, Callback callback, int status, String message, Throwable cause)
     {
         // Retrieve the Logger instance here, rather than having a
@@ -213,7 +399,7 @@ public interface Response extends Content.Sink
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (logger.isDebugEnabled())
             logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
-        else if (cause instanceof BadMessageException || cause instanceof QuietException)
+        else if (cause instanceof QuietException || cause instanceof TimeoutException)
             logger.debug("writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
         else if (cause != null)
             logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);
@@ -224,7 +410,7 @@ public interface Response extends Content.Sink
             return;
         }
 
-        Response.ensureConsumeAvailableOrNotPersistent(request, response);
+        ResponseUtils.ensureConsumeAvailableOrNotPersistent(request, response);
 
         if (status <= 0)
             status = HttpStatus.INTERNAL_SERVER_ERROR_500;
@@ -233,16 +419,16 @@ public interface Response extends Content.Sink
 
         response.setStatus(status);
 
-        // TODO: detect recursion when an ErrorProcessor calls this method, otherwise StackOverflowError.
+        // TODO: detect recursion when an ErrorHandler calls this method, otherwise StackOverflowError.
         Context context = request.getContext();
-        Request.Processor errorProcessor = context.getErrorProcessor();
-        if (errorProcessor != null)
+        Request.Handler errorHandler = context.getErrorHandler();
+        if (errorHandler != null)
         {
-            Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
+            Request errorRequest = new ErrorHandler.ErrorRequest(request, status, message, cause);
             try
             {
-                errorProcessor.process(errorRequest, response, callback);
-                return;
+                if (errorHandler.handle(errorRequest, response, callback))
+                    return;
             }
             catch (Exception e)
             {
@@ -252,10 +438,17 @@ public interface Response extends Content.Sink
         }
 
         // fall back to very empty error page
-        response.getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
+        response.getHeaders().put(ErrorHandler.ERROR_CACHE_CONTROL);
         response.write(true, null, callback);
     }
 
+    /**
+     * <p>Unwraps the given response until the innermost wrapped response instance.</p>
+     *
+     * @param response the response to unwrap
+     * @return the innermost wrapped response instance
+     * @see Wrapper
+     */
     static Response getOriginalResponse(Response response)
     {
         while (response instanceof Response.Wrapper wrapped)
@@ -265,85 +458,17 @@ public interface Response extends Content.Sink
         return response;
     }
 
+    /**
+     * @param response the HTTP response
+     * @return the number of response content bytes written so far,
+     * or {@code -1} if the number is unknown
+     */
     static long getContentBytesWritten(Response response)
     {
         Response originalResponse = getOriginalResponse(response);
         if (originalResponse instanceof HttpChannelState.ChannelResponse channelResponse)
             return channelResponse.getContentBytesWritten();
         return -1;
-    }
-
-    static void ensureConsumeAvailableOrNotPersistent(Request request, Response response)
-    {
-        switch (request.getConnectionMetaData().getHttpVersion())
-        {
-            case HTTP_1_0:
-                if (consumeAvailable(request))
-                    return;
-
-                // Remove any keep-alive value in Connection headers
-                response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
-                {
-                    if (fields == null || fields.isEmpty())
-                        return null;
-                    String v = fields.stream()
-                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
-                        .collect(Collectors.joining(", "));
-                    if (StringUtil.isEmpty(v))
-                        return null;
-
-                    return new HttpField(HttpHeader.CONNECTION, v);
-                });
-                break;
-
-            case HTTP_1_1:
-                if (consumeAvailable(request))
-                    return;
-
-                // Add close value to Connection headers
-                response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
-                {
-                    if (fields == null || fields.isEmpty())
-                        return HttpFields.CONNECTION_CLOSE;
-
-                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
-                    {
-                        if (fields.size() == 1)
-                        {
-                            HttpField f = fields.get(0);
-                            if (HttpFields.CONNECTION_CLOSE.equals(f))
-                                return f;
-                        }
-
-                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                            .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
-                            .collect(Collectors.joining(", ")));
-                    }
-
-                    return new HttpField(HttpHeader.CONNECTION,
-                        Stream.concat(fields.stream()
-                                    .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
-                                Stream.of(HttpHeaderValue.CLOSE.asString()))
-                            .collect(Collectors.joining(", ")));
-                });
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    static boolean consumeAvailable(Request request)
-    {
-        while (true)
-        {
-            Content.Chunk chunk = request.read();
-            if (chunk == null)
-                return false;
-            chunk.release();
-            if (chunk.isLast())
-                return true;
-        }
     }
 
     class Wrapper implements Response
@@ -357,15 +482,15 @@ public interface Response extends Content.Sink
             _wrapped = wrapped;
         }
 
+        public Response getWrapped()
+        {
+            return _wrapped;
+        }
+
         @Override
         public Request getRequest()
         {
             return _request;
-        }
-
-        public Response getWrapped()
-        {
-            return _wrapped;
         }
 
         @Override
@@ -399,12 +524,6 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            getWrapped().write(last, byteBuffer, callback);
-        }
-
-        @Override
         public boolean isCommitted()
         {
             return getWrapped().isCommitted();
@@ -426,6 +545,12 @@ public interface Response extends Content.Sink
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
             return getWrapped().writeInterim(status, headers);
+        }
+
+        @Override
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+            getWrapped().write(last, byteBuffer, callback);
         }
     }
 }

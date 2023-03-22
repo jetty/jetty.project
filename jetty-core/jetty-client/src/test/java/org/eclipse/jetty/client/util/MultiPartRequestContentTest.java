@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,12 +23,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.MultiPartRequestContent;
+import org.eclipse.jetty.client.PathRequestContent;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -129,7 +135,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 int equal = contentType.lastIndexOf('=');
                 Charset charset = Charset.forName(contentType.substring(equal + 1));
                 assertEquals(encoding, charset);
-                assertEquals(value, Content.Source.asString(part.getContent(), charset));
+                assertEquals(value, Content.Source.asString(part.getContentSource(), charset));
             }
         });
 
@@ -163,7 +169,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 MultiPart.Part part = parts.iterator().next();
                 assertEquals(name, part.getName());
                 assertEquals("text/plain", part.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContent()).array());
+                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContentSource()).array());
             }
         });
 
@@ -204,8 +210,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         String name = "file";
         String fileName = "upload.png";
         String contentType = "image/png";
-        byte[] data = new byte[512];
-        new Random().nextBytes(data);
+        byte[] data = randomBytes(512);
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
@@ -216,8 +221,8 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 assertEquals(name, part.getName());
                 assertEquals(contentType, part.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 assertEquals(fileName, part.getFileName());
-                assertEquals(data.length, part.getContent().getLength());
-                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContent()).array());
+                assertEquals(data.length, part.getContentSource().getLength());
+                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContentSource()).array());
             }
         });
 
@@ -272,13 +277,13 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 assertEquals(name, part.getName());
                 assertEquals(contentType, part.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 assertEquals(tmpPath.getFileName().toString(), part.getFileName());
-                assertEquals(Files.size(tmpPath), part.getContent().getLength());
-                assertEquals(data, Content.Source.asString(part.getContent(), encoding));
+                assertEquals(Files.size(tmpPath), part.getContentSource().getLength());
+                assertEquals(data, Content.Source.asString(part.getContentSource(), encoding));
             }
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        PathRequestContent content = new PathRequestContent(contentType, tmpPath, client.getByteBufferPool().asRetainableByteBufferPool());
+        PathRequestContent content = new PathRequestContent(contentType, tmpPath, client.getByteBufferPool());
         content.setUseDirectByteBuffers(client.isUseOutputDirectByteBuffers());
         multiPart.addPart(new MultiPart.ContentSourcePart(name, tmpPath.getFileName().toString(), null, content));
         multiPart.close();
@@ -298,8 +303,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
     public void testFieldWithFile(Scenario scenario) throws Exception
     {
         // Prepare a file to upload.
-        byte[] data = new byte[1024];
-        new Random().nextBytes(data);
+        byte[] data = randomBytes(1024);
         Path tmpDir = MavenTestingUtils.getTargetTestingPath();
         Path tmpPath = Files.createTempFile(tmpDir, "multipart_", ".txt");
         try (OutputStream output = Files.newOutputStream(tmpPath, StandardOpenOption.CREATE))
@@ -325,14 +329,14 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
 
                 assertEquals(field, fieldPart.getName());
                 assertEquals(contentType, fieldPart.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                assertEquals(value, Content.Source.asString(fieldPart.getContent(), encoding));
+                assertEquals(value, Content.Source.asString(fieldPart.getContentSource(), encoding));
                 assertEquals(headerValue, fieldPart.getHeaders().get(headerName));
 
                 assertEquals(fileField, filePart.getName());
                 assertEquals("application/octet-stream", filePart.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 assertEquals(tmpPath.getFileName().toString(), filePart.getFileName());
-                assertEquals(Files.size(tmpPath), filePart.getContent().getLength());
-                assertArrayEquals(data, Content.Source.asByteBuffer(filePart.getContent()).array());
+                assertEquals(Files.size(tmpPath), filePart.getContentSource().getLength());
+                assertArrayEquals(data, Content.Source.asByteBuffer(filePart.getContentSource()).array());
             }
         });
 
@@ -359,8 +363,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
     {
         String value = "text";
         Charset encoding = StandardCharsets.US_ASCII;
-        byte[] fileData = new byte[1024];
-        new Random().nextBytes(fileData);
+        byte[] fileData = randomBytes(1024);
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
@@ -370,11 +373,11 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 MultiPart.Part fieldPart = parts.get(0);
                 MultiPart.Part filePart = parts.get(1);
 
-                assertEquals(value, Content.Source.asString(fieldPart.getContent(), encoding));
+                assertEquals(value, Content.Source.asString(fieldPart.getContentSource(), encoding));
                 assertEquals("file", filePart.getName());
                 assertEquals("application/octet-stream", filePart.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 assertEquals("fileName", filePart.getFileName());
-                assertArrayEquals(fileData, Content.Source.asByteBuffer(filePart.getContent()).array());
+                assertArrayEquals(fileData, Content.Source.asByteBuffer(filePart.getContentSource()).array());
             }
         });
 
@@ -414,11 +417,24 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private abstract static class AbstractMultiPartHandler extends Handler.Processor
+    private byte[] randomBytes(int length)
+    {
+        byte[] bytes = new byte[length];
+        ThreadLocalRandom.current().nextBytes(bytes);
+        // Make sure the last 2 bytes are not \r\n,
+        // otherwise the multipart parser gets confused.
+        bytes[length - 2] = 0;
+        bytes[length - 1] = 0;
+        return bytes;
+    }
+
+    private abstract static class AbstractMultiPartHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
+            // TODO use the DelayedHandler.UntilMultiPartFormData
+
             Path tmpDir = MavenTestingUtils.getTargetTestingPath();
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
             assertEquals("multipart/form-data", HttpField.valueParameters(contentType, null));
@@ -428,13 +444,14 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             formData.parse(request);
             try
             {
-                process(formData.join());
+                process(formData.join()); // May block waiting for multipart form data.
                 response.write(true, BufferUtil.EMPTY_BUFFER, callback);
             }
             catch (Exception x)
             {
                 Response.writeError(request, response, callback, x);
             }
+            return true;
         }
 
         protected abstract void process(MultiPartFormData.Parts parts) throws Exception;

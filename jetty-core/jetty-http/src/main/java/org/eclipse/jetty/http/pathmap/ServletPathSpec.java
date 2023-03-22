@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http.pathmap;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,7 +194,6 @@ public class ServletPathSpec extends AbstractPathSpec
             servletPathSpec = "";
         if (servletPathSpec.startsWith("servlet|"))
             servletPathSpec = servletPathSpec.substring("servlet|".length());
-        servletPathSpec = URIUtil.canonicalPath(servletPathSpec);
         assertValidServletPathSpec(servletPathSpec);
 
         // The Root Path Spec

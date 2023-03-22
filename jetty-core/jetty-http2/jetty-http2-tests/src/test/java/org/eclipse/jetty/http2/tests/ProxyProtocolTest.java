@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -81,16 +81,17 @@ public class ProxyProtocolTest
     @Test
     public void testProxyGetV1() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertEquals("1.2.3.4", Request.getRemoteAddr(request));
                 assertEquals(1111, Request.getRemotePort(request));
                 assertEquals("5.6.7.8", Request.getLocalAddr(request));
                 assertEquals(2222, Request.getLocalPort(request));
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -124,10 +125,10 @@ public class ProxyProtocolTest
     @Test
     public void testProxyGetV2() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertEquals("10.0.0.4", Request.getRemoteAddr(request));
                 assertEquals(33824, Request.getRemotePort(request));
@@ -138,6 +139,7 @@ public class ProxyProtocolTest
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                 assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 callback.succeeded();
+                return true;
             }
         });
 

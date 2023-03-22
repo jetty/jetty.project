@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,11 +48,7 @@ public class DefaultHandlerTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handler = new DefaultHandler();
-        server.setHandler(new Handler.Collection(contexts, handler));
-
-        handler.setServeIcon(true);
-        handler.setShowContexts(true);
+        server.setHandler(new Handler.Sequence(contexts, new DefaultHandler(true, true)));
 
         contexts.addHandler(new ContextHandler("/foo"));
         contexts.addHandler(new ContextHandler("/bar"));

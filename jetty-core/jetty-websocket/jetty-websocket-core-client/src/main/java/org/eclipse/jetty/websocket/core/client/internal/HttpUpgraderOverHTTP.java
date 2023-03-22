@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,10 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.HttpUpgrader;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 
 public class HttpUpgraderOverHTTP implements HttpUpgrader
 {
@@ -47,7 +47,7 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     }
 
     @Override
-    public void prepare(HttpRequest request)
+    public void prepare(Request request)
     {
         request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1)
             .headers(headers -> headers
@@ -74,9 +74,9 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     }
 
     @Override
-    public void upgrade(HttpResponse response, EndPoint endPoint, Callback callback)
+    public void upgrade(Response response, EndPoint endPoint, Callback callback)
     {
-        HttpRequest request = (HttpRequest)response.getRequest();
+        Request request = response.getRequest();
         HttpFields requestHeaders = request.getHeaders();
         if (requestHeaders.contains(HttpHeader.UPGRADE, "websocket"))
         {
@@ -85,7 +85,7 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
             {
                 // Check the Accept hash
                 String reqKey = requestHeaders.get(HttpHeader.SEC_WEBSOCKET_KEY);
-                String expectedHash = WebSocketCore.hashKey(reqKey);
+                String expectedHash = WebSocketUtils.hashKey(reqKey);
                 String respHash = responseHeaders.get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
                 if (expectedHash.equalsIgnoreCase(respHash))
                 {

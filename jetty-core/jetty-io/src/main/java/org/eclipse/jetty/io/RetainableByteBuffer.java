@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,97 +14,155 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
+import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.NanoTime;
 
 /**
- * <p>A pooled ByteBuffer which maintains a reference count that is
- * incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
- * is released to the pool when {@link #release()} is called one more time than {@link #retain()}.</p>
- * <p>A {@code RetainableByteBuffer} can either be:
+ * <p>A pooled {@link ByteBuffer} which maintains a reference count that is
+ * incremented with {@link #retain()} and decremented with {@link #release()}.</p>
+ * <p>The {@code ByteBuffer} is released to a {@link ByteBufferPool}
+ * when {@link #release()} is called one more time than {@link #retain()};
+ * in such case, the call to {@link #release()} returns {@code true}.</p>
+ * <p>A {@code RetainableByteBuffer} can either be:</p>
  * <ul>
- *     <li>in pool; in this case {@link #isRetained()} returns {@code false} and calling {@link #release()} throws {@link IllegalStateException}</li>
- *     <li>out of pool but not retained; in this case {@link #isRetained()} returns {@code false} and calling {@link #release()} returns {@code true}</li>
- *     <li>out of pool and retained; in this case {@link #isRetained()} returns {@code true} and calling {@link #release()} returns {@code false}</li>
+ *     <li>in pool; in this case {@link #isRetained()} returns {@code false}
+ *     and calling {@link #release()} throws {@link IllegalStateException}</li>
+ *     <li>out of pool but not retained; in this case {@link #isRetained()}
+ *     returns {@code false} and calling {@link #release()} returns {@code true}</li>
+ *     <li>out of pool and retained; in this case {@link #isRetained()}
+ *     returns {@code true} and calling {@link #release()} returns {@code false}</li>
  * </ul>
- * <p>Calling {@link #release()} on a out of pool and retained instance does not re-pool it while that re-pools it on a out of pool but not retained instance.</p>
  */
-public class RetainableByteBuffer extends Retainable.ReferenceCounter
+public interface RetainableByteBuffer extends Retainable
 {
-    private final ByteBuffer buffer;
-    private final Consumer<RetainableByteBuffer> releaser;
-    private final AtomicLong lastUpdate = new AtomicLong(NanoTime.now());
-
-    RetainableByteBuffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
+    /**
+     * <p>Returns a non-retainable {@code RetainableByteBuffer} that wraps
+     * the given {@code ByteBuffer}.</p>
+     * <p>Use this method to wrap user-provided {@code ByteBuffer}s, or
+     * {@code ByteBuffer}s that hold constant bytes, to make them look
+     * like {@code RetainableByteBuffer}s.</p>
+     * <p>The returned {@code RetainableByteBuffer} {@link #canRetain()}
+     * method always returns {@code false}.</p>
+     * <p>{@code RetainableByteBuffer}s returned by this method are not
+     * suitable to be wrapped in other {@link Retainable} implementations
+     * that may delegate calls to {@link #retain()}.</p>
+     *
+     * @param byteBuffer the {@code ByteBuffer} to wrap
+     * @return a non-retainable {@code RetainableByteBuffer}
+     * @see ByteBufferPool.NonPooling
+     */
+    public static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {
-        super(0);
-        this.releaser = releaser;
-        this.buffer = buffer;
+        return new NonRetainableByteBuffer(byteBuffer);
     }
 
-    public int capacity()
+    /**
+     * @return whether this instance is retained
+     * @see ReferenceCounter#isRetained()
+     */
+    public boolean isRetained();
+
+    /**
+     * @return the wrapped, not {@code null}, {@code ByteBuffer}
+     */
+    public ByteBuffer getByteBuffer();
+
+    /**
+     * @return whether the {@code ByteBuffer} is direct
+     */
+    public default boolean isDirect()
     {
-        return buffer.capacity();
+        return getByteBuffer().isDirect();
     }
 
-    public ByteBuffer getBuffer()
+    /**
+     * @return the number of remaining bytes in the {@code ByteBuffer}
+     */
+    public default int remaining()
     {
-        return buffer;
+        return getByteBuffer().remaining();
     }
 
-    public long getLastUpdate()
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes
+     */
+    public default boolean hasRemaining()
     {
-        return lastUpdate.getOpaque();
+        return getByteBuffer().hasRemaining();
     }
 
-    public boolean isDirect()
+    /**
+     * @return the {@code ByteBuffer} capacity
+     */
+    public default int capacity()
     {
-        return buffer.isDirect();
+        return getByteBuffer().capacity();
     }
 
-    protected void acquire()
+    /**
+     * @see BufferUtil#clear(ByteBuffer)
+     */
+    public default void clear()
     {
-        // Overridden for visibility.
-        super.acquire();
+        BufferUtil.clear(getByteBuffer());
     }
 
-    public boolean release()
+    /**
+     * A wrapper for {@link RetainableByteBuffer} instances
+     */
+    public class Wrapper extends Retainable.Wrapper implements RetainableByteBuffer
     {
-        boolean released = super.release();
-        if (released)
+        public Wrapper(RetainableByteBuffer wrapped)
         {
-            lastUpdate.setOpaque(NanoTime.now());
-            releaser.accept(this);
+            super(wrapped);
         }
-        return released;
-    }
 
-    public int remaining()
-    {
-        return buffer.remaining();
-    }
+        public RetainableByteBuffer getWrapped()
+        {
+            return (RetainableByteBuffer)super.getWrapped();
+        }
 
-    public boolean hasRemaining()
-    {
-        return remaining() > 0;
-    }
+        @Override
+        public boolean isRetained()
+        {
+            return getWrapped().isRetained();
+        }
 
-    public boolean isEmpty()
-    {
-        return !hasRemaining();
-    }
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return getWrapped().getByteBuffer();
+        }
 
-    public void clear()
-    {
-        BufferUtil.clear(buffer);
-    }
+        @Override
+        public boolean isDirect()
+        {
+            return getWrapped().isDirect();
+        }
 
-    @Override
-    public String toString()
-    {
-        return "%s[%s]".formatted(super.toString(), BufferUtil.toDetailString(buffer));
+        @Override
+        public int remaining()
+        {
+            return getWrapped().remaining();
+        }
+
+        @Override
+        public boolean hasRemaining()
+        {
+            return getWrapped().hasRemaining();
+        }
+
+        @Override
+        public int capacity()
+        {
+            return getWrapped().capacity();
+        }
+
+        @Override
+        public void clear()
+        {
+            getWrapped().clear();
+        }
     }
 }

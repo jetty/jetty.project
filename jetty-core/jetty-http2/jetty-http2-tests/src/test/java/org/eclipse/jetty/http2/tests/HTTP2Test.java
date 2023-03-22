@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,6 +33,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -42,8 +44,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.internal.ErrorCode;
-import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -72,12 +72,13 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestNoContentResponseNoContent() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -161,12 +162,13 @@ public class HTTP2Test extends AbstractTest
     public void testRequestNoContentResponseContent() throws Exception
     {
         byte[] content = "Hello World!".getBytes(StandardCharsets.UTF_8);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, true, ByteBuffer.wrap(content));
+                return true;
             }
         });
 
@@ -199,7 +201,7 @@ public class HTTP2Test extends AbstractTest
                 Stream.Data data = stream.readData();
                 DataFrame frame = data.frame();
                 assertTrue(frame.isEndStream());
-                assertEquals(ByteBuffer.wrap(content), frame.getData());
+                assertEquals(ByteBuffer.wrap(content), frame.getByteBuffer());
                 data.release();
                 latch.countDown();
             }
@@ -211,12 +213,13 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestContentResponseContent() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -248,15 +251,16 @@ public class HTTP2Test extends AbstractTest
     public void testMultipleRequests() throws Exception
     {
         String downloadBytes = "X-Download";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 
@@ -294,13 +298,14 @@ public class HTTP2Test extends AbstractTest
     public void testCustomResponseCode() throws Exception
     {
         int status = 475;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -329,14 +334,15 @@ public class HTTP2Test extends AbstractTest
         String host = "fooBar";
         int port = 1313;
         String authority = host + ":" + port;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertEquals(host, Request.getServerName(request));
                 assertEquals(port, Request.getServerPort(request));
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -587,10 +593,10 @@ public class HTTP2Test extends AbstractTest
         DataFrame data1 = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), false)
         {
             @Override
-            public ByteBuffer getData()
+            public ByteBuffer getByteBuffer()
             {
                 sleep(2 * sleep);
-                return super.getData();
+                return super.getByteBuffer();
             }
         };
         DataFrame data2 = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
@@ -743,12 +749,13 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testClientInvalidHeader() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -767,13 +774,14 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testServerInvalidHeader() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(":custom", "special");
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -802,10 +810,10 @@ public class HTTP2Test extends AbstractTest
     public void testServerInvalidHeaderFlushed() throws Exception
     {
         CountDownLatch serverFailure = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(":custom", "special");
                 try
@@ -818,6 +826,7 @@ public class HTTP2Test extends AbstractTest
                     serverFailure.countDown();
                     throw x;
                 }
+                return true;
             }
         });
 

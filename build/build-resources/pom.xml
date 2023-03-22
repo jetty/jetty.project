@@ -8,13 +8,14 @@
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>build-resources</artifactId>
   <version>12.0.0-SNAPSHOT</version>
-  <name>Jetty :: Build Resources</name>
+  <name>Build :: Resources</name>
   <packaging>jar</packaging>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- versions for these plugins are not based on parent pom -->
     <maven.remote-resources.plugin.version>3.0.0</maven.remote-resources.plugin.version>
+    <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <skipTests>true</skipTests>

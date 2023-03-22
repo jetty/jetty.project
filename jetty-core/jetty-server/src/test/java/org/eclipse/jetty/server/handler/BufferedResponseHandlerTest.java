@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,7 +18,6 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -45,7 +44,6 @@ public class BufferedResponseHandlerTest
     public void setUp() throws Exception
     {
         _server = new Server();
-        _server.addBean(new NoopByteBufferPool()); // Avoid giving larger buffers than requested
         HttpConfiguration config = new HttpConfiguration();
         config.setOutputBufferSize(1024);
         config.setOutputAggregationSize(256);
@@ -197,7 +195,7 @@ public class BufferedResponseHandlerTest
         assertThat(response, not(containsString("RESET")));
     }
 
-    public static class TestHandler extends Handler.Processor
+    public static class TestHandler extends Handler.Abstract
     {
         int _bufferSize = -1;
         String _mimeType;
@@ -213,7 +211,7 @@ public class BufferedResponseHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 
@@ -234,6 +232,7 @@ public class BufferedResponseHandlerTest
 
             response.getHeaders().add("Written", "true");
             callback.succeeded();
+            return true;
         }
     }
 }

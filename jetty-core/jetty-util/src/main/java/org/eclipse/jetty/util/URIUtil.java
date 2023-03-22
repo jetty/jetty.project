@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,6 +31,7 @@ import java.util.StringTokenizer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,12 +49,6 @@ import org.slf4j.LoggerFactory;
 public final class URIUtil
 {
     private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
-    private static final Index<String> KNOWN_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file:")
-        .with("jrt:")
-        .with("jar:")
-        .build();
 
     // From https://www.rfc-editor.org/rfc/rfc3986
     private static final String UNRESERVED = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~";
@@ -464,7 +459,8 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters
+     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters.
+     * @param path The URI path to decode
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
@@ -474,7 +470,10 @@ public final class URIUtil
     }
 
     /**
-     * Decode a URI path and strip parameters of UTF-8 path
+     * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters.
+     * @param path A String holding the URI path to decode
+     * @param offset The start of the URI within the path string
+     * @param length The length of the URI within the path string
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
@@ -492,7 +491,7 @@ public final class URIUtil
                     case '%':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(path.length());
+                            builder = new Utf8StringBuilder(length);
                             builder.append(path, offset, i - offset);
                         }
                         if ((i + 2) < end)
@@ -510,7 +509,8 @@ public final class URIUtil
                             }
                             else
                             {
-                                builder.append((byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
+                                byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
+                                builder.append(b);
                                 i += 2;
                             }
                         }
@@ -660,40 +660,41 @@ public final class URIUtil
      * <p>
      * For example the path {@code /fo %2fo/b%61r} will be normalized to {@code /fo%20%2Fo/bar},
      * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal {@code /fo /o/bar}.
+     * @param encodedPath An encoded URI path
      * @return the canonical path or null if it is non-normal
      * @see #decodePath(String)
      * @see #normalizePath(String)
      * @see URI
      */
-    public static String canonicalPath(String path)
+    public static String canonicalPath(String encodedPath)
     {
-        if (path == null)
+        if (encodedPath == null)
             return null;
         try
         {
 
             Utf8StringBuilder builder = null;
-            int end = path.length();
+            int end = encodedPath.length();
             boolean slash = true;
             boolean normal = true;
             for (int i = 0; i < end; i++)
             {
-                char c = path.charAt(i);
+                char c = encodedPath.charAt(i);
                 switch (c)
                 {
                     case '%':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, 0, i);
+                            builder = new Utf8StringBuilder(encodedPath.length());
+                            builder.append(encodedPath, 0, i);
                         }
                         if ((i + 2) < end)
                         {
-                            char u = path.charAt(i + 1);
+                            char u = encodedPath.charAt(i + 1);
                             if (u == 'u')
                             {
                                 // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
-                                int code = TypeUtil.parseInt(path, i + 2, 4, 16);
+                                int code = TypeUtil.parseInt(encodedPath, i + 2, 4, 16);
                                 if (isSafeElseEncode(code, builder))
                                 {
                                     char[] chars = Character.toChars(code);
@@ -709,7 +710,7 @@ public final class URIUtil
                             }
                             else
                             {
-                                int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2));
+                                int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(encodedPath.charAt(i + 2));
                                 if (isSafeElseEncode(code, builder))
                                 {
                                     builder.append((byte)(0xff & code));
@@ -728,13 +729,13 @@ public final class URIUtil
                     case ';':
                         if (builder == null)
                         {
-                            builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, 0, i);
+                            builder = new Utf8StringBuilder(encodedPath.length());
+                            builder.append(encodedPath, 0, i);
                         }
 
                         while (++i < end)
                         {
-                            if (path.charAt(i) == '/')
+                            if (encodedPath.charAt(i) == '/')
                             {
                                 builder.append('/');
                                 break;
@@ -757,8 +758,8 @@ public final class URIUtil
                     default:
                         if (builder == null && !isSafe(c))
                         {
-                            builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, 0, i);
+                            builder = new Utf8StringBuilder(encodedPath.length());
+                            builder.append(encodedPath, 0, i);
                         }
 
                         if (builder != null && isSafeElseEncode(c, builder))
@@ -769,13 +770,13 @@ public final class URIUtil
                 slash = c == '/';
             }
 
-            String canonical = (builder != null) ? builder.toString() : path;
+            String canonical = (builder != null) ? builder.toString() : encodedPath;
             return normal ? canonical : normalizePath(canonical);
         }
         catch (NotUtf8Exception e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} {}", path, e.toString());
+                LOG.debug("{} {}", encodedPath, e.toString());
             throw e;
         }
         catch (IllegalArgumentException e)
@@ -1861,9 +1862,6 @@ public final class URIUtil
         Objects.requireNonNull(uri, "URI");
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
 
-        if (!FileID.isArchive(uri))
-            return uri;
-
         boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
 
         if (scheme.equalsIgnoreCase("jar"))
@@ -1881,6 +1879,8 @@ public final class URIUtil
         else if (scheme.equalsIgnoreCase("file"))
         {
             String rawUri = uri.toASCIIString();
+            if (rawUri.endsWith("/")) // skip directories
+                return uri;
             if (hasInternalReference)
                 return URI.create("jar:" + rawUri);
             else
@@ -1903,7 +1903,8 @@ public final class URIUtil
         Objects.requireNonNull(resource);
 
         // Only try URI for string for known schemes, otherwise assume it is a Path
-        return (KNOWN_SCHEMES.getBest(resource) != null)
+        ResourceFactory resourceFactory = ResourceFactory.getBestByScheme(resource);
+        return (resourceFactory != null)
             ? correctFileURI(URI.create(resource))
             : Paths.get(resource).toUri();
     }

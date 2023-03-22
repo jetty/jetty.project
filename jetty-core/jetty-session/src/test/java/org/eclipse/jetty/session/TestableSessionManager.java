@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,15 +14,13 @@
 package org.eclipse.jetty.session;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.Session.APISession;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.server.Session.API;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -71,12 +69,12 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public APISession newSessionAPIWrapper(Session session)
+    public API newSessionAPIWrapper(ManagedSession session)
     {
-        return new APISession()
+        return new API()
         {
             @Override
-            public Session getCoreSession()
+            public ManagedSession getSession()
             {
                 return session;
             }
@@ -89,7 +87,7 @@ public class TestableSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public Session getSession(Request request)
+    public ManagedSession getManagedSession(Request request)
     {
         return null;
     }
@@ -144,74 +142,36 @@ public class TestableSessionManager extends AbstractSessionManager
 
     protected void configureCookies()
     {
-        String tmp = _cookieConfig.get(__SessionCookieProperty);
-        if (tmp != null)
-            setSessionCookie(tmp);
+        String cookieName = _cookieConfig.get(__SessionCookieProperty);
+        if (StringUtil.isNotBlank(cookieName))
+            setSessionCookie(cookieName);
 
-        tmp = _cookieConfig.get(__SessionIdPathParameterNameProperty);
-        if (tmp != null)
-            setSessionIdPathParameterName(tmp);
+        String paramName = _cookieConfig.get(__SessionIdPathParameterNameProperty);
+        if (StringUtil.isNotBlank(paramName))
+            setSessionIdPathParameterName(paramName);
 
-        // set up the max session cookie age if it isn't already
-        if (getMaxCookieAge() == -1)
-        {
-            tmp = _cookieConfig.get(__MaxAgeProperty);
-            if (tmp != null)
-                setMaxCookieAge(Integer.parseInt(tmp.trim()));
-        }
+        // set up the max session cookie age
+        String maxAge = _cookieConfig.get(__MaxAgeProperty);
+        if (StringUtil.isNotBlank(maxAge))
+            setMaxCookieAge(Integer.parseInt(maxAge));
 
-        // set up the session domain if it isn't already
-        if (getSessionDomain() == null)
-            setSessionDomain(_cookieConfig.get(__SessionDomainProperty));
+        // set up the session domain
+        String domain = _cookieConfig.get(__SessionDomainProperty);
+        if (StringUtil.isNotBlank(domain))
+            setSessionDomain(domain);
 
-        // set up the sessionPath if it isn't already
-        if (getSessionPath() == null)
-            setSessionPath(_cookieConfig.get(__SessionPathProperty));
+        // set up the sessionPath
+        String path = _cookieConfig.get(__SessionPathProperty);
+        if (StringUtil.isNotBlank(path))
+            setSessionPath(path);
 
-        tmp = _cookieConfig.get(__CheckRemoteSessionEncoding);
-        if (tmp != null)
-            setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
+        String checkEncoding = _cookieConfig.get(__CheckRemoteSessionEncoding);
+        if (StringUtil.isNotBlank(checkEncoding))
+            setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(checkEncoding));
     }
     
     public Map<String, String> getCookieConfig()
     {
         return _cookieConfig;
-    }
-
-    @Override
-    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
-    {
-        if (isUsingCookies())
-        {
-            String sessionPath = getSessionPath();
-            sessionPath = (sessionPath == null) ? contextPath : sessionPath;
-            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
-            SameSite sameSite = HttpCookie.getSameSiteFromComment(getSessionComment());
-            Map<String, String> attributes = Collections.emptyMap();
-            if (sameSite != null)
-                attributes = Collections.singletonMap("SameSite", sameSite.getAttributeValue());
-            return session.generateSetCookie((getSessionCookie() == null ? __DefaultSessionCookie : getSessionCookie()),
-                getSessionDomain(),
-                sessionPath,
-                getMaxCookieAge(),
-                isHttpOnly(),
-                isSecureCookies() || (isSecureRequestOnly() && requestIsSecure),
-                HttpCookie.getCommentWithoutAttributes(getSessionComment()),
-                0,
-                attributes);
-        }
-        return null;
-    }
-
-    @Override
-    public SameSite getSameSite()
-    {
-        return HttpCookie.getSameSiteFromComment(getSessionComment());
-    }
-
-    @Override
-    public void setSameSite(SameSite sameSite)
-    {
-        setSessionComment(HttpCookie.getCommentWithAttributes(getSessionComment(), false, sameSite));
     }
 }

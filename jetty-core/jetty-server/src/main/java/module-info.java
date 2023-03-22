@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,9 +19,6 @@ module org.eclipse.jetty.server
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 
-    // TODO needed for testing??
-    requires static java.xml;
-
     exports org.eclipse.jetty.server;
     exports org.eclipse.jetty.server.handler;
     exports org.eclipse.jetty.server.handler.gzip;
@@ -31,7 +28,4 @@ module org.eclipse.jetty.server
 
     exports org.eclipse.jetty.server.jmx to
          org.eclipse.jetty.jmx;
-
-    // TODO required for testing ????
-    exports org.eclipse.jetty.server.ssl;
 }

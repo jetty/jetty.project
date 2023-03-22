@@ -8,12 +8,13 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
-  <name>Jetty :: Home Assembly</name>
+  <name>Home</name>
   <packaging>pom</packaging>
 
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
+    <docs-assembly-directory>${basedir}/target/jetty-home-with-docs</docs-assembly-directory>
     <jetty-setuid-version>1.0.4</jetty-setuid-version>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
@@ -50,6 +51,7 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -121,7 +123,6 @@
               </artifactItems>
             </configuration>
           </execution>
-
           <execution>
             <id>copy-jetty-core-deps</id>
             <phase>generate-resources</phase>
@@ -131,10 +132,10 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-start,jetty-slf4j-impl
+                jetty-ee8-apache-jsp,jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-start,jetty-slf4j-impl,javadoc
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -152,7 +153,7 @@
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                jetty-ee9-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-apache-jsp,jetty-ee10-glassfish-jtl,jetty-start
+                jetty-ee8-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-apache-jsp,jetty-ee10-glassfish-jtl,jetty-start
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
@@ -302,6 +303,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
+              <!-- useful for troubleshooting the source archive of a particular file: <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact> -->
               <includeGroupIds>
                 org.eclipse.jetty, org.eclipse.jetty.websocket
               </includeGroupIds>
@@ -337,6 +339,44 @@
               </artifactItems>
               <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-documentation</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.documentation</groupId>
+                  <artifactId>jetty-documentation</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>html</classifier>
+                  <type>zip</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${docs-assembly-directory}/docs</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-javadoc-aggregate</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>javadoc</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>javadoc</classifier>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${docs-assembly-directory}/javadoc</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -394,6 +434,19 @@
               <appendAssemblyId>true</appendAssemblyId>
             </configuration>
           </execution>
+          <execution>
+            <id>docs</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/jetty-with-docs-assembly.xml</descriptor>
+              </descriptors>
+              <appendAssemblyId>true</appendAssemblyId>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -436,7 +489,7 @@
       </plugin>
     </plugins>
   </build>
-  
+
   <dependencies>
     <!--    <dependency>-->
     <!--      <groupId>jakarta.mail</groupId>-->
@@ -625,6 +678,22 @@
       <optional>true</optional>
     </dependency>
 
+    <dependency>
+      <groupId>org.eclipse.jetty.documentation</groupId>
+      <artifactId>jetty-documentation</artifactId>
+      <version>${project.version}</version>
+      <classifier>html</classifier>
+      <type>zip</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>javadoc</artifactId>
+      <version>${project.version}</version>
+      <classifier>javadoc</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
   </dependencies>
 
 </project>

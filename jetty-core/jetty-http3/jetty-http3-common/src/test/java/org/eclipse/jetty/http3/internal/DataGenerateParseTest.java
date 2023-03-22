@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,9 +20,9 @@ import java.util.Random;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
-import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
+import org.eclipse.jetty.http3.generator.MessageGenerator;
+import org.eclipse.jetty.http3.parser.MessageParser;
+import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
@@ -53,8 +53,9 @@ public class DataGenerateParseTest
         byteBuffer.get(inputBytes);
         DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes), true);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
-        new MessageGenerator(null, 8192, true).generate(lease, 0, input, null);
+        ByteBufferPool.NonPooling bufferPool = new ByteBufferPool.NonPooling();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        new MessageGenerator(bufferPool, null, 8192, true).generate(accumulator, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()
@@ -66,7 +67,7 @@ public class DataGenerateParseTest
             }
         }, null, 13, () -> true);
         parser.init(UnaryOperator.identity());
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -142,8 +142,9 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         //we might have applied any war overlays onto it
         webApp.setBaseResource(originalBaseResource);
 
+        //TODO the war does not need to be set, _except_ that QuickStartConfiguration checks for non null
         if (webApp.getWar() == null)
-            webApp.setWar(originalBaseResource.getURI().toURL().toExternalForm());
+            webApp.setWar(originalBaseResource.toString());
         
         if (classesDirectory != null)
             webApp.setClasses(classesDirectory);
@@ -194,7 +195,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 }
             }
         }
-
+        
         //process any overlays and the war type artifacts, and
         //sets up the base resource collection for the webapp
         mavenProjectHelper.getOverlayManager().applyOverlays(webApp);

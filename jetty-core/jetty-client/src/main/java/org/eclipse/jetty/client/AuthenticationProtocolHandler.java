@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,14 +23,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.Authentication.HeaderInfo;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.Authentication.HeaderInfo;
+import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -42,18 +39,16 @@ import org.slf4j.LoggerFactory;
 public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16 * 1024;
-    public static final Logger LOG = LoggerFactory.getLogger(AuthenticationProtocolHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AuthenticationProtocolHandler.class);
+    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
+
     private final HttpClient client;
     private final int maxContentLength;
-    private final ResponseNotifier notifier;
-
-    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
         this.client = client;
         this.maxContentLength = maxContentLength;
-        this.notifier = new ResponseNotifier();
     }
 
     protected HttpClient getHttpClient()
@@ -277,19 +272,20 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
-            notifier.forwardSuccessComplete(conversation.getResponseListeners(), request, response);
+            ResponseListeners responseListeners = conversation.getResponseListeners();
+            responseListeners.emitSuccessComplete(new Result(request, response));
         }
 
         private void forwardFailureComplete(HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
-            List<Response.ResponseListener> responseListeners = conversation.getResponseListeners();
+            ResponseListeners responseListeners = conversation.getResponseListeners();
             if (responseFailure == null)
-                notifier.forwardSuccess(responseListeners, response);
+                responseListeners.emitSuccess(response);
             else
-                notifier.forwardFailure(responseListeners, response, responseFailure);
-            notifier.notifyComplete(responseListeners, new Result(request, requestFailure, response, responseFailure));
+                responseListeners.emitFailure(response, responseFailure);
+            responseListeners.notifyComplete(new Result(request, requestFailure, response, responseFailure));
         }
 
         private List<Authentication.HeaderInfo> parseAuthenticateHeader(Response response, HttpHeader header)

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.net.http.WebSocket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,10 +32,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -42,11 +43,14 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -208,6 +212,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             "resources", "server", "http", "jmx",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env),
+            toEnvironment("glassfish-jstl", env),
             toEnvironment("apache-jsp", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
@@ -228,6 +233,11 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
+
+                response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("JSTL Example"));
+                assertThat(response.getContentAsString(), not(containsString("<c:")));
             }
         }
     }
@@ -460,6 +470,21 @@ public class DistributionTests extends AbstractJettyHomeTest
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-proxy-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "proxy");
 
+            Path loggingProps = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+
+            String loggingConfig = """
+                # Default for everything is INFO
+                org.eclipse.jetty.LEVEL=INFO
+                # to see full logger names 
+                # org.eclipse.jetty.logging.appender.NAME_CONDENSE=false
+                # to see CR LF as-is (not escaped) in output (useful for DEBUG of request/response headers)
+                org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE=false
+                # To enable DEBUG:oejepP.JavadocTransparentProxy
+                org.eclipse.jetty.%s.proxy.ProxyServlet$Transparent.JavadocTransparentProxy.LEVEL=DEBUG
+                """.formatted(env);
+
+            Files.writeString(loggingProps, loggingConfig, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
@@ -467,7 +492,16 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
                 ContentResponse response = client.GET("http://localhost:" + port + "/proxy/current/");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus(), () ->
+                {
+                    StringBuilder rawResponse = new StringBuilder();
+                    rawResponse.append(response.getVersion()).append(' ');
+                    rawResponse.append(response.getStatus()).append(' ');
+                    rawResponse.append(response.getReason()).append('\n');
+                    rawResponse.append(response.getHeaders());
+                    rawResponse.append(response.getContentAsString());
+                    return rawResponse.toString();
+                });
             }
         }
     }
@@ -1070,6 +1104,59 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
+    public void testRequestLogFormatWithSpaces() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {"--add-module=server,http,deploy,requestlog"};
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Setup custom format string with spaces
+            Path requestLogIni = distribution.getJettyBase().resolve("start.d/requestlog.ini");
+            List<String> lines = List.of(
+                "--module=requestlog",
+                "jetty.requestlog.filePath=logs/test.request.log",
+                "jetty.requestlog.formatString=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t [foo space here] \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\""
+            );
+            Files.write(requestLogIni, lines, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+            };
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                startHttpClient(false);
+
+                String uri = "http://localhost:" + port + "/test";
+
+                // Generate a request
+                ContentResponse response = client.GET(uri + "/");
+                // Don't really care about the result, as any request should be logged in the requestlog
+                // We are just asserting a status here to ensure that the request is complete
+                assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+                Path requestLog = distribution.getJettyBase().resolve("logs/test.request.log");
+                List<String> loggedLines = Files.readAllLines(requestLog, StandardCharsets.UTF_8);
+                for (String loggedLine: loggedLines)
+                {
+                    assertThat(loggedLine, containsString(" [foo space here] "));
+                }
+            }
+        }
+    }
+
+    @Test
     public void testFastCGIProxying() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -1167,6 +1254,36 @@ public class DistributionTests extends AbstractJettyHomeTest
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/test.txt");
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 assertThat(response.getContentAsString(), is(testFileContent));
+            }
+        }
+    }
+
+    @Test
+    @DisabledForJreRange(max = JRE.JAVA_18)
+    @Tag("flaky")
+    public void testVirtualThreadPool() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=threadpool-virtual-preview,http"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int httpPort = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.selectors=1", "jetty.http.port=" + httpPort)))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.newRequest("localhost", httpPort)
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             }
         }
     }

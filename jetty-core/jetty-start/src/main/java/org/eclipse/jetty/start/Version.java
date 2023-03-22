@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -76,13 +76,13 @@ public class Version implements Comparable<Version>
         parse(versionString);
     }
 
-    @Override
     /**
      * Compares with other version. Does not take extension into account, as there is no reliable way to order them.
      *
      * @param other the other version to compare this to 
      * @return -1 if this is older version that other, 0 if its same version, 1 if it's newer version than other
      */
+    @Override
     public int compareTo(Version other)
     {
         if (other == null)

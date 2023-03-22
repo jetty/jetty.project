@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -75,8 +75,8 @@ public class StreamTest
         ServerContainer container = server.getServerContainer();
 
         // Prepare Server Side Output directory for uploaded files
-        outputDir = MavenTestingUtils.getTargetTestingDir(StreamTest.class.getName());
-        FS.ensureEmpty(outputDir);
+        outputDir = MavenTestingUtils.getTargetTestingPath(StreamTest.class.getName()).toFile();
+        FS.ensureEmpty(outputDir.toPath());
 
         // Create Server Endpoint with output directory configuration
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(UploadSocket.class, "/upload/{filename}")
@@ -116,7 +116,7 @@ public class StreamTest
 
     private void upload(String filename) throws Exception
     {
-        File inputFile = MavenTestingUtils.getTargetFile("test-classes/data/" + filename);
+        File inputFile = MavenTestingUtils.getTargetPath("test-classes/data/" + filename).toFile();
 
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         try
@@ -127,7 +127,7 @@ public class StreamTest
             socket.uploadFile(inputFile);
             socket.awaitClose();
 
-            File sha1File = MavenTestingUtils.getTargetFile("test-classes/data/" + filename + ".sha");
+            File sha1File = MavenTestingUtils.getTargetPath("test-classes/data/" + filename + ".sha").toFile();
             assertFileUpload(new File(outputDir, filename), sha1File);
         }
         finally

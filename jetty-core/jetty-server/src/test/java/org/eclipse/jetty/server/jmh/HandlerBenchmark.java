@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -83,7 +83,7 @@ public class HandlerBenchmark
     {
         _server.addConnector(_connector);
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
-        DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
+        DelayedHandler delayedHandler = new DelayedHandler();
         _server.setHandler(delayedHandler);
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         delayedHandler.setHandler(contexts);

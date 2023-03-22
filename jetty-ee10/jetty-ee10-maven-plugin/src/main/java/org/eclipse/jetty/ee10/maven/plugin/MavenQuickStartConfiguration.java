@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,7 +39,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
     public void deconfigure(WebAppContext context) throws Exception
     {
         //if we're not persisting the temp dir, get rid of any overlays
-        if (!context.isPersistTempDirectory())
+        if (!context.isTempDirectoryPersistent())
         {
             Resource originalBases = (Resource)context.getAttribute("org.eclipse.jetty.resources.originalBases");
             String originalBaseStr = originalBases.toString();

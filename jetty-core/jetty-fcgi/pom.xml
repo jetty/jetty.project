@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.fcgi</groupId>
   <artifactId>jetty-fcgi</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty Core :: FastCGI</name>
+  <name>Core :: FastCGI</name>
 
   <modules>
     <module>jetty-fcgi-client</module>

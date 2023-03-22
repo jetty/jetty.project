@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,13 +48,14 @@ public class H2SpecServer
 
         // H2Spec requires the server to read the request
         // content and respond with 200 and some content.
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, Callback.NOOP);
                 response.write(true, UTF_8.encode("hello"), callback);
+                return true;
             }
         });
 

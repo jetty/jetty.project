@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,7 +22,6 @@ import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -40,6 +39,8 @@ import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -61,6 +62,7 @@ public class TypeUtil
     public static final Class<?>[] NO_ARGS = new Class[]{};
     public static final int CR = '\r';
     public static final int LF = '\n';
+    private static final  Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
 
@@ -137,48 +139,25 @@ public class TypeUtil
         class2Name.put(java.lang.String.class, "java.lang.String");
     }
 
-    private static final HashMap<Class<?>, Method> class2Value = new HashMap<>();
+    private static final HashMap<Class<?>, Function<String, Object>> class2Value = new HashMap<>();
 
     static
     {
-        try
-        {
-            Class<?>[] s = {java.lang.String.class};
-
-            class2Value.put(java.lang.Boolean.TYPE,
-                java.lang.Boolean.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Byte.TYPE,
-                java.lang.Byte.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Double.TYPE,
-                java.lang.Double.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Float.TYPE,
-                java.lang.Float.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Integer.TYPE,
-                java.lang.Integer.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Long.TYPE,
-                java.lang.Long.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Short.TYPE,
-                java.lang.Short.class.getMethod("valueOf", s));
-
-            class2Value.put(java.lang.Boolean.class,
-                java.lang.Boolean.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Byte.class,
-                java.lang.Byte.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Double.class,
-                java.lang.Double.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Float.class,
-                java.lang.Float.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Integer.class,
-                java.lang.Integer.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Long.class,
-                java.lang.Long.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Short.class,
-                java.lang.Short.class.getMethod("valueOf", s));
-        }
-        catch (Exception e)
-        {
-            throw new Error(e);
-        }
+        class2Value.put(java.lang.Boolean.TYPE, Boolean::valueOf);
+        class2Value.put(java.lang.Byte.TYPE, Byte::valueOf);
+        class2Value.put(java.lang.Double.TYPE, Double::valueOf);
+        class2Value.put(java.lang.Float.TYPE, Float::valueOf);
+        class2Value.put(java.lang.Integer.TYPE, Integer::valueOf);
+        class2Value.put(java.lang.Long.TYPE, Long::valueOf);
+        class2Value.put(java.lang.Short.TYPE, Short::valueOf);
+  
+        class2Value.put(java.lang.Boolean.class, Boolean::valueOf);
+        class2Value.put(java.lang.Byte.class, Byte::valueOf);
+        class2Value.put(java.lang.Double.class, Double::valueOf);
+        class2Value.put(java.lang.Float.class, Float::valueOf);
+        class2Value.put(java.lang.Integer.class, Integer::valueOf);
+        class2Value.put(java.lang.Long.class, Long::valueOf);
+        class2Value.put(java.lang.Short.class, Short::valueOf);
     }
 
     private static final MethodHandle[] LOCATION_METHODS;
@@ -253,7 +232,12 @@ public class TypeUtil
             {
                 String[] ss = p.split("\\.");
                 for (String s : ss)
+                {
                     b.append(s.charAt(0));
+                    Matcher matcher = TRAILING_DIGITS.matcher(s);
+                    if (matcher.matches())
+                        b.append(matcher.group(1));
+                }
             }
             b.append('.');
         }
@@ -326,9 +310,9 @@ public class TypeUtil
             if (type.equals(java.lang.String.class))
                 return value;
 
-            Method m = class2Value.get(type);
-            if (m != null)
-                return m.invoke(null, value);
+            Function<String, Object> vos = class2Value.get(type);
+            if (vos != null)
+                return vos.apply(value);
 
             if (type.equals(java.lang.Character.TYPE) ||
                 type.equals(java.lang.Character.class))

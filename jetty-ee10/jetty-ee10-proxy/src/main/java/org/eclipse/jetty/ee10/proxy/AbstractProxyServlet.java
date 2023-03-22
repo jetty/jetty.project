@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -37,9 +37,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProtocolHandlers;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -276,7 +276,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         client.setFollowRedirects(false);
 
         // Must not store cookies, otherwise cookies of different clients will mix.
-        client.setCookieStore(new HttpCookieStore.Empty());
+        client.setHttpCookieStore(new HttpCookieStore.Empty());
 
         Executor executor;
         String value = config.getInitParameter("maxThreads");
@@ -666,7 +666,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 continue;
 
             String newHeaderValue = filterServerResponseHeader(clientRequest, serverResponse, headerName, field.getValue());
-            if (newHeaderValue == null || newHeaderValue.trim().length() == 0)
+            if (newHeaderValue == null)
                 continue;
 
             proxyResponse.addHeader(headerName, newHeaderValue);
@@ -775,12 +775,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <p>Utility class that implement transparent proxy functionalities.</p>
      * <p>Configuration parameters:</p>
      * <ul>
-     * <li>{@code proxyTo} - a mandatory URI like http://host:80/context to which the request is proxied.</li>
+     * <li>{@code proxyTo} - a mandatory URI like {@code http://host:80/context} to which the request is proxied.</li>
      * <li>{@code prefix} - an optional URI prefix that is stripped from the start of the forwarded URI.</li>
      * </ul>
      * <p>For example, if a request is received at "/foo/bar", the {@code proxyTo} parameter is
-     * "http://host:80/context" and the {@code prefix} parameter is "/foo", then the request would
-     * be proxied to "http://host:80/context/bar".
+     * {@code http://host:80/context} and the {@code prefix} parameter is "/foo", then the request would
+     * be proxied to {@code http://host:80/context/bar}.
      */
     protected static class TransparentDelegate
     {

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
 /**
  * {@link ContentDecoder} for the "gzip" encoding.
@@ -40,7 +39,7 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     }
 
     @Override
-    protected boolean decodedChunk(ByteBuffer chunk)
+    protected boolean decodedChunk(RetainableByteBuffer chunk)
     {
         super.decodedChunk(chunk);
         return true;
@@ -51,8 +50,8 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
      */
     public static class Factory extends ContentDecoder.Factory
     {
-        private final int bufferSize;
         private final ByteBufferPool byteBufferPool;
+        private final int bufferSize;
 
         public Factory()
         {

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -83,6 +84,59 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testCONNECTAndClose() throws Exception
+    {
+        disposeProxy();
+        connectHandler = new ConnectHandler()
+        {
+            @Override
+            protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
+            {
+                try
+                {
+                    super.handleConnect(request, response, callback, serverAddress);
+                    // Delay the return of this method to trigger the race
+                    // with the server closing the connection immediately.
+                    Thread.sleep(500);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }
+        };
+        proxy.setHandler(connectHandler);
+        proxy.start();
+
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            String hostPort = "localhost:" + server.getLocalPort();
+            String request =
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+            try (Socket socket = newSocket())
+            {
+                OutputStream output = socket.getOutputStream();
+                output.write(request.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                Socket serverSocket = server.accept();
+                // Close immediately to trigger the race with
+                // the return from ConnectHandler.handle().
+                serverSocket.close();
+
+                // Expect 200 OK from the CONNECT request
+                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
+                assertNotNull(response);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                // Expect the connection to be closed.
+                assertEquals(-1, socket.getInputStream().read());
+            }
         }
     }
 
@@ -838,10 +892,10 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
     }
 
-    private static class ServerHandler extends Handler.Processor
+    private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String cp = Request.getPathInContext(request);
             switch (cp)
@@ -889,6 +943,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                 }
                 default -> throw new ServletException();
             }
+            return true;
         }
     }
 }

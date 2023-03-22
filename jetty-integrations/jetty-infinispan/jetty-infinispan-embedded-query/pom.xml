@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-infinispan-embedded-query</artifactId>
-  <name>Jetty :: Infinispan Session Manager Embedded with Querying</name>
+  <name>Integrations :: Infinispan :: Embedded with Querying</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.embedded.query</bundle-symbolic-name>
   </properties>

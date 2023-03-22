@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,24 +18,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.core.Negotiated;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
-import org.eclipse.jetty.websocket.core.internal.Negotiated;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 
@@ -63,7 +62,7 @@ public class ExtensionTool
             assertThat(extensionStack.getExtensions().size(), equalTo(1));
 
             this.capture = new IncomingFramesCapture();
-            this.parser = new Parser(new MappedByteBufferPool());
+            this.parser = new Parser(new ArrayByteBufferPool());
         }
 
         public String getRequestedExtParams()
@@ -88,7 +87,7 @@ public class ExtensionTool
             for (int i = 0; i < parts; i++)
             {
                 String hex = rawhex[i].replaceAll("\\s*(0x)?", "");
-                net = TypeUtil.fromHexString(hex);
+                net = StringUtil.fromHexString(hex);
 
                 ByteBuffer buffer = ByteBuffer.wrap(net);
                 while (BufferUtil.hasContent(buffer))
@@ -103,7 +102,7 @@ public class ExtensionTool
                         public void succeeded()
                         {
                             super.succeeded();
-                            if (!coreSession.isDemanding())
+                            if (coreSession.isAutoDemanding())
                                 coreSession.autoDemand();
                         }
                     };
@@ -161,7 +160,7 @@ public class ExtensionTool
 
     private final WebSocketComponents components;
 
-    public ExtensionTool(ByteBufferPool bufferPool)
+    public ExtensionTool()
     {
         this.components = new WebSocketComponents();
     }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,7 +33,7 @@ public class BarebonesAddUnknownTest extends AbstractUseCase
 
         Files.write(baseDir.resolve("start.ini"),
             Collections.singletonList(
-                "--module=main"
+                "--modules=main"
             ),
             StandardCharsets.UTF_8);
 
@@ -41,7 +41,7 @@ public class BarebonesAddUnknownTest extends AbstractUseCase
         List<String> prepareArgs = Arrays.asList(
             "--testing-mode",
             "--create-startd",
-            "--add-module=unknown"
+            "--add-modules=unknown"
         );
         ExecResults prepareResults = exec(prepareArgs, true);
 

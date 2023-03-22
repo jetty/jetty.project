@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +23,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -66,7 +66,8 @@ import org.slf4j.LoggerFactory;
  * {@link ScheduledExecutorScheduler} instance.
  * </li>
  * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release
- * {@link ByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool} instance.
+ * {@link RetainableByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool}
+ * instance.
  * </li>
  * </ul>
  * These services are managed as aggregate beans by the {@link ContainerLifeCycle} super class and
@@ -144,7 +145,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Server _server;
     private final Executor _executor;
     private final Scheduler _scheduler;
-    private final ByteBufferPool _byteBufferPool;
+    private final ByteBufferPool _bufferPool;
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
@@ -160,43 +161,32 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private ThreadPoolBudget.Lease _lease;
 
     /**
-     * @param server The server this connector will be added to. Must not be null.
-     * @param executor An executor for this connector or null to use the servers executor
-     * @param scheduler A scheduler for this connector or null to either a {@link Scheduler} set as a server bean or if none set, then a new {@link ScheduledExecutorScheduler} instance.
-     * @param pool A buffer pool for this connector or null to either a {@link ByteBufferPool} set as a server bean or none set, the new  {@link ArrayByteBufferPool} instance.
-     * @param acceptors the number of acceptor threads to use, or -1 for a default value. If 0, then no acceptor threads will be launched and some other mechanism will need to be used to accept new connections.
-     * @param factories The Connection Factories to use.
+     * @param server The {@link Server} this connector will be added to, must not be null
+     * @param executor An {@link Executor} for this connector or null to use the Server's Executor
+     * @param scheduler A {@link Scheduler} for this connector or null to use the Server's Scheduler
+     * @param bufferPool A {@link ByteBufferPool} for this connector or null to use the Server's ByteBufferPool
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value.
+     * If 0, then no acceptor threads will be launched and some other mechanism will need to be used to accept new connections.
+     * @param factories The {@link ConnectionFactory} instances to use
      */
     public AbstractConnector(
         Server server,
         Executor executor,
         Scheduler scheduler,
-        ByteBufferPool pool,
+        ByteBufferPool bufferPool,
         int acceptors,
         ConnectionFactory... factories)
     {
-        _server = server;
-        _executor = executor != null ? executor : _server.getThreadPool();
-        addBean(_executor);
-        if (executor == null)
-            unmanage(_executor); // inherited from server
-        if (scheduler == null)
-            scheduler = _server.getBean(Scheduler.class);
-        _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler(String.format("Connector-Scheduler-%x", hashCode()), false);
-        addBean(_scheduler);
+        _server = Objects.requireNonNull(server);
 
-        if (pool == null)
-        {
-            // Look for (and cache) a common pool on the server
-            pool = server.getBean(ByteBufferPool.class);
-            if (pool == null)
-            {
-                pool = new LogarithmicArrayByteBufferPool();
-                server.addBean(pool, true);
-            }
-        }
-        _byteBufferPool = pool;
-        addBean(pool.asRetainableByteBufferPool());
+        _executor = executor != null ? executor : _server.getThreadPool();
+        addBean(_executor, executor != null);
+
+        _scheduler = scheduler != null ? scheduler : _server.getScheduler();
+        addBean(_scheduler, scheduler != null);
+
+        _bufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
+        addBean(_bufferPool, bufferPool != null);
 
         for (ConnectionFactory factory : factories)
         {
@@ -226,7 +216,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        return _byteBufferPool;
+        return _bufferPool;
     }
 
     @Override

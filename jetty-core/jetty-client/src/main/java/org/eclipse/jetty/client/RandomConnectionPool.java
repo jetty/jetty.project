@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
@@ -24,8 +23,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class RandomConnectionPool extends MultiplexConnectionPool
 {
-    public RandomConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
+    public RandomConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        super(destination, Pool.StrategyType.RANDOM, maxConnections, false, requester, maxMultiplex);
+        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.RANDOM, maxConnections, false, MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
     }
 }

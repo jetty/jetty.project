@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -72,8 +72,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                 // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
                 // This does not allow symlinks like /WeB-InF->/var/lib/other
                 if (Files.isSymbolicLink(fromBase))
-                    return true;
-                    // TODO: return !getContextHandler().isProtectedTarget(realURI.toString());
+                    return !getContextHandler().isProtectedTarget(realURI.toString());
 
                 // If the ancestor is not allowed then do not allow.
                 if (!isAllowed(fromBase))

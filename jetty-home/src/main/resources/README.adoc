@@ -32,7 +32,7 @@ The last command creates a `$JETTY_BASE/start.d/` directory and other directorie
 To deploy Jetty's demo web applications, run this command:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=demo
+$ java -jar $JETTY_HOME/start.jar --add-module=demos
 ----
 
 Now you can start the Jetty server with:

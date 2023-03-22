@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,14 +25,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -40,26 +37,24 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.FormRequestContent;
+import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
+import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpConversation;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -69,7 +64,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -89,7 +83,7 @@ import org.slf4j.LoggerFactory;
  * and HTTP parameters (such as whether to follow redirects).</p>
  * <p>HttpClient transparently pools connections to servers, but allows direct control of connections
  * for cases where this is needed.</p>
- * <p>HttpClient also acts as a central configuration point for cookies, via {@link #getCookieStore()}.</p>
+ * <p>HttpClient also acts as a central configuration point for cookies, via {@link #getHttpCookieStore()}.</p>
  * <p>Typical usage:</p>
  * <pre>
  * HttpClient httpClient = new HttpClient();
@@ -123,14 +117,14 @@ public class HttpClient extends ContainerLifeCycle
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
-    private final List<Request.Listener> requestListeners = new ArrayList<>();
-    private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
+    private final RequestListeners requestListeners = new NotifyingRequestListeners();
+    private final ContentDecoder.Factories decoderFactories = new ContentDecoder.Factories();
     private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
     private final ClientConnector connector;
     private AuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    private CookieManager cookieManager;
-    private CookieStore cookieStore;
+    private HttpCookieStore cookieStore;
+    private HttpCookieParser cookieParser;
     private SocketAddressResolver resolver;
     private HttpField agentField = new HttpField(HttpHeader.USER_AGENT, USER_AGENT);
     private boolean followRedirects = true;
@@ -140,9 +134,7 @@ public class HttpClient extends ContainerLifeCycle
     private int responseBufferSize = 16384;
     private int maxRedirects = 8;
     private long addressResolutionTimeout = 15000;
-    private boolean tcpNoDelay = true;
     private boolean strictEventOrdering = false;
-    private HttpField encodingField;
     private long destinationIdleTimeout;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
@@ -164,14 +156,9 @@ public class HttpClient extends ContainerLifeCycle
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
         this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
+        addBean(requestListeners);
         addBean(handlers);
         addBean(decoderFactories);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpObjects(out, indent, new DumpableCollection("requestListeners", requestListeners));
     }
 
     public HttpClientTransport getTransport()
@@ -211,9 +198,7 @@ public class HttpClient extends ContainerLifeCycle
             : ProcessorUtils.availableProcessors() * 2;
         ByteBufferPool byteBufferPool = getByteBufferPool();
         if (byteBufferPool == null)
-            setByteBufferPool(new MappedByteBufferPool(2048, maxBucketSize));
-        if (getBean(RetainableByteBufferPool.class) == null)
-            addBean(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
+            setByteBufferPool(new ArrayByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
         {
@@ -232,10 +217,11 @@ public class HttpClient extends ContainerLifeCycle
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
         handlers.put(new UpgradeProtocolHandler());
 
-        decoderFactories.add(new GZIPContentDecoder.Factory(byteBufferPool));
+        decoderFactories.put(new GZIPContentDecoder.Factory(byteBufferPool));
 
-        cookieManager = newCookieManager();
-        cookieStore = cookieManager.getCookieStore();
+        if (cookieStore == null)
+            cookieStore = new HttpCookieStore.Default();
+        cookieParser = new HttpCookieParser();
 
         transport.setHttpClient(this);
 
@@ -246,11 +232,6 @@ public class HttpClient extends ContainerLifeCycle
             destinationSweeper = new Sweeper(scheduler, 1000L);
             destinationSweeper.start();
         }
-    }
-
-    private CookieManager newCookieManager()
-    {
-        return new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
     }
 
     @Override
@@ -264,13 +245,7 @@ public class HttpClient extends ContainerLifeCycle
 
         decoderFactories.clear();
         handlers.clear();
-
-        for (HttpDestination destination : destinations.values())
-        {
-            destination.close();
-        }
         destinations.clear();
-
         requestListeners.clear();
         authenticationStore.clearAuthentications();
         authenticationStore.clearAuthenticationResults();
@@ -279,12 +254,12 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Returns a <em>non</em> thread-safe list of {@link org.eclipse.jetty.client.api.Request.Listener}s that can be modified before
-     * performing requests.
+     * Returns a <em>non</em> thread-safe container of {@link Request.Listener}s
+     * that allows to add request listeners before performing requests.
      *
-     * @return a list of {@link org.eclipse.jetty.client.api.Request.Listener} that can be used to add and remove listeners
+     * @return a {@link RequestListeners} instance that can be used to add request listeners
      */
-    public List<Request.Listener> getRequestListeners()
+    public RequestListeners getRequestListeners()
     {
         return requestListeners;
     }
@@ -292,7 +267,7 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @return the cookie store associated with this instance
      */
-    public CookieStore getCookieStore()
+    public HttpCookieStore getHttpCookieStore()
     {
         return cookieStore;
     }
@@ -300,28 +275,26 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @param cookieStore the cookie store associated with this instance
      */
-    public void setCookieStore(CookieStore cookieStore)
+    public void setHttpCookieStore(HttpCookieStore cookieStore)
     {
         if (isStarted())
             throw new IllegalStateException();
         this.cookieStore = Objects.requireNonNull(cookieStore);
-        this.cookieManager = newCookieManager();
     }
 
-    /**
-     * Keep this method package-private because its interface is so ugly
-     * that we really don't want to expose it more than strictly needed.
-     *
-     * @return the cookie manager
-     */
-    CookieManager getCookieManager()
+    public void putCookie(URI uri, HttpField field)
     {
-        return cookieManager;
-    }
-
-    Sweeper getDestinationSweeper()
-    {
-        return destinationSweeper;
+        try
+        {
+            HttpCookie cookie = cookieParser.parse(uri, field);
+            if (cookie != null)
+                cookieStore.add(uri, cookie);
+        }
+        catch (IOException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to store cookies {} from {}", field, uri, x);
+        }
     }
 
     /**
@@ -348,7 +321,7 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @return a set of {@link ContentDecoder.Factory} that can be used to add and remove content decoder factories
      */
-    public Set<ContentDecoder.Factory> getContentDecoderFactories()
+    public ContentDecoder.Factories getContentDecoderFactories()
     {
         return decoderFactories;
     }
@@ -474,9 +447,9 @@ public class HttpClient extends ContainerLifeCycle
         return newHttpRequest(newConversation(), uri);
     }
 
-    protected Request copyRequest(HttpRequest oldRequest, URI newURI)
+    protected Request copyRequest(Request oldRequest, URI newURI)
     {
-        HttpRequest newRequest = newHttpRequest(oldRequest.getConversation(), newURI);
+        HttpRequest newRequest = newHttpRequest(((HttpRequest)oldRequest).getConversation(), newURI);
         newRequest.method(oldRequest.getMethod())
             .version(oldRequest.getVersion())
             .body(oldRequest.getBody())
@@ -510,7 +483,7 @@ public class HttpClient extends ContainerLifeCycle
         return newRequest;
     }
 
-    protected HttpRequest newHttpRequest(HttpConversation conversation, URI uri)
+    private HttpRequest newHttpRequest(HttpConversation conversation, URI uri)
     {
         return new HttpRequest(this, conversation, checkHost(uri));
     }
@@ -534,14 +507,14 @@ public class HttpClient extends ContainerLifeCycle
     public Destination resolveDestination(Request request)
     {
         HttpClientTransport transport = getTransport();
-        Origin origin = transport.newOrigin((HttpRequest)request);
-        HttpDestination destination = resolveDestination(origin);
+        Origin origin = transport.newOrigin(request);
+        Destination destination = resolveDestination(origin);
         if (LOG.isDebugEnabled())
             LOG.debug("Resolved {} for {}", destination, request);
         return destination;
     }
 
-    public Origin createOrigin(HttpRequest request, Origin.Protocol protocol)
+    public Origin createOrigin(Request request, Origin.Protocol protocol)
     {
         String scheme = request.getScheme();
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
@@ -561,15 +534,17 @@ public class HttpClient extends ContainerLifeCycle
      * @param origin the origin that identifies the destination
      * @return the destination for the given origin
      */
-    public HttpDestination resolveDestination(Origin origin)
+    public Destination resolveDestination(Origin origin)
     {
         return destinations.compute(origin, (k, v) ->
         {
             if (v == null || v.stale())
             {
-                HttpDestination newDestination = getTransport().newHttpDestination(k);
+                HttpDestination newDestination = (HttpDestination)getTransport().newDestination(k);
                 // Start the destination before it's published to other threads.
                 addManaged(newDestination);
+                if (destinationSweeper != null)
+                    destinationSweeper.offer(newDestination);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Created {}; existing: '{}'", newDestination, v);
                 return newDestination;
@@ -578,10 +553,13 @@ public class HttpClient extends ContainerLifeCycle
         });
     }
 
-    protected boolean removeDestination(HttpDestination destination)
+    public boolean removeDestination(Destination destination)
     {
-        boolean removed = destinations.remove(destination.getOrigin(), destination);
+        HttpDestination httpDestination = (HttpDestination)destination;
+        boolean removed = destinations.remove(destination.getOrigin(), httpDestination);
         removeBean(destination);
+        if (destinationSweeper != null)
+            destinationSweeper.remove(httpDestination);
         if (LOG.isDebugEnabled())
             LOG.debug("Removed {}; result: {}", destination, removed);
         return removed;
@@ -595,13 +573,7 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<>(destinations.values());
     }
 
-    protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
-    {
-        HttpDestination destination = (HttpDestination)resolveDestination(request);
-        destination.send(request, listeners);
-    }
-
-    protected void newConnection(HttpDestination destination, Promise<Connection> promise)
+    public void newConnection(Destination destination, Promise<Connection> promise)
     {
         // Multiple threads may access the map, especially with DEBUG logging enabled.
         Map<String, Object> context = new ConcurrentHashMap<>();
@@ -611,8 +583,9 @@ public class HttpClient extends ContainerLifeCycle
         List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, protocols);
 
-        Origin.Address address = destination.getConnectAddress();
-        resolver.resolve(address.getHost(), address.getPort(), new Promise<>()
+        ProxyConfiguration.Proxy proxy = destination.getProxy();
+        Origin.Address address = proxy == null ? destination.getOrigin().getAddress() : proxy.getAddress();
+        getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()
         {
             @Override
             public void succeeded(List<InetSocketAddress> socketAddresses)
@@ -655,7 +628,7 @@ public class HttpClient extends ContainerLifeCycle
         return handlers;
     }
 
-    protected ProtocolHandler findProtocolHandler(Request request, Response response)
+    public ProtocolHandler findProtocolHandler(Request request, Response response)
     {
         return handlers.find(request, response);
     }
@@ -1002,7 +975,7 @@ public class HttpClient extends ContainerLifeCycle
      * Whether request/response events must be strictly ordered with respect to connection usage.
      * <p>
      * From the point of view of connection usage, the connection can be reused just before the
-     * "complete" event notified to {@link org.eclipse.jetty.client.api.Response.CompleteListener}s
+     * "complete" event notified to {@link Response.CompleteListener}s
      * (but after the "success" event).
      * <p>
      * When a request/response exchange is completing, the destination may have another request
@@ -1146,11 +1119,6 @@ public class HttpClient extends ContainerLifeCycle
         return proxyConfig;
     }
 
-    protected HttpField getAcceptEncodingField()
-    {
-        return encodingField;
-    }
-
     public static int normalizePort(String scheme, int port)
     {
         if (port > 0)
@@ -1158,154 +1126,76 @@ public class HttpClient extends ContainerLifeCycle
         return HttpScheme.getDefaultPort(scheme);
     }
 
-    public boolean isDefaultPort(String scheme, int port)
-    {
-        return HttpScheme.getDefaultPort(scheme) == port;
-    }
-
-    public static boolean isSchemeSecure(String scheme)
-    {
-        return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
-    }
-
-    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+    public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
         return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
-    private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>
+    private static class HttpCookieParser extends CookieManager
     {
-        private final Set<ContentDecoder.Factory> set = new HashSet<>();
-
-        @Override
-        public boolean add(ContentDecoder.Factory e)
+        public HttpCookieParser()
         {
-            boolean result = set.add(e);
-            invalidate();
-            return result;
+            super(new Store(), CookiePolicy.ACCEPT_ALL);
         }
 
-        @Override
-        public boolean addAll(Collection<? extends ContentDecoder.Factory> c)
+        public HttpCookie parse(URI uri, HttpField field) throws IOException
         {
-            boolean result = set.addAll(c);
-            invalidate();
-            return result;
+            // TODO: hacky implementation waiting for a real HttpCookie parser.
+            String value = field.getValue();
+            if (value == null)
+                return null;
+            Map<String, List<String>> header = new HashMap<>(1);
+            header.put(field.getHeader().asString(), List.of(value));
+            put(uri, header);
+            Store store = (Store)getCookieStore();
+            HttpCookie cookie = store.cookie;
+            store.cookie = null;
+            return cookie;
         }
 
-        @Override
-        public boolean remove(Object o)
+        private static class Store implements CookieStore
         {
-            boolean result = set.remove(o);
-            invalidate();
-            return result;
-        }
+            private HttpCookie cookie;
 
-        @Override
-        public boolean removeAll(Collection<?> c)
-        {
-            boolean result = set.removeAll(c);
-            invalidate();
-            return result;
-        }
-
-        @Override
-        public boolean retainAll(Collection<?> c)
-        {
-            boolean result = set.retainAll(c);
-            invalidate();
-            return result;
-        }
-
-        @Override
-        public void clear()
-        {
-            set.clear();
-            invalidate();
-        }
-
-        @Override
-        public int size()
-        {
-            return set.size();
-        }
-
-        @Override
-        public boolean isEmpty()
-        {
-            return set.isEmpty();
-        }
-
-        @Override
-        public boolean contains(Object o)
-        {
-            return set.contains(o);
-        }
-
-        @Override
-        public boolean containsAll(Collection<?> c)
-        {
-            return set.containsAll(c);
-        }
-
-        @Override
-        public Iterator<ContentDecoder.Factory> iterator()
-        {
-            Iterator<ContentDecoder.Factory> iterator = set.iterator();
-            return new Iterator<>()
+            @Override
+            public void add(URI uri, java.net.HttpCookie cookie)
             {
-                @Override
-                public boolean hasNext()
-                {
-                    return iterator.hasNext();
-                }
-
-                @Override
-                public ContentDecoder.Factory next()
-                {
-                    return iterator.next();
-                }
-
-                @Override
-                public void remove()
-                {
-                    iterator.remove();
-                    invalidate();
-                }
-            };
-        }
-
-        @Override
-        public Object[] toArray()
-        {
-            return set.toArray();
-        }
-
-        @Override
-        public <T> T[] toArray(T[] a)
-        {
-            return set.toArray(a);
-        }
-
-        private void invalidate()
-        {
-            if (set.isEmpty())
-            {
-                encodingField = null;
+                String domain = cookie.getDomain();
+                if ("localhost.local".equals(domain))
+                    cookie.setDomain("localhost");
+                this.cookie = HttpCookie.from(cookie);
             }
-            else
+
+            @Override
+            public List<java.net.HttpCookie> get(URI uri)
             {
-                StringBuilder value = new StringBuilder();
-                for (Iterator<ContentDecoder.Factory> iterator = set.iterator(); iterator.hasNext(); )
-                {
-                    ContentDecoder.Factory decoderFactory = iterator.next();
-                    value.append(decoderFactory.getEncoding());
-                    if (iterator.hasNext())
-                        value.append(",");
-                }
-                encodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, value.toString());
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<java.net.HttpCookie> getCookies()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<URI> getURIs()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean remove(URI uri, java.net.HttpCookie cookie)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean removeAll()
+            {
+                throw new UnsupportedOperationException();
             }
         }
     }

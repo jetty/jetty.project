@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,13 +33,18 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Uptime;
@@ -52,7 +59,10 @@ import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -60,25 +70,29 @@ import org.slf4j.LoggerFactory;
 
 public class Server extends Handler.Wrapper implements Attributes
 {
-    public static final String BASE_TEMP_DIR_ATTR = "org.eclipse.jetty.server.BaseTempDir";
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
+    private final Scheduler _scheduler;
+    private final ByteBufferPool _bufferPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
+    private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
-    private Request.Processor _errorProcessor;
+    private Handler _defaultHandler;
+    private Request.Handler _errorHandler;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private volatile DateField _dateField;
     private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
+    private File _tempDirectory;
 
     public Server()
     {
@@ -97,7 +111,7 @@ public class Server extends Handler.Wrapper implements Attributes
         this((ThreadPool)null);
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
-        setConnectors(new Connector[]{connector});
+        addConnector(connector);
         addBean(_attributes);
     }
 
@@ -114,20 +128,98 @@ public class Server extends Handler.Wrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
-        setConnectors(new Connector[]{connector});
+        addConnector(connector);
     }
 
-    public Server(@Name("threadpool") ThreadPool pool)
+    public Server(@Name("threadPool") ThreadPool pool)
     {
-        _threadPool = pool != null ? pool : new QueuedThreadPool();
+        this(pool, null, null);
+    }
+
+    public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool)
+    {
+        _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
         addBean(_threadPool);
+        _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler();
+        addBean(_scheduler);
+        _bufferPool = bufferPool != null ? bufferPool : new ArrayByteBufferPool();
+        addBean(_bufferPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);
+    }
+
+    public Handler getDefaultHandler()
+    {
+        return _defaultHandler;
+    }
+
+    /**
+     * @param defaultHandler The handler to use if no other handler is set or has handled the request. This handler should
+     *                       always accept the request, even if only to send a 404.
+     */
+    public void setDefaultHandler(Handler defaultHandler)
+    {
+        if (!isDynamic() && isStarted())
+            throw new IllegalStateException(getState());
+        if (defaultHandler != null)
+            defaultHandler.setServer(this);
+        Handler old = _defaultHandler;
+        _defaultHandler = defaultHandler;
+        updateBean(old, defaultHandler);
+    }
+
+    @Override
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    {
+        // Handle either with normal handler or default handler
+        return super.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
     }
 
     public String getServerInfo()
     {
         return _serverInfo;
+    }
+
+    /**
+     * <p>Convenience method to call {@link #setTempDirectory(File)} from a String representation
+     * of the temporary directory.</p>
+     * @param temp A string representation of the temporary directory.
+     * @see #setTempDirectory(File)
+     */
+    public void setTempDirectory(String temp)
+    {
+        setTempDirectory(new File(temp));
+    }
+
+    /**
+     * <p>Set the temporary directory returned by {@link Context#getTempDirectory()} for the root
+     * {@link Context} returned {@link #getContext()}. If not set explicitly here, then the root
+     * {@link Context#getTempDirectory()} will return either the directory found at
+     * {@code new File(IO.asFile(System.getProperty("jetty.base")), "work")} if it exists,
+     * else the JVMs temporary directory as {@code IO.asFile(System.getProperty("java.io.tmpdir"))}.
+     * @param temp A directory that must exist and be writable or null to get the default.
+     */
+    public void setTempDirectory(File temp)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        if (temp != null && !temp.exists())
+            throw new IllegalArgumentException("Does not exist: " + temp);
+        if (temp != null && !temp.canWrite())
+            throw new IllegalArgumentException("Cannot write: " + temp);
+        _tempDirectory = temp;
+    }
+
+    /**
+     * @return The server temporary directory if set, else null. To always obtain a non-null
+     * temporary directory use {@link Context#getTempDirectory()} on {@link #getContext()}.
+     * @see #getContext()
+     * @see Context#getTempDirectory()
+     */
+    @ManagedAttribute("temporary directory")
+    public File getTempDirectory()
+    {
+        return _tempDirectory;
     }
 
     public void setServerInfo(String serverInfo)
@@ -140,14 +232,30 @@ public class Server extends Handler.Wrapper implements Attributes
         return _serverContext;
     }
 
+    public MimeTypes.Mutable getMimeTypes()
+    {
+        return _mimeTypes;
+    }
+
     @Override
     public InvocationType getInvocationType()
     {
-        Handler handler = getHandler();
-        if (handler == null)
-            return InvocationType.NON_BLOCKING;
+        if (isDynamic())
+            return InvocationType.BLOCKING;
+
         // Return cached type to avoid a full handler tree walk.
-        return isRunning() ? _invocationType : handler.getInvocationType();
+        if (isStarted())
+            return _invocationType;
+
+        InvocationType type = InvocationType.NON_BLOCKING;
+        Handler handler = getHandler();
+        if (handler != null)
+            type = Invocable.combine(type, handler.getInvocationType());
+        handler = getDefaultHandler();
+        if (handler != null)
+            type = Invocable.combine(type, handler.getInvocationType());
+
+        return type;
     }
 
     public boolean isDryRun()
@@ -165,9 +273,9 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public Request.Processor getErrorProcessor()
+    public Request.Handler getErrorHandler()
     {
-        return _errorProcessor;
+        return _errorHandler;
     }
 
     public void setRequestLog(RequestLog requestLog)
@@ -176,10 +284,10 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorProcessor(Request.Processor errorProcessor)
+    public void setErrorHandler(Request.Handler errorHandler)
     {
-        updateBean(_errorProcessor, errorProcessor);
-        _errorProcessor = errorProcessor;
+        updateBean(_errorHandler, errorHandler);
+        _errorHandler = errorHandler;
     }
 
     @ManagedAttribute("version of this server")
@@ -309,6 +417,16 @@ public class Server extends Handler.Wrapper implements Attributes
         return _threadPool;
     }
 
+    public Scheduler getScheduler()
+    {
+        return _scheduler;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _bufferPool;
+    }
+
     /**
      * @return true if {@link #dumpStdErr()} is called after starting
      */
@@ -382,8 +500,8 @@ public class Server extends Handler.Wrapper implements Attributes
             //Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
 
-            if (_errorProcessor == null)
-                setErrorProcessor(new DynamicErrorProcessor());
+            if (_errorHandler == null)
+                setErrorHandler(new DynamicErrorHandler());
 
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
@@ -423,8 +541,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             // Cache the invocation type to avoid runtime walk of handler tree
             // Handlers must check they don't change the InvocationType of a started server
-            Handler handler = getHandler();
-            _invocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
+            _invocationType = getInvocationType();
 
             if (_dryRun)
             {
@@ -533,8 +650,8 @@ public class Server extends Handler.Wrapper implements Attributes
             multiException = ExceptionUtil.combine(multiException, e);
         }
 
-        if (getErrorProcessor() instanceof DynamicErrorProcessor)
-            setErrorProcessor(null);
+        if (getErrorHandler() instanceof DynamicErrorHandler)
+            setErrorHandler(null);
 
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
@@ -710,10 +827,14 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private static class DynamicErrorProcessor extends ErrorProcessor {}
+    private static class DynamicErrorHandler extends ErrorHandler {}
 
     class ServerContext extends Attributes.Wrapper implements Context
     {
+        private final File jettyBase = IO.asFile(System.getProperty("jetty.base"));
+        private final File workDir = jettyBase != null && jettyBase.isDirectory() && jettyBase.canWrite() ? new File(jettyBase, "work") : null;
+        private final File tempDir = workDir != null && workDir.isDirectory() && workDir.canWrite() ? workDir : IO.asFile(System.getProperty("java.io.tmpdir"));
+
         private ServerContext()
         {
             super(Server.this);
@@ -723,6 +844,12 @@ public class Server extends Handler.Wrapper implements Attributes
         public String getContextPath()
         {
             return null;
+        }
+
+        @Override
+        public MimeTypes getMimeTypes()
+        {
+            return _mimeTypes;
         }
 
         @Override
@@ -762,9 +889,9 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public Request.Processor getErrorProcessor()
+        public Request.Handler getErrorHandler()
         {
-            return Server.this.getErrorProcessor();
+            return Server.this.getErrorHandler();
         }
 
         @Override
@@ -787,9 +914,15 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public String getPathInContext(String fullPath)
+        public String getPathInContext(String canonicallyEncodedPath)
         {
-            return fullPath;
+            return canonicallyEncodedPath;
+        }
+
+        @Override
+        public File getTempDirectory()
+        {
+            return Objects.requireNonNullElse(Server.this.getTempDirectory(), tempDir);
         }
     }
 

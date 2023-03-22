@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,12 +17,14 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.MultiPartRequestContent;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.MultiPartRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MultiPart;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -67,17 +69,17 @@ public class TestJettyOSGiBootWithAnnotations
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         options.addAll(annotationDependencies());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-fragment").versionAsInProject().noStart());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("test-jetty-ee9-osgi-fragment").versionAsInProject().noStart());
         return options.toArray(new Option[0]);
     }
 
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-container-initializer").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-mock-resources").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.demos").artifactId("jetty-ee9-demo-container-initializer").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.demos").artifactId("jetty-ee9-demo-mock-resources").versionAsInProject());
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-spec-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.demos").artifactId("jetty-ee9-demo-spec-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
@@ -112,7 +114,7 @@ public class TestJettyOSGiBootWithAnnotations
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
             MultiPartRequestContent multiPart = new MultiPartRequestContent();
-            multiPart.addFieldPart("field", new StringRequestContent("foo"), null);
+            multiPart.addPart(new MultiPart.ContentSourcePart("field", null, HttpFields.EMPTY, new StringRequestContent("foo")));
             multiPart.close();
             response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
                 .body(multiPart).send();

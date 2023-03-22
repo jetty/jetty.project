@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject
 public class DuplexConnectionPool extends AbstractConnectionPool
 {
-    public DuplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+    public DuplexConnectionPool(Destination destination, int maxConnections)
     {
-        super(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, false), requester, 1);
+        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, false), 1);
     }
 }

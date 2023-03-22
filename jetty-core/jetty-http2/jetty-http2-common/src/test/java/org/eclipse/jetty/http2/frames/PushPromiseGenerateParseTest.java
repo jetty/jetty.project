@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,12 +24,12 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.PushPromiseGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.internal.generator.PushPromiseGenerator;
-import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,15 +37,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PushPromiseGenerateParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testGenerateParse() throws Exception
     {
-        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
+        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onPushPromise(PushPromiseFrame frame)
@@ -65,11 +65,11 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -95,10 +95,10 @@ public class PushPromiseGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
+        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onPushPromise(PushPromiseFrame frame)
@@ -118,11 +118,11 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -134,7 +134,7 @@ public class PushPromiseGenerateParseTest
             PushPromiseFrame frame = frames.get(0);
             assertEquals(streamId, frame.getStreamId());
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
+            MetaData.Request request = frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
             assertEquals(metaData.getURI(), request.getURI());
             for (int j = 0; j < fields.size(); ++j)

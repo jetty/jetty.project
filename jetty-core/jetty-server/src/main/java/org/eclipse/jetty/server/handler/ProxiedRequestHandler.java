@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,12 +19,14 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 
 public class ProxiedRequestHandler extends Handler.Wrapper
 {
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         ConnectionMetaData proxiedFor = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
         {
@@ -57,7 +59,7 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             }
         };
 
-        Request.WrapperProcessor wrapper = new Request.WrapperProcessor(request)
+        return super.handle(new Request.Wrapper(request)
         {
             @Override
             public HttpURI getHttpURI()
@@ -71,7 +73,6 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             {
                 return proxiedFor;
             }
-        };
-        return wrapper.wrapProcessor(super.handle(wrapper));
+        }, response, callback);
     }
 }

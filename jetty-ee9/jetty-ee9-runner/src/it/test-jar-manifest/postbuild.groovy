@@ -8,4 +8,4 @@ JarFile jar = new JarFile( artifact );
 
 Attributes manifest = jar.getManifest().getMainAttributes();
 
-assert manifest.getValue( new Attributes.Name( "Main-Class" ) ).equals( "org.eclipse.jetty.runner.Runner" )
+assert manifest.getValue( new Attributes.Name( "Main-Class" ) ).equals( "org.eclipse.jetty.ee9.runner.Runner" )

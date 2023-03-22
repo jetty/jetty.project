@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,20 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.ee9.loginservice;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.ee9.plus.security.DataSourceLoginService;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -48,7 +49,7 @@ public class DataSourceLoginServiceTest
 {
     private static final String _content = "This is some protected content";
     private static String REALM_NAME = "DSRealm";
-    private static File __docRoot;
+    private static Path __docRoot;
     private static URI __baseUri;
     private static DatabaseLoginServiceTestServer __testServer;
     private AuthenticationStore _authStore;
@@ -57,10 +58,11 @@ public class DataSourceLoginServiceTest
     @BeforeAll
     public static void setUp() throws Exception
     {
-        __docRoot = MavenTestingUtils.getTargetTestingDir("dsloginservice-test");
+        DatabaseLoginServiceTestServer.beforeAll();
+        __docRoot = MavenTestingUtils.getTargetTestingPath("dsloginservice-test");
         FS.ensureDirExists(__docRoot);
 
-        File content = new File(__docRoot, "input.txt");
+        File content = __docRoot.resolve("input.txt").toFile();
         try (FileOutputStream out = new FileOutputStream(content))
         {
             out.write(_content.getBytes("utf-8"));
@@ -91,7 +93,7 @@ public class DataSourceLoginServiceTest
         loginService.setName(REALM_NAME);
         loginService.setServer(__testServer.getServer());
         
-        __testServer.setResourceBase(__docRoot.getAbsolutePath()); 
+        __testServer.setResourceBase(__docRoot); 
         __testServer.setLoginService(loginService);
         __testServer.start();
         __baseUri = __testServer.getBaseUri();
@@ -101,6 +103,7 @@ public class DataSourceLoginServiceTest
     public static void tearDown()
         throws Exception
     {
+        DatabaseLoginServiceTestServer.afterAll();
         if (__testServer != null)
         {
             __testServer.stop();

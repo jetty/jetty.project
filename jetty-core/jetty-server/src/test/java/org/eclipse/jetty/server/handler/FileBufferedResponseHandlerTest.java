@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -96,10 +96,10 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testPathNotIncluded() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -124,10 +124,10 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testIncludedByPath() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -159,10 +159,10 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testExcludedByPath() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -188,10 +188,10 @@ public class FileBufferedResponseHandlerTest
     public void testExcludedByMime() throws Exception
     {
         String excludedMimeType = "text/excluded";
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setContentType(excludedMimeType);
                 response.setBufferSize(10);
@@ -217,10 +217,10 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testFlushed() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(1024);
                 PrintWriter writer = response.getWriter();
@@ -255,10 +255,10 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testClosed() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -293,10 +293,10 @@ public class FileBufferedResponseHandlerTest
     {
         int bufferSize = 4096;
         String largeContent = generateContent(bufferSize - 64);
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(bufferSize);
                 PrintWriter writer = response.getWriter();
@@ -322,10 +322,10 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testFlushEmpty() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(1024);
                 PrintWriter writer = response.getWriter();
@@ -356,10 +356,10 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testReset() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 response.setBufferSize(8);
                 PrintWriter writer = response.getWriter();
@@ -405,10 +405,10 @@ public class FileBufferedResponseHandlerTest
         long fileSize = Integer.MAX_VALUE + 1234L;
         byte[] bytes = randomBytes(1024 * 1024);
 
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 ServletOutputStream outputStream = response.getOutputStream();
 
@@ -507,10 +507,10 @@ public class FileBufferedResponseHandlerTest
 
         _server.setHandler(new HandlerCollection(failingInterceptorHandler, _server.getHandler()));
         CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 byte[] chunk1 = "this content will ".getBytes();
                 byte[] chunk2 = "be buffered in a file".getBytes();
@@ -566,10 +566,10 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setTempDir(tempDir.toPath());
 
         CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void handle(request request, Response response, Callback callback) throws Exception
             {
                 ServletOutputStream outputStream = response.getOutputStream();
                 byte[] content = "this content will be buffered in a file".getBytes();

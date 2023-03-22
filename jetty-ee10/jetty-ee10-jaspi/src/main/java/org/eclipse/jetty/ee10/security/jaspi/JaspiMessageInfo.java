@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -98,7 +98,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         if (!(response instanceof ServletResponse))
             throw new IllegalStateException("Not a ServletResponse");
-        _response = ServletContextResponse.getBaseResponse((ServletResponse)response);
+        _response = ServletContextResponse.getServletContextResponse((ServletResponse)response);
     }
 
     public String getAuthMethod()

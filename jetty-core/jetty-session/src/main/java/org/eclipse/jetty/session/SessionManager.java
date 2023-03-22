@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -75,19 +76,19 @@ public interface SessionManager extends LifeCycle, SessionConfig
      */
     String __MaxAgeProperty = "org.eclipse.jetty.servlet.MaxAge";
 
-    Session getSession(String id) throws Exception;
+    ManagedSession getManagedSession(String id) throws Exception;
 
-    void newSession(Request request, String requestedSessionId, Consumer<Session> consumer);
+    void newSession(Request request, String requestedSessionId, Consumer<ManagedSession> consumer);
 
-    Session getSession(Request request);
+    ManagedSession getManagedSession(Request request);
     
-    Session.APISession newSessionAPIWrapper(Session session);
+    Session.API newSessionAPIWrapper(ManagedSession session);
     
-    void sessionTimerExpired(Session session, long now);
+    void sessionTimerExpired(ManagedSession session, long now);
 
-    void commit(Session session);
+    void commit(ManagedSession session);
 
-    void complete(Session session);
+    void complete(ManagedSession session);
 
     void invalidate(String id) throws Exception;
     
@@ -95,13 +96,13 @@ public interface SessionManager extends LifeCycle, SessionConfig
     
     boolean isIdInUse(String id) throws Exception;
 
-    HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure);
+    HttpCookie getSessionCookie(ManagedSession session, boolean requestIsSecure);
 
     void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId) throws Exception;
     
     long calculateInactivityTimeout(String id, long timeRemaining, long maxInactiveMs);
     
-    SessionInactivityTimer newSessionInactivityTimer(Session session);
+    SessionInactivityTimer newSessionInactivityTimer(ManagedSession session);
     
     Context getContext();
 
@@ -145,7 +146,7 @@ public interface SessionManager extends LifeCycle, SessionConfig
     {
     }
     
-    void recordSessionTime(Session session);
+    void recordSessionTime(ManagedSession session);
     
     int getSessionsCreated();
     

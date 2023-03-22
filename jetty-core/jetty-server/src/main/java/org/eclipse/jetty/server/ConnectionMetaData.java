@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -44,6 +44,14 @@ public interface ConnectionMetaData extends Attributes
     boolean isPersistent();
 
     boolean isSecure();
+
+    /**
+     * @return whether the functionality of pushing resources is supported
+     */
+    default boolean isPushSupported()
+    {
+        return false;
+    }
 
     /**
      * @return The address of the remote end of this connection.  By default, this is the first hop of the underlying
@@ -135,6 +143,12 @@ public interface ConnectionMetaData extends Attributes
         public boolean isSecure()
         {
             return getWrapped().isSecure();
+        }
+
+        @Override
+        public boolean isPushSupported()
+        {
+            return getWrapped().isPushSupported();
         }
 
         @Override

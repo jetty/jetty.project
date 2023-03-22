@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -279,7 +279,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     }
 
     @Override
-    protected void sendProxyToServerRequest(Request clientToProxyRequest, org.eclipse.jetty.client.api.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    protected void sendProxyToServerRequest(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
     {
         proxyToServerRequest.attribute(REMOTE_ADDR_ATTRIBUTE, Request.getRemoteAddr(clientToProxyRequest));
         proxyToServerRequest.attribute(REMOTE_PORT_ATTRIBUTE, String.valueOf(Request.getRemotePort(clientToProxyRequest)));
@@ -316,7 +316,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         // If the Host header is missing, add it.
         if (!proxyToServerRequest.getHeaders().contains(HttpHeader.HOST))
         {
-            if (!getHttpClient().isDefaultPort(scheme, serverPort))
+            if (serverPort != HttpScheme.getDefaultPort(scheme))
                 serverName += ":" + serverPort;
             String host = serverName;
             proxyToServerRequest.headers(headers -> headers
@@ -335,7 +335,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         super.sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
     }
 
-    protected void customizeFastCGIHeaders(org.eclipse.jetty.client.api.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
+    protected void customizeFastCGIHeaders(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
     {
         for (String envName : getFastCGIEnvNames())
         {
@@ -397,7 +397,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         }
 
         @Override
-        public void customize(org.eclipse.jetty.client.api.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
+        public void customize(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(proxyToServerRequest, fastCGIHeaders);
             customizeFastCGIHeaders(proxyToServerRequest, fastCGIHeaders);

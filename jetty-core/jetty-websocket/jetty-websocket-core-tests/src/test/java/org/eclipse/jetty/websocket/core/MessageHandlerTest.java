@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -46,7 +46,7 @@ public class MessageHandlerTest
     static byte[] fourByteUtf8Bytes = fourByteUtf8String.getBytes(StandardCharsets.UTF_8);
     static byte[] nonUtf8Bytes = {0x7F, (byte)0xFF, (byte)0xFF};
 
-    boolean demanding;
+    boolean autoDemanding;
     CoreSession coreSession;
     List<String> textMessages = new ArrayList<>();
     List<ByteBuffer> binaryMessages = new ArrayList<>();
@@ -57,11 +57,11 @@ public class MessageHandlerTest
     @BeforeEach
     public void beforeEach() throws Exception
     {
-        demanding = false;
+        autoDemanding = true;
 
         coreSession = new CoreSession.Empty()
         {
-            private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+            private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
             @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
@@ -73,7 +73,7 @@ public class MessageHandlerTest
             @Override
             public ByteBufferPool getByteBufferPool()
             {
-                return byteBufferPool;
+                return bufferPool;
             }
         };
 
@@ -94,9 +94,9 @@ public class MessageHandlerTest
             }
 
             @Override
-            public boolean isDemanding()
+            public boolean isAutoDemanding()
             {
-                return demanding;
+                return autoDemanding;
             }
         };
 

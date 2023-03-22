@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
 
 /**
  * <p>Sets the request URI scheme, by default {@code https}.</p>
@@ -34,16 +33,9 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
     }
 
     @Override
-    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, String value)
+    protected Handler apply(Handler input, String value)
     {
         HttpURI newURI = HttpURI.build(input.getHttpURI()).scheme(getScheme());
-        return new Request.WrapperProcessor(input)
-        {
-            @Override
-            public HttpURI getHttpURI()
-            {
-                return newURI;
-            }
-        };
+        return new HttpURIHandler(input, newURI);
     }
 }

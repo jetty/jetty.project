@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-test-client-transports</artifactId>
   <packaging>jar</packaging>
-  <name>EE9 :: Jetty Test :: HTTP Client Transports</name>
+  <name>EE9 :: Tests :: HTTP Client Transports</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.test.client.transport</bundle-symbolic-name>
@@ -89,6 +89,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-servlets</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

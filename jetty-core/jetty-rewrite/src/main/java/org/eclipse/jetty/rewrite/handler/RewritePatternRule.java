@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,6 @@ import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.slf4j.Logger;
@@ -64,7 +63,7 @@ public class RewritePatternRule extends PatternRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    public Handler apply(Handler input) throws IOException
     {
         HttpURI httpURI = input.getHttpURI();
         String newQuery = URIUtil.addQueries(httpURI.getQuery(), _query);
@@ -72,14 +71,7 @@ public class RewritePatternRule extends PatternRule
         HttpURI newURI = HttpURI.build(httpURI, newPath, httpURI.getParam(), newQuery);
         if (LOG.isDebugEnabled())
             LOG.debug("rewriting {} to {}", httpURI, newURI);
-        return new Request.WrapperProcessor(input)
-        {
-            @Override
-            public HttpURI getHttpURI()
-            {
-                return newURI;
-            }
-        };
+        return new HttpURIHandler(input, newURI);
     }
 
     @Override

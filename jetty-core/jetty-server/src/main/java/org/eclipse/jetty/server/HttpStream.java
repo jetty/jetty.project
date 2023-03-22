@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -22,9 +21,18 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StaticException;
 
+/**
+ * A HttpStream is an abstraction that together with {@link MetaData.Request}, represents the
+ * flow of data from and to a single request and response cycle.  It is roughly analogous to the
+ * Stream within a HTTP/2 connection, in that a connection can have many streams, each used once
+ * and each representing a single request and response exchange.
+ */
 public interface HttpStream extends Callback
 {
+    Exception CONTENT_NOT_CONSUMED = new StaticException("Content not consumed");
+
     /**
      * <p>Attribute name to be used as a {@link Request} attribute to store/retrieve
      * the {@link Connection} created during the HTTP/1.1 upgrade mechanism or the
@@ -41,7 +49,7 @@ public interface HttpStream extends Callback
     /**
      * @return the nanoTime when this HttpStream was created
      */
-    long getNanoTimeStamp();
+    long getNanoTime();
 
     /**
      * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
@@ -53,17 +61,43 @@ public interface HttpStream extends Callback
 
     /**
      * <p>Demands more content chunks to the underlying implementation.</p>
-     * <p>This method is called from the implementation of {@link Request#demand(Runnable)}.</p>
+     * <p>This method is called from the implementation of {@link Request#demand(Runnable)} and when the
+     * demand can be satisfied the implementation must call {@link HttpChannel#onContentAvailable()}.
+     * If there is a problem meeting demand, then the implementation must call {@link HttpChannel#onFailure(Throwable)}.</p>
+     * @see HttpChannel#onContentAvailable()
+     * @see HttpChannel#onFailure(Throwable)
      */
     void demand();
 
+    /**
+     * <p>Prepare the response headers with respect to the stream. Typically this may set headers related to
+     * protocol specific behaviour (e.g. {@code Keep-Alive} for HTTP/1.0 connections).</p>
+     * @param headers The headers to prepare.
+     */
     void prepareResponse(HttpFields.Mutable headers);
 
+    /**
+     * <p>Send response meta-data and/or data.</p>
+     * @param request The request metadata for which the response should be sent.
+     * @param response The response metadata to be sent or null if the response is already committed by a previous call
+     *                 to send.
+     * @param last True if this will be the last call to send and the response can be completed.
+     * @param content A buffer of content to send or null if no content.
+     * @param callback The callback to invoke when the send is completed successfully or in failure.
+     */
     void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback);
 
-    boolean isPushSupported();
-
-    void push(MetaData.Request request);
+    /**
+     * <p>Pushes the given {@code resource} to the client.</p>
+     *
+     * @param resource the resource to push
+     * @throws UnsupportedOperationException if the push functionality is not supported
+     * @see ConnectionMetaData#isPushSupported()
+     */
+    default void push(MetaData.Request resource)
+    {
+        throw new UnsupportedOperationException();
+    }
 
     boolean isCommitted();
 
@@ -72,27 +106,34 @@ public interface HttpStream extends Callback
         return null;
     }
 
-    default Throwable consumeAvailable()
+    Throwable consumeAvailable();
+
+    static Throwable consumeAvailable(HttpStream stream, HttpConfiguration httpConfig)
     {
-        while (true)
+        int numReads = 0;
+        int maxReads = httpConfig.getMaxUnconsumedRequestContentReads();
+        while (maxReads < 0 || numReads < maxReads)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
-            Content.Chunk content = read();
+            Chunk content = stream.read();
+            numReads++;
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
-                return new IOException("Content not consumed");
+                return CONTENT_NOT_CONSUMED;
 
             // Always release any returned content. This is a noop for EOF and Error content.
             content.release();
 
             // if the input failed, then fail the stream for same reason
-            if (content instanceof Content.Chunk.Error error)
+            if (content instanceof Chunk.Error error)
                 return error.getCause();
 
             if (content.isLast())
                 return null;
         }
+
+        return CONTENT_NOT_CONSUMED;
     }
 
     class Wrapper implements HttpStream
@@ -116,9 +157,9 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public final long getNanoTimeStamp()
+        public final long getNanoTime()
         {
-            return getWrapped().getNanoTimeStamp();
+            return getWrapped().getNanoTime();
         }
 
         @Override
@@ -146,15 +187,9 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public final boolean isPushSupported()
+        public void push(MetaData.Request resource)
         {
-            return getWrapped().isPushSupported();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getWrapped().push(request);
+            getWrapped().push(resource);
         }
 
         @Override

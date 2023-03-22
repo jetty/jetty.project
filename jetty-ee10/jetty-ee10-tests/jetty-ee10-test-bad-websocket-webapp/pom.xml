@@ -10,7 +10,7 @@
   <artifactId>jetty-ee10-test-bad-websocket-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>EE10 :: Jetty Test :: Jetty Bad Websocket Simple Webapp</name>
+  <name>EE10 :: Tests :: Bad Websocket Simple WebApp</name>
   <description>Contains wrong websocket which should fail at deployment</description>
 
   <dependencies>

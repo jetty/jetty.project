@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -98,7 +98,7 @@ public class AsyncServletTest
         context.addEventListener(new DebugListener());
 
         _errorHandler = new ErrorPageErrorHandler();
-        context.setErrorProcessor(_errorHandler);
+        context.setErrorHandler(_errorHandler);
         _errorHandler.addErrorPage(300, 599, "/error/custom");
 
         _servletHandler = context.getServletHandler();
@@ -182,7 +182,6 @@ public class AsyncServletTest
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
             "REQUEST /ctx/noasync/info",
-            "wrapped REQ",
             "initial"
         ));
 
@@ -199,7 +198,6 @@ public class AsyncServletTest
             assertThat(response, Matchers.startsWith("HTTP/1.1 500 "));
             assertThat(_history, contains(
                 "REQUEST /ctx/noasync/info?start=200",
-                "wrapped REQ",
                 "initial",
                 "ERROR /ctx/error/custom?start=200",
                 "wrapped REQ",

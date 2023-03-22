@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,7 +48,7 @@ This is necessary to avoid that the Jetty start mechanism depend on logging libr
 [NOTE]
 ====
 This section is about the logging performed by the Jetty start mechanism _before_ it configures and starts Jetty.
-See the xref:og-logging[logging section] for information about logging when Jetty starts.
+See the xref:og-server-logging[logging section] for information about logging when Jetty starts.
 ====
 
 You can enable DEBUG level logging with the `--debug` command line option, for both the _tool_ and _start_ modes:
@@ -69,5 +69,5 @@ This is useful for capturing startup issues where the Jetty-specific logger has 
 ==== Usage Reference
 
 ----
-include::../../../../../../../jetty-start/src/main/resources/org/eclipse/jetty/start/usage.txt[]
+include::../../../../../../../jetty-core/jetty-start/src/main/resources/org/eclipse/jetty/start/usage.txt[]
 ----

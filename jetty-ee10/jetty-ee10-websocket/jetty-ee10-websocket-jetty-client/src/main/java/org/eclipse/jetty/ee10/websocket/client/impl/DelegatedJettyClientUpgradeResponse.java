@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,20 +20,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.http.HttpHeader;
 
 /**
- * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpResponse}
+ * Representing the Jetty {@link org.eclipse.jetty.client.Response}
  * in the {@link UpgradeResponse} interface.
  */
 public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
 {
-    private final HttpResponse delegate;
+    private final Response delegate;
 
-    public DelegatedJettyClientUpgradeResponse(HttpResponse response)
+    public DelegatedJettyClientUpgradeResponse(Response response)
     {
         this.delegate = response;
     }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends Handler.Processor.Blocking
+public class DumpHandler extends Handler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
@@ -57,7 +57,7 @@ public class DumpHandler extends Handler.Processor.Blocking
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("dump {}", request);
@@ -78,7 +78,7 @@ public class DumpHandler extends Handler.Processor.Blocking
         {
             response.setStatus(200);
             callback.succeeded();
-            return;
+            return true;
         }
 
         Utf8StringBuilder read = null;
@@ -108,7 +108,7 @@ public class DumpHandler extends Handler.Processor.Blocking
                 if (chunk instanceof Content.Chunk.Error error)
                 {
                     callback.failed(error.getCause());
-                    return;
+                    return true;
                 }
 
                 int l = Math.min(buffer.length, Math.min(len, chunk.remaining()));
@@ -118,10 +118,11 @@ public class DumpHandler extends Handler.Processor.Blocking
 
                 if (!chunk.hasRemaining())
                 {
+                    boolean last = chunk.isLast();
                     chunk.release();
-                    if (chunk.isLast())
-                        break;
                     chunk = null;
+                    if (last)
+                        break;
                 }
             }
             if (chunk != null)
@@ -138,7 +139,7 @@ public class DumpHandler extends Handler.Processor.Blocking
         {
             response.setStatus(Integer.parseInt(params.getValue("error")));
             callback.succeeded();
-            return;
+            return true;
         }
 
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML.asString());
@@ -211,5 +212,6 @@ public class DumpHandler extends Handler.Processor.Blocking
         }
 
         callback.succeeded();
+        return true;
     }
 }
