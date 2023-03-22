@@ -58,31 +58,13 @@ import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
  * server.start();
  * }</pre>
  * <p>A {@link WebSocketUpgradeHandler} is associated with a {@link ServerWebSocketContainer}
- * that is exported as a request context attribute, so that a child handler may dynamically
- * add WebSocket mappings, in this way:</p>
+ * that is exported as a request context attribute and can be retrieved in this way:
  * <pre>{@code
- * Server server = ...;
- * ContextHandler context = new ContextHandler("/app");
- * WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
- * context.setHandler(wsHandler);
- *
- * wsHandler.setHandler(new Handler.Abstract()
+ * public boolean process(Request request)
  * {
- *     @Override
- *     public boolean handle(Request request, Response response, Callback callback)
- *     {
- *         // Retrieve the WebSocket container from the context attributes.
- *         ServerWebSocketContainer container = (ServerWebSocketContainer)request.getContext().getAttribute(WebSocketContainer.class.getName());
- *
- *         // Dynamically add a WebSocket endpoint.
- *         String pathInContext = Request.getPathInContext(request);
- *         if ("/ws".equals(pathInContext))
- *             container.addMapping("/ws/echo", (upgradeRequest, upgradeResponse, callback) -> new EchoEndPoint());
- *
- *         // Reply with a 200 OK.
- *         callback.succeeded();
- *     }
- * });
+ *     // Retrieve the WebSocket container from the context attributes.
+ *     ServerWebSocketContainer container = (ServerWebSocketContainer)request.getContext().getAttribute(WebSocketContainer.class.getName());
+ * }
  * }</pre>
  */
 public class WebSocketUpgradeHandler extends Handler.Wrapper
