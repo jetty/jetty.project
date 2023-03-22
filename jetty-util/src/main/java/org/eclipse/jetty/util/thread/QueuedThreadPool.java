@@ -114,6 +114,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
     private int _shrinkCount = 1;
+    private boolean _aggressiveShrinking;
 
     public QueuedThreadPool()
     {
@@ -562,9 +563,24 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     /**
      * @return the maximum number of idle threads to exit in one idle timeout period
      */
+    @ManagedAttribute("maximum number of idle threads to exit in one idle timeout period")
     public int getIdleTimeoutMaxShrinkCount()
     {
         return _shrinkCount;
+    }
+
+    public void setAggressiveShrinking(boolean aggressiveShrinking)
+    {
+        _aggressiveShrinking = aggressiveShrinking;
+    }
+
+    /**
+     * @return true if the idle threads should exit before the idle timeout period, false otherwise
+     */
+    @ManagedAttribute("should the idle threads exit before the idle timeout period")
+    public boolean isAggressiveShrinking()
+    {
+        return _aggressiveShrinking;
     }
 
     /**
@@ -1072,12 +1088,20 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             boolean idle = true;
             try
             {
-                exit: while (_counts.getHi() > Integer.MIN_VALUE)
+                while (_counts.getHi() > Integer.MIN_VALUE)
                 {
                     try
                     {
+                        boolean aggressiveShrinking = isAggressiveShrinking();
                         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
                         Runnable job = idleJobPoll(idleTimeoutNanos);
+
+                        if (job == null && !aggressiveShrinking)
+                        {
+                            if (shrinkIfNeeded(idleTimeoutNanos))
+                                break;
+                        }
+
                         while (job != null)
                         {
                             idle = false;
@@ -1099,47 +1123,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             job = _jobs.poll();
                         }
 
-                        // No jobs available, should we shrink?
-                        int threads = getThreads();
-                        if (threads > getMinThreads())
-                        {
-                            // We have an idle timeout and excess threads, so check if we should shrink?
-                            long now = NanoTime.now();
-                            long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Shrink check, {} > {} period={}ms {}", threads, getMinThreads(), TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
-                            while (true)
-                            {
-                                long shrinkThreshold = _shrinkThreshold.get();
-                                long threshold = shrinkThreshold;
-
-                                // If the threshold is too far in the past,
-                                // advance it to be one idle timeout before now plus a bit of shrink period.
-                                if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
-                                    threshold = now - idleTimeoutNanos;
-
-                                // advance the threshold by one shrink period
-                                threshold += shrinkPeriod;
-
-                                // Is the new threshold in the future?
-                                if (NanoTime.isBefore(now, threshold))
-                                {
-                                    // Yes - we cannot shrink yet, so break and continue looking for jobs
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
-                                    break;
-                                }
-
-                                // We can shrink if we can update the atomic shrink threshold?
-                                if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
-                                {
-                                    // Yes - we have shrunk, so exit.
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
-                                    break exit;
-                                }
-                            }
-                        }
+                        if (aggressiveShrinking && shrinkIfNeeded(idleTimeoutNanos))
+                            break;
                     }
                     catch (InterruptedException e)
                     {
@@ -1160,6 +1145,63 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 // There is a chance that we shrunk just as a job was queued,
                 // so check again if we have sufficient threads to meet demand.
                 ensureThreads();
+            }
+        }
+
+        /**
+         * @return true if shrunk, false otherwise.
+         */
+        private boolean shrinkIfNeeded(long idleTimeoutNanos)
+        {
+            while (true)
+            {
+                // No jobs available, should we shrink?
+                int threads = getThreads();
+                int minThreads = getMinThreads();
+                if (threads > minThreads)
+                {
+                    // We have an idle timeout and excess threads, so check if we should shrink?
+                    long now = NanoTime.now();
+                    long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Shrink check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
+
+                    long shrinkThreshold = _shrinkThreshold.get();
+                    long threshold = shrinkThreshold;
+
+                    // If the threshold is too far in the past,
+                    // advance it to be one idle timeout before now plus a bit of shrink period.
+                    if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
+                        threshold = now - idleTimeoutNanos;
+
+                    // advance the threshold by one shrink period
+                    threshold += shrinkPeriod;
+
+                    // Is the new threshold in the future?
+                    if (NanoTime.isBefore(now, threshold))
+                    {
+                        // Yes - we cannot shrink yet, so continue looking for jobs
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
+                        return false;
+                    }
+
+                    // We can shrink if we can update the atomic shrink threshold?
+                    if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
+                    {
+                        // Yes - we have shrunk, so exit.
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
+                        return true;
+                    }
+                }
+                else
+                {
+                    // We reached min threads, continue looking for jobs
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("At min threads, {} > {} {}", threads, minThreads, QueuedThreadPool.this);
+                    return false;
+                }
             }
         }
     }
