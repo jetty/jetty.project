@@ -30,12 +30,12 @@ import org.eclipse.jetty.util.NanoTime;
  *
  * <p>The repeated lifecycle methods {@link #onIdle()} and {@link #onBusy()} return <code>true</code>
  * and <code>false</code> (respectively) as a convenience, indicating whether the calling thread is
- * registered with this {@link ShrinkManager} following the associated method call. It is the
+ * registered with this {@link LinearShrinkManager} following the associated method call. It is the
  * responsibility of the calling thread to ensure (e.g., via conditional call to {@link #prune()}
- * in a <code>finally</code> block) that any outstanding entries in this {@link ShrinkManager} are
+ * in a <code>finally</code> block) that any outstanding entries in this {@link LinearShrinkManager} are
  * removed if the calling thread exits unexpectedly (i.e., throws an exception).
  */
-public class ShrinkManager
+public class LinearShrinkManager implements QueuedThreadPool.ShrinkManager
 {
     private final int mask;
     private final long[] timestamps;
@@ -52,7 +52,7 @@ public class ShrinkManager
      */
     static int RETRY_LIMIT = 0;
 
-    public ShrinkManager(int maxSize)
+    public LinearShrinkManager(int maxSize)
     {
         // We make size a power of two for easy mask/circular operation.
         // NOTE: it's perfectly fine for `head`/`tail` to overflow/wrap around.
@@ -64,8 +64,9 @@ public class ShrinkManager
     /**
      * Called by a thread that is newly idle, either because it just completed a job, or because
      * it has just been created. Returns <code>true</code>, indicating that an entry has been added
-     * to this {@link ShrinkManager} for the calling thread.
+     * to this {@link LinearShrinkManager} for the calling thread.
      */
+    @Override
     public boolean onIdle()
     {
         timestamps[head.getAndIncrement() & mask] = NanoTime.now();
@@ -74,8 +75,9 @@ public class ShrinkManager
 
     /**
      * Called by a thread just before it performs work. Returns <code>false</code>, indicating that
-     * an entry (corresponding to the calling thread) has been removed from this {@link ShrinkManager}.
+     * an entry (corresponding to the calling thread) has been removed from this {@link LinearShrinkManager}.
      */
+    @Override
     public boolean onBusy()
     {
         head.getAndDecrement();
@@ -85,7 +87,7 @@ public class ShrinkManager
     /**
      * Check to see if this pool has idle capacity and is eligible to shrink. If this method returns
      * <code>false</code>, it has no side-effects. If this method returns <code>true</code>, the
-     * {@link ShrinkManager} has been updated to record the removal of the thread, and it is the
+     * {@link LinearShrinkManager} has been updated to record the removal of the thread, and it is the
      * responsibility of the caller to ensure that exactly one corresponding thread (the calling
      * thread) exits, <i>without</i> calling {@link #prune()}.
      *
@@ -93,6 +95,7 @@ public class ShrinkManager
      * @param siNanos minimum time (in nanos) between the removal of threads from the pool
      * @return <code>true</code> if the pool should shrink, otherwise <code>false</code>.
      */
+    @Override
     public boolean pollIdleShrink(long itNanos, long siNanos)
     {
         long now = NanoTime.now();
@@ -124,11 +127,12 @@ public class ShrinkManager
     }
 
     /**
-     * Must be called by any thread with an outstanding entry in this {@link ShrinkManager} that exits for any
+     * Must be called by any thread with an outstanding entry in this {@link LinearShrinkManager} that exits for any
      * reason <i>other than</i> {@link #pollIdleShrink(long, long)} returning <code>true</code>. This method will
      * normally not be called except (conditionally) in a <code>finally</code> block if a registered thread exits
      * unexpectedly with an exception.
      */
+    @Override
     public void prune()
     {
         tail.getAndIncrement();
@@ -138,6 +142,7 @@ public class ShrinkManager
      * Initializes the baseline timestamp against which idle timestamps are compared to determine eligibility for
      * shrinkage. This should be called to prevent premature idling of threads created early in the life of a pool.
      */
+    @Override
     public void init()
     {
         lastShrink.set(NanoTime.now());

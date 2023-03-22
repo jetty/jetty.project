@@ -260,8 +260,8 @@ public class QueuedThreadPoolShrinkTest
     @Test
     public void testPrecise() throws Exception
     {
-        final int restoreRetryLimit = ShrinkManager.RETRY_LIMIT;
-        ShrinkManager.RETRY_LIMIT = 10;
+        final int restoreRetryLimit = LinearShrinkManager.RETRY_LIMIT;
+        LinearShrinkManager.RETRY_LIMIT = 10;
         try
         {
             testShrinkRatePrecise(5, 5, 5);
@@ -270,7 +270,7 @@ public class QueuedThreadPoolShrinkTest
         }
         finally
         {
-            ShrinkManager.RETRY_LIMIT = restoreRetryLimit;
+            LinearShrinkManager.RETRY_LIMIT = restoreRetryLimit;
         }
     }
 

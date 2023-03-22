@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -82,6 +83,58 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private static final Runnable NOOP = () ->
     {
     };
+
+    /**
+     * Provides lifecycle hooks to be called by pooled threads, supporting state management
+     * and behavior guiding pool shrinkage.
+     */
+    interface ShrinkManager
+    {
+        /**
+         * Called upon a thread becoming tracked as idle (for the purpose of determining
+         * shrink behavior). This method should return <code>true</code> if internal state
+         * is updated in a way that must be cleared via {@link #prune()} upon unexpected
+         * thread exit (i.e., exit by any means <i>other</i> than {@link #pollIdleShrink(long, long)}
+         * returning <code>true</code>).
+         */
+        boolean onIdle();
+
+        /**
+         * Called upon a thread becoming active (non-idle) to update state accordingly.
+         * This method (as a convenience) should always return <code>false</code>,
+         * indicating that subsequent call to {@link #prune()} is not necessary upon
+         * thread exit.
+         */
+        boolean onBusy();
+
+        /**
+         * Called to determine whether pool capacity should shrink by one. If this method
+         * returns <code>true</code>, it is the responsibility of the caller to ensure that
+         * exactly one corresponding thread in the pool (usually the calling thread) is
+         * allowed to die, shrinking the pool by one. A return value of <code>true</code>
+         * indicates that internal state has been updated to account for the corresponding
+         * pool shrinkage, so there should be <i>no</i> corresponding call to {@link #prune()}.
+         *
+         * @param itNanos idle timeout (minimum TTL for idle capacity) in nanos
+         * @param siNanos shrink interval (minimum interval separating shrink events) in nanos
+         * @return <code>true</code> if the pool should shrink by one.
+         */
+        boolean pollIdleShrink(long itNanos, long siNanos);
+
+        /**
+         * Cleans up any extraneous internal state corresponding to a thread that exits
+         * for any reason <i>aside from</i> receiving a <code>true</code> value from
+         * {@link #pollIdleShrink(long, long)}. This method should be called according
+         * to a <code>true</code> value having been most recently received from
+         * {@link #onIdle()}.
+         */
+        void prune();
+
+        /**
+         * Reset the baseline timestamp against which `idleTimeout` will be evaluated
+         */
+        void init();
+    }
 
     /**
      * Encodes thread counts:
@@ -401,6 +454,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             throw new IllegalArgumentException("idleTimeoutDecay expireCount must be >= 1; found: " + expireCount);
         }
         _idleTimeoutDecay = expireCount;
+        initShrinkManager();
         _shrinkInterval = computeShrinkIntervalNanos(_idleTimeout, expireCount);
         // TODO: do we need to pass idleTimeoutDecay along to reserved pool?
 //        ReservedThreadExecutor reserved = getBean(ReservedThreadExecutor.class);
@@ -437,9 +491,77 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (_budget != null)
             _budget.check(maxThreads);
         _maxThreads = maxThreads;
-        shrinkManager = new ShrinkManager(maxThreads);
+        initShrinkManager();
         if (_minThreads > _maxThreads)
             _minThreads = _maxThreads;
+    }
+
+    /**
+     * Trivial default implementation, with minimal internal state. Results in
+     * behavior that is functionally identical to historical default shrink behavior.
+     */
+    private static final class DefaultShrinkManager implements ShrinkManager
+    {
+
+        private final AtomicLong lastShrink = new AtomicLong();
+
+        @Override
+        public boolean onIdle()
+        {
+            // no per-thread state, so return false
+            return false;
+        }
+
+        @Override
+        public boolean onBusy()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean pollIdleShrink(long itNanos, long siNanos)
+        {
+            assert itNanos == siNanos;
+            long last = lastShrink.get();
+            long now = NanoTime.now();
+            // NOTE: legacy behavior simply updated `lastShrink` to `now`; but that introduced
+            // gaps in the "lastShrink timeline" that artificially reduced shrink rate and made
+            // it harder to test reliably -- hence `Math.max(last + siNanos, now - siNanos)`.
+            return NanoTime.elapsed(last, now) > itNanos &&
+                    lastShrink.compareAndSet(last, Math.max(last + siNanos, now - siNanos));
+        }
+
+        @Override
+        public void prune()
+        {
+            throw new UnsupportedOperationException("no per-thread state to prune!");
+        }
+
+        @Override
+        public void init()
+        {
+            lastShrink.set(NanoTime.now());
+        }
+    }
+
+    /**
+     * Initializes {@link #shrinkManager} according to current settings. This method should
+     * be called after updating {@link #_idleTimeoutDecay} or {@link #_maxThreads}.
+     */
+    private void initShrinkManager()
+    {
+        if (_idleTimeoutDecay != 1)
+        {
+            shrinkManager = new LinearShrinkManager(_maxThreads);
+        }
+        else if (shrinkManager instanceof DefaultShrinkManager)
+        {
+            // No-op, fine to re-use existing instance
+        }
+        else
+        {
+            shrinkManager = new DefaultShrinkManager();
+        }
     }
 
     /**
