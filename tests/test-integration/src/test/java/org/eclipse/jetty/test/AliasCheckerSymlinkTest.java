@@ -56,6 +56,7 @@ public class AliasCheckerSymlinkTest
     private static Path _symlinkSiblingDir;
     private static Path _webInfSymlink;
     private static Path _webrootSymlink;
+    private static Path _protectedFile;
 
     private static Path getResource(String path) throws Exception
     {
@@ -117,6 +118,11 @@ public class AliasCheckerSymlinkTest
         delete(_webrootSymlink);
         Files.createSymbolicLink(_webrootSymlink, webRootPath).toFile().deleteOnExit();
 
+        // PROTECTED is a symlink to a file outside webroot.
+        _protectedFile = webRootPath.resolve("PROTECTED");
+        IO.delete(_protectedFile);
+        Files.createSymbolicLink(_protectedFile, webRootPath.resolve("../sibling/file")).toFile().deleteOnExit();
+
         // Create and start Server and Client.
         _server = new Server();
         _connector = new ServerConnector(_server);
@@ -124,7 +130,7 @@ public class AliasCheckerSymlinkTest
         _context = new ContextHandler();
         _context.setContextPath("/");
         _context.setBaseResourceAsPath(webRootPath);
-        _context.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
+        _context.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF", "/PROTECTED"});
         _context.setHandler(new ResourceHandler());
 
         _server.setHandler(_context);
@@ -146,6 +152,7 @@ public class AliasCheckerSymlinkTest
         Files.delete(_symlinkSiblingDir);
         Files.delete(_webInfSymlink);
         Files.delete(_webrootSymlink);
+        Files.delete(_protectedFile);
 
         _client.stop();
         _server.stop();
@@ -175,6 +182,7 @@ public class AliasCheckerSymlinkTest
                 Arguments.of(allowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
                 Arguments.of(allowedResource, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
                 Arguments.of(allowedResource, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
+                Arguments.of(allowedResource, "/PROTECTED", HttpStatus.NOT_FOUND_404, null),
 
                 // SymlinkAllowedResourceAliasChecker that does not check the target of symlinks, but only approves files obtained through a symlink.
                 Arguments.of(symlinkAllowedResource, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
@@ -184,6 +192,7 @@ public class AliasCheckerSymlinkTest
                 Arguments.of(symlinkAllowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
                 Arguments.of(symlinkAllowedResource, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
                 Arguments.of(symlinkAllowedResource, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
+                Arguments.of(symlinkAllowedResource, "/PROTECTED", HttpStatus.NOT_FOUND_404, null),
 
                 // The ApproveAliases (approves everything regardless).
                 Arguments.of(approveAliases, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
@@ -193,6 +202,7 @@ public class AliasCheckerSymlinkTest
                 Arguments.of(approveAliases, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
                 Arguments.of(approveAliases, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
                 Arguments.of(approveAliases, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
+                Arguments.of(approveAliases, "/PROTECTED", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
 
                 // No alias checker (any symlink should be an alias).
                 Arguments.of(null, "/symlinkFile", HttpStatus.NOT_FOUND_404, null),
@@ -201,8 +211,9 @@ public class AliasCheckerSymlinkTest
                 Arguments.of(null, "/symlinkParentDir/webroot/file", HttpStatus.NOT_FOUND_404, null),
                 Arguments.of(null, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
                 Arguments.of(null, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null)
-        );
+                Arguments.of(null, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
+                Arguments.of(null, "/PROTECTED", HttpStatus.NOT_FOUND_404, null)
+            );
     }
 
     @ParameterizedTest
