@@ -496,29 +496,35 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             _minThreads = _maxThreads;
     }
 
-    private static final ShrinkManager NOOP_SHRINK_MANAGER = new ShrinkManager() {
+    private static final ShrinkManager NOOP_SHRINK_MANAGER = new ShrinkManager()
+    {
         @Override
-        public boolean onIdle() {
+        public boolean onIdle()
+        {
             return false;
         }
 
         @Override
-        public boolean onBusy() {
+        public boolean onBusy()
+        {
             return false;
         }
 
         @Override
-        public boolean pollIdleShrink(long itNanos, long siNanos) {
+        public boolean pollIdleShrink(long itNanos, long siNanos)
+        {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void prune() {
+        public void prune()
+        {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void init() {
+        public void init()
+        {
             // No-op
         }
     };
