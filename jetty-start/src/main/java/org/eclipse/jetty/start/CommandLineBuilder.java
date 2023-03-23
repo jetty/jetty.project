@@ -59,7 +59,7 @@ public class CommandLineBuilder
      *
      * @param arg the argument to quote
      * @return the quoted and escaped argument
-     * @deprecated no replacement, quoting is done by {@link #toQuotedString(String)} now.
+     * @deprecated no replacement, quoting is done by {@link #toQuotedString()} now.
      */
     @Deprecated
     public static String quote(String arg)
