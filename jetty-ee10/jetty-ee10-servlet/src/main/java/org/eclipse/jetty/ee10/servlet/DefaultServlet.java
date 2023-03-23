@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -85,14 +86,12 @@ import org.slf4j.LoggerFactory;
 public class DefaultServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
-    private ServletResourceService _resourceService;
-    private boolean _welcomeServlets = false;
-    private boolean _welcomeExactServlets = false;
 
+    private ServletResourceService _resourceService;
+    private WelcomeServletMode _welcomeServletMode;
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-
-    private boolean _isPathInfoOnly = false;
+    private boolean _isPathInfoOnly;
 
     public ResourceService getResourceService()
     {
@@ -193,13 +192,18 @@ public class DefaultServlet extends HttpServlet
 
         _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
 
-        if ("exact".equals(getInitParameter("welcomeServlets")))
+        _welcomeServletMode = WelcomeServletMode.NONE;
+        String welcomeServlets = getInitParameter("welcomeServlets");
+        if (welcomeServlets != null)
         {
-            _welcomeExactServlets = true;
-            _welcomeServlets = false;
+            welcomeServlets = welcomeServlets.toLowerCase(Locale.ENGLISH);
+            _welcomeServletMode = switch (welcomeServlets)
+            {
+                case "true" -> WelcomeServletMode.MATCH;
+                case "exact" -> WelcomeServletMode.EXACT;
+                default -> WelcomeServletMode.NONE;
+            };
         }
-        else
-            _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
         if (encodingHeaderCacheSize >= 0)
@@ -234,8 +238,7 @@ public class DefaultServlet extends HttpServlet
             LOG.debug("  .resourceFactory = {}", _resourceFactory);
             LOG.debug("  .resourceService = {}", _resourceService);
             LOG.debug("  .isPathInfoOnly = {}", _isPathInfoOnly);
-            LOG.debug("  .welcomeExactServlets = {}", _welcomeExactServlets);
-            LOG.debug("  .welcomeServlets = {}", _welcomeServlets);
+            LOG.debug("  .welcomeServletMode = {}", _welcomeServletMode);
         }
     }
 
@@ -925,36 +928,45 @@ public class DefaultServlet extends HttpServlet
 
             HttpServletRequest request = getServletRequest(coreRequest);
             String pathInContext = Request.getPathInContext(coreRequest);
-            String requestTarget;
             String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-            boolean included = includedServletPath != null;
-            if (included)
+            String requestTarget;
+            if (includedServletPath != null)
                 requestTarget = getIncludedPathInContext(request, includedServletPath, isPathInfoOnly());
             else
                 requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
 
-            String welcomeServlet = null;
+            String welcomeTarget = null;
             Resource base = _baseResource.resolve(requestTarget);
             if (Resources.isReadableDirectory(base))
             {
                 for (String welcome : welcomes)
                 {
-                    Resource welcomePath = base.resolve(welcome);
                     String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
 
+                    // If the welcome resource is a file, it has
+                    // precedence over resources served by Servlets.
+                    Resource welcomePath = base.resolve(welcome);
                     if (Resources.isReadableFile(welcomePath))
                         return welcomeInContext;
 
-                    if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
+                    // Check whether a Servlet may serve the welcome resource.
+                    if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
-                        if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this &&
-                            (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
-                            welcomeServlet = welcomeInContext;
+                        // Is there a different Servlet that may serve the welcome resource?
+                        if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this)
+                        {
+                            if (_welcomeServletMode == WelcomeServletMode.MATCH || entry.getPathSpec().getDeclaration().equals(welcomeInContext))
+                            {
+                                welcomeTarget = welcomeInContext;
+                                // Do not break the loop, because we want to try other welcome resources
+                                // that may be files and take precedence over Servlet welcome resources.
+                            }
+                        }
                     }
                 }
             }
-            return welcomeServlet;
+            return welcomeTarget;
         }
 
         @Override
@@ -1154,5 +1166,28 @@ public class DefaultServlet extends HttpServlet
         {
             return this.characterEncoding;
         }
+    }
+
+    /**
+     * <p>The different modes a welcome resource may be served by a Servlet.</p>
+     */
+    private enum WelcomeServletMode
+    {
+        /**
+         * <p>Welcome resources are not served by Servlets.</p>
+         * <p>The welcome resource must exist as a file on the filesystem.</p>
+         */
+        NONE,
+        /**
+         * <p>Welcome resources may be served by Servlets, but only if the
+         * welcome resource does not exist as a file on the filesystem.</p>
+         */
+        MATCH,
+        /**
+         * <p>Welcome resources may be served by Servlets, but only if the
+         * welcome resource does not exist as a file on the filesystem,
+         * and the Servlet has an exact mapping for the welcome resource.</p>
+         */
+        EXACT
     }
 }
