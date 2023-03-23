@@ -402,12 +402,18 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             uri = URIUtil.SLASH;
 
         HttpSession session = request.getSession(false);
-        if (hasExpiredIdToken(session))
+        if (_openIdConfiguration.isRespectIdTokenExpiry() && hasExpiredIdToken(session))
+        {
             logoutWithoutRedirect(request);
-
-        mandatory |= isJSecurityCheck(uri);
-        if (!mandatory)
-            return new DeferredAuthentication(this);
+        }
+        else
+        {
+            // If we expired a valid authentication we do not want to defer authentication,
+            // we want to try re-authenticate the user.
+            mandatory |= isJSecurityCheck(uri);
+            if (!mandatory)
+                return new DeferredAuthentication(this);
+        }
 
         if (isErrorPage(baseRequest.getPathInContext()) && !DeferredAuthentication.isDeferred(response))
             return new DeferredAuthentication(this);

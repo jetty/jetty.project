@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
@@ -68,7 +67,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         String clientId = "CLIENT_ID123";
         String clientSecret = "PASSWORD123";
         int port = 5771;
-        String redirectUri = "http://localhost:8080/openid/auth";
+        String redirectUri = "http://localhost:8080/j_security_check";
 
         OpenIdProvider openIdProvider = new OpenIdProvider(clientId, clientSecret);
         openIdProvider.addRedirectUri(redirectUri);
@@ -184,7 +183,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
 
             String scopeString = req.getParameter("scope");
-            List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(StringUtil.csvSplit(scopeString));
+            List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(scopeString.split(" "));
             if (!scopes.contains("openid"))
             {
                 resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no openid scope");

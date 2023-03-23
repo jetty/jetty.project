@@ -19,6 +19,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -65,6 +66,11 @@ public class OpenIdAuthenticationTest
     private HttpClient client;
 
     public void setup(LoginService loginService) throws Exception
+    {
+        setup(loginService, null);
+    }
+
+    public void setup(LoginService loginService, Consumer<OpenIdConfiguration> configure) throws Exception
     {
         openIdProvider = new OpenIdProvider(CLIENT_ID, CLIENT_SECRET);
         openIdProvider.start();
@@ -114,7 +120,10 @@ public class OpenIdAuthenticationTest
         securityHandler.addConstraintMapping(adminMapping);
 
         // Authentication using local OIDC Provider
-        server.addBean(new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET));
+        OpenIdConfiguration openIdConfiguration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
+        if (configure != null)
+            configure.accept(openIdConfiguration);
+        server.addBean(openIdConfiguration);
         securityHandler.setInitParameter(OpenIdAuthenticator.REDIRECT_PATH, "/redirect_path");
         securityHandler.setInitParameter(OpenIdAuthenticator.ERROR_PAGE, "/error");
         securityHandler.setInitParameter(OpenIdAuthenticator.LOGOUT_REDIRECT_PATH, "/");
@@ -272,7 +281,7 @@ public class OpenIdAuthenticationTest
     @Test
     public void testExpiredIdToken() throws Exception
     {
-        setup(null);
+        setup(null, config -> config.setRespectIdTokenExpiry(true));
         long idTokenExpiryTime = 2000;
         openIdProvider.setIdTokenExpiry(idTokenExpiryTime);
         openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
@@ -302,14 +311,9 @@ public class OpenIdAuthenticationTest
 
         // After waiting past ID_Token expiry time we are no longer authenticated.
         // Even though this page is non-mandatory authentication the OpenId attributes should be cleared.
+        // This then attempts re-authorization the first time even though it is non-mandatory page.
         Thread.sleep(idTokenExpiryTime * 2);
         response = client.GET(appUriString + "/");
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString();
-        assertThat(content, containsString("not authenticated"));
-
-        // Attempting to access a secured page requires you to re-login.
-        response = client.GET(appUriString + "/profile");
         assertThat(response.getStatus(), is(HttpStatus.SEE_OTHER_303));
         assertThat(response.getHeaders().get(HttpHeader.LOCATION), startsWith(openIdProvider.getProvider() + "/auth"));
 
@@ -317,6 +321,47 @@ public class OpenIdAuthenticationTest
         assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
+    }
+
+    @Test
+    public void testExpiredIdTokenDisabled() throws Exception
+    {
+        setup(null);
+        long idTokenExpiryTime = 2000;
+        openIdProvider.setIdTokenExpiry(idTokenExpiryTime);
+        openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
+
+        String appUriString = "http://localhost:" + connector.getLocalPort();
+
+        // Initially not authenticated
+        ContentResponse response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
+
+        // Request to login is success
+        response = client.GET(appUriString + "/login");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("success"));
+
+        // Now authenticated we can get info
+        client.setFollowRedirects(false);
+        response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
+
+        // After waiting past ID_Token expiry time we are still authenticated because respectIdTokenExpiry is false by default.
+        Thread.sleep(idTokenExpiryTime * 2);
+        response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
     }
 
     public static class LoginPage extends HttpServlet

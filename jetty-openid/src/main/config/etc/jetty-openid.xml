@@ -38,6 +38,9 @@
         <Set name="authenticateNewUsers">
           <Property name="jetty.openid.authenticateNewUsers" default="false"/>
         </Set>
+        <Set name="respectIdTokenExpiry">
+          <Property name="jetty.openid.respectIdTokenExpiry" default="false"/>
+        </Set>
         <Call name="addScopes">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
