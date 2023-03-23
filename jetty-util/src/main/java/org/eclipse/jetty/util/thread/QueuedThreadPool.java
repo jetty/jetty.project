@@ -85,6 +85,58 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     };
 
     /**
+     * Provides lifecycle hooks to be called by pooled threads, supporting state management
+     * and behavior guiding pool shrinkage.
+     */
+    interface ShrinkManager
+    {
+        /**
+         * Called upon a thread becoming tracked as idle (for the purpose of determining
+         * shrink behavior). This method should return <code>true</code> if internal state
+         * is updated in a way that must be cleared via {@link #prune()} upon unexpected
+         * thread exit (i.e., exit by any means <i>other</i> than {@link #shrinkIfNeeded(long, int)}
+         * returning <code>true</code>).
+         */
+        boolean onIdle();
+
+        /**
+         * Called upon a thread becoming active (non-idle) to update state accordingly.
+         * This method (as a convenience) should always return <code>false</code>,
+         * indicating that subsequent call to {@link #prune()} is not necessary upon
+         * thread exit.
+         */
+        boolean onBusy();
+
+        /**
+         * Called to determine whether pool capacity should shrink by one. If this method
+         * returns <code>true</code>, it is the responsibility of the caller to ensure that
+         * exactly one corresponding thread in the pool (usually the calling thread) is
+         * allowed to die, shrinking the pool by one. A return value of <code>true</code>
+         * indicates that internal state has been updated to account for the corresponding
+         * pool shrinkage, so there should be <i>no</i> corresponding call to {@link #prune()}.
+         *
+         * @param itNanos idle timeout (minimum TTL for idle capacity) in nanos
+         * @param idleTimeoutMaxShrinkCount max threads to shrink per itNanos interval
+         * @return <code>true</code> if the pool should shrink by one.
+         */
+        boolean shrinkIfNeeded(long itNanos, int idleTimeoutMaxShrinkCount);
+
+        /**
+         * Cleans up any extraneous internal state corresponding to a thread that exits
+         * for any reason <i>aside from</i> receiving a <code>true</code> value from
+         * {@link #shrinkIfNeeded(long, int)}. This method should be called according
+         * to a <code>true</code> value having been most recently received from
+         * {@link #onIdle()}.
+         */
+        void prune();
+
+        /**
+         * Reset the baseline timestamp against which `idleTimeout` will be evaluated
+         */
+        void init();
+    }
+
+    /**
      * Encodes thread counts:
      * <dl>
      * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if the pool is stopping</dd>
@@ -94,7 +146,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
-    private final AtomicLong _shrinkThreshold = new AtomicLong();
+    private ShrinkManager shrinkManager;
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private final BlockingQueue<Runnable> _jobs;
@@ -219,7 +271,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         addBean(_tryExecutor);
 
-        _shrinkThreshold.set(NanoTime.now());
+        shrinkManager.init();
 
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
@@ -367,6 +419,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public void setIdleTimeout(int idleTimeout)
     {
         _idleTimeout = idleTimeout;
+        initShrinkManager();
         ReservedThreadExecutor reserved = getBean(ReservedThreadExecutor.class);
         if (reserved != null)
             reserved.setIdleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
@@ -391,8 +444,115 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (_budget != null)
             _budget.check(maxThreads);
         _maxThreads = maxThreads;
+        initShrinkManager();
         if (_minThreads > _maxThreads)
             _minThreads = _maxThreads;
+    }
+
+    private static final ShrinkManager NOOP_SHRINK_MANAGER = new ShrinkManager()
+    {
+        @Override
+        public boolean onIdle()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onBusy()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean shrinkIfNeeded(long itNanos, int idleTimeoutMaxShrinkCount)
+        {
+            return false;
+        }
+
+        @Override
+        public void prune()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void init()
+        {
+            // No-op
+        }
+    };
+
+    /**
+     * Trivial default implementation, with minimal internal state. Results in
+     * behavior that is functionally identical to historical default shrink behavior.
+     */
+    private static final class DefaultShrinkManager implements ShrinkManager
+    {
+
+        private final AtomicLong lastShrink = new AtomicLong();
+
+        @Override
+        public boolean onIdle()
+        {
+            // no per-thread state, so return false
+            return false;
+        }
+
+        @Override
+        public boolean onBusy()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean shrinkIfNeeded(long itNanos, int idleTimeoutMaxShrinkCount)
+        {
+            assert idleTimeoutMaxShrinkCount == 1;
+            long last = lastShrink.get();
+            long now = NanoTime.now();
+            // NOTE: legacy behavior simply updated `lastShrink` to `now`; but that introduced
+            // gaps in the "lastShrink timeline" that artificially reduced shrink rate and made
+            // it harder to test reliably -- hence `Math.max(last + siNanos, now - siNanos)`.
+            long siNanos = itNanos / idleTimeoutMaxShrinkCount;
+            return NanoTime.elapsed(last, now) > itNanos &&
+                    lastShrink.compareAndSet(last, Math.max(last + siNanos, now - siNanos));
+        }
+
+        @Override
+        public void prune()
+        {
+            throw new UnsupportedOperationException("no per-thread state to prune!");
+        }
+
+        @Override
+        public void init()
+        {
+            lastShrink.set(NanoTime.now());
+        }
+    }
+
+    /**
+     * Initializes {@link #shrinkManager} according to current settings. This method should
+     * be called after updating {@link #_shrinkCount} or {@link #_maxThreads}.
+     */
+    private void initShrinkManager()
+    {
+        if (_idleTimeout <= 0)
+        {
+            shrinkManager = NOOP_SHRINK_MANAGER;
+        }
+        else if (_shrinkCount != 1)
+        {
+            shrinkManager = new LinearShrinkManager(_maxThreads);
+        }
+        else if (shrinkManager instanceof DefaultShrinkManager)
+        {
+            // No-op, fine to re-use existing instance
+        }
+        else
+        {
+            shrinkManager = new DefaultShrinkManager();
+        }
     }
 
     /**
@@ -414,7 +574,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         _minThreads = minThreads;
 
         if (_minThreads > _maxThreads)
+        {
             _maxThreads = _minThreads;
+            initShrinkManager();
+        }
 
         if (isStarted())
             ensureThreads();
@@ -557,6 +720,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (shrinkCount < 1)
             throw new IllegalArgumentException("Invalid shrink count " + shrinkCount);
         _shrinkCount = shrinkCount;
+        initShrinkManager();
     }
 
     /**
@@ -863,6 +1027,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
+            shrinkManager.init(); // TODO (mg) maybe don't need this?
             thread.start();
             started = true;
         }
@@ -966,65 +1131,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     protected void runJob(Runnable job)
     {
         job.run();
-    }
-
-    /**
-     * <p>Attempts to shrink the thread pool by one thread if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
-     * @return true if shrunk, false otherwise.
-     */
-    protected boolean shrinkIfNeeded()
-    {
-        long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
-        while (true)
-        {
-            // No jobs available, should we shrink?
-            int threads = getThreads();
-            int minThreads = getMinThreads();
-            if (threads > minThreads)
-            {
-                // We have an idle timeout and excess threads, so check if we should shrink?
-                long now = NanoTime.now();
-                long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Shrink check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
-
-                long shrinkThreshold = _shrinkThreshold.get();
-                long threshold = shrinkThreshold;
-
-                // If the threshold is too far in the past,
-                // advance it to be one idle timeout before now plus a bit of shrink period.
-                if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
-                    threshold = now - idleTimeoutNanos;
-
-                // advance the threshold by one shrink period
-                threshold += shrinkPeriod;
-
-                // Is the new threshold in the future?
-                if (NanoTime.isBefore(now, threshold))
-                {
-                    // Yes - we cannot shrink yet, so continue looking for jobs
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
-                    return false;
-                }
-
-                // We can shrink if we can update the atomic shrink threshold?
-                if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
-                {
-                    // Yes - we have shrunk, so exit.
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
-                    return true;
-                }
-            }
-            else
-            {
-                // We reached min threads, continue looking for jobs
-                if (LOG.isDebugEnabled())
-                    LOG.debug("At min threads, {} > {} {}", threads, minThreads, QueuedThreadPool.this);
-                return false;
-            }
-        }
     }
 
     private void doRunJob(Runnable job)
@@ -1132,8 +1238,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
             boolean idle = true;
+            boolean pruneIdle = false;
             try
             {
+                pruneIdle = shrinkManager.onIdle();
                 while (_counts.getHi() > Integer.MIN_VALUE)
                 {
                     try
@@ -1141,29 +1249,38 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
                         Runnable job = idleJobPoll(idleTimeoutNanos);
 
-                        while (job != null)
+                        if (job != null)
                         {
-                            idle = false;
-                            // Run the jobs.
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("run {} in {}", job, QueuedThreadPool.this);
-                            doRunJob(job);
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
+                            pruneIdle = shrinkManager.onBusy();
+                            do
+                            {
+                                idle = false;
+                                // Run the jobs.
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("run {} in {}", job, QueuedThreadPool.this);
+                                doRunJob(job);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
 
-                            // Signal that we are idle again; since execute() subtracts
-                            // 1 from idle each time a job is submitted, we have to add
-                            // 1 for each executed job here to compensate.
-                            if (!addCounts(0, 1))
-                                break;
-                            idle = true;
+                                // Signal that we are idle again; since execute() subtracts
+                                // 1 from idle each time a job is submitted, we have to add
+                                // 1 for each executed job here to compensate.
+                                if (!addCounts(0, 1))
+                                    break;
+                                idle = true;
 
-                            // Look for another job
-                            job = _jobs.poll();
+                                // Look for another job
+                                job = _jobs.poll();
+                            }
+                            while (job != null);
+                            pruneIdle = shrinkManager.onIdle();
                         }
 
-                        if (shrinkIfNeeded())
+                        if (shrinkManager.shrinkIfNeeded(idleTimeoutNanos, getIdleTimeoutMaxShrinkCount()))
+                        {
+                            pruneIdle = false;
                             break;
+                        }
                     }
                     catch (InterruptedException e)
                     {
@@ -1173,6 +1290,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
             finally
             {
+                if (pruneIdle)
+                {
+                    shrinkManager.prune();
+                }
                 Thread thread = Thread.currentThread();
                 removeThread(thread);
 
