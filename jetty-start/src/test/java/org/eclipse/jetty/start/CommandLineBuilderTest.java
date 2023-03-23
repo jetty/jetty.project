@@ -26,7 +26,7 @@ public class CommandLineBuilderTest
         CommandLineBuilder cmd = new CommandLineBuilder("java");
         cmd.addEqualsArg("-Djava.io.tmpdir", "/home/java/temp dir/");
         cmd.addArg("--version");
-        assertThat(cmd.toQuotedString(" "), is("java '-Djava.io.tmpdir=/home/java/temp dir/' --version"));
+        assertThat(cmd.toQuotedString(), is("java '-Djava.io.tmpdir=/home/java/temp dir/' --version"));
     }
 
     @Test
@@ -34,7 +34,7 @@ public class CommandLineBuilderTest
     {
         CommandLineBuilder cmd = new CommandLineBuilder("java");
         cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
-        assertThat(cmd.toQuotedString(" "), is("java -Djetty.home=/opt/jetty"));
+        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty"));
     }
 
     @Test
@@ -42,7 +42,7 @@ public class CommandLineBuilderTest
     {
         CommandLineBuilder cmd = new CommandLineBuilder("java");
         cmd.addEqualsArg("-Djetty.home", "/opt/jetty 10/home");
-        assertThat(cmd.toQuotedString(" "), is("java '-Djetty.home=/opt/jetty 10/home'"));
+        assertThat(cmd.toQuotedString(), is("java '-Djetty.home=/opt/jetty 10/home'"));
     }
 
     @Test
@@ -51,7 +51,7 @@ public class CommandLineBuilderTest
         CommandLineBuilder cmd = new CommandLineBuilder("java");
         cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
         cmd.addEqualsArg("jetty.requestlog.formatter", "%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"");
-        assertThat(cmd.toQuotedString(" "), is("java -Djetty.home=/opt/jetty 'jetty.requestlog.formatter=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"'"));
+        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty 'jetty.requestlog.formatter=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"'"));
     }
 
     @Test
@@ -60,6 +60,6 @@ public class CommandLineBuilderTest
         CommandLineBuilder cmd = new CommandLineBuilder("java");
         cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
         cmd.addEqualsArg("monetary.symbol", "€");
-        assertThat(cmd.toQuotedString(" "), is("java -Djetty.home=/opt/jetty monetary.symbol=€"));
+        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty monetary.symbol=€"));
     }
 }

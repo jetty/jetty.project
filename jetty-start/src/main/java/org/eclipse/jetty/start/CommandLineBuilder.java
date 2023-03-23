@@ -167,17 +167,16 @@ public class CommandLineBuilder
     /**
      * A version of {@link #toString()} where every arg is evaluated for potential {@code '} (single-quote tick) wrapping.
      *
-     * @param delim the delimiter between args, use {@code ' '} (space) for shell executable command line.
      * @return the toString but each arg that has spaces is surrounded by {@code '} (single-quote tick)
      */
-    public String toQuotedString(String delim)
+    public String toQuotedString()
     {
         StringBuilder buf = new StringBuilder();
 
         for (String arg : args)
         {
             if (buf.length() > 0)
-                buf.append(delim);
+                buf.append(' ');
             boolean needsQuotes = (arg.contains(" "));
             if (needsQuotes)
                 buf.append("'");
