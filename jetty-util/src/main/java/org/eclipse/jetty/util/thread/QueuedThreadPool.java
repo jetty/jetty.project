@@ -968,6 +968,65 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         job.run();
     }
 
+    /**
+     * <p>Attempts to shrink the thread pool by one thread if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
+     * @return true if shrunk, false otherwise.
+     */
+    protected boolean shrinkIfNeeded()
+    {
+        long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
+        while (true)
+        {
+            // No jobs available, should we shrink?
+            int threads = getThreads();
+            int minThreads = getMinThreads();
+            if (threads > minThreads)
+            {
+                // We have an idle timeout and excess threads, so check if we should shrink?
+                long now = NanoTime.now();
+                long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Shrink check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
+
+                long shrinkThreshold = _shrinkThreshold.get();
+                long threshold = shrinkThreshold;
+
+                // If the threshold is too far in the past,
+                // advance it to be one idle timeout before now plus a bit of shrink period.
+                if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
+                    threshold = now - idleTimeoutNanos;
+
+                // advance the threshold by one shrink period
+                threshold += shrinkPeriod;
+
+                // Is the new threshold in the future?
+                if (NanoTime.isBefore(now, threshold))
+                {
+                    // Yes - we cannot shrink yet, so continue looking for jobs
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
+                    return false;
+                }
+
+                // We can shrink if we can update the atomic shrink threshold?
+                if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
+                {
+                    // Yes - we have shrunk, so exit.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
+                    return true;
+                }
+            }
+            else
+            {
+                // We reached min threads, continue looking for jobs
+                if (LOG.isDebugEnabled())
+                    LOG.debug("At min threads, {} > {} {}", threads, minThreads, QueuedThreadPool.this);
+                return false;
+            }
+        }
+    }
+
     private void doRunJob(Runnable job)
     {
         try
@@ -1103,7 +1162,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             job = _jobs.poll();
                         }
 
-                        if (shrinkIfNeeded(idleTimeoutNanos))
+                        if (shrinkIfNeeded())
                             break;
                     }
                     catch (InterruptedException e)
@@ -1125,63 +1184,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 // There is a chance that we shrunk just as a job was queued,
                 // so check again if we have sufficient threads to meet demand.
                 ensureThreads();
-            }
-        }
-
-        /**
-         * @return true if shrunk, false otherwise.
-         */
-        private boolean shrinkIfNeeded(long idleTimeoutNanos)
-        {
-            while (true)
-            {
-                // No jobs available, should we shrink?
-                int threads = getThreads();
-                int minThreads = getMinThreads();
-                if (threads > minThreads)
-                {
-                    // We have an idle timeout and excess threads, so check if we should shrink?
-                    long now = NanoTime.now();
-                    long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Shrink check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
-
-                    long shrinkThreshold = _shrinkThreshold.get();
-                    long threshold = shrinkThreshold;
-
-                    // If the threshold is too far in the past,
-                    // advance it to be one idle timeout before now plus a bit of shrink period.
-                    if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
-                        threshold = now - idleTimeoutNanos;
-
-                    // advance the threshold by one shrink period
-                    threshold += shrinkPeriod;
-
-                    // Is the new threshold in the future?
-                    if (NanoTime.isBefore(now, threshold))
-                    {
-                        // Yes - we cannot shrink yet, so continue looking for jobs
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
-                        return false;
-                    }
-
-                    // We can shrink if we can update the atomic shrink threshold?
-                    if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
-                    {
-                        // Yes - we have shrunk, so exit.
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
-                        return true;
-                    }
-                }
-                else
-                {
-                    // We reached min threads, continue looking for jobs
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("At min threads, {} > {} {}", threads, minThreads, QueuedThreadPool.this);
-                    return false;
-                }
             }
         }
     }
