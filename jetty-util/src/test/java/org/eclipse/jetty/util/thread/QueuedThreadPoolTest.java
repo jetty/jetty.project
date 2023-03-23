@@ -1156,9 +1156,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         final Random random = new Random();
 
         QueuedThreadPool qtp = new QueuedThreadPool(2 * spikeThreads, busyThreads / 2);
-        // This test requires the aggressive shrinking as it keeps all threads busy enough that not a single one
-        // ever stays idle for the idle timeout period.
-        qtp.setAggressiveShrinking(true);
         qtp.setIdleTimeout(idleTimeout);
         qtp.setIdleTimeoutMaxShrinkCount(shrinkCount);
         qtp.start();

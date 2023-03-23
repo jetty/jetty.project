@@ -114,7 +114,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
     private int _shrinkCount = 1;
-    private boolean _aggressiveShrinking;
 
     public QueuedThreadPool()
     {
@@ -569,20 +568,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         return _shrinkCount;
     }
 
-    public void setAggressiveShrinking(boolean aggressiveShrinking)
-    {
-        _aggressiveShrinking = aggressiveShrinking;
-    }
-
-    /**
-     * @return true if the idle threads should exit before the idle timeout period, false otherwise
-     */
-    @ManagedAttribute("should the idle threads exit before the idle timeout period")
-    public boolean isAggressiveShrinking()
-    {
-        return _aggressiveShrinking;
-    }
-
     /**
      * @return the number of jobs in the queue waiting for a thread
      */
@@ -980,9 +965,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      */
     protected void runJob(Runnable job)
     {
+        job.run();
+    }
+
+    private void doRunJob(Runnable job)
+    {
         try
         {
-            job.run();
+            runJob(job);
         }
         catch (Throwable e)
         {
@@ -990,11 +980,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         finally
         {
-            // Clear any thread interrupted status,
-            // interrupted() is relatively slow so the
-            // isInterrupted() check helps with perf.
-            if (Thread.currentThread().isInterrupted())
-                Thread.interrupted();
+            // Clear any thread interrupted status.
+            Thread.interrupted();
         }
     }
 
@@ -1092,15 +1079,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 {
                     try
                     {
-                        boolean aggressiveShrinking = isAggressiveShrinking();
                         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
                         Runnable job = idleJobPoll(idleTimeoutNanos);
-
-                        if (job == null && !aggressiveShrinking)
-                        {
-                            if (shrinkIfNeeded(idleTimeoutNanos))
-                                break;
-                        }
 
                         while (job != null)
                         {
@@ -1108,7 +1088,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             // Run the jobs.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("run {} in {}", job, QueuedThreadPool.this);
-                            runJob(job);
+                            doRunJob(job);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
 
@@ -1123,7 +1103,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             job = _jobs.poll();
                         }
 
-                        if (aggressiveShrinking && shrinkIfNeeded(idleTimeoutNanos))
+                        if (shrinkIfNeeded(idleTimeoutNanos))
                             break;
                     }
                     catch (InterruptedException e)
