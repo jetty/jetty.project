@@ -171,7 +171,7 @@ dumpEnv()
     echo "JETTY_STATE           =  $JETTY_STATE"
     echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
     echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
-    echo "RUN_CMD               =  ${RUN_CMD[*]}"
+    echo "RUN_ARGS              =  ${RUN_ARGS[*]}"
 }
 
 
@@ -432,8 +432,9 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-RUN_ARGS=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
-RUN_CMD=($JETTY_SYS_PROPS ${RUN_ARGS[@]})
+# Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
+JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
+RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
 #####################################################
 # Comment these out after you're happy with what
@@ -464,7 +465,7 @@ case "$ACTION" in
         CH_USER="--chuid $JETTY_USER"
       fi
 
-      echo ${RUN_CMD[@]} start-log-file="$JETTY_START_LOG" | xargs start-stop-daemon \
+      echo ${RUN_ARGS[@]} start-log-file="$JETTY_START_LOG" | xargs start-stop-daemon \
        --start $CH_USER \
        --pidfile "$JETTY_PID" \
        --chdir "$JETTY_BASE" \
@@ -494,11 +495,11 @@ case "$ACTION" in
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          echo ${RUN_CMD[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
+          echo ${RUN_ARGS[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
           disown \$!
           echo \$! > \"$JETTY_PID\""
       else
-        echo ${RUN_CMD[*]} | xargs ${JAVA} > /dev/null &
+        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
         disown $!
         echo $! > "$JETTY_PID"
       fi
@@ -583,7 +584,7 @@ case "$ACTION" in
     # Under control of daemontools supervise monitor which
     # handles restarts and shutdowns via the svc program.
     #
-    echo ${RUN_CMD[*]} | xargs ${JAVA} > /dev/null &
+    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
 
     ;;
 
@@ -596,7 +597,7 @@ case "$ACTION" in
       exit 1
     fi
 
-    echo ${RUN_CMD[*]} | xargs ${JAVA} > /dev/null &
+    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
     ;;
 
   check|status)
