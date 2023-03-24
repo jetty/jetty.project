@@ -94,7 +94,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
          * Called upon a thread becoming tracked as idle (for the purpose of determining
          * shrink behavior). This method should return <code>true</code> if internal state
          * is updated in a way that must be cleared via {@link #prune()} upon unexpected
-         * thread exit (i.e., exit by any means <i>other</i> than {@link #shrinkIfNeeded(long, int)}
+         * thread exit (i.e., exit by any means <i>other</i> than {@link #evict(long, int)}
          * returning <code>true</code>).
          */
         boolean onIdle();
@@ -116,15 +116,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
          * pool shrinkage, so there should be <i>no</i> corresponding call to {@link #prune()}.
          *
          * @param itNanos idle timeout (minimum TTL for idle capacity) in nanos
-         * @param idleTimeoutMaxShrinkCount max threads to shrink per itNanos interval
+         * @param maxEvictCount max threads to shrink per itNanos interval
          * @return <code>true</code> if the pool should shrink by one.
          */
-        boolean shrinkIfNeeded(long itNanos, int idleTimeoutMaxShrinkCount);
+        boolean evict(long itNanos, int maxEvictCount);
 
         /**
          * Cleans up any extraneous internal state corresponding to a thread that exits
          * for any reason <i>aside from</i> receiving a <code>true</code> value from
-         * {@link #shrinkIfNeeded(long, int)}. This method should be called according
+         * {@link #evict(long, int)}. This method should be called according
          * to a <code>true</code> value having been most recently received from
          * {@link #onIdle()}.
          */
@@ -464,7 +464,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
 
         @Override
-        public boolean shrinkIfNeeded(long itNanos, int idleTimeoutMaxShrinkCount)
+        public boolean evict(long itNanos, int maxEvictCount)
         {
             return false;
         }
@@ -505,15 +505,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
 
         @Override
-        public boolean shrinkIfNeeded(long itNanos, int idleTimeoutMaxShrinkCount)
+        public boolean evict(long itNanos, int maxEvictCount)
         {
-            assert idleTimeoutMaxShrinkCount == 1;
+            assert maxEvictCount == 1;
             long last = lastShrink.get();
             long now = NanoTime.now();
             // NOTE: legacy behavior simply updated `lastShrink` to `now`; but that introduced
             // gaps in the "lastShrink timeline" that artificially reduced shrink rate and made
             // it harder to test reliably -- hence `Math.max(last + siNanos, now - siNanos)`.
-            long siNanos = itNanos / idleTimeoutMaxShrinkCount;
+            long siNanos = itNanos / maxEvictCount;
             return NanoTime.elapsed(last, now) > itNanos &&
                     lastShrink.compareAndSet(last, Math.max(last + siNanos, now - siNanos));
         }
@@ -1259,7 +1259,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             pruneIdle = shrinkManager.onIdle();
                         }
 
-                        if (shrinkManager.shrinkIfNeeded(idleTimeoutNanos, getMaxEvictCount()))
+                        if (shrinkManager.evict(idleTimeoutNanos, getMaxEvictCount()))
                         {
                             pruneIdle = false;
                             break;
