@@ -53,7 +53,7 @@ public class QueuedThreadPoolShrinkTest
         final String configMsg = "idleTimeout=" + idleTimeout + ", idleTimeoutDecay=" + idleTimeoutDecay + ", seed=" + Long.toUnsignedString(seed, 16);
         QueuedThreadPool qtp = new QueuedThreadPool(maxThreads, 0);
         qtp.setIdleTimeout(idleTimeout);
-        qtp.setIdleTimeoutMaxShrinkCount(idleTimeoutDecay);
+        qtp.setMaxEvictCount(idleTimeoutDecay);
         qtp.start();
         AtomicBoolean abortPing = new AtomicBoolean();
         try
@@ -127,7 +127,7 @@ public class QueuedThreadPoolShrinkTest
         }
         QueuedThreadPool qtp = new QueuedThreadPool(maxThreads + 1, 0);
         qtp.setIdleTimeout(idleTimeout);
-        qtp.setIdleTimeoutMaxShrinkCount(idleTimeoutDecay);
+        qtp.setMaxEvictCount(idleTimeoutDecay);
         qtp.start();
         AtomicBoolean abortPing = new AtomicBoolean();
         try
@@ -283,7 +283,7 @@ public class QueuedThreadPoolShrinkTest
         }
         QueuedThreadPool qtp = new QueuedThreadPool(1000, 0);
         qtp.setIdleTimeout(1000);
-        qtp.setIdleTimeoutMaxShrinkCount(idleTimeoutDecay);
+        qtp.setMaxEvictCount(idleTimeoutDecay);
         qtp.start();
         final int count = 10;
         final int taskMillis = 2000;
@@ -368,7 +368,7 @@ public class QueuedThreadPoolShrinkTest
         AtomicBoolean abortPing = new AtomicBoolean();
         QueuedThreadPool qtp = new QueuedThreadPool(count << 1, 0);
         qtp.setIdleTimeout(idleTimeout);
-        qtp.setIdleTimeoutMaxShrinkCount(idleTimeoutDecay);
+        qtp.setMaxEvictCount(idleTimeoutDecay);
         qtp.start();
         final int taskMillis = idleTimeout << 1;
         // The outcome of how this Random is used will not be deterministic anyway, so for our purposes a

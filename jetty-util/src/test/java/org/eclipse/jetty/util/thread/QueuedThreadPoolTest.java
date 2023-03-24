@@ -1114,7 +1114,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setMaxThreads(maxThreads);
         int idleTimeout = 1000;
         tp.setIdleTimeout(idleTimeout);
-        tp.setIdleTimeoutMaxShrinkCount(3);
+        tp.setMaxEvictCount(3);
         tp.start();
 
         waitForThreads(tp, minThreads);
@@ -1136,10 +1136,10 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertEquals(maxThreads, tp.getThreads());
 
         Thread.sleep(idleTimeout + idleTimeout / 2);
-        assertEquals(maxThreads - tp.getIdleTimeoutMaxShrinkCount(), tp.getThreads());
+        assertEquals(maxThreads - tp.getMaxEvictCount(), tp.getThreads());
 
         Thread.sleep(idleTimeout);
-        assertEquals(maxThreads - 2 * tp.getIdleTimeoutMaxShrinkCount(), tp.getThreads());
+        assertEquals(maxThreads - 2 * tp.getMaxEvictCount(), tp.getThreads());
 
         Thread.sleep(idleTimeout);
         assertEquals(minThreads, tp.getThreads());
@@ -1157,7 +1157,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         QueuedThreadPool qtp = new QueuedThreadPool(2 * spikeThreads, busyThreads / 2);
         qtp.setIdleTimeout(idleTimeout);
-        qtp.setIdleTimeoutMaxShrinkCount(shrinkCount);
+        qtp.setMaxEvictCount(shrinkCount);
         qtp.start();
 
         CountDownLatch spike = new CountDownLatch(spikeThreads);
