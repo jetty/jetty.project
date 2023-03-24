@@ -90,7 +90,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if the pool is stopping</dd>
      * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size.  Essentially if positive,
      * this represents the effective number of idle threads, and if negative it represents the
-     * demand for more threads, aka the job queue's size.</dd>
+     * demand for more threads, which is equivalent to the job queue's size.</dd>
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
@@ -113,7 +113,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
-    private int _shrinkCount = 1;
+    private int _maxEvictCount = 1;
 
     public QueuedThreadPool()
     {
@@ -543,29 +543,29 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * number of threads}.
      * The default value is {@code 1}.</p>
      * <p>For example, consider a thread pool with {@code minThread=2}, {@code maxThread=20},
-     * {@code idleTimeout=5000} and {@code idleTimeoutShrinkCount=3}.
+     * {@code idleTimeout=5000} and {@code maxEvictCount=3}.
      * Let's assume all 20 threads are executing a task, and they all finish their own tasks
      * at the same time and no more tasks are submitted; then, all 20 will wait for an idle
      * timeout, after which 3 threads will be exited, while the other 17 will wait another
      * idle timeout; then another 3 threads will be exited, and so on until {@code minThreads=2}
      * will be reached.</p>
      *
-     * @param shrinkCount the maximum number of idle threads to exit in one idle timeout period
+     * @param evictCount the maximum number of idle threads to exit in one idle timeout period
      */
-    public void setIdleTimeoutMaxShrinkCount(int shrinkCount)
+    public void setMaxEvictCount(int evictCount)
     {
-        if (shrinkCount < 1)
-            throw new IllegalArgumentException("Invalid shrink count " + shrinkCount);
-        _shrinkCount = shrinkCount;
+        if (evictCount < 1)
+            throw new IllegalArgumentException("Invalid evict count " + evictCount);
+        _maxEvictCount = evictCount;
     }
 
     /**
      * @return the maximum number of idle threads to exit in one idle timeout period
      */
     @ManagedAttribute("maximum number of idle threads to exit in one idle timeout period")
-    public int getIdleTimeoutMaxShrinkCount()
+    public int getMaxEvictCount()
     {
-        return _shrinkCount;
+        return _maxEvictCount;
     }
 
     /**
@@ -969,10 +969,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>Attempts to shrink the thread pool by one thread if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
-     * @return true if shrunk, false otherwise.
+     * <p>Attempts to evict the current thread from the pool if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
+     * @return true if the current thread was evicted, false otherwise.
      */
-    protected boolean shrinkIfNeeded()
+    protected boolean evict()
     {
         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
         while (true)
@@ -984,7 +984,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             {
                 // We have an idle timeout and excess threads, so check if we should shrink?
                 long now = NanoTime.now();
-                long shrinkPeriod = idleTimeoutNanos / getIdleTimeoutMaxShrinkCount();
+                long shrinkPeriod = idleTimeoutNanos / getMaxEvictCount();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Shrink check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
 
@@ -1024,23 +1024,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     LOG.debug("At min threads, {} > {} {}", threads, minThreads, QueuedThreadPool.this);
                 return false;
             }
-        }
-    }
-
-    private void doRunJob(Runnable job)
-    {
-        try
-        {
-            runJob(job);
-        }
-        catch (Throwable e)
-        {
-            LOG.warn("Job failed", e);
-        }
-        finally
-        {
-            // Clear any thread interrupted status.
-            Thread.interrupted();
         }
     }
 
@@ -1134,7 +1117,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             boolean idle = true;
             try
             {
-                while (_counts.getHi() > Integer.MIN_VALUE)
+                while (_counts.getHi() != Integer.MIN_VALUE)
                 {
                     try
                     {
@@ -1162,7 +1145,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             job = _jobs.poll();
                         }
 
-                        if (shrinkIfNeeded())
+                        if (evict())
                             break;
                     }
                     catch (InterruptedException e)
@@ -1184,6 +1167,23 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 // There is a chance that we shrunk just as a job was queued,
                 // so check again if we have sufficient threads to meet demand.
                 ensureThreads();
+            }
+        }
+
+        private void doRunJob(Runnable job)
+        {
+            try
+            {
+                runJob(job);
+            }
+            catch (Throwable e)
+            {
+                LOG.warn("Job failed", e);
+            }
+            finally
+            {
+                // Clear any thread interrupted status.
+                Thread.interrupted();
             }
         }
     }

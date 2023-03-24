@@ -36,7 +36,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @State(Scope.Benchmark)
 @Warmup(iterations = 10, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
-public class QTPBenchmark
+public class QueuedThreadPoolBenchmark
 {
     QueuedThreadPool pool;
     private CountDownLatch[] latches;
@@ -80,7 +80,7 @@ public class QTPBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-            .include(QTPBenchmark.class.getSimpleName())
+            .include(QueuedThreadPoolBenchmark.class.getSimpleName())
             .forks(1)
             // .addProfiler(CompilerProfiler.class)
             // .addProfiler(LinuxPerfProfiler.class)
