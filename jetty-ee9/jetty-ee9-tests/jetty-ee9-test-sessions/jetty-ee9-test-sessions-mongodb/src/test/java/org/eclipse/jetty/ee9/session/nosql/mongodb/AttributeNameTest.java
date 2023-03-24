@@ -32,10 +32,7 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * See bug: https://bugs.eclipse.org/bugs/show_bug.cgi?id=444595
  */
 @Testcontainers(disabledWithoutDocker = true)
-@Tag("flaky")
 public class AttributeNameTest
 {
     @BeforeAll
