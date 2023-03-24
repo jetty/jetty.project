@@ -55,7 +55,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private String tokenEndpoint;
     private String endSessionEndpoint;
     private boolean authenticateNewUsers = false;
-    private boolean respectIdTokenExpiry = false;
+    private boolean logoutWhenIdTokenIsExpired = false;
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
@@ -276,14 +276,14 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         this.authenticateNewUsers = authenticateNewUsers;
     }
 
-    public boolean isRespectIdTokenExpiry()
+    public boolean isLogoutWhenIdTokenIsExpired()
     {
-        return respectIdTokenExpiry;
+        return logoutWhenIdTokenIsExpired;
     }
 
-    public void setRespectIdTokenExpiry(boolean respectIdTokenExpiry)
+    public void setLogoutWhenIdTokenIsExpired(boolean logoutWhenIdTokenIsExpired)
     {
-        this.respectIdTokenExpiry = respectIdTokenExpiry;
+        this.logoutWhenIdTokenIsExpired = logoutWhenIdTokenIsExpired;
     }
 
     private static HttpClient newHttpClient()

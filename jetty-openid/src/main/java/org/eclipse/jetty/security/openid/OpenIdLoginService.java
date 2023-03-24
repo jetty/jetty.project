@@ -137,7 +137,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         if (!(user.getUserPrincipal() instanceof OpenIdUserPrincipal))
             return false;
         OpenIdUserPrincipal userPrincipal = (OpenIdUserPrincipal)user.getUserPrincipal();
-        if (configuration.isRespectIdTokenExpiry() && userPrincipal.getCredentials().isExpired())
+        if (configuration.isLogoutWhenIdTokenIsExpired() && userPrincipal.getCredentials().isExpired())
             return false;
         return loginService == null || loginService.validate(user);
     }

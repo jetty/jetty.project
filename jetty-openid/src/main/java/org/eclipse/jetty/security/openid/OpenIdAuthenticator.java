@@ -398,7 +398,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             uri = URIUtil.SLASH;
 
         HttpSession session = request.getSession(false);
-        if (_openIdConfiguration.isRespectIdTokenExpiry() && hasExpiredIdToken(session))
+        if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
         {
             // After logout, fall through to the code below and send another login challenge.
             logoutWithoutRedirect(request);

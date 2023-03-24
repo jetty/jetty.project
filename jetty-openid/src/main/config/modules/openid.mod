@@ -47,4 +47,4 @@ etc/jetty-openid.xml
 # jetty.openid.authMethod=client_secret_post
 
 ## Whether the user should be logged out after the idToken expiry.
-# jetty.openid.respectIdTokenExpiry=false
+# jetty.openid.logoutWhenIdTokenIsExpired=false

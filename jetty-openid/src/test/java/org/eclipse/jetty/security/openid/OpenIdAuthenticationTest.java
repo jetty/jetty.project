@@ -281,7 +281,7 @@ public class OpenIdAuthenticationTest
     @Test
     public void testExpiredIdToken() throws Exception
     {
-        setup(null, config -> config.setRespectIdTokenExpiry(true));
+        setup(null, config -> config.setLogoutWhenIdTokenIsExpired(true));
         long idTokenExpiryTime = 2000;
         openIdProvider.setIdTokenExpiry(idTokenExpiryTime);
         openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
@@ -354,7 +354,7 @@ public class OpenIdAuthenticationTest
         assertThat(content, containsString("name: Alice"));
         assertThat(content, containsString("email: Alice@example.com"));
 
-        // After waiting past ID_Token expiry time we are still authenticated because respectIdTokenExpiry is false by default.
+        // After waiting past ID_Token expiry time we are still authenticated because logoutWhenIdTokenIsExpired is false by default.
         Thread.sleep(idTokenExpiryTime * 2);
         response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
