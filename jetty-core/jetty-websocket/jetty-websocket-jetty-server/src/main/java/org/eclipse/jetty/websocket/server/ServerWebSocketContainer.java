@@ -57,7 +57,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     private final WebSocketMappings mappings;
     private final FrameHandlerFactory factory;
 
-    ServerWebSocketContainer(WebSocketMappings mappings)
+    public ServerWebSocketContainer(WebSocketMappings mappings)
     {
         this.mappings = mappings;
         this.factory = new ServerFrameHandlerFactory(this, mappings.getWebSocketComponents());
@@ -243,7 +243,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         mappings.addMapping(pathSpec, coreCreator, factory, configuration);
     }
 
-    boolean handle(Request request, Response response, Callback callback)
+    public boolean handle(Request request, Response response, Callback callback)
     {
         String target = Request.getPathInContext(request);
         WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
