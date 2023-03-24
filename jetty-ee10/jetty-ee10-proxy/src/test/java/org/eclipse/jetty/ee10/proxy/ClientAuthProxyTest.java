@@ -118,7 +118,7 @@ public class ClientAuthProxyTest
         serverTLS.setSniRequired(false);
         serverTLS.setNeedClientAuth(true);
         // The KeyStore is also a TrustStore.
-        serverTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/server_keystore.p12").toAbsolutePath().toString());
+        serverTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/server_keystore.p12").toString());
         serverTLS.setKeyStorePassword("storepwd");
         serverTLS.setKeyStoreType("PKCS12");
 
@@ -168,7 +168,7 @@ public class ClientAuthProxyTest
         proxyTLS.setSniRequired(false);
         proxyTLS.setNeedClientAuth(true);
         // The KeyStore is also a TrustStore.
-        proxyTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toAbsolutePath().toString());
+        proxyTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toString());
         proxyTLS.setKeyStorePassword("storepwd");
         proxyTLS.setKeyStoreType("PKCS12");
 
@@ -190,7 +190,7 @@ public class ClientAuthProxyTest
         SslContextFactory.Client clientTLS = new SslContextFactory.Client();
         // Disable TLS-level hostname verification.
         clientTLS.setEndpointIdentificationAlgorithm(null);
-        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/client_keystore.p12").toAbsolutePath().toString());
+        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/client_keystore.p12").toString());
         clientTLS.setKeyStorePassword("storepwd");
         clientTLS.setKeyStoreType("PKCS12");
         ClientConnector connector = new ClientConnector();
@@ -263,7 +263,7 @@ public class ClientAuthProxyTest
                     SslContextFactory.Client clientTLS = new SslContextFactory.Client();
                     // Disable TLS-level hostname verification for this test.
                     clientTLS.setEndpointIdentificationAlgorithm(null);
-                    clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toAbsolutePath().toString());
+                    clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toString());
                     clientTLS.setKeyStorePassword("storepwd");
                     clientTLS.setKeyStoreType("PKCS12");
                     clientTLS.setCertAlias(key + "_proxy");
@@ -329,7 +329,7 @@ public class ClientAuthProxyTest
                 };
                 // Disable TLS-level hostname verification for this test.
                 clientTLS.setEndpointIdentificationAlgorithm(null);
-                clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toAbsolutePath().toString());
+                clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toString());
                 clientTLS.setKeyStorePassword("storepwd");
                 clientTLS.setKeyStoreType("PKCS12");
                 ClientConnector connector = new ClientConnector();
@@ -392,7 +392,7 @@ public class ClientAuthProxyTest
                 };
                 // Disable hostname verification is required.
                 clientTLS.setEndpointIdentificationAlgorithm(null);
-                clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toAbsolutePath().toString());
+                clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toString());
                 clientTLS.setKeyStorePassword("storepwd");
                 clientTLS.setKeyStoreType("PKCS12");
                 ClientConnector connector = new ClientConnector();
@@ -442,7 +442,7 @@ public class ClientAuthProxyTest
             {
                 // Disable TLS-level hostname verification for this test.
                 tls.setEndpointIdentificationAlgorithm(null);
-                tls.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toAbsolutePath().toString());
+                tls.setKeyStorePath(MavenTestingUtils.getTestResourcePath("client_auth/proxy_keystore.p12").toString());
                 tls.setKeyStorePassword("storepwd");
                 tls.setKeyStoreType("PKCS12");
                 if (user != null)
