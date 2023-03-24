@@ -14,15 +14,15 @@
 package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
@@ -52,16 +52,13 @@ import static org.hamcrest.Matchers.is;
 
 public class ClientCertAuthenticatorTest
 {
+    private static final String MESSAGE = "Yep CLIENT-CERT works";
 
     private Server server;
-
     private URI serverHttpsUri;
     private URI serverHttpUri;
-
     private HostnameVerifier origVerifier;
     private SSLSocketFactory origSsf;
-
-    private static final String MESSAGE = "Yep CLIENT-CERT works";
 
     @BeforeEach
     public void setup() throws Exception
@@ -74,8 +71,8 @@ public class ClientCertAuthenticatorTest
         ContextHandler context = new ContextHandler();
         server.setHandler(context);
 
-        int port = 32080;
-        int securePort = 32443;
+        int port = freePort();
+        int securePort = freePort();
         SslContextFactory.Server sslContextFactory = createServerSslContextFactory("cacerts.jks", "changeit");
         // Setup HTTP Configuration
         HttpConfiguration httpConf = new HttpConfiguration();
@@ -97,7 +94,6 @@ public class ClientCertAuthenticatorTest
         httpsConnector.setName("secured");
         httpsConnector.setPort(securePort);
 
-        // Add connectors
         server.setConnectors(new Connector[]{httpConnector, httpsConnector});
 
         ConstraintSecurityHandler constraintSecurityHandler = new ConstraintSecurityHandler();
@@ -123,12 +119,9 @@ public class ClientCertAuthenticatorTest
         server.addBean(sslContextFactory);
         server.start();
 
-        // calculate serverUri
         String host = httpConnector.getHost();
         if (host == null)
-        {
             host = "localhost";
-        }
         serverHttpsUri = new URI(String.format("https://%s:%d/", host, httpsConnector.getLocalPort()));
         serverHttpUri = new URI(String.format("http://%s:%d/", host, httpConnector.getLocalPort()));
     }
@@ -137,13 +130,9 @@ public class ClientCertAuthenticatorTest
     public void stopServer() throws Exception
     {
         if (origVerifier != null)
-        {
             HttpsURLConnection.setDefaultHostnameVerifier(origVerifier);
-        }
         if (origSsf != null)
-        {
             HttpsURLConnection.setDefaultSSLSocketFactory(origSsf);
-        }
         server.stop();
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
@@ -153,8 +142,8 @@ public class ClientCertAuthenticatorTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setNeedClientAuth(true);
         cf.setTrustStorePassword(trustStorePassword);
-        cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("test-classes/" + trustStorePath)));
-        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("test-classes/clientcert.jks")));
+        cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile(trustStorePath)));
+        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("clientcert.jks")));
         cf.setKeyStorePassword("changeit");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);
@@ -162,7 +151,7 @@ public class ClientCertAuthenticatorTest
     }
 
     @Test
-    public void authzPass() throws Exception
+    public void testAuthenticationWithClientCertificateSucceeds() throws Exception
     {
         HttpsURLConnection.setDefaultHostnameVerifier((s, sslSession) -> true);
         SslContextFactory.Server cf = createServerSslContextFactory("cacerts.jks", "changeit");
@@ -176,27 +165,32 @@ public class ClientCertAuthenticatorTest
     }
 
     @Test
-    public void authzNotPass() throws Exception
+    public void testAuthenticationWithoutClientCertificateFails() throws Exception
     {
         URL url = serverHttpUri.resolve("/").toURL();
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         assertThat("response code", connection.getResponseCode(), is(403));
     }
 
-    static class FooHandler extends AbstractHandler
+    private int freePort() throws IOException
+    {
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress("localhost", 0));
+            return server.getLocalPort();
+        }
+    }
+
+    private static class FooHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request,
-                            HttpServletResponse response)
-            throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
+            baseRequest.setHandled(true);
             response.setContentType("text/plain; charset=utf-8");
             response.setStatus(HttpServletResponse.SC_OK);
-
-            PrintWriter out = response.getWriter();
-
-            out.println(MESSAGE);
-            baseRequest.setHandled(true);
+            response.getWriter().println(MESSAGE);
         }
     }
 }
