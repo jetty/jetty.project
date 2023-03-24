@@ -143,6 +143,11 @@ public class OpenIdCredentials implements Serializable
 
     public boolean isExpired()
     {
+        return checkExpiry(claims);
+    }
+
+    public static boolean checkExpiry(Map<String, Object> claims)
+    {
         if (claims == null)
             return true;
 

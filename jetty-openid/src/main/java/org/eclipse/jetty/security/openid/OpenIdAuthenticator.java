@@ -377,11 +377,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         {
             Map<String, Object> claims = (Map)session.getAttribute(CLAIMS);
             if (claims != null)
-            {
-                long expiry = (Long)claims.get("exp");
-                long currentTimeSeconds = System.currentTimeMillis() / 1000;
-                return (currentTimeSeconds > expiry);
-            }
+                return OpenIdCredentials.checkExpiry(claims);
         }
         return false;
     }
@@ -404,16 +400,17 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         HttpSession session = request.getSession(false);
         if (_openIdConfiguration.isRespectIdTokenExpiry() && hasExpiredIdToken(session))
         {
+            // After logout, fall through to the code below and send another login challenge.
             logoutWithoutRedirect(request);
-        }
-        else
-        {
+
             // If we expired a valid authentication we do not want to defer authentication,
             // we want to try re-authenticate the user.
-            mandatory |= isJSecurityCheck(uri);
-            if (!mandatory)
-                return new DeferredAuthentication(this);
+            mandatory = true;
         }
+
+        mandatory |= isJSecurityCheck(uri);
+        if (!mandatory)
+            return new DeferredAuthentication(this);
 
         if (isErrorPage(baseRequest.getPathInContext()) && !DeferredAuthentication.isDeferred(response))
             return new DeferredAuthentication(this);
