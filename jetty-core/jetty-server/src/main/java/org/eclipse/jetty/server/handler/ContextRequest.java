@@ -57,18 +57,6 @@ public class ContextRequest extends Request.Wrapper implements Invocable
         return _context;
     }
 
-    @Override
-    public Object getAttribute(String name)
-    {
-        // return some hidden attributes for requestLog
-        return switch (name)
-        {
-            case "o.e.j.s.h.ScopedRequest.contextPath" -> _context.getContextPath();
-            case "o.e.j.s.h.ScopedRequest.pathInContext" -> Request.getPathInContext(this);
-            default -> super.getAttribute(name);
-        };
-    }
-
     private class OnContextDemand implements Runnable
     {
         private final Runnable _demandCallback;
