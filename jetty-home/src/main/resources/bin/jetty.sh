@@ -170,7 +170,8 @@ dumpEnv()
     echo "JETTY_START_LOG       =  $JETTY_START_LOG"
     echo "JETTY_STATE           =  $JETTY_STATE"
     echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
-    echo "RUN_CMD               =  ${RUN_CMD[*]}"
+    echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
+    echo "RUN_ARGS              =  ${RUN_ARGS[*]}"
 }
 
 
@@ -414,9 +415,6 @@ TMPDIR="`cygpath -w $TMPDIR`"
 ;;
 esac
 
-BASE_JETTY_SYS_PROPS=$(echo -ne "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
-JETTY_SYS_PROPS=(${JETTY_SYS_PROPS[*]} $BASE_JETTY_SYS_PROPS)
-
 #####################################################
 # This is how the Jetty server will be started
 #####################################################
@@ -434,8 +432,9 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-RUN_ARGS=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
-RUN_CMD=("$JAVA" $JETTY_SYS_PROPS ${RUN_ARGS[@]})
+# Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
+JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
+RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
 #####################################################
 # Comment these out after you're happy with what
@@ -466,13 +465,14 @@ case "$ACTION" in
         CH_USER="--chuid $JETTY_USER"
       fi
 
-      start-stop-daemon --start $CH_USER \
+      echo ${RUN_ARGS[@]} start-log-file="$JETTY_START_LOG" | xargs start-stop-daemon \
+       --start $CH_USER \
        --pidfile "$JETTY_PID" \
        --chdir "$JETTY_BASE" \
        --background \
        --make-pidfile \
        --startas "$JAVA" \
-       -- ${RUN_ARGS[@]} start-log-file="$JETTY_START_LOG"
+       --
 
     else
 
@@ -495,11 +495,11 @@ case "$ACTION" in
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          exec ${RUN_CMD[*]} start-log-file=\"$JETTY_START_LOG\" > /dev/null &
+          echo ${RUN_ARGS[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
           disown \$!
           echo \$! > \"$JETTY_PID\""
       else
-        "${RUN_CMD[@]}" > /dev/null &
+        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
         disown $!
         echo $! > "$JETTY_PID"
       fi
@@ -584,7 +584,7 @@ case "$ACTION" in
     # Under control of daemontools supervise monitor which
     # handles restarts and shutdowns via the svc program.
     #
-    exec "${RUN_CMD[@]}"
+    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
 
     ;;
 
@@ -597,7 +597,7 @@ case "$ACTION" in
       exit 1
     fi
 
-    exec "${RUN_CMD[@]}"
+    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
     ;;
 
   check|status)
