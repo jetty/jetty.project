@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,54 +20,46 @@ import static org.hamcrest.Matchers.is;
 
 public class CommandLineBuilderTest
 {
-    private CommandLineBuilder cmd = new CommandLineBuilder("java");
-
-    @BeforeEach
-    public void setUp()
-    {
-        cmd.addEqualsArg("-Djava.io.tmpdir", "/home/java/temp dir/");
-        cmd.addArg("--version");
-    }
-
     @Test
     public void testSimpleCommandline()
     {
-        assertThat(cmd.toString(), is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djava.io.tmpdir", "/home/java/temp dir/");
+        cmd.addArg("--version");
+        assertThat(cmd.toQuotedString(), is("java '-Djava.io.tmpdir=/home/java/temp dir/' --version"));
     }
 
     @Test
-    public void testQuotingSimple()
+    public void testSimpleHomeNoSpace()
     {
-        assertQuoting("/opt/jetty", "/opt/jetty");
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
+        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty"));
     }
 
     @Test
-    public void testQuotingSpaceInPath()
+    public void testSimpleHomeWithSpace()
     {
-        assertQuoting("/opt/jetty 7/home", "/opt/jetty\\ 7/home");
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty 10/home");
+        assertThat(cmd.toQuotedString(), is("java '-Djetty.home=/opt/jetty 10/home'"));
     }
 
     @Test
-    public void testQuotingSpaceAndQuotesInPath()
+    public void testEscapedFormattingString()
     {
-        assertQuoting("/opt/jetty 7 \"special\"/home", "/opt/jetty\\ 7\\ \\\"special\\\"/home");
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
+        cmd.addEqualsArg("jetty.requestlog.formatter", "%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"");
+        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty 'jetty.requestlog.formatter=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"'"));
     }
 
     @Test
-    public void testToStringIsQuotedEvenIfArgsAreNotQuotedForProcessBuilder()
+    public void testEscapeUnicode()
     {
-        System.out.println(cmd.toString());
-    }
-
-    @Test
-    public void testQuoteQuotationMarks()
-    {
-        assertQuoting("-XX:OnOutOfMemoryError='kill -9 %p'", "-XX:OnOutOfMemoryError='kill -9 %p'");
-    }
-
-    private void assertQuoting(String raw, String expected)
-    {
-        String actual = CommandLineBuilder.quote(raw);
-        assertThat("Quoted version of [" + raw + "]", actual, is(expected));
+        CommandLineBuilder cmd = new CommandLineBuilder("java");
+        cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
+        cmd.addEqualsArg("monetary.symbol", "€");
+        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty monetary.symbol=€"));
     }
 }
