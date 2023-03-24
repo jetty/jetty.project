@@ -17,10 +17,10 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.ee10.websocket.api.util.WSURI;
-import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.websocket.api.util.WSURI;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

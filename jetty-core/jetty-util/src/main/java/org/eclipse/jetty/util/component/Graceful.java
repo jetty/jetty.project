@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -143,6 +144,10 @@ public interface Graceful
         if (log.isDebugEnabled())
             gracefuls.forEach(g -> log.debug("Graceful {}", g));
 
+        // Call shutdown() on the gracefuls in reverse order.
+        // Inner components may send network bytes to close connections
+        // and must run before the ServerConnector closes the EndPoints.
+        Collections.reverse(gracefuls);
         return CompletableFuture.allOf(gracefuls.stream().map(Graceful::shutdown).toArray(CompletableFuture[]::new));
     }
 

@@ -25,13 +25,13 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.websocket.api.Session;
-import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.ee10.websocket.api.util.WSURI;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.util.WSURI;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 @WebServlet("/")
 public class WebSocketClientServlet extends HttpServlet
