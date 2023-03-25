@@ -32,7 +32,7 @@ etc/jetty-threadpool.xml
 #jetty.threadPool.idleTimeout=60000
 
 ## The max number of idle threads that are exited in one idleTimeout period.
-#jetty.threadPool.idleTimeoutMaxShrinkCount=1
+#jetty.threadPool.maxShrinkCount=1
 
 ## Whether to output a detailed dump.
 #jetty.threadPool.detailedDump=false
