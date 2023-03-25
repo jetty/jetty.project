@@ -969,8 +969,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>Attempts to evict the current thread from the pool if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
-     * @return true if the current thread was evicted, false otherwise.
+     * <p>Attempts to shrink the current thread from the pool if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
+     * @return true if the current thread was shrunk, false otherwise.
      */
     protected boolean shrink()
     {
