@@ -113,7 +113,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
-    private int _maxEvictCount = 1;
+    private int _maxShrinkCount = 1;
 
     public QueuedThreadPool()
     {
@@ -543,29 +543,29 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * number of threads}.
      * The default value is {@code 1}.</p>
      * <p>For example, consider a thread pool with {@code minThread=2}, {@code maxThread=20},
-     * {@code idleTimeout=5000} and {@code maxEvictCount=3}.
+     * {@code idleTimeout=5000} and {@code maxShrinkCount=3}.
      * Let's assume all 20 threads are executing a task, and they all finish their own tasks
      * at the same time and no more tasks are submitted; then, all 20 will wait for an idle
      * timeout, after which 3 threads will be exited, while the other 17 will wait another
      * idle timeout; then another 3 threads will be exited, and so on until {@code minThreads=2}
      * will be reached.</p>
      *
-     * @param evictCount the maximum number of idle threads to exit in one idle timeout period
+     * @param shrinkCount the maximum number of idle threads to exit in one idle timeout period
      */
-    public void setMaxEvictCount(int evictCount)
+    public void setMaxShrinkCount(int shrinkCount)
     {
-        if (evictCount < 1)
-            throw new IllegalArgumentException("Invalid evict count " + evictCount);
-        _maxEvictCount = evictCount;
+        if (shrinkCount < 1)
+            throw new IllegalArgumentException("Invalid shrink count " + shrinkCount);
+        _maxShrinkCount = shrinkCount;
     }
 
     /**
      * @return the maximum number of idle threads to exit in one idle timeout period
      */
     @ManagedAttribute("maximum number of idle threads to exit in one idle timeout period")
-    public int getMaxEvictCount()
+    public int getMaxShrinkCount()
     {
-        return _maxEvictCount;
+        return _maxShrinkCount;
     }
 
     /**
@@ -863,6 +863,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
+            // Update the shrink threshold to prevent thrashing
+            _shrinkThreshold.set(NanoTime.now());
             thread.start();
             started = true;
         }
@@ -987,7 +989,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             {
                 // We have an idle timeout and excess threads, so check if we should shrink?
                 long now = NanoTime.now();
-                long shrinkPeriod = idleTimeoutNanos / getMaxEvictCount();
+                long shrinkPeriod = idleTimeoutNanos / getMaxShrinkCount();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Shrink check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
 
