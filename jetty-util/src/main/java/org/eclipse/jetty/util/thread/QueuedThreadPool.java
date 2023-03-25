@@ -972,13 +972,16 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * <p>Attempts to evict the current thread from the pool if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
      * @return true if the current thread was evicted, false otherwise.
      */
-    protected boolean evict()
+    protected boolean shrink()
     {
         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
         while (true)
         {
             // No jobs available, should we shrink?
-            int threads = getThreads();
+
+            long encoded = _counts.get();
+            int threads = AtomicBiInteger.getHi(encoded);
+            int idle = AtomicBiInteger.getLo(encoded);
             int minThreads = getMinThreads();
             if (threads > minThreads)
             {
@@ -1011,6 +1014,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 // We can shrink if we can update the atomic shrink threshold?
                 if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
                 {
+                    // can we decrement the thread count?
+                    if (!_counts.compareAndSet(encoded, threads - 1, idle - 1))
+                    {
+                        // Rewind the threshold
+                        _shrinkThreshold.addAndGet(-shrinkPeriod);
+                        continue;
+                    }
+
                     // Yes - we have shrunk, so exit.
                     if (LOG.isDebugEnabled())
                         LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
@@ -1114,6 +1125,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
+            boolean shrunk = false;
             boolean idle = true;
             try
             {
@@ -1145,7 +1157,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             job = _jobs.poll();
                         }
 
-                        if (evict())
+                        shrunk = shrink();
+                        if (shrunk)
                             break;
                     }
                     catch (InterruptedException e)
@@ -1160,7 +1173,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 removeThread(thread);
 
                 // Decrement the total thread count and the idle count if we had no job.
-                addCounts(-1, idle ? -1 : 0);
+                if (!shrunk)
+                    addCounts(-1, idle ? -1 : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited for {}", thread, QueuedThreadPool.this);
 
