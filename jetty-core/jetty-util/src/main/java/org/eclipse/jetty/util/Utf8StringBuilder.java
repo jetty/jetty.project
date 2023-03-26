@@ -92,11 +92,6 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         return _buffer.length();
     }
 
-    protected void resetAppendable()
-    {
-        _buffer.setLength(0);
-    }
-    
     /**
      * @return {@code True} if the characters decoded have contained UTF8 coding errors.
      */
@@ -113,7 +108,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         _state = UTF8_ACCEPT;
         _codep = 0;
         _codingErrors = false;
-        resetAppendable();
+        _buffer.setLength(0);
     }
 
     /**
@@ -123,7 +118,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     public void partialReset()
     {
         _codingErrors = false;
-        resetAppendable();
+        _buffer.setLength(0);
     }
 
     private void checkCharAppend()
@@ -392,7 +387,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 throw x;
         }
         String string = _buffer.toString();
-        reset();
+        _buffer.setLength(0);
         return string;
     }
 

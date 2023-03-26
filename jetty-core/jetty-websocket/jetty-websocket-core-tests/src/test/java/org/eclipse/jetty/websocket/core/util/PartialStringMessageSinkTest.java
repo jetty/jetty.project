@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,6 +80,15 @@ public class PartialStringMessageSinkTest
         // First payload is 2 bytes, second payload is 2 bytes
         ByteBuffer firstUtf8Payload = BufferUtil.toBuffer(utf8Bytes, 0, 2);
         ByteBuffer continuationUtf8Payload = BufferUtil.toBuffer(utf8Bytes, 2, 2);
+
+        // Check decoding
+        Utf8StringBuilder check = new Utf8StringBuilder();
+        check.append(utf8Bytes, 0, 2);
+        String partial = check.takePartialString(IllegalStateException::new);
+        assertThat(partial, equalTo(""));
+        check.append(utf8Bytes, 2, 2);
+        String complete = check.takeString(IllegalStateException::new);
+        assertThat(complete, equalTo(gothicUnicode));
 
         FutureCallback callback = new FutureCallback();
         messageSink.accept(new Frame(OpCode.TEXT, firstUtf8Payload).setFin(false), callback);

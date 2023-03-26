@@ -15,7 +15,9 @@ package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -238,6 +240,8 @@ public class InvalidURIRuleTest extends AbstractRuleTest
     @Test
     public void testInvalidUTF8() throws Exception
     {
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setUriCompliance(UriCompliance.RFC3986.with("Bad UTF8", UriCompliance.Violation.BAD_UTF8_ENCODING));
         InvalidURIRule rule = new InvalidURIRule();
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
         start(rule);
@@ -255,6 +259,8 @@ public class InvalidURIRuleTest extends AbstractRuleTest
     @Test
     public void testIncompleteUTF8() throws Exception
     {
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setUriCompliance(UriCompliance.RFC3986.with("Bad UTF8", UriCompliance.Violation.BAD_UTF8_ENCODING));
         InvalidURIRule rule = new InvalidURIRule();
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
         start(rule);
