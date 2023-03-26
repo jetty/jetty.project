@@ -88,6 +88,8 @@ public interface CharsetStringBuilder
             return new Iso8859StringBuilder();
         if (charset == StandardCharsets.US_ASCII)
             return new UsAsciiStringBuilder();
+
+        // Use a CharsetDecoder that defaults to CodingErrorAction#REPORT
         return new DecoderStringBuilder(charset.newDecoder());
     }
 
