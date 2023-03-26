@@ -30,8 +30,14 @@ import org.slf4j.LoggerFactory;
  * This class is stateful and up to 4 calls to {@link #append(byte)} may be needed before
  * state a character is appended to the string buffer.
  * </p><p>
- * The UTF-8 decoding is done by this class and no additional buffers or Readers are used.
+ * The UTF-8 decoding is done by this class and no additional buffers or Readers are used.  The algorithm is
+ * fast fail, in that errors are detected as the bytes are appended.  However, no exceptions are thrown and
+ * only the {@link #hasCodingErrors()} method indicates the fast failure, otherwise the coding errors
+ * are replaced and may be returned, unless the {@link #takeString()} method is used, which may throw
+ * {@link CharacterCodingException}. Already decoded characters may also be appended (e.g. {@link #append(char)}
+ * making this class suitable for decoding % encoded strings of already decoded characters.
  * </p>
+ * @see CharsetStringBuilder for decoding of arbitrary {@link java.nio.charset.Charset}s.
  */
 public class Utf8StringBuilder implements CharsetStringBuilder
 {

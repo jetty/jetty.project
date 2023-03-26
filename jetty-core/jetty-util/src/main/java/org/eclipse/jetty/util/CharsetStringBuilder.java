@@ -32,7 +32,7 @@ import java.util.Objects;
  * <p>Any coding errors in the string will be reported by a {@link CharacterCodingException} thrown
  * from the {@link #takeString()} method, or a {@link RuntimeException} wrapping a {@link CharacterCodingException}
  * thrown from the {@link #toCompleteString()} method.</p>
- * @see Utf8StringBuilder for UTF-8 decoding with replacement of coding errors.
+ * @see Utf8StringBuilder for UTF-8 decoding with replacement of coding errors and/or fast fail behaviour.
  * @see CharsetDecoder for decoding arbitrary {@link Charset}s with control over {@link CodingErrorAction}.
  */
 public interface CharsetStringBuilder
