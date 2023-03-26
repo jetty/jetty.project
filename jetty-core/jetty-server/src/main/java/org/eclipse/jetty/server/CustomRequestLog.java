@@ -548,14 +548,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 }
                 else
                 {
-                    throw new IllegalStateException("formatString parsing error");
+                    throw new IllegalStateException("formatString parsing error: " + formatString);
                 }
 
                 remaining = m.group("REMAINING");
             }
             else
             {
-                throw new IllegalArgumentException("Invalid format string");
+                throw new IllegalArgumentException("Invalid format string: " + formatString);
             }
         }
 
