@@ -298,7 +298,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
 
-        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging stacklessLogging = new StacklessLogging(org.eclipse.jetty.server.Response.class))
         {
             CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
             Throwable t = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
