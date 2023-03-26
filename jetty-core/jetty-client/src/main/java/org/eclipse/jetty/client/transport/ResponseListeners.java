@@ -455,17 +455,19 @@ public class ResponseListeners
             while (true)
             {
                 long encoded = counters.get();
-                int failures = AtomicBiInteger.getHi(encoded) + 1;
+                int failures = AtomicBiInteger.getHi(encoded);
+                int newFailures = failures + 1;
                 int demands = AtomicBiInteger.getLo(encoded);
-                if (demands == listeners.size() - failures)
-                    demands = 0;
-                if (counters.compareAndSet(encoded, failures, demands))
+                int newDemands = demands;
+                if (newDemands + newFailures >= listeners.size())
+                    newDemands = 0;
+                if (counters.compareAndSet(encoded, newFailures, newDemands))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Registered failure; failures={} demands={}", failures, demands);
-                    if (failures == listeners.size())
+                    if (newFailures == listeners.size())
                         originalContentSource.fail(failure);
-                    else if (demands == 0)
+                    else if (demands > 0 && newDemands == 0)
                         originalContentSource.demand(this::onDemandCallback);
                     break;
                 }
@@ -478,14 +480,15 @@ public class ResponseListeners
             {
                 long encoded = counters.get();
                 int failures = AtomicBiInteger.getHi(encoded);
-                int demands = AtomicBiInteger.getLo(encoded) + 1;
-                if (demands == listeners.size() - failures)
-                    demands = 0;
-                if (counters.compareAndSet(encoded, failures, demands))
+                int demands = AtomicBiInteger.getLo(encoded);
+                int newDemands = demands + 1;
+                if (newDemands + failures >= listeners.size())
+                    newDemands = 0;
+                if (counters.compareAndSet(encoded, failures, newDemands))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Registered demand; failures={} demands={}", failures, demands);
-                    if (demands == 0)
+                    if (newDemands == 0)
                         originalContentSource.demand(this::onDemandCallback);
                     break;
                 }
