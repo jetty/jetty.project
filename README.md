@@ -46,11 +46,23 @@ Project documentation is available on the Jetty Eclipse website.
 Building
 ========
 
-To build, use:
+To build, use [Apache Maven 3.8.0](https://maven.apache.org/) (or better):
+
+Fast Build:
 
 ``` shell
-  mvn clean install
+mvn -Pci clean install -DskipTests
 ```
+
+Full Build with All Tests:
+
+``` shell
+mvn clean install
+```
+
+Optional build tools: 
+
+* [`graphviz`](https://graphviz.org/) - used by asciidoctor in the jetty-documentation build to produce various graphs
 
 Eclipse Jetty will be built in `jetty-home/target/jetty-home`.
 
