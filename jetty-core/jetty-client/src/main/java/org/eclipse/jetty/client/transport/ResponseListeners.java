@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.util.AtomicBiInteger;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -410,10 +410,12 @@ public class ResponseListeners
     {
         private static final Logger LOG = LoggerFactory.getLogger(ContentSourceDemultiplexer.class);
 
-        private final AtomicBiInteger counters = new AtomicBiInteger(); // HI = failures; LO = demands
+        private final AutoLock lock = new AutoLock();
         private final List<Response.ContentSourceListener> listeners = new ArrayList<>(2);
         private final List<ContentSource> contentSources = new ArrayList<>(2);
         private Content.Source originalContentSource;
+        private int failures;
+        private int demands;
 
         private void addContentSourceListener(Response.ContentSourceListener listener)
         {
@@ -452,43 +454,35 @@ public class ResponseListeners
 
         private void registerFailure(Throwable failure)
         {
-            while (true)
+            try (AutoLock ignored = lock.lock())
             {
-                long encoded = counters.get();
-                int failures = AtomicBiInteger.getHi(encoded) + 1;
-                int demands = AtomicBiInteger.getLo(encoded);
+                failures++;
+                if (failures == listeners.size())
+                    originalContentSource.fail(failure);
+
                 if (demands == listeners.size() - failures)
-                    demands = 0;
-                if (counters.compareAndSet(encoded, failures, demands))
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Registered failure; failures={} demands={}", failures, demands);
-                    if (failures == listeners.size())
-                        originalContentSource.fail(failure);
-                    else if (demands == 0)
-                        originalContentSource.demand(this::onDemandCallback);
-                    break;
+                    demands = 0;
+                    originalContentSource.demand(this::onDemandCallback);
                 }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Registered failure; failures={} demands={}", failures, demands);
             }
         }
 
         private void registerDemand()
         {
-            while (true)
+            try (AutoLock ignored = lock.lock())
             {
-                long encoded = counters.get();
-                int failures = AtomicBiInteger.getHi(encoded);
-                int demands = AtomicBiInteger.getLo(encoded) + 1;
+                demands++;
                 if (demands == listeners.size() - failures)
-                    demands = 0;
-                if (counters.compareAndSet(encoded, failures, demands))
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Registered demand; failures={} demands={}", failures, demands);
-                    if (demands == 0)
-                        originalContentSource.demand(this::onDemandCallback);
-                    break;
+                    demands = 0;
+                    originalContentSource.demand(this::onDemandCallback);
                 }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Registered demand; failures={} demands={}", failures, demands);
             }
         }
 
