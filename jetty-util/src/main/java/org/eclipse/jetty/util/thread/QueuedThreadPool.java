@@ -980,11 +980,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         while (true)
         {
             // No jobs available, should we shrink?
-
-            long encoded = _counts.get();
-            int threads = AtomicBiInteger.getHi(encoded);
-            int idle = AtomicBiInteger.getLo(encoded);
+            int threads = getThreads();
             int minThreads = getMinThreads();
+
+            // This minThreads comparison isn't atomic, so there's a chance that multiple threads might
+            // enter this branch concurrently and shrink the pool below minThreads; this is okay
+            // as when that happens, the finally block in Runner.run() compensates b/c it calls
+            // ensureThreads() - so we can go below minThreads but that's a very transient state.
             if (threads > minThreads)
             {
                 // We have an idle timeout and excess threads, so check if we should shrink?
@@ -1016,14 +1018,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 // We can shrink if we can update the atomic shrink threshold?
                 if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
                 {
-                    // can we decrement the thread count?
-                    if (!_counts.compareAndSet(encoded, threads - 1, idle - 1))
-                    {
-                        // Rewind the threshold
-                        _shrinkThreshold.addAndGet(-shrinkPeriod);
-                        continue;
-                    }
-
                     // Yes - we have shrunk, so exit.
                     if (LOG.isDebugEnabled())
                         LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
@@ -1127,7 +1121,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
-            boolean shrunk = false;
             boolean idle = true;
             try
             {
@@ -1159,8 +1152,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             job = _jobs.poll();
                         }
 
-                        shrunk = shrink();
-                        if (shrunk)
+                        if (shrink())
                             break;
                     }
                     catch (InterruptedException e)
@@ -1175,12 +1167,12 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 removeThread(thread);
 
                 // Decrement the total thread count and the idle count if we had no job.
-                if (!shrunk)
-                    addCounts(-1, idle ? -1 : 0);
+                addCounts(-1, idle ? -1 : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited for {}", thread, QueuedThreadPool.this);
 
                 // There is a chance that we shrunk just as a job was queued,
+                // or multiple concurrent threads ran out of jobs,
                 // so check again if we have sufficient threads to meet demand.
                 ensureThreads();
             }
