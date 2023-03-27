@@ -30,6 +30,8 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -45,6 +47,8 @@ public class SessionHandlerTest
 {
     private Server _server;
     private LocalConnector _connector;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionHandlerTest.class);
 
     @BeforeEach
     public void beforeEach() throws Exception
@@ -351,18 +355,21 @@ public class SessionHandlerTest
             @Override
             public void onSessionIdChanged(Session session, String oldId)
             {
+                LOGGER.debug("testSessionLifeCycleListener#onSessionIdChanged");
                 history.add("changed %s->%s".formatted(oldId, session.getId()));
             }
 
             @Override
             public void onSessionCreated(Session session)
             {
+                LOGGER.debug("testSessionLifeCycleListener#onSessionCreated");
                 history.add("created %s".formatted(session.getId()));
             }
 
             @Override
             public void onSessionDestroyed(Session session)
             {
+                LOGGER.debug("testSessionLifeCycleListener#onSessionDestroyed");
                 history.add("destroyed %s".formatted(session.getId()));
             }
         });
@@ -401,18 +408,21 @@ public class SessionHandlerTest
                     @Override
                     public void onSessionAttributeUpdate(Session session, String name, Object oldValue, Object newValue)
                     {
+                        LOGGER.debug("testSessionValueAttributeListener#onSessionAttributeUpdate");
                         history.add("attribute %s %s: %s->%s".formatted(session.getId(), name, oldValue, newValue));
                     }
 
                     @Override
                     public void onSessionActivation(Session session)
                     {
+                        LOGGER.debug("testSessionValueAttributeListener#onSessionActivation");
                         history.add("activate %s".formatted(session.getId()));
                     }
 
                     @Override
                     public void onSessionPassivation(Session session)
                     {
+                        LOGGER.debug("testSessionValueAttributeListener#onSessionPassivation");
                         history.add("passivate %s".formatted(session.getId()));
                     }
 
