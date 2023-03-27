@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.NanoTime;
  * and when an idle thread becomes non-idle (i.e., runs a job), it pops from the head of the deque
  * by calling {@link #onBusy()}.
  *
- * <p>Shrinking proceeds by polling the <i>tail</i> of the deque via {@link #evict(long, int)};
+ * <p>Shrinking proceeds by polling the <i>tail</i> of the deque via {@link #shrink(long, int)};
  * the pool thus determines eligibility to shrink based on the longest-standing idle capacity at the pool
  * level.
  *
@@ -92,11 +92,11 @@ public class LinearShrinkManager implements QueuedThreadPool.ShrinkManager
      * thread) exits, <i>without</i> calling {@link #prune()}.
      *
      * @param itNanos time (in nanos) that pool capacity must be idle in order to be eligible to shrink
-     * @param maxEvictCount max threads to shrink per itNanos interval
+     * @param maxShrinkCount max threads to shrink per itNanos interval
      * @return <code>true</code> if the pool should shrink, otherwise <code>false</code>.
      */
     @Override
-    public boolean evict(long itNanos, int maxEvictCount)
+    public boolean shrink(long itNanos, int maxShrinkCount)
     {
         long now = NanoTime.now();
         final long idleBaseline = timestamps[tail.getAndIncrement() & mask];
@@ -104,7 +104,7 @@ public class LinearShrinkManager implements QueuedThreadPool.ShrinkManager
         {
             long last = lastShrink.get();
             int retries = 0;
-            long siNanos = itNanos / maxEvictCount;
+            long siNanos = itNanos / maxShrinkCount;
             while (NanoTime.elapsed(last, now) > siNanos)
             {
                 // shrinkInterval is satisfied
@@ -129,7 +129,7 @@ public class LinearShrinkManager implements QueuedThreadPool.ShrinkManager
 
     /**
      * Must be called by any thread with an outstanding entry in this {@link LinearShrinkManager} that exits for any
-     * reason <i>other than</i> {@link #evict(long, int)} returning <code>true</code>. This method will
+     * reason <i>other than</i> {@link #shrink(long, int)} returning <code>true</code>. This method will
      * normally not be called except (conditionally) in a <code>finally</code> block if a registered thread exits
      * unexpectedly with an exception.
      */
