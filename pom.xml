@@ -93,6 +93,7 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.9</json-smart.version>
     <junit.version>5.9.2</junit.version>
+    <jsp.impl.version>10.0.14</jsp.impl.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.20.0</log4j2.version>
     <logback.version>1.4.5</logback.version>
