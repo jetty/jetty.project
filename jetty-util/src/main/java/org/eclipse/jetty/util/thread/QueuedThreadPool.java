@@ -1260,7 +1260,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             pruneIdle = shrinkManager.onIdle();
                         }
 
-                        if (shrinkManager.shrink(idleTimeoutNanos, getMaxShrinkCount()))
+                        if (getThreads() > getMinThreads() && shrinkManager.shrink(idleTimeoutNanos, getMaxShrinkCount()))
                         {
                             pruneIdle = false;
                             break;
