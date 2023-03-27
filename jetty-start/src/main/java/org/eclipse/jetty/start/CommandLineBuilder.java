@@ -59,34 +59,12 @@ public class CommandLineBuilder
      *
      * @param arg the argument to quote
      * @return the quoted and escaped argument
+     * @deprecated no replacement, quoting is done by {@link #toQuotedString()} now.
      */
+    @Deprecated
     public static String quote(String arg)
     {
-        boolean needsQuoting = (arg.indexOf(' ') >= 0) || (arg.indexOf('"') >= 0);
-        if (!needsQuoting)
-        {
-            return arg;
-        }
-        StringBuilder buf = new StringBuilder();
-        // buf.append('"');
-        boolean escaped = false;
-        boolean quoted = false;
-        for (char c : arg.toCharArray())
-        {
-            if (!quoted && !escaped && ((c == '"') || (c == ' ')))
-            {
-                buf.append("\\");
-            }
-            // don't quote text in single quotes
-            if (!escaped && (c == '\''))
-            {
-                quoted = !quoted;
-            }
-            escaped = (c == '\\');
-            buf.append(c);
-        }
-        // buf.append('"');
-        return buf.toString();
+        return "'" + arg + "'";
     }
 
     private List<String> args;
@@ -113,7 +91,7 @@ public class CommandLineBuilder
     {
         if (arg != null)
         {
-            args.add(quote(arg));
+            args.add(arg);
         }
     }
 
@@ -136,11 +114,11 @@ public class CommandLineBuilder
     {
         if ((value != null) && (value.length() > 0))
         {
-            args.add(quote(name + "=" + value));
+            args.add(name + "=" + value);
         }
         else
         {
-            args.add(quote(name));
+            args.add(name);
         }
     }
 
@@ -180,7 +158,31 @@ public class CommandLineBuilder
             {
                 buf.append(delim);
             }
-            buf.append(quote(arg));
+            buf.append(arg); // we assume escaping has occurred during addArg
+        }
+
+        return buf.toString();
+    }
+
+    /**
+     * A version of {@link #toString()} where every arg is evaluated for potential {@code '} (single-quote tick) wrapping.
+     *
+     * @return the toString but each arg that has spaces is surrounded by {@code '} (single-quote tick)
+     */
+    public String toQuotedString()
+    {
+        StringBuilder buf = new StringBuilder();
+
+        for (String arg : args)
+        {
+            if (buf.length() > 0)
+                buf.append(' ');
+            boolean needsQuotes = (arg.contains(" "));
+            if (needsQuotes)
+                buf.append("'");
+            buf.append(arg);
+            if (needsQuotes)
+                buf.append("'");
         }
 
         return buf.toString();

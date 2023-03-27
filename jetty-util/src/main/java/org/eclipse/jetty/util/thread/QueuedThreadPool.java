@@ -165,7 +165,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
-    private int _maxEvictCount = 1;
+    private int _maxShrinkCount = 1;
 
     public QueuedThreadPool()
     {
@@ -533,7 +533,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     /**
      * Initializes {@link #shrinkManager} according to current settings. This method should
-     * be called after updating {@link #_maxEvictCount} or {@link #_maxThreads}.
+     * be called after updating {@link #_maxShrinkCount} or {@link #_maxThreads}.
      */
     private void initShrinkManager()
     {
@@ -541,7 +541,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             shrinkManager = NOOP_SHRINK_MANAGER;
         }
-        else if (_maxEvictCount != 1)
+        else if (_maxShrinkCount != 1)
         {
             shrinkManager = new LinearShrinkManager(_maxThreads);
         }
@@ -706,20 +706,20 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * number of threads}.
      * The default value is {@code 1}.</p>
      * <p>For example, consider a thread pool with {@code minThread=2}, {@code maxThread=20},
-     * {@code idleTimeout=5000} and {@code maxEvictCount=3}.
+     * {@code idleTimeout=5000} and {@code maxShrinkCount=3}.
      * Let's assume all 20 threads are executing a task, and they all finish their own tasks
      * at the same time and no more tasks are submitted; then, all 20 will wait for an idle
      * timeout, after which 3 threads will be exited, while the other 17 will wait another
      * idle timeout; then another 3 threads will be exited, and so on until {@code minThreads=2}
      * will be reached.</p>
      *
-     * @param evictCount the maximum number of idle threads to exit in one idle timeout period
+     * @param shrinkCount the maximum number of idle threads to exit in one idle timeout period
      */
-    public void setMaxEvictCount(int evictCount)
+    public void setMaxShrinkCount(int shrinkCount)
     {
-        if (evictCount < 1)
-            throw new IllegalArgumentException("Invalid evict count " + evictCount);
-        _maxEvictCount = evictCount;
+        if (shrinkCount < 1)
+            throw new IllegalArgumentException("Invalid shrink count " + shrinkCount);
+        _maxShrinkCount = shrinkCount;
         initShrinkManager();
     }
 
@@ -727,9 +727,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * @return the maximum number of idle threads to exit in one idle timeout period
      */
     @ManagedAttribute("maximum number of idle threads to exit in one idle timeout period")
-    public int getMaxEvictCount()
+    public int getMaxShrinkCount()
     {
-        return _maxEvictCount;
+        return _maxShrinkCount;
     }
 
     /**
@@ -1027,7 +1027,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
-            shrinkManager.init(); // TODO (mg) maybe don't need this?
+            // init shrinkManager to guard against thrashing
+            shrinkManager.init();
             thread.start();
             started = true;
         }
@@ -1259,7 +1260,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             pruneIdle = shrinkManager.onIdle();
                         }
 
-                        if (shrinkManager.evict(idleTimeoutNanos, getMaxEvictCount()))
+                        if (shrinkManager.evict(idleTimeoutNanos, getMaxShrinkCount()))
                         {
                             pruneIdle = false;
                             break;
@@ -1286,6 +1287,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     LOG.debug("{} exited for {}", thread, QueuedThreadPool.this);
 
                 // There is a chance that we shrunk just as a job was queued,
+                // or multiple concurrent threads ran out of jobs,
                 // so check again if we have sufficient threads to meet demand.
                 ensureThreads();
             }
