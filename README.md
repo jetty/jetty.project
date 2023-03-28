@@ -46,11 +46,13 @@ Project documentation is available on the Jetty Eclipse website.
 Building
 ========
 
-JDK to use:
-- `jetty-10.0.x` and `jetty-11.0.x` branches you wil need jdk11 
-- `jetty-12.0.x` you wil need jdk17
+[Apache Maven 3.8.0](https://maven.apache.org/) and [OpenJDK](https://adoptium.net/) requirements:
 
-To build, use [Apache Maven 3.8.0](https://maven.apache.org/) (or better):
+Branch         | Maven Version | Minimum JDK | Recommended JDK
+---------------|---------------|-------------| ---------------
+`jetty-10.0.x` | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional loom and http/3 support)
+`jetty-11.0.x` | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional loom and http/3 support)
+`jetty-12.0.x` | Maven 3.8.6+  | OpenJDK 17  | OpenJDK 17
 
 Full Build with All Tests:
 
@@ -63,8 +65,6 @@ Fast Build if you need jars and distribution (not running tests, checkstyle, enf
 ``` shell
 mvn -Pfast clean install
 ```
-
-
 Optional build tools: 
 
 * [`graphviz`](https://graphviz.org/) - used by asciidoctor in the jetty-documentation build to produce various graphs
@@ -72,11 +72,10 @@ Optional build tools:
 
 Eclipse Jetty will be built in `jetty-home/target/jetty-home`.
 
-The first build may take a longer than expected as Maven downloads all the dependencies.
+The first build will take longer than subsequent builds as Maven will downloads all third party dependencies.
 
-The build tests do a lot of stress testing, and on some machines it is necessary to set the file descriptor limit to greater than 2048 for the tests to all pass successfully.
-
-It is possible to bypass tests by building with `mvn clean install -DskipTests`.
+The build tests do a lot of stress testing, and on some machines it is necessary to set the 
+file descriptor limit to greater than 2048 for the tests to all pass successfully.
 
 Professional Services
 ---------------------
