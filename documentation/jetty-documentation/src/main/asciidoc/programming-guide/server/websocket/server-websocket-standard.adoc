@@ -91,7 +91,7 @@ Calling `JavaxWebSocketServletContainerInitializer.configure(\...)` must be done
 [[pg-server-websocket-standard-endpoints]]
 ===== Configuring Endpoints
 
-Once you have xref:pg-server-websocket-standard-container[setup] the `ServerContainer`, you can configure your xref:pg-websocket-endpoints[WebSocket endpoints].
+Once you have xref:pg-server-websocket-standard-container[setup] the `ServerContainer`, you can configure your WebSocket endpoints.
 
 The WebSocket endpoints classes may be either annotated with the standard `javax.websocket` annotations, extend the `javax.websocket.Endpoint` abstract class, or implement the `javax.websocket.server.ServerApplicationConfig` interface.
 
