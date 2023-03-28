@@ -46,10 +46,22 @@ import org.slf4j.LoggerFactory;
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     /**
+     * <p>The request attribute name to use to obtain the cipher suite name.</p>
+     */
+    public static final String CIPHER_SUITE_ATTRIBUTE = "org.eclipse.jetty.server.cipher";
+    /**
+     * <p>The request attribute name to use to obtain the key size.</p>
+     */
+    public static final String KEY_SIZE_ATTRIBUTE = "org.eclipse.jetty.server.keySize";
+    /**
+     * <p>The request attribute name to use to obtain the {@link SSLSession#getId()}.</p>
+     */
+    public static final String SSL_SESSION_ID_ATTRIBUTE = "org.eclipse.jetty.server.sslSessionId";
+    /**
      * <p>The request attribute name to use to obtain the peer certificate
      * chain as an array of {@link X509Certificate} objects.</p>
      */
-    public static final String PEER_CERTIFICATES_ATTRIBUTE = "org.eclipse.jetty.server.certificates";
+    public static final String PEER_CERTIFICATES_ATTRIBUTE = "org.eclipse.jetty.server.peerCertificates";
     /**
      * <p>The request attribute name to use to obtain the local certificate
      * as an {@link X509} object.</p>
@@ -358,12 +370,12 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                     String cipherSuite = _sslSession.getCipherSuite();
                     int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
 
-                    X509Certificate[] certs = getCertChain(getConnectionMetaData().getConnector(), _sslSession);
+                    X509Certificate[] peerCertificates = getCertChain(getConnectionMetaData().getConnector(), _sslSession);
 
                     byte[] bytes = _sslSession.getId();
                     String idStr = StringUtil.toHexString(bytes);
 
-                    sslSessionData = new SslSessionData(idStr, keySize, certs);
+                    sslSessionData = new SslSessionData(idStr, cipherSuite, keySize, peerCertificates);
                     _sslSession.putValue(key, sslSessionData);
                 }
                 catch (Exception e)
@@ -388,8 +400,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
             return switch (name)
             {
-                case X509_ATTRIBUTE -> getX509(_sslSession);
+                case CIPHER_SUITE_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.cipherSuite() : null;
+                case KEY_SIZE_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.keySize() : null;
+                case SSL_SESSION_ID_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.sessionId() : null;
                 case PEER_CERTIFICATES_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.peerCertificates() : null;
+                case X509_ATTRIBUTE -> getX509(_sslSession);
                 default -> super.getAttribute(name);
             };
         }
@@ -397,12 +412,21 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         @Override
         public Set<String> getAttributeNameSet()
         {
-            String sessionAttribute = getSslSessionAttribute();
             Set<String> names = new HashSet<>(super.getAttributeNameSet());
-            if (!StringUtil.isEmpty(sessionAttribute))
+            if (getX509(_sslSession) != null)
+                names.add(X509_ATTRIBUTE);
+            String sessionAttribute = getSslSessionAttribute();
+            if (!StringUtil.isNotBlank(sessionAttribute))
             {
                 names.add(sessionAttribute);
-                names.add(sessionAttribute + "_data");
+                if (_sslSessionData != null)
+                {
+                    names.add(getSslSessionDataAttribute());
+                    names.add(CIPHER_SUITE_ATTRIBUTE);
+                    names.add(KEY_SIZE_ATTRIBUTE);
+                    names.add(SSL_SESSION_ID_ATTRIBUTE);
+                    names.add(PEER_CERTIFICATES_ATTRIBUTE);
+                }
             }
             return names;
         }
@@ -411,7 +435,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     /**
      * Simple bundle of data that is cached in the SSLSession.
      */
-    public record SslSessionData(String sessionId, int keySize, X509Certificate[] peerCertificates)
+    public record SslSessionData(String sessionId, String cipherSuite, int keySize, X509Certificate[] peerCertificates)
     {
     }
 }

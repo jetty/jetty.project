@@ -14,7 +14,7 @@
 // Snippets of WebSocket documentation that are common between client and server.
 
 [[pg-websocket-architecture]]
-==== WebSocket Architecture
+==== Jetty WebSocket Architecture
 
 The Jetty WebSocket architecture is organized around the concept of a logical _connection_ between the client and the server.
 
@@ -151,6 +151,29 @@ You want to do this as soon as you have access to the `Session` object, typicall
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sessionConfigure]
 ----
+
+The settings that can be configured include:
+
+maxBinaryMessageSize::
+the maximum size in bytes of a binary message (which may be composed of multiple frames) that can be received.
+
+maxTextMessageSize::
+the maximum size in bytes of a text message (which may be composed of multiple frames) that can be received.
+
+maxFrameSize::
+the maximum payload size in bytes of any WebSocket frame that can be received.
+
+inputBufferSize::
+the input (read from network/transport layer) buffer size in bytes; it has no relationship with the WebSocket frame size or message size.
+
+outputBufferSize::
+the output (write to network/transport layer) buffer size in bytes; it has no relationship to the WebSocket frame size or message size.
+
+autoFragment::
+whether WebSocket frames are automatically fragmented to respect the maximum frame size.
+
+idleTimeout::
+the duration that a WebSocket connection may remain idle (that is, there is no network traffic, neither in read nor in write) before being closed by the implementation.
 
 Please refer to the `Session` link:{javadoc-url}/org/eclipse/jetty/websocket/api/Session.html[javadocs] for the complete list of configuration APIs.
 

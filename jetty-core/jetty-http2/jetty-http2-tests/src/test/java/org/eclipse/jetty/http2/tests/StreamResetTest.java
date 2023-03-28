@@ -82,6 +82,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -423,6 +424,7 @@ public class StreamResetTest extends AbstractTest
     }
 
     @Test
+    @Tag("Flaky")
     public void testClientResetConsumesQueuedData() throws Exception
     {
         CountDownLatch dataLatch = new CountDownLatch(1);
