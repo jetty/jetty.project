@@ -15,6 +15,7 @@ package org.eclipse.jetty.docs.programming.server.websocket;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -32,6 +33,8 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -347,5 +350,39 @@ public class WebSocketServerDocs
     @WebSocket
     private static class MyOtherJettyWebSocketEndPoint
     {
+    }
+
+    public void uriTemplatePathSpec()
+    {
+        Server server = new Server(8080);
+
+        // tag::uriTemplatePathSpec[]
+        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+
+        // Configure the JettyWebSocketServerContainer.
+        JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
+        {
+            container.addMapping("/ws/chat/{room}", (upgradeRequest, upgradeResponse) ->
+            {
+                // Retrieve the URI template.
+                UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)upgradeRequest.getServletAttribute(PathSpec.class.getName());
+
+                // Match the URI template.
+                Map<String, String> params = pathSpec.getPathParams(upgradeRequest.getRequestPath());
+                String room = params.get("room");
+
+                // Create the new WebSocket endpoint with the URI template information.
+                return new MyWebSocketRoomEndPoint(room);
+            });
+        });
+        // end::uriTemplatePathSpec[]
+    }
+
+    @WebSocket
+    private static class MyWebSocketRoomEndPoint
+    {
+        public MyWebSocketRoomEndPoint(String room)
+        {
+        }
     }
 }
