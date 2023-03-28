@@ -46,19 +46,24 @@ Project documentation is available on the Jetty Eclipse website.
 Building
 ========
 
+JDK to use:
+- `jetty-10.0.x` and `jetty-11.0.x` branches you wil need jdk11 
+- `jetty-12.0.x` you wil need jdk17
+
 To build, use [Apache Maven 3.8.0](https://maven.apache.org/) (or better):
-
-Fast Build:
-
-``` shell
-mvn -Pci clean install -DskipTests
-```
 
 Full Build with All Tests:
 
 ``` shell
 mvn clean install
 ```
+
+Fast Build if you need jars and distribution (not running tests, checkstyle, enforcer, license check):
+
+``` shell
+mvn -Pfast clean install
+```
+
 
 Optional build tools: 
 
