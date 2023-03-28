@@ -14,7 +14,7 @@
 // Snippets of WebSocket documentation that are common between client and server.
 
 [[pg-websocket-architecture]]
-==== WebSocket Architecture
+==== Jetty WebSocket Architecture
 
 The Jetty WebSocket architecture is organized around the concept of a logical _connection_ between the client and the server.
 
@@ -27,30 +27,6 @@ Each side of a WebSocket connection, either client or server, is made of two ent
 
 * A xref:pg-websocket-endpoints[WebSocket _endpoint_], the entity that _receives_ WebSocket events.
 * A xref:pg-websocket-session[WebSocket _session_], the entity that offers an API to _send_ WebSocket data (and to close the WebSocket connection), as well as to configure WebSocket connection parameters.
-
-[[pg-websocket-session-configuration]]
-==== WebSocket Session Configuration
-
-The WebSocket Session configuration can be configured on the WebSocket Session instance once the connection has been upgraded, usually during the `onOpen()` notification.
-
-For the Server, default configuration can be set through the `WebSocketUpgradeFilter` and the `WebSocketContainer`. +
-For the Client, default configuration can be set on the `WebSocketClient`.
-
-This default configuration is applied to all Sessions during the WebSocket upgrade before the `onOpen()` notification. Then further Session specific configuration can be applied by the application during and after the `onOpen()` notification.
-
-Settings which can be configured include:
-
-* Max Binary Message Size, the maximum size of a binary message which can be received.
-* Max Text Message Size, the maximum size of a text message which can be received.
-* Max Frame Size, the maximum payload size of any WebSocket Frame which can be received.
-* Input Buffer Size, the input (read from network layer) buffer size. This is the raw read operation buffer size, before the parsing of the websocket frames.
-* Output Buffer Size, the output (write to network layer) buffer size. This is the raw write operation buffer size and has no relationship to the websocket frame.
-* Auto Fragment, if set to true, frames are automatically fragmented to respect the maximum frame size.
-* Idle Timeout, the duration that a websocket may be idle before being closed by the implementation.
-* Write Timeout, the maximum time a frame may be waiting to be sent.
-* Max Outgoing Frames, set the maximum number of data frames allowed to be waiting to be sent at any one time.
-
-The default values for this configuration is defined in link:{javadoc-url}/org/eclipse/jetty/websocket/core/WebSocketConstants.html[`WebSocketConstants`].
 
 [[pg-websocket-endpoints]]
 ==== WebSocket Endpoints
@@ -175,6 +151,29 @@ You want to do this as soon as you have access to the `Session` object, typicall
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sessionConfigure]
 ----
+
+The settings that can be configured include:
+
+maxBinaryMessageSize::
+the maximum size in bytes of a binary message (which may be composed of multiple frames) that can be received.
+
+maxTextMessageSize::
+the maximum size in bytes of a text message (which may be composed of multiple frames) that can be received.
+
+maxFrameSize::
+the maximum payload size in bytes of any WebSocket frame that can be received.
+
+inputBufferSize::
+the input (read from network/transport layer) buffer size in bytes; it has no relationship with the WebSocket frame size or message size.
+
+outputBufferSize::
+the output (write to network/transport layer) buffer size in bytes; it has no relationship to the WebSocket frame size or message size.
+
+autoFragment::
+whether WebSocket frames are automatically fragmented to respect the maximum frame size.
+
+idleTimeout::
+the duration that a WebSocket connection may remain idle (that is, there is no network traffic, neither in read nor in write) before being closed by the implementation.
 
 Please refer to the `Session` link:{javadoc-url}/org/eclipse/jetty/websocket/api/Session.html[javadocs] for the complete list of configuration APIs.
 
