@@ -46,5 +46,5 @@ etc/jetty-openid.xml
 ## What authentication method to use with the Token Endpoint (client_secret_post, client_secret_basic).
 # jetty.openid.authMethod=client_secret_post
 
-## Whether the user should be logged out after the idToken expiry.
+## Whether the user should be logged out after the idToken expires.
 # jetty.openid.logoutWhenIdTokenIsExpired=false

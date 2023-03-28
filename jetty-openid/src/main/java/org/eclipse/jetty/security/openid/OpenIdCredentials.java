@@ -15,6 +15,7 @@ package org.eclipse.jetty.security.openid;
 
 import java.io.Serializable;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -152,9 +153,7 @@ public class OpenIdCredentials implements Serializable
             return true;
 
         // Check that the ID token has not expired by checking the exp claim.
-        long expiry = (Long)claims.get("exp");
-        long currentTimeSeconds = System.currentTimeMillis() / 1000;
-        return (currentTimeSeconds > expiry);
+        return Instant.ofEpochSecond((Long)claims.get("exp")).isBefore(Instant.now());
     }
 
     private void validateAudience(OpenIdConfiguration configuration) throws AuthenticationException

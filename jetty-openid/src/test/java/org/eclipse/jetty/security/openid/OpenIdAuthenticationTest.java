@@ -283,7 +283,7 @@ public class OpenIdAuthenticationTest
     {
         setup(null, config -> config.setLogoutWhenIdTokenIsExpired(true));
         long idTokenExpiryTime = 2000;
-        openIdProvider.setIdTokenExpiry(idTokenExpiryTime);
+        openIdProvider.setIdTokenDuration(idTokenExpiryTime);
         openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
 
         String appUriString = "http://localhost:" + connector.getLocalPort();
@@ -328,7 +328,7 @@ public class OpenIdAuthenticationTest
     {
         setup(null);
         long idTokenExpiryTime = 2000;
-        openIdProvider.setIdTokenExpiry(idTokenExpiryTime);
+        openIdProvider.setIdTokenDuration(idTokenExpiryTime);
         openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
 
         String appUriString = "http://localhost:" + connector.getLocalPort();
