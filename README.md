@@ -70,12 +70,19 @@ Optional build tools:
 * [`graphviz`](https://graphviz.org/) - used by asciidoctor in the jetty-documentation build to produce various graphs
 * [`Docker`](https://www.docker.com/) - used to run some integration tests for testing third party integrations
 
-Eclipse Jetty will be built in `jetty-home/target/jetty-home`.
+Once the build is complete, you can find the built Jetty Maven artifacts in your Maven local repository.
+Along with the following locations of note:
 
-The first build will take longer than subsequent builds as Maven will downloads all third party dependencies.
+Branches | Location                                                       | Description
+---------|----------------------------------------------------------------|---------
+all      | `jetty-home/target/jetty-home-<ver>.tar.gz`                    | The Jetty Home standalone tarball
+all      | `jetty-runner/target/jetty-runner-<ver>.jar`                   | The Jetty Runner uber jar
+`jetty-12.0.x` | `jetty-ee10/jetty-ee10-runner/target/jetty-ee10-runner-<ver>.jar` | The Jetty Runner uber jar for ee10/Servlet 6 (jakarta.servlet) webapps
+`jetty-12.0.x` | `jetty-ee9/jetty-ee9-runner/target/jetty-ee9-runner-<ver>.jar`    | The Jetty Runner uber jar for ee9/Servlet 5 (jakarta.servlet) webapps
+`jetty-12.0.x` | `jetty-ee8/jetty-ee8-runner/target/jetty-ee8-runner-<ver>.jar`    | The Jetty Runner uber jar for ee8/Servlet 4 (javax.servlet) webapps
 
-The build tests do a lot of stress testing, and on some machines it is necessary to set the 
-file descriptor limit to greater than 2048 for the tests to all pass successfully.
+Note: The build tests do a lot of stress testing, and on some machines it is necessary to set the 
+file descriptor limit to greater than 2048 for the tests to all pass successfully (check your `ulimit -n` value).
 
 Professional Services
 ---------------------
