@@ -14,9 +14,9 @@
 package org.eclipse.jetty.ee10.websocket.server.internal;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandler;
-import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;

@@ -13,14 +13,9 @@
 
 module org.eclipse.jetty.ee10.websocket.jetty.client
 {
-    requires org.eclipse.jetty.websocket.core.client;
-    requires org.eclipse.jetty.ee10.websocket.jetty.common;
-    requires org.slf4j;
-
-    requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.ee10.websocket.jetty.api;
+    requires org.eclipse.jetty.websocket.client;
 
     requires static org.eclipse.jetty.ee10.webapp;
 
-    exports org.eclipse.jetty.ee10.websocket.client;
+    exports org.eclipse.jetty.ee10.websocket.client.config;
 }

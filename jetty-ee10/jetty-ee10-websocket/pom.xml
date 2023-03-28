@@ -21,9 +21,7 @@
     <module>jetty-ee10-websocket-jakarta-common</module>
     <module>jetty-ee10-websocket-jakarta-server</module>
     <module>jetty-ee10-websocket-jakarta-tests</module>
-    <module>jetty-ee10-websocket-jetty-api</module>
     <module>jetty-ee10-websocket-jetty-client</module>
-    <module>jetty-ee10-websocket-jetty-common</module>
     <module>jetty-ee10-websocket-jetty-server</module>
     <module>jetty-ee10-websocket-jetty-tests</module>
     <module>jetty-ee10-websocket-servlet</module>

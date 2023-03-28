@@ -57,7 +57,7 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
     @Override
     public Mutable add(HttpHeader header, HttpHeaderValue value)
     {
-        if (onAddField(header.name(), value.asString()))
+        if (onAddField(header.asString(), value.asString()))
             return _fields.add(header, value);
         return this;
     }
@@ -65,7 +65,7 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
     @Override
     public Mutable add(HttpHeader header, String value)
     {
-        if (onAddField(header.name(), value))
+        if (onAddField(header.asString(), value))
             return _fields.add(header, value);
         return this;
     }
@@ -125,7 +125,7 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
     @Override
     public Mutable put(HttpHeader header, HttpHeaderValue value)
     {
-        if (onPutField(header.name(), value.asString()))
+        if (onPutField(header.asString(), value.asString()))
             return _fields.put(header, value);
         return this;
     }
@@ -133,7 +133,7 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
     @Override
     public Mutable put(HttpHeader header, String value)
     {
-        if (onPutField(header.name(), value))
+        if (onPutField(header.asString(), value))
             return _fields.put(header, value);
         return this;
     }
@@ -141,7 +141,7 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
     @Override
     public Mutable remove(HttpHeader header)
     {
-        if (onRemoveField(header.name()))
+        if (onRemoveField(header.asString()))
             return _fields.remove(header);
         return this;
     }

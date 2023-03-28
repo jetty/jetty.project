@@ -164,7 +164,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
     protected boolean isAllowed(Path path)
     {
-        // If the resource doesn't exist we cannot determine whether it is protected so we assume it is.
+        // If the resource doesn't exist we cannot determine whether it is protected, so we assume it is.
         if (path != null && Files.exists(path))
         {
             // Walk the path parent links looking for the base resource, but failing if any steps are protected

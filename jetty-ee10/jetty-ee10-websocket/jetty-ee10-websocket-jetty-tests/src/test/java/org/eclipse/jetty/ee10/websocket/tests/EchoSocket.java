@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee10.websocket.tests;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket

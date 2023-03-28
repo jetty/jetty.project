@@ -133,6 +133,11 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         this.components = components;
     }
 
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
+    }
+
     public Handshaker getHandshaker()
     {
         return handshaker;
