@@ -480,6 +480,12 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             // No-op
         }
+
+        @Override
+        public String toString()
+        {
+            return ShrinkManager.class.getSimpleName().concat("{NEVER_SHRINK}");
+        }
     };
 
     /**
@@ -528,6 +534,12 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         public void init()
         {
             lastShrink.set(NanoTime.now());
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "{lastShrinkDelta=" + NanoTime.millisSince(lastShrink.get()) + "ms}";
         }
     }
 
@@ -1192,7 +1204,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         int idle = Math.max(0, AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d}[%s]",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d,t=%s}[%s]",
             getClass().getSimpleName(),
             _name,
             hashCode(),
@@ -1203,6 +1215,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             idle,
             getReservedThreads(),
             queue,
+            shrinkManager,
             _tryExecutor);
     }
 

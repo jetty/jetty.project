@@ -148,4 +148,11 @@ public class LinearShrinkManager implements QueuedThreadPool.ShrinkManager
     {
         lastShrink.set(NanoTime.now());
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "{idleBaselineDelta=" + NanoTime.millisSince(timestamps[tail.get() & mask])
+                + "ms, lastShrinkDelta=" + NanoTime.millisSince(lastShrink.get()) + "ms}";
+    }
 }

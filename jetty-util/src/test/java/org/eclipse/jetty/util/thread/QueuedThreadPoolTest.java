@@ -1114,7 +1114,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setMaxThreads(maxThreads);
         int idleTimeout = 1000;
         tp.setIdleTimeout(idleTimeout);
-        tp.setMaxShrinkCount(3);
+        int shrinkCount = 3;
+        tp.setMaxShrinkCount(shrinkCount);
         tp.start();
 
         waitForThreads(tp, minThreads);
