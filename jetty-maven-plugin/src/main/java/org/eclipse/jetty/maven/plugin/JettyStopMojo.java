@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -220,9 +220,19 @@ public class JettyStopMojo extends AbstractWebAppMojo
             }
             else
             {
-                //Wait only a small amount of time to ensure TCP has sent the message
-                s.setSoTimeout(1000);
-                s.getInputStream().read();
+                try
+                {
+                    //Wait only a small amount of time to ensure TCP has sent the message
+                    s.setSoTimeout(1000);
+                    s.getInputStream().read();
+                }
+                catch (Exception e)
+                {
+                    if (getLog().isDebugEnabled())
+                        getLog().error("Error after sending command: " + command + ". Check the server state.", e);
+                    else
+                        getLog().info(e.getMessage() + " after sending command: " + command + ". Check the server state.");
+                }
             }
             
             return response;

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>10.0.13-SNAPSHOT</version>
+  <version>10.0.15-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -24,12 +24,13 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.12</ant.version>
+    <ant.version>1.10.13</ant.version>
     <apache.avro.version>1.11.1</apache.avro.version>
-    <apache.httpclient.version>4.5.13</apache.httpclient.version>
-    <apache.httpcore.version>4.4.15</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
+    <apache.httpclient.version>4.5.14</apache.httpclient.version>
+    <apache.httpcore.version>4.4.16</apache.httpcore.version>
+    <asciidoctorj-diagram.version>2.2.4</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.6</asciidoctorj.version>
+    <mina.core.version>2.2.1</mina.core.version>
     <asm.version>9.4</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
@@ -50,10 +51,10 @@
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.15.2</hawtio.version>
-    <hazelcast.version>4.2.5</hazelcast.version>
-    <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.16.Final</infinispan.version>
-    <jackson.version>2.13.4</jackson.version>
+    <hazelcast.version>5.2.1</hazelcast.version>
+    <infinispan.protostream.version>4.6.1.Final</infinispan.protostream.version>
+    <infinispan.version>11.0.17.Final</infinispan.version>
+    <jackson.version>2.14.1</jackson.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
     <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
     <jakarta.el-api.version>3.0.3</jakarta.el-api.version>
@@ -87,25 +88,25 @@
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>6.0</jetty.test.version>
-    <jmh.version>1.35</jmh.version>
+    <jmh.version>1.36</jmh.version>
     <jna.version>5.12.1</jna.version>
-    <jnr-constants.version>0.10.3</jnr-constants.version>
+    <jnr-constants.version>0.10.4</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
     <jnr-ffi.version>2.2.12</jnr-ffi.version>
     <jnr-posix.version>3.1.15</jnr-posix.version>
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
     <jolokia.version>1.7.1</jolokia.version>
     <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.4.8</json-smart.version>
+    <json-smart.version>2.4.9</json-smart.version>
     <jsp.impl.version>9.0.52</jsp.impl.version>
     <junit.version>5.9.1</junit.version>
-    <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
-    <log4j2.version>2.19.0</log4j2.version>
-    <logback.version>1.4.4</logback.version>
+    <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
+    <log4j2.version>2.20.0</log4j2.version>
+    <logback.version>1.3.5</logback.version>
     <mariadb.version>3.0.8</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.resolver.version>1.8.2</maven.resolver.version>
-    <maven.version>3.8.6</maven.version>
+    <maven.resolver.version>1.9.5</maven.resolver.version>
+    <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -114,14 +115,14 @@
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.5.0</plexus-utils.version>
-    <slf4j.version>2.0.2</slf4j.version>
+    <slf4j.version>2.0.5</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.17.5</testcontainers.version>
+    <testcontainers.version>1.17.6</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.1.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -135,27 +136,28 @@
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.5.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
-    <maven.checkstyle.plugin.version>3.2.0</maven.checkstyle.plugin.version>
-    <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.3.0</maven.dependency.plugin.version>
-    <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
-    <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
+    <maven.checkstyle.plugin.version>3.2.1</maven.checkstyle.plugin.version>
+    <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.5.0</maven.dependency.plugin.version>
+    <maven.deploy.plugin.version>3.1.0</maven.deploy.plugin.version>
+    <maven.enforcer.plugin.version>3.2.1</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.0.1</maven.install.plugin.version>
-    <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
+    <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
+    <maven.invoker.plugin.version>3.4.0</maven.invoker.plugin.version>
+    <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
-    <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
+    <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
+    <maven.plugin-tools.version>3.8.1</maven.plugin-tools.version>
+    <maven-plugin.plugin.version>3.8.1</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.4.1</maven.shade.plugin.version>
-    <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
     <spotbugs.maven.plugin.version>4.7.2.0</spotbugs.maven.plugin.version>
@@ -427,9 +429,6 @@
           <failIfMissing>true</failIfMissing>
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
-          <properties>
-            <copyright-range>${project.inceptionYear}-2022</copyright-range>
-          </properties>
         </configuration>
         <executions>
           <execution>
@@ -644,13 +643,6 @@
               <localRepo>${localRepoPath}</localRepo>
             </filterProperties>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.ant</groupId>
-              <artifactId>ant</artifactId>
-              <version>${ant.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1898,6 +1890,11 @@
         <version>${commons.compress.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.mina</groupId>
+        <artifactId>mina-core</artifactId>
+        <version>${mina.core.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
@@ -1990,23 +1987,10 @@
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
-        <artifactId>asm</artifactId>
+        <artifactId>asm-bom</artifactId>
         <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-analysis</artifactId>
-        <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-commons</artifactId>
-        <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-tree</artifactId>
-        <version>${asm.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -2226,8 +2210,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[17,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 17 or newer</message>
+                      <version>[19,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 19 or newer</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>
@@ -2301,9 +2285,11 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
+                <excludedGroups>external, large-disk-resource, stress, slow, flaky</excludedGroups>
                 <systemPropertyVariables>
                   <env>ci</env>
                   <maven.repo.uri>${maven.repo.uri}</maven.repo.uri>
+                  <jetty.testtracker.log>true</jetty.testtracker.log>
                 </systemPropertyVariables>
               </configuration>
             </plugin>

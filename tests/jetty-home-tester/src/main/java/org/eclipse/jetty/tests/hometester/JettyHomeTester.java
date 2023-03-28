@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -347,11 +347,14 @@ public class JettyHomeTester
         // create tmp directory to unzip distribution
         Path homes = MavenTestingUtils.getTargetTestingPath("homes");
         FS.ensureDirExists(homes);
-        Path tmp = Files.createTempDirectory(homes, "jetty_home_");
+        Path tmp = Files.createDirectories(homes.resolve(Long.toString(artifactFile.toFile().lastModified())));
+        Path home = tmp.resolve("jetty-home-" + version);
+        if (!Files.exists(home))
+        {
+            unzip(artifactFile, tmp);
+        }
 
-        unzip(artifactFile, tmp);
-
-        return tmp.resolve("jetty-home-" + version);
+        return home;
     }
 
     private RepositorySystem newRepositorySystem()

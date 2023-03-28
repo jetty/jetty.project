@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -422,8 +422,8 @@ public class Scanner extends ContainerLifeCycle
 
         try
         {
-            // Always follow links when check ultimate type of the path
-            Path real = path.toRealPath();
+            // Check status of the real path
+            Path real = path.toRealPath(_linkOptions);
             if (!Files.exists(real) || Files.isDirectory(real))
                 throw new IllegalStateException("Not file or doesn't exist: " + path);
 
@@ -452,7 +452,7 @@ public class Scanner extends ContainerLifeCycle
         try
         {
             // Check status of the real path
-            Path real = p.toRealPath();
+            Path real = p.toRealPath(_linkOptions);
             if (!Files.exists(real) || !Files.isDirectory(real))
                 throw new IllegalStateException("Not directory or doesn't exist: " + p);
 

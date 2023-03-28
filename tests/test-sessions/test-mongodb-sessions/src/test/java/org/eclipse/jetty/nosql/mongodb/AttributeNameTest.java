@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,7 +31,10 @@ import org.eclipse.jetty.server.session.TestServer;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * See bug: https://bugs.eclipse.org/bugs/show_bug.cgi?id=444595
  */
 @Testcontainers(disabledWithoutDocker = true)
+@Tag("flaky")
 public class AttributeNameTest
 {
     @BeforeAll

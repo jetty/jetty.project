@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -931,6 +931,11 @@ public class AnnotationParser
                 LOG.debug("Not a class: {}", name);
             return false;
         }
+        
+        //get just the last name portion
+        int ldir =  lc.lastIndexOf('/', lc.length());
+        int c0 = (ldir < 0 ? 0 : ldir + 1);
+        lc = lc.substring(c0);
 
         if (lc.equals("module-info.class"))
         {
@@ -940,9 +945,6 @@ public class AnnotationParser
         }
 
         //skip any classfiles that are not a valid java identifier
-        int c0 = 0;
-        int ldir = name.lastIndexOf('/', name.length() - 6);
-        c0 = (ldir > -1 ? ldir + 1 : c0);
         if (!Character.isJavaIdentifierStart(name.charAt(c0)))
         {
             if (LOG.isDebugEnabled())

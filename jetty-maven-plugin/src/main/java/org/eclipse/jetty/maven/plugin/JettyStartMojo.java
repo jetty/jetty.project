@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,8 +14,6 @@
 package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Execute;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
@@ -35,7 +33,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  *  </p>
  */
 @Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
-@Execute(phase = LifecyclePhase.VALIDATE)
 public class JettyStartMojo extends AbstractUnassembledWebAppMojo
 {
 

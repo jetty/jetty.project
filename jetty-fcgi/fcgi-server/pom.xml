@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.fcgi</groupId>
     <artifactId>fcgi-parent</artifactId>
-    <version>10.0.13-SNAPSHOT</version>
+    <version>10.0.15-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,6 +13,20 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-reads org.eclipse.jetty.fcgi.server=org.eclipse.jetty.logging
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>

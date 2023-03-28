@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -95,7 +95,7 @@ public class OverlayManager
             //if a war matches an overlay config
             Artifact a = warPlugin.getWarArtifact(config.getGroupId(), config.getArtifactId(), config.getClassifier());
             if (a != null)
-            {
+            {   
                 matchedWarArtifacts.add(a);
                 SelectiveJarResource r = new SelectiveJarResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/"));
                 r.setIncludes(config.getIncludes());
@@ -126,7 +126,7 @@ public class OverlayManager
      */
     protected  Resource unpackOverlay(Overlay overlay)
         throws IOException
-    {        
+    {
         if (overlay.getResource() == null)
             return null; //nothing to unpack
 

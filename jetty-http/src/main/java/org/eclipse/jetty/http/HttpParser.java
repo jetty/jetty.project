@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -33,10 +34,12 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
 import static org.eclipse.jetty.http.HttpCompliance.Violation;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.DUPLICATE_HOST_HEADERS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.UNSAFE_HOST_HEADER;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_FIELD_NAME;
 
 /**
@@ -226,7 +229,7 @@ public class HttpParser
     private String _valueString;
     private int _responseStatus;
     private int _headerBytes;
-    private boolean _host;
+    private String _parsedHost;
     private boolean _headerComplete;
     private volatile State _state = State.START;
     private volatile FieldState _fieldState = FieldState.FIELD;
@@ -438,8 +441,7 @@ public class HttpParser
     private HttpTokens.Token next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
-
-        HttpTokens.Token t = HttpTokens.TOKENS[0xff & ch];
+        HttpTokens.Token t = HttpTokens.getToken(ch);
 
         switch (t.getType())
         {
@@ -1028,14 +1030,28 @@ public class HttpParser
                         break;
 
                     case HOST:
-                        if (_host)
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Host: multiple headers");
-                        _host = true;
+                        if (_parsedHost != null)
+                        {
+                            if (LOG.isWarnEnabled())
+                                LOG.warn("Encountered multiple `Host` headers.  Previous `Host` header already seen as `{}`, new `Host` header has appeared as `{}`", _parsedHost, _valueString);
+                            checkViolation(DUPLICATE_HOST_HEADERS);
+                        }
+                        _parsedHost = _valueString;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
                         {
-                            _field = new HostPortHttpField(_header,
-                                CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
-                                _valueString);
+                            HostPort hostPort;
+                            if (UNSAFE_HOST_HEADER.isAllowedBy(_complianceMode))
+                            {
+                                _field = new HostPortHttpField(_header,
+                                    CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
+                                    HostPort.unsafe(_valueString));
+                            }
+                            else
+                            {
+                                _field = new HostPortHttpField(_header,
+                                    CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
+                                    _valueString);
+                            }
                             addToFieldCache = _fieldCache.isEnabled();
                         }
                         break;
@@ -1072,6 +1088,8 @@ public class HttpParser
                     _fieldCache.add(_field);
                 }
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsedHeader({}) header={}, headerString=[{}], valueString=[{}]", _field, _header, _headerString, _valueString);
             _handler.parsedHeader(_field != null ? _field : new HttpField(_header, _headerString, _valueString));
         }
 
@@ -1183,7 +1201,7 @@ public class HttpParser
                             }
 
                             // Was there a required host header?
-                            if (!_host && _version == HttpVersion.HTTP_1_1 && _requestHandler != null)
+                            if (_parsedHost == null && _version == HttpVersion.HTTP_1_1 && _requestHandler != null)
                             {
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "No Host");
                             }
@@ -1888,7 +1906,7 @@ public class HttpParser
         _responseStatus = 0;
         _contentChunk = null;
         _headerBytes = 0;
-        _host = false;
+        _parsedHost = null;
         _headerComplete = false;
     }
 

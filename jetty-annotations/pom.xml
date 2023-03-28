@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.13-SNAPSHOT</version>
+    <version>10.0.15-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -20,7 +20,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.annotations/org.eclipse.jetty.annotations.resources=org.eclipse.jetty.plus
+            @{argLine} ${jetty.surefire.argLine}
+            --add-opens org.eclipse.jetty.annotations/org.eclipse.jetty.annotations.resources=org.eclipse.jetty.plus
+            --add-reads org.eclipse.jetty.annotations=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>

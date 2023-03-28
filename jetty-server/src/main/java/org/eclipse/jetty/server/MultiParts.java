@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -74,7 +74,12 @@ public interface MultiParts extends Closeable
 
         public MultiPartsHttpParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request) throws IOException
         {
-            _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
+            this(in, contentType, config, contextTmpDir, request, ContextHandler.DEFAULT_MAX_FORM_KEYS);
+        }
+
+        public MultiPartsHttpParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request, int maxParts) throws IOException
+        {
+            _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir, maxParts);
             _context = request.getContext();
             _request = request;
         }
@@ -145,7 +150,12 @@ public interface MultiParts extends Closeable
 
         public MultiPartsUtilParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request) throws IOException
         {
-            _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
+            this(in, contentType, config, contextTmpDir, request, ContextHandler.DEFAULT_MAX_FORM_KEYS);
+        }
+
+        public MultiPartsUtilParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request, int maxParts) throws IOException
+        {
+            _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir, maxParts);
             _context = request.getContext();
             _request = request;
         }

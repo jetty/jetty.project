@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -66,6 +66,7 @@ import javax.servlet.http.WebConnection;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -96,6 +97,8 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
 
 /**
  * Jetty Request.
@@ -1740,9 +1743,28 @@ public class Request implements HttpServletRequest
                 throw new BadMessageException(badMessage);
         }
 
+        HttpField host = getHttpFields().getField(HttpHeader.HOST);
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
         {
             _uri = uri;
+            if (host instanceof HostPortHttpField && !((HostPortHttpField)host).getHostPort().toString().equals(uri.getAuthority()))
+            {
+                HttpChannel httpChannel = getHttpChannel();
+                HttpConfiguration httpConfiguration = httpChannel.getHttpConfiguration();
+                if (httpConfiguration != null)
+                {
+                    HttpCompliance httpCompliance = httpConfiguration.getHttpCompliance();
+                    if (httpCompliance.allows(MISMATCHED_AUTHORITY))
+                    {
+                        if (httpChannel instanceof ComplianceViolation.Listener)
+                            ((ComplianceViolation.Listener)httpChannel).onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.toString());
+                    }
+                    else
+                    {
+                        throw new BadMessageException(400, "Mismatched Authority");
+                    }
+                }
+            }
         }
         else
         {
@@ -1756,10 +1778,9 @@ public class Request implements HttpServletRequest
 
             if (!uri.hasAuthority())
             {
-                HttpField field = getHttpFields().getField(HttpHeader.HOST);
-                if (field instanceof HostPortHttpField)
+                if (host instanceof HostPortHttpField)
                 {
-                    HostPortHttpField authority = (HostPortHttpField)field;
+                    HostPortHttpField authority = (HostPortHttpField)host;
 
                     builder.host(authority.getHost()).port(authority.getPort());
                 }
@@ -2305,7 +2326,21 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiParts = newMultiParts(config);
+            int maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+            int maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
+            if (_context != null)
+            {
+                ContextHandler contextHandler = _context.getContextHandler();
+                maxFormContentSize = contextHandler.getMaxFormContentSize();
+                maxFormKeys = contextHandler.getMaxFormKeys();
+            }
+            else
+            {
+                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+            }
+
+            _multiParts = newMultiParts(config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
 
             String formCharset = null;
@@ -2316,7 +2351,7 @@ public class Request implements HttpServletRequest
                 {
                     ByteArrayOutputStream os = new ByteArrayOutputStream();
                     IO.copy(is, os);
-                    formCharset = new String(os.toByteArray(), StandardCharsets.UTF_8);
+                    formCharset = os.toString(StandardCharsets.UTF_8);
                 }
             }
 
@@ -2338,11 +2373,16 @@ public class Request implements HttpServletRequest
             else
                 defaultCharset = StandardCharsets.UTF_8;
 
+            long formContentSize = 0;
             ByteArrayOutputStream os = null;
             for (Part p : parts)
             {
                 if (p.getSubmittedFileName() == null)
                 {
+                    formContentSize = Math.addExact(formContentSize, p.getSize());
+                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
+                        throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
+
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
                     if (p.getContentType() != null)
@@ -2354,7 +2394,7 @@ public class Request implements HttpServletRequest
                             os = new ByteArrayOutputStream();
                         IO.copy(is, os);
 
-                        String content = new String(os.toByteArray(), charset == null ? defaultCharset : Charset.forName(charset));
+                        String content = os.toString(charset == null ? defaultCharset : Charset.forName(charset));
                         if (_contentParameters == null)
                             _contentParameters = params == null ? new MultiMap<>() : params;
                         _contentParameters.add(p.getName(), content);
@@ -2367,7 +2407,7 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    private MultiParts newMultiParts(MultipartConfigElement config) throws IOException
+    private MultiParts newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
     {
         MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
         if (LOG.isDebugEnabled())
@@ -2377,12 +2417,12 @@ public class Request implements HttpServletRequest
         {
             case RFC7578:
                 return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
+                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this, maxParts);
 
             case LEGACY:
             default:
                 return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
+                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this, maxParts);
         }
     }
 

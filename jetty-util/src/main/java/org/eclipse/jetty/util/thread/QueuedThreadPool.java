@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -288,9 +288,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
 
         // Close any un-executed jobs
-        while (!_jobs.isEmpty())
+        while (true)
         {
             Runnable job = _jobs.poll();
+            if (job == null)
+                break;
             if (job instanceof Closeable)
             {
                 try

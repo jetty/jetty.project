@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -571,14 +571,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 }
                 else
                 {
-                    throw new IllegalStateException("formatString parsing error");
+                    throw new IllegalStateException("formatString parsing error: " + formatString);
                 }
 
                 remaining = m.group("REMAINING");
             }
             else
             {
-                throw new IllegalArgumentException("Invalid format string");
+                throw new IllegalArgumentException("Invalid format string: " + formatString);
             }
         }
 

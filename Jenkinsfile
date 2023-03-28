@@ -1,7 +1,7 @@
 #!groovy
 
 pipeline {
-  agent any
+  agent none
   // save some io during the build
   options {
     skipDefaultCheckout()
@@ -11,6 +11,17 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
+        stage("Build / Test - JDK19") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk19", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk19", name: "Static Analysis jdk19", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle()]
+            }
+          }
+        }
+
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
@@ -106,7 +117,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -Dmaven.repo.uri=http://10.0.0.15:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -DexcludedGroups=\"external, large-disk-resource, stress, slow, flaky\" -V -B -e -Djetty.testtracker.log=true $cmdline"
+          sh "mvn -Dmaven.repo.uri=http://10.0.0.15:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e $cmdline"
         }
       }
     }

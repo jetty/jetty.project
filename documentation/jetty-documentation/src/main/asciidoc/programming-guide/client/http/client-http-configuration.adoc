@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -30,7 +30,7 @@ The most common parameters are:
 
 `HttpClient` supports HTTPS requests out-of-the-box like a browser does.
 
-The support for HTTPS request is provided by a `SslContextFactory.Client`, typically configured in the `ClientConnector`.
+The support for HTTPS request is provided by a `SslContextFactory.Client` instance, typically configured in the `ClientConnector`.
 If not explicitly configured, the `ClientConnector` will allocate a default one when started.
 
 [source,java,indent=0]
@@ -38,28 +38,33 @@ If not explicitly configured, the `ClientConnector` will allocate a default one 
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsExplicit]
 ----
 
-The default `SslContextFactory.Client` verifies the certificate sent by the server by verifying the certificate chain.
-This means that requests to public websites that have a valid certificate (such as ``https://google.com``) will work out-of-the-box.
+The default `SslContextFactory.Client` verifies the certificate sent by the server by verifying the validity of the certificate with respect to the certificate chain, the expiration date, the server host name, etc.
+This means that requests to public websites that have a valid certificate (such as `+https://google.com+`) will work out-of-the-box, without the need to specify a KeyStore or a TrustStore.
 
-However, requests made to sites (typically ``localhost``) that have an invalid (for example, expired or with a wrong host) or self-signed certificate will fail (like they will in a browser).
+However, requests made to sites that return an invalid or a self-signed certificate will fail (like they will in a browser).
+An invalid certificate may be expired or have the wrong server host name; a self-signed certificate has a certificate chain that cannot be verified.
 
-Certificate validation is performed at two levels: at the TLS implementation level (in the JDK) and, optionally, at the application level.
+The validation of the server host name present in the certificate is important, to guarantee that the client is connected indeed with the intended server.
 
-By default, certificate validation at the TLS level is enabled, while certificate validation at the application level is disabled.
+The validation of the server host name is performed at two levels: at the TLS level (in the JDK) and, optionally, at the application level.
 
-You can configure the `SslContextFactory.Client` to skip certificate validation at the TLS level:
+By default, the validation of the server host name at the TLS level is enabled, while it is disabled at the application level.
+
+You can configure the `SslContextFactory.Client` to skip the validation of the server host name at the TLS level:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsNoValidation]
 ----
 
-You can enable certificate validation at the application level:
+When you disable the validation of the server host name at the TLS level, you are strongly recommended to enable it at the application level, otherwise you may risk to connect to a server different from the one you intend to connect to:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsAppValidation]
 ----
+
+You may have the validation of the server host name enabled at both the TLS level and application level, typically when you want to further restrict the client to connect only to a smaller set of server hosts than those allowed in the certificate sent by the server.
 
 Please refer to the `SslContextFactory.Client` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.
 

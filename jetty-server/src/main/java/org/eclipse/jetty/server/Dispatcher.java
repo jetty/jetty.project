@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -178,7 +178,7 @@ public class Dispatcher implements RequestDispatcher
                 if (old_attr.getAttribute(FORWARD_REQUEST_URI) == null)
                     baseRequest.setAttributes(new ForwardAttributes(old_attr,
                         old_uri.getPath(),
-                        old_context == null ? null : old_context.getContextHandler().getContextPathEncoded(),
+                        baseRequest.getContextPath(),
                         baseRequest.getPathInContext(),
                         source_mapping,
                         old_uri.getQuery()));

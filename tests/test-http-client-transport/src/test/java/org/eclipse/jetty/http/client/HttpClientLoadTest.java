@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -81,10 +81,6 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     @ArgumentsSource(TransportProvider.class)
     public void testIterative(Transport transport) throws Exception
     {
-        // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
-        if ("ci".equals(System.getProperty("env")))
-            Assumptions.assumeTrue(transport != Transport.H3);
-
         init(transport);
         scenario.start(new LoadHandler(), client ->
         {
@@ -118,9 +114,6 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     @ArgumentsSource(TransportProvider.class)
     public void testConcurrent(Transport transport) throws Exception
     {
-        // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
-        Assumptions.assumeTrue(transport != Transport.H3);
-
         init(transport);
         scenario.start(new LoadHandler(), client ->
         {

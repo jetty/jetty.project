@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -63,12 +63,11 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
             }
         }
 
-        Path start = path.getName(0);
-        int count = path.getNameCount();
-        Path end = path.getName(count > 0 ? count - 1 : count);
-        //if the war is not assembled, we must configure it
-        if (start.startsWith("src") || !end.toString().endsWith(".war"))
+        
+        if ((path == null) || (path.startsWith("src") || !path.endsWith(".war")))
+        {
             super.configureUnassembledWebApp();
+        }
     }
     
     /**

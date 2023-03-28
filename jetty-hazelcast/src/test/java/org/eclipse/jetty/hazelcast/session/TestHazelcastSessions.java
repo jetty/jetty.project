@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -108,6 +108,7 @@ public class TestHazelcastSessions
         SessionContext sessionContext = new SessionContext("foo", null);
 
         hazelcastSessionDataStoreFactory = new HazelcastSessionDataStoreFactory();
+        hazelcastSessionDataStoreFactory.setConfigurationLocation("target/test-classes/hazelcast-test-config.xml");
         hazelcastSessionDataStore = (HazelcastSessionDataStore)hazelcastSessionDataStoreFactory.getSessionDataStore(
             context.getSessionHandler());
         hazelcastSessionDataStore.initialize(sessionContext);

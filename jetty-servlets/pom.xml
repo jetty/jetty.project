@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.13-SNAPSHOT</version>
+    <version>10.0.15-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -22,7 +22,16 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules jetty.servlet.api --add-modules org.eclipse.jetty.util --add-modules org.eclipse.jetty.io --add-modules org.eclipse.jetty.http --add-modules org.eclipse.jetty.server --add-reads org.eclipse.jetty.servlets=java.management --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules jetty.servlet.api
+            --add-modules org.eclipse.jetty.util
+            --add-modules org.eclipse.jetty.io
+            --add-modules org.eclipse.jetty.http
+            --add-modules org.eclipse.jetty.server
+            --add-modules org.eclipse.jetty.jmx
+            --add-reads org.eclipse.jetty.servlets=java.management
+            --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
+            --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>
