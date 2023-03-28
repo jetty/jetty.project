@@ -864,7 +864,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
             // Update the shrink threshold to prevent thrashing
-            _shrinkThreshold.set(NanoTime.now());
+            _shrinkThreshold.set(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(_idleTimeout));
             thread.start();
             started = true;
         }
@@ -1092,7 +1092,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         int idle = Math.max(0, AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d}[%s]",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%d,q=%d}[%s]",
             getClass().getSimpleName(),
             _name,
             hashCode(),
@@ -1102,6 +1102,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             getMaxThreads(),
             idle,
             getReservedThreads(),
+            NanoTime.millisUntil(_shrinkThreshold.get()),
             queue,
             _tryExecutor);
     }

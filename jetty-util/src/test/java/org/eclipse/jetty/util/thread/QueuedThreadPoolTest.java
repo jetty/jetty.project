@@ -41,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1114,7 +1115,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setMaxThreads(maxThreads);
         int idleTimeout = 1000;
         tp.setIdleTimeout(idleTimeout);
-        tp.setMaxShrinkCount(3);
+        int shrinkCount = 3;
+        tp.setMaxShrinkCount(shrinkCount);
         tp.start();
 
         waitForThreads(tp, minThreads);
@@ -1135,7 +1137,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         assertEquals(maxThreads, tp.getThreads());
 
-        Thread.sleep(idleTimeout + idleTimeout / 2);
+        Thread.sleep(idleTimeout * 2 + idleTimeout / 2);
         assertEquals(maxThreads - tp.getMaxShrinkCount(), tp.getThreads());
 
         Thread.sleep(idleTimeout);
