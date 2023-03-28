@@ -42,7 +42,7 @@ public interface SessionIdManager extends LifeCycle
      *
      * @param id the session id
      */
-    public void invalidateAll(String id);
+    public void invalidateAll(String id, SessionManager except);
 
     /**
      * Create a new Session ID.

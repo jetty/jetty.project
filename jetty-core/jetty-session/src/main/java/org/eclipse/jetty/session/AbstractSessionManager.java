@@ -425,7 +425,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             try
             {
                 //tell id mgr to remove session from all other contexts
-                getSessionIdManager().invalidateAll(id);
+                getSessionIdManager().invalidateAll(id, this);
             }
             catch (Exception x)
             {
