@@ -54,7 +54,12 @@ You may create multiple instances of `WebSocketClient`, but typically one instan
 Creating multiple instances may be necessary for example when you need to specify different configuration parameters for different instances.
 For example, you may need different instances when you need to configure the `HttpClient` differently: different transports, different proxies, different cookie stores, different authentications, etc.
 
-WebSocket specific configuration may be typically be given a default value in `WebSocketClient` and then overridden more specifically, see for example xref:pg-websocket-session-configure[this section].
+The configuration that is not WebSocket specific (such as idle timeout, etc.) should be directly configured on the associated `HttpClient` instance.
+
+The WebSocket specific configuration can be configured directly on the `WebSocketClient` instance.
+Configuring the `WebSocketClient` allows to give default values to various parameters, whose values may be overridden more specifically, as described in xref:pg-websocket-session-configure[this section].
+
+Refer to the  `WebSocketClient` link:{javadoc-url}/org/eclipse/jetty/websocket/client/WebSocketClient.html[javadocs] for the setter methods available to customize the WebSocket specific configuration.
 
 [[pg-client-websocket-stop]]
 ==== Stopping WebSocketClient

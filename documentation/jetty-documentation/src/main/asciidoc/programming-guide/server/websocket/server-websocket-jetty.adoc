@@ -49,6 +49,8 @@ To configure correctly your WebSocket application based on the Jetty WebSocket A
 . Make sure that Jetty xref:pg-server-websocket-jetty-container[sets up] an instance of `JettyWebSocketServerContainer`.
 . Use the `JettyWebSocketServerContainer` APIs in your applications to xref:pg-server-websocket-jetty-endpoints[register your WebSocket endpoints] that implement your application logic.
 
+You can read more about the xref:pg-websocket-architecture[Jetty WebSocket architecture], which is common to both client-side and server-side, to get familiar with the terminology used in the following sections.
+
 [[pg-server-websocket-jetty-container]]
 ===== Setting up `JettyWebSocketServerContainer`
 
@@ -112,10 +114,12 @@ You can also use this variant to set up the `JettyWebSocketServerContainer` and 
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyContainerAndEndpoints]
 ----
 
+In the call to `JettyWebSocketServerContainer.addMapping(\...)`, you can specify a _path spec_ (the first parameter) that can be configured as specified in xref:pg-server-websocket-jetty-pathspec[this section].
+
 When the `ServletContextHandler` is started, the `Configurator` lambda (the second parameter passed to `JettyWebSocketServletContainerInitializer.configure(\...)`) is invoked and allows you to explicitly configure the WebSocket endpoints using the Jetty WebSocket APIs provided by `JettyWebSocketServerContainer`.
 
 Under the hood, the call to `JettyWebSocketServerContainer.addMapping(\...)` installs the `org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter`, which is the component that intercepts HTTP requests to upgrade to WebSocket, described in xref:pg-server-websocket-standard-upgrade[this section].
-For more information about the `WebSocketUpgradeFilter` see also xref:pg-server-websocket-configure-filter[this section].
+For more information about the configuration of `WebSocketUpgradeFilter` see also xref:pg-server-websocket-configure-filter[this section].
 
 One last alternative to register your WebSocket endpoints is to use a programmatic WebSocket upgrade via `JettyWebSocketServerContainer.upgrade(\...)`, which allows you to use a standard `HttpServlet` subclass (rather than a `JettyWebSocketServlet` as explained in xref:pg-server-websocket-jetty-endpoints-servlet[this section]) to perform a direct WebSocket upgrade when your application logic demands so:
 
@@ -175,3 +179,22 @@ However, it is typically best to avoid mixing the use of `JettyWebSocketServerCo
 
 Using `JettyWebSocketServerContainer.addMapping(\...)` will install the `WebSocketUpgradeFilter` under the hood, which by default will intercepts all HTTP requests to upgrade to WebSocket.
 However, as explained in xref:pg-server-websocket-standard-upgrade[this section], if `WebSocketUpgradeFilter` does not find a matching WebSocket endpoint for the request URI path, then the HTTP request is passed to the Filter chain of your web application and may arrive to your `JettyWebSocketServlet` subclass, where it would be processed and possibly result in a WebSocket upgrade.
+
+[[pg-server-websocket-jetty-pathspec]]
+====== Custom PathSpec Mappings
+
+The `JettyWebSocketServerContainer.addMapping(\...)` API maps a _path spec_ to a `JettyWebSocketCreator` instance (typically a lambda expression).
+The path spec is matched against the WebSocket upgrade request URI to select the correspondent `JettyWebSocketCreator` to invoke.
+
+The path spec can have these forms:
+
+* Servlet syntax, specified with `servlet|<path spec>`, where the `servlet|` prefix can be omitted if the path spec begins with `/` or `+*.+` (for example, `/ws`, `/ws/chat` or `+*.ws+`).
+* Regex syntax, specified with `regex|<path spec>`, where the `regex|` prefix can be omitted if the path spec begins with `^` (for example, `+^/ws/[0-9]++`).
+* URI template syntax, specified with `uri-template|<path spec>` (for example `+uri-template|/ws/chat/{room}+`).
+
+Within the `JettyWebSocketCreator`, it is possible to access the path spec and, for example in case of URI templates, extract additional information in the following way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=uriTemplatePathSpec]
+----
