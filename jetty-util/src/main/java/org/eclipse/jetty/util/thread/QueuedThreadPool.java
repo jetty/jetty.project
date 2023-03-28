@@ -1204,7 +1204,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         int idle = Math.max(0, AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d,t=%s}[%s]",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%s,q=%d}[%s]",
             getClass().getSimpleName(),
             _name,
             hashCode(),
@@ -1214,8 +1214,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             getMaxThreads(),
             idle,
             getReservedThreads(),
-            queue,
             shrinkManager,
+            queue,
             _tryExecutor);
     }
 
