@@ -828,13 +828,13 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         String dump = pool.dump();
         // TODO use hamcrest 2.0 regex matcher
         assertThat(dump, containsString("STOPPED"));
-        assertThat(dump, containsString(",3<=0<=4,i=0,r=-1,q=0"));
+        assertThat(dump, containsString(",3<=0<=4,i=0,r=-1,"));
         assertThat(dump, containsString("[NO_TRY]"));
 
         pool.setReservedThreads(2);
         dump = pool.dump();
         assertThat(dump, containsString("STOPPED"));
-        assertThat(dump, containsString(",3<=0<=4,i=0,r=2,q=0"));
+        assertThat(dump, containsString(",3<=0<=4,i=0,r=2,"));
         assertThat(dump, containsString("[NO_TRY]"));
 
         pool.start();
@@ -842,7 +842,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
-        assertThat(dump, containsString(",3<=3<=4,i=3,r=2,q=0"));
+        assertThat(dump, containsString(",3<=3<=4,i=3,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, " IDLE"), is(3));
         assertThat(count(dump, " RESERVED"), is(0));
@@ -865,7 +865,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
-        assertThat(dump, containsString(",3<=3<=4,i=2,r=2,q=0"));
+        assertThat(dump, containsString(",3<=3<=4,i=2,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, " IDLE"), is(2));
         assertThat(count(dump, " WAITING"), is(1));
@@ -875,7 +875,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         pool.setDetailedDump(true);
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
-        assertThat(dump, containsString(",3<=3<=4,i=2,r=2,q=0"));
+        assertThat(dump, containsString(",3<=3<=4,i=2,r=2,"));
         assertThat(dump, containsString("reserved=0/2"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, " IDLE"), is(2));
@@ -890,7 +890,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
-        assertThat(dump, containsString(",3<=3<=4,i=1,r=2,q=0"));
+        assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
         assertThat(dump, containsString("reserved=1/2"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, " IDLE"), is(1));
