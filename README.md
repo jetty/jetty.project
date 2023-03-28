@@ -63,6 +63,7 @@ mvn clean install
 Optional build tools: 
 
 * [`graphviz`](https://graphviz.org/) - used by asciidoctor in the jetty-documentation build to produce various graphs
+* [`Docker`](https://www.docker.com/) - used to run some integration tests for testing third party integrations
 
 Eclipse Jetty will be built in `jetty-home/target/jetty-home`.
 
