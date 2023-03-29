@@ -74,6 +74,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
+    public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
+
     /**
      * Get the current Context if any.
      *
