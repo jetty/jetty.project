@@ -10,6 +10,10 @@
   <artifactId>jetty-http2-tests</artifactId>
   <name>Core :: HTTP2 :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
