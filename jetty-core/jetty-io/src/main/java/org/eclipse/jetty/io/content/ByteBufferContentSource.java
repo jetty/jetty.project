@@ -138,5 +138,7 @@ public class ByteBufferContentSource implements Content.Source
                 return;
             terminated = Content.Chunk.from(failure);
         }
+        // Demands are always serviced immediately so there is no
+        // need to ask the invoker to run invokeDemandCallback here.
     }
 }
