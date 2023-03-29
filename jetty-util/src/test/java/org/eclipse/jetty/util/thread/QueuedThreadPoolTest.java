@@ -512,7 +512,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     }
 
     @Test
-    public void testShrink() throws Exception
+    public void testEvict() throws Exception
     {
         final AtomicInteger sleep = new AtomicInteger(100);
         Runnable job = () ->
@@ -560,7 +560,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     }
 
     @Test
-    public void testSteadyShrink() throws Exception
+    public void testSteadyEvict() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
         Runnable job = () ->
@@ -1105,7 +1105,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     }
 
     @Test
-    public void testShrinkCount() throws Exception
+    public void testEvictCount() throws Exception
     {
         QueuedThreadPool tp = new QueuedThreadPool();
         int minThreads = 2;
@@ -1114,8 +1114,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setMaxThreads(maxThreads);
         int idleTimeout = 1000;
         tp.setIdleTimeout(idleTimeout);
-        int shrinkCount = 3;
-        tp.setMaxShrinkCount(shrinkCount);
+        int evictCount = 3;
+        tp.setMaxEvictCount(evictCount);
         tp.start();
 
         waitForThreads(tp, minThreads);
@@ -1137,10 +1137,10 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertEquals(maxThreads, tp.getThreads());
 
         Thread.sleep(idleTimeout + idleTimeout / 2);
-        assertEquals(maxThreads - tp.getMaxShrinkCount(), tp.getThreads());
+        assertEquals(maxThreads - tp.getMaxEvictCount(), tp.getThreads());
 
         Thread.sleep(idleTimeout);
-        assertEquals(maxThreads - 2 * tp.getMaxShrinkCount(), tp.getThreads());
+        assertEquals(maxThreads - 2 * tp.getMaxEvictCount(), tp.getThreads());
 
         Thread.sleep(idleTimeout);
         assertEquals(minThreads, tp.getThreads());
@@ -1152,13 +1152,13 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         final int spikeThreads = 1000;
         final int busyThreads = 200;
         final int idleTimeout = 2000;
-        final int shrinkCount = 200;
+        final int evictCount = 200;
         final int jobDuration = 10;
         final Random random = new Random();
 
         QueuedThreadPool qtp = new QueuedThreadPool(2 * spikeThreads, busyThreads / 2);
         qtp.setIdleTimeout(idleTimeout);
-        qtp.setMaxShrinkCount(shrinkCount);
+        qtp.setMaxEvictCount(evictCount);
         qtp.start();
 
         CountDownLatch spike = new CountDownLatch(spikeThreads);

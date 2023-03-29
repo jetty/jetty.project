@@ -165,7 +165,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
-    private int _maxShrinkCount = 1;
+    private int _maxEvictCount = 1;
 
     public QueuedThreadPool()
     {
@@ -545,7 +545,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     /**
      * Initializes {@link #shrinkManager} according to current settings. This method should
-     * be called after updating {@link #_maxShrinkCount} or {@link #_maxThreads}.
+     * be called after updating {@link #_maxEvictCount} or {@link #_maxThreads}.
      */
     private void initShrinkManager()
     {
@@ -553,7 +553,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             shrinkManager = NOOP_SHRINK_MANAGER;
         }
-        else if (_maxShrinkCount != 1)
+        else if (_maxEvictCount != 1)
         {
             shrinkManager = new LinearShrinkManager(_maxThreads);
         }
@@ -713,35 +713,34 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>Returns the maximum number of idle threads that are exited for every idle timeout
+     * <p>Returns the maximum number of idle threads that are evicted for every idle timeout
      * period, thus shrinking this thread pool towards its {@link #getMinThreads() minimum
      * number of threads}.
      * The default value is {@code 1}.</p>
      * <p>For example, consider a thread pool with {@code minThread=2}, {@code maxThread=20},
-     * {@code idleTimeout=5000} and {@code maxShrinkCount=3}.
+     * {@code idleTimeout=5000} and {@code maxEvictCount=3}.
      * Let's assume all 20 threads are executing a task, and they all finish their own tasks
-     * at the same time and no more tasks are submitted; then, all 20 will wait for an idle
-     * timeout, after which 3 threads will be exited, while the other 17 will wait another
-     * idle timeout; then another 3 threads will be exited, and so on until {@code minThreads=2}
-     * will be reached.</p>
+     * at the same time and no more tasks are submitted; then, 3 threads will be evicted,
+     * while the other 17 will wait another idle timeout; then another 3 threads will be
+     * evicted, and so on until {@code minThreads=2} will be reached.</p>
      *
-     * @param shrinkCount the maximum number of idle threads to exit in one idle timeout period
+     * @param evictCount the maximum number of idle threads to evict in one idle timeout period
      */
-    public void setMaxShrinkCount(int shrinkCount)
+    public void setMaxEvictCount(int evictCount)
     {
-        if (shrinkCount < 1)
-            throw new IllegalArgumentException("Invalid shrink count " + shrinkCount);
-        _maxShrinkCount = shrinkCount;
+        if (evictCount < 1)
+            throw new IllegalArgumentException("Invalid evict count " + evictCount);
+        _maxEvictCount = evictCount;
         initShrinkManager();
     }
 
     /**
-     * @return the maximum number of idle threads to exit in one idle timeout period
+     * @return the maximum number of idle threads to evict in one idle timeout period
      */
-    @ManagedAttribute("maximum number of idle threads to exit in one idle timeout period")
-    public int getMaxShrinkCount()
+    @ManagedAttribute("maximum number of idle threads to evict in one idle timeout period")
+    public int getMaxEvictCount()
     {
-        return _maxShrinkCount;
+        return _maxEvictCount;
     }
 
     /**
@@ -1273,7 +1272,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             pruneIdle = shrinkManager.onIdle();
                         }
 
-                        if (getThreads() > getMinThreads() && shrinkManager.shrink(idleTimeoutNanos, getMaxShrinkCount()))
+                        if (getThreads() > getMinThreads() && shrinkManager.shrink(idleTimeoutNanos, getMaxEvictCount()))
                         {
                             pruneIdle = false;
                             break;
