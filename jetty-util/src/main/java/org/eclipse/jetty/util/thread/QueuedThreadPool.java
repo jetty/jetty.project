@@ -94,7 +94,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
-    private final AtomicLong _shrinkThreshold = new AtomicLong();
+    private final AtomicLong _evictThreshold = new AtomicLong();
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private final BlockingQueue<Runnable> _jobs;
@@ -113,7 +113,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
     private Executor _virtualThreadsExecutor;
-    private int _maxShrinkCount = 1;
+    private int _maxEvictCount = 1;
 
     public QueuedThreadPool()
     {
@@ -219,7 +219,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         addBean(_tryExecutor);
 
-        _shrinkThreshold.set(NanoTime.now());
+        _evictThreshold.set(NanoTime.now());
 
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
@@ -538,34 +538,33 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>Returns the maximum number of idle threads that are exited for every idle timeout
+     * <p>Returns the maximum number of idle threads that are evicted for every idle timeout
      * period, thus shrinking this thread pool towards its {@link #getMinThreads() minimum
      * number of threads}.
      * The default value is {@code 1}.</p>
      * <p>For example, consider a thread pool with {@code minThread=2}, {@code maxThread=20},
-     * {@code idleTimeout=5000} and {@code maxShrinkCount=3}.
+     * {@code idleTimeout=5000} and {@code maxEvictCount=3}.
      * Let's assume all 20 threads are executing a task, and they all finish their own tasks
-     * at the same time and no more tasks are submitted; then, all 20 will wait for an idle
-     * timeout, after which 3 threads will be exited, while the other 17 will wait another
-     * idle timeout; then another 3 threads will be exited, and so on until {@code minThreads=2}
-     * will be reached.</p>
+     * at the same time and no more tasks are submitted; then, 3 threads will be evicted,
+     * while the other 17 will wait another idle timeout; then another 3 threads will be
+     * evicted, and so on until {@code minThreads=2} will be reached.</p>
      *
-     * @param shrinkCount the maximum number of idle threads to exit in one idle timeout period
+     * @param evictCount the maximum number of idle threads to evict in one idle timeout period
      */
-    public void setMaxShrinkCount(int shrinkCount)
+    public void setMaxEvictCount(int evictCount)
     {
-        if (shrinkCount < 1)
-            throw new IllegalArgumentException("Invalid shrink count " + shrinkCount);
-        _maxShrinkCount = shrinkCount;
+        if (evictCount < 1)
+            throw new IllegalArgumentException("Invalid evict count " + evictCount);
+        _maxEvictCount = evictCount;
     }
 
     /**
-     * @return the maximum number of idle threads to exit in one idle timeout period
+     * @return the maximum number of idle threads to evict in one idle timeout period
      */
-    @ManagedAttribute("maximum number of idle threads to exit in one idle timeout period")
-    public int getMaxShrinkCount()
+    @ManagedAttribute("maximum number of idle threads to evict in one idle timeout period")
+    public int getMaxEvictCount()
     {
-        return _maxShrinkCount;
+        return _maxEvictCount;
     }
 
     /**
@@ -863,8 +862,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
-            // Update the shrink threshold to prevent thrashing
-            _shrinkThreshold.set(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(_idleTimeout));
+            // Update the evict threshold to prevent thrashing of newly started threads.
+            _evictThreshold.set(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(_idleTimeout));
             thread.start();
             started = true;
         }
@@ -971,62 +970,62 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>Attempts to shrink the current thread from the pool if {@link #getThreads()} is greater than {@link #getMinThreads()}.</p>
-     * @return true if the current thread was shrunk, false otherwise.
+     * <p>Determines whether to evict the current thread from the pool.</p>
+     *
+     * @return whether the current thread should be evicted
      */
-    protected boolean shrink()
+    protected boolean evict()
     {
         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
         while (true)
         {
-            // No jobs available, should we shrink?
+            // No jobs available, should we evict the current thread?
             int threads = getThreads();
             int minThreads = getMinThreads();
 
             // This minThreads comparison isn't atomic, so there's a chance that multiple threads might
             // enter this branch concurrently and shrink the pool below minThreads; this is okay
-            // as when that happens, the finally block in Runner.run() compensates b/c it calls
+            // as when that happens, the finally block in Runner.run() compensates by calling
             // ensureThreads() - so we can go below minThreads but that's a very transient state.
             if (threads > minThreads)
             {
-                // We have an idle timeout and excess threads, so check if we should shrink?
+                // We have excess threads, so check if we should evict the current thread?
                 long now = NanoTime.now();
-                long shrinkPeriod = idleTimeoutNanos / getMaxShrinkCount();
+                long evictPeriod = idleTimeoutNanos / getMaxEvictCount();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Shrink check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(shrinkPeriod), QueuedThreadPool.this);
+                    LOG.debug("Evict check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(evictPeriod), QueuedThreadPool.this);
 
-                long shrinkThreshold = _shrinkThreshold.get();
-                long threshold = shrinkThreshold;
+                long evictThreshold = _evictThreshold.get();
+                long threshold = evictThreshold;
 
                 // If the threshold is too far in the past,
-                // advance it to be one idle timeout before now plus a bit of shrink period.
+                // advance it to be one idle timeout before now.
                 if (NanoTime.elapsed(threshold, now) > idleTimeoutNanos)
                     threshold = now - idleTimeoutNanos;
 
-                // advance the threshold by one shrink period
-                threshold += shrinkPeriod;
+                // Advance the threshold by one evict period.
+                threshold += evictPeriod;
 
                 // Is the new threshold in the future?
                 if (NanoTime.isBefore(now, threshold))
                 {
-                    // Yes - we cannot shrink yet, so continue looking for jobs
+                    // Yes - we cannot evict yet, so continue looking for jobs.
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Shrink skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
+                        LOG.debug("Evict skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
                     return false;
                 }
 
-                // We can shrink if we can update the atomic shrink threshold?
-                if (_shrinkThreshold.compareAndSet(shrinkThreshold, threshold))
+                // We can evict if we can update the threshold.
+                if (_evictThreshold.compareAndSet(evictThreshold, threshold))
                 {
-                    // Yes - we have shrunk, so exit.
                     if (LOG.isDebugEnabled())
-                        LOG.debug("SHRUNK, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
+                        LOG.debug("Evicted, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
                     return true;
                 }
             }
             else
             {
-                // We reached min threads, continue looking for jobs
+                // We reached min threads, continue looking for jobs.
                 if (LOG.isDebugEnabled())
                     LOG.debug("At min threads, {} > {} {}", threads, minThreads, QueuedThreadPool.this);
                 return false;
@@ -1102,7 +1101,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             getMaxThreads(),
             idle,
             getReservedThreads(),
-            NanoTime.millisUntil(_shrinkThreshold.get()),
+            NanoTime.millisUntil(_evictThreshold.get()),
             queue,
             _tryExecutor);
     }
@@ -1153,7 +1152,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             job = _jobs.poll();
                         }
 
-                        if (shrink())
+                        if (evict())
                             break;
                     }
                     catch (InterruptedException e)
