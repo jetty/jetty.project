@@ -54,7 +54,7 @@ public class DoSFilterJMXTest
         holder.setName(name);
         holder.setInitParameter(DoSFilter.MANAGED_ATTR_INIT_PARAM, "true");
         context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
-        context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, name);
+        context.setInitParameter(org.eclipse.jetty.server.handler.ContextHandler.MANAGED_ATTRIBUTES, name);
 
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);

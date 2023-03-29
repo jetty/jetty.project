@@ -27,6 +27,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +55,7 @@ public class DoSFilterJMXTest
         holder.setName(name);
         holder.setInitParameter(DoSFilter.MANAGED_ATTR_INIT_PARAM, "true");
         context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
-        context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, name);
+        context.setInitParameter(ContextHandler.MANAGED_ATTRIBUTES, name);
 
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
