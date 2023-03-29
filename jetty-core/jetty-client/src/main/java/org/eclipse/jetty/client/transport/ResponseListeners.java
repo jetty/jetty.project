@@ -414,8 +414,6 @@ public class ResponseListeners
         private final List<Response.ContentSourceListener> listeners = new ArrayList<>(2);
         private final List<ContentSource> contentSources = new ArrayList<>(2);
         private Content.Source originalContentSource;
-        private int failures;
-        private int demands;
 
         private void addContentSourceListener(Response.ContentSourceListener listener)
         {
@@ -432,6 +430,27 @@ public class ResponseListeners
                 ContentSource cs = new ContentSource(i);
                 contentSources.add(cs);
                 notifyContentSource(listener, response, cs);
+            }
+        }
+
+        private int[] countStates()
+        {
+            assert lock.isHeldByCurrentThread();
+            int[] counts = new int[State.values().length];
+            for (ContentSource contentSource : contentSources)
+            {
+                counts[contentSource.state.ordinal()]++;
+            }
+            return counts;
+        }
+
+        private void resetDemands()
+        {
+            assert lock.isHeldByCurrentThread();
+            for (ContentSource contentSource : contentSources)
+            {
+                if (contentSource.state == State.DEMAND_REGISTERED)
+                    contentSource.state = State.IDLE;
             }
         }
 
@@ -452,38 +471,65 @@ public class ResponseListeners
             chunk.release();
         }
 
-        private void registerFailure(Throwable failure)
+        private void registerFailure(ContentSource contentSource, Throwable failure)
         {
+            boolean processFail = false;
+            boolean processDemand = false;
+            int failures;
+            int demands;
             try (AutoLock ignored = lock.lock())
             {
-                failures++;
+                contentSource.state = State.FAILURE_REGISTERED;
+
+                int[] states = countStates();
+                failures = states[State.FAILURE_REGISTERED.ordinal()];
+                demands = states[State.DEMAND_REGISTERED.ordinal()];
+
                 if (failures == listeners.size())
-                    originalContentSource.fail(failure);
-
-                if (demands == listeners.size() - failures)
                 {
-                    demands = 0;
-                    originalContentSource.demand(this::onDemandCallback);
+                    processFail = true;
                 }
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Registered failure; failures={} demands={}", failures, demands);
+                else if (demands + failures == listeners.size())
+                {
+                    resetDemands();
+                    processDemand = true;
+                }
             }
+            if (processFail)
+                originalContentSource.fail(failure);
+            else if (processDemand)
+                originalContentSource.demand(this::onDemandCallback);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Registered failure on {}; failures={} demands={}", contentSource, failures, demands);
         }
 
-        private void registerDemand()
+        private void registerDemand(ContentSource contentSource)
         {
+            boolean processDemand = false;
+            int failures;
+            int demands;
             try (AutoLock ignored = lock.lock())
             {
-                demands++;
-                if (demands == listeners.size() - failures)
+                if (contentSource.state != State.IDLE)
+                    return;
+                contentSource.state = State.DEMAND_REGISTERED;
+
+                int[] states = countStates();
+                failures = states[State.FAILURE_REGISTERED.ordinal()];
+                demands = states[State.DEMAND_REGISTERED.ordinal()];
+
+                if (demands + failures == listeners.size())
                 {
-                    demands = 0;
-                    originalContentSource.demand(this::onDemandCallback);
+                    resetDemands();
+                    processDemand = true;
                 }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Registered demand; failures={} demands={}", failures, demands);
             }
+            if (processDemand)
+                originalContentSource.demand(this::onDemandCallback);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Registered demand on {}; failures={} demands={}", contentSource, failures, demands);
         }
 
         private class ContentSource implements Content.Source
@@ -529,6 +575,7 @@ public class ResponseListeners
             private final int index;
             private final AtomicReference<Runnable> demandCallbackRef = new AtomicReference<>();
             private volatile Content.Chunk chunk;
+            private volatile State state = State.IDLE;
 
             private ContentSource(int index)
             {
@@ -600,7 +647,7 @@ public class ResponseListeners
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} demand while current chunk is {}", index, currentChunk);
                 if (currentChunk == null || currentChunk == ALREADY_READ_CHUNK)
-                    registerDemand();
+                    registerDemand(this);
                 else
                     onDemandCallback();
             }
@@ -617,8 +664,19 @@ public class ResponseListeners
                     currentChunk.release();
                 this.chunk = Content.Chunk.from(failure);
                 onDemandCallback();
-                registerFailure(failure);
+                registerFailure(this, failure);
             }
+
+            @Override
+            public String toString()
+            {
+                return "%s@%x[i=%d,d=%s,c=%s,s=%s]".formatted(getClass().getSimpleName(), hashCode(), index, demandCallbackRef, chunk, state);
+            }
+        }
+
+        enum State
+        {
+            IDLE, DEMAND_REGISTERED, FAILURE_REGISTERED
         }
     }
 }
