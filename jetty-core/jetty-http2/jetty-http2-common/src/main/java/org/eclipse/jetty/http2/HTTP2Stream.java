@@ -444,8 +444,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private boolean offer(Data data)
     {
-        // No need to retain the Data object because it
-        // has already been retained when it was created.
+        // Retain the data because it is stored for later use.
+        data.retain();
         boolean process;
         try (AutoLock ignored = lock.lock())
         {
