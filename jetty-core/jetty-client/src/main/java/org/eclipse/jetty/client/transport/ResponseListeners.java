@@ -433,15 +433,20 @@ public class ResponseListeners
             }
         }
 
-        private int[] countStates()
+        private Counters countStates()
         {
             assert lock.isHeldByCurrentThread();
-            int[] counts = new int[State.values().length];
+            int demands = 0;
+            int failures = 0;
             for (ContentSource contentSource : contentSources)
             {
-                counts[contentSource.state.ordinal()]++;
+                switch (contentSource.state)
+                {
+                    case DEMANDED -> demands++;
+                    case FAILED -> failures++;
+                }
             }
-            return counts;
+            return new Counters(demands, failures);
         }
 
         private void resetDemands()
@@ -449,7 +454,7 @@ public class ResponseListeners
             assert lock.isHeldByCurrentThread();
             for (ContentSource contentSource : contentSources)
             {
-                if (contentSource.state == State.DEMAND_REGISTERED)
+                if (contentSource.state == State.DEMANDED)
                     contentSource.state = State.IDLE;
             }
         }
@@ -475,21 +480,16 @@ public class ResponseListeners
         {
             boolean processFail = false;
             boolean processDemand = false;
-            int failures;
-            int demands;
+            Counters counters;
             try (AutoLock ignored = lock.lock())
             {
-                contentSource.state = State.FAILURE_REGISTERED;
-
-                int[] states = countStates();
-                failures = states[State.FAILURE_REGISTERED.ordinal()];
-                demands = states[State.DEMAND_REGISTERED.ordinal()];
-
-                if (failures == listeners.size())
+                contentSource.state = State.FAILED;
+                counters = countStates();
+                if (counters.failures() == listeners.size())
                 {
                     processFail = true;
                 }
-                else if (demands + failures == listeners.size())
+                else if (counters.total() == listeners.size())
                 {
                     resetDemands();
                     processDemand = true;
@@ -501,25 +501,20 @@ public class ResponseListeners
                 originalContentSource.demand(this::onDemandCallback);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Registered failure on {}; failures={} demands={}", contentSource, failures, demands);
+                LOG.debug("Registered failure on {}; {}", contentSource, counters);
         }
 
         private void registerDemand(ContentSource contentSource)
         {
             boolean processDemand = false;
-            int failures;
-            int demands;
+            Counters counters;
             try (AutoLock ignored = lock.lock())
             {
                 if (contentSource.state != State.IDLE)
                     return;
-                contentSource.state = State.DEMAND_REGISTERED;
-
-                int[] states = countStates();
-                failures = states[State.FAILURE_REGISTERED.ordinal()];
-                demands = states[State.DEMAND_REGISTERED.ordinal()];
-
-                if (demands + failures == listeners.size())
+                contentSource.state = State.DEMANDED;
+                counters = countStates();
+                if (counters.total() == listeners.size())
                 {
                     resetDemands();
                     processDemand = true;
@@ -529,7 +524,7 @@ public class ResponseListeners
                 originalContentSource.demand(this::onDemandCallback);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Registered demand on {}; failures={} demands={}", contentSource, failures, demands);
+                LOG.debug("Registered demand on {}; {}", contentSource, counters);
         }
 
         private class ContentSource implements Content.Source
@@ -676,7 +671,15 @@ public class ResponseListeners
 
         enum State
         {
-            IDLE, DEMAND_REGISTERED, FAILURE_REGISTERED
+            IDLE, DEMANDED, FAILED
+        }
+
+        private record Counters(int demands, int failures)
+        {
+            public int total()
+            {
+                return demands + failures;
+            }
         }
     }
 }
