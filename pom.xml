@@ -224,8 +224,6 @@
   </pluginRepositories>
 
   <modules>
-    <!-- CAUTION: Any changes to this list will need to be represented
-         in the Jenkinsfile and build/scripts/ci.sh as well -->
     <module>build</module>
     <module>jetty-core</module>
     <module>jetty-integrations</module>
