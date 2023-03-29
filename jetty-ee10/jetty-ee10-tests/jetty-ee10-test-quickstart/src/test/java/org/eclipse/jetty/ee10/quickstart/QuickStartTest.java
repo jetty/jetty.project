@@ -26,7 +26,7 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -50,7 +50,7 @@ public class QuickStartTest
         //Generate the quickstart
         PreconfigureStandardTestWar.main(new String[]{});
 
-        Path workDir = MavenTestingUtils.getTargetTestingPath(PreconfigureStandardTestWar.class.getSimpleName());
+        Path workDir = MavenPaths.targetTestDir(PreconfigureStandardTestWar.class.getSimpleName());
         Path targetDir = workDir.resolve("test-standard-preconfigured");
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
@@ -65,7 +65,7 @@ public class QuickStartTest
         String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Path testResourceXml = MavenTestingUtils.getTestResourcePathFile("test.xml");
+        Path testResourceXml = MavenPaths.findTestResourceFile("test.xml");
         Resource contextXml = webapp.getResourceFactory().newResource(testResourceXml);
 
         Server server = new Server(0);
@@ -102,7 +102,7 @@ public class QuickStartTest
         //Generate the quickstart xml
         PreconfigureSpecWar.main(new String[]{});
 
-        Path workDir = MavenTestingUtils.getTargetTestingPath(PreconfigureSpecWar.class.getSimpleName());
+        Path workDir = MavenPaths.targetTestDir(PreconfigureSpecWar.class.getSimpleName());
         Path targetDir = workDir.resolve("test-spec-preconfigured");
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
@@ -119,7 +119,7 @@ public class QuickStartTest
         String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Path testResourceSpec = MavenTestingUtils.getTestResourcePathFile("test-spec.xml");
+        Path testResourceSpec = MavenPaths.findTestResourceFile("test-spec.xml");
         Resource contextXml = webapp.getResourceFactory().newResource(testResourceSpec);
 
         Server server = new Server(0);
@@ -167,10 +167,11 @@ public class QuickStartTest
         //Generate the quickstart
         PreconfigureJNDIWar.main(new String[]{});
 
-        Path workDir = MavenTestingUtils.getTargetTestingPath(PreconfigureJNDIWar.class.getSimpleName());
+        Path workDir = MavenPaths.targetTestDir(PreconfigureJNDIWar.class.getSimpleName());
         Path targetDir = workDir.resolve("test-jndi-preconfigured");
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
+        assertTrue(Files.exists(webXmlPath), "Exists: " + webXmlPath);
         WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
@@ -182,7 +183,7 @@ public class QuickStartTest
         String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Path testResourceJndi = MavenTestingUtils.getTestResourcePathFile("test-jndi.xml");
+        Path testResourceJndi = MavenPaths.findTestResourceFile("test-jndi.xml");
         Resource contextXml = webapp.getResourceFactory().newResource(testResourceJndi);
 
         Server server = new Server(0);

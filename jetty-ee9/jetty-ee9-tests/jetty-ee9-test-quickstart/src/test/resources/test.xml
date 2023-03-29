@@ -11,13 +11,13 @@ directory, additional configuration may be specified and hot deployments
 detected.
 ===================================================================== -->
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id="webapp" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <Set name="contextPath">/test</Set>
 
   <Call name="getResourceFactory">
     <Call id="realmResource" name="newResource">
-      <Arg><Property name="webapp.root" default="."/>/test-standard-realm.properties</Arg>
+      <Arg><SystemProperty name="jetty.home" default="."/>/test-standard-realm.properties</Arg>
     </Call>
   </Call>
 
