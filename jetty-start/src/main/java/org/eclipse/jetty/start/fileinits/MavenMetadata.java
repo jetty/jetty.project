@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -56,6 +57,10 @@ public class MavenMetadata
         throws IOException, ParserConfigurationException, SAXException
     {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature(XMLConstants.ACCESS_EXTERNAL_DTD, false);
+        factory.setFeature(XMLConstants.ACCESS_EXTERNAL_SCHEMA, false);
+        factory.setFeature(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, false);
         DocumentBuilder builder = factory.newDocumentBuilder();
         try (InputStream input = Files.newInputStream(metadataXml))
         {
