@@ -32,6 +32,7 @@
     <module>test-cdi</module>
     <module>test-jpms</module>
     <module>test-websocket-autobahn</module>
+    <module>test-resources</module>
   </modules>
 
 </project>
