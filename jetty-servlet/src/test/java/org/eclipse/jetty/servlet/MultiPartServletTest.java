@@ -75,6 +75,7 @@ public class MultiPartServletTest
     private ServerConnector connector;
     private HttpClient client;
     private Path tmpDir;
+    private ServletContextHandler contextHandler;
 
     private static final int MAX_FILE_SIZE = 512 * 1024;
     private static final int MAX_REQUEST_SIZE = 1024 * 1024 * 8;
@@ -155,7 +156,7 @@ public class MultiPartServletTest
         MultipartConfigElement defaultConfig = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
             -1, -1, 1);
 
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         ServletHolder servletHolder = contextHandler.addServlet(MultiPartServlet.class, "/");
         servletHolder.getRegistration().setMultipartConfig(config);
@@ -228,6 +229,8 @@ public class MultiPartServletTest
     @MethodSource("complianceModes")
     public void testManyParts(MultiPartFormDataCompliance compliance) throws Exception
     {
+        int maxParts = 1000;
+        contextHandler.setMaxFormKeys(maxParts);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
             .setMultiPartFormDataCompliance(compliance);
 
@@ -235,7 +238,7 @@ public class MultiPartServletTest
         Arrays.fill(byteArray, (byte)1);
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < maxParts; i++)
         {
             BytesRequestContent content = new BytesRequestContent(byteArray);
             multiPart.addFieldPart("part" + i, content, null);
@@ -260,6 +263,8 @@ public class MultiPartServletTest
     @MethodSource("complianceModes")
     public void testTooManyParts(MultiPartFormDataCompliance compliance) throws Exception
     {
+        int maxParts = 1000;
+        contextHandler.setMaxFormKeys(maxParts);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
             .setMultiPartFormDataCompliance(compliance);
 
@@ -267,7 +272,7 @@ public class MultiPartServletTest
         Arrays.fill(byteArray, (byte)1);
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        for (int i = 0; i < 1001; i++)
+        for (int i = 0; i < maxParts + 1; i++)
         {
             BytesRequestContent content = new BytesRequestContent(byteArray);
             multiPart.addFieldPart("part" + i, content, null);
