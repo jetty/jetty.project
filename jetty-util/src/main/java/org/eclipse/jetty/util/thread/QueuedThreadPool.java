@@ -318,7 +318,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
     }
 
-    private void joinThreads(long stopByNanos) throws InterruptedException
+    private void joinThreads(long stopByNanos)
     {
         loop : while (true)
         {
@@ -977,23 +977,27 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     protected boolean evict()
     {
         long idleTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(getIdleTimeout());
+
+        // There is a chance that many threads enter this method concurrently,
+        // and if all of them are evicted the pool shrinks below minThreads.
+        // For example when minThreads=3, threads=8, maxEvictCount=10 we want
+        // to evict at most 5 threads (8-3), not 10.
+        // When a thread fails the CAS, it may assume that another thread has
+        // been evicted, so the CAS should be attempted only a number of times
+        // equal to the most threads we want to evict (5 in the example above).
+        int threads = getThreads();
+        int minThreads = getMinThreads();
+        int threadsToEvict = threads - minThreads;
+
         while (true)
         {
-            // No jobs available, should we evict the current thread?
-            int threads = getThreads();
-            int minThreads = getMinThreads();
-
-            // This minThreads comparison isn't atomic, so there's a chance that multiple threads might
-            // enter this branch concurrently and shrink the pool below minThreads; this is okay
-            // as when that happens, the finally block in Runner.run() compensates by calling
-            // ensureThreads() - so we can go below minThreads but that's a very transient state.
-            if (threads > minThreads)
+            if (threadsToEvict > 0)
             {
-                // We have excess threads, so check if we should evict the current thread?
+                // We have excess threads, so check if we should evict the current thread.
                 long now = NanoTime.now();
                 long evictPeriod = idleTimeoutNanos / getMaxEvictCount();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Evict check, {} > {} period={}ms {}", threads, minThreads, TimeUnit.NANOSECONDS.toMillis(evictPeriod), QueuedThreadPool.this);
+                    LOG.debug("Evict check, period={}ms {}", TimeUnit.NANOSECONDS.toMillis(evictPeriod), this);
 
                 long evictThreshold = _evictThreshold.get();
                 long threshold = evictThreshold;
@@ -1011,7 +1015,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 {
                     // Yes - we cannot evict yet, so continue looking for jobs.
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Evict skipped, threshold={}ms in future {}", NanoTime.millisElapsed(now, threshold), QueuedThreadPool.this);
+                        LOG.debug("Evict skipped, threshold={}ms in the future {}", NanoTime.millisElapsed(now, threshold), this);
                     return false;
                 }
 
@@ -1019,15 +1023,20 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 if (_evictThreshold.compareAndSet(evictThreshold, threshold))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Evicted, threshold={}ms in past {}", NanoTime.millisElapsed(threshold, now), QueuedThreadPool.this);
+                        LOG.debug("Evicted, threshold={}ms in the past {}", NanoTime.millisElapsed(threshold, now), this);
                     return true;
+                }
+                else
+                {
+                    // Some other thread was evicted.
+                    --threadsToEvict;
                 }
             }
             else
             {
-                // We reached min threads, continue looking for jobs.
+                // No more threads to evict, continue looking for jobs.
                 if (LOG.isDebugEnabled())
-                    LOG.debug("At min threads, {} > {} {}", threads, minThreads, QueuedThreadPool.this);
+                    LOG.debug("Evict skipped, no excess threads {}", this);
                 return false;
             }
         }
@@ -1091,7 +1100,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         int idle = Math.max(0, AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%d,q=%d}[%s]",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%dms,q=%d}[%s]",
             getClass().getSimpleName(),
             _name,
             hashCode(),
