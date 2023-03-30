@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -82,8 +83,12 @@ public class NeedWantClientAuthTest
     private SslContextFactory.Server createServerSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+
         return sslContextFactory;
     }
 
@@ -141,8 +146,10 @@ public class NeedWantClientAuthTest
         });
 
         SslContextFactory.Client clientSSL = new SslContextFactory.Client(true);
-        clientSSL.setKeyStorePath("src/test/resources/client_keystore.p12");
-        clientSSL.setKeyStorePassword("storepwd");
+        clientSSL.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSSL.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSSL.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSSL.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
@@ -232,8 +239,10 @@ public class NeedWantClientAuthTest
         });
 
         SslContextFactory.Client clientSSL = new SslContextFactory.Client(true);
-        clientSSL.setKeyStorePath("src/test/resources/client_keystore.p12");
-        clientSSL.setKeyStorePassword("storepwd");
+        clientSSL.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSSL.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSSL.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSSL.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())

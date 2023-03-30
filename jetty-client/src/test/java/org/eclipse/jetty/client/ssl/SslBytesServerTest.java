@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.ssl;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -59,7 +58,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -113,12 +112,13 @@ public class SslBytesServerTest extends SslBytesTest
         httpParses.set(0);
         serverEndPoint.set(null);
 
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         // This whole test is very specific to how TLS < 1.3 works.
         sslContextFactory.setIncludeProtocols("TLSv1.2");
-        sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory httpFactory = new HttpConnectionFactory()
         {

@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -204,10 +205,10 @@ public class Socks4ProxyTest
         SslContextFactory clientTLS = client.getSslContextFactory();
         clientTLS.reload(ssl ->
         {
-            // The client keystore contains the trustedCertEntry for the
-            // self-signed server certificate, so it acts as a truststore.
-            ssl.setTrustStorePath("src/test/resources/client_keystore.p12");
-            ssl.setTrustStorePassword("storepwd");
+            ssl.setTrustStore(TestKeyStoreFactory.getClientKeyStore());
+            ssl.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+            ssl.setTrustStore(TestKeyStoreFactory.getTrustStore());
+            ssl.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
             // Disable TLS hostname verification, but
             // enable application hostname verification.
             ssl.setEndpointIdentificationAlgorithm(null);
@@ -240,8 +241,10 @@ public class Socks4ProxyTest
 
             // Wrap the socket with TLS.
             SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-            serverTLS.setKeyStorePath("src/test/resources/keystore.p12");
-            serverTLS.setKeyStorePassword("storepwd");
+            serverTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+            serverTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+            serverTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+            serverTLS.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
             serverTLS.start();
             SSLContext sslContext = serverTLS.getSslContext();
             SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(channel.socket(), serverHost, serverPort, false);

@@ -69,6 +69,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
@@ -130,6 +131,8 @@ public class HttpClientTLSTest
     private SslContextFactory.Server createServerSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         configureSslContextFactory(sslContextFactory);
         return sslContextFactory;
     }
@@ -137,6 +140,8 @@ public class HttpClientTLSTest
     private SslContextFactory.Client createClientSslContextFactory()
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         configureSslContextFactory(sslContextFactory);
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
         return sslContextFactory;
@@ -144,8 +149,8 @@ public class HttpClientTLSTest
 
     private void configureSslContextFactory(SslContextFactory sslContextFactory)
     {
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
     }
 
     @AfterEach
@@ -1311,8 +1316,10 @@ public class HttpClientTLSTest
     public void testDefaultNonDomainSNI() throws Exception
     {
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        serverTLS.setKeyStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverTLS.setTrustStorePath(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         serverTLS.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
         {
             // Java clients don't send SNI by default if it's not a domain.
@@ -1322,9 +1329,10 @@ public class HttpClientTLSTest
         startServer(serverTLS, new EmptyServerHandler());
 
         SslContextFactory.Client clientTLS = new SslContextFactory.Client();
-        // Trust any certificate received by the server.
-        clientTLS.setTrustStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        clientTLS.setTrustStorePassword("storepwd");
+        clientTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        clientTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientTLS.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         // Disable TLS-level hostName verification, as we may receive a random certificate.
         clientTLS.setEndpointIdentificationAlgorithm(null);
         startClient(clientTLS);
@@ -1341,8 +1349,10 @@ public class HttpClientTLSTest
     public void testForcedNonDomainSNI() throws Exception
     {
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        serverTLS.setKeyStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverTLS.setTrustStorePath(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         serverTLS.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
         {
             // We have forced the client to send the non-domain SNI.
@@ -1352,9 +1362,11 @@ public class HttpClientTLSTest
         startServer(serverTLS, new EmptyServerHandler());
 
         SslContextFactory.Client clientTLS = new SslContextFactory.Client();
-        // Trust any certificate received by the server.
-        clientTLS.setTrustStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        clientTLS.setTrustStorePassword("storepwd");
+        
+        clientTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        clientTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientTLS.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         // Force TLS-level hostName verification, as we want to receive the correspondent certificate.
         clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
         startClient(clientTLS);
@@ -1380,8 +1392,10 @@ public class HttpClientTLSTest
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
 
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        serverTLS.setKeyStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverTLS.setTrustStorePath(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         serverTLS.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
         {
             // We have forced the client to send the non-domain SNI.
@@ -1391,9 +1405,11 @@ public class HttpClientTLSTest
         startServer(serverTLS, new EmptyServerHandler());
 
         SslContextFactory.Client clientTLS = new SslContextFactory.Client();
-        // Trust any certificate received by the server.
-        clientTLS.setTrustStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        clientTLS.setTrustStorePassword("storepwd");
+        
+        clientTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        clientTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientTLS.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         // Force TLS-level hostName verification, as we want to receive the correspondent certificate.
         clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
         startClient(clientTLS);

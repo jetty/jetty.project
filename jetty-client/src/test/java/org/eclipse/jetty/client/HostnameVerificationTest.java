@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -61,8 +62,10 @@ public class HostnameVerificationTest
         server = new Server(serverThreads);
 
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
-        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        serverSslContextFactory.setKeyStorePassword("storepwd");
+        serverSslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         HttpConfiguration httpConfig = new HttpConfiguration();
         SecureRequestCustomizer customizer = new SecureRequestCustomizer();
         customizer.setSniHostCheck(false);
@@ -83,8 +86,10 @@ public class HostnameVerificationTest
         server.start();
 
         // The keystore contains a hostname which doesn't match localhost
-        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        clientSslContextFactory.setKeyStorePassword("storepwd");
+        clientSslContextFactory.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSelectors(1);

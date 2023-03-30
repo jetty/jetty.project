@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -24,7 +23,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -182,6 +181,8 @@ public abstract class AbstractHttpClientServerTest
         {
             SslContextFactory.Client result = new SslContextFactory.Client();
             result.setEndpointIdentificationAlgorithm(null);
+            result.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+            result.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
             configure(result);
             return result;
         }
@@ -190,15 +191,16 @@ public abstract class AbstractHttpClientServerTest
         public SslContextFactory.Server newServerSslContextFactory()
         {
             SslContextFactory.Server result = new SslContextFactory.Server();
+            result.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+            result.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
             configure(result);
             return result;
         }
 
         private void configure(SslContextFactory ssl)
         {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-            ssl.setKeyStorePath(keystorePath.toString());
-            ssl.setKeyStorePassword("storepwd");
+            ssl.setTrustStore(TestKeyStoreFactory.getTrustStore());
+            ssl.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         }
 
         @Override
