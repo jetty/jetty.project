@@ -18,7 +18,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
  * Session ID Manager.
- *
  * Manages session IDs across multiple contexts.
  */
 public interface SessionIdManager extends LifeCycle
@@ -28,21 +27,21 @@ public interface SessionIdManager extends LifeCycle
      * @param id The plain session ID (ie no workername extension)
      * @return True if the session ID is in use by at least one context.
      */
-    public boolean isIdInUse(String id);
+    boolean isIdInUse(String id);
 
     /**
      * Expire all sessions on all contexts that share the same id.
      *
      * @param id The session ID without any cluster node extension
      */
-    public void expireAll(String id);
+    void expireAll(String id);
 
     /**
      * Invalidate all sessions on all contexts that share the same id.
      *
      * @param id the session id
      */
-    public void invalidateAll(String id, SessionManager except);
+    void invalidateAll(String id);
 
     /**
      * Create a new Session ID.
@@ -52,12 +51,12 @@ public interface SessionIdManager extends LifeCycle
      * @param created the timestamp for when the session was created
      * @return the new session id
      */
-    public String newSessionId(Request request, String requestedId, long created);
+    String newSessionId(Request request, String requestedId, long created);
 
     /**
      * @return the unique name of this server instance
      */
-    public String getWorkerName();
+    String getWorkerName();
 
     /**
      * Get just the session id from an id that includes the worker name
@@ -68,7 +67,7 @@ public interface SessionIdManager extends LifeCycle
      * @param qualifiedId the session id including the worker name
      * @return the cluster id
      */
-    public String getId(String qualifiedId);
+    String getId(String qualifiedId);
 
     /**
      * Get an extended id for a session. An extended id contains
@@ -78,7 +77,7 @@ public interface SessionIdManager extends LifeCycle
      * @param request The request that for the session (or null)
      * @return The session id qualified with the worker name
      */
-    public String getExtendedId(String id, Request request);
+    String getExtendedId(String id, Request request);
 
     /**
      * Change the existing session id.
@@ -88,17 +87,17 @@ public interface SessionIdManager extends LifeCycle
      * @param request the request containing the session
      * @return the new session id
      */
-    public String renewSessionId(String oldId, String oldExtendedId, Request request);
+    String renewSessionId(String oldId, String oldExtendedId, Request request);
     
-    public void scavenge();
+    void scavenge();
 
     /**
      * @param houseKeeper the housekeeper for doing scavenging
      */
-    public void setSessionHouseKeeper(HouseKeeper houseKeeper);
+    void setSessionHouseKeeper(HouseKeeper houseKeeper);
 
     /**
      * @return the housekeeper for doing scavenging
      */
-    public HouseKeeper getSessionHouseKeeper();
+    HouseKeeper getSessionHouseKeeper();
 }

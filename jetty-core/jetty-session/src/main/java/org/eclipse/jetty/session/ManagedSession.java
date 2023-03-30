@@ -653,7 +653,7 @@ public class ManagedSession implements Session
                     // as invalid
                     finishInvalidate();
                     // tell id mgr to remove sessions with same id from all contexts
-                    _manager.getSessionIdManager().invalidateAll(_sessionData.getId(), _manager);
+                    _manager.getSessionIdManager().invalidateAll(_sessionData.getId());
                 }
             }
         }

@@ -238,9 +238,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         //check if session management is set up, if not set up defaults
         final Server server = getServer();
 
-        _context = ContextHandler.getCurrentContext();
-        if (_context == null)
-            _context = server.getContext();
+        _context = ContextHandler.getCurrentContext(server);
         _loader = Thread.currentThread().getContextClassLoader();
 
         // ensure a session path is set
@@ -424,8 +422,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             LOG.warn("Error loading session {}", id, e);
             try
             {
-                //tell id mgr to remove session from all other contexts
-                getSessionIdManager().invalidateAll(id, this);
+                //tell id mgr to remove session from all contexts
+                getSessionIdManager().invalidateAll(id);
             }
             catch (Exception x)
             {

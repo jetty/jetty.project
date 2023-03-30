@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -144,9 +145,16 @@ public abstract class AbstractSessionDataStoreTest
         File factoryClass = new File(extraClasses, "ProxyableFactory.class");
         IO.copy(is, new FileOutputStream(factoryClass));
         is.close();
-
     }
-    
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        if (_server != null)
+            _server.stop();
+        _server = null;
+    }
+
     public AbstractSessionDataStoreTest() throws Exception
     {
         URL[] foodirUrls = new URL[]{extraClasses.toURI().toURL()};

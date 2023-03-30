@@ -924,6 +924,12 @@ public class Server extends Handler.Wrapper implements Attributes
         {
             return Objects.requireNonNullElse(Server.this.getTempDirectory(), tempDir);
         }
+
+        @Override
+        public String toString()
+        {
+            return "ServerContext@%x".formatted(Server.this.hashCode());
+        }
     }
 
     private class ServerEnvironment extends Attributes.Wrapper implements Environment

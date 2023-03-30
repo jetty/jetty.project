@@ -419,7 +419,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     @Override
-    public void invalidateAll(String id, SessionManager except)
+    public void invalidateAll(String id)
     {
         //tell all contexts that may have a session object with this id to
         //get rid of them
@@ -427,8 +427,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         {
             try
             {
-                if (manager != except)
-                    manager.invalidate(id);
+                manager.invalidate(id);
             }
             catch (Exception e)
             {
