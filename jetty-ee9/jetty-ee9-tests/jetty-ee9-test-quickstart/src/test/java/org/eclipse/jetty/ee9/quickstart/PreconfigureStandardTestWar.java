@@ -18,7 +18,7 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,30 +31,26 @@ public class PreconfigureStandardTestWar
     private static final long __start = NanoTime.now();
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
-    public static Path getTargetDir()
-    {
-        Path workdir = MavenTestingUtils.getTargetTestingPath(PreconfigureStandardTestWar.class.getSimpleName());
-        FS.ensureDirExists(workdir);
-
-        return workdir.resolve("test-standard-preconfigured");
-    }
-
     public static void main(String[] args) throws Exception
     {
-        Path target = getTargetDir();
+        Path workdir = MavenPaths.targetTestDir(PreconfigureStandardTestWar.class.getSimpleName());
+        FS.ensureDirExists(workdir);
+
+        Path target = workdir.resolve("test-standard-preconfigured");
         FS.ensureEmpty(target);
 
         Path realmPropertiesDest = target.resolve("test-standard-realm.properties");
         Files.deleteIfExists(realmPropertiesDest);
 
-        Path realmPropertiesSrc = MavenTestingUtils.getTestResourcePathFile("realm.properties");
+        Path realmPropertiesSrc = MavenPaths.findTestResourceFile("realm.properties");
         Files.copy(realmPropertiesSrc, realmPropertiesDest);
-        System.setProperty("jetty.home", "target");
+
+        System.setProperty("jetty.home", target.toString());
 
         PreconfigureQuickStartWar.main(
-            MavenTestingUtils.getTargetPath("test-standard.war").toString(),
+            MavenPaths.targetDir().resolve("test-standard.war").toString(),
             target.toString(),
-            MavenTestingUtils.getTargetPath("test-spec.xml").toString());
+            MavenPaths.findTestResourceFile("test-spec.xml").toString());
 
         LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 

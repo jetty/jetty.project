@@ -91,7 +91,7 @@ Calling `JakartaWebSocketServletContainerInitializer.configure(\...)` must be do
 [[pg-server-websocket-standard-endpoints]]
 ===== Configuring Endpoints
 
-Once you have xref:pg-server-websocket-standard-container[setup] the `ServerContainer`, you can configure your xref:pg-websocket-endpoints[WebSocket endpoints].
+Once you have xref:pg-server-websocket-standard-container[setup] the `ServerContainer`, you can configure your WebSocket endpoints.
 
 The WebSocket endpoints classes may be either annotated with the standard `jakarta.websocket` annotations, extend the `jakarta.websocket.Endpoint` abstract class, or implement the `jakarta.websocket.server.ServerApplicationConfig` interface.
 
