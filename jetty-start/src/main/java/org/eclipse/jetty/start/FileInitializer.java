@@ -111,7 +111,9 @@ public abstract class FileInitializer
 
         Path destination = _basehome.getBasePath(location);
 
-        // now on copy/download paths (be safe above all else)
+        // We restrict our behavior to only modifying what exists in ${jetty.base}.
+        // If the use decides they want to use things like symlinks to point to content outside of ${jetty.base}, that
+        // is their call.  On download and/or extract, we will not replace files that already exist.
         if (destination != null && !destination.startsWith(_basehome.getBasePath()))
             throw new IOException("For security reasons, Jetty start is unable to process file resource not in ${jetty.base} - " + location);
 
@@ -204,7 +206,11 @@ public abstract class FileInitializer
                     if (copyDirectory(from, to))
                         modified = true;
                 }
-                else if (!Files.exists(to))
+                else if (Files.exists(to))
+                {
+                    StartLog.debug("skipping copy (file exists in destination) %s", to);
+                }
+                else
                 {
                     StartLog.info("copy %s to %s", _basehome.toShortForm(from), _basehome.toShortForm(to));
                     Files.copy(from, to);
