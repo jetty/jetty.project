@@ -23,6 +23,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
+import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 import org.xml.sax.SAXException;
@@ -108,19 +109,19 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
     private final boolean readonly;
     private String mavenRepoUri;
 
-    public MavenLocalRepoFileInitializer(BaseHome baseHome)
+    public MavenLocalRepoFileInitializer(StartArgs startArgs, BaseHome baseHome)
     {
-        this(baseHome, null, true);
+        this(startArgs, baseHome, null, true);
     }
 
-    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly)
+    public MavenLocalRepoFileInitializer(StartArgs startArgs, BaseHome baseHome, Path localRepoDir, boolean readonly)
     {
-        this(baseHome, localRepoDir, readonly, null);
+        this(startArgs, baseHome, localRepoDir, readonly, null);
     }
 
-    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
+    public MavenLocalRepoFileInitializer(StartArgs startArgs, BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
     {
-        super(baseHome, "maven");
+        super(startArgs, baseHome, "maven");
         this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
         this.readonly = readonly;
         this.mavenRepoUri = mavenRepoUri;

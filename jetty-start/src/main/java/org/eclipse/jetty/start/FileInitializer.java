@@ -32,10 +32,12 @@ public abstract class FileInitializer
 {
     protected final Set<String> _scheme = new HashSet<>();
     protected final BaseHome _basehome;
+    protected final boolean _allowInsecureHttpDownloads;
 
-    protected FileInitializer(BaseHome basehome, String... scheme)
+    protected FileInitializer(StartArgs startArgs, BaseHome basehome, String... scheme)
     {
         _basehome = basehome;
+        _allowInsecureHttpDownloads = startArgs.isAllowInsecureHttpDownloads();
         if (scheme != null)
             for (String s : scheme)
             {
@@ -122,6 +124,9 @@ public abstract class FileInitializer
 
     protected void download(URI uri, Path destination) throws IOException
     {
+        if ("http".equalsIgnoreCase(uri.getScheme()) && !_allowInsecureHttpDownloads)
+            throw new IOException("Insecure HTTP download not allowed (use " + StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + uri);
+
         if (FS.ensureDirectoryExists(destination.getParent()))
             StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
 

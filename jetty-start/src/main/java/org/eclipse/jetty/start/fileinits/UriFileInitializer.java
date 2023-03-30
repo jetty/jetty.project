@@ -20,12 +20,13 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FileInitializer;
+import org.eclipse.jetty.start.StartArgs;
 
 public class UriFileInitializer extends FileInitializer
 {
-    public UriFileInitializer(BaseHome baseHome)
+    public UriFileInitializer(StartArgs startArgs, BaseHome baseHome)
     {
-        super(baseHome, "http", "https");
+        super(startArgs, baseHome, "http", "https");
     }
 
     @Override

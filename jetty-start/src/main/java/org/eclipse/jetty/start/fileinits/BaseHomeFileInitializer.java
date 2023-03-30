@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
+import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartLog;
 
 /**
@@ -30,9 +31,9 @@ import org.eclipse.jetty.start.StartLog;
  */
 public class BaseHomeFileInitializer extends FileInitializer
 {
-    public BaseHomeFileInitializer(BaseHome basehome)
+    public BaseHomeFileInitializer(StartArgs startArgs, BaseHome basehome)
     {
-        super(basehome, "basehome");
+        super(startArgs, basehome, "basehome");
     }
 
     @Override

@@ -191,6 +191,10 @@ Options:
                    issues when the Jetty logging module has not yet started
                    due to configuration errors.
 
+  --allow-insecure-http-downloads
+                   Allow the use of insecure `http://` plaintext URI for
+                   downloading of content.
+
   --approve-all-licenses
                    Approves all license questions from modules that have
                    particular license requirements.

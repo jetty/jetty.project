@@ -73,18 +73,18 @@ public class BaseBuilder
         if (args.isTestingModeEnabled())
         {
             // Copy from basehome
-            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
+            fileInitializers.add(new BaseHomeFileInitializer(startArgs, baseHome));
 
             // Handle local directories
-            fileInitializers.add(new LocalFileInitializer(baseHome));
+            fileInitializers.add(new LocalFileInitializer(startArgs, baseHome));
 
             // No downloads performed
-            fileInitializers.add(new TestFileInitializer(baseHome));
+            fileInitializers.add(new TestFileInitializer(startArgs, baseHome));
         }
         else if (args.isCreateFiles())
         {
             // Handle local directories
-            fileInitializers.add(new LocalFileInitializer(baseHome));
+            fileInitializers.add(new LocalFileInitializer(startArgs, baseHome));
 
             // Downloads are allowed to be performed
             // Setup Maven Local Repo
@@ -92,21 +92,21 @@ public class BaseBuilder
             if (localRepoDir != null)
             {
                 // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
+                fileInitializers.add(new MavenLocalRepoFileInitializer(startArgs, baseHome, localRepoDir,
                     args.getMavenLocalRepoDir() == null,
                     startArgs.getMavenBaseUri()));
             }
             else
             {
                 // No no local repo directory (direct downloads)
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome));
+                fileInitializers.add(new MavenLocalRepoFileInitializer(startArgs, baseHome));
             }
 
             // Copy from basehome
-            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
+            fileInitializers.add(new BaseHomeFileInitializer(startArgs, baseHome));
 
             // Normal URL downloads
-            fileInitializers.add(new UriFileInitializer(baseHome));
+            fileInitializers.add(new UriFileInitializer(startArgs, baseHome));
         }
     }
 
@@ -367,6 +367,7 @@ public class BaseBuilder
         {
             for (FileInitializer finit : fileInitializers)
             {
+
                 if (finit.isApplicable(uri))
                     return finit.create(uri, arg.location);
             }
