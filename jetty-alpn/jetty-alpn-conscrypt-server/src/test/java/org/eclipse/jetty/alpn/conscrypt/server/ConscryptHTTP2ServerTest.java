@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.alpn.conscrypt.server;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Security;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -73,11 +71,11 @@ public class ConscryptHTTP2ServerTest
 
     private void configureSslContextFactory(SslContextFactory sslContextFactory)
     {
-        Path path = Paths.get("src", "test", "resources");
-        File keys = path.resolve("keystore.p12").toFile();
-        sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslContextFactory.setProvider("Conscrypt");
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         if (JavaVersion.VERSION.getPlatform() < 9)
         {
             // Conscrypt enables TLSv1.3 by default but it's not supported in Java 8.
