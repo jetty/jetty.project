@@ -58,9 +58,6 @@ public class MavenMetadata
     {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature(XMLConstants.ACCESS_EXTERNAL_DTD, false);
-        factory.setFeature(XMLConstants.ACCESS_EXTERNAL_SCHEMA, false);
-        factory.setFeature(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, false);
         DocumentBuilder builder = factory.newDocumentBuilder();
         try (InputStream input = Files.newInputStream(metadataXml))
         {
