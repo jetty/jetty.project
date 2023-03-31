@@ -270,7 +270,9 @@ public class Password extends Credential
             System.out.print(": ");
 
             BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
-            argUser = input.readLine();
+            String inputUser = input.readLine();
+            if (StringUtil.isNotBlank(inputUser))
+                argUser = inputUser;
 
             System.out.print("Password: ");
             argPassword = input.readLine();
@@ -295,7 +297,8 @@ public class Password extends Credential
         Password pw = new Password(argPassword);
         System.err.println(obfuscate(pw.toString()));
         System.err.println(Credential.MD5.digest(argPassword));
-        System.err.println(Credential.Crypt.crypt(argUser, pw.toString()));
+        if (StringUtil.isNotBlank(argUser))
+            System.err.println(Credential.Crypt.crypt(argUser, pw.toString()));
         System.exit(0);
     }
 }
