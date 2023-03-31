@@ -131,6 +131,9 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     protected boolean allowInsecureHttpDownloads()
     {
         // Always allow insecure http downloads if the `maven.repo.uri` property has been changed from default.
+        // This indicates a change to a different maven uri, overwhelmingly pointing to a maven repository manager
+        // like artifactory or nexus.   This is viewed as an intentional decision by the user and as such we should
+        // not put additional hurdles in their way.
         return !this.mavenRepoUri.equals(DEFAULT_REMOTE_REPO);
     }
 
