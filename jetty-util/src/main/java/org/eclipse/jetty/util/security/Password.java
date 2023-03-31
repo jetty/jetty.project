@@ -276,6 +276,11 @@ public class Password extends Credential
 
             System.out.print("Password: ");
             argPassword = input.readLine();
+            if (StringUtil.isBlank(argPassword))
+            {
+                System.err.println("ERROR: blank passwords not supported");
+                System.exit(1);
+            }
         }
         else if (StringUtil.isBlank(argUser))
         {
