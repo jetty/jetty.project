@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -50,8 +51,10 @@ public class TryFilesFilterTest
         server.addConnector(connector);
 
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
-        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        serverSslContextFactory.setKeyStorePassword("storepwd");
+        serverSslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslConnector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(sslConnector);
 
@@ -66,8 +69,10 @@ public class TryFilesFilterTest
         ClientConnector clientConnector = new ClientConnector();
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
         clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
-        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        clientSslContextFactory.setKeyStorePassword("storepwd");
+        clientSslContextFactory.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         clientConnector.setSslContextFactory(clientSslContextFactory);
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         server.addBean(client);
