@@ -110,8 +110,10 @@ public abstract class FileInitializer
         Path destination = _basehome.getBasePath(location);
 
         // We restrict our behavior to only modifying what exists in ${jetty.base}.
-        // If the use decides they want to use things like symlinks to point to content outside of ${jetty.base}, that
-        // is their call.  On download and/or extract, we will not replace files that already exist.
+        // If the user decides they want to use advanced setups, such as symlinks to point
+        // to content outside of ${jetty.base}, that is their decision ad we will not
+        // attempt to save them from themselves.
+        // Note: All copy and extract steps, will not replace files that already exist.
         if (destination != null && !destination.startsWith(_basehome.getBasePath()))
             throw new IOException("For security reasons, Jetty start is unable to process file resource not in ${jetty.base} - " + location);
 

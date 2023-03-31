@@ -86,20 +86,19 @@ public class BaseBuilder
             // Handle local directories
             fileInitializers.add(new LocalFileInitializer(baseHome));
 
-            // Downloads are allowed to be performed
             // Setup Maven Local Repo
             Path localRepoDir = args.findMavenLocalRepoDir();
             if (localRepoDir != null)
             {
                 // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(startArgs, baseHome, localRepoDir,
+                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
                     args.getMavenLocalRepoDir() == null,
                     startArgs.getMavenBaseUri()));
             }
             else
             {
                 // No no local repo directory (direct downloads)
-                fileInitializers.add(new MavenLocalRepoFileInitializer(startArgs, baseHome));
+                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome));
             }
 
             // Copy from basehome
@@ -367,7 +366,6 @@ public class BaseBuilder
         {
             for (FileInitializer finit : fileInitializers)
             {
-
                 if (finit.isApplicable(uri))
                     return finit.create(uri, arg.location);
             }

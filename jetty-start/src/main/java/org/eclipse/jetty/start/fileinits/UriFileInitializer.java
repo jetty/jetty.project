@@ -19,14 +19,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.start.BaseHome;
-import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartArgs;
 
 public class UriFileInitializer extends DownloadFileInitializer
 {
+    protected final boolean _allowInsecureHttpDownloads;
+
     public UriFileInitializer(StartArgs startArgs, BaseHome baseHome)
     {
-        super(startArgs, baseHome, "http", "https");
+        super(baseHome, "http", "https");
+        _allowInsecureHttpDownloads = startArgs.isAllowInsecureHttpDownloads();
+    }
+
+    @Override
+    protected boolean allowInsecureHttpDownloads()
+    {
+        return _allowInsecureHttpDownloads;
     }
 
     @Override

@@ -22,8 +22,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
-import org.eclipse.jetty.start.FileInitializer;
-import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 import org.xml.sax.SAXException;
@@ -109,19 +107,19 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     private final boolean readonly;
     private String mavenRepoUri;
 
-    public MavenLocalRepoFileInitializer(StartArgs startArgs, BaseHome baseHome)
+    public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
-        this(startArgs, baseHome, null, true);
+        this(baseHome, null, true);
     }
 
-    public MavenLocalRepoFileInitializer(StartArgs startArgs, BaseHome baseHome, Path localRepoDir, boolean readonly)
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly)
     {
-        this(startArgs, baseHome, localRepoDir, readonly, null);
+        this(baseHome, localRepoDir, readonly, null);
     }
 
-    public MavenLocalRepoFileInitializer(StartArgs startArgs, BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
     {
-        super(startArgs, baseHome, "maven");
+        super(baseHome, "maven");
         this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
         this.readonly = readonly;
         this.mavenRepoUri = mavenRepoUri;
@@ -130,11 +128,14 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     @Override
     protected boolean allowInsecureHttpDownloads()
     {
-        // Always allow insecure http downloads if the `maven.repo.uri` property has been changed from default.
-        // This indicates a change to a different maven uri, overwhelmingly pointing to a maven repository manager
-        // like artifactory or nexus.   This is viewed as an intentional decision by the user and as such we should
-        // not put additional hurdles in their way.
-        return !this.mavenRepoUri.equals(DEFAULT_REMOTE_REPO);
+        // Always allow insecure http downloads in this file initializer.
+
+        // The user is either using the DEFAULT_REMOTE_REPO, or has redeclared it to a new URI.
+        // If the `maven.repo.uri` property has been changed from default, this indicates a change
+        // to a different maven uri, overwhelmingly pointing to a maven repository manager
+        // like artifactory or nexus.   This is viewed as an intentional decision by the
+        // user and as such we should not put additional hurdles in their way.
+        return true;
     }
 
     private static Path newTempRepo()

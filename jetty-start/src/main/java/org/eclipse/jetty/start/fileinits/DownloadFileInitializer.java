@@ -30,18 +30,12 @@ import org.eclipse.jetty.start.StartLog;
 
 public abstract class DownloadFileInitializer extends FileInitializer
 {
-    protected final boolean _allowInsecureHttpDownloads;
-
-    protected DownloadFileInitializer(StartArgs startArgs, BaseHome basehome, String... scheme)
+    protected DownloadFileInitializer(BaseHome basehome, String... scheme)
     {
         super(basehome, scheme);
-        _allowInsecureHttpDownloads = startArgs.isAllowInsecureHttpDownloads();
     }
 
-    protected boolean allowInsecureHttpDownloads()
-    {
-        return _allowInsecureHttpDownloads;
-    }
+    protected abstract boolean allowInsecureHttpDownloads();
 
     protected void download(URI uri, Path destination) throws IOException
     {
