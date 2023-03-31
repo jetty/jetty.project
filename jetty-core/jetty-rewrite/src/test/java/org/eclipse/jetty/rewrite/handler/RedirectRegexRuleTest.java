@@ -108,4 +108,21 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
         assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date", response.get(HttpHeader.LOCATION));
     }
+
+    @Test
+    public void testEncodedNewLineInURI() throws Exception
+    {
+        RedirectRegexRule rule = new RedirectRegexRule("(.+)$", "https://example$1");
+        start(rule);
+
+        String request = """
+            GET /%0A.evil.com HTTP/1.1
+            Host: localhost
+                        
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.FOUND_302, response.getStatus());
+        assertEquals("https://example/%0A.evil.com", response.get(HttpHeader.LOCATION));
+    }
 }
