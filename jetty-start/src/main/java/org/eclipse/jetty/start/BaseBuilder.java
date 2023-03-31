@@ -73,18 +73,18 @@ public class BaseBuilder
         if (args.isTestingModeEnabled())
         {
             // Copy from basehome
-            fileInitializers.add(new BaseHomeFileInitializer(startArgs, baseHome));
+            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
 
             // Handle local directories
-            fileInitializers.add(new LocalFileInitializer(startArgs, baseHome));
+            fileInitializers.add(new LocalFileInitializer(baseHome));
 
             // No downloads performed
-            fileInitializers.add(new TestFileInitializer(startArgs, baseHome));
+            fileInitializers.add(new TestFileInitializer(baseHome));
         }
         else if (args.isCreateFiles())
         {
             // Handle local directories
-            fileInitializers.add(new LocalFileInitializer(startArgs, baseHome));
+            fileInitializers.add(new LocalFileInitializer(baseHome));
 
             // Downloads are allowed to be performed
             // Setup Maven Local Repo
@@ -103,7 +103,7 @@ public class BaseBuilder
             }
 
             // Copy from basehome
-            fileInitializers.add(new BaseHomeFileInitializer(startArgs, baseHome));
+            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
 
             // Normal URL downloads
             fileInitializers.add(new UriFileInitializer(startArgs, baseHome));

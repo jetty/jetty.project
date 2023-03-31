@@ -22,7 +22,7 @@ import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartArgs;
 
-public class UriFileInitializer extends FileInitializer
+public class UriFileInitializer extends DownloadFileInitializer
 {
     public UriFileInitializer(StartArgs startArgs, BaseHome baseHome)
     {

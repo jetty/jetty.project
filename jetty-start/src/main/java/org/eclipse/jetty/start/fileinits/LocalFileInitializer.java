@@ -26,9 +26,9 @@ import org.eclipse.jetty.start.StartLog;
 
 public class LocalFileInitializer extends FileInitializer
 {
-    public LocalFileInitializer(StartArgs startArgs, BaseHome basehome)
+    public LocalFileInitializer(BaseHome basehome)
     {
-        super(startArgs, basehome);
+        super(basehome);
     }
 
     @Override

@@ -30,9 +30,9 @@ import org.eclipse.jetty.start.StartLog;
  */
 public class TestFileInitializer extends FileInitializer
 {
-    public TestFileInitializer(StartArgs startArgs, BaseHome basehome)
+    public TestFileInitializer(BaseHome basehome)
     {
-        super(startArgs, basehome);
+        super(basehome);
     }
 
     @Override

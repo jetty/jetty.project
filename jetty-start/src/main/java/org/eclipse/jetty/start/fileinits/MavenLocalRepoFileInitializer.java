@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
  * <dd>optional type and classifier requirement</dd>
  * </dl>
  */
-public class MavenLocalRepoFileInitializer extends FileInitializer
+public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
 {
     public static class Coordinates
     {
@@ -125,6 +125,13 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
         this.readonly = readonly;
         this.mavenRepoUri = mavenRepoUri;
+    }
+
+    @Override
+    protected boolean allowInsecureHttpDownloads()
+    {
+        // Always allow insecure http downloads if the `maven.repo.uri` property has been changed from default.
+        return !this.mavenRepoUri.equals(DEFAULT_REMOTE_REPO);
     }
 
     private static Path newTempRepo()

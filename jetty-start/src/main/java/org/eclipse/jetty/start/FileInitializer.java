@@ -32,12 +32,10 @@ public abstract class FileInitializer
 {
     protected final Set<String> _scheme = new HashSet<>();
     protected final BaseHome _basehome;
-    protected final boolean _allowInsecureHttpDownloads;
 
-    protected FileInitializer(StartArgs startArgs, BaseHome basehome, String... scheme)
+    protected FileInitializer(BaseHome basehome, String... scheme)
     {
         _basehome = basehome;
-        _allowInsecureHttpDownloads = startArgs.isAllowInsecureHttpDownloads();
         if (scheme != null)
             for (String s : scheme)
             {
@@ -122,38 +120,6 @@ public abstract class FileInitializer
             destination = destination.resolve(uri.getSchemeSpecificPart().substring(uri.getSchemeSpecificPart().lastIndexOf('/') + 1));
 
         return destination;
-    }
-
-    protected void download(URI uri, Path destination) throws IOException
-    {
-        if ("http".equalsIgnoreCase(uri.getScheme()) && !_allowInsecureHttpDownloads)
-            throw new IOException("Insecure HTTP download not allowed (use " + StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + uri);
-
-        if (FS.ensureDirectoryExists(destination.getParent()))
-            StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
-
-        StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
-
-        URLConnection connection = uri.toURL().openConnection();
-
-        if (connection instanceof HttpURLConnection)
-        {
-            HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-            http.setInstanceFollowRedirects(true);
-            http.setAllowUserInteraction(false);
-
-            int status = http.getResponseCode();
-
-            if (status != HttpURLConnection.HTTP_OK)
-            {
-                throw new IOException("URL GET Failure [" + status + "/" + http.getResponseMessage() + "] on " + uri);
-            }
-        }
-
-        try (InputStream in = connection.getInputStream())
-        {
-            Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
-        }
     }
 
     /**
