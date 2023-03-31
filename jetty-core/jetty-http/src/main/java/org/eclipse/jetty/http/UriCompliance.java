@@ -70,11 +70,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow UTF-16 encoding eg <code>/foo%u2192bar</code>.
          */
-        UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding"),
+        UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF-16 encoding"),
         /**
          * Allow Bad UTF-8 encodings to be substituted by the replacement character.
          */
-        BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF8 encoding");
+        BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding");
 
         private final String _url;
         private final String _description;
