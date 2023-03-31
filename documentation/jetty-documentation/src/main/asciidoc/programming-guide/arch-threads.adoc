@@ -188,6 +188,19 @@ This value represents the maximum number of threads that can be reserved and use
 A negative value for `QueuedThreadPool.reservedThreads` means that the actual value will be heuristically derived from the number of CPU cores and `QueuedThreadPool.maxThreads`.
 A value of zero for `QueuedThreadPool.reservedThreads` means that reserved threads are disabled, and therefore the xref:pg-arch-threads-execution-strategy-epc[`Execute-Produce-Consume` mode] is never used -- the xref:pg-arch-threads-execution-strategy-pec[`Produce-Execute-Consume` mode] is always used instead.
 
+`QueuedThreadPool` always maintains the number of threads between `QueuedThreadPool.minThreads` and `QueuedThreadPool.maxThreads`; during load spikes the number of thread grows to meet the load demand, and when the load on the system diminishes or the system goes idle, the number of threads shrinks.
+
+Shrinking `QueuedThreadPool` is important in particular in containerized environments, where typically you want to return the memory occupied by the threads to the operative system.
+The shrinking of the `QueuedThreadPool` is controlled by two parameters: `QueuedThreadPool.idleTimeout` and `QueuedThreadPool.maxEvictCount`.
+
+`QueuedThreadPool.idleTimeout` indicates how long a thread should stay around when it is idle, waiting for tasks to execute.
+The longer the threads stay around, the more ready they are in case of new load spikes on the system; however, they consume resources: a Java platform thread typically allocates 1 MiB of native memory.
+
+`QueuedThreadPool.maxEvictCount` controls how many idle threads are evicted for one `QueuedThreadPool.idleTimeout` period.
+The larger this value is, the quicker the threads are evicted when the `QueuedThreadPool` is idle or has less load, and their resources returned to the operative system; however, large values may result in too much thread thrashing: the `QueuedThreadPool` shrinks too fast and must re-create a lot of threads in case of a new load spike on the system.
+
+A good balance between `QueuedThreadPool.idleTimeout` and `QueuedThreadPool.maxEvictCount` depends on the load profile of your system, and it is often tuned via trial and error.
+
 [[pg-arch-threads-thread-pool-virtual-threads]]
 ===== Virtual Threads
 Virtual threads have been introduced in Java 19 as a preview feature.
