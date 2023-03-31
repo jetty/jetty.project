@@ -40,7 +40,10 @@
     <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
     <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
     <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+
     <jsp.impl.version>10.0.14</jsp.impl.version>
+    <weld.version>4.0.3.Final</weld.version>
+
     <sonar.skip>true</sonar.skip>
   </properties>
 

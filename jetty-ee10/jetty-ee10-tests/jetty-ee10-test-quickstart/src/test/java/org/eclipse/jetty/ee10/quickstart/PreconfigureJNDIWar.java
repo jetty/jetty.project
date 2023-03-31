@@ -18,7 +18,7 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,16 +30,16 @@ public class PreconfigureJNDIWar
 
     public static void main(String[] args) throws Exception
     {
-        Path workdir = MavenTestingUtils.getTargetTestingPath(PreconfigureJNDIWar.class.getSimpleName());
+        Path workdir = MavenPaths.targetTestDir(PreconfigureJNDIWar.class.getSimpleName());
         FS.ensureEmpty(workdir);
 
         Path target = workdir.resolve("test-jndi-preconfigured");
         FS.ensureEmpty(target);
 
         PreconfigureQuickStartWar.main(
-            MavenTestingUtils.getTargetFile("test-jndi.war").toString(),
+            MavenPaths.targetDir().resolve("test-jndi.war").toString(),
             target.toString(),
-            MavenTestingUtils.getTestResourceFile("test-jndi.xml").toString());
+            MavenPaths.findTestResourceFile("test-jndi.xml").toString());
 
         LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 

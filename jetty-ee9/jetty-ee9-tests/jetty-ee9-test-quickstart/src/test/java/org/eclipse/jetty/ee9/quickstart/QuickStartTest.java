@@ -27,10 +27,8 @@ import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
@@ -48,50 +46,41 @@ public class QuickStartTest
     public void testStandardTestWar() throws Exception
     {
         WebAppContext webapp = new WebAppContext();
-        ResourceFactory resourceFactory = webapp.getResourceFactory();
 
         //Generate the quickstart
         PreconfigureStandardTestWar.main(new String[]{});
 
-        // war file or dir to start
-        Path warRoot = PreconfigureStandardTestWar.getTargetDir();
-        assertTrue(Files.exists(warRoot), "Does not exist: " + warRoot);
-        Path quickstartXml = warRoot.resolve("WEB-INF/quickstart-web.xml");
-        assertTrue(Files.exists(quickstartXml), "Does not exist: " + quickstartXml);
+        Path workDir = MavenPaths.targetTestDir(PreconfigureStandardTestWar.class.getSimpleName());
+        Path targetDir = workDir.resolve("test-standard-preconfigured");
 
-        WebDescriptor descriptor = new WebDescriptor(resourceFactory.newResource(quickstartXml));
+        Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
+        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
-        assertThat(node, Matchers.notNullValue());
+        assertNotNull(node);
 
-        System.setProperty("jetty.home", MavenTestingUtils.getTargetPath().toString());
+        System.setProperty("jetty.home", targetDir.toString());
+
+        //war file or dir to start
+        String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Path contextXmlPath = MavenTestingUtils.getTestResourcePathFile("test.xml");
-        assertTrue(Files.exists(contextXmlPath), "Does not exist: " + contextXmlPath);
-        Resource contextXml = resourceFactory.newResource(contextXmlPath);
+        Path testResourceXml = MavenPaths.findTestResourceFile("test.xml");
+        Resource contextXml = webapp.getResourceFactory().newResource(testResourceXml);
 
         Server server = new Server(0);
-
-        // War resource
-        Resource warResource = resourceFactory.newResource(warRoot);
 
         webapp.addConfiguration(new QuickStartConfiguration(),
             new EnvConfiguration(),
             new PlusConfiguration(),
             new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
-        webapp.setWarResource(warResource);
+        webapp.setWar(war);
         webapp.setContextPath("/");
 
         //apply context xml file
-        if (contextXml != null)
-        {
-            // System.err.println("Applying "+contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
-            xmlConfiguration.getProperties().put("webapp.root", warRoot.toString());
-            xmlConfiguration.configure(webapp);
-        }
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
+        xmlConfiguration.configure(webapp);
 
         server.setHandler(webapp);
 
@@ -113,21 +102,25 @@ public class QuickStartTest
         //Generate the quickstart xml
         PreconfigureSpecWar.main(new String[]{});
 
-        Path webXmlPath = MavenTestingUtils.getTargetPath().resolve("test-spec-preconfigured/WEB-INF/quickstart-web.xml");
+        Path workDir = MavenPaths.targetTestDir(PreconfigureSpecWar.class.getSimpleName());
+        Path targetDir = workDir.resolve("test-spec-preconfigured");
+
+        Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
         WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
-        assertThat(node, Matchers.notNullValue());
+        assertNotNull(node);
 
-        System.setProperty("jetty.home", "target");
+        System.setProperty("jetty.home", targetDir.toString());
 
-        //war file or dir to start
-        String war = "target/test-spec-preconfigured";
+        // war file or dir to start
+        String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = webapp.getResourceFactory().newResource("src/test/resources/test-spec.xml");
+        Path testResourceSpec = MavenPaths.findTestResourceFile("test-spec.xml");
+        Resource contextXml = webapp.getResourceFactory().newResource(testResourceSpec);
 
         Server server = new Server(0);
 
@@ -140,24 +133,21 @@ public class QuickStartTest
         webapp.setContextPath("/");
 
         //apply context xml file
-        if (contextXml != null)
-        {
-            // System.err.println("Applying "+contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
-            xmlConfiguration.configure(webapp);
-        }
+        // System.err.println("Applying "+contextXml);
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
+        xmlConfiguration.configure(webapp);
 
         server.setHandler(webapp);
         server.start();
-        
-        //test fragment static resource
+
+        //test static content added by fragment
         URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/fragmentA/index.html");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         assertEquals(200, connection.getResponseCode());
         String content = IO.toString((InputStream)connection.getContent());
         assertThat(content, Matchers.containsString("Welcome to a Fragment"));
-        
-        //test annotations etc etc
+
+        //test annotations etc
         url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
         connection = (HttpURLConnection)url.openConnection();
         connection.setRequestMethod("POST");
@@ -181,6 +171,7 @@ public class QuickStartTest
         Path targetDir = workDir.resolve("test-jndi-preconfigured");
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
+        assertTrue(Files.exists(webXmlPath), "Exists: " + webXmlPath);
         WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
@@ -192,7 +183,7 @@ public class QuickStartTest
         String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Path testResourceJndi = MavenTestingUtils.getTestResourcePathFile("test-jndi.xml");
+        Path testResourceJndi = MavenPaths.findTestResourceFile("test-jndi.xml");
         Resource contextXml = webapp.getResourceFactory().newResource(testResourceJndi);
 
         Server server = new Server(0);
@@ -216,8 +207,8 @@ public class QuickStartTest
 
         URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        assertEquals(200, connection.getResponseCode());
         String content = IO.toString((InputStream)connection.getContent());
+        assertEquals(200, connection.getResponseCode());
         assertThat(content, Matchers.containsString("JNDI Demo WebApp"));
 
         server.stop();

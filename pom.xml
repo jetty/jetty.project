@@ -93,6 +93,7 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.9</json-smart.version>
     <junit.version>5.9.2</junit.version>
+    <jsp.impl.version>10.0.14</jsp.impl.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.20.0</log4j2.version>
     <logback.version>1.4.5</logback.version>
@@ -136,7 +137,6 @@
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.17.6</testcontainers.version>
-    <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.1.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
@@ -224,8 +224,6 @@
   </pluginRepositories>
 
   <modules>
-    <!-- CAUTION: Any changes to this list will need to be represented
-         in the Jenkinsfile and build/scripts/ci.sh as well -->
     <module>build</module>
     <module>jetty-core</module>
     <module>jetty-integrations</module>

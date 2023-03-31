@@ -259,7 +259,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 }
                 else
                 {
-                    stream.process(new StreamData(data, stream, flowControlLength));
+                    // StreamData has its own reference count (that starts at 1),
+                    // so since we create it here, we release it after stream.process().
+                    StreamData streamData = new StreamData(data, stream, flowControlLength);
+                    stream.process(streamData);
+                    streamData.release();
                 }
             }
         }

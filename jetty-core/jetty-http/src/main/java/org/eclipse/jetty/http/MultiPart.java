@@ -750,6 +750,7 @@ public class MultiPart
         @Override
         public void demand(Runnable demandCallback)
         {
+            Part part = null;
             boolean invoke = false;
             try (AutoLock ignored = lock.lock())
             {
@@ -758,23 +759,25 @@ public class MultiPart
                 this.demand = Objects.requireNonNull(demandCallback);
 
                 if (state == State.CONTENT)
-                {
-                    part.getContentSource().demand(() ->
-                    {
-                        try (AutoLock ignoredAgain = lock.lock())
-                        {
-                            this.demand = null;
-                        }
-                        demandCallback.run();
-                    });
-                }
+                    part = this.part;
                 else
-                {
                     invoke = !parts.isEmpty() || closed || errorChunk != null;
-                }
             }
-            if (invoke)
+            if (part != null)
+            {
+                part.getContentSource().demand(() ->
+                {
+                    try (AutoLock ignoredAgain = lock.lock())
+                    {
+                        this.demand = null;
+                    }
+                    demandCallback.run();
+                });
+            }
+            else if (invoke)
+            {
                 invoker.run(this::invokeDemandCallback);
+            }
         }
 
         @Override

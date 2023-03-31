@@ -18,7 +18,7 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class PreconfigureStandardTestWar
 
     public static void main(String[] args) throws Exception
     {
-        Path workdir = MavenTestingUtils.getTargetTestingPath(PreconfigureStandardTestWar.class.getSimpleName());
+        Path workdir = MavenPaths.targetTestDir(PreconfigureStandardTestWar.class.getSimpleName());
         FS.ensureDirExists(workdir);
 
         Path target = workdir.resolve("test-standard-preconfigured");
@@ -42,15 +42,15 @@ public class PreconfigureStandardTestWar
         Path realmPropertiesDest = target.resolve("test-standard-realm.properties");
         Files.deleteIfExists(realmPropertiesDest);
 
-        Path realmPropertiesSrc = MavenTestingUtils.getTestResourcePathFile("realm.properties");
+        Path realmPropertiesSrc = MavenPaths.findTestResourceFile("realm.properties");
         Files.copy(realmPropertiesSrc, realmPropertiesDest);
 
         System.setProperty("jetty.home", target.toString());
 
         PreconfigureQuickStartWar.main(
-            MavenTestingUtils.getTargetFile("test-standard.war").toString(),
+            MavenPaths.targetDir().resolve("test-standard.war").toString(),
             target.toString(),
-            MavenTestingUtils.getTestResourceFile("test-spec.xml").toString());
+            MavenPaths.findTestResourceFile("test-spec.xml").toString());
 
         LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 

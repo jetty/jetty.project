@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -142,7 +143,7 @@ public class WebSocketProxyTest
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("fail");
 
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class, Response.class))
         {
             client.connect(clientSocket, proxyUri, upgradeRequest);
             assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));

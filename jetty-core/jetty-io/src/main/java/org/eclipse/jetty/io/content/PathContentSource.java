@@ -222,6 +222,8 @@ public class PathContentSource implements Content.Source
             }
             return errorChunk;
         }
+        // Demands are always serviced immediately so there is no
+        // need to ask the invoker to run invokeDemandCallback here.
     }
 
     @Override
