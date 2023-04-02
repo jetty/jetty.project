@@ -159,7 +159,7 @@ public class ReservedThreadExecutorTest
     }
 
     @Test
-    public void testShrink() throws Exception
+    public void testEvict() throws Exception
     {
         final long IDLE = 1000;
 
@@ -183,7 +183,7 @@ public class ReservedThreadExecutorTest
     }
 
     @Test
-    public void testBusyShrink() throws Exception
+    public void testBusyEvict() throws Exception
     {
         final long IDLE = 1000;
 

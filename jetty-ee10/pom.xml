@@ -36,6 +36,7 @@
 
     <jsp.impl.version>10.1.5</jsp.impl.version>
     <mail.impl.version>2.0.1</mail.impl.version>
+    <weld.version>5.1.0.Final</weld.version>
 
     <sonar.skip>true</sonar.skip>
   </properties>
@@ -167,17 +168,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-        <artifactId>jetty-ee10-websocket-jetty-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-        <artifactId>jetty-ee10-websocket-jetty-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

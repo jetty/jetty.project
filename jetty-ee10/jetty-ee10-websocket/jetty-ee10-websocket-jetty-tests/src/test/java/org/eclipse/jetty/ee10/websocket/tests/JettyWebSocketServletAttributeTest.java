@@ -13,21 +13,31 @@
 
 package org.eclipse.jetty.ee10.websocket.tests;
 
+import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketServletAttributeTest
@@ -86,5 +96,48 @@ public class JettyWebSocketServletAttributeTest
 
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPathSpecAttribute() throws Exception
+    {
+        start((context, container) -> container.addMapping("uri-template|/{path}", (req, resp) ->
+        {
+            UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)req.getServletAttribute(PathSpec.class.getName());
+            assertNotNull(pathSpec);
+
+            Map<String, String> params = pathSpec.getPathParams(req.getRequestPath());
+            String path = params.get("path");
+            assertNotNull(path);
+
+            return new ParamWebSocketEndPoint(path);
+        }));
+
+        String param = "world";
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/" + param);
+        EventSocket clientEndpoint = new EventSocket();
+        try (Session session = client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS))
+        {
+            session.getRemote().sendString("hello", WriteCallback.NOOP);
+            String path = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+            assertEquals(param, path);
+        }
+    }
+
+    @WebSocket
+    public static class ParamWebSocketEndPoint
+    {
+        private final String param;
+
+        public ParamWebSocketEndPoint(String param)
+        {
+            this.param = param;
+        }
+
+        @OnWebSocketMessage
+        public void onText(Session session, String text) throws IOException
+        {
+            session.getRemote().sendString(param);
+        }
     }
 }

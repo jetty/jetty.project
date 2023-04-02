@@ -44,7 +44,8 @@ import org.slf4j.LoggerFactory;
 public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterable<MappedResource<E>>, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
-
+    // In prefix matches, this is the length ("/*".length() + 1) - used for the best prefix match loop
+    private static final int PREFIX_TAIL_LEN = 3;
     private final Set<MappedResource<E>> _mappings = new TreeSet<>(Map.Entry.comparingByKey());
 
     /**
@@ -220,11 +221,14 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
 
         // Try a prefix match
         MappedResource<E> prefix = _prefixMap.getBest(path);
-        if (prefix != null)
+        while (prefix != null)
         {
-            MatchedPath matchedPath = prefix.getPathSpec().matched(path);
+            PathSpec pathSpec = prefix.getPathSpec();
+            MatchedPath matchedPath = pathSpec.matched(path);
             if (matchedPath != null)
-                return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
+                return new MatchedResource<>(prefix.getResource(), pathSpec, matchedPath);
+            int specLength = pathSpec.getSpecLength();
+            prefix = specLength > PREFIX_TAIL_LEN ? _prefixMap.getBest(path, 0, specLength - PREFIX_TAIL_LEN) : null;
         }
 
         // Try a suffix match
@@ -238,13 +242,13 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
             //  Loop 3: "foo"
             while ((i = path.indexOf('.', i + 1)) > 0)
             {
-                prefix = _suffixMap.get(path, i + 1, path.length() - i - 1);
-                if (prefix == null)
+                MappedResource<E> suffix = _suffixMap.get(path, i + 1, path.length() - i - 1);
+                if (suffix == null)
                     continue;
 
-                MatchedPath matchedPath = prefix.getPathSpec().matched(path);
+                MatchedPath matchedPath = suffix.getPathSpec().matched(path);
                 if (matchedPath != null)
-                    return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
+                    return new MatchedResource<>(suffix.getResource(), suffix.getPathSpec(), matchedPath);
             }
         }
 
@@ -301,12 +305,15 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
                     {
                         if (_optimizedPrefix)
                         {
-                            MappedResource<E> candidate = _prefixMap.getBest(path);
-                            if (candidate != null)
+                            MappedResource<E> prefix = _prefixMap.getBest(path);
+                            while (prefix != null)
                             {
-                                matchedPath = candidate.getPathSpec().matched(path);
+                                PathSpec pathSpec = prefix.getPathSpec();
+                                matchedPath = pathSpec.matched(path);
                                 if (matchedPath != null)
-                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                                    return new MatchedResource<>(prefix.getResource(), pathSpec, matchedPath);
+                                int specLength = pathSpec.getSpecLength();
+                                prefix = specLength > PREFIX_TAIL_LEN ? _prefixMap.getBest(path, 0, specLength - PREFIX_TAIL_LEN) : null;
                             }
 
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
@@ -327,13 +334,13 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
                             //  Loop 3: "foo"
                             while ((i = path.indexOf('.', i + 1)) > 0)
                             {
-                                MappedResource<E> candidate = _suffixMap.get(path, i + 1, path.length() - i - 1);
-                                if (candidate == null)
+                                MappedResource<E> suffix = _suffixMap.get(path, i + 1, path.length() - i - 1);
+                                if (suffix == null)
                                     continue;
 
-                                matchedPath = candidate.getPathSpec().matched(path);
+                                matchedPath = suffix.getPathSpec().matched(path);
                                 if (matchedPath != null)
-                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                                    return new MatchedResource<>(suffix.getResource(), suffix.getPathSpec(), matchedPath);
                             }
                             // If we reached here, there's NO optimized SUFFIX Match possible, skip simple match below
                             skipRestOfGroup = true;

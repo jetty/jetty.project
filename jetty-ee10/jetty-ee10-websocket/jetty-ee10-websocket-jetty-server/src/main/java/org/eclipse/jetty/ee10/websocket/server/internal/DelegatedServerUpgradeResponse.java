@@ -23,11 +23,11 @@ import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
-import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 

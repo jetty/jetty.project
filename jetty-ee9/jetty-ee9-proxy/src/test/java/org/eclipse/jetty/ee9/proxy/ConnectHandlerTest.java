@@ -58,7 +58,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void prepare() throws Exception
     {
         server = new Server();
-        serverConnector = new ServerConnector(server);
+        serverConnector = new ServerConnector(server, 1, 1);
         server.addConnector(serverConnector);
         server.setHandler(new ServerHandler());
         server.start();

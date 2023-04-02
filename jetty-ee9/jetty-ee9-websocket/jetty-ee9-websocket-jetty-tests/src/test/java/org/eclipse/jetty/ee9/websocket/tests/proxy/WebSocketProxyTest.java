@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Frame;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.ee9.websocket.tests.EventSocket;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -138,7 +138,7 @@ public class WebSocketProxyTest
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("fail");
 
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
             client.connect(clientSocket, proxyUri, upgradeRequest);
             assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));

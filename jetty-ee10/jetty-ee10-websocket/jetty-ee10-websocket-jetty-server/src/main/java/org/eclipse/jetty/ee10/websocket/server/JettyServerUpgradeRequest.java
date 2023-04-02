@@ -23,7 +23,7 @@ import java.util.Map;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.ee10.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
 
 public interface JettyServerUpgradeRequest extends UpgradeRequest
 {
