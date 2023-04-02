@@ -649,6 +649,49 @@ public class AsyncServletTest
         }
     }
 
+    @Test
+    public void testTCK() throws Exception
+    {
+        _servletHandler.addServletWithMapping(
+            new ServletHolder(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                {
+                    historyAdd("FWD " + request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
+                    request.getServletContext().getRequestDispatcher("/target?name=forward&foo=bar").forward(request, response);
+                }
+            }),
+            "/forwarder/*"
+        );
+
+        _servletHandler.addServletWithMapping(
+            new ServletHolder(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                {
+                    historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
+
+                    if (request.getAttribute("TEST") == null)
+                    {
+                        request.setAttribute("TEST", "OK");
+                        request.startAsync(request, response).dispatch();
+                    }
+                }
+            }),
+            "/target/*"
+        );
+
+        String response = process("forwarder", "name=orig&other=value", null);
+        assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
+
+        assertThat(_history, contains(
+            "FWD REQUEST /ctx/forwarder/info?name=orig&other=value",
+            "FORWARD /ctx/target?name=forward&name=orig&foo=bar&other=value",
+            "ASYNC /ctx/target?name=forward&name=orig&foo=bar&other=value"));
+    }
+
     public synchronized String process(String query, String content) throws Exception
     {
         return process("path", query, content);
