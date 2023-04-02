@@ -12,14 +12,14 @@
   <packaging>pom</packaging>
 
   <properties>
-    <osgi-version>3.18.200</osgi-version>
+    <osgi-version>3.18.300</osgi-version>
     <osgi-services-version>3.11.100</osgi-services-version>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.0</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
-    <osgi-util-version>3.7.100</osgi-util-version>
+    <osgi-util-version>3.7.200</osgi-util-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
-    <osgi-util-promise-version>1.2.0</osgi-util-promise-version>
+    <osgi-util-promise-version>1.3.0</osgi-util-promise-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
     <osgi-util-position-version>1.0.1</osgi-util-position-version>
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
@@ -225,6 +225,11 @@
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.util.tracker</artifactId>
         <version>${osgi-util-tracker-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.promise</artifactId>
+        <version>${osgi-util-promise-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
