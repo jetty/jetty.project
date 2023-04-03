@@ -67,7 +67,7 @@ public class Utf8StringBuilderTest
         }
         assertThat(utf8.toPartialString(), equalTo("abc"));
         assertThat(utf8.toCompleteString(), equalTo("abc�"));
-        assertThrows(CharacterCodingException.class, utf8::takeString);
+        assertThrows(CharacterCodingException.class, utf8::build);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class Utf8StringBuilderTest
 
         assertThat(utf8.toPartialString(), equalTo("abc�\000"));
         assertThat(utf8.toCompleteString(), equalTo("abc�\000"));
-        assertThrows(CharacterCodingException.class, utf8::takeString);
+        assertThrows(CharacterCodingException.class, utf8::build);
     }
 
     @Test
@@ -128,7 +128,7 @@ public class Utf8StringBuilderTest
         utf8.append((byte)0xC2); // start of another sequence
         assertThat(utf8.toPartialString(), equalTo("�")); // only first sequence is reported as BAD
         assertThat(utf8.toCompleteString(), equalTo("��")); // now both sequences are reported as BAD
-        assertThrows(CharacterCodingException.class, utf8::takeString);
+        assertThrows(CharacterCodingException.class, utf8::build);
     }
 
     @Test
@@ -140,7 +140,7 @@ public class Utf8StringBuilderTest
         utf8.append((byte)0x80);
         assertThat(utf8.toPartialString(), equalTo("��"));
         assertThat(utf8.toCompleteString(), equalTo("��"));
-        assertThrows(CharacterCodingException.class, utf8::takeString);
+        assertThrows(CharacterCodingException.class, utf8::build);
     }
 
     @Test
@@ -156,7 +156,7 @@ public class Utf8StringBuilderTest
 
         assertThat(utf8.toPartialString(), equalTo("/��./"));
         assertThat(utf8.toCompleteString(), equalTo("/��./"));
-        assertThrows(CharacterCodingException.class, utf8::takeString);
+        assertThrows(CharacterCodingException.class, utf8::build);
     }
 
     @Test

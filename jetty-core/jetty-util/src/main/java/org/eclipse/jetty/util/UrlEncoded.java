@@ -874,7 +874,7 @@ public class UrlEncoded
 
             try
             {
-                return buffer.takeString();
+                return buffer.build();
             }
             catch (CharacterCodingException e)
             {

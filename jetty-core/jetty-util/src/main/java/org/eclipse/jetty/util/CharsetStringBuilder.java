@@ -30,7 +30,7 @@ import java.util.Objects;
  * escaped byte sequences that are not decoded.  The standard {@link CharsetDecoder} API is not well suited for this
  * use-case.</p>
  * <p>Any coding errors in the string will be reported by a {@link CharacterCodingException} thrown
- * from the {@link #takeString()} method.</p>
+ * from the {@link #build()} method.</p>
  * @see Utf8StringBuilder for UTF-8 decoding with replacement of coding errors and/or fast fail behaviour.
  * @see CharsetDecoder for decoding arbitrary {@link Charset}s with control over {@link CodingErrorAction}.
  */
@@ -67,10 +67,11 @@ public interface CharsetStringBuilder
     }
 
     /**
-     * @return The decoded built string.
-     * @throws CharacterCodingException If the bytes cannot be correctly decoded.
+     * <p>Build the completed string and reset the buffer.</p>
+     * @return The decoded built string which must be complete in regard to any multibyte sequences.
+     * @throws CharacterCodingException If the bytes cannot be correctly decoded or a multibyte sequence is incomplete.
      */
-    String takeString() throws CharacterCodingException;
+    String build() throws CharacterCodingException;
 
     static CharsetStringBuilder forCharset(Charset charset)
     {
@@ -101,11 +102,11 @@ public interface CharsetStringBuilder
         }
 
         @Override
-        public String takeString() throws CharacterCodingException
+        public String build() throws CharacterCodingException
         {
             if (hasCodingErrors())
                 throw new CharacterCodingException();
-            return super.takeString();
+            return super.build();
         }
     }
 
@@ -132,7 +133,7 @@ public interface CharsetStringBuilder
         }
 
         @Override
-        public String takeString()
+        public String build()
         {
             String s = _builder.toString();
             _builder.setLength(0);
@@ -165,7 +166,7 @@ public interface CharsetStringBuilder
         }
 
         @Override
-        public String takeString()
+        public String build()
         {
             String s = _builder.toString();
             _builder.setLength(0);
@@ -258,7 +259,7 @@ public interface CharsetStringBuilder
         }
 
         @Override
-        public String takeString() throws CharacterCodingException
+        public String build() throws CharacterCodingException
         {
             try
             {

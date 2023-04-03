@@ -1181,7 +1181,7 @@ public class MultiPart
                     {
                         // End of field name.
                         incrementAndCheckPartHeadersLength();
-                        fieldName = text.takeCompleteString();
+                        fieldName = text.takeCompleteString(null);
                         trailingWhiteSpaces = 0;
                         return true;
                     }

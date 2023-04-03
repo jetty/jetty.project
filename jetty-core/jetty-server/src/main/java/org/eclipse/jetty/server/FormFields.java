@@ -220,7 +220,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                 {
                     case '=' ->
                     {
-                        _name = _builder.takeString();
+                        _name = _builder.build();
                         checkLength(_name);
                     }
                     case '+' -> _builder.append((byte)' ');
@@ -234,7 +234,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                 {
                     case '&' ->
                     {
-                        value = _builder.takeString();
+                        value = _builder.build();
                         checkLength(value);
                         break loop;
                     }
@@ -254,7 +254,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     _builder.append((byte)'%');
                     _builder.append(_percentCode);
                 }
-                value = _builder.takeString();
+                value = _builder.build();
                 checkLength(value);
             }
 

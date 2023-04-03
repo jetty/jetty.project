@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * The UTF-8 decoding is done by this class and no additional buffers or Readers are used.  The algorithm is
  * fast fail, in that errors are detected as the bytes are appended.  However, no exceptions are thrown and
  * only the {@link #hasCodingErrors()} method indicates the fast failure, otherwise the coding errors
- * are replaced and may be returned, unless the {@link #takeString()} method is used, which may throw
+ * are replaced and may be returned, unless the {@link #build()} method is used, which may throw
  * {@link CharacterCodingException}. Already decoded characters may also be appended (e.g. {@link #append(char)}
  * making this class suitable for decoding % encoded strings of already decoded characters.
  * </p>
@@ -84,7 +84,12 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     public Utf8StringBuilder(int capacity)
     {
-        _buffer = new StringBuilder(capacity);
+        this(new StringBuilder(capacity));
+    }
+
+    protected Utf8StringBuilder(StringBuilder buffer)
+    {
+        _buffer = buffer;
     }
 
     public int length()
@@ -108,7 +113,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         _state = UTF8_ACCEPT;
         _codep = 0;
         _codingErrors = false;
-        _buffer.setLength(0);
+        bufferReset();
     }
 
     /**
@@ -118,14 +123,14 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     public void partialReset()
     {
         _codingErrors = false;
-        _buffer.setLength(0);
+        bufferReset();
     }
 
-    private void checkCharAppend()
+    protected void checkCharAppend()
     {
         if (_state != UTF8_ACCEPT)
         {
-            _buffer.append(REPLACEMENT);
+            bufferAppend(REPLACEMENT);
             _state = UTF8_ACCEPT;
             _codingErrors = true;
         }
@@ -220,11 +225,21 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         }
     }
 
+    protected void bufferAppend(char c)
+    {
+        _buffer.append(c);
+    }
+
+    protected void bufferReset()
+    {
+        _buffer.setLength(0);
+    }
+
     public void appendByte(byte b) throws IOException
     {
         if (b > 0 && _state == UTF8_ACCEPT)
         {
-            _buffer.append((char)(b & 0xFF));
+            bufferAppend((char)(b & 0xFF));
         }
         else
         {
@@ -250,13 +265,13 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 {
                     if (_codep < Character.MIN_HIGH_SURROGATE)
                     {
-                        _buffer.append((char)_codep);
+                        bufferAppend((char)_codep);
                     }
                     else
                     {
                         for (char c : Character.toChars(_codep))
                         {
-                            _buffer.append(c);
+                            bufferAppend(c);
                         }
                     }
                     _codep = 0;
@@ -265,7 +280,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 case UTF8_REJECT ->
                 {
                     _codep = 0;
-                    _buffer.append(REPLACEMENT);
+                    bufferAppend(REPLACEMENT);
                     _codingErrors = true;
                     if (_state != UTF8_ACCEPT)
                     {
@@ -296,7 +311,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             _codep = 0;
             _state = UTF8_ACCEPT;
             _codingErrors = true;
-            _buffer.append(REPLACEMENT);
+            bufferAppend(REPLACEMENT);
         }
     }
 
@@ -334,18 +349,6 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     }
 
     /**
-     * Take the completely decoded string, which is equivalent to calling {@link #toCompleteString()} then {@link #reset()}.
-     * @return The completely decoded string.
-     */
-    public String takeCompleteString()
-    {
-        complete();
-        String complete = _buffer.toString();
-        reset();
-        return complete;
-    }
-
-    /**
      * Take the completely decoded string.
      * @param onCodingError A supplier of a {@link Throwable} to use if {@link #hasCodingErrors()} returns true,
      *                      or null for no error action
@@ -376,18 +379,12 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 throw x;
         }
         String string = _buffer.toString();
-        _buffer.setLength(0);
+        bufferReset();
         return string;
     }
 
-    /**
-     * Take the completely decoded string, which is equivalent to calling {@link #complete()} then {@link #toString()}
-     * then {@link #reset()}.
-     * @return The complete string
-     * @throws CharacterCodingException if {@link #hasCodingErrors()} is true after {@link #complete()}.
-     */
     @Override
-    public String takeString() throws CharacterCodingException
+    public String build() throws CharacterCodingException
     {
         return takeCompleteString(Utf8StringBuilder::newUtf8CharacterCodingException);
     }

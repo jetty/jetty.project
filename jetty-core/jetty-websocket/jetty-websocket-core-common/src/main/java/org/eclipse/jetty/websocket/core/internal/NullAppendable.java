@@ -13,14 +13,90 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.nio.charset.CharacterCodingException;
+import java.util.function.Supplier;
+
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class NullAppendable extends Utf8StringBuilder
 {
     public NullAppendable()
     {
-        // TODO implement nullable
-        super();
+        super(null);
     }
 
+    @Override
+    public void append(CharSequence chars, int offset, int length)
+    {
+        checkCharAppend();
+    }
+
+    @Override
+    public void append(char c)
+    {
+        checkCharAppend();
+    }
+
+    @Override
+    public void append(String s)
+    {
+        checkCharAppend();
+    }
+
+    @Override
+    public void append(String s, int offset, int length)
+    {
+        checkCharAppend();
+    }
+
+    @Override
+    protected void bufferAppend(char c)
+    {
+    }
+
+    @Override
+    protected void bufferReset()
+    {
+    }
+
+    @Override
+    public String toPartialString()
+    {
+        return null;
+    }
+
+    @Override
+    public String toCompleteString()
+    {
+        complete();
+        return null;
+    }
+
+    @Override
+    public <X extends Throwable> String takeCompleteString(Supplier<X> onCodingError) throws X
+    {
+        complete();
+        return takePartialString(onCodingError);
+    }
+
+    @Override
+    public <X extends Throwable> String takePartialString(Supplier<X> onCodingError) throws X
+    {
+        if (onCodingError != null && hasCodingErrors())
+        {
+            X x = onCodingError.get();
+            if (x != null)
+                throw x;
+        }
+        return null;
+    }
+
+    @Override
+    public String build() throws CharacterCodingException
+    {
+        complete();
+        if (hasCodingErrors())
+            throw new CharacterCodingException();
+        return null;
+    }
 }

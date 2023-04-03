@@ -46,14 +46,14 @@ public class CharsetStringBuilderTest
         CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
 
         builder.append(bytes);
-        assertThat(builder.takeString(), equalTo(test));
+        assertThat(builder.build(), equalTo(test));
 
         for (byte b : bytes)
             builder.append(b);
-        assertThat(builder.takeString(), equalTo(test));
+        assertThat(builder.build(), equalTo(test));
 
         builder.append(bytes[0]);
         builder.append(bytes, 1, bytes.length - 1);
-        assertThat(builder.takeString(), equalTo(test));
+        assertThat(builder.build(), equalTo(test));
     }
 }
