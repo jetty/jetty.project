@@ -123,6 +123,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         // Must be BLOCKING because EndPoint.upgrade() ends up invoking
         // application code in the WebSocket "connect" event handler,
         // e.g. a method annotated with @OnWebSocketConnect, that may block.
-        return InvocationType.NON_BLOCKING;
+        return InvocationType.BLOCKING;
     }
 }
