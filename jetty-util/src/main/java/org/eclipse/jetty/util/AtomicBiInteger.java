@@ -251,6 +251,13 @@ public class AtomicBiInteger extends AtomicLong
         }
     }
 
+    @Override
+    public String toString()
+    {
+        long encoded = get();
+        return getHi(encoded) + "|" + getLo(encoded);
+    }
+
     /**
      * Encodes hi and lo values into a long.
      *
