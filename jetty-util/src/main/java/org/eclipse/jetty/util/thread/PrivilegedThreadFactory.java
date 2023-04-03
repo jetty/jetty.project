@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 class PrivilegedThreadFactory
 {
     private static final MethodHandle privileged = lookup();
+
     private static MethodHandle lookup()
     {
         try
