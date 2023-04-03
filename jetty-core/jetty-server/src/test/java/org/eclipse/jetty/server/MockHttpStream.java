@@ -180,7 +180,7 @@ public class MockHttpStream implements HttpStream
         {
             MetaData.Response r = _response.getAndSet(response);
 
-            _responseHeaders.add(response.getFields());
+            _responseHeaders.add(response.getHttpFields());
 
             if (r != null && r.getStatus() >= 200)
             {
@@ -188,7 +188,7 @@ public class MockHttpStream implements HttpStream
                 return;
             }
 
-            if (response.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) &&
+            if (response.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) &&
                 _channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
                 mock.notPersistent();
         }

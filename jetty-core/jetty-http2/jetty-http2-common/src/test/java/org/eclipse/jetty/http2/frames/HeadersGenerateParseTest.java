@@ -84,11 +84,11 @@ public class HeadersGenerateParseTest
             assertTrue(frame.isEndStream());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
-            assertEquals(metaData.getURI(), request.getURI());
+            assertEquals(metaData.getHttpURI(), request.getHttpURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
-                assertTrue(request.getFields().contains(field));
+                assertTrue(request.getHttpFields().contains(field));
             }
             PriorityFrame priority = frame.getPriority();
             assertNotNull(priority);
@@ -144,11 +144,11 @@ public class HeadersGenerateParseTest
             assertTrue(frame.isEndStream());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
-            assertEquals(metaData.getURI(), request.getURI());
+            assertEquals(metaData.getHttpURI(), request.getHttpURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
-                assertTrue(request.getFields().contains(field));
+                assertTrue(request.getHttpFields().contains(field));
             }
             PriorityFrame priority = frame.getPriority();
             assertNotNull(priority);

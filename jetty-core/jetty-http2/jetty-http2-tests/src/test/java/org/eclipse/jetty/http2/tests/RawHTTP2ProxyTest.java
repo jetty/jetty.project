@@ -128,7 +128,7 @@ public class RawHTTP2ProxyTest
                             LOGGER.debug("SERVER1 received {}", frame);
                         if (frame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER1 sending {}", reply);
@@ -166,7 +166,7 @@ public class RawHTTP2ProxyTest
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("SERVER2 received {}", data);
                         data.release();
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("SERVER2 sending {}", reply);
@@ -287,7 +287,7 @@ public class RawHTTP2ProxyTest
                 LOGGER.debug("Received {} for {} on {}: {}", frame, stream, stream.getSession(), frame.getMetaData());
             // Forward to the right server.
             MetaData metaData = frame.getMetaData();
-            HttpFields fields = metaData.getFields();
+            HttpFields fields = metaData.getHttpFields();
             int port = Integer.parseInt(fields.get("X-Target"));
             ClientToProxyToServer clientToProxyToServer = forwarders.computeIfAbsent(port, p -> new ClientToProxyToServer("localhost", p, client));
             clientToProxyToServer.offer(stream, frame, Callback.NOOP);

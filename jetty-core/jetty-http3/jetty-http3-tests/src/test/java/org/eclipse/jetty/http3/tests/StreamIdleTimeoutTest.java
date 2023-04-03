@@ -53,7 +53,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                if ("/idle".equals(request.getURI().getPath()))
+                if ("/idle".equals(request.getHttpURI().getPath()))
                 {
                     assertFalse(frame.isLast());
                     stream.demand();
@@ -68,7 +68,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
+                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                     stream.respond(new HeadersFrame(response, true));
                     return null;
                 }
@@ -134,7 +134,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                if ("/idle".equals(request.getURI().getPath()))
+                if ("/idle".equals(request.getHttpURI().getPath()))
                 {
                     return new Stream.Server.Listener()
                     {
@@ -148,7 +148,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
+                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                     stream.respond(new HeadersFrame(response, true));
                     return null;
                 }

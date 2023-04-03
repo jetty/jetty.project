@@ -55,15 +55,14 @@ public class HpackTest
             .add(Date)
             .add(HttpHeader.SET_COOKIE, "abcdefghijklmnopqrstuvwxyz")
             .add("custom-key", "custom-value");
-        Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);
+        Response original0 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0);
 
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
         Response decoded0 = (Response)decoder.decode(buffer);
         
-        Response nullToEmpty = new MetaData.Response(HttpVersion.HTTP_2, 200, 
-            fields0.put(new HttpField(HttpHeader.CONTENT_ENCODING, "")));
+        Response nullToEmpty = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0.put(new HttpField(HttpHeader.CONTENT_ENCODING, "")));
         assertMetaDataResponseSame(nullToEmpty, decoded0);
 
         // Same again?
@@ -82,7 +81,7 @@ public class HpackTest
             .add(XPowerJetty)
             .add(Date)
             .add("Custom-Key", "Other-Value");
-        Response original1 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields1);
+        Response original1 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields1);
 
         // Same again?
         BufferUtil.clearToFill(buffer);
@@ -91,7 +90,7 @@ public class HpackTest
         Response decoded1 = (Response)decoder.decode(buffer);
 
         assertMetaDataResponseSame(original1, decoded1);
-        assertEquals("custom-key", decoded1.getFields().getField("Custom-Key").getName());
+        assertEquals("custom-key", decoded1.getHttpFields().getField("Custom-Key").getName());
     }
 
     @Test
@@ -144,7 +143,7 @@ public class HpackTest
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             .add("Cookie", "[\uD842\uDF9F]")
             .add("custom-key", "[\uD842\uDF9F]");
-        Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);
+        Response original0 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0);
 
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
@@ -218,7 +217,7 @@ public class HpackTest
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
         BufferUtil.flipToFlush(buffer, 0);
         MetaData metaData = decoder.decode(buffer);
-        HttpFields output = metaData.getFields();
+        HttpFields output = metaData.getHttpFields();
 
         assertEquals(1, output.size());
         assertEquals("*", output.get(HttpHeader.ACCEPT));
@@ -242,7 +241,7 @@ public class HpackTest
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
         BufferUtil.flipToFlush(buffer, 0);
         MetaData metaData = decoder.decode(buffer);
-        HttpFields output = metaData.getFields();
+        HttpFields output = metaData.getHttpFields();
 
         assertEquals(2, output.size());
         assertEquals(teValue, output.get(HttpHeader.TE));
@@ -281,7 +280,7 @@ public class HpackTest
     {
         assertThat("Metadata.contentLength", actual.getContentLength(), is(expected.getContentLength()));
         assertThat("Metadata.version" + ".version", actual.getHttpVersion(), is(expected.getHttpVersion()));
-        assertHttpFieldsSame(expected.getFields(), actual.getFields());
+        assertHttpFieldsSame(expected.getHttpFields(), actual.getHttpFields());
     }
 
     private void assertHttpFieldsSame(HttpFields expected, HttpFields actual)

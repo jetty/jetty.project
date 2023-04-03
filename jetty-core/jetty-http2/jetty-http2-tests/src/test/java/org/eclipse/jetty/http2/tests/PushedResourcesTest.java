@@ -70,7 +70,7 @@ public class PushedResourcesTest extends AbstractTest
                     public void succeeded(Stream pushStream)
                     {
                         // Just send the normal response and wait for the reset.
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
                 }, new Stream.Listener()
@@ -124,9 +124,9 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    MetaData.Request push1 = new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    MetaData.Request push1 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
                     request.push(push1);
-                    MetaData.Request push2 = new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    MetaData.Request push2 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
                     request.push(push2);
                     response.write(true, ByteBuffer.wrap(bytes), callback);
                 }
@@ -189,7 +189,7 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    request.push(new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
+                    request.push(new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
                     callback.succeeded();
                 }
                 return true;
@@ -260,7 +260,7 @@ public class PushedResourcesTest extends AbstractTest
         // Request for the primary and secondary resource to build the cache.
         HttpFields.Mutable primaryFields = HttpFields.build();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
-        String referrerURI = primaryRequest.getURIString();
+        String referrerURI = primaryRequest.getHttpURI().toString();
         CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Stream.Listener()
         {

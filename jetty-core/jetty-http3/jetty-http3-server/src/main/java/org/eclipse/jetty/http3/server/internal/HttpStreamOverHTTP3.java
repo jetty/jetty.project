@@ -94,7 +94,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 }
             }
 
-            HttpFields fields = requestMetaData.getFields();
+            HttpFields fields = requestMetaData.getHttpFields();
 
             expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
@@ -107,7 +107,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             {
                 LOG.debug("HTTP3 request #{}/{}, {} {} {}{}{}",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    requestMetaData.getMethod(), requestMetaData.getURI(), requestMetaData.getHttpVersion(),
+                    requestMetaData.getMethod(), requestMetaData.getHttpURI(), requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
 
@@ -237,7 +237,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     public Runnable onTrailer(HeadersFrame frame)
     {
-        HttpFields trailers = frame.getMetaData().getFields().asImmutable();
+        HttpFields trailers = frame.getMetaData().getHttpFields().asImmutable();
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP3 Request #{}/{}, trailer:{}{}",
@@ -312,10 +312,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 if (contentLength < 0)
                 {
                     this.responseMetaData = new MetaData.Response(
-                        response.getHttpVersion(),
-                        response.getStatus(),
-                        response.getReason(),
-                        response.getFields(),
+                        response.getStatus(), response.getReason(), response.getHttpVersion(),
+                        response.getHttpFields(),
                         realContentLength,
                         response.getTrailersSupplier()
                     );
@@ -382,7 +380,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             LOG.debug("HTTP3 Response #{}/{}:{}{} {}{}{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), HttpVersion.HTTP_3, response.getStatus(),
-                System.lineSeparator(), response.getFields());
+                System.lineSeparator(), response.getHttpFields());
         }
 
         CompletableFuture<Stream> cf = stream.respond(headersFrame);

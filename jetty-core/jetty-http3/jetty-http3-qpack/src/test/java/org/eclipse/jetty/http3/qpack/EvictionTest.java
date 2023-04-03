@@ -84,7 +84,7 @@ public class EvictionTest
 //            System.err.println("====================");
 //            System.err.println();
 
-            assertTrue(result.getFields().isEqualTo(httpFields));
+            assertTrue(result.getHttpFields().isEqualTo(httpFields));
             encodedFields.clear();
         }
     }

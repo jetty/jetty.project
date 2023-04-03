@@ -108,8 +108,8 @@ public class BlockedStreamsTest
         // Give first instruction to get first metadata.
         _decoder.parseInstructions(QpackTestUtil.toBuffer(instruction1));
         MetaData metaData = _decoderHandler.getMetaData();
-        assertThat(metaData.getFields().size(), equalTo(1));
-        assertThat(metaData.getFields().get(entry1.getHeader()), equalTo(entry1.getValue()));
+        assertThat(metaData.getHttpFields().size(), equalTo(1));
+        assertThat(metaData.getHttpFields().get(entry1.getHeader()), equalTo(entry1.getValue()));
 
         Instruction inc1 = _decoderHandler.getInstruction();
         assertThat(inc1, instanceOf(InsertCountIncrementInstruction.class));
@@ -125,8 +125,8 @@ public class BlockedStreamsTest
         // Give second instruction to get second metadata.
         _decoder.parseInstructions(QpackTestUtil.toBuffer(instruction2));
         metaData = _decoderHandler.getMetaData();
-        assertThat(metaData.getFields().size(), equalTo(1));
-        assertThat(metaData.getFields().get(entry2.getHeader()), equalTo(entry2.getValue()));
+        assertThat(metaData.getHttpFields().size(), equalTo(1));
+        assertThat(metaData.getHttpFields().get(entry2.getHeader()), equalTo(entry2.getValue()));
 
         Instruction inc2 = _decoderHandler.getInstruction();
         assertThat(inc2, instanceOf(InsertCountIncrementInstruction.class));
@@ -152,8 +152,8 @@ public class BlockedStreamsTest
         decoded = _decoder.decode(3, buffer, _decoderHandler);
         assertTrue(decoded);
         metaData = _decoderHandler.getMetaData();
-        assertThat(metaData.getFields().size(), equalTo(1));
-        assertThat(metaData.getFields().get(entry3.getHeader()), equalTo(entry3.getValue()));
+        assertThat(metaData.getHttpFields().size(), equalTo(1));
+        assertThat(metaData.getHttpFields().get(entry3.getHeader()), equalTo(entry3.getValue()));
 
         // No longer referencing any streams that have been acknowledged.
         buffer = toBuffer(inc1, ack1, inc2, ack2);

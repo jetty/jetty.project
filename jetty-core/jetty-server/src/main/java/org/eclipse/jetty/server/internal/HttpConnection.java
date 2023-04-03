@@ -1502,7 +1502,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             // Prior knowledge HTTP/2 does not need a 101 response (it will directly be
             // in HTTP/2 format) while HTTP/1.1 to HTTP/2 upgrade needs a 101 response.
             if (!isPriorKnowledgeH2C)
-                send(_request, new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), false, null, Callback.NOOP);
+                send(_request, new MetaData.Response(HttpStatus.SWITCHING_PROTOCOLS_101, null, HttpVersion.HTTP_1_1, response101, 0), false, null, Callback.NOOP);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrading from {} to {}", getEndPoint().getConnection(), upgradeConnection);

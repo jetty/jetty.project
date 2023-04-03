@@ -58,7 +58,7 @@ public class RequestTrailersTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return new Stream.Listener()
@@ -105,7 +105,7 @@ public class RequestTrailersTest extends AbstractTest
                         // trailers, but instead a DATA frame with endStream=true.
                         if (data.frame().isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                             stream.headers(responseFrame, Callback.NOOP);
                         }
@@ -160,7 +160,7 @@ public class RequestTrailersTest extends AbstractTest
                         // trailers, but instead a DATA frame with endStream=true.
                         if (data.frame().isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                             stream.headers(responseFrame, Callback.NOOP);
                         }

@@ -72,7 +72,14 @@ public class FrameFloodTest
     public void testInvalidHeadersFrameFlood() throws Exception
     {
         // Invalid MetaData (no method, no scheme, etc).
-        MetaData.Request metadata = new MetaData.Request(null, null, null, null, HttpVersion.HTTP_2, null, -1);
+        MetaData.Request metadata = new MetaData.Request("NULL", null, null, null, HttpVersion.HTTP_2, null, -1)
+        {
+            @Override
+            public String getMethod()
+            {
+                return null;
+            }
+        };
         HpackEncoder encoder = new HpackEncoder();
         ByteBuffer buffer = ByteBuffer.allocate(1024);
         encoder.encode(buffer, metadata);

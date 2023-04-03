@@ -2316,7 +2316,7 @@ public class ResponseTest
         @Override
         public HttpURI getHttpURI()
         {
-            return _reqMeta.getURI();
+            return _reqMeta.getHttpURI();
         }
 
         @Override
@@ -2328,7 +2328,7 @@ public class ResponseTest
         @Override
         public HttpFields getHeaders()
         {
-            return _reqMeta.getFields();
+            return _reqMeta.getHttpFields();
         }
 
         @Override
