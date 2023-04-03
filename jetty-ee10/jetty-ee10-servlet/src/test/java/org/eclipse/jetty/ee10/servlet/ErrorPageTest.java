@@ -557,6 +557,7 @@ public class ErrorPageTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
+            request.getParameterMap();
             PrintWriter writer = response.getWriter();
             writer.println(request.getRequestURI());
         }
