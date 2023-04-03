@@ -258,24 +258,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getQueryString()
         {
-            String origQuery = _httpServletRequest.getQueryString();
             if (_uri != null)
             {
                 String targetQuery = _uri.getQuery();
                 if (!StringUtil.isEmpty(targetQuery))
-                {
-                    if (StringUtil.isEmpty(origQuery))
                         return targetQuery;
-
-                    // TODO should we cache this?
-                    // TODO assume we need to do the same for include
-                    MultiMap<String> newQueryParams = new MultiMap<>();
-                    UrlEncoded.decodeTo(targetQuery, newQueryParams, UrlEncoded.ENCODING);
-                    UrlEncoded.decodeTo(origQuery, newQueryParams, UrlEncoded.ENCODING);
-                    return UrlEncoded.encode(newQueryParams, UrlEncoded.ENCODING, false);
                 }
-            }
-            return origQuery;
+            return _httpServletRequest.getQueryString();
         }
 
         @Override

@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -650,7 +651,7 @@ public class AsyncServletTest
     }
 
     @Test
-    public void testTCK() throws Exception
+    public void testForwardAsyncParameters() throws Exception
     {
         _servletHandler.addServletWithMapping(
             new ServletHolder(new HttpServlet()
@@ -659,6 +660,7 @@ public class AsyncServletTest
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
                     historyAdd("FWD " + request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
+                    historyAdd("FWD name=" + Arrays.asList(request.getParameterValues("name")));
                     request.getServletContext().getRequestDispatcher("/target?name=forward&foo=bar").forward(request, response);
                 }
             }),
@@ -672,6 +674,7 @@ public class AsyncServletTest
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
                     historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
+                    historyAdd("name=" + Arrays.asList(request.getParameterValues("name")));
 
                     if (request.getAttribute("TEST") == null)
                     {
@@ -686,10 +689,15 @@ public class AsyncServletTest
         String response = process("forwarder", "name=orig&other=value", null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
 
+        _history.forEach(System.err::println);
+
         assertThat(_history, contains(
             "FWD REQUEST /ctx/forwarder/info?name=orig&other=value",
-            "FORWARD /ctx/target?name=forward&name=orig&foo=bar&other=value",
-            "ASYNC /ctx/target?name=forward&name=orig&foo=bar&other=value"));
+            "FWD name=[orig]",
+            "FORWARD /ctx/target?name=forward&foo=bar",
+            "name=[forward, orig]",
+            "ASYNC /ctx/target?name=forward&foo=bar",
+            "name=[forward, orig]"));
     }
 
     public synchronized String process(String query, String content) throws Exception
