@@ -30,8 +30,6 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -493,7 +491,7 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Config error {} at {} in {}", e.toString(), node, _configuration);
+                    LOG.warn("Config error {} at {} in {}", e, node, _configuration);
                     throw e;
                 }
             }
@@ -1815,86 +1813,81 @@ public class XmlConfiguration
     {
         try
         {
-            AccessController.doPrivileged((PrivilegedExceptionAction<Void>)() ->
+            Properties properties = new Properties();
+            properties.putAll(System.getProperties());
+
+            // For all arguments, load properties
+            if (LOG.isDebugEnabled())
+                LOG.debug("args={}", Arrays.asList(args));
+            for (String arg : args)
             {
-                Properties properties = new Properties();
-                properties.putAll(System.getProperties());
-
-                // For all arguments, load properties
-                if (LOG.isDebugEnabled())
-                    LOG.debug("args={}", Arrays.asList(args));
-                for (String arg : args)
+                if (arg.indexOf('=') >= 0)
                 {
-                    if (arg.indexOf('=') >= 0)
+                    int i = arg.indexOf('=');
+                    properties.put(arg.substring(0, i), arg.substring(i + 1));
+                }
+                else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                {
+                    try (InputStream inputStream = Resource.newResource(arg).getInputStream())
                     {
-                        int i = arg.indexOf('=');
-                        properties.put(arg.substring(0, i), arg.substring(i + 1));
-                    }
-                    else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
-                    {
-                        try (InputStream inputStream = Resource.newResource(arg).getInputStream())
-                        {
-                            properties.load(inputStream);
-                        }
+                        properties.load(inputStream);
                     }
                 }
+            }
 
-                // For all arguments, parse XMLs
-                XmlConfiguration last = null;
-                List<Object> objects = new ArrayList<>(args.length);
-                for (String arg : args)
+            // For all arguments, parse XMLs
+            XmlConfiguration last = null;
+            List<Object> objects = new ArrayList<>(args.length);
+            for (String arg : args)
+            {
+                if (!arg.toLowerCase(Locale.ENGLISH).endsWith(".properties") && (arg.indexOf('=') < 0))
                 {
-                    if (!arg.toLowerCase(Locale.ENGLISH).endsWith(".properties") && (arg.indexOf('=') < 0))
+                    XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg));
+                    if (last != null)
+                        configuration.getIdMap().putAll(last.getIdMap());
+                    if (properties.size() > 0)
                     {
-                        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg));
-                        if (last != null)
-                            configuration.getIdMap().putAll(last.getIdMap());
-                        if (properties.size() > 0)
-                        {
-                            Map<String, String> props = new HashMap<>();
-                            properties.entrySet().stream()
-                                .forEach(objectObjectEntry -> props.put(objectObjectEntry.getKey().toString(),
-                                                                        String.valueOf(objectObjectEntry.getValue())));
-                            configuration.getProperties().putAll(props);
-                        }
-
-                        Object obj = configuration.configure();
-                        if (obj != null && !objects.contains(obj))
-                            objects.add(obj);
-                        last = configuration;
+                        Map<String, String> props = new HashMap<>();
+                        properties.forEach((key, value) -> props.put(key.toString(),
+                            String.valueOf(value)));
+                        configuration.getProperties().putAll(props);
                     }
+
+                    Object obj = configuration.configure();
+                    if (obj != null && !objects.contains(obj))
+                        objects.add(obj);
+                    last = configuration;
                 }
+            }
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("objects={}", objects);
+            if (LOG.isDebugEnabled())
+                LOG.debug("objects={}", objects);
 
-                // For all objects created by XmlConfigurations, start them if they are lifecycles.
-                List<LifeCycle> started = new ArrayList<>(objects.size());
-                for (Object obj : objects)
+            // For all objects created by XmlConfigurations, start them if they are lifecycles.
+            List<LifeCycle> started = new ArrayList<>(objects.size());
+            for (Object obj : objects)
+            {
+                if (obj instanceof LifeCycle)
                 {
-                    if (obj instanceof LifeCycle)
+                    LifeCycle lc = (LifeCycle)obj;
+                    if (!lc.isRunning())
                     {
-                        LifeCycle lc = (LifeCycle)obj;
-                        if (!lc.isRunning())
+                        lc.start();
+                        if (lc.isStarted())
+                            started.add(lc);
+                        else
                         {
-                            lc.start();
-                            if (lc.isStarted())
-                                started.add(lc);
-                            else
+                            // Failed to start a component, so stop all started components
+                            Collections.reverse(started);
+                            for (LifeCycle slc : started)
                             {
-                                // Failed to start a component, so stop all started components
-                                Collections.reverse(started);
-                                for (LifeCycle slc : started)
-                                {
-                                    slc.stop();
-                                }
-                                break;
+                                slc.stop();
                             }
+                            break;
                         }
                     }
                 }
-                return null;
-            });
+            }
         }
         catch (Error | Exception e)
         {
