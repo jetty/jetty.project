@@ -25,6 +25,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -53,6 +54,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -650,8 +654,19 @@ public class AsyncServletTest
         }
     }
 
-    @Test
-    public void testForwardAsyncParameters() throws Exception
+    public static Stream<Arguments> forwardAsyncDispatchArgs()
+    {
+        return Stream.of(
+            Arguments.of(false, false, "name=orig&one=1", "orig"),
+            Arguments.of(false, true, "name=async&three=3", "async, orig"),
+            Arguments.of(true, false, "name=forward&two=2", "forward, orig"),
+            Arguments.of(true, true, "name=async&three=3", "async, forward, orig")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("forwardAsyncDispatchArgs")
+    public void testForwardAsyncDispatch(boolean startWithRequest, boolean dispatchTarget, String expectedQuery, String expectedName) throws Exception
     {
         _servletHandler.addServletWithMapping(
             new ServletHolder(new HttpServlet()
@@ -659,9 +674,14 @@ public class AsyncServletTest
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
-                    historyAdd("FWD " + request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
-                    historyAdd("FWD name=" + Arrays.asList(request.getParameterValues("name")));
-                    request.getServletContext().getRequestDispatcher("/target?name=forward&foo=bar").forward(request, response);
+                    historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
+                    historyAdd("name=" + Arrays.asList(request.getParameterValues("name")));
+
+                    if (request.getAttribute("FWD") == null)
+                    {
+                        request.setAttribute("FWD", "OK");
+                        request.getServletContext().getRequestDispatcher("/target?name=forward&two=2").forward(request, response);
+                    }
                 }
             }),
             "/forwarder/*"
@@ -679,25 +699,31 @@ public class AsyncServletTest
                     if (request.getAttribute("TEST") == null)
                     {
                         request.setAttribute("TEST", "OK");
-                        request.startAsync(request, response).dispatch();
+                        AsyncContext asyncContext = startWithRequest
+                            ? request.startAsync(request, response)
+                            : request.startAsync();
+                        if (dispatchTarget)
+                            asyncContext.dispatch("/target?name=async&three=3");
+                        else
+                            asyncContext.dispatch();
                     }
                 }
             }),
             "/target/*"
         );
 
-        String response = process("forwarder", "name=orig&other=value", null);
+        String response = process("forwarder", "name=orig&one=1", null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
 
         _history.forEach(System.err::println);
 
         assertThat(_history, contains(
-            "FWD REQUEST /ctx/forwarder/info?name=orig&other=value",
-            "FWD name=[orig]",
-            "FORWARD /ctx/target?name=forward&foo=bar",
+            "REQUEST /ctx/forwarder/info?name=orig&one=1",
+            "name=[orig]",
+            "FORWARD /ctx/target?name=forward&two=2",
             "name=[forward, orig]",
-            "ASYNC /ctx/target?name=forward&foo=bar",
-            "name=[forward, orig]"));
+            (!startWithRequest && !dispatchTarget ? "ASYNC /ctx/forwarder/info?" : "ASYNC /ctx/target?") + expectedQuery,
+            "name=[" + expectedName + "]"));
     }
 
     public synchronized String process(String query, String content) throws Exception
