@@ -671,7 +671,7 @@ public class AsyncServletTest
             new ServletHolder(new HttpServlet()
             {
                 @Override
-                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 {
                     historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
                     historyAdd("name=" + Arrays.asList(request.getParameterValues("name")));
@@ -711,9 +711,11 @@ public class AsyncServletTest
 
         if (query != null)
             request += "?" + query;
-        request += " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n";
+        request += """
+             HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            """;
         if (content == null)
             request += "\r\n";
         else

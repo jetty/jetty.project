@@ -519,7 +519,7 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
-    private class AsyncRequest extends ParameterRequestWrapper
+    private class AsyncRequest extends HttpServletRequestWrapper
     {
         private final HttpServletRequest _httpServletRequest;
 
@@ -567,6 +567,12 @@ public class Dispatcher implements RequestDispatcher
                     return targetQuery;
             }
             return _httpServletRequest.getQueryString();
+        }
+
+        @Override
+        public String[] getParameterValues(String name)
+        {
+            return super.getParameterValues(name);
         }
 
         @Override
