@@ -46,23 +46,24 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
+        long contentLength = 1024;
         HttpFields.Mutable fields0 = HttpFields.build()
             .add(HttpHeader.CONTENT_TYPE, "text/html")
-            .add(HttpHeader.CONTENT_LENGTH, "1024")
+            .add(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength))
             .add(new HttpField(HttpHeader.CONTENT_ENCODING, (String)null))
             .add(ServerJetty)
             .add(XPowerJetty)
             .add(Date)
             .add(HttpHeader.SET_COOKIE, "abcdefghijklmnopqrstuvwxyz")
             .add("custom-key", "custom-value");
-        Response original0 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0);
+        Response original0 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0, contentLength);
 
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
         Response decoded0 = (Response)decoder.decode(buffer);
         
-        Response nullToEmpty = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0.put(new HttpField(HttpHeader.CONTENT_ENCODING, "")));
+        Response nullToEmpty = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0.put(new HttpField(HttpHeader.CONTENT_ENCODING, "")), contentLength);
         assertMetaDataResponseSame(nullToEmpty, decoded0);
 
         // Same again?
@@ -73,15 +74,16 @@ public class HpackTest
 
         assertMetaDataResponseSame(nullToEmpty, decoded0b);
 
+        contentLength = 1234;
         HttpFields.Mutable fields1 = HttpFields.build()
             .add(HttpHeader.CONTENT_TYPE, "text/plain")
-            .add(HttpHeader.CONTENT_LENGTH, "1234")
+            .add(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength))
             .add(HttpHeader.CONTENT_ENCODING, " ")
             .add(ServerJetty)
             .add(XPowerJetty)
             .add(Date)
             .add("Custom-Key", "Other-Value");
-        Response original1 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields1);
+        Response original1 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields1, contentLength);
 
         // Same again?
         BufferUtil.clearToFill(buffer);
