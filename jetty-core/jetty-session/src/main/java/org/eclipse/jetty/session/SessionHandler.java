@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.session;
 
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -25,9 +24,9 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * SimpleSessionHandler example
+ * A minimal SessionHandler.
  */
-public class SimpleSessionHandler extends AbstractSessionManager implements Handler.Singleton
+public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
     private Server _server;
     private Handler _handler;
@@ -77,7 +76,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     @Override
     public Session.API newSessionAPIWrapper(ManagedSession session)
     {
-        return new SessionAPI(session);
+        return null;
     }
 
     public class SessionRequest extends Request.Wrapper
@@ -138,52 +137,6 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             }
 
             return handler.handle(this, _response, callback);
-        }
-    }
-
-    public static class SessionAPI implements Session.API
-    {
-        private final Session _session;
-
-        public SessionAPI(Session session)
-        {
-            _session = session;
-        }
-
-        @Override
-        public Session getSession()
-        {
-            return _session;
-        }
-
-        public String getId()
-        {
-            return _session.getId();
-        }
-
-        public Set<String> getAttributeNames()
-        {
-            return _session.getAttributeNameSet();
-        }
-
-        public Object getAttribute(String name)
-        {
-            return _session.getAttribute(name);
-        }
-
-        public void setAttribute(String name, Object value)
-        {
-            _session.setAttribute(name, value);
-        }
-
-        public void invalidate()
-        {
-            _session.invalidate();
-        }
-
-        public void renewId(Request request, Response response)
-        {
-            _session.renewId(request, response);
         }
     }
 }

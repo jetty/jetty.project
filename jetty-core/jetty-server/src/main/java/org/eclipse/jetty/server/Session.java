@@ -28,6 +28,7 @@ public interface Session extends Attributes
 {
     /**
      * <p>Get the session associated with an API session wrapper.</p>
+     *
      * @param session The API wrapper of the session
      * @return The associated Session.
      */
@@ -62,7 +63,7 @@ public interface Session extends Attributes
 
     /**
      * @return A identifier for the session. Depending on the implementation may be unique within the context, the server, the
-     *         JVM or a cluster.
+     * JVM or a cluster.
      * @see #getExtendedId()
      */
     String getId();
@@ -81,18 +82,19 @@ public interface Session extends Attributes
 
     /**
      * @param secs The period in secs in which the session will remain valid (unless explicitly invalidated)
-     *             when not accessed by any requests.
+     * when not accessed by any requests.
      */
     void setMaxInactiveInterval(int secs);
 
     /**
      * @return The period in secs in which the session will remain valid (unless explicitly invalidated)
-     *         when not accessed by any requests.
+     * when not accessed by any requests.
      */
     int getMaxInactiveInterval();
 
     /**
      * Renew the identity of the session. Typically, this is done after a change of authentication or confidentiality.
+     *
      * @param request The request from which the session was obtained.
      * @param response The response which may be updated with the new session identity.
      */
@@ -107,4 +109,42 @@ public interface Session extends Attributes
      * @return {@code true} if the session has been newly created within the scope of the current request.
      */
     boolean isNew() throws IllegalStateException;
+
+    /**
+     * Listener interface that if implemented by a value of an attribute of an enclosing {@link Context} at start, will be
+     * notified of session lifecycle events.
+     */
+    interface LifeCycleListener
+    {
+        default void onSessionIdChanged(Session session, String oldId)
+        {
+        }
+
+        default void onSessionCreated(Session session)
+        {
+        }
+
+        default void onSessionDestroyed(Session session)
+        {
+        }
+    }
+
+    /**
+     * Listener interface that if implemented by a session attribute value, will be notified of
+     * session value events.
+     */
+    interface ValueListener
+    {
+        default void onSessionAttributeUpdate(Session session, String name, Object oldValue, Object newValue)
+        {
+        }
+
+        default void onSessionActivation(Session session)
+        {
+        }
+
+        default void onSessionPassivation(Session session)
+        {
+        }
+    }
 }
