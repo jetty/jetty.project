@@ -171,7 +171,7 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.takeString(IllegalArgumentException::new));
+                messages.offer(activeMessage.takeCompleteString(IllegalArgumentException::new));
                 activeMessage = null;
             }
             callback.succeeded();

@@ -52,7 +52,7 @@ public class StringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.takeString(() -> new BadPayloadException("Invalid UTF-8")));
+                methodHandle.invoke(out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
             }
             callback.succeeded();
             session.demand(1);

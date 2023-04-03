@@ -330,7 +330,7 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.takeString(() -> new IllegalArgumentException("Invalid value: Bad UTF-8"));
+                    value = buffer.takeCompleteString(() -> new IllegalArgumentException("Invalid value: Bad UTF-8"));
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -348,7 +348,7 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.takeString(() -> new IllegalArgumentException("Invalid key: Bad UTF-8"));
+                    key = buffer.takeCompleteString(() -> new IllegalArgumentException("Invalid key: Bad UTF-8"));
                     break;
 
                 case '+':
@@ -376,7 +376,7 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.takeString(() -> new IllegalArgumentException("Invalid value: Bad UTF-8"));
+            value = buffer.takeCompleteString(() -> new IllegalArgumentException("Invalid value: Bad UTF-8"));
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)

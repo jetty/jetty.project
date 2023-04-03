@@ -346,17 +346,6 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     }
 
     /**
-     * Take the partially decoded string, which is equivalent to calling {@link #toPartialString()} ()} then {@link #partialReset()}.
-     * @return The completely decoded string.
-     */
-    public String takePartialString()
-    {
-        String partial = _buffer.toString();
-        partialReset();
-        return partial;
-    }
-
-    /**
      * Take the completely decoded string.
      * @param onCodingError A supplier of a {@link Throwable} to use if {@link #hasCodingErrors()} returns true,
      *                      or null for no error action
@@ -364,7 +353,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
      * @return The complete string.
      * @throws X if {@link #hasCodingErrors()} is true after {@link #complete()}.
      */
-    public <X extends Throwable> String takeString(Supplier<X> onCodingError) throws X
+    public <X extends Throwable> String takeCompleteString(Supplier<X> onCodingError) throws X
     {
         complete();
         return takePartialString(onCodingError);
@@ -400,7 +389,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     @Override
     public String takeString() throws CharacterCodingException
     {
-        return takeString(Utf8StringBuilder::newUtf8CharacterCodingException);
+        return takeCompleteString(Utf8StringBuilder::newUtf8CharacterCodingException);
     }
 
     private static CharacterCodingException newUtf8CharacterCodingException()
@@ -412,5 +401,4 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             }
         };
     }
-    
 }

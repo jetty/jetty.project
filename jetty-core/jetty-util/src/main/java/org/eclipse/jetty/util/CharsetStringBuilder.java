@@ -30,8 +30,7 @@ import java.util.Objects;
  * escaped byte sequences that are not decoded.  The standard {@link CharsetDecoder} API is not well suited for this
  * use-case.</p>
  * <p>Any coding errors in the string will be reported by a {@link CharacterCodingException} thrown
- * from the {@link #takeString()} method, or a {@link RuntimeException} wrapping a {@link CharacterCodingException}
- * thrown from the {@link #toCompleteString()} method.</p>
+ * from the {@link #takeString()} method.</p>
  * @see Utf8StringBuilder for UTF-8 decoding with replacement of coding errors and/or fast fail behaviour.
  * @see CharsetDecoder for decoding arbitrary {@link Charset}s with control over {@link CodingErrorAction}.
  */
@@ -66,12 +65,6 @@ public interface CharsetStringBuilder
         while (buf.position() < end)
             append(buf.get());
     }
-
-    /**
-     * @return The decoded built string.
-     * @throws RuntimeException if there is a {@link CharacterCodingException}.
-     */
-    String toCompleteString() throws RuntimeException;
 
     /**
      * @return The decoded built string.
@@ -139,12 +132,6 @@ public interface CharsetStringBuilder
         }
 
         @Override
-        public String toCompleteString()
-        {
-            return _builder.toString();
-        }
-
-        @Override
         public String takeString()
         {
             String s = _builder.toString();
@@ -175,12 +162,6 @@ public interface CharsetStringBuilder
         public void append(CharSequence chars, int offset, int length)
         {
             _builder.append(chars, offset, length);
-        }
-
-        @Override
-        public String toCompleteString()
-        {
-            return _builder.toString();
         }
 
         @Override
@@ -274,27 +255,6 @@ public interface CharsetStringBuilder
         {
             ensureSpace(buf.remaining());
             _buffer.put(buf);
-        }
-
-        @Override
-        public String toCompleteString()
-        {
-            try
-            {
-                if (_buffer.position() > 0)
-                {
-                    CharSequence decoded = _decoder.decode(_buffer.flip());
-                    _buffer.clear();
-                    if (_stringBuilder.isEmpty())
-                        return decoded.toString();
-                    _stringBuilder.append(decoded);
-                }
-                return _stringBuilder.toString();
-            }
-            catch (CharacterCodingException e)
-            {
-                throw new RuntimeException(e);
-            }
         }
 
         @Override

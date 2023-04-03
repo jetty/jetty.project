@@ -87,7 +87,7 @@ public class PartialStringMessageSinkTest
         String partial = check.takePartialString(IllegalStateException::new);
         assertThat(partial, equalTo(""));
         check.append(utf8Bytes, 2, 2);
-        String complete = check.takeString(IllegalStateException::new);
+        String complete = check.takeCompleteString(IllegalStateException::new);
         assertThat(complete, equalTo(gothicUnicode));
 
         FutureCallback callback = new FutureCallback();

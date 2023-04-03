@@ -787,7 +787,7 @@ public final class URIUtil
         }
 
         String canonical = (builder != null)
-            ? (onBadUtf8 == null ? builder.toCompleteString() : builder.takeString(onBadUtf8))
+            ? (onBadUtf8 == null ? builder.toCompleteString() : builder.takeCompleteString(onBadUtf8))
             : encodedPath;
         return normal ? canonical : normalizePath(canonical);
     }

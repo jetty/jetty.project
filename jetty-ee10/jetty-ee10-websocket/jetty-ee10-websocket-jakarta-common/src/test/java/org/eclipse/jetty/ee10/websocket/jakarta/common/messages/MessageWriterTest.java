@@ -172,7 +172,7 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.takeString(() -> new BadPayloadException("Invalid UTF-8")));
+                messages.offer(activeMessage.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
                 activeMessage = null;
             }
             callback.succeeded();
