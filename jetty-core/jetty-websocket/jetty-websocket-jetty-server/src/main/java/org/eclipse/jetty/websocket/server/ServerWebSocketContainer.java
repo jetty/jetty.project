@@ -285,7 +285,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * it is known that application code in the listener methods or annotated methods
      * of the WebSocket endpoint does not use blocking APIs.</p>
      * <p>Setting the invocation type to {@link InvocationType#NON_BLOCKING}, but then
-     * use blocking APIs in the WebSocket endpoint may result in a server lockup.</p>
+     * using blocking APIs in the WebSocket endpoint may result in a server lockup.</p>
      * <p>By default {@link InvocationType#BLOCKING} is returned, assuming that
      * application code in the WebSocket endpoint uses blocking APIs.</p>
      *
