@@ -27,6 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.EvaluatedCondition;
+import org.awaitility.core.TimeoutEvent;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -37,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -302,11 +306,20 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         // finish job 1, and its thread will become idle and then shrink
         job1._stopping.countDown();
         assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
-        await().atMost(10, TimeUnit.SECONDS).until(() ->
-        {
-            LOG.info(tp.toString());
-            return tp.getIdleThreads();
-        }, is(0));
+        with().conditionEvaluationListener(new ConditionEvaluationListener<String>()
+            {
+                @Override
+                public void conditionEvaluated(EvaluatedCondition condition)
+                {
+                }
+
+                @Override
+                public void onTimeout(TimeoutEvent timeoutEvent)
+                {
+                    LOG.info(timeoutEvent.getDescription() + " " + tp);
+                }
+            }).
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
         await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
 
         // finish job 2,3,4
