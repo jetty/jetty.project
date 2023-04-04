@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
@@ -115,5 +116,15 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         if (container.handle(request, response, callback))
             return true;
         return super.handle(request, response, callback);
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        if (isDynamic())
+            return InvocationType.BLOCKING;
+        Handler handler = getHandler();
+        InvocationType handlerInvocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
+        return Invocable.combine(handlerInvocationType, container.getInvocationType());
     }
 }
