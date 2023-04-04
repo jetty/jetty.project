@@ -1746,6 +1746,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         private String _defaultContentType;
         private String _buffer;
         private String _errorOnUndeclaredNamespace;
+        private String _errorOnELNotFound;
 
         @Override
         public java.util.Collection<String> getUrlPatterns()
@@ -1768,7 +1769,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public String getErrorOnELNotFound()
         {
-            return "true";
+            return _errorOnELNotFound;
         }
 
         public void setElIgnored(String s)
@@ -1820,6 +1821,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         public void setErrorOnUndeclaredNamespace(String errorOnUndeclaredNamespace)
         {
             _errorOnUndeclaredNamespace = errorOnUndeclaredNamespace;
+        }
+
+        public void setErrorOnELNotFound(String errorOnELNotFound)
+        {
+            _errorOnELNotFound = errorOnELNotFound;
         }
 
         @Override
@@ -1893,6 +1899,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             StringBuilder sb = new StringBuilder();
             sb.append("JspPropertyGroupDescriptor:");
+            sb.append(" error-on-el-not-found=").append(_errorOnELNotFound);
             sb.append(" el-ignored=").append(_elIgnored);
             sb.append(" is-xml=").append(_isXml);
             sb.append(" page-encoding=").append(_pageEncoding);
