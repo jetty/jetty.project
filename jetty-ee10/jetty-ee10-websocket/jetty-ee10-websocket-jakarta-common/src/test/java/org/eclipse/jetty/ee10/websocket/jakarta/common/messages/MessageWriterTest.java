@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.messages.MessageWriter;
 import org.junit.jupiter.api.Test;
 
@@ -171,7 +172,7 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.toString());
+                messages.offer(activeMessage.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
                 activeMessage = null;
             }
             callback.succeeded();

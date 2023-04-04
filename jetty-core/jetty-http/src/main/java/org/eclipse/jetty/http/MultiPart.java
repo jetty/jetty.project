@@ -714,7 +714,7 @@ public class MultiPart
                     builder.append("\r\n");
 
                     // TODO: use a ByteBuffer pool and direct ByteBuffers?
-                    ByteBuffer byteBuffer = UTF_8.encode(builder.toString());
+                    ByteBuffer byteBuffer = UTF_8.encode(builder.toCompleteString());
                     state = State.CONTENT;
                     yield Content.Chunk.from(byteBuffer, false);
                 }
@@ -1181,9 +1181,8 @@ public class MultiPart
                     {
                         // End of field name.
                         incrementAndCheckPartHeadersLength();
-                        fieldName = text.toString();
+                        fieldName = text.takeCompleteString(null);
                         trailingWhiteSpaces = 0;
-                        text.reset();
                         return true;
                     }
                     case ALPHA, DIGIT, TCHAR ->
@@ -1227,7 +1226,7 @@ public class MultiPart
                     {
                         // End of header value.
                         // Ignore trailing whitespace.
-                        fieldValue = text.toString().stripTrailing();
+                        fieldValue = text.toCompleteString().stripTrailing();
                         text.reset();
                         notifyPartHeader(fieldName, fieldValue);
                         fieldName = null;

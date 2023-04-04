@@ -13,49 +13,90 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import org.eclipse.jetty.util.Utf8Appendable;
+import java.nio.charset.CharacterCodingException;
+import java.util.function.Supplier;
 
-public class NullAppendable extends Utf8Appendable
+import org.eclipse.jetty.util.Utf8StringBuilder;
+
+public class NullAppendable extends Utf8StringBuilder
 {
     public NullAppendable()
     {
-        super(new Appendable()
-        {
-            @Override
-            public Appendable append(CharSequence csq)
-            {
-                return null;
-            }
-
-            @Override
-            public Appendable append(CharSequence csq, int start, int end)
-            {
-                return null;
-            }
-
-            @Override
-            public Appendable append(char c)
-            {
-                return null;
-            }
-        });
+        super(null);
     }
 
     @Override
-    public int length()
+    public void append(CharSequence chars, int offset, int length)
     {
-        return 0;
+        checkCharAppend();
     }
 
     @Override
-    public String getPartialString()
+    public void append(char c)
+    {
+        checkCharAppend();
+    }
+
+    @Override
+    public void append(String s)
+    {
+        checkCharAppend();
+    }
+
+    @Override
+    public void append(String s, int offset, int length)
+    {
+        checkCharAppend();
+    }
+
+    @Override
+    protected void bufferAppend(char c)
+    {
+    }
+
+    @Override
+    protected void bufferReset()
+    {
+    }
+
+    @Override
+    public String toPartialString()
     {
         return null;
     }
 
     @Override
-    public String takeString()
+    public String toCompleteString()
     {
+        complete();
+        return null;
+    }
+
+    @Override
+    public <X extends Throwable> String takeCompleteString(Supplier<X> onCodingError) throws X
+    {
+        complete();
+        return takePartialString(onCodingError);
+    }
+
+    @Override
+    public <X extends Throwable> String takePartialString(Supplier<X> onCodingError) throws X
+    {
+        if (onCodingError != null && hasCodingErrors())
+        {
+            X x = onCodingError.get();
+            if (x != null)
+                throw x;
+        }
+        return null;
+    }
+
+    @Override
+    public String build() throws CharacterCodingException
+    {
+        complete();
+        if (hasCodingErrors())
+            throw new CharacterCodingException();
         return null;
     }
 }
