@@ -27,15 +27,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.logging.JettyLevel;
-import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,22 +222,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         }
     }
 
-    @BeforeEach
-    public void setUp()
-    {
-
-        JettyLogger logger = (JettyLogger)LoggerFactory.getLogger(QueuedThreadPool.class);
-        logger.setLevel(JettyLevel.DEBUG);
-    }
-
-    @AfterEach
-    public void tearDown()
-    {
-
-        JettyLogger logger = (JettyLogger)LoggerFactory.getLogger(QueuedThreadPool.class);
-        logger.setLevel(JettyLevel.INFO);
-    }
-
     @Test
     public void testThreadPool() throws Exception
     {
@@ -325,7 +305,11 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         LOG.info("awaiting");
         assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
         LOG.info("asserting idle threads == 0");
-        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
+        await().atMost(10, TimeUnit.SECONDS).until(() ->
+        {
+            LOG.info(tp.toString());
+            return tp.getIdleThreads();
+        }, is(0));
         LOG.info("asserting threads == 0");
         await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
         LOG.info("done");
