@@ -15,8 +15,10 @@ package org.eclipse.jetty.ee10.websocket.jakarta.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -44,7 +46,6 @@ import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHand
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -63,13 +64,15 @@ import org.slf4j.LoggerFactory;
 public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer implements jakarta.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketClientContainer.class);
-    private static final AtomicReference<ContainerLifeCycle> SHUTDOWN_CONTAINER = new AtomicReference<>();
+    private static final AtomicReference<Map<ClassLoader, ContainerLifeCycle>> SHUTDOWN_MAP = new AtomicReference<>(new ConcurrentHashMap<>());
 
     public static void setShutdownContainer(ContainerLifeCycle container)
     {
-        SHUTDOWN_CONTAINER.set(container);
+        Map<ClassLoader, ContainerLifeCycle> map = SHUTDOWN_MAP.get();
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        map.compute(cl, (k, v) -> container);
         if (LOG.isDebugEnabled())
-            LOG.debug("initialized {} to {}", String.format("%s@%x", SHUTDOWN_CONTAINER.getClass().getSimpleName(), SHUTDOWN_CONTAINER.hashCode()), container);
+            LOG.debug("initialized shutdown map@{} to [{}={}]", SHUTDOWN_MAP.hashCode(), cl, container);
     }
 
     protected WebSocketCoreClient coreClient;
@@ -175,10 +178,8 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         JakartaClientUpgradeRequest upgradeRequest = new JakartaClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
         EndpointConfig config = configuredEndpoint.getConfig();
-        if (config instanceof ClientEndpointConfig)
+        if (config instanceof ClientEndpointConfig clientEndpointConfig)
         {
-            ClientEndpointConfig clientEndpointConfig = (ClientEndpointConfig)config;
-
             JsrUpgradeListener jsrUpgradeListener = new JsrUpgradeListener(clientEndpointConfig.getConfigurator());
             upgradeRequest.addListener(jsrUpgradeListener);
 
@@ -309,27 +310,23 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStart() {}", this);
 
-        // If we are running in Jetty register shutdown with the ContextHandler.
-        if (addToContextHandler())
+        Map<ClassLoader, ContainerLifeCycle> shutdownMap = SHUTDOWN_MAP.get();
+        if (shutdownMap != null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Shutdown registered with ContextHandler");
-            return;
-        }
-
-        // If we are running inside a different ServletContainer we can register with the SHUTDOWN_CONTAINER static.
-        ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
-        if (shutdownContainer != null)
-        {
-            shutdownContainer.addManaged(this);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Shutdown registered with ShutdownContainer {}", shutdownContainer);
-            return;
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            ContainerLifeCycle container = shutdownMap.get(cl);
+            if (container != null)
+            {
+                container.addManaged(this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} registered for Context shutdown to {}", this, container);
+                return;
+            }
         }
 
         ShutdownThread.register(this);
         if (LOG.isDebugEnabled())
-            LOG.debug("Shutdown registered with ShutdownThread");
+            LOG.debug("{} registered for JVM shutdown", this);
     }
 
     protected void doClientStop()
@@ -337,75 +334,27 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStop() {}", this);
 
-        // Remove from context handler if running in Jetty server.
-        removeFromContextHandler();
-
-        // Remove from the Shutdown Container.
-        ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
-        if (shutdownContainer != null && shutdownContainer.contains(this))
+        Map<ClassLoader, ContainerLifeCycle> shutdownMap = SHUTDOWN_MAP.get();
+        if (shutdownMap != null)
         {
-            // Un-manage first as we don't want to call stop again while in STOPPING state.
-            shutdownContainer.unmanage(this);
-            shutdownContainer.removeBean(this);
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            ContainerLifeCycle container = shutdownMap.get(cl);
+            if (container != null)
+            {
+                // As we are already stopping this instance, un-manage first
+                // to avoid that removeBean() stops again this instance.
+                container.unmanage(this);
+                if (container.removeBean(this))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} deregistered for Context shutdown from {}", this, container);
+                    return;
+                }
+            }
         }
 
-        // If not running in a server we need to de-register with the shutdown thread.
         ShutdownThread.deregister(this);
-    }
-
-    private boolean addToContextHandler()
-    {
-        try
-        {
-            Object context = getClass().getClassLoader()
-                .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
-                .getMethod("getCurrentContext")
-                .invoke(null);
-
-            Object contextHandler = context.getClass()
-                .getMethod("getContextHandler")
-                .invoke(context);
-
-            contextHandler.getClass()
-                .getMethod("addManaged", LifeCycle.class)
-                .invoke(contextHandler, this);
-
-            return true;
-        }
-        catch (Throwable throwable)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("error from addToContextHandler() for {}", this, throwable);
-            return false;
-        }
-    }
-
-    private void removeFromContextHandler()
-    {
-        try
-        {
-            Object context = getClass().getClassLoader()
-                .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
-                .getMethod("getCurrentContext")
-                .invoke(null);
-
-            Object contextHandler = context.getClass()
-                .getMethod("getContextHandler")
-                .invoke(context);
-
-            // Un-manage first as we don't want to call stop again while in STOPPING state.
-            contextHandler.getClass()
-                .getMethod("unmanage", Object.class)
-                .invoke(contextHandler, this);
-
-            contextHandler.getClass()
-                .getMethod("removeBean", Object.class)
-                .invoke(contextHandler, this);
-        }
-        catch (Throwable throwable)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("error from removeFromContextHandler() for {}", this, throwable);
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} deregistered for JVM shutdown", this);
     }
 }
