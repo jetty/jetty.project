@@ -470,7 +470,7 @@ public interface HttpURI
         @Override
         public boolean isAmbiguous()
         {
-            return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16_ENCODINGS));
+            return UriCompliance.isAmbiguous(_violations);
         }
 
         @Override
@@ -844,7 +844,7 @@ public interface HttpURI
         @Override
         public boolean isAmbiguous()
         {
-            return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16_ENCODINGS));
+            return UriCompliance.isAmbiguous(_violations);
         }
 
         @Override
@@ -1439,10 +1439,17 @@ public interface HttpURI
             {
                 // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
                 // which are not canonicalized and could be used in an attempt to bypass security checks.
-                _canonicalPath = URIUtil.canonicalPath(_path);
+                _canonicalPath = URIUtil.canonicalPath(_path, this::onBadUtf8);
                 if (_canonicalPath == null)
                     throw new IllegalArgumentException("Bad URI");
             }
+        }
+
+        private RuntimeException onBadUtf8()
+        {
+            // We just remember the violation and return null so nothing is thrown
+            _violations.add(Violation.BAD_UTF8_ENCODING);
+            return null;
         }
 
         /**

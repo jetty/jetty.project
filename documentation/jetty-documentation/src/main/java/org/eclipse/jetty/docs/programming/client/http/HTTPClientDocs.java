@@ -127,7 +127,7 @@ public class HTTPClientDocs
     {
         // tag::tlsNoValidation[]
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        // Disable certificate validation at the TLS level.
+        // Disable the validation of the server host name at the TLS level.
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
         // end::tlsNoValidation[]
     }
@@ -136,7 +136,7 @@ public class HTTPClientDocs
     {
         // tag::tlsAppValidation[]
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        // Only allow subdomains of domain.com.
+        // Only allow to connect to subdomains of domain.com.
         sslContextFactory.setHostnameVerifier((hostName, session) -> hostName.endsWith(".domain.com"));
         // end::tlsAppValidation[]
     }

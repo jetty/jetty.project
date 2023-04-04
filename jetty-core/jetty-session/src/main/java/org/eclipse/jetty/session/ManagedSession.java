@@ -14,8 +14,11 @@
 package org.eclipse.jetty.session;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -43,7 +46,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ManagedSession implements Session
 {
-
     private static final Logger LOG = LoggerFactory.getLogger(ManagedSession.class);
 
     /**
@@ -91,6 +93,7 @@ public class ManagedSession implements Session
     protected Condition _stateChangeCompleted = _lock.newCondition();
     protected boolean _resident = false;
     protected final SessionInactivityTimer _sessionInactivityTimer;
+    private final List<ValueListener> _valueListenerList = new CopyOnWriteArrayList<>();
 
     /**
      * Create a new session object. The session could be an 
@@ -135,7 +138,7 @@ public class ManagedSession implements Session
      */
     public long getRequests()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _requests;
         }
@@ -158,7 +161,7 @@ public class ManagedSession implements Session
      */
     void onSetCookieGenerated()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _sessionData.setCookieSet(_sessionData.getAccessed());
             _needSetCookie = false;
@@ -167,7 +170,7 @@ public class ManagedSession implements Session
 
     protected void use()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _requests++;
 
@@ -180,7 +183,7 @@ public class ManagedSession implements Session
 
     public boolean access(long time)
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (!isValid() || !isResident())
                 return false;
@@ -210,7 +213,7 @@ public class ManagedSession implements Session
 
     void release()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _requests--;
 
@@ -237,7 +240,7 @@ public class ManagedSession implements Session
      */
     public boolean isExpiredAt(long time)
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _sessionData.isExpiredAt(time);
         }
@@ -252,9 +255,9 @@ public class ManagedSession implements Session
     protected boolean isIdleLongerThan(int sec)
     {
         long now = System.currentTimeMillis();
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
-            return ((_sessionData.getAccessed() + (sec * 1000)) <= now);
+            return ((_sessionData.getAccessed() + (sec * 1000L)) <= now);
         }
     }
 
@@ -267,26 +270,20 @@ public class ManagedSession implements Session
      * @param oldValue previous value of the attribute
      * @throws IllegalStateException if no session manager can be find
      */
-    protected void callSessionAttributeListeners(String name, Object newValue, Object oldValue)
+    protected void onSessionAttributeUpdate(String name, Object newValue, Object oldValue)
     {
-        if (newValue == null || !newValue.equals(oldValue))
+        if (!Objects.equals(newValue, oldValue))
         {
-            if (oldValue != null)
-                _manager.callUnboundBindingListener(this, name, oldValue);
-            if (newValue != null)
-                _manager.callBoundBindingListener(this, name, newValue);
-
-            if (_manager == null)
-                throw new IllegalStateException("No session manager for session " + _sessionData.getId());
-
-            _manager.callSessionAttributeListeners(this, name, oldValue, newValue);
+            for (Session.ValueListener listener : _valueListenerList)
+                listener.onSessionAttributeUpdate(this, name, oldValue, newValue);
+            _manager.onSessionAttributeUpdate(this, name, oldValue, newValue);
         }
     }
 
     /**
      * Call the activation listeners. This must be called holding the lock.
      */
-    public void didActivate()
+    public void onSessionActivation()
     {
         //A passivate listener might remove a non-serializable attribute that
         //the activate listener might put back in again, which would spuriously
@@ -298,12 +295,9 @@ public class ManagedSession implements Session
         
         try 
         {
-            for (String name : _sessionData.getKeys())
-            {
-                Object value = _sessionData.getAttribute(name);
-                
-                _manager.callSessionActivationListener(this, name, value);
-            }
+            for (Session.ValueListener listener : _valueListenerList)
+                listener.onSessionActivation(this);
+            _manager.onSessionActivation(this);
         }
         finally
         {
@@ -314,19 +308,17 @@ public class ManagedSession implements Session
     /**
      * Call the passivation listeners. This must be called holding the lock
      */
-    public void willPassivate()
+    public void onSessionPassivation()
     {
-        for (String name : _sessionData.getKeys())
-        {
-            Object value = _sessionData.getAttribute(name);
-            _manager.callSessionPassivationListener(this, name, value);
-        }
+        for (Session.ValueListener listener : _valueListenerList)
+            listener.onSessionPassivation(this);
+        _manager.onSessionPassivation(this);
     }
 
     @Override
     public boolean isValid()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _state == State.VALID;
         }
@@ -334,7 +326,7 @@ public class ManagedSession implements Session
 
     public boolean isInvalidOrInvalidating()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             // TODO review if this can be replaced by !isValid()
             return _state == State.INVALID || _state == State.INVALIDATING;
@@ -343,7 +335,7 @@ public class ManagedSession implements Session
 
     public long getCookieSetTime()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _sessionData.getCookieSet();
         }
@@ -351,7 +343,7 @@ public class ManagedSession implements Session
 
     public long getCreationTime() throws IllegalStateException
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             checkValidForRead();
             return _sessionData.getCreated();
@@ -361,7 +353,7 @@ public class ManagedSession implements Session
     @Override
     public String getId()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _sessionData.getId();
         }
@@ -381,7 +373,7 @@ public class ManagedSession implements Session
     @Override
     public long getLastAccessedTime()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             checkValidForRead();
             return _sessionData.getLastAccessed();
@@ -391,7 +383,7 @@ public class ManagedSession implements Session
     @Override
     public void setMaxInactiveInterval(int secs)
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _sessionData.setMaxInactiveMs((long)secs * 1000L);
             _sessionData.calcAndSetExpiry();
@@ -422,9 +414,9 @@ public class ManagedSession implements Session
      */
     public long calculateInactivityTimeout(long now)
     {
-        long time = 0;
+        long time;
 
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             time = getSessionManager().calculateInactivityTimeout(getId(), _sessionData.getExpiry() - now, _sessionData.getMaxInactiveMs());
         }
@@ -434,7 +426,7 @@ public class ManagedSession implements Session
     @Override
     public int getMaxInactiveInterval()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             long maxInactiveMs = _sessionData.getMaxInactiveMs();
             return (int)(maxInactiveMs < 0 ? -1 : maxInactiveMs / 1000);
@@ -494,7 +486,7 @@ public class ManagedSession implements Session
     @Override
     public Object getAttribute(String name)
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             checkValidForRead();
             return _sessionData.getAttribute(name);
@@ -504,7 +496,7 @@ public class ManagedSession implements Session
     @Override
     public Set<String> getAttributeNameSet()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             checkValidForRead();
             return Collections.unmodifiableSet(_sessionData.getKeys());
@@ -514,24 +506,29 @@ public class ManagedSession implements Session
     @Override
     public Object setAttribute(String name, Object value)
     {
-        Object old = null;
-        try (AutoLock l = _lock.lock())
+        Object old;
+        try (AutoLock ignored = _lock.lock())
         {
             // if session is not valid, don't accept the set
             checkValidForWrite();
+            if (value instanceof Session.ValueListener valueListener)
+                _valueListenerList.add(valueListener);
             old = _sessionData.setAttribute(name, value);
         }
         if (value == null && old == null)
             return null; // if same as remove attribute but attribute was already
         // removed, no change
-        callSessionAttributeListeners(name, value, old);
+        onSessionAttributeUpdate(name, value, old);
         return old;
     }
 
     @Override
     public Object removeAttribute(String name)
     {
-        return setAttribute(name, null);
+        Object value = setAttribute(name, null);
+        if (value instanceof Session.ValueListener valueListener)
+            _valueListenerList.remove(valueListener);
+        return value;
     }
 
     /**
@@ -548,9 +545,9 @@ public class ManagedSession implements Session
         if (response != null && response.isCommitted())
             throw new IllegalStateException("Response committed " + _sessionData.getId());
 
-        String oldId = null;
-        String extendedId = null;
-        try (AutoLock l = _lock.lock())
+        String oldId;
+        String extendedId;
+        try (AutoLock ignored = _lock.lock())
         {
             while (true)
             {
@@ -586,7 +583,7 @@ public class ManagedSession implements Session
 
         String newId = _manager.getSessionIdManager().renewSessionId(oldId, extendedId, request);
 
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             switch (_state)
             {
@@ -645,7 +642,7 @@ public class ManagedSession implements Session
                 try
                 {
                     // do the invalidation
-                    _manager.callSessionDestroyedListeners(this);
+                    _manager.onSessionDestroyed(this);
                 }
                 catch (Exception e)
                 {
@@ -684,7 +681,7 @@ public class ManagedSession implements Session
     {
         boolean result = false;
 
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             while (true)
             {
@@ -742,7 +739,7 @@ public class ManagedSession implements Session
      */
     public void finishInvalidate() throws IllegalStateException
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             try
             {
@@ -750,7 +747,7 @@ public class ManagedSession implements Session
                     LOG.debug("invalidate {}", _sessionData.getId());
                 if (_state == State.VALID || _state == State.INVALIDATING)
                 {
-                    Set<String> keys = null;
+                    Set<String> keys;
                     do
                     {
                         keys = _sessionData.getKeys();
@@ -761,7 +758,7 @@ public class ManagedSession implements Session
                             // already removed, no change
                             if (old == null)
                                 continue;
-                            callSessionAttributeListeners(key, null, old);
+                            onSessionAttributeUpdate(key, null, old);
                         }
                     }
                     while (!keys.isEmpty());
@@ -780,7 +777,7 @@ public class ManagedSession implements Session
     @Override
     public boolean isNew() throws IllegalStateException
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             checkValidForRead();
             return _newSession;
@@ -789,7 +786,7 @@ public class ManagedSession implements Session
 
     public void onIdChanged()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (getSessionManager().isUsingCookies())
                 _needSetCookie = true;
@@ -798,7 +795,7 @@ public class ManagedSession implements Session
 
     public boolean isSetCookieNeeded()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _needSetCookie;
         }
@@ -825,7 +822,7 @@ public class ManagedSession implements Session
     @Override
     public String toString()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return String.format("%s@%x{id=%s,x=%s,req=%d,res=%b}",
                 getClass().getSimpleName(),

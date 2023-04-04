@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * into an HttpSession to remember that the user is authenticated.
  */
 public class SessionAuthentication extends AbstractUserAuthentication
-    implements Serializable
+    implements Serializable, Session.ValueListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionAuthentication.class);
 
@@ -98,21 +98,14 @@ public class SessionAuthentication extends AbstractUserAuthentication
         return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
     }
 
-    /* TODO
-
     @Override
-    public void sessionWillPassivate(HttpSessionEvent se)
+    public void onSessionActivation(Session session)
     {
+        _session = session;
     }
 
     @Override
-    public void sessionDidActivate(HttpSessionEvent se)
+    public void onSessionPassivation(Session session)
     {
-        if (_session == null)
-        {
-            _session = se.getSession();
-        }
     }
-
-     */
 }

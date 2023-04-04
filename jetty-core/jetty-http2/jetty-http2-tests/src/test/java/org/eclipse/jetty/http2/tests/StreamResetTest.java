@@ -85,7 +85,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -455,9 +454,8 @@ public class StreamResetTest extends AbstractTest
 
         // Wait for the server to receive the reset and process
         // it, and for the client to process the window updates.
-        Thread.sleep(1000);
-
-        assertThat(((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
     }
 
     @Test
@@ -585,13 +583,14 @@ public class StreamResetTest extends AbstractTest
     {
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
+            long delay = 1000;
             start(new Handler.Abstract()
             {
                 @Override
                 public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
                     // Wait to let the data sent by the client to be queued.
-                    Thread.sleep(1000);
+                    Thread.sleep(delay);
                     throw new IllegalStateException("explicitly_thrown_by_test");
                 }
             });
@@ -619,9 +618,8 @@ public class StreamResetTest extends AbstractTest
 
             // Wait for the server process the exception, and
             // for the client to process the window updates.
-            Thread.sleep(2000);
-
-            assertThat(((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+            await().atMost(2 * delay, TimeUnit.MILLISECONDS)
+                .until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
         }
     }
 

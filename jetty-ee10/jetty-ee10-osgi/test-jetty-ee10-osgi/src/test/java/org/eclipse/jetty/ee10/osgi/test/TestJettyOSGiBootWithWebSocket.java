@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
-import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;

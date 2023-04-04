@@ -19,7 +19,6 @@ import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 public class Quickstart

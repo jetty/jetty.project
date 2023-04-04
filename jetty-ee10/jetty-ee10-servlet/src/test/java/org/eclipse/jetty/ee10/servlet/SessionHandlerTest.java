@@ -286,8 +286,8 @@ public class SessionHandlerTest
             sessionHandler.setServer(server);
             server.start();
             Session session = new ManagedSession(sessionHandler, new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
-            sessionHandler.callSessionCreatedListeners(session);
-            sessionHandler.callSessionDestroyedListeners(session);
+            sessionHandler.onSessionCreated(session);
+            sessionHandler.onSessionDestroyed(session);
             assertEquals("Listener1 create;Listener2 create;Listener2 destroy;Listener1 destroy;", result.toString());
         }
         finally

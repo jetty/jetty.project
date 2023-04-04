@@ -74,15 +74,29 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
+    public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
+
     /**
      * Get the current Context if any.
      *
      * @return The {@link Context} from a {@link ContextHandler};
-     *         or {@link Server#getContext()} if the current {@link Thread} is not scoped to a {@link ContextHandler}.
+     *         or null if the current {@link Thread} is not scoped to a {@link ContextHandler}.
      */
     public static Context getCurrentContext()
     {
         return __context.get();
+    }
+
+    /**
+     * Get the current Context if any, or else server context if any.
+     * @param server The server.
+     * @return The {@link Context} from a {@link ContextHandler};
+     *         or {@link Server#getContext()} if the current {@link Thread} is not scoped to a {@link ContextHandler}.
+     */
+    public static Context getCurrentContext(Server server)
+    {
+        Context context = __context.get();
+        return context == null ? (server == null ? null : server.getContext()) : context;
     }
 
     public static ContextHandler getCurrentContextHandler()
@@ -537,7 +551,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected void exitScope(Request request, Context lastContext, ClassLoader lastLoader)
     {
         notifyExitScope(request);
-        __context.set(lastContext == null && getServer() != null ? getServer().getContext() : lastContext);
+        __context.set(lastContext);
         Thread.currentThread().setContextClassLoader(lastLoader);
     }
 
@@ -646,9 +660,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (getContextPath() == null)
             throw new IllegalStateException("Null contextPath");
 
-        Server server = getServer();
-        if (server != null)
-            __context.set(server.getContext());
         _availability.set(Availability.STARTING);
         try
         {
@@ -1172,7 +1183,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public String toString()
         {
-            return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+            return "%s@%x".formatted(getClass().getSimpleName(), ContextHandler.this.hashCode());
         }
 
         @Override

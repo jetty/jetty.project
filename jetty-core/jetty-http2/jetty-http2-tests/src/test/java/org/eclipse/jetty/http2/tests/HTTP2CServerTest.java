@@ -148,7 +148,7 @@ public class HTTP2CServerTest extends AbstractServerTest
                     break;
             }
 
-            assertTrue(upgrade.toString().startsWith("HTTP/1.1 101 "));
+            assertTrue(upgrade.toCompleteString().startsWith("HTTP/1.1 101 "));
 
             bufferPool = new ArrayByteBufferPool();
             generator = new Generator(bufferPool);

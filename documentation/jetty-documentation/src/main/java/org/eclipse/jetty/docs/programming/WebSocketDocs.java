@@ -20,20 +20,20 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import org.eclipse.jetty.ee10.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.ee10.websocket.api.Session;
-import org.eclipse.jetty.ee10.websocket.api.StatusCode;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketPingPongListener;
-import org.eclipse.jetty.ee10.websocket.api.WriteCallback;
-import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
+import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 public class WebSocketDocs

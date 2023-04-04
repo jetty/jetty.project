@@ -20,6 +20,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 
 public class PartialStringMessageSink extends AbstractMessageSink
 {
@@ -42,12 +43,14 @@ public class PartialStringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.toString(), true);
+                String complete = out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8"));
+                methodHandle.invoke(complete, true);
                 out = null;
             }
             else
             {
-                methodHandle.invoke(out.takePartialString(), false);
+                String partial = out.takePartialString(() -> new BadPayloadException("Invalid UTF-8"));
+                methodHandle.invoke(partial, false);
             }
 
             callback.succeeded();

@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 
@@ -32,7 +34,7 @@ public class ServletAttributes implements Attributes
 
     ServletAttributes(Attributes attributes)
     {
-        _attributes = attributes;
+        _attributes = new SSLAttributes(attributes);
     }
 
     public void setAsyncAttributes(String requestURI, String contextPath, String pathInContext, ServletPathMapping servletPathMapping, String queryString)
@@ -74,5 +76,41 @@ public class ServletAttributes implements Attributes
     {
         getAttributes().clearAttributes();
         _asyncAttributes = null;
+    }
+
+    private static class SSLAttributes extends Attributes.Wrapper
+    {
+        public SSLAttributes(Attributes wrapped)
+        {
+            super(wrapped);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return switch (name)
+            {
+                case "jakarta.servlet.request.cipher_suite" -> super.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE);
+                case "jakarta.servlet.request.key_size" -> super.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
+                case "jakarta.servlet.request.ssl_session_id" -> super.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE);
+                case "jakarta.servlet.request.X509Certificate" -> super.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+                default -> super.getAttribute(name);
+            };
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+            if (names.contains(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE))
+                names.add("jakarta.servlet.request.cipher_suite");
+            if (names.contains(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE))
+                names.add("jakarta.servlet.request.key_size");
+            if (names.contains(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE))
+                names.add("jakarta.servlet.request.ssl_session_id");
+            if (names.contains(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE))
+                names.add("jakarta.servlet.request.X509Certificate");
+            return names;
+        }
     }
 }

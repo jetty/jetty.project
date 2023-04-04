@@ -135,6 +135,7 @@ public abstract class AbstractSessionCacheTest
         //prefill the datastore with a session that will be treated as unreadable
         UnreadableSessionDataStore store = new UnreadableSessionDataStore(1, new SessionData("1234", "/test", "0.0.0.0", System.currentTimeMillis(), 0, 0, -1));
         cache.setSessionDataStore(store);
+        cache.setRemoveUnloadableSessions(true);
         sessionManager.setSessionCache(cache);
         server.addBean(sessionManager);
         sessionManager.setServer(server);

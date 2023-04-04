@@ -34,7 +34,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.session.FileSessionDataStoreFactory;
-import org.eclipse.jetty.session.SimpleSessionHandler;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -80,7 +80,7 @@ public class OpenIdAuthenticationTest
         // Configure Contexts.
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         securityHandler.setHandler(contexts);
-        SimpleSessionHandler sessionHandler = new SimpleSessionHandler();
+        SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setHandler(securityHandler);
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setHandler(sessionHandler);

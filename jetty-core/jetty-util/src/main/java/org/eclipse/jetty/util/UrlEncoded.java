@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -329,8 +330,7 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.toReplacedString();
-                    buffer.reset();
+                    value = buffer.takeCompleteString(() -> new IllegalArgumentException("Invalid value: Bad UTF-8"));
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -348,8 +348,7 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.toReplacedString();
-                    buffer.reset();
+                    key = buffer.takeCompleteString(() -> new IllegalArgumentException("Invalid key: Bad UTF-8"));
                     break;
 
                 case '+':
@@ -365,7 +364,7 @@ public class UrlEncoded
                     }
                     else
                     {
-                        throw new Utf8Appendable.NotUtf8Exception("Incomplete % encoding");
+                        throw new IllegalArgumentException("Incomplete % encoding");
                     }
                     break;
 
@@ -377,13 +376,12 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.toReplacedString();
-            buffer.reset();
+            value = buffer.takeCompleteString(() -> new IllegalArgumentException("Invalid value: Bad UTF-8"));
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)
         {
-            adder.accept(buffer.toReplacedString(), "");
+            adder.accept(buffer.toCompleteString(), "");
         }
     }
 
@@ -489,7 +487,7 @@ public class UrlEncoded
             switch ((char)b)
             {
                 case '&':
-                    value = buffer.toReplacedString();
+                    value = buffer.toCompleteString();
                     buffer.reset();
                     if (key != null)
                     {
@@ -509,7 +507,7 @@ public class UrlEncoded
                         buffer.append((byte)b);
                         break;
                     }
-                    key = buffer.toReplacedString();
+                    key = buffer.toCompleteString();
                     buffer.reset();
                     break;
 
@@ -532,13 +530,13 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.toReplacedString();
+            value = buffer.toCompleteString();
             buffer.reset();
             map.add(key, value);
         }
         else if (buffer.length() > 0)
         {
-            map.add(buffer.toReplacedString(), "");
+            map.add(buffer.toCompleteString(), "");
         }
         checkMaxKeys(map, maxKeys);
     }
@@ -709,7 +707,7 @@ public class UrlEncoded
     {
         if (charset == null || StandardCharsets.UTF_8.equals(charset))
         {
-            Utf8StringBuffer buffer = null;
+            Utf8StringBuilder buffer = null;
 
             for (int i = 0; i < length; i++)
             {
@@ -718,28 +716,28 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new Utf8StringBuffer(length);
-                        buffer.getStringBuffer().append(encoded, offset, offset + i + 1);
+                        buffer = new Utf8StringBuilder(length);
+                        buffer.append(encoded, offset, i + 1);
                     }
                     else
-                        buffer.getStringBuffer().append(c);
+                        buffer.append(c);
                 }
                 else if (c == '+')
                 {
                     if (buffer == null)
                     {
-                        buffer = new Utf8StringBuffer(length);
-                        buffer.getStringBuffer().append(encoded, offset, offset + i);
+                        buffer = new Utf8StringBuilder(length);
+                        buffer.append(encoded, offset, i);
                     }
 
-                    buffer.getStringBuffer().append(' ');
+                    buffer.append(' ');
                 }
                 else if (c == '%')
                 {
                     if (buffer == null)
                     {
-                        buffer = new Utf8StringBuffer(length);
-                        buffer.getStringBuffer().append(encoded, offset, offset + i);
+                        buffer = new Utf8StringBuilder(length);
+                        buffer.append(encoded, offset, i);
                     }
 
                     if ((i + 2) < length)
@@ -751,12 +749,12 @@ public class UrlEncoded
                     }
                     else
                     {
-                        buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT);
+                        buffer.append(Utf8StringBuilder.REPLACEMENT);
                         i = length;
                     }
                 }
                 else if (buffer != null)
-                    buffer.getStringBuffer().append(c);
+                    buffer.append(c);
             }
 
             if (buffer == null)
@@ -766,11 +764,11 @@ public class UrlEncoded
                 return encoded.substring(offset, offset + length);
             }
 
-            return buffer.toReplacedString();
+            return buffer.toCompleteString();
         }
         else
         {
-            StringBuffer buffer = null;
+            CharsetStringBuilder buffer = null;
 
             for (int i = 0; i < length; i++)
             {
@@ -779,8 +777,8 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new StringBuffer(length);
-                        buffer.append(encoded, offset, offset + i + 1);
+                        buffer = CharsetStringBuilder.forCharset(charset);
+                        buffer.append(encoded, offset, i + 1);
                     }
                     else
                         buffer.append(c);
@@ -789,8 +787,8 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new StringBuffer(length);
-                        buffer.append(encoded, offset, offset + i);
+                        buffer = CharsetStringBuilder.forCharset(charset);
+                        buffer.append(encoded, offset, i);
                     }
 
                     buffer.append(' ');
@@ -799,8 +797,8 @@ public class UrlEncoded
                 {
                     if (buffer == null)
                     {
-                        buffer = new StringBuffer(length);
-                        buffer.append(encoded, offset, offset + i);
+                        buffer = CharsetStringBuilder.forCharset(charset);
+                        buffer.append(encoded, offset, i);
                     }
 
                     byte[] ba = new byte[length];
@@ -839,7 +837,8 @@ public class UrlEncoded
                     }
 
                     i--;
-                    buffer.append(new String(ba, 0, n, charset));
+                    String s = new String(ba, 0, n, charset);
+                    buffer.append(s, 0, s.length());
                 }
                 else if (buffer != null)
                     buffer.append(c);
@@ -852,7 +851,14 @@ public class UrlEncoded
                 return encoded.substring(offset, offset + length);
             }
 
-            return buffer.toString();
+            try
+            {
+                return buffer.build();
+            }
+            catch (CharacterCodingException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 

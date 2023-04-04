@@ -13,6 +13,7 @@
     <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->

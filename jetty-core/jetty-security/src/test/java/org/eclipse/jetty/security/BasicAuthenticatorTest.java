@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.session.SimpleSessionHandler;
+import org.eclipse.jetty.session.SessionHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ public class BasicAuthenticatorTest
     private Server _server;
     private LocalConnector _connector;
     private LocalConnector _connectorS;
-    private SimpleSessionHandler _sessionHandler;
+    private SessionHandler _sessionHandler;
     private SecurityHandler.Mapped _securityHandler;
 
     @BeforeEach
@@ -85,7 +85,7 @@ public class BasicAuthenticatorTest
         _server.setConnectors(new Connector[]{_connector, _connectorS});
 
         ContextHandler contextHandler = new ContextHandler();
-        _sessionHandler = new SimpleSessionHandler();
+        _sessionHandler = new SessionHandler();
 
         contextHandler.setContextPath("/ctx");
         _server.setHandler(contextHandler);

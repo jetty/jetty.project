@@ -18,7 +18,6 @@ import java.util.Collection;
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.ee9.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.ConfigurableSpnegoAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.DigestAuthenticator;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
  * <li>{@link BasicAuthenticator}</li>
  * <li>{@link DigestAuthenticator}</li>
  * <li>{@link FormAuthenticator}</li>
- * <li>{@link ClientCertAuthenticator}</li>
  * <li>{@link SslClientCertAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link LoginAuthenticator} are
@@ -54,10 +52,9 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultAuthenticatorFactory implements Authenticator.Factory
 {
-
     private static final Logger LOG = LoggerFactory.getLogger(DefaultAuthenticatorFactory.class);
 
-    LoginService _loginService;
+    private LoginService _loginService;
 
     @Override
     public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
@@ -77,18 +74,13 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
             authenticator = new ConfigurableSpnegoAuthenticator(Constraint.__NEGOTIATE_AUTH);
         if (Constraint.__CERT_AUTH.equalsIgnoreCase(auth) || Constraint.__CERT_AUTH2.equalsIgnoreCase(auth))
         {
-            Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
+            Collection<SslContextFactory.Server> sslContextFactories = server.getBeans(SslContextFactory.Server.class);
             if (sslContextFactories.size() != 1)
             {
                 if (sslContextFactories.size() > 1)
-                {
-                    LOG.info("Multiple SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
-                }
+                    LOG.info("Multiple SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
                 else
-                {
-                    LOG.debug("No SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
-                }
-                authenticator = new ClientCertAuthenticator();
+                    LOG.debug("No SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
             }
             else
             {

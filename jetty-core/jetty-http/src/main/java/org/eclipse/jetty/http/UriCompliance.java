@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
+import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
 
@@ -69,7 +70,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow UTF-16 encoding eg <code>/foo%u2192bar</code>.
          */
-        UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding");
+        UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF-16 encoding"),
+        /**
+         * Allow Bad UTF-8 encodings to be substituted by the replacement character.
+         */
+        BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding");
 
         private final String _url;
         private final String _description;
@@ -99,7 +104,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
         }
     }
 
-    public static final Set<Violation> AMBIGUOUS_VIOLATIONS = EnumSet.of(
+    public static final EnumSet<Violation> AMBIGUOUS_VIOLATIONS = EnumSet.of(
         Violation.AMBIGUOUS_EMPTY_SEGMENT,
         Violation.AMBIGUOUS_PATH_ENCODING,
         Violation.AMBIGUOUS_PATH_PARAMETER,
@@ -111,6 +116,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * excluding all URI Violations.
      */
     public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", noneOf(Violation.class));
+
+    /**
+     * Compliance mode that allows all unambiguous violations.
+     */
+    public static final UriCompliance UNAMBIGUOUS = new UriCompliance("UNAMBIGUOUS", complementOf(AMBIGUOUS_VIOLATIONS));
 
     /**
      * The default compliance mode allows no violations from <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
@@ -136,7 +146,17 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
     private static final AtomicInteger __custom = new AtomicInteger();
-    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, UNSAFE);
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
+
+    public static boolean isAmbiguous(EnumSet<Violation> violations)
+    {
+        if (violations.isEmpty())
+            return false;
+        for (Violation v : AMBIGUOUS_VIOLATIONS)
+            if (violations.contains(v))
+                return true;
+        return false;
+    }
 
     public static UriCompliance valueOf(String name)
     {
