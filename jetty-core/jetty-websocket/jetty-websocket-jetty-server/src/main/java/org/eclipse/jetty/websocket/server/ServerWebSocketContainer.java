@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * URI paths to WebSocket endpoints and configure WebSocket parameters such as idle timeouts,
  * max WebSocket message sizes, etc.</p>
  */
-public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy
+public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerWebSocketContainer.class);
 
@@ -56,6 +57,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     private final Configuration configuration = new Configuration();
     private final WebSocketMappings mappings;
     private final FrameHandlerFactory factory;
+    private InvocationType invocationType = InvocationType.BLOCKING;
 
     public ServerWebSocketContainer(WebSocketMappings mappings)
     {
@@ -265,6 +267,33 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
             callback.failed(x);
             return true;
         }
+    }
+
+    /**
+     * @return the invocation type, typically blocking or non-blocking, of this container
+     * @see #setInvocationType(InvocationType)
+     */
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return invocationType;
+    }
+
+    /**
+     * <p>Sets the invocation type of this container.</p>
+     * <p>The invocation type may be set to {@link InvocationType#NON_BLOCKING} when
+     * it is known that application code in the listener methods or annotated methods
+     * of the WebSocket endpoint does not use blocking APIs.</p>
+     * <p>Setting the invocation type to {@link InvocationType#NON_BLOCKING}, but then
+     * use blocking APIs in the WebSocket endpoint may result in a server lockup.</p>
+     * <p>By default {@link InvocationType#BLOCKING} is returned, assuming that
+     * application code in the WebSocket endpoint uses blocking APIs.</p>
+     *
+     * @param invocationType the invocation type of this container
+     */
+    public void setInvocationType(InvocationType invocationType)
+    {
+        this.invocationType = invocationType;
     }
 
     private static class Configuration extends org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer implements WebSocketPolicy

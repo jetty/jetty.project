@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
@@ -120,9 +121,10 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     @Override
     public InvocationType getInvocationType()
     {
-        // Must be BLOCKING because EndPoint.upgrade() ends up invoking
-        // application code in the WebSocket "connect" event handler,
-        // e.g. a method annotated with @OnWebSocketConnect, that may block.
-        return InvocationType.BLOCKING;
+        if (isDynamic())
+            return InvocationType.BLOCKING;
+        Handler handler = getHandler();
+        InvocationType result = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
+        return Invocable.combine(result, container.getInvocationType());
     }
 }
