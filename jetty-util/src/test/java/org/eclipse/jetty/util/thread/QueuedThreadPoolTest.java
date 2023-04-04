@@ -27,11 +27,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.logging.JettyLevel;
+import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,6 +226,22 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         }
     }
 
+    @BeforeEach
+    public void setUp()
+    {
+
+        JettyLogger logger = (JettyLogger)LoggerFactory.getLogger(QueuedThreadPool.class);
+        logger.setLevel(JettyLevel.DEBUG);
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+
+        JettyLogger logger = (JettyLogger)LoggerFactory.getLogger(QueuedThreadPool.class);
+        logger.setLevel(JettyLevel.INFO);
+    }
+
     @Test
     public void testThreadPool() throws Exception
     {
@@ -234,8 +254,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.start();
 
         // min threads started
-        waitForThreads(tp, 2);
-        waitForIdle(tp, 2);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(2));
 
         // Doesn't shrink to less than min threads
         Thread.sleep(3L * tp.getIdleTimeout() / 2);
@@ -300,10 +320,15 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(tp.getQueueSize(), is(0));
 
         // finish job 1, and its thread will become idle and then shrink
+        LOG.info("counting down");
         job1._stopping.countDown();
+        LOG.info("awaiting");
         assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
-        waitForIdle(tp, 0);
-        waitForThreads(tp, 3);
+        LOG.info("asserting idle threads == 0");
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
+        LOG.info("asserting threads == 0");
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
+        LOG.info("done");
 
         // finish job 2,3,4
         job2._stopping.countDown();
@@ -322,7 +347,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(tp.getIdleTimeout() / 4);
 
         // Now we have 3 idle threads.
-        waitForIdle(tp, 3);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(3));
         assertThat(tp.getThreads(), is(3));
 
         tp.stop();
@@ -342,40 +367,40 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             tp.start();
 
             // min threads started
-            waitForThreads(tp, 2);
-            waitForIdle(tp, 2);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(2));
 
             // Doesn't shrink to less than min threads
             Thread.sleep(3L * tp.getIdleTimeout() / 2);
-            waitForThreads(tp, 2);
-            waitForIdle(tp, 2);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(2));
 
             // Run job0
             RunningJob job0 = new RunningJob("JOB0", true);
             tp.execute(job0);
             assertTrue(job0._run.await(10, TimeUnit.SECONDS));
-            waitForIdle(tp, 1);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(1));
 
             // Run job1
             RunningJob job1 = new RunningJob("JOB1", true);
             tp.execute(job1);
             assertTrue(job1._run.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 2);
-            waitForIdle(tp, 0);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
 
             // Run job2
             RunningJob job2 = new RunningJob("JOB2", true);
             tp.execute(job2);
             assertTrue(job2._run.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 3);
-            waitForIdle(tp, 0);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
 
             // Run job3
             RunningJob job3 = new RunningJob("JOB3", true);
             tp.execute(job3);
             assertTrue(job3._run.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 4);
-            waitForIdle(tp, 0);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(4));
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
             assertThat(tp.getIdleThreads(), is(0));
             Thread.sleep(100);
             assertThat(tp.getIdleThreads(), is(0));
@@ -397,7 +422,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             // finish job 1
             job1._stopping.countDown();
             assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 3);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
             assertThat(tp.getIdleThreads(), is(0));
 
             // finish job 2,3,4
@@ -408,8 +433,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             assertTrue(job3._stopped.await(10, TimeUnit.SECONDS));
             assertTrue(job4._stopped.await(10, TimeUnit.SECONDS));
 
-            waitForIdle(tp, 2);
-            waitForThreads(tp, 2);
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(2));
+            await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
         }
 
         tp.stop();
@@ -440,15 +465,15 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job2._run.await(5, TimeUnit.SECONDS));
         assertTrue(job3._run.await(5, TimeUnit.SECONDS));
 
-        waitForThreads(tp, 3);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
         assertThat(tp.getIdleThreads(), is(0));
 
         job1._stopping.countDown();
         assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
-        waitForIdle(tp, 1);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(1));
         assertThat(tp.getThreads(), is(3));
 
-        waitForIdle(tp, 0);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
         assertThat(tp.getThreads(), is(2));
 
         RunningJob job4 = new RunningJob();
@@ -471,8 +496,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.start();
 
         // min threads started
-        waitForThreads(tp, 1);
-        waitForIdle(tp, 1);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(1));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(1));
 
         // Run job0 and job1
         RunningJob job0 = new RunningJob();
@@ -489,8 +514,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.execute(job4);
 
         // Wait until the first 2 start running
-        waitForThreads(tp, 2);
-        waitForIdle(tp, 0);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
         assertTrue(job0._run.await(200, TimeUnit.MILLISECONDS));
         assertTrue(job1._run.await(200, TimeUnit.MILLISECONDS));
 
@@ -534,8 +559,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
 
         tp.start();
-        waitForIdle(tp, 2);
-        waitForThreads(tp, 2);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(2));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
 
         sleep.set(200);
         tp.execute(job);
@@ -545,8 +570,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             tp.execute(job);
         }
 
-        waitForThreads(tp, 10);
-        waitForIdle(tp, 0);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(10));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
 
         sleep.set(5);
         for (int i = 0; i < 500; i++)
@@ -554,8 +579,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             tp.execute(job);
             Thread.sleep(10);
         }
-        waitForThreads(tp, 2);
-        waitForIdle(tp, 2);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(2));
         tp.stop();
     }
 
@@ -583,15 +608,15 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
 
         tp.start();
-        waitForIdle(tp, 2);
-        waitForThreads(tp, 2);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(2));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(2));
 
         for (int i = 0; i < 10; i++)
         {
             tp.execute(job);
         }
 
-        waitForThreads(tp, 10);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(10));
         int threads = tp.getThreads();
         // let the jobs run
         latch.countDown();
@@ -628,8 +653,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
 
         tp.start();
-        waitForIdle(tp, 2);
-        waitForThreads(tp, 2);
+        await().atMost(10, TimeUnit.SECONDS).until(((QueuedThreadPool)tp)::getIdleThreads, is(2));
+        await().atMost(10, TimeUnit.SECONDS).until(((QueuedThreadPool)tp)::getThreads, is(2));
 
         RunningJob job1 = new RunningJob();
         RunningJob job2 = new RunningJob();
@@ -638,14 +663,14 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.execute(job2);
         tp.execute(job3);
 
-        waitForThreads(tp, 3);
-        waitForIdle(tp, 0);
+        await().atMost(10, TimeUnit.SECONDS).until(((QueuedThreadPool)tp)::getThreads, is(3));
+        await().atMost(10, TimeUnit.SECONDS).until(((QueuedThreadPool)tp)::getIdleThreads, is(0));
 
         // We stop job3, the thread becomes idle, thread decides to shrink, and then blocks in removeThread().
         job3.stop();
         assertTrue(enteredRemoveThread.await(5, TimeUnit.SECONDS));
-        waitForThreads(tp, 3);
-        waitForIdle(tp, 1);
+        await().atMost(10, TimeUnit.SECONDS).until(((QueuedThreadPool)tp)::getThreads, is(3));
+        await().atMost(10, TimeUnit.SECONDS).until(((QueuedThreadPool)tp)::getIdleThreads, is(1));
 
         // Executing job4 will not start a new thread because we already have 1 idle thread.
         RunningJob job4 = new RunningJob();
@@ -696,55 +721,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(tp.isStopped());
         assertTrue(NanoTime.millisElapsed(beforeStop, afterStop) < 1000);
         assertTrue(interruptedLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    private void waitForIdle(QueuedThreadPool tp, int idle)
-    {
-        long start = NanoTime.now();
-        while (tp.getIdleThreads() != idle && NanoTime.millisSince(start) < 10000)
-        {
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException ignored)
-            {
-            }
-        }
-        assertThat(tp.getIdleThreads(), is(idle));
-    }
-
-    private void waitForReserved(QueuedThreadPool tp, int reserved)
-    {
-        long start = NanoTime.now();
-        ReservedThreadExecutor reservedThreadExecutor = tp.getBean(ReservedThreadExecutor.class);
-        while (reservedThreadExecutor.getAvailable() != reserved && NanoTime.millisSince(start) < 10000)
-        {
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException ignored)
-            {
-            }
-        }
-        assertThat(reservedThreadExecutor.getAvailable(), is(reserved));
-    }
-
-    private void waitForThreads(QueuedThreadPool tp, int threads)
-    {
-        long start = NanoTime.now();
-        while (tp.getThreads() != threads && NanoTime.millisSince(start) < 10000)
-        {
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException ignored)
-            {
-            }
-        }
-        assertThat(tp.getThreads(), is(threads));
     }
 
     @Test
@@ -837,7 +813,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(dump, containsString("[NO_TRY]"));
 
         pool.start();
-        waitForIdle(pool, 3);
+        await().atMost(10, TimeUnit.SECONDS).until(pool::getIdleThreads, is(3));
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
@@ -885,7 +861,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertFalse(pool.tryExecute(() ->
         {
         }));
-        waitForReserved(pool, 1);
+        await().atMost(10, TimeUnit.SECONDS).until(pool.getBean(ReservedThreadExecutor.class)::getAvailable, is(1));
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
@@ -1118,8 +1094,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setMaxEvictCount(evictCount);
         tp.start();
 
-        waitForThreads(tp, minThreads);
-        waitForIdle(tp, minThreads);
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(minThreads));
+        await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(minThreads));
 
         RunningJob[] jobs = new RunningJob[maxThreads];
         for (int i = 0; i < jobs.length; i++)
