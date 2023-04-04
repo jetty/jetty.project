@@ -300,19 +300,14 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(tp.getQueueSize(), is(0));
 
         // finish job 1, and its thread will become idle and then shrink
-        LOG.info("counting down");
         job1._stopping.countDown();
-        LOG.info("awaiting");
         assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
-        LOG.info("asserting idle threads == 0");
         await().atMost(10, TimeUnit.SECONDS).until(() ->
         {
             LOG.info(tp.toString());
             return tp.getIdleThreads();
         }, is(0));
-        LOG.info("asserting threads == 0");
         await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
-        LOG.info("done");
 
         // finish job 2,3,4
         job2._stopping.countDown();
