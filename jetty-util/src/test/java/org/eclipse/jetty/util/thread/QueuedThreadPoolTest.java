@@ -318,8 +318,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
                 {
                     LOG.info(timeoutEvent.getDescription() + " " + tp);
                 }
-            }).
-            await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
+            }).await().atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(0));
         await().atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(3));
 
         // finish job 2,3,4
