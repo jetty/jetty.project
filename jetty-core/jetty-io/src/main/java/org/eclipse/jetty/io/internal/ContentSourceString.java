@@ -61,7 +61,7 @@ public class ContentSourceString
     {
         try
         {
-            String result = text.takeString();
+            String result = text.build();
             promise.succeeded(result);
         }
         catch (Throwable x)

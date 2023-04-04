@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -329,6 +330,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     }
 
     @Test
+    @Tag("flaky")
     public void testThreadPoolFailingJobs() throws Exception
     {
         QueuedThreadPool tp = new QueuedThreadPool();

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 public class InvalidURIRule extends Rule
 {
     private static final Logger LOG = LoggerFactory.getLogger(InvalidURIRule.class);
+    private static final int REPLACEMENT_CHAR_CODEPOINT = 65533; // UTF-8 Replacement Char as codepoint
 
     private int _code = HttpStatus.BAD_REQUEST_400;
     private String _message = "Illegal URI";
@@ -118,6 +119,9 @@ public class InvalidURIRule extends Rule
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
+
+        if (codepoint == REPLACEMENT_CHAR_CODEPOINT)
+            return false;
 
         return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);
     }

@@ -28,9 +28,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -412,7 +412,7 @@ public final class URIUtil
                 ret.append(c);
             }
         }
-        return ret.toString();
+        return ret.toCompleteString();
     }
 
     /**
@@ -547,16 +547,12 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.toString();
+            {
+                return builder.toCompleteString();
+            }
             if (offset == 0 && length == path.length())
                 return path;
             return path.substring(offset, end);
-        }
-        catch (NotUtf8Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
-            return decodeISO88591Path(path, offset, length);
         }
         catch (IllegalArgumentException e)
         {
@@ -668,176 +664,94 @@ public final class URIUtil
      */
     public static String canonicalPath(String encodedPath)
     {
-        if (encodedPath == null)
-            return null;
-        try
-        {
-
-            Utf8StringBuilder builder = null;
-            int end = encodedPath.length();
-            boolean slash = true;
-            boolean normal = true;
-            for (int i = 0; i < end; i++)
-            {
-                char c = encodedPath.charAt(i);
-                switch (c)
-                {
-                    case '%':
-                        if (builder == null)
-                        {
-                            builder = new Utf8StringBuilder(encodedPath.length());
-                            builder.append(encodedPath, 0, i);
-                        }
-                        if ((i + 2) < end)
-                        {
-                            char u = encodedPath.charAt(i + 1);
-                            if (u == 'u')
-                            {
-                                // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
-                                int code = TypeUtil.parseInt(encodedPath, i + 2, 4, 16);
-                                if (isSafeElseEncode(code, builder))
-                                {
-                                    char[] chars = Character.toChars(code);
-                                    for (char ch : chars)
-                                    {
-                                        builder.append(ch);
-                                        if (slash && ch == '.')
-                                            normal = false;
-                                        slash = false;
-                                    }
-                                }
-                                i += 5;
-                            }
-                            else
-                            {
-                                int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(encodedPath.charAt(i + 2));
-                                if (isSafeElseEncode(code, builder))
-                                {
-                                    builder.append((byte)(0xff & code));
-                                    if (slash && code == '.')
-                                        normal = false;
-                                }
-                                i += 2;
-                            }
-                        }
-                        else
-                        {
-                            throw new IllegalArgumentException("Bad URI % encoding");
-                        }
-                        break;
-
-                    case ';':
-                        if (builder == null)
-                        {
-                            builder = new Utf8StringBuilder(encodedPath.length());
-                            builder.append(encodedPath, 0, i);
-                        }
-
-                        while (++i < end)
-                        {
-                            if (encodedPath.charAt(i) == '/')
-                            {
-                                builder.append('/');
-                                break;
-                            }
-                        }
-                        break;
-
-                    case '/':
-                        if (builder != null)
-                            builder.append(c);
-                        break;
-
-                    case '.':
-                        if (slash)
-                            normal = false;
-                        if (builder != null)
-                            builder.append(c);
-                        break;
-
-                    default:
-                        if (builder == null && !isSafe(c))
-                        {
-                            builder = new Utf8StringBuilder(encodedPath.length());
-                            builder.append(encodedPath, 0, i);
-                        }
-
-                        if (builder != null && isSafeElseEncode(c, builder))
-                            builder.append(c);
-                        break;
-                }
-
-                slash = c == '/';
-            }
-
-            String canonical = (builder != null) ? builder.toString() : encodedPath;
-            return normal ? canonical : normalizePath(canonical);
-        }
-        catch (NotUtf8Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} {}", encodedPath, e.toString());
-            throw e;
-        }
-        catch (IllegalArgumentException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new IllegalArgumentException("cannot decode URI", e);
-        }
+        return canonicalPath(encodedPath, null);
     }
 
     /**
-     * Decode a URI path and strip parameters of ISO-8859-1 path
+     * Canonicalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * <p>
+     * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
+     * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
+     * Unsafe characters, other than '{@code /}' will be encoded.  Encodings will be uppercase hex.
+     * Canonical paths are also normalized and may be used in string comparisons with other canonical paths.
+     * <p>
+     * For example the path {@code /fo %2fo/b%61r} will be normalized to {@code /fo%20%2Fo/bar},
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal {@code /fo /o/bar}.
+     * @param encodedPath An encoded URI path
+     * @param onBadUtf8 A supplier of exceptions if bad UTF8 is encountered, or null for no exception thrown.
+     * @return the canonical path or null if it is non-normal
+     * @see #decodePath(String)
+     * @see #normalizePath(String)
+     * @see URI
      */
-    private static String decodeISO88591Path(String path, int offset, int length)
+    public static <X extends Throwable> String canonicalPath(String encodedPath, Supplier<X> onBadUtf8) throws X
     {
-        StringBuilder builder = null;
-        int end = offset + length;
-        for (int i = offset; i < end; i++)
+        if (encodedPath == null)
+            return null;
+
+        Utf8StringBuilder builder = null;
+        int end = encodedPath.length();
+        boolean slash = true;
+        boolean normal = true;
+        for (int i = 0; i < end; i++)
         {
-            char c = path.charAt(i);
+            char c = encodedPath.charAt(i);
             switch (c)
             {
                 case '%':
                     if (builder == null)
                     {
-                        builder = new StringBuilder(path.length());
-                        builder.append(path, offset, i - offset);
+                        builder = new Utf8StringBuilder(encodedPath.length());
+                        builder.append(encodedPath, 0, i);
                     }
                     if ((i + 2) < end)
                     {
-                        char u = path.charAt(i + 1);
+                        char u = encodedPath.charAt(i + 1);
                         if (u == 'u')
                         {
                             // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
-                            builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
+                            int code = TypeUtil.parseInt(encodedPath, i + 2, 4, 16);
+                            if (isSafeElseEncode(code, builder))
+                            {
+                                char[] chars = Character.toChars(code);
+                                for (char ch : chars)
+                                {
+                                    builder.append(ch);
+                                    if (slash && ch == '.')
+                                        normal = false;
+                                    slash = false;
+                                }
+                            }
                             i += 5;
                         }
                         else
                         {
-                            builder.append((char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
+                            int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(encodedPath.charAt(i + 2));
+                            if (isSafeElseEncode(code, builder))
+                            {
+                                builder.append((byte)(0xff & code));
+                                if (slash && code == '.')
+                                    normal = false;
+                            }
                             i += 2;
                         }
                     }
                     else
                     {
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException("Bad URI % encoding");
                     }
-
                     break;
 
                 case ';':
                     if (builder == null)
                     {
-                        builder = new StringBuilder(path.length());
-                        builder.append(path, offset, i - offset);
+                        builder = new Utf8StringBuilder(encodedPath.length());
+                        builder.append(encodedPath, 0, i);
                     }
+
                     while (++i < end)
                     {
-                        if (path.charAt(i) == '/')
+                        if (encodedPath.charAt(i) == '/')
                         {
                             builder.append('/');
                             break;
@@ -845,18 +759,37 @@ public final class URIUtil
                     }
                     break;
 
-                default:
+                case '/':
                     if (builder != null)
                         builder.append(c);
                     break;
+
+                case '.':
+                    if (slash)
+                        normal = false;
+                    if (builder != null)
+                        builder.append(c);
+                    break;
+
+                default:
+                    if (builder == null && !isSafe(c))
+                    {
+                        builder = new Utf8StringBuilder(encodedPath.length());
+                        builder.append(encodedPath, 0, i);
+                    }
+
+                    if (builder != null && isSafeElseEncode(c, builder))
+                        builder.append(c);
+                    break;
             }
+
+            slash = c == '/';
         }
 
-        if (builder != null)
-            return builder.toString();
-        if (offset == 0 && length == path.length())
-            return path;
-        return path.substring(offset, end);
+        String canonical = (builder != null)
+            ? (onBadUtf8 == null ? builder.toCompleteString() : builder.takeCompleteString(onBadUtf8))
+            : encodedPath;
+        return normal ? canonical : normalizePath(canonical);
     }
 
     /**
@@ -1624,7 +1557,7 @@ public final class URIUtil
             }
 
             if (builder != null)
-                return builder.toString();
+                return builder.toCompleteString();
             return path;
         }
         catch (IllegalArgumentException e)

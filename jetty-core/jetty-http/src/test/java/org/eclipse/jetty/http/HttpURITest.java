@@ -476,6 +476,9 @@ public class HttpURITest
                 {"/path/%25../info", "/path/%25../info", "/path/%../info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
                 {"/path/%u0025../info", "/path/%25../info", "/path/%../info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING, Violation.UTF16_ENCODINGS)},
 
+                // bad utf8
+                {"/path/%C0%AF/info", "/path/��/info", "/path/��/info", EnumSet.of(Violation.BAD_UTF8_ENCODING)},
+
                 // combinations
                 {"/path/%2f/..;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER)},
                 {"/path/%u002f/..;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER, Violation.UTF16_ENCODINGS)},
@@ -500,7 +503,7 @@ public class HttpURITest
             assertThat("Decoded Path", uri.getDecodedPath(), is(decodedPath));
 
             EnumSet<Violation> ambiguous = EnumSet.copyOf(expected);
-            ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS)));
+            ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS, Violation.BAD_UTF8_ENCODING)));
 
             assertThat(uri.isAmbiguous(), is(!ambiguous.isEmpty()));
             assertThat(uri.hasAmbiguousSegment(), is(ambiguous.contains(Violation.AMBIGUOUS_PATH_SEGMENT)));

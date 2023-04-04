@@ -114,6 +114,8 @@ public class ServletContextRequest extends ContextRequest
     {
         if (getHttpURI().hasViolations() && !getServletChannel().getContextHandler().getServletHandler().isDecodeAmbiguousURIs())
         {
+            // TODO we should check if current compliance mode allows all the violations?
+
             for (UriCompliance.Violation violation : getHttpURI().getViolations())
             {
                 if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))

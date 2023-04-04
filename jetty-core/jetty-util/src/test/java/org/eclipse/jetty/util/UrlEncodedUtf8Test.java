@@ -34,7 +34,7 @@ public class UrlEncodedUtf8Test
     {
         byte[] bytes = {97, 98, 61, 99, -50};
         String test = new String(bytes, StandardCharsets.UTF_8);
-        String expected = "c" + Utf8Appendable.REPLACEMENT;
+        String expected = "c" + Utf8StringBuilder.REPLACEMENT;
 
         fromString(test, test, "ab", expected, false);
         fromInputStream(test, bytes, "ab", expected, false);
@@ -45,7 +45,7 @@ public class UrlEncodedUtf8Test
     {
         byte[] bytes = {97, 98, 61, -50};
         String test = new String(bytes, StandardCharsets.UTF_8);
-        String expected = "" + Utf8Appendable.REPLACEMENT;
+        String expected = "" + Utf8StringBuilder.REPLACEMENT;
 
         fromString(test, test, "ab", expected, false);
         fromInputStream(test, bytes, "ab", expected, false);
@@ -56,7 +56,7 @@ public class UrlEncodedUtf8Test
     {
         byte[] bytes = {101, -50, 61, 102, 103, 38, 97, 98, 61, 99, 100};
         String test = new String(bytes, StandardCharsets.UTF_8);
-        String name = "e" + Utf8Appendable.REPLACEMENT;
+        String name = "e" + Utf8StringBuilder.REPLACEMENT;
         String value = "fg";
 
         fromString(test, test, name, value, false);
@@ -69,7 +69,7 @@ public class UrlEncodedUtf8Test
         byte[] bytes = {101, 102, 61, 103, -50, 38, 97, 98, 61, 99, 100};
         String test = new String(bytes, StandardCharsets.UTF_8);
         String name = "ef";
-        String value = "g" + Utf8Appendable.REPLACEMENT;
+        String value = "g" + Utf8StringBuilder.REPLACEMENT;
 
         fromString(test, test, name, value, false);
         fromInputStream(test, bytes, name, value, false);

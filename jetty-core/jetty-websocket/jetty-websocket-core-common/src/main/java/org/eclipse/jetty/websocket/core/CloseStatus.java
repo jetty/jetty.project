@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -168,21 +167,14 @@ public class CloseStatus
                 data.get(reasonBytes, 0, len);
 
                 // Spec Requirement : throw BadPayloadException on invalid UTF8
-                try
-                {
-                    Utf8StringBuilder utf = new Utf8StringBuilder();
-                    // if this throws, we know we have bad UTF8
-                    utf.append(reasonBytes, 0, reasonBytes.length);
-                    String reason = utf.toString();
+                Utf8StringBuilder utf = new Utf8StringBuilder();
+                // if this throws, we know we have bad UTF8
+                utf.append(reasonBytes, 0, reasonBytes.length);
+                String reason = utf.takeCompleteString(() -> new BadPayloadException("Invalid UTF8 in CLOSE Reason"));
 
-                    this.code = statusCode;
-                    this.reason = reason;
-                    return;
-                }
-                catch (Utf8Appendable.NotUtf8Exception e)
-                {
-                    throw new BadPayloadException("Invalid CLOSE Reason", e);
-                }
+                this.code = statusCode;
+                this.reason = reason;
+                return;
             }
         }
 
@@ -270,7 +262,7 @@ public class CloseStatus
         for (int i = 0; i < maxBytes; i++)
         {
             a.append(bytes[i]);
-            if (a.isUtf8SequenceComplete())
+            if (a.isComplete())
                 lastIndex = i;
         }
 

@@ -171,11 +171,10 @@ public class MultiPartParser
      */
     private String takeString()
     {
-        String s = _string.toString();
+        String s = _string.takeCompleteString(null);
         // trim trailing whitespace.
         if (s.length() > _length)
             s = s.substring(0, _length);
-        _string.reset();
         _length = -1;
         return s;
     }
