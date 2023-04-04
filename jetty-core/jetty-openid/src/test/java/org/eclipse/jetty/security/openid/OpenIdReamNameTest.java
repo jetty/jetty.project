@@ -11,15 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.security.openid;
+package org.eclipse.jetty.security.openid;
 
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.security.Authenticator;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -32,16 +30,13 @@ public class OpenIdReamNameTest
 {
     private final Server server = new Server();
 
-    public static ServletContextHandler configureOpenIdContext(String realmName)
+    public static SecurityHandler configureOpenIdContext(String realmName)
     {
-        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+        SecurityHandler.Mapped securityHandler = new SecurityHandler.Mapped();
         assertThat(securityHandler.getKnownAuthenticatorFactories().size(), greaterThanOrEqualTo(2));
-        securityHandler.setAuthMethod(Constraint.__OPENID_AUTH);
+        securityHandler.setAuthMethod(Authenticator.OPENID_AUTH);
         securityHandler.setRealmName(realmName);
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/" + realmName);
-        context.setSecurityHandler(securityHandler);
-        return context;
+        return securityHandler;
     }
 
     @Test
@@ -53,7 +48,7 @@ public class OpenIdReamNameTest
         server.addBean(config1);
 
         // Configure two webapps to select configs based on realm name.
-        ServletContextHandler context1 = configureOpenIdContext("This doesn't matter if only 1 OpenIdConfiguration");
+        SecurityHandler context1 = configureOpenIdContext("This doesn't matter if only 1 OpenIdConfiguration");
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
         contextHandlerCollection.addHandler(context1);
         server.setHandler(contextHandlerCollection);
@@ -63,7 +58,7 @@ public class OpenIdReamNameTest
             server.start();
 
             // The OpenIdConfiguration from context1 matches to config1.
-            Authenticator authenticator = context1.getSecurityHandler().getAuthenticator();
+            Authenticator authenticator = context1.getAuthenticator();
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             LoginService loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
@@ -84,7 +79,7 @@ public class OpenIdReamNameTest
         server.addBean(config1);
 
         // Configure two webapps to select configs based on realm name.
-        ServletContextHandler context1 = configureOpenIdContext(null);
+        SecurityHandler context1 = configureOpenIdContext(null);
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
         contextHandlerCollection.addHandler(context1);
         server.setHandler(contextHandlerCollection);
@@ -94,7 +89,7 @@ public class OpenIdReamNameTest
             server.start();
 
             // The OpenIdConfiguration from context1 matches to config1.
-            Authenticator authenticator = context1.getSecurityHandler().getAuthenticator();
+            Authenticator authenticator = context1.getAuthenticator();
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             LoginService loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
@@ -118,8 +113,8 @@ public class OpenIdReamNameTest
         server.addBean(config2);
 
         // Configure two webapps to select configs based on realm name.
-        ServletContextHandler context1 = configureOpenIdContext(config1.getIssuer());
-        ServletContextHandler context2 = configureOpenIdContext(config2.getIssuer());
+        SecurityHandler context1 = configureOpenIdContext(config1.getIssuer());
+        SecurityHandler context2 = configureOpenIdContext(config2.getIssuer());
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
         contextHandlerCollection.addHandler(context1);
         contextHandlerCollection.addHandler(context2);
@@ -130,14 +125,14 @@ public class OpenIdReamNameTest
             server.start();
 
             // The OpenIdConfiguration from context1 matches to config1.
-            Authenticator authenticator = context1.getSecurityHandler().getAuthenticator();
+            Authenticator authenticator = context1.getAuthenticator();
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             LoginService loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
             assertThat(((OpenIdLoginService)loginService).getConfiguration(), Matchers.is(config1));
 
             // The OpenIdConfiguration from context2 matches to config2.
-            authenticator = context2.getSecurityHandler().getAuthenticator();
+            authenticator = context2.getAuthenticator();
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
@@ -161,7 +156,7 @@ public class OpenIdReamNameTest
         server.addBean(config2);
 
         // Configure two webapps to select configs based on realm name.
-        ServletContextHandler context1 = configureOpenIdContext("provider3");
+        SecurityHandler context1 = configureOpenIdContext("provider3");
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
         contextHandlerCollection.addHandler(context1);
         server.setHandler(contextHandlerCollection);
@@ -173,7 +168,7 @@ public class OpenIdReamNameTest
     @Test
     public void testNoConfiguration() throws Exception
     {
-        ServletContextHandler context1 = configureOpenIdContext(null);
+        SecurityHandler context1 = configureOpenIdContext(null);
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
         contextHandlerCollection.addHandler(context1);
         server.setHandler(contextHandlerCollection);

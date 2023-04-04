@@ -56,6 +56,7 @@ public interface Authenticator
     String getAuthMethod();
 
     /**
+     * TODO: fix javadoc and rename method.
      * Called after to validateRequest.
      * This may be restore method or content from a previous request
      * that was challenged.
@@ -66,6 +67,11 @@ public interface Authenticator
     default Request prepareRequest(Request request, Authentication authentication)
     {
         return request;
+    }
+
+    default boolean isMandatory(Request request, Response response, boolean mandatory)
+    {
+        return true;
     }
 
     /**
@@ -90,8 +96,7 @@ public interface Authenticator
      * @param callback the callback to use for writing a response
      * @return An Authentication.  If Authentication is successful, this will be a {@link User}. If a response has
      * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
-     * implement {@link Authentication.ResponseSent}.  If Authentication is not mandatory, then a
-     * {@link Authentication.Deferred} may be returned.
+     * implement {@link Authentication.ResponseSent}.
      * @throws ServerAuthException if unable to validate request
      */
     Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException;

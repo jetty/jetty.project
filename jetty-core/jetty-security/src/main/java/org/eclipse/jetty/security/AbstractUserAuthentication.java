@@ -59,7 +59,7 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     }
 
     @Override
-    public void logout(Request request)
+    public void logout(Request request, Response response)
     {
         SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
         if (security != null)
@@ -70,7 +70,7 @@ public abstract class AbstractUserAuthentication implements User, Serializable
             Authentication authentication = null;
             if (authenticator instanceof LoginAuthenticator loginAuthenticator)
             {
-                ((LoginAuthenticator)authenticator).logout(request);
+                ((LoginAuthenticator)authenticator).logout(request, response);
                 authentication = new LoggedOutAuthentication(loginAuthenticator);
             }
             Authentication.setAuthentication(request, authentication);

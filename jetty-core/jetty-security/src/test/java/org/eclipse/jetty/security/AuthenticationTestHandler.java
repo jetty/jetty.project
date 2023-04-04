@@ -65,7 +65,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
                         out.append(user == null ? "-" : user.getUserIdentity().getUserPrincipal());
                     }
 
-                    case "logout" -> out.append(Authentication.logout(request));
+                    case "logout" -> out.append(Authentication.logout(request, response));
 
                     case "thread" -> out.append(TestIdentityService.USER_IDENTITY.get());
 

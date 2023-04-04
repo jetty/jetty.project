@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.security.openid;
+package org.eclipse.jetty.security.openid;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;

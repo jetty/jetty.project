@@ -11,10 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.security.openid;
+package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,14 +24,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -89,13 +92,12 @@ public class OpenIdProvider extends ContainerLifeCycle
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler contextHandler = new ServletContextHandler();
-        contextHandler.setContextPath("/");
-        contextHandler.addServlet(new ServletHolder(new ConfigServlet()), CONFIG_PATH);
-        contextHandler.addServlet(new ServletHolder(new AuthEndpoint()), AUTH_PATH);
-        contextHandler.addServlet(new ServletHolder(new TokenEndpoint()), TOKEN_PATH);
-        contextHandler.addServlet(new ServletHolder(new EndSessionEndpoint()), END_SESSION_PATH);
-        server.setHandler(contextHandler);
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        contexts.addHandler(new ConfigServlet(CONFIG_PATH));
+        contexts.addHandler(new AuthEndpoint(AUTH_PATH));
+        contexts.addHandler(new TokenEndpoint(TOKEN_PATH));
+        contexts.addHandler(new EndSessionEndpoint(END_SESSION_PATH));
+        server.setHandler(contexts);
 
         addBean(server);
     }
@@ -150,93 +152,118 @@ public class OpenIdProvider extends ContainerLifeCycle
         redirectUris.add(uri);
     }
 
-    public class AuthEndpoint extends HttpServlet
+    public class AuthEndpoint extends ContextHandler
     {
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        public AuthEndpoint(String contextPath)
         {
-            if (!clientId.equals(req.getParameter("client_id")))
+            super(contextPath);
+        }
+
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            switch (request.getMethod())
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid client_id");
+                case "GET":
+                    doGet(request, response, callback);
+                    break;
+                case "POST":
+                    doPost(request, response, callback);
+                    break;
+                default:
+                    throw new BadMessageException("Unsupported HTTP Method");
+            }
+
+            return true;
+        }
+
+        protected void doGet(Request request, Response response, Callback callback) throws Exception
+        {
+            Fields parameters = Request.getParameters(request);
+            if (!clientId.equals(parameters.getValue("client_id")))
+            {
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "invalid client_id");
                 return;
             }
 
-            String redirectUri = req.getParameter("redirect_uri");
+            String redirectUri = parameters.getValue("redirect_uri");
             if (!redirectUris.contains(redirectUri))
             {
-                LOG.warn("invalid redirectUri {}", redirectUri);
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid redirect_uri");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "invalid redirect_uri");
                 return;
             }
 
-            String scopeString = req.getParameter("scope");
+            String scopeString = parameters.getValue("scope");
             List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(StringUtil.csvSplit(scopeString));
             if (!scopes.contains("openid"))
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no openid scope");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "no openid scope");
                 return;
             }
 
-            if (!"code".equals(req.getParameter("response_type")))
+            if (!"code".equals(parameters.getValue("response_type")))
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "response_type must be code");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "response_type must be code");
                 return;
             }
 
-            String state = req.getParameter("state");
+            String state = parameters.getValue("state");
             if (state == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no state param");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "no state param");
                 return;
             }
 
             if (preAuthedUser == null)
             {
-                PrintWriter writer = resp.getWriter();
-                resp.setContentType("text/html");
-                writer.println("<h2>Login to OpenID Connect Provider</h2>");
-                writer.println("<form action=\"" + AUTH_PATH + "\" method=\"post\">");
-                writer.println("<input type=\"text\" autocomplete=\"off\" placeholder=\"Username\" name=\"username\" required>");
-                writer.println("<input type=\"hidden\" name=\"redirectUri\" value=\"" + redirectUri + "\">");
-                writer.println("<input type=\"hidden\" name=\"state\" value=\"" + state + "\">");
-                writer.println("<input type=\"submit\">");
-                writer.println("</form>");
+                response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html");
+
+                String content =
+                "<h2>Login to OpenID Connect Provider</h2>" +
+                "<form action=\"" + AUTH_PATH + "\" method=\"post\">" +
+                "<input type=\"text\" autocomplete=\"off\" placeholder=\"Username\" name=\"username\" required>" +
+                "<input type=\"hidden\" name=\"redirectUri\" value=\"" + redirectUri + "\">" +
+                "<input type=\"hidden\" name=\"state\" value=\"" + state + "\">" +
+                "<input type=\"submit\">" +
+                "</form>";
+                response.write(true, BufferUtil.toBuffer(content), callback);
             }
             else
             {
-                redirectUser(resp, preAuthedUser, redirectUri, state);
+                redirectUser(request, response, callback, preAuthedUser, redirectUri, state);
             }
         }
 
-        @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        protected void doPost(Request request, Response response, Callback callback) throws Exception
         {
-            String redirectUri = req.getParameter("redirectUri");
+            Fields parameters = Request.getParameters(request);
+
+            String redirectUri = parameters.getValue("redirectUri");
             if (!redirectUris.contains(redirectUri))
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid redirect_uri");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "invalid redirect_uri");
                 return;
             }
 
-            String state = req.getParameter("state");
+            String state = parameters.getValue("state");
             if (state == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no state param");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "no state param");
                 return;
             }
 
-            String username = req.getParameter("username");
+            String username = parameters.getValue("username");
             if (username == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no username");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "no username");
                 return;
             }
 
             User user = new User(username);
-            redirectUser(resp, user, redirectUri, state);
+            redirectUser(request, response, callback, user, redirectUri, state);
         }
 
-        public void redirectUser(HttpServletResponse response, User user, String redirectUri, String state) throws IOException
+        public void redirectUser(Request request, Response response, Callback callback, User user, String redirectUri, String state) throws IOException
         {
             String authCode = UUID.randomUUID().toString().replace("-", "");
             issuedAuthCodes.put(authCode, user);
@@ -244,7 +271,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             try
             {
                 redirectUri += "?code=" + authCode + "&state=" + state;
-                response.sendRedirect(response.encodeRedirectURL(redirectUri));
+                Response.sendRedirect(request, response, callback, redirectUri);
             }
             catch (Throwable t)
             {
@@ -254,33 +281,40 @@ public class OpenIdProvider extends ContainerLifeCycle
         }
     }
 
-    private class TokenEndpoint extends HttpServlet
+    private class TokenEndpoint extends ContextHandler
     {
-        @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        public TokenEndpoint(String contextPath)
         {
-            String code = req.getParameter("code");
+            super(contextPath);
+        }
 
-            if (!clientId.equals(req.getParameter("client_id")) ||
-                !clientSecret.equals(req.getParameter("client_secret")) ||
-                !redirectUris.contains(req.getParameter("redirect_uri")) ||
-                !"authorization_code".equals(req.getParameter("grant_type")) ||
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            Fields parameters = Request.getParameters(request);
+
+            String code = parameters.getValue("code");
+
+            if (!clientId.equals(parameters.getValue("client_id")) ||
+                !clientSecret.equals(parameters.getValue("client_secret")) ||
+                !redirectUris.contains(parameters.getValue("redirect_uri")) ||
+                !"authorization_code".equals(parameters.getValue("grant_type")) ||
                 code == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "bad auth request");
-                return;
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "bad auth request");
+                return true;
             }
 
             User user = issuedAuthCodes.remove(code);
             if (user == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid auth code");
-                return;
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "invalid auth code");
+                return true;
             }
 
             String accessToken = "ABCDEFG";
             long expiry = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis();
-            String response = "{" +
+            String content = "{" +
                 "\"access_token\": \"" + accessToken + "\"," +
                 "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId)) + "\"," +
                 "\"expires_in\": " + expiry + "," +
@@ -288,47 +322,55 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "}";
 
             loggedInUsers.increment();
-            resp.setContentType("text/plain");
-            resp.getWriter().print(response);
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+            response.write(true, BufferUtil.toBuffer(content), callback);
+            return true;
         }
     }
 
-    private class EndSessionEndpoint extends HttpServlet
+    private class EndSessionEndpoint extends ContextHandler
     {
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        public EndSessionEndpoint(String contextPath)
         {
-            doPost(req, resp);
+            super(contextPath);
         }
 
         @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            String idToken = req.getParameter("id_token_hint");
+            Fields parameters = Request.getParameters(request);
+
+            String idToken = parameters.getValue("id_token_hint");
             if (idToken == null)
             {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "no id_token_hint");
-                return;
+                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "no id_token_hint");
+                return true;
             }
 
-            String logoutRedirect = req.getParameter("post_logout_redirect_uri");
+            String logoutRedirect = parameters.getValue("post_logout_redirect_uri");
             if (logoutRedirect == null)
             {
-                resp.setStatus(HttpServletResponse.SC_OK);
-                resp.getWriter().println("logout success on end_session_endpoint");
-                return;
+                response.setStatus(HttpStatus.OK_200);
+                response.write(true, BufferUtil.toBuffer("logout success on end_session_endpoint"), callback);
+                return true;
             }
 
             loggedInUsers.decrement();
-            resp.setContentType("text/plain");
-            resp.sendRedirect(logoutRedirect);
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+            Response.sendRedirect(request, response, callback, logoutRedirect);
+            return true;
         }
     }
 
-    private class ConfigServlet extends HttpServlet
+    private class ConfigServlet extends ContextHandler
     {
+        public ConfigServlet(String contextPath)
+        {
+            super(contextPath);
+        }
+
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             String discoveryDocument = "{" +
                 "\"issuer\": \"" + provider + "\"," +
@@ -337,7 +379,8 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"end_session_endpoint\": \"" + provider + END_SESSION_PATH + "\"," +
                 "}";
 
-            resp.getWriter().write(discoveryDocument);
+            response.write(true, BufferUtil.toBuffer(discoveryDocument), callback);
+            return true;
         }
     }
 

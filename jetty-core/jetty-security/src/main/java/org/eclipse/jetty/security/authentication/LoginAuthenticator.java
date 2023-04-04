@@ -58,7 +58,7 @@ public abstract class LoginAuthenticator implements Authenticator
         return null;
     }
 
-    public void logout(Request request)
+    public void logout(Request request, Response response)
     {
         Session session = request.getSession(false);
         if (session == null)

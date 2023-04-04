@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.security;
 
+import java.security.Principal;
+
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
@@ -35,6 +37,23 @@ public interface Authentication
     {
         Object auth = request.getAttribute(Authentication.class.getName());
         return auth instanceof Authentication authentication ? authentication : null;
+    }
+
+    static Principal getUserPrincipal(Request request)
+    {
+        Authentication authentication = Authentication.getAuthentication(request);
+        if (authentication instanceof UserAuthentication userAuthentication)
+        {
+            return userAuthentication.getUserIdentity().getUserPrincipal();
+        }
+        if (authentication instanceof DeferredAuthentication deferredAuthentication)
+        {
+            User user = deferredAuthentication.authenticate(request);
+            if (user == null)
+                return null;
+            return user.getUserIdentity().getUserPrincipal();
+        }
+        return null;
     }
 
     static void setAuthentication(Request request, Authentication authentication)
@@ -110,16 +129,23 @@ public interface Authentication
         return null;
     }
 
-    static boolean logout(Request request)
+    static boolean logout(Request request, Response response)
     {
         Authentication authentication = getAuthentication(request);
 
         //if already authenticated, return true
         if (authentication instanceof Authentication.User userAuthentication)
         {
-            userAuthentication.logout(request);
+            userAuthentication.logout(request, response);
             return true;
         }
+
+        if (authentication instanceof DeferredAuthentication deferredAuthentication)
+        {
+            deferredAuthentication.logout(request, response);
+            return true;
+        }
+
         return false;
     }
 
@@ -147,8 +173,9 @@ public interface Authentication
          * such that a call to getUserPrincipal/getRemoteUser will return null.
          *
          * @param request the request
+         * @param response the response
          */
-        void logout(Request request);
+        void logout(Request request, Response response);
     }
 
     /**

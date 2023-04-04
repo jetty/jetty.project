@@ -427,6 +427,13 @@ public interface Request extends Attributes, Content.Source
         return fields;
     }
 
+    static Fields getParameters(Request request) throws Exception
+    {
+        Fields queryFields = Request.extractQueryParameters(request);
+        Fields formFields = FormFields.from(request).get();
+        return Fields.combine(queryFields, formFields);
+    }
+
     @SuppressWarnings("unchecked")
     static List<HttpCookie> getCookies(Request request)
     {

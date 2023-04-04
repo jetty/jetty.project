@@ -170,9 +170,9 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public void logout(Request request)
+    public void logout(Request request, Response response)
     {
-        super.logout(request);
+        super.logout(request, response);
         Session session = request.getSession(false);
         if (session == null)
             return;
@@ -189,7 +189,7 @@ public class FormAuthenticator extends LoginAuthenticator
         // browser handling of 302 redirects, the method may not be the same as
         // that of the original request. Replace the method and original post
         // params (if it was a post).
-        if (authentication instanceof Authentication.User user)
+        if (authentication instanceof Authentication.User)
         {
             Session session = request.getSession(false);
 

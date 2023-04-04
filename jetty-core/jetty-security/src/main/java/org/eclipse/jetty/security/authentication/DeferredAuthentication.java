@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
@@ -102,6 +103,16 @@ public class DeferredAuthentication implements Authentication
             return authentication;
         }
         return null;
+    }
+
+    public void logout(Request request, Response response)
+    {
+        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        if (security != null)
+        {
+            security.logout(null);
+            _authenticator.logout(request, response);
+        }
     }
 
     public IdentityService.Association getAssociation()

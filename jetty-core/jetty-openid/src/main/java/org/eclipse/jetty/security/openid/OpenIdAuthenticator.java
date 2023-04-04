@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.security.openid;
+package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -248,10 +248,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public void logout(Request request)
+    public void logout(Request request, Response response)
     {
         attemptLogoutRedirect(request, response);
-        super.logout(request);
+        super.logout(request, response);
         Session session = request.getSession(false);
 
         if (session == null)
@@ -285,11 +285,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String redirectUri = null;
             if (_logoutRedirectPath != null)
             {
-                StringBuilder sb = new StringBuilder(128);
-                URIUtil.appendSchemeHostPort(sb, request.getHttpURI().getScheme(), Request.getServerName(request), Request.getServerPort(request));
-                sb.append(Request.getContextPath(request));
-                sb.append(_logoutRedirectPath);
-                redirectUri = sb.toString();
+                HttpURI.Mutable httpURI = HttpURI.build()
+                    .scheme(request.getHttpURI().getScheme())
+                    .host(Request.getServerName(request))
+                    .port(Request.getServerPort(request))
+                    .path(URIUtil.compactPath(Request.getContextPath(request) + _logoutRedirectPath));
+                redirectUri = httpURI.toString();
             }
 
             Session session = request.getSession(false);
@@ -330,50 +331,45 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Request prepareRequest(Request request)
+    public Request prepareRequest(Request request, Authentication authentication)
     {
-        //if this is a request resulting from a redirect after auth is complete
-        //(ie its from a redirect to the original request uri) then due to
-        //browser handling of 302 redirects, the method may not be the same as
-        //that of the original request. Replace the method and original post
-        //params (if it was a post).
-        //
-        //See Servlet Spec 3.1 sec 13.6.3
-        Session session = request.getSession(false);
-        if (session == null)
-            return request; //not authenticated yet
-
-        HttpURI juri;
-        String method;
-        synchronized (session)
+        // if this is a request resulting from a redirect after auth is complete
+        // (ie its from a redirect to the original request uri) then due to
+        // browser handling of 302 redirects, the method may not be the same as
+        // that of the original request. Replace the method and original post
+        // params (if it was a post).
+        if (authentication instanceof Authentication.User)
         {
-            if (session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE) == null)
+            Session session = request.getSession(false);
+            if (session == null)
                 return request; //not authenticated yet
 
-            juri = (HttpURI)session.getAttribute(J_URI);
-            if (juri == null)
-                return request; //no original uri saved
+            HttpURI juri = (HttpURI)session.getAttribute(J_URI);
+            HttpURI uri = request.getHttpURI();
+            if ((uri.equals(juri)))
+            {
+                session.removeAttribute(J_URI);
 
-            method = (String)session.getAttribute(J_METHOD);
-            if (method == null || method.length() == 0)
-                return request; //didn't save original request method
+                Fields fields = (Fields)session.removeAttribute(J_POST);
+                if (fields != null)
+                    request.setAttribute(FormFields.class.getName(), fields);
+
+                String method = (String)session.removeAttribute(J_METHOD);
+                if (method != null && request.getMethod().equals(method))
+                {
+                    return new Request.Wrapper(request)
+                    {
+                        @Override
+                        public String getMethod()
+                        {
+                            return method;
+                        }
+                    };
+                }
+            }
         }
 
-        if (!juri.equals(request.getHttpURI()))
-            return request; //this request is not for the same url as the original
-
-        // Restore the original request's method on this request.
-        if (LOG.isDebugEnabled())
-            LOG.debug("Restoring original method {} for {} with method {}", method, juri, request.getMethod());
-
-        return new Request.Wrapper(request)
-        {
-            @Override
-            public String getMethod()
-            {
-                return method;
-            }
-        };
+        return request;
     }
 
     protected Fields getParameters(Request request)
@@ -391,26 +387,38 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request request, Response response, Callback cb, boolean mandatory) throws ServerAuthException
+    public boolean isMandatory(Request request, Response response, boolean mandatory)
+    {
+        String uri = request.getHttpURI().toString();
+        if (uri == null)
+            uri = "/";
+
+        if (isJSecurityCheck(uri))
+            return true;
+        if (isErrorPage(Request.getPathInContext(request)) && !DeferredAuthentication.isDeferred(response))
+            return false;
+        return mandatory;
+    }
+
+    @Override
+    public Authentication validateRequest(Request request, Response response, Callback cb) throws ServerAuthException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("validateRequest({},{},{})", request, response, mandatory);
+            LOG.debug("validateRequest({},{})", request, response);
 
         String uri = request.getHttpURI().toString();
         if (uri == null)
             uri = "/";
 
-        mandatory |= isJSecurityCheck(uri);
-        if (!mandatory)
-            return new DeferredAuthentication(this);
-
-        if (isErrorPage(Request.getPathInContext(request)) && !DeferredAuthentication.isDeferred(response))
-            return new DeferredAuthentication(this);
-
         try
         {
             // Get the Session.
             Session session = request.getSession(true);
+            if (session == null)
+            {
+                sendError(request, response, cb, "session could not be created");
+                return Authentication.SEND_FAILURE;
+            }
 
             // TODO: No session API to work this out?
             /*
@@ -467,6 +475,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 // Save redirect info in session so original request can be restored after redirect.
                 synchronized (session)
                 {
+                    // TODO: We are duplicating this logic.
                     session.setAttribute(J_URI, uriRedirectInfo.getUri());
                     session.setAttribute(J_METHOD, uriRedirectInfo.getMethod());
                     session.setAttribute(J_POST, uriRedirectInfo.getFormParameters());
@@ -476,7 +485,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                     ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
-                Response.sendRedirect(request, response, cb, redirectCode, uriRedirectInfo.getUri(), true);
+                Response.sendRedirect(request, response, cb, redirectCode, uriRedirectInfo.getUri().toString(), true);
                 return openIdAuth;
             }
 
@@ -534,18 +543,46 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("auth deferred {}", session.getId());
-                return Authentication.UNAUTHENTICATED;
+                return null;
             }
 
-            // Send the the challenge.
+            // Save the current URI
+            synchronized (session)
+            {
+                // But only if it is not set already, or we save every uri that leads to a login form redirect
+                if (session.getAttribute(J_URI) == null || _alwaysSaveUri)
+                {
+                    HttpURI juri = request.getHttpURI();
+                    session.setAttribute(J_URI, juri);
+                    if (!HttpMethod.GET.is(request.getMethod()))
+                        session.setAttribute(J_METHOD, request.getMethod());
+
+                    if (HttpMethod.POST.is(request.getMethod()))
+                    {
+                        try
+                        {
+                            session.setAttribute(J_POST, FormFields.from(request).get());
+                        }
+                        catch (ExecutionException e)
+                        {
+                            throw new ServerAuthException(e.getCause());
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new ServerAuthException(e);
+                        }
+                    }
+                }
+            }
+
+            // Send the challenge.
             String challengeUri = getChallengeUri(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
             int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                 ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
             Response.sendRedirect(request, response, cb, redirectCode, challengeUri, true);
-
-            return Authentication.SEND_CONTINUE;
+            return Authentication.CHALLENGE;
         }
         catch (IOException e)
         {
@@ -579,15 +616,16 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             if (LOG.isDebugEnabled())
                 LOG.debug("auth failed {}", _errorPage);
 
-            String redirectUri = URIUtil.addPaths(httpServletRequest.getContextPath(), _errorPage);
+            String contextPath = Request.getContextPath(request);
+            String redirectUri = URIUtil.addPaths(contextPath, _errorPage);
             if (message != null)
             {
                 String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
-                redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(httpServletRequest.getContextPath(), _errorPath), query);
+                redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(contextPath, _errorPath), query);
             }
 
             int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER;
+                ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
             Response.sendRedirect(request, response, callback, redirectCode, redirectUri, true);
         }
     }
@@ -645,12 +683,6 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             "&response_type=code";
     }
 
-    @Override
-    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
-    {
-        return req.isSecure();
-    }
-
     private UriRedirectInfo removeAndClearCsrfMap(Session session, String csrf)
     {
         @SuppressWarnings("unchecked")
@@ -703,7 +735,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         public UriRedirectInfo(Request request)
         {
-            _uri = request.getHttpURI().asString();
+            _uri = request.getHttpURI();
             _method = request.getMethod();
 
             // TODO:

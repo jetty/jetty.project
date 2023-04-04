@@ -35,6 +35,9 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     public void setServer(Server server)
     {
         _server = server;
+        Handler handler = getHandler();
+        if (handler != null)
+            handler.setServer(server);
     }
 
     @Override
