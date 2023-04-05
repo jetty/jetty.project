@@ -85,6 +85,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2114,15 +2115,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private static Object getSecurityManager()
     {
-        try
-        {
-            // Use reflection to work with Java versions that have and don't have SecurityManager.
-            return System.class.getMethod("getSecurityManager").invoke(null);
-        }
-        catch (Throwable ignored)
-        {
-            return null;
-        }
+        return SecurityUtils.getSecurityManager();
     }
 
     /**
@@ -2582,28 +2575,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     else
                         callerLoader = callerLoader.getParent();
                 }
-                checkPermission();
+                SecurityUtils.checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
-            }
-        }
-
-        private void checkPermission()
-        {
-            try
-            {
-                // Use reflection to work with Java versions that still have the SecurityManager.
-                Object securityManager = getSecurityManager();
-                if (securityManager == null)
-                    return;
-                securityManager.getClass().getMethod("checkPermission")
-                    .invoke(securityManager, new RuntimePermission("getClassLoader"));
-            }
-            catch (SecurityException x)
-            {
-                throw x;
-            }
-            catch (Throwable ignored)
-            {
             }
         }
 

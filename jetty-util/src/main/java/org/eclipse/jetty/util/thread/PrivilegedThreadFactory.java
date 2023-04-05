@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.util.function.Supplier;
+
+import org.eclipse.jetty.util.security.SecurityUtils;
 
 /**
  * <p>Convenience {@link Thread} factory that ensure threads are
@@ -41,55 +40,16 @@ import java.util.function.Supplier;
  */
 class PrivilegedThreadFactory
 {
-    private static final MethodHandle privileged = lookup();
-
-    private static MethodHandle lookup()
-    {
-        try
-        {
-            // Use reflection to work with Java versions that have and don't have AccessController.
-            Class<?> klass = ClassLoader.getPlatformClassLoader().loadClass("java.security.AccessController");
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            return lookup.findStatic(klass, "doPrivileged", MethodType.methodType(Object.class, PrivilegedAction.class));
-        }
-        catch (Throwable x)
-        {
-            return null;
-        }
-    }
-
     /**
      * <p>Creates a new {@link Thread} from the given {@link Supplier},
      * without retaining the calling context.</p>
      *
-     * @param supplier the {@link Supplier} that creates the {@link Thread}
+     * @param creator the action that creates the {@link Thread}
      * @return a new {@link Thread} without retaining the calling context
      */
-    static <T extends Thread> T newThread(Supplier<T> supplier)
+    static <T extends Thread> T newThread(PrivilegedAction<T> creator)
     {
-        // Keep this method short and inlineable.
-        MethodHandle methodHandle = privileged;
-        if (methodHandle == null)
-            return supplier.get();
-        return privilegedNewThread(methodHandle, supplier);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T extends Thread> T privilegedNewThread(MethodHandle privileged, Supplier<T> supplier)
-    {
-        try
-        {
-            PrivilegedAction<T> action = supplier::get;
-            return (T)privileged.invoke(action);
-        }
-        catch (RuntimeException | Error x)
-        {
-            throw x;
-        }
-        catch (Throwable x)
-        {
-            throw new RuntimeException(x);
-        }
+        return SecurityUtils.doPrivileged(creator);
     }
 
     private PrivilegedThreadFactory()

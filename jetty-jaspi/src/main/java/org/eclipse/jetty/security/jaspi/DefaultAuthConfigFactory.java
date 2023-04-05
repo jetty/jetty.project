@@ -23,6 +23,7 @@ import javax.security.auth.message.config.AuthConfigFactory;
 import javax.security.auth.message.config.AuthConfigProvider;
 import javax.security.auth.message.config.RegistrationListener;
 
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,34 +145,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
 
     private static void checkPermission(String permission)
     {
-        try
-        {
-            Object securityManager = getSecurityManager();
-            if (securityManager == null)
-                return;
-            securityManager.getClass().getMethod("checkPermission")
-                .invoke(securityManager, new AuthPermission(permission));
-        }
-        catch (SecurityException x)
-        {
-            throw x;
-        }
-        catch (Throwable ignored)
-        {
-        }
-    }
-
-    private static Object getSecurityManager()
-    {
-        try
-        {
-            // Use reflection to work with Java versions that have and don't have SecurityManager.
-            return System.class.getMethod("getSecurityManager").invoke(null);
-        }
-        catch (Throwable ignored)
-        {
-            return null;
-        }
+        SecurityUtils.checkPermission(new AuthPermission(permission));
     }
 
     private static String getKey(String layer, String appContext)
