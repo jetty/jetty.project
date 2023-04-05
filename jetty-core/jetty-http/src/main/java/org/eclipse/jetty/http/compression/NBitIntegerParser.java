@@ -11,12 +11,54 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
 public class NBitIntegerParser
 {
+    public static int decode(ByteBuffer buffer, int n)
+    {
+        if (n == 8)
+        {
+            int nbits = 0xFF;
+
+            int i = buffer.get() & 0xff;
+
+            if (i == nbits)
+            {
+                int m = 1;
+                int b;
+                do
+                {
+                    b = 0xff & buffer.get();
+                    i = i + (b & 127) * m;
+                    m = m * 128;
+                }
+                while ((b & 128) == 128);
+            }
+            return i;
+        }
+
+        int nbits = 0xFF >>> (8 - n);
+
+        int i = buffer.get(buffer.position() - 1) & nbits;
+
+        if (i == nbits)
+        {
+            int m = 1;
+            int b;
+            do
+            {
+                b = 0xff & buffer.get();
+                i = i + (b & 127) * m;
+                m = m * 128;
+            }
+            while ((b & 128) == 128);
+        }
+        return i;
+    }
+
     private int _prefix;
     private long _total;
     private long _multiplier;

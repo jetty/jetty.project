@@ -15,8 +15,8 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.Test;

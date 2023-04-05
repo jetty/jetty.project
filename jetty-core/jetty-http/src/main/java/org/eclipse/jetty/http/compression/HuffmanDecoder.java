@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
@@ -19,6 +19,72 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class HuffmanDecoder
 {
+    public static String decode(ByteBuffer buffer, int length) throws EncodingException
+    {
+        Utf8StringBuilder utf8 = new Utf8StringBuilder(length * 2);
+        int node = 0;
+        int current = 0;
+        int bits = 0;
+
+        for (int i = 0; i < length; i++)
+        {
+            int b = buffer.get() & 0xFF;
+            current = (current << 8) | b;
+            bits += 8;
+            while (bits >= 8)
+            {
+                int c = (current >>> (bits - 8)) & 0xFF;
+                node = tree[node * 256 + c];
+                if (rowbits[node] != 0)
+                {
+                    if (rowsym[node] == EOS)
+                        throw new EncodingException("EOS in content");
+
+                    // terminal node
+                    utf8.append((byte)(0xFF & rowsym[node]));
+                    bits -= rowbits[node];
+                    node = 0;
+                }
+                else
+                {
+                    // non-terminal node
+                    bits -= 8;
+                }
+            }
+        }
+
+        while (bits > 0)
+        {
+            int c = (current << (8 - bits)) & 0xFF;
+            int lastNode = node;
+            node = tree[node * 256 + c];
+
+            if (rowbits[node] == 0 || rowbits[node] > bits)
+            {
+                int requiredPadding = 0;
+                for (int i = 0; i < bits; i++)
+                {
+                    requiredPadding = (requiredPadding << 1) | 1;
+                }
+
+                if ((c >> (8 - bits)) != requiredPadding)
+                    throw new EncodingException("Incorrect padding");
+
+                node = lastNode;
+                break;
+            }
+
+            utf8.append((byte)(0xFF & rowsym[node]));
+            bits -= rowbits[node];
+            node = 0;
+        }
+
+        if (node != 0)
+            throw new EncodingException("Bad termination");
+
+        return utf8.toCompleteString();
+    }
+
     static final char EOS = HuffmanEncoder.EOS;
     static final char[] tree = HuffmanEncoder.tree;
     static final char[] rowsym = HuffmanEncoder.rowsym;

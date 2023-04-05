@@ -19,9 +19,9 @@ import java.util.Objects;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
-import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 
 public abstract class EncodableEntry
 {
