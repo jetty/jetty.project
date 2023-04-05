@@ -236,7 +236,7 @@ public class Password extends Credential
 
     public static void main(String[] args) throws IOException
     {
-        boolean promptUser = false;
+        boolean promptArgs = false;
         String argUser = null;
         String argPassword = null;
 
@@ -244,7 +244,7 @@ public class Password extends Credential
         {
             if (arg.equals("--prompt"))
             {
-                promptUser = true;
+                promptArgs = true;
                 // ignore any other args
                 break;
             }
@@ -252,17 +252,17 @@ public class Password extends Credential
             if (argUser == null)
             {
                 argUser = arg;
-                promptUser = true;
+                promptArgs = true;
             }
             else
             {
                 if (!arg.equals("?"))
-                    promptUser = false;
+                    promptArgs = false;
                 argPassword = arg;
             }
         }
 
-        if (promptUser)
+        if (promptArgs)
         {
             System.out.print("Username");
             if (StringUtil.isNotBlank(argUser))
