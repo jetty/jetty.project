@@ -29,6 +29,8 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
@@ -46,7 +48,6 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,7 +152,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__OPENID_AUTH;
+        return Authenticator.OPENID_AUTH;
     }
 
     @Deprecated
@@ -387,17 +388,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean isMandatory(Request request, Response response, boolean mandatory)
+    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing)
     {
-        String uri = request.getHttpURI().toString();
-        if (uri == null)
-            uri = "/";
-
-        if (isJSecurityCheck(uri))
-            return true;
-        if (isErrorPage(Request.getPathInContext(request)) && !DeferredAuthentication.isDeferred(response))
-            return false;
-        return mandatory;
+        if (isJSecurityCheck(pathInContext))
+            return Constraint.Authentication.REQUIRE;
+        if (isErrorPage(pathInContext))
+            return Constraint.Authentication.REQUIRE_NONE;
+        return existing;
     }
 
     @Override
@@ -476,7 +473,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 synchronized (session)
                 {
                     // TODO: We are duplicating this logic.
-                    session.setAttribute(J_URI, uriRedirectInfo.getUri());
+                    session.setAttribute(J_URI, uriRedirectInfo.getUri().asImmutable());
                     session.setAttribute(J_METHOD, uriRedirectInfo.getMethod());
                     session.setAttribute(J_POST, uriRedirectInfo.getFormParameters());
                 }
@@ -553,7 +550,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 if (session.getAttribute(J_URI) == null || _alwaysSaveUri)
                 {
                     HttpURI juri = request.getHttpURI();
-                    session.setAttribute(J_URI, juri);
+                    session.setAttribute(J_URI, juri.asImmutable());
                     if (!HttpMethod.GET.is(request.getMethod()))
                         session.setAttribute(J_METHOD, request.getMethod());
 

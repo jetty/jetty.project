@@ -320,7 +320,7 @@ public class FormAuthenticator extends LoginAuthenticator
             if (session.getAttribute(__J_URI) == null || _alwaysSaveUri)
             {
                 HttpURI juri = request.getHttpURI();
-                session.setAttribute(__J_URI, juri);
+                session.setAttribute(__J_URI, juri.asImmutable());
                 if (!HttpMethod.GET.is(request.getMethod()))
                     session.setAttribute(__J_METHOD, request.getMethod());
 

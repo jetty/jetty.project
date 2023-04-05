@@ -69,11 +69,6 @@ public interface Authenticator
         return request;
     }
 
-    default boolean isMandatory(Request request, Response response, boolean mandatory)
-    {
-        return true;
-    }
-
     /**
      * Get an {@link Constraint.Authentication} applicable to the path for
      * this authenticator.  This is typically used to vary protection on special URIs known to a

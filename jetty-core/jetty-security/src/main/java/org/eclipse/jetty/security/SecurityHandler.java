@@ -447,27 +447,22 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         Constraint.Authentication constraintAuthentication = constraint.getAuthentication();
         constraintAuthentication = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthentication);
         boolean mustValidate = constraintAuthentication != Constraint.Authentication.REQUIRE_NONE;
-        mustValidate = _authenticator.isMandatory(request, response, mustValidate);
 
         try
         {
-            Authentication authentication;
-            if (mustValidate)
-            {
-                authentication = _authenticator.validateRequest(request, response, callback);
-                if (authentication instanceof Authentication.ResponseSent)
-                    return true;
+            Authentication authentication = mustValidate ? _authenticator.validateRequest(request, response, callback) : null;
 
-                if (isNotAuthorized(constraint, authentication))
-                {
-                    Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
-                    return true;
-                }
-            }
-            else
+            if (authentication instanceof Authentication.ResponseSent)
+                return true;
+
+            if (isNotAuthorized(constraint, authentication))
             {
-                authentication = _deferredAuthentication;
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
+                return true;
             }
+
+            if (authentication == null)
+                authentication = _deferredAuthentication;
 
             Authentication.setAuthentication(request, authentication);
             IdentityService.Association association = authentication instanceof Authentication.User user
