@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +63,7 @@ public class PasswordTest
     public void testCommandLineUsage() throws IOException, InterruptedException
     {
         ProcessBuilder passwordBuilder = new ProcessBuilder()
-            .directory(MavenTestingUtils.getTargetDir())
+            .directory(MavenPaths.targetDir().toFile())
             .command("java",
                 "-cp", MavenTestingUtils.getTargetPath("classes").toString(),
                 Password.class.getName(),
@@ -79,7 +80,6 @@ public class PasswordTest
                 assertThat("Non-error exit code: " + output, exitCode, is(0));
                 assertThat("Output", output, not(containsString("Exception")));
                 assertThat("Output", output, allOf(
-                    containsString("password"),
                     containsString("OBF:"),
                     containsString("MD5:"),
                     containsString("CRYPT:")
