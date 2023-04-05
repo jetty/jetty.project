@@ -546,7 +546,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         }
 
         waitForThreads(tp, 10);
-        waitForIdle(tp, 0);
+        waitForIdle(tp, 2);
 
         sleep.set(5);
         for (int i = 0; i < 500; i++)
@@ -700,51 +700,17 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
     private void waitForIdle(QueuedThreadPool tp, int idle)
     {
-        long start = NanoTime.now();
-        while (tp.getIdleThreads() != idle && NanoTime.millisSince(start) < 10000)
-        {
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException ignored)
-            {
-            }
-        }
-        assertThat(tp.getIdleThreads(), is(idle));
+        await().during(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS).until(tp::getIdleThreads, is(idle));
     }
 
     private void waitForReserved(QueuedThreadPool tp, int reserved)
     {
-        long start = NanoTime.now();
-        ReservedThreadExecutor reservedThreadExecutor = tp.getBean(ReservedThreadExecutor.class);
-        while (reservedThreadExecutor.getAvailable() != reserved && NanoTime.millisSince(start) < 10000)
-        {
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException ignored)
-            {
-            }
-        }
-        assertThat(reservedThreadExecutor.getAvailable(), is(reserved));
+        await().during(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS).until(() -> tp.getBean(ReservedThreadExecutor.class).getAvailable(), is(reserved));
     }
 
     private void waitForThreads(QueuedThreadPool tp, int threads)
     {
-        long start = NanoTime.now();
-        while (tp.getThreads() != threads && NanoTime.millisSince(start) < 10000)
-        {
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException ignored)
-            {
-            }
-        }
-        assertThat(tp.getThreads(), is(threads));
+        await().during(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS).until(tp::getThreads, is(threads));
     }
 
     @Test
