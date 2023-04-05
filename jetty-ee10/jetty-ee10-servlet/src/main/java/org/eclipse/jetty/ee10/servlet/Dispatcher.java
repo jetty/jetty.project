@@ -542,12 +542,6 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
-        public String[] getParameterValues(String name)
-        {
-            return super.getParameterValues(name);
-        }
-
-        @Override
         public String getRequestURI()
         {
             return _uri == null ? null : _uri.getPath();
