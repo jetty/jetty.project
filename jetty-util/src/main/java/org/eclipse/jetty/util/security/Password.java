@@ -284,18 +284,18 @@ public class Password extends Credential
         }
         else if (StringUtil.isBlank(argUser))
         {
-            System.err.printf("Usage - java %s [<user>] <password> --prompt%n", Password.class.getName());
+            System.err.printf("Usage - java %s [<username>] [<password>] --prompt%n", Password.class.getName());
             System.err.printf("Argument options:%n");
             System.err.printf("  %s%n", Password.class.getName());
             System.err.printf("     No arguments, will show this help%n");
-            System.err.printf("  %s myusername%n", Password.class.getName());
-            System.err.printf("     username only, will prompt for entries%n");
-            System.err.printf("  %s myusername ?%n", Password.class.getName());
-            System.err.printf("     username with question mark password, will prompt for entries%n");
-            System.err.printf("  %s myusername secretpassword%n", Password.class.getName());
+            System.err.printf("  %s <username>%n", Password.class.getName());
+            System.err.printf("     username only, will prompt for arguments%n");
+            System.err.printf("  %s <username> ?%n", Password.class.getName());
+            System.err.printf("     username with question mark password, will prompt for arguments%n");
+            System.err.printf("  %s <username> <password>%n", Password.class.getName());
             System.err.printf("     username with password, will produce obfuscation results%n");
             System.err.printf("  %s --prompt%n", Password.class.getName());
-            System.err.printf("     will prompt for entries%n");
+            System.err.printf("     will prompt for arguments%n");
             System.exit(1);
         }
 
