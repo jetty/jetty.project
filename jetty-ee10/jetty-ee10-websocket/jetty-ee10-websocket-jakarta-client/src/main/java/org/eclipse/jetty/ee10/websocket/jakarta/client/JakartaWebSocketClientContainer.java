@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import jakarta.websocket.ClientEndpoint;
@@ -64,13 +63,12 @@ import org.slf4j.LoggerFactory;
 public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer implements jakarta.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketClientContainer.class);
-    private static final AtomicReference<Map<ClassLoader, ContainerLifeCycle>> SHUTDOWN_MAP = new AtomicReference<>(new ConcurrentHashMap<>());
+    private static final Map<ClassLoader, ContainerLifeCycle> SHUTDOWN_MAP = new  ConcurrentHashMap<>();
 
     public static void setShutdownContainer(ContainerLifeCycle container)
     {
-        Map<ClassLoader, ContainerLifeCycle> map = SHUTDOWN_MAP.get();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        map.compute(cl, (k, v) -> container);
+        SHUTDOWN_MAP.compute(cl, (k, v) -> container);
         if (LOG.isDebugEnabled())
             LOG.debug("initialized shutdown map@{} to [{}={}]", SHUTDOWN_MAP.hashCode(), cl, container);
     }
@@ -310,18 +308,14 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStart() {}", this);
 
-        Map<ClassLoader, ContainerLifeCycle> shutdownMap = SHUTDOWN_MAP.get();
-        if (shutdownMap != null)
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        ContainerLifeCycle container = SHUTDOWN_MAP.get(cl);
+        if (container != null)
         {
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            ContainerLifeCycle container = shutdownMap.get(cl);
-            if (container != null)
-            {
-                container.addManaged(this);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} registered for Context shutdown to {}", this, container);
-                return;
-            }
+            container.addManaged(this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} registered for Context shutdown to {}", this, container);
+            return;
         }
 
         ShutdownThread.register(this);
@@ -334,22 +328,18 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStop() {}", this);
 
-        Map<ClassLoader, ContainerLifeCycle> shutdownMap = SHUTDOWN_MAP.get();
-        if (shutdownMap != null)
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        ContainerLifeCycle container = SHUTDOWN_MAP.get(cl);
+        if (container != null)
         {
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            ContainerLifeCycle container = shutdownMap.get(cl);
-            if (container != null)
+            // As we are already stopping this instance, un-manage first
+            // to avoid that removeBean() stops again this instance.
+            container.unmanage(this);
+            if (container.removeBean(this))
             {
-                // As we are already stopping this instance, un-manage first
-                // to avoid that removeBean() stops again this instance.
-                container.unmanage(this);
-                if (container.removeBean(this))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} deregistered for Context shutdown from {}", this, container);
-                    return;
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} deregistered for Context shutdown from {}", this, container);
+                return;
             }
         }
 

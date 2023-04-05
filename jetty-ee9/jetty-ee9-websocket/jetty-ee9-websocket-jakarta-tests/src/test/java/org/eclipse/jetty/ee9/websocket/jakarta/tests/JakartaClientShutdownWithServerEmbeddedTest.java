@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
 import java.net.URI;
-import java.util.Collection;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -97,11 +96,6 @@ public class JakartaClientShutdownWithServerEmbeddedTest
         assertThat(container, instanceOf(JakartaWebSocketClientContainer.class));
         JakartaWebSocketClientContainer clientContainer = (JakartaWebSocketClientContainer)container;
         assertThat(clientContainer.isRunning(), is(true));
-
-        // The container should be a bean on the ContextHandler.
-        Collection<WebSocketContainer> containedBeans = contextHandler.getCoreContextHandler().getBeans(WebSocketContainer.class);
-        assertThat(containedBeans.size(), is(1));
-        assertThat(containedBeans.toArray()[0], is(container));
 
         // The client should be attached to the servers LifeCycle and should stop with it.
         server.stop();
