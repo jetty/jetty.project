@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.util.security;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Password utility class.
@@ -230,21 +234,76 @@ public class Password extends Credential
         return new Password(passwd);
     }
 
-    public static void main(String[] arg)
+    public static void main(String[] args) throws IOException
     {
-        if (arg.length != 1 && arg.length != 2)
+        boolean promptArgs = false;
+        String argUser = null;
+        String argPassword = null;
+
+        for (String arg: args)
         {
-            System.err.println("Usage - java " + Password.class.getName() + " [<user>] <password>");
-            System.err.println("If the password is ?, the user will be prompted for the password");
+            if (arg.equals("--prompt"))
+            {
+                promptArgs = true;
+                // ignore any other args
+                break;
+            }
+
+            if (argUser == null)
+            {
+                argUser = arg;
+                promptArgs = true;
+            }
+            else
+            {
+                if (!arg.equals("?"))
+                    promptArgs = false;
+                argPassword = arg;
+            }
+        }
+
+        if (promptArgs)
+        {
+            System.out.print("Username");
+            if (StringUtil.isNotBlank(argUser))
+                System.out.printf("[%s]", argUser);
+            System.out.print(": ");
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+            String inputUser = input.readLine();
+            if (StringUtil.isNotBlank(inputUser))
+                argUser = inputUser;
+
+            System.out.print("Password: ");
+            argPassword = input.readLine();
+            if (StringUtil.isBlank(argPassword))
+            {
+                System.err.println("ERROR: blank passwords not supported");
+                System.exit(1);
+            }
+        }
+        else if (StringUtil.isBlank(argUser))
+        {
+            System.err.printf("Usage - java %s [<username>] [<password>] --prompt%n", Password.class.getName());
+            System.err.printf("Argument options:%n");
+            System.err.printf("  %s%n", Password.class.getName());
+            System.err.printf("     No arguments, will show this help%n");
+            System.err.printf("  %s <username>%n", Password.class.getName());
+            System.err.printf("     username only, will prompt for arguments%n");
+            System.err.printf("  %s <username> ?%n", Password.class.getName());
+            System.err.printf("     username with question mark password, will prompt for arguments%n");
+            System.err.printf("  %s <username> <password>%n", Password.class.getName());
+            System.err.printf("     username with password, will produce obfuscation results%n");
+            System.err.printf("  %s --prompt%n", Password.class.getName());
+            System.err.printf("     will prompt for arguments%n");
             System.exit(1);
         }
-        String p = arg[arg.length == 1 ? 0 : 1];
-        Password pw = new Password(p);
-        System.err.println(pw.toString());
+
+        Password pw = new Password(argPassword);
         System.err.println(obfuscate(pw.toString()));
-        System.err.println(Credential.MD5.digest(p));
-        if (arg.length == 2)
-            System.err.println(Credential.Crypt.crypt(arg[0], pw.toString()));
+        System.err.println(Credential.MD5.digest(argPassword));
+        if (StringUtil.isNotBlank(argUser))
+            System.err.println(Credential.Crypt.crypt(argUser, pw.toString()));
         System.exit(0);
     }
 }
