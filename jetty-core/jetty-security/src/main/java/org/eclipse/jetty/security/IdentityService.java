@@ -68,7 +68,7 @@ public interface IdentityService
 
     UserIdentity getSystemUserIdentity();
 
-    interface Association extends AutoCloseable
+    interface Association extends Closeable
     {
     }
 
