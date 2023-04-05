@@ -24,6 +24,9 @@ public class HuffmanDecoder
         HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
         huffmanDecoder.setLength(length);
         String decoded = huffmanDecoder.decode(buffer);
+        if (decoded == null)
+            throw new EncodingException("invalid string encoding");
+
         huffmanDecoder.reset();
         return decoded;
     }

@@ -89,7 +89,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testDecode()
+    public void testDecode() throws Exception
     {
         testDecode(6, 0, "00");
         testDecode(6, 1, "01");
@@ -120,7 +120,7 @@ public class NBitIntegerTest
         testDecode(8, 255 + 0x00 + 0x80 * 0x80, "Ff808001");
     }
 
-    public void testDecode(int n, int expected, String encoded)
+    public void testDecode(int n, int expected, String encoded) throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         buf.position(n == 8 ? 0 : 1);
@@ -143,7 +143,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testDecodeExampleD11()
+    public void testDecodeExampleD11() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString("77EaFF"));
         buf.position(2);
@@ -167,7 +167,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testDecodeExampleD12()
+    public void testDecodeExampleD12() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString("881f9a0aff"));
         buf.position(2);
@@ -191,7 +191,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testDecodeExampleD13()
+    public void testDecodeExampleD13() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString("882aFf"));
         buf.position(1);

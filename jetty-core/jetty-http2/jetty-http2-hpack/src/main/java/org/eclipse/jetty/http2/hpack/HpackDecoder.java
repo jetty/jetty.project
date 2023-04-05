@@ -84,7 +84,7 @@ public class HpackDecoder
             if (b < 0)
             {
                 // 7.1 indexed if the high bit is set
-                int index = NBitIntegerParser.decode(buffer, 7);
+                int index = integerDecode(buffer, 7);
                 Entry entry = _context.get(index);
                 if (entry == null)
                     throw new HpackException.SessionException("Unknown index %d", index);
@@ -125,7 +125,7 @@ public class HpackDecoder
                     case 2: // 7.3
                     case 3: // 7.3
                         // change table size
-                        int size = NBitIntegerParser.decode(buffer, 5);
+                        int size = integerDecode(buffer, 5);
                         if (LOG.isDebugEnabled())
                             LOG.debug("decode resize={}", size);
                         if (size > _localMaxDynamicTableSize)
@@ -138,7 +138,7 @@ public class HpackDecoder
                     case 0: // 7.2.2
                     case 1: // 7.2.3
                         indexed = false;
-                        nameIndex = NBitIntegerParser.decode(buffer, 4);
+                        nameIndex = integerDecode(buffer, 4);
                         break;
 
                     case 4: // 7.2.1
@@ -146,7 +146,7 @@ public class HpackDecoder
                     case 6: // 7.2.1
                     case 7: // 7.2.1
                         indexed = true;
-                        nameIndex = NBitIntegerParser.decode(buffer, 6);
+                        nameIndex = integerDecode(buffer, 6);
                         break;
 
                     default:
@@ -165,7 +165,7 @@ public class HpackDecoder
                 else
                 {
                     huffmanName = (buffer.get() & 0x80) == 0x80;
-                    int length = NBitIntegerParser.decode(buffer, 7);
+                    int length = integerDecode(buffer, 7);
                     _builder.checkSize(length, huffmanName);
                     if (huffmanName)
                         name = huffmanDecode(buffer, length);
@@ -206,7 +206,7 @@ public class HpackDecoder
 
                 // decode the value
                 boolean huffmanValue = (buffer.get() & 0x80) == 0x80;
-                int length = NBitIntegerParser.decode(buffer, 7);
+                int length = integerDecode(buffer, 7);
                 _builder.checkSize(length, huffmanValue);
                 if (huffmanValue)
                     value = huffmanDecode(buffer, length);
@@ -270,6 +270,20 @@ public class HpackDecoder
         }
 
         return _builder.build();
+    }
+
+    private int integerDecode(ByteBuffer buffer, int prefix) throws HpackException.CompressionException
+    {
+        try
+        {
+            return NBitIntegerParser.decode(buffer, prefix);
+        }
+        catch (EncodingException e)
+        {
+            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
+            compressionException.initCause(e);
+            throw compressionException;
+        }
     }
 
     private String huffmanDecode(ByteBuffer buffer, int length) throws HpackException.CompressionException

@@ -17,46 +17,19 @@ import java.nio.ByteBuffer;
 
 public class NBitIntegerParser
 {
-    public static int decode(ByteBuffer buffer, int prefix)
+    public static int decode(ByteBuffer buffer, int prefix) throws EncodingException
     {
-        if (prefix == 8)
-        {
-            int nbits = 0xFF;
+        // TODO: This is a fix for HPACK as it already takes the first byte of the encoded integer.
+        if (prefix != 8)
+            buffer.position(buffer.position() - 1);
 
-            int i = buffer.get() & 0xff;
-
-            if (i == nbits)
-            {
-                int m = 1;
-                int b;
-                do
-                {
-                    b = 0xff & buffer.get();
-                    i = i + (b & 127) * m;
-                    m = m * 128;
-                }
-                while ((b & 128) == 128);
-            }
-            return i;
-        }
-
-        int nbits = 0xFF >>> (8 - prefix);
-
-        int i = buffer.get(buffer.position() - 1) & nbits;
-
-        if (i == nbits)
-        {
-            int m = 1;
-            int b;
-            do
-            {
-                b = 0xff & buffer.get();
-                i = i + (b & 127) * m;
-                m = m * 128;
-            }
-            while ((b & 128) == 128);
-        }
-        return i;
+        NBitIntegerParser parser = new NBitIntegerParser();
+        parser.setPrefix(prefix);
+        int decodedInt = parser.decodeInt(buffer);
+        if (decodedInt < 0)
+            throw new EncodingException("invalid integer encoding");
+        parser.reset();
+        return decodedInt;
     }
 
     private int _prefix;
