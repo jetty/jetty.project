@@ -466,7 +466,7 @@ public class HpackDecoderTest
         String encoded = "82868441" + "84" + "49509FFF";
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
-        assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+        assertThat(ex.getMessage(), Matchers.containsString("bad_termination"));
     }
 
     /* 5.2.2: Sends a Huffman-encoded string literal representation padded by zero */
@@ -479,7 +479,7 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
-        assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
+        assertThat(ex.getMessage(), Matchers.containsString("incorrect_padding"));
     }
 
     /* 5.2.3: Sends a Huffman-encoded string literal representation containing the EOS symbol */
@@ -492,7 +492,7 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
-        assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
+        assertThat(ex.getMessage(), Matchers.containsString("eos_in_content"));
     }
 
     @Test
@@ -504,7 +504,7 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
-        assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+        assertThat(ex.getMessage(), Matchers.containsString("bad_termination"));
     }
 
     @Test
@@ -516,7 +516,7 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
-        assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+        assertThat(ex.getMessage(), Matchers.containsString("bad_termination"));
     }
 
     @Test

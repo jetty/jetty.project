@@ -17,9 +17,9 @@ import java.nio.ByteBuffer;
 
 public class NBitIntegerParser
 {
-    public static int decode(ByteBuffer buffer, int n)
+    public static int decode(ByteBuffer buffer, int prefix)
     {
-        if (n == 8)
+        if (prefix == 8)
         {
             int nbits = 0xFF;
 
@@ -40,7 +40,7 @@ public class NBitIntegerParser
             return i;
         }
 
-        int nbits = 0xFF >>> (8 - n);
+        int nbits = 0xFF >>> (8 - prefix);
 
         int i = buffer.get(buffer.position() - 1) & nbits;
 
