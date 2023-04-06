@@ -27,13 +27,13 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoggedOutAuthentication;
-import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -35,12 +35,12 @@ import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
@@ -699,7 +699,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         boolean isUserInRole = false;
         for (String role : roleInfo.getRoles())
         {
-            if (userIdentity.isUserInRole(role, null))
+            if (userIdentity.isUserInRole(role))
             {
                 isUserInRole = true;
                 break;

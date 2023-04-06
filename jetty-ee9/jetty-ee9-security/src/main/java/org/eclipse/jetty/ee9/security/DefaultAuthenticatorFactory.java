@@ -25,6 +25,8 @@ import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.SslClientCertAuthenticator;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;

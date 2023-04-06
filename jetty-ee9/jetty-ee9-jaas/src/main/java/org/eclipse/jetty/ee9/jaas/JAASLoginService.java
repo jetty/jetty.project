@@ -31,13 +31,13 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
-import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.DefaultIdentityService;
-import org.eclipse.jetty.ee9.security.IdentityService;
-import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -182,7 +182,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     }
 
     @Override
-    public UserIdentity login(final String username, final Object credentials, final ServletRequest request)
+    public UserIdentity login(final String username, final Object credentials, final Request request)
     {
         try
         {

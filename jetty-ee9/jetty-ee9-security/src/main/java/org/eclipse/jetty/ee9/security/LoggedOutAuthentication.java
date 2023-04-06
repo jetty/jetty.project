@@ -15,8 +15,9 @@ package org.eclipse.jetty.ee9.security;
 
 import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee9.nested.Authentication;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.UserIdentity;
 
 /**
  * LoggedOutAuthentication

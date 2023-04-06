@@ -44,7 +44,7 @@ import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentityScope;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
@@ -2015,9 +2015,9 @@ public class ConstraintTest
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            UserIdentity.Scope old = ((Request)request).getUserIdentityScope();
+            UserIdentityScope old = ((Request)request).getUserIdentityScope();
 
-            UserIdentity.Scope scope = new UserIdentity.Scope()
+            UserIdentityScope scope = new UserIdentityScope()
             {
                 @Override
                 public ContextHandler getContextHandler()

@@ -166,10 +166,10 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request req)
+    public UserIdentity login(String username, Object credentials, Request request)
     {
         Subject subject = _context._subject;
-        Session httpSession = req.getSession(false);
+        Session httpSession = request.getSession(false);
         GSSContext gssContext = null;
         if (httpSession != null)
         {
@@ -191,14 +191,14 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
             if (httpSession != null)
                 httpSession.removeAttribute(GSSContextHolder.ATTRIBUTE);
 
-            UserIdentity roles = _authorizationService.getUserIdentity(req, userName);
+            UserIdentity roles = _authorizationService.getUserIdentity(request, userName);
             return new SpnegoUserIdentity(subject, principal, roles);
         }
         else
         {
             // The GSS context is not established yet, save it into the HTTP session.
             if (httpSession == null)
-                httpSession = req.getSession(true);
+                httpSession = request.getSession(true);
             GSSContextHolder holder = new GSSContextHolder(gssContext);
             httpSession.setAttribute(GSSContextHolder.ATTRIBUTE, holder);
 

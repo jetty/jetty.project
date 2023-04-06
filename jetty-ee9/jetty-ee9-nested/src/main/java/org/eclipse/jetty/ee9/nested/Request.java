@@ -78,6 +78,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
 import org.eclipse.jetty.server.Server;
@@ -182,7 +183,7 @@ public class Request implements HttpServletRequest
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
     private Charset _queryEncoding;
-    private UserIdentity.Scope _scope;
+    private UserIdentityScope _scope;
     private long _timeStamp;
     private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
@@ -1407,7 +1408,7 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    public UserIdentity.Scope getUserIdentityScope()
+    public UserIdentityScope getUserIdentityScope()
     {
         return _scope;
     }
@@ -1842,7 +1843,7 @@ public class Request implements HttpServletRequest
         _timeStamp = ts;
     }
 
-    public void setUserIdentityScope(UserIdentity.Scope scope)
+    public void setUserIdentityScope(UserIdentityScope scope)
     {
         _scope = scope;
     }

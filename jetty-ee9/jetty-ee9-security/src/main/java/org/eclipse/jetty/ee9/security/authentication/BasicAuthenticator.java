@@ -24,10 +24,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.util.security.Constraint;
 
 public class BasicAuthenticator extends LoginAuthenticator
