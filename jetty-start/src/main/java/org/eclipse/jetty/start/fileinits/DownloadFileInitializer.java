@@ -23,6 +23,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
@@ -78,7 +79,20 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
             int status = response.statusCode();
 
-            if (response.statusCode() != 200)
+            if (!allowInsecureHttpDownloads() && (status >= 300) && (status <= 399))
+            {
+                // redirection status, provide more details in error
+                Optional<String> location = response.headers().firstValue("Location");
+                if (location.isPresent())
+                {
+                    throw new IOException("URL GET Failure [status " + status + "] on " + uri +
+                        " wanting to redirect to insecure HTTP location (use " +
+                        StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " +
+                        location.get());
+                }
+            }
+
+            if (status != 200)
             {
                 throw new IOException("URL GET Failure [status " + status + "] on " + uri);
             }
