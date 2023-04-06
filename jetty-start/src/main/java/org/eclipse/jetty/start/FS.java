@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -190,15 +191,15 @@ public class FS
     {
         StartLog.info("extract %s to %s", archive, destination);
         URI jaruri = URI.create("jar:" + archive.toUri());
-        Map<String, ?> fsEnv = new HashMap<>();
-        try (FileSystem zipfs = FileSystems.newFileSystem(jaruri, fsEnv))
+        Map<String, ?> fsEnv = Map.of();
+        try (FileSystem zipFs = FileSystems.newFileSystem(jaruri, fsEnv))
         {
-            copyZipContents(zipfs.getPath("/"), destination);
+            copyZipContents(zipFs.getPath("/"), destination);
         }
         catch (FileSystemAlreadyExistsException e)
         {
-            FileSystem zipfs = FileSystems.getFileSystem(jaruri);
-            copyZipContents(zipfs.getPath("/"), destination);
+            FileSystem zipFs = FileSystems.getFileSystem(jaruri);
+            copyZipContents(zipFs.getPath("/"), destination);
         }
     }
 
@@ -212,23 +213,23 @@ public class FS
         URI archiveURI = root.toUri();
         int archiveURISubIndex = archiveURI.toASCIIString().indexOf("!/") + 2;
 
-        try (Stream<Path> entriesStream = Files.walk(root, 30))
+        try (Stream<Path> entriesStream = Files.walk(root))
         {
             // ensure proper unpack order (eg: directories before files)
-            List<Path> sorted = entriesStream
+            Stream<Path> sorted = entriesStream
                 .filter((path) -> path.getNameCount() > 0)
                 .filter((path) -> !path.getName(0).toString().equalsIgnoreCase("META-INF"))
-                .sorted()
-                .collect(Collectors.toList());
+                .sorted();
 
-            for (Path path : sorted)
+            Iterator<Path> pathIterator = sorted.iterator();
+            while (pathIterator.hasNext())
             {
-
+                Path path = pathIterator.next();
                 URI entryURI = path.toUri();
                 String subURI = entryURI.toASCIIString().substring(archiveURISubIndex);
                 URI outputPathURI = outputDirURI.resolve(subURI);
                 Path outputPath = Path.of(outputPathURI);
-                StartLog.info("zipfs: %s > %s", path, outputPath);
+                StartLog.info("zipFs: %s > %s", path, outputPath);
                 if (Files.isDirectory(path))
                 {
                     if (!Files.exists(outputPath))
@@ -236,11 +237,11 @@ public class FS
                 }
                 else if (Files.exists(outputPath))
                 {
-                    StartLog.debug("skipping extract (file exists) %s", outputPath);
+                    StartLog.debug("skipping extraction (file exists) %s", outputPath);
                 }
                 else
                 {
-                    StartLog.info("copy %s to %s", path, outputPath);
+                    StartLog.info("extracting %s to %s", path, outputPath);
                     Files.copy(path, outputPath);
                 }
             }

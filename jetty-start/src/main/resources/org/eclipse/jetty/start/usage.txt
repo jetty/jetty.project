@@ -192,8 +192,7 @@ Options:
                    due to configuration errors.
 
   --allow-insecure-http-downloads
-                   Allow the use of insecure `http://` plaintext URI for
-                   downloading of content.
+                   Allow the use of insecure `http://` scheme for content download.
 
   --approve-all-licenses
                    Approves all license questions from modules that have

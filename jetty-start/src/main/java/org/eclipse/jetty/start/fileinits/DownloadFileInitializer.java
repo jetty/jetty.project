@@ -15,9 +15,11 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
+import java.net.ProxySelector;
 import java.net.URI;
-import java.net.URLConnection;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -30,6 +32,8 @@ import org.eclipse.jetty.start.StartLog;
 
 public abstract class DownloadFileInitializer extends FileInitializer
 {
+    private HttpClient httpClient;
+
     protected DownloadFileInitializer(BaseHome basehome, String... scheme)
     {
         super(basehome, scheme);
@@ -42,30 +46,63 @@ public abstract class DownloadFileInitializer extends FileInitializer
         if ("http".equalsIgnoreCase(uri.getScheme()) && !allowInsecureHttpDownloads())
             throw new IOException("Insecure HTTP download not allowed (use " + StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + uri);
 
+        if (Files.exists(destination))
+        {
+            if (Files.isRegularFile(destination))
+            {
+                StartLog.warn("skipping download of %s : file exists in destination %s", uri, destination);
+            }
+            else
+            {
+                StartLog.warn("skipping download of %s : path conflict at destination %s", uri, destination);
+            }
+            return;
+        }
+
         if (FS.ensureDirectoryExists(destination.getParent()))
             StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
 
         StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
 
-        URLConnection connection = uri.toURL().openConnection();
+        HttpClient httpClient = getHttpClient();
 
-        if (connection instanceof HttpURLConnection)
+        try
         {
-            HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-            http.setInstanceFollowRedirects(true);
-            http.setAllowUserInteraction(false);
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .GET()
+                .build();
 
-            int status = http.getResponseCode();
+            HttpResponse<InputStream> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
-            if (status != HttpURLConnection.HTTP_OK)
+            int status = response.statusCode();
+
+            if (response.statusCode() != 200)
             {
-                throw new IOException("URL GET Failure [" + status + "/" + http.getResponseMessage() + "] on " + uri);
+                throw new IOException("URL GET Failure [status " + status + "] on " + uri);
+            }
+
+            try (InputStream in = response.body())
+            {
+                Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
             }
         }
-
-        try (InputStream in = connection.getInputStream())
+        catch (InterruptedException e)
         {
-            Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
+            throw new IOException("Failed to GET: " + uri, e);
         }
+    }
+
+    private HttpClient getHttpClient()
+    {
+        if (httpClient == null)
+        {
+            httpClient = HttpClient.newBuilder()
+                .followRedirects(allowInsecureHttpDownloads() ? HttpClient.Redirect.ALWAYS : HttpClient.Redirect.NORMAL)
+                .proxy(ProxySelector.getDefault())
+                .build();
+        }
+        return httpClient;
     }
 }
