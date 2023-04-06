@@ -472,18 +472,18 @@ public class ResourceService
     public enum WelcomeMode
     {
         /**
-         * The welcome target is used in an HTTP redirect
-         * as the value of the {@code Location} header.
+         * The welcome target is used as the location for a redirect response,
+         * sent by {@link #redirectWelcome(Request, Response, Callback, String)}.
          */
         REDIRECT,
         /**
-         * The welcome target is served either as a real file
-         * or forwarded to be processed again.
+         * The welcome target is served by
+         * {@link #serveWelcome(Request, Response, Callback, String)}.
          */
         SERVE,
         /**
-         * The welcome target is wrapped in a new request
-         * that is re-handled.
+         * The welcome target is re-handled by
+         * {@link #rehandleWelcome(Request, Response, Callback, String)}.
          */
         REHANDLE
     }
