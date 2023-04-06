@@ -20,8 +20,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,6 +99,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,7 +202,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     protected boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
-    private boolean _usingSecurityManager = System.getSecurityManager() != null;
+    private boolean _usingSecurityManager = getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
@@ -335,7 +334,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
-        if (usingSecurityManager && System.getSecurityManager() == null)
+        if (usingSecurityManager && getSecurityManager() == null)
             throw new IllegalStateException("No security manager");
         _usingSecurityManager = usingSecurityManager;
     }
@@ -1732,6 +1731,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         getContext().destroy(listener);
     }
 
+    private static Object getSecurityManager()
+    {
+        return SecurityUtils.getSecurityManager();
+    }
+
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
         private final List<String> _urlPatterns = new ArrayList<>();
@@ -3062,19 +3066,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             // no security manager just return the classloader
             ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
-            if (!isUsingSecurityManager())
-            {
-                return classLoader;
-            }
-            else
+            if (isUsingSecurityManager())
             {
                 // check to see if the classloader of the caller is the same as the context
                 // classloader, or a parent of it, as required by the javadoc specification.
-
-                // Wrap in a PrivilegedAction so that only Jetty code will require the
-                // "createSecurityManager" permission, not also application code that calls this method.
-                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
-                ClassLoader callerLoader = caller.getCallerClassLoader(2);
+                ClassLoader callerLoader = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+                    .getCallerClass()
+                    .getClassLoader();
                 while (callerLoader != null)
                 {
                     if (callerLoader == classLoader)
@@ -3082,9 +3080,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                     else
                         callerLoader = callerLoader.getParent();
                 }
-                System.getSecurityManager().checkPermission(new RuntimePermission("getClassLoader"));
-                return classLoader;
+                SecurityUtils.checkPermission(new RuntimePermission("getClassLoader"));
             }
+            return classLoader;
         }
 
         public void setEnabled(boolean enabled)
