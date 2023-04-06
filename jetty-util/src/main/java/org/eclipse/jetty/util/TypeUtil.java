@@ -26,9 +26,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.AccessController;
 import java.security.CodeSource;
-import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -671,7 +669,7 @@ public class TypeUtil
     {
         try
         {
-            ProtectionDomain domain = AccessController.doPrivileged((PrivilegedAction<ProtectionDomain>)() -> clazz.getProtectionDomain());
+            ProtectionDomain domain = clazz.getProtectionDomain();
             if (domain != null)
             {
                 CodeSource source = domain.getCodeSource();

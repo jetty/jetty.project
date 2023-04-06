@@ -23,6 +23,7 @@ import javax.security.auth.message.config.AuthConfigFactory;
 import javax.security.auth.message.config.AuthConfigProvider;
 import javax.security.auth.message.config.RegistrationListener;
 
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,9 +61,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(String className, Map properties, String layer, String appContext, String description)
     {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null)
-            sm.checkPermission(new AuthPermission("registerAuthConfigProvider"));
+        checkPermission("registerAuthConfigProvider");
 
         String key = getKey(layer, appContext);
         AuthConfigProvider configProvider = createConfigProvider(className, properties);
@@ -76,9 +75,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(AuthConfigProvider provider, String layer, String appContext, String description)
     {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) 
-            sm.checkPermission(new AuthPermission("registerAuthConfigProvider"));
+        checkPermission("registerAuthConfigProvider");
 
         String key = getKey(layer, appContext);
         DefaultRegistrationContext context = new DefaultRegistrationContext(provider, layer, appContext, description, false);
@@ -91,9 +88,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public boolean removeRegistration(String registrationID)
     {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) 
-            sm.checkPermission(new AuthPermission("removeAuthRegistration"));
+        checkPermission("removeAuthRegistration");
 
         DefaultRegistrationContext registrationContext = _registrations.remove(registrationID);
         if (registrationContext == null)
@@ -106,9 +101,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String[] detachListener(RegistrationListener listener, String layer, String appContext)
     {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null)
-            sm.checkPermission(new AuthPermission("detachAuthListener"));
+        checkPermission("detachAuthListener");
 
         List<String> registrationIds = new ArrayList<>();
         for (DefaultRegistrationContext registration : _registrations.values())
@@ -145,11 +138,14 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public void refresh()
     {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null)
-            sm.checkPermission(new AuthPermission("refreshAuth"));
+        checkPermission("refreshAuth");
 
         // TODO: maybe we should re-construct providers created from classname.
+    }
+
+    private static void checkPermission(String permission)
+    {
+        SecurityUtils.checkPermission(new AuthPermission(permission));
     }
 
     private static String getKey(String layer, String appContext)
