@@ -50,7 +50,7 @@ public interface UserIdentityScope
         if (scope == null)
             return role;
 
-        Map<String,String> roleRefMap = scope.getRoleRefMap();
+        Map<String, String> roleRefMap = scope.getRoleRefMap();
         if (roleRefMap == null || roleRefMap.isEmpty())
             return role;
 
