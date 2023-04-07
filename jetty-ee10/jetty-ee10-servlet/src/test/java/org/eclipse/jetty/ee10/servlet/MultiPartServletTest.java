@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
@@ -256,9 +257,18 @@ public class MultiPartServletTest
 
         assertThat(writeError, instanceOf(EofException.class));
 
-        // We should get 400 response, for some reason reading the content throws EofException.
-        Response response = listener.get(30, TimeUnit.SECONDS);
-        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        // There is a race here, either we fail trying to write some more content OR
+        // we get 400 response, for some reason reading the content throws EofException.
+        try
+        {
+            Response response = listener.get(30, TimeUnit.SECONDS);
+            assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        }
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+            assertThat(cause, instanceOf(EofException.class));
+        }
     }
 
     @Test

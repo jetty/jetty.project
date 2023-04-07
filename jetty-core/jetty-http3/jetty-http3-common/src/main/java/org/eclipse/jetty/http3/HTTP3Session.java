@@ -38,6 +38,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.CyclicTimeouts;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Atomics;
@@ -216,7 +217,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             {
                 long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
                 String reason = "go_away";
-                failStreams(stream -> true, error, reason, true);
+                failStreams(stream -> true, error, reason, true, new ClosedChannelException());
                 terminate();
                 outwardDisconnect(error, reason);
             }
@@ -576,7 +577,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             // The other peer sent us a GOAWAY with the last processed streamId,
             // so we must fail the streams that have a bigger streamId.
             Predicate<HTTP3Stream> predicate = stream -> stream.isLocal() && stream.getId() > frame.getLastId();
-            failStreams(predicate, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), "go_away", true);
+            failStreams(predicate, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), "go_away", true, new EofException());
         }
 
         tryRunZeroStreamsAction();
@@ -666,7 +667,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             }
         }
 
-        failStreams(stream -> true, error, reason, true);
+        failStreams(stream -> true, error, reason, true, new IOException(reason));
 
         if (goAwayFrame != null)
         {
@@ -716,9 +717,8 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         getProtocolSession().outwardClose(error, reason);
     }
 
-    private void failStreams(Predicate<HTTP3Stream> predicate, long error, String reason, boolean close)
+    private void failStreams(Predicate<HTTP3Stream> predicate, long error, String reason, boolean close, Throwable failure)
     {
-        Throwable failure = new IOException(reason);
         streams.values().stream()
             .filter(predicate)
             .forEach(stream ->
@@ -837,10 +837,11 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
 
         // No point in closing the streams, as QUIC frames cannot be sent.
-        failStreams(stream -> true, error, reason, false);
+        Throwable failure = new EofException(reason);
+        failStreams(stream -> true, error, reason, false, failure);
 
         if (notifyFailure)
-            onSessionFailure(error, reason, new ClosedChannelException());
+            onSessionFailure(error, reason, failure);
 
         notifyDisconnect(error, reason);
     }

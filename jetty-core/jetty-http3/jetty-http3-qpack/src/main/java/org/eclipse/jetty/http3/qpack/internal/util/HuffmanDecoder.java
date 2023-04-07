@@ -105,7 +105,7 @@ public class HuffmanDecoder
             throw new EncodingException("bad_termination");
         }
 
-        String value = _utf8.toString();
+        String value = _utf8.toCompleteString();
         reset();
         return value;
     }

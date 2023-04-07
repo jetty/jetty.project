@@ -512,7 +512,7 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Config error {} at {} in {}", e.toString(), node, _configuration);
+                    LOG.warn("Config error {} at {} in {}", e, node, _configuration);
                     throw e;
                 }
             }

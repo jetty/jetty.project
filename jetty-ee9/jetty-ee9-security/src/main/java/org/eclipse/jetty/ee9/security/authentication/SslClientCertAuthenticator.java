@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -63,47 +62,39 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        X509Certificate[] certs = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
-
+        X509Certificate[] certs = (X509Certificate[])request.getAttribute("jakarta.servlet.request.X509Certificate");
         try
         {
             // Need certificates.
             if (certs != null && certs.length > 0)
             {
-
                 if (validateCerts)
-                {
                     sslContextFactory.validateCerts(certs);
-                }
 
                 for (X509Certificate cert : certs)
                 {
                     if (cert == null)
                         continue;
 
-                    Principal principal = cert.getSubjectDN();
+                    Principal principal = cert.getSubjectX500Principal();
                     if (principal == null)
-                        principal = cert.getIssuerDN();
-                    final String username = principal == null ? "clientcert" : principal.getName();
+                        principal = cert.getIssuerX500Principal();
+                    String username = principal == null ? "clientcert" : principal.getName();
 
                     UserIdentity user = login(username, "", req);
                     if (user != null)
-                    {
                         return new UserAuthentication(getAuthMethod(), user);
-                    }
+
                     // try with null password
                     user = login(username, null, req);
                     if (user != null)
-                    {
                         return new UserAuthentication(getAuthMethod(), user);
-                    }
+
                     // try with certs sig against login service as previous behaviour
-                    final char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
+                    char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
                     user = login(username, credential, req);
                     if (user != null)
-                    {
                         return new UserAuthentication(getAuthMethod(), user);
-                    }
                 }
             }
 

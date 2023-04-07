@@ -16,7 +16,9 @@ package org.eclipse.jetty.ee10.servlet;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletRequest;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
@@ -111,6 +114,8 @@ public class ServletContextRequest extends ContextRequest
     {
         if (getHttpURI().hasViolations() && !getServletChannel().getContextHandler().getServletHandler().isDecodeAmbiguousURIs())
         {
+            // TODO we should check if current compliance mode allows all the violations?
+
             for (UriCompliance.Violation violation : getHttpURI().getViolations())
             {
                 if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))
@@ -210,28 +215,29 @@ public class ServletContextRequest extends ContextRequest
     @Override
     public Object getAttribute(String name)
     {
-        // return hidden attributes for request logging
-        // TODO does this actually work?   Does the request logger have the wrapped request?
         return switch (name)
         {
-            case "o.e.j.s.s.ServletScopedRequest.request" -> _httpServletRequest;
-            case "o.e.j.s.s.ServletScopedRequest.response" -> _response.getHttpServletResponse();
-            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(getDecodedPathInContext()).getServletName();
-            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getDecodedPathInContext()).getPattern();
+            case "jakarta.servlet.request.cipher_suite" -> super.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE);
+            case "jakarta.servlet.request.key_size" -> super.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
+            case "jakarta.servlet.request.ssl_session_id" -> super.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE);
+            case "jakarta.servlet.request.X509Certificate" -> super.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
             default -> super.getAttribute(name);
         };
     }
 
     @Override
-    public Object removeAttribute(String name)
+    public Set<String> getAttributeNameSet()
     {
-        return super.removeAttribute(name);
-    }
-
-    @Override
-    public Object setAttribute(String name, Object attribute)
-    {
-        return super.setAttribute(name, attribute);
+        Set<String> names = new HashSet<>(super.getAttributeNameSet());
+        if (names.contains(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE))
+            names.add("jakarta.servlet.request.cipher_suite");
+        if (names.contains(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE))
+            names.add("jakarta.servlet.request.key_size");
+        if (names.contains(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE))
+            names.add("jakarta.servlet.request.ssl_session_id");
+        if (names.contains(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE))
+            names.add("jakarta.servlet.request.X509Certificate");
+        return names;
     }
 
     /**

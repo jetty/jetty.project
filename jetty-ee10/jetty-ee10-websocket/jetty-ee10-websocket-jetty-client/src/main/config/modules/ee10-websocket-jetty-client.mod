@@ -12,12 +12,9 @@ websocket
 [depend]
 client
 ee10-annotations
+websocket-jetty-client
 
 [lib]
-lib/jetty-websocket-core-common-${jetty.version}.jar
-lib/jetty-websocket-core-client-${jetty.version}.jar
-lib/ee10-websocket/jetty-ee10-websocket-jetty-api-${jetty.version}.jar
-lib/ee10-websocket/jetty-ee10-websocket-jetty-common-${jetty.version}.jar
 lib/ee10-websocket/jetty-ee10-websocket-jetty-client-${jetty.version}.jar
 
 [jpms]

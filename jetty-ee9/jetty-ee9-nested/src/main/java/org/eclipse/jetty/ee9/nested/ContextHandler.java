@@ -19,8 +19,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,6 +94,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,13 +149,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private static String __serverInfo = "jetty/" + Server.getVersion();
 
-    public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
-
     public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
     public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
     public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
     private boolean _canonicalEncodingURIs = false;
+    private boolean _usingSecurityManager = getSecurityManager() != null;
 
     /**
      * Get the current ServletContext implementation.
@@ -297,17 +295,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _errorHandler.setServer(server);
     }
 
-    @Deprecated
     public boolean isUsingSecurityManager()
     {
-        return false;
+        return _usingSecurityManager;
     }
 
-    @Deprecated
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
-        if (usingSecurityManager)
-            throw new UnsupportedOperationException();
+        if (usingSecurityManager && getSecurityManager() == null)
+            throw new IllegalStateException("No security manager");
+        _usingSecurityManager = usingSecurityManager;
     }
 
     public void setVirtualHosts(String[] vhosts)
@@ -717,7 +714,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     protected void startContext() throws Exception
     {
-        String managedAttributes = _initParams.get(MANAGED_ATTRIBUTES);
+        String managedAttributes = _initParams.get(org.eclipse.jetty.server.handler.ContextHandler.MANAGED_ATTRIBUTES);
         if (managedAttributes != null)
             addEventListener(new ManagedAttributeListener(this, StringUtil.csvSplit(managedAttributes)));
 
@@ -1535,6 +1532,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _coreContextHandler.clearAliasChecks();
     }
 
+    private static Object getSecurityManager()
+    {
+        return SecurityUtils.getSecurityManager();
+    }
+
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
      * or after the entire request has been received (for short requests of known length), or
@@ -2245,13 +2247,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 // check to see if the classloader of the caller is the same as the context
                 // classloader, or a parent of it, as required by the javadoc specification.
-
                 ClassLoader classLoader = _coreContext.getClassLoader();
-
-                // Wrap in a PrivilegedAction so that only Jetty code will require the
-                // "createSecurityManager" permission, not also application code that calls this method.
-                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
-                ClassLoader callerLoader = caller.getCallerClassLoader(2);
+                ClassLoader callerLoader = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+                    .getCallerClass()
+                    .getClassLoader();
                 while (callerLoader != null)
                 {
                     if (callerLoader == classLoader)
@@ -2259,10 +2258,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     else
                         callerLoader = callerLoader.getParent();
                 }
-                System.getSecurityManager().checkPermission(new RuntimePermission("getClassLoader"));
+                SecurityUtils.checkPermission(new RuntimePermission("getClassLoader"));
                 return classLoader;
             }
-
         }
 
         @Override
@@ -2323,19 +2321,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          * @param request A request that is applicable to the scope, or null
          */
         void exitScope(APIContext context, Request request);
-    }
-
-    private static class Caller extends SecurityManager
-    {
-        public ClassLoader getCallerClassLoader(int depth)
-        {
-            if (depth < 0)
-                return null;
-            Class<?>[] classContext = getClassContext();
-            if (classContext.length <= depth)
-                return null;
-            return classContext[depth].getClassLoader();
-        }
     }
 
     public static class CoreContextRequest extends ContextRequest

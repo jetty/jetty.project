@@ -24,7 +24,6 @@ Also included are a number of Jetty specific handlers that allow access to inter
 include::default-servlet.adoc[]
 include::proxy-servlet.adoc[]
 include::balancer-servlet.adoc[]
-include::cgi-servlet.adoc[]
 include::qos-filter.adoc[]
 include::dos-filter.adoc[]
 include::header-filter.adoc[]

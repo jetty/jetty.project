@@ -76,7 +76,7 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
-        Context context = ContextHandler.getCurrentContext();
+        Context context = ContextHandler.getCurrentContext(getServer());
         if (_baseResource == null)
         {
             if (context != null)

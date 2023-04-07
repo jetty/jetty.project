@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -319,8 +318,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         int code;
         if (cause instanceof CloseException)
             code = ((CloseException)cause).getStatusCode();
-        else if (cause instanceof Utf8Appendable.NotUtf8Exception)
-            code = CloseStatus.BAD_PAYLOAD;
         else if (cause instanceof WebSocketWriteTimeoutException)
             code = CloseStatus.NO_CLOSE;
         else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
@@ -355,8 +352,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
             code = ((CloseException)cause).getStatusCode();
         else if (cause instanceof ClosedChannelException)
             code = CloseStatus.NO_CLOSE;
-        else if (cause instanceof Utf8Appendable.NotUtf8Exception)
-            code = CloseStatus.BAD_PAYLOAD;
         else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
             code = CloseStatus.SHUTDOWN;
         else if (behavior == Behavior.CLIENT)

@@ -27,12 +27,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
-import org.eclipse.jetty.ee10.websocket.api.Session;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketSessionListener;
-import org.eclipse.jetty.ee10.websocket.common.SessionTracker;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
@@ -43,6 +37,12 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -180,7 +180,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
             catch (Exception e)
             {
-                throw new org.eclipse.jetty.ee10.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
+                throw new org.eclipse.jetty.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }
         });
     }

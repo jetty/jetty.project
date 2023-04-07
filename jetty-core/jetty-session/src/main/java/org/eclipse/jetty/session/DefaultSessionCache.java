@@ -162,7 +162,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                 {
                     //write out the session and remove from the cache
                     if (_sessionDataStore.isPassivating())
-                        session.willPassivate();
+                        session.onSessionPassivation();
                     try
                     {
                         _sessionDataStore.store(session.getId(), session.getSessionData());

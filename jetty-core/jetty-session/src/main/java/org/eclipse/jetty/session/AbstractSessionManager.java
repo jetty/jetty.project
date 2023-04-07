@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -81,7 +82,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private boolean _secureRequestOnly = true;
     private int _refreshCookieAge;
     private boolean _checkingRemoteSessionIdEncoding;
-    
+    private List<Session.LifeCycleListener> _sessionLifeCycleListeners = Collections.emptyList();
+
     public AbstractSessionManager()
     {
     }
@@ -236,7 +238,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         //check if session management is set up, if not set up defaults
         final Server server = getServer();
 
-        _context = ContextHandler.getCurrentContext();
+        _context = ContextHandler.getCurrentContext(server);
         _loader = Thread.currentThread().getContextClassLoader();
 
         // ensure a session path is set
@@ -303,6 +305,16 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
         secureRequestOnlyAttributes();
         super.doStart();
+
+        if (_context != null)
+        {
+            _sessionLifeCycleListeners = _context.getAttributeNameSet().stream()
+                .map(_context::getAttribute)
+                .filter(Session.LifeCycleListener.class::isInstance)
+                .map(Session.LifeCycleListener.class::cast)
+                .toList();
+            addBean(_sessionLifeCycleListeners);
+        }
     }
     
     public org.eclipse.jetty.server.Context getContext()
@@ -410,7 +422,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             LOG.warn("Error loading session {}", id, e);
             try
             {
-                //tell id mgr to remove session from all other contexts
+                //tell id mgr to remove session from all contexts
                 getSessionIdManager().invalidateAll(id);
             }
             catch (Exception x)
@@ -629,7 +641,28 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return (int)_sessionsCreatedStats.getCurrent();
     }
-    
+
+    @Override
+    public void onSessionIdChanged(Session session, String oldId)
+    {
+        for (Session.LifeCycleListener listener : _sessionLifeCycleListeners)
+            listener.onSessionIdChanged(session, oldId);
+    }
+
+    @Override
+    public void onSessionCreated(Session session)
+    {
+        for (Session.LifeCycleListener listener : _sessionLifeCycleListeners)
+            listener.onSessionCreated(session);
+    }
+
+    @Override
+    public void onSessionDestroyed(Session session)
+    {
+        for (Session.LifeCycleListener listener : _sessionLifeCycleListeners)
+            listener.onSessionDestroyed(session);
+    }
+
     /**
      * Called by SessionIdManager to remove a session that has been invalidated,
      * either by this context or another context. Also called by
@@ -641,10 +674,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public void invalidate(String id) throws Exception
     {
-
         if (StringUtil.isBlank(id))
             return;
-
         try
         {
             // Remove the Session object from the session cache and any backing
@@ -659,7 +690,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     {
                         try
                         {
-                            callSessionDestroyedListeners(session);
+                            onSessionDestroyed(session);
                         }
                         catch (Exception e)
                         {
@@ -846,7 +877,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
 
             consumer.accept(session);
-            callSessionCreatedListeners(session);
+            onSessionCreated(session);
         }
         catch (Exception e)
         {
@@ -899,7 +930,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
 
             //inform the listeners
-            callSessionIdListeners(session, oldId);
+            onSessionIdChanged(session, oldId);
         }
         catch (Exception e)
         {
@@ -1031,6 +1062,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _scheduler = null;
         super.doStop();
         _loader = null;
+        removeBean(_sessionLifeCycleListeners);
+        _sessionLifeCycleListeners = Collections.emptyList();
     }
 
     /**
