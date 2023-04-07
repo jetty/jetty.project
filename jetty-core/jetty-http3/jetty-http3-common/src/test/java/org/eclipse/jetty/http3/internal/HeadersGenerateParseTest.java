@@ -74,7 +74,7 @@ public class HeadersGenerateParseTest
         MetaData.Request inputMetaData = (MetaData.Request)input.getMetaData();
         MetaData.Request outputMetaData = (MetaData.Request)output.getMetaData();
         assertEquals(inputMetaData.getMethod(), outputMetaData.getMethod());
-        assertEquals(inputMetaData.getURIString(), outputMetaData.getURIString());
-        assertEquals(inputMetaData.getFields(), outputMetaData.getFields());
+        assertEquals(inputMetaData.getHttpURI().toString(), outputMetaData.getHttpURI().toString());
+        assertEquals(inputMetaData.getHttpFields(), outputMetaData.getHttpFields());
     }
 }

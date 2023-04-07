@@ -144,7 +144,7 @@ public class HttpGeneratorServerHTTPTest
                 switch (result)
                 {
                     case NEED_INFO:
-                        info = new MetaData.Response(HttpVersion.fromVersion(version), _code, reason, _fields, _contentLength);
+                        info = new MetaData.Response(_code, reason, HttpVersion.fromVersion(version), _fields, _contentLength);
                         continue;
 
                     case NEED_HEADER:

@@ -305,7 +305,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
         else
         {
-            HttpField settingsField = request.getFields().getField(HttpHeader.HTTP2_SETTINGS);
+            HttpField settingsField = request.getHttpFields().getField(HttpHeader.HTTP2_SETTINGS);
             if (settingsField == null)
                 throw new BadMessageException("Missing " + HttpHeader.HTTP2_SETTINGS + " header");
             String value = settingsField.getValue();

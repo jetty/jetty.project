@@ -61,7 +61,7 @@ public class CloseTest extends AbstractServerTest
                 try
                 {
                     sessionRef.set(stream.getSession());
-                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                    MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     // Reply with HEADERS.
                     stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     closeLatch.await(5, TimeUnit.SECONDS);
@@ -129,7 +129,7 @@ public class CloseTest extends AbstractServerTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 sessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -194,7 +194,7 @@ public class CloseTest extends AbstractServerTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
                 sessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 stream.getSession().close(ErrorCode.NO_ERROR.code, "OK", Callback.NOOP);
                 return null;

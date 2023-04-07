@@ -230,7 +230,7 @@ public class HTTP2ServerDocs
                 // Prepare the response HEADERS frame.
 
                 // The response HTTP status and HTTP headers.
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
 
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
@@ -322,17 +322,17 @@ public class HTTP2ServerDocs
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                if (pushEnabled && request.getURIString().endsWith("/index.html"))
+                if (pushEnabled && request.getHttpURI().toString().endsWith("/index.html"))
                 {
                     // Push the favicon.
-                    HttpURI pushedURI = HttpURI.build(request.getURI()).path("/favicon.ico");
+                    HttpURI pushedURI = HttpURI.build(request.getHttpURI()).path("/favicon.ico");
                     MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
                     stream.push(promiseFrame, null)
                         .thenCompose(pushedStream ->
                         {
                             // Send the favicon "response".
-                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            MetaData.Response pushedResponse = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
                                 .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer, true)));
                         });

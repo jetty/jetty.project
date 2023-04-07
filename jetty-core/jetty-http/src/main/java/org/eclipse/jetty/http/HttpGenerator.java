@@ -45,12 +45,12 @@ public class HttpGenerator
     public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
 
     private static final byte[] __colon_space = new byte[]{':', ' '};
-    public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 100, null, HttpFields.EMPTY, -1);
-    public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 102, null, HttpFields.EMPTY, -1);
+    public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(100, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
+    public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(102, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
     public static final MetaData.Response RESPONSE_400_INFO =
-        new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.BAD_REQUEST_400, null, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
+        new MetaData.Response(HttpStatus.BAD_REQUEST_400, null, HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
     public static final MetaData.Response RESPONSE_500_INFO =
-        new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
+        new MetaData.Response(INTERNAL_SERVER_ERROR_500, null, HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
 
     // states
     public enum State
@@ -224,7 +224,7 @@ public class HttpGenerator
 
                     generateHeaders(header, content, last);
 
-                    boolean expect100 = info.getFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+                    boolean expect100 = info.getHttpFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
                     if (expect100)
                     {
@@ -527,7 +527,7 @@ public class HttpGenerator
     {
         header.put(StringUtil.getBytes(request.getMethod()));
         header.put((byte)' ');
-        header.put(StringUtil.getBytes(request.getURIString()));
+        header.put(StringUtil.getBytes(request.getHttpURI().toString()));
         header.put((byte)' ');
         header.put(request.getHttpVersion().toBytes());
         header.put(HttpTokens.CRLF);
@@ -591,7 +591,7 @@ public class HttpGenerator
         if (LOG.isDebugEnabled())
         {
             LOG.debug("generateHeaders {} last={} content={}", _info, last, BufferUtil.toDetailString(content));
-            LOG.debug(_info.getFields().toString());
+            LOG.debug(_info.getHttpFields().toString());
         }
 
         // default field values
@@ -605,7 +605,7 @@ public class HttpGenerator
         boolean contentLengthField = false;
 
         // Generate fields
-        HttpFields fields = _info.getFields();
+        HttpFields fields = _info.getHttpFields();
         if (fields != null)
         {
             int n = fields.size();

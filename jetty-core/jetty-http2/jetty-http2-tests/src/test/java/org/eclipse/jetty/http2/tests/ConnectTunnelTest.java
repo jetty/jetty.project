@@ -53,11 +53,11 @@ public class ConnectTunnelTest extends AbstractTest
                 // Verifies that the CONNECT request is well formed.
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 assertEquals(HttpMethod.CONNECT.asString(), request.getMethod());
-                HttpURI uri = request.getURI();
+                HttpURI uri = request.getHttpURI();
                 assertNull(uri.getScheme());
                 assertNull(uri.getPath());
                 assertNotNull(uri.getAuthority());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(stream::demand));
                 return new Stream.Listener()
                 {
@@ -109,12 +109,12 @@ public class ConnectTunnelTest extends AbstractTest
                 // Verifies that the CONNECT request is well formed.
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 assertEquals(HttpMethod.CONNECT.asString(), request.getMethod());
-                HttpURI uri = request.getURI();
+                HttpURI uri = request.getHttpURI();
                 assertNotNull(uri.getScheme());
                 assertNotNull(uri.getPath());
                 assertNotNull(uri.getAuthority());
                 assertNotNull(request.getProtocol());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(stream::demand));
                 return new Stream.Listener()
                 {

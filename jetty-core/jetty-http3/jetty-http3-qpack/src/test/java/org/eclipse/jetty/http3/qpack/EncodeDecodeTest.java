@@ -90,7 +90,7 @@ public class EncodeDecodeTest
 
         _decoder.decode(streamId, buffer, _decoderHandler);
         MetaData result = _decoderHandler.getMetaData();
-        assertThat(result.getFields(), is(httpFields));
+        assertThat(result.getHttpFields(), is(httpFields));
         assertThat(_decoderHandler.getInstruction(), instanceOf(SectionAcknowledgmentInstruction.class));
         assertTrue(_decoderHandler.isEmpty());
 

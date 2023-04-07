@@ -109,7 +109,7 @@ public class HttpStreamOverFCGI implements HttpStream
     {
         String pathQuery = URIUtil.addPathQuery(_path, _query);
         // TODO https?
-        MetaData.Request request = new MetaData.Request(_method, HttpScheme.HTTP.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, Long.MIN_VALUE);
+        MetaData.Request request = new MetaData.Request(_method, HttpScheme.HTTP.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
         Runnable task = _httpChannel.onRequest(request);
         _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
         // TODO: here we just execute the task.
@@ -258,7 +258,7 @@ public class HttpStreamOverFCGI implements HttpStream
 
         _committed = true;
 
-        boolean shutdown = _shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        boolean shutdown = _shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         ByteBufferPool bufferPool = _generator.getByteBufferPool();
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
@@ -290,7 +290,7 @@ public class HttpStreamOverFCGI implements HttpStream
 
     private void generateResponseHeaders(ByteBufferPool.Accumulator accumulator, MetaData.Response info)
     {
-        _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getFields());
+        _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getHttpFields());
     }
 
     private void generateResponseContent(ByteBufferPool.Accumulator accumulator, boolean last, ByteBuffer buffer)

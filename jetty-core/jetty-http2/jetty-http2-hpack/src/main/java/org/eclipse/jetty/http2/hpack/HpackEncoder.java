@@ -166,7 +166,7 @@ public class HpackEncoder
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("CtxTbl[%x] encoding", _context.hashCode()));
 
-            HttpFields fields = metadata.getFields();
+            HttpFields fields = metadata.getHttpFields();
             // Verify that we can encode without errors.
             if (isValidateEncoding() && fields != null)
             {
@@ -196,14 +196,14 @@ public class HpackEncoder
                 HttpMethod httpMethod = method == null ? null : HttpMethod.fromString(method);
                 HttpField methodField = C_METHODS.get(httpMethod);
                 encode(buffer, methodField == null ? new HttpField(HttpHeader.C_METHOD, method) : methodField);
-                encode(buffer, new HttpField(HttpHeader.C_AUTHORITY, request.getURI().getAuthority()));
+                encode(buffer, new HttpField(HttpHeader.C_AUTHORITY, request.getHttpURI().getAuthority()));
                 boolean isConnect = HttpMethod.CONNECT.is(request.getMethod());
                 String protocol = request.getProtocol();
                 if (!isConnect || protocol != null)
                 {
-                    String scheme = request.getURI().getScheme();
+                    String scheme = request.getHttpURI().getScheme();
                     encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
-                    encode(buffer, new HttpField(HttpHeader.C_PATH, request.getURI().getPathQuery()));
+                    encode(buffer, new HttpField(HttpHeader.C_PATH, request.getHttpURI().getPathQuery()));
                     if (protocol != null)
                         encode(buffer, new HttpField(HttpHeader.C_PROTOCOL, protocol));
                 }

@@ -83,11 +83,11 @@ public class PushPromiseGenerateParseTest
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
-            assertEquals(metaData.getURI(), request.getURI());
+            assertEquals(metaData.getHttpURI(), request.getHttpURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
-                assertTrue(request.getFields().contains(field));
+                assertTrue(request.getHttpFields().contains(field));
             }
         }
     }
@@ -136,11 +136,11 @@ public class PushPromiseGenerateParseTest
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
             MetaData.Request request = frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
-            assertEquals(metaData.getURI(), request.getURI());
+            assertEquals(metaData.getHttpURI(), request.getHttpURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
-                assertTrue(request.getFields().contains(field));
+                assertTrue(request.getHttpFields().contains(field));
             }
         }
     }

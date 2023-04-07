@@ -68,7 +68,7 @@ public class TrailersTest extends AbstractTest
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 assertFalse(frame.isEndStream());
-                assertTrue(request.getFields().contains("X-Request"));
+                assertTrue(request.getHttpFields().contains("X-Request"));
                 return new Stream.Listener()
                 {
                     @Override
@@ -76,7 +76,7 @@ public class TrailersTest extends AbstractTest
                     {
                         MetaData trailer = frame.getMetaData();
                         assertTrue(frame.isEndStream());
-                        assertTrue(trailer.getFields().contains("X-Trailer"));
+                        assertTrue(trailer.getHttpFields().contains("X-Trailer"));
                         latch.countDown();
                     }
                 };
@@ -205,7 +205,7 @@ public class TrailersTest extends AbstractTest
             {
                 HttpFields.Mutable responseFields = HttpFields.build();
                 responseFields.put("X-Response", "true");
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, responseFields);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, responseFields);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
                 stream.headers(responseFrame, new Callback()
                 {
@@ -238,14 +238,14 @@ public class TrailersTest extends AbstractTest
                 {
                     MetaData.Response response = (MetaData.Response)frame.getMetaData();
                     assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertTrue(response.getFields().contains("X-Response"));
+                    assertTrue(response.getHttpFields().contains("X-Response"));
                     assertFalse(frame.isEndStream());
                     responded = true;
                 }
                 else
                 {
                     MetaData trailer = frame.getMetaData();
-                    assertTrue(trailer.getFields().contains("X-Trailer"));
+                    assertTrue(trailer.getHttpFields().contains("X-Trailer"));
                     assertTrue(frame.isEndStream());
                     latch.countDown();
                 }
@@ -316,7 +316,7 @@ public class TrailersTest extends AbstractTest
         assertFalse(data.isEndStream());
         assertTrue(trailers.isEndStream());
         assertTrue(eof.isEndStream());
-        assertEquals(trailers.getMetaData().getFields().get(trailerName), trailerValue);
+        assertEquals(trailers.getMetaData().getHttpFields().get(trailerName), trailerValue);
     }
 
     @Test
@@ -464,6 +464,6 @@ public class TrailersTest extends AbstractTest
         assertEquals(HttpStatus.OK_200, responseMetaData.getStatus());
 
         MetaData trailerMetaData = trailersRef.get();
-        assertEquals(trailerValue, trailerMetaData.getFields().get(trailerName));
+        assertEquals(trailerValue, trailerMetaData.getHttpFields().get(trailerName));
     }
 }

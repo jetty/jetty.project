@@ -590,7 +590,7 @@ public class HttpTester
         @Override
         public MetaData.Response getInfo()
         {
-            return new MetaData.Response(_version, _status, _reason, this, _content == null ? -1 : _content.size());
+            return new MetaData.Response(_status, _reason, _version, this, _content == null ? -1 : _content.size());
         }
 
         @Override

@@ -35,7 +35,7 @@ public class MetaDataBuilder
     private HostPortHttpField _authority;
     private String _path;
     private String _protocol;
-    private long _contentLength = Long.MIN_VALUE;
+    private long _contentLength = -1;
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -260,7 +260,7 @@ public class MetaDataBuilder
             {
                 if (_status == null)
                     throw new HpackException.StreamException("No Status");
-                return new MetaData.Response(HttpVersion.HTTP_2, _status, fields, _contentLength);
+                return new MetaData.Response(_status, null, HttpVersion.HTTP_2, fields, _contentLength);
             }
 
             return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
@@ -277,7 +277,7 @@ public class MetaDataBuilder
             _path = null;
             _protocol = null;
             _size = 0;
-            _contentLength = Long.MIN_VALUE;
+            _contentLength = -1;
         }
     }
 

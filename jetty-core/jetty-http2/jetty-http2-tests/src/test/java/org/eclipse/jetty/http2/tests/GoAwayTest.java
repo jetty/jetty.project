@@ -73,7 +73,7 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -128,7 +128,7 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -212,7 +212,7 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -368,7 +368,7 @@ public class GoAwayTest extends AbstractTest
 
         // Previous streams must complete successfully.
         Stream serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream.headers(new HeadersFrame(serverStream.getId(), response, null, true), Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -417,7 +417,7 @@ public class GoAwayTest extends AbstractTest
                         // Only send the response after reading the first DATA frame.
                         if (dataFrames.incrementAndGet() == 1)
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                     }
@@ -595,7 +595,7 @@ public class GoAwayTest extends AbstractTest
 
         // Complete the stream.
         Stream serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream.headers(new HeadersFrame(serverStream.getId(), response, null, true), Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -680,7 +680,7 @@ public class GoAwayTest extends AbstractTest
 
         // Complete the stream, the server should send the non-graceful GOAWAY.
         Stream serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream.headers(new HeadersFrame(serverStream.getId(), response, null, true), Callback.NOOP);
 
         // The server already received the client GOAWAY,
@@ -717,7 +717,7 @@ public class GoAwayTest extends AbstractTest
                         data.release();
                         if (data.frame().isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                     }
@@ -1165,7 +1165,7 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                String path = request.getURI().getPath();
+                String path = request.getHttpURI().getPath();
 
                 if ("/prime".equals(path))
                 {
@@ -1223,7 +1223,7 @@ public class GoAwayTest extends AbstractTest
             {
                 long remotePort = ((InetSocketAddress)stream.getSession().getRemoteSocketAddress()).getPort();
                 HttpFields responseHeaders = HttpFields.build().putLongField("X-Remote-Port", remotePort);
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, responseHeaders);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, responseHeaders);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true));
             }
         });

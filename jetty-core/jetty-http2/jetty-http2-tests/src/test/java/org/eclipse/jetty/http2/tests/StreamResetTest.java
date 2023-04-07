@@ -165,7 +165,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
                 CompletableFuture<Stream> completable = stream.headers(responseFrame);
                 stream.demand();
@@ -1053,7 +1053,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;

@@ -61,7 +61,7 @@ public class Http3Fields implements HttpFields
 
     public Http3Fields(MetaData metadata)
     {
-        httpFields = metadata.getFields();
+        httpFields = metadata.getHttpFields();
         if (metadata.isRequest())
         {
             MetaData.Request request = (MetaData.Request)metadata;
@@ -69,14 +69,14 @@ public class Http3Fields implements HttpFields
             HttpMethod httpMethod = method == null ? null : HttpMethod.fromString(method);
             HttpField methodField = C_METHODS.get(httpMethod);
             pseudoHeaders.add(methodField == null ? new HttpField(HttpHeader.C_METHOD, method) : methodField);
-            pseudoHeaders.add(new HttpField(HttpHeader.C_AUTHORITY, request.getURI().getAuthority()));
+            pseudoHeaders.add(new HttpField(HttpHeader.C_AUTHORITY, request.getHttpURI().getAuthority()));
 
             boolean isConnect = HttpMethod.CONNECT.is(request.getMethod());
             String protocol = request.getProtocol();
             if (!isConnect || protocol != null)
             {
-                pseudoHeaders.add(HttpScheme.HTTPS.is(request.getURI().getScheme()) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
-                pseudoHeaders.add(new HttpField(HttpHeader.C_PATH, request.getURI().getPathQuery()));
+                pseudoHeaders.add(HttpScheme.HTTPS.is(request.getHttpURI().getScheme()) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
+                pseudoHeaders.add(new HttpField(HttpHeader.C_PATH, request.getHttpURI().getPathQuery()));
 
                 if (protocol != null)
                     pseudoHeaders.add(new HttpField(HttpHeader.C_PROTOCOL, protocol));

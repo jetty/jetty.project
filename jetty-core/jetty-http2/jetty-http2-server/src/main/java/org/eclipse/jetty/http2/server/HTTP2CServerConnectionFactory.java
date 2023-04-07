@@ -65,7 +65,7 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
     public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields.Mutable response101) throws BadMessageException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} upgrading {}{}{}", this, request, System.lineSeparator(), request.getFields());
+            LOG.debug("{} upgrading {}{}{}", this, request, System.lineSeparator(), request.getHttpFields());
 
         if (request.getContentLength() > 0)
             return null;

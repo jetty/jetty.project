@@ -110,7 +110,7 @@ public class InterleavingTest extends AbstractTest
 
         Stream serverStream1 = serverStreams.get(0);
         Stream serverStream2 = serverStreams.get(1);
-        MetaData.Response response1 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+        MetaData.Response response1 = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream1.headers(new HeadersFrame(serverStream1.getId(), response1, null, false), Callback.NOOP);
 
         Random random = new Random();
@@ -119,7 +119,7 @@ public class InterleavingTest extends AbstractTest
         byte[] content2 = new byte[2 * ((HTTP2Session)serverStream2.getSession()).updateSendWindow(0)];
         random.nextBytes(content2);
 
-        MetaData.Response response2 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+        MetaData.Response response2 = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream2.headers(new HeadersFrame(serverStream2.getId(), response2, null, false), new Callback()
         {
             @Override

@@ -88,7 +88,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         this.streamId = streamId;
         this.request = request;
         this.local = local;
-        this.dataLength = Long.MIN_VALUE;
+        this.dataLength = -1;
         this.dataStalled = true;
     }
 
@@ -375,11 +375,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
         {
-            HttpFields fields = metaData.getFields();
+            HttpFields fields = metaData.getHttpFields();
             long length = -1;
             if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
-            dataLength = length >= 0 ? length : Long.MIN_VALUE;
+            dataLength = length;
         }
 
         boolean offered = false;
@@ -425,7 +425,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             return;
         }
 
-        if (dataLength != Long.MIN_VALUE)
+        if (dataLength >= 0)
         {
             DataFrame frame = data.frame();
             dataLength -= frame.remaining();

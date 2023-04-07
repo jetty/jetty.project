@@ -165,9 +165,9 @@ public class QpackEncoder implements Dumpable
                 LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
 
             // Verify that we can encode without errors.
-            if (metadata.getFields() != null)
+            if (metadata.getHttpFields() != null)
             {
-                for (HttpField field : metadata.getFields())
+                for (HttpField field : metadata.getHttpFields())
                 {
                     String name = field.getName();
                     char firstChar = name.charAt(0);
