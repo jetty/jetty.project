@@ -99,6 +99,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return context == null ? (server == null ? null : server.getContext()) : context;
     }
 
+    // Do not remove, invoked via reflection.
     public static ContextHandler getCurrentContextHandler()
     {
         Context context = getCurrentContext();

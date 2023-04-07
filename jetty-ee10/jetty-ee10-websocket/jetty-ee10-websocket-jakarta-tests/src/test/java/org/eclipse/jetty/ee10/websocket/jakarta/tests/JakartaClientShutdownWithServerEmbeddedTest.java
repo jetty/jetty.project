@@ -25,7 +25,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -67,10 +66,6 @@ public class JakartaClientShutdownWithServerEmbeddedTest
         contextHandler.setContextPath("/");
         contextHandler.addServlet(new ServletHolder(new ContextHandlerShutdownServlet()), "/");
         server.setHandler(contextHandler);
-
-        // Because we are using embedded we must manually add the Jakarta WS Client Shutdown SCI.
-        JakartaWebSocketShutdownContainer jakartaWebSocketClientShutdown = new JakartaWebSocketShutdownContainer();
-        contextHandler.addServletContainerInitializer(jakartaWebSocketClientShutdown);
 
         server.start();
         serverUri = WSURI.toWebsocket(server.getURI());

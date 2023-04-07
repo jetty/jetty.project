@@ -166,14 +166,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return __context.get();
     }
 
-    public static ContextHandler getContextHandler(ServletContext context)
+    public static ContextHandler getCurrentContextHandler()
     {
-        if (context instanceof APIContext)
-            return ((APIContext)context).getContextHandler();
         APIContext c = getCurrentContext();
         if (c != null)
             return c.getContextHandler();
         return null;
+    }
+
+    public static ContextHandler getContextHandler(ServletContext context)
+    {
+        if (context instanceof APIContext)
+            return ((APIContext)context).getContextHandler();
+        return getCurrentContextHandler();
     }
 
     public static ServletContext getServletContext(Context context)

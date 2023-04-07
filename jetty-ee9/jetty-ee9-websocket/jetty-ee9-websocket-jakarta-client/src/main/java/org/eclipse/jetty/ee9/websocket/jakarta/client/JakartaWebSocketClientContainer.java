@@ -44,6 +44,7 @@ import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketExtensionC
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -63,7 +64,7 @@ import org.slf4j.LoggerFactory;
 public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer implements jakarta.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketClientContainer.class);
-    private static final Map<ClassLoader, ContainerLifeCycle> SHUTDOWN_MAP = new  ConcurrentHashMap<>();
+    private static final Map<ClassLoader, ContainerLifeCycle> SHUTDOWN_MAP = new ConcurrentHashMap<>();
 
     public static void setShutdownContainer(ContainerLifeCycle container)
     {
@@ -308,6 +309,25 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStart() {}", this);
 
+        // Mechanism 1.
+        // - When this class is used by a web app, and it is loaded from the server
+        //   class-path, so ContextHandler can be seen from this class' ClassLoader.
+        // - When this class is used on the server in embedded code, so the same
+        //   ClassLoader can load both this class and ContextHandler.
+        Object contextHandler = getContextHandler();
+        if (contextHandler != null)
+        {
+            Container.addBean(contextHandler, this, true);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} registered for ContextHandler shutdown to {}", this, contextHandler);
+            return;
+        }
+
+        // Mechanism 2.
+        // - When this class is used by a web app, and it is loaded from the web app
+        //   ClassLoader because all the necessary jars have been put in WEB-INF/lib.
+        //   In this case the ContextHandler class cannot be loaded by this class'
+        //   ClassLoader, and we rely on the JakartaWebSocketShutdownContainer.
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         ContainerLifeCycle container = SHUTDOWN_MAP.get(cl);
         if (container != null)
@@ -318,6 +338,8 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
             return;
         }
 
+        // Mechanism 3.
+        // - When this class is used on the client side.
         ShutdownThread.register(this);
         if (LOG.isDebugEnabled())
             LOG.debug("{} registered for JVM shutdown", this);
@@ -327,6 +349,16 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
     {
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStop() {}", this);
+
+        Object contextHandler = getContextHandler();
+        if (contextHandler != null)
+        {
+            Container.unmanage(contextHandler, this);
+            Container.removeBean(contextHandler, this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} deregistered for ContextHandler shutdown from {}", this, contextHandler);
+            return;
+        }
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         ContainerLifeCycle container = SHUTDOWN_MAP.get(cl);
@@ -346,5 +378,20 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         ShutdownThread.deregister(this);
         if (LOG.isDebugEnabled())
             LOG.debug("{} deregistered for JVM shutdown", this);
+    }
+
+    public Object getContextHandler()
+    {
+        try
+        {
+            return getClass().getClassLoader()
+                .loadClass("org.eclipse.jetty.ee9.nested.ContextHandler")
+                .getMethod("getCurrentContextHandler")
+                .invoke(null);
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
     }
 }
