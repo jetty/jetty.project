@@ -507,12 +507,13 @@ public class ResourceService
         if (welcomeAction == null)
             return false;
 
-        return handleWelcomeAction(request, response, callback, welcomeAction);
+        handleWelcomeAction(request, response, callback, welcomeAction);
+        return true;
     }
 
-    protected boolean handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
+    protected void handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
     {
-        return switch (welcomeAction.mode)
+        switch (welcomeAction.mode)
         {
             case REDIRECT -> redirectWelcome(request, response, callback, welcomeAction.target);
             case SERVE ->
@@ -531,15 +532,12 @@ public class ResourceService
      * @param response the response
      * @param callback the callback to complete
      * @param welcomeTarget the welcome target to redirect to
-     * @return true when the request will be redirected and the callback completed,
-     * false otherwise
      * @throws Exception if the redirection fails
      */
-    protected boolean redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    protected void redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
         response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
         sendRedirect(request, response, callback, welcomeTarget);
-        return true;
     }
 
     /**
@@ -551,15 +549,12 @@ public class ResourceService
      * @param response the response
      * @param callback the callback to complete
      * @param welcomeTarget the welcome target to serve
-     * @return true when the welcome target will be served and the callback completed,
-     * false otherwise
      * @throws Exception if serving the welcome target fails
      */
-    protected boolean serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
         HttpContent c = _contentFactory.getContent(welcomeTarget);
         sendData(request, response, callback, c, List.of());
-        return true;
     }
 
     /**
@@ -578,13 +573,11 @@ public class ResourceService
      * @param response the response
      * @param callback the callback to complete
      * @param welcomeTarget the welcome target to rehandle to
-     * @return true when the welcome target will be rehandled and the callback completed,
-     * false otherwise
      * @throws Exception if the rehandling fails
      */
-    protected boolean rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
-        return false;
+        Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
     }
 
     private WelcomeAction processWelcome(Request request) throws IOException

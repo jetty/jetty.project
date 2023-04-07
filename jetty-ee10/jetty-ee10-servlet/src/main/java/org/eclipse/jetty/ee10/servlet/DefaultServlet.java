@@ -174,11 +174,12 @@ import org.slf4j.LoggerFactory;
  *   <dt>welcomeServlets</dt>
  *   <dd>
  *     Use {@code false} to only serve welcome resources from the file system.
- *     Use {@code true} to dispatch welcome resources to a matching Servlet, when
- *     the welcome resources does not exist on file system.
- *     Use {@code exact} to dispatch welcome resource to a Servlet whose mapping
- *     is exactly the same as the welcome resource, when the welcome resources
+ *     Use {@code true} to dispatch welcome resources to a matching Servlet
+ *     (for example mapped to {@code *.welcome}), when the welcome resources
  *     does not exist on file system.
+ *     Use {@code exact} to dispatch welcome resource to a Servlet whose mapping
+ *     is exactly the same as the welcome resource (for example {@code /index.welcome}),
+ *     when the welcome resources does not exist on file system.
  *     Defaults to {@code false}.
  *   </dd>
  * </dl>
@@ -1068,7 +1069,7 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected boolean redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
+        protected void redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
         {
             HttpServletRequest servletRequest = getServletRequest(request);
             HttpServletResponse servletResponse = getServletResponse(response);
@@ -1084,11 +1085,10 @@ public class DefaultServlet extends HttpServlet
             servletResponse.setContentLength(0);
             servletResponse.sendRedirect(welcomeTarget);
             callback.succeeded();
-            return true;
         }
 
         @Override
-        protected boolean serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
+        protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
         {
             HttpServletRequest servletRequest = getServletRequest(request);
             HttpServletResponse servletResponse = getServletResponse(response);
@@ -1097,7 +1097,11 @@ public class DefaultServlet extends HttpServlet
 
             RequestDispatcher dispatcher = servletRequest.getServletContext().getRequestDispatcher(welcomeTarget);
             if (dispatcher == null)
-                return false;
+            {
+                // We know that the welcome target exists and can be served.
+                Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                return;
+            }
 
             try
             {
@@ -1116,13 +1120,12 @@ public class DefaultServlet extends HttpServlet
             {
                 callback.failed(e);
             }
-            return true;
         }
 
         @Override
-        protected boolean rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
+        protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
         {
-            return serveWelcome(request, response, callback, welcomeTarget);
+            serveWelcome(request, response, callback, welcomeTarget);
         }
 
         @Override
@@ -1272,19 +1275,18 @@ public class DefaultServlet extends HttpServlet
     private enum WelcomeServletMode
     {
         /**
-         * <p>Welcome resources are not served by Servlets.</p>
-         * <p>The welcome resource must exist as a file on the filesystem.</p>
+         * <p>Welcome targets are not served by Servlets.</p>
+         * <p>The welcome target must exist as a file on the filesystem.</p>
          */
         NONE,
         /**
-         * <p>Welcome resources may be served by Servlets, but only if the
-         * welcome resource does not exist as a file on the filesystem.</p>
+         * <p>Welcome target that exist as files on the filesystem are
+         * served, otherwise a matching Servlet may serve the welcome target.</p>
          */
         MATCH,
         /**
-         * <p>Welcome resources may be served by Servlets, but only if the
-         * welcome resource does not exist as a file on the filesystem,
-         * and the Servlet has an exact mapping for the welcome resource.</p>
+         * <p>Welcome target that exist as files on the filesystem are
+         * served, otherwise an exact matching Servlet may serve the welcome target.</p>
          */
         EXACT
     }

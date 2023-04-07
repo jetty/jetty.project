@@ -375,7 +375,7 @@ public class ResourceHandler extends Handler.Wrapper
     private class HandlerResourceService extends ResourceService
     {
         @Override
-        protected boolean rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+        protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
         {
             HttpURI newHttpURI = HttpURI.build(request.getHttpURI()).pathQuery(welcomeTarget);
             Request newRequest = new Request.Wrapper(request)
@@ -386,7 +386,11 @@ public class ResourceHandler extends Handler.Wrapper
                     return newHttpURI;
                 }
             };
-            return getServer().handle(newRequest, response, callback);
+
+            if (getServer().handle(newRequest, response, callback))
+                return;
+
+            super.rehandleWelcome(request, response, callback, welcomeTarget);
         }
     }
 }
