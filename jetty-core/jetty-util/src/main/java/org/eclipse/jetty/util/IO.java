@@ -466,6 +466,24 @@ public class IO
     }
 
     /**
+     * Closes an arbitrary closable, and logs exceptions at ignore level
+     *
+     * @param closeable the closeable to close
+     */
+    public static void close(AutoCloseable closeable)
+    {
+        try
+        {
+            if (closeable != null)
+                closeable.close();
+        }
+        catch (Exception ignore)
+        {
+            LOG.trace("IGNORED", ignore);
+        }
+    }
+
+    /**
      * closes an input stream, and logs exceptions
      *
      * @param is the input stream to close

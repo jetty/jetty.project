@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
+import java.util.function.Function;
+
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,6 +29,8 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.ManagedSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.newGetSession;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
@@ -47,7 +51,7 @@ public abstract class LoginAuthenticator implements Authenticator
     }
 
     /**
-     * If the UserIdentity is not null after this method calls {@link LoginService#login(String, Object, ServletRequest)}, it
+     * If the UserIdentity is not null after this method calls {@link LoginService#login(String, Object, Function<Boolean, Session>)}, it
      * is assumed that the user is fully authenticated and we need to change the session id to prevent
      * session fixation vulnerability. If the UserIdentity is not necessarily fully
      * authenticated, then subclasses must override this method and
@@ -59,7 +63,7 @@ public abstract class LoginAuthenticator implements Authenticator
      */
     public UserIdentity login(String username, Object password, ServletRequest servletRequest)
     {
-        UserIdentity user = _loginService.login(username, password, servletRequest);
+        UserIdentity user = _loginService.login(username, password, newGetSession(servletRequest));
         if (user != null)
         {
             Request request = Request.getBaseRequest(servletRequest);

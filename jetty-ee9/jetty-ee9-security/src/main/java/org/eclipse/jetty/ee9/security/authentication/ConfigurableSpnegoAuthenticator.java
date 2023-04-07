@@ -27,16 +27,18 @@ import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
-import org.eclipse.jetty.ee9.security.SpnegoUserIdentity;
-import org.eclipse.jetty.ee9.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
+import org.eclipse.jetty.security.SpnegoUserIdentity;
+import org.eclipse.jetty.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.newGetSession;
 
 /**
  * <p>A LoginAuthenticator that uses SPNEGO and the GSS API to authenticate requests.</p>
@@ -102,7 +104,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, ServletRequest servletRequest)
     {
-        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, servletRequest);
+        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, newGetSession(servletRequest));
         if (user != null && user.isEstablished())
         {
             Request request = Request.getBaseRequest(servletRequest);

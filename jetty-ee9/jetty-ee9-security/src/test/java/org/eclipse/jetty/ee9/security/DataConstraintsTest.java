@@ -15,9 +15,9 @@ package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
@@ -28,11 +28,16 @@ import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -434,7 +439,7 @@ public class DataConstraintsTest
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, ServletRequest request)
+        public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
                 return new DefaultUserIdentity(null, null, new String[]{"admin"});

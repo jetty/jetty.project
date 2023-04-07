@@ -99,7 +99,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, Request request, Response response)
     {
-        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, request);
+        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, request::getSession);
         if (user != null && user.isEstablished())
         {
             renewSession(request, response);

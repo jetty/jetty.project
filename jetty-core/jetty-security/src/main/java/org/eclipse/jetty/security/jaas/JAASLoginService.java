@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -36,7 +37,7 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.jaas.callback.DefaultCallbackHandler;
-import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -181,7 +182,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     }
 
     @Override
-    public UserIdentity login(final String username, final Object credentials, final Request request)
+    public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
     {
         try
         {
@@ -197,7 +198,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
             if (callbackHandler instanceof DefaultCallbackHandler)
             {
                 DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
-                dch.setRequest(request);
+                // TODO dch.setRequest(request);
                 dch.setCredential(credentials);
                 dch.setUserName(username);
             }

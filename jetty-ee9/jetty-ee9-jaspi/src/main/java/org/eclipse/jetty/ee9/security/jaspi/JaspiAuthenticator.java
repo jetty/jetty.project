@@ -35,15 +35,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee9.nested.Authentication;
-import org.eclipse.jetty.ee9.security.EmptyLoginService;
-import org.eclipse.jetty.ee9.security.IdentityService;
-import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.ee9.security.WrappedAuthConfiguration;
 import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.security.EmptyLoginService;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
 
 import static org.eclipse.jetty.ee9.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
@@ -138,7 +139,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, ServletRequest request)
     {
-        UserIdentity user = _loginService.login(username, password, request);
+        UserIdentity user = _loginService.login(username, password, SessionHandler.ServletSessionApi.newGetSession(request));
         if (user != null)
         {
             renewSession((HttpServletRequest)request, null);

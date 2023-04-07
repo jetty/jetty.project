@@ -68,8 +68,10 @@ public interface IdentityService
 
     UserIdentity getSystemUserIdentity();
 
-    interface Association extends Closeable
+    interface Association extends AutoCloseable
     {
+        @Override
+        void close();
     }
 
     interface RunAsToken

@@ -13,22 +13,25 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.util.function.Function;
+
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Session;
 
 /**
  * <p>A service to query for user roles.</p>
+ * TODO do we need this interface? Can it be moved somewhere more private?
  */
 @FunctionalInterface
 public interface AuthorizationService
 {
     /**
-     * @param request the current HTTP request
      * @param name the user name
+     * @param getSession Function to get or create a {@link Session}
      * @return a {@link UserIdentity} to query for roles of the given user
      */
-    UserIdentity getUserIdentity(Request request, String name);
+    UserIdentity getUserIdentity(String name, Function<Boolean, Session> getSession);
 
     /**
      * <p>Wraps a {@link LoginService} as an AuthorizationService</p>
@@ -38,6 +41,6 @@ public interface AuthorizationService
      */
     static AuthorizationService from(LoginService loginService, Object credentials)
     {
-        return (request, name) -> loginService.login(name, credentials, request);
+        return (name, getSession) -> loginService.login(name, credentials, getSession);
     }
 }

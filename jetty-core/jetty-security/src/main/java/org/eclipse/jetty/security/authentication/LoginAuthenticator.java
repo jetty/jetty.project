@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.util.function.Function;
+
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
@@ -37,7 +39,7 @@ public abstract class LoginAuthenticator implements Authenticator
     }
 
     /**
-     * If the UserIdentity is not null after this method calls {@link LoginService#login(String, Object, Request)}, it
+     * If the UserIdentity is not null after this method calls {@link LoginService#login(String, Object, Function<Boolean, Session>)}, it
      * is assumed that the user is fully authenticated and we need to change the session id to prevent
      * session fixation vulnerability. If the UserIdentity is not necessarily fully
      * authenticated, then subclasses must override this method and
@@ -49,7 +51,7 @@ public abstract class LoginAuthenticator implements Authenticator
      */
     public UserIdentity login(String username, Object password, Request request, Response response)
     {
-        UserIdentity user = _loginService.login(username, password, request);
+        UserIdentity user = _loginService.login(username, password, request::getSession);
         if (user != null)
         {
             renewSession(request, response);

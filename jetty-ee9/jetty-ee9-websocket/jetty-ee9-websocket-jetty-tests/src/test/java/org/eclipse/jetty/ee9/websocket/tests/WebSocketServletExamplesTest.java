@@ -21,9 +21,7 @@ import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
-import org.eclipse.jetty.ee9.security.UserStore;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContai
 import org.eclipse.jetty.ee9.websocket.tests.examples.MyAdvancedEchoServlet;
 import org.eclipse.jetty.ee9.websocket.tests.examples.MyAuthedServlet;
 import org.eclipse.jetty.ee9.websocket.tests.examples.MyEchoServlet;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.UserStore;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.security.Constraint;

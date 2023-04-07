@@ -41,7 +41,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeferredAuthentication.class);
     protected final LoginAuthenticator _authenticator;
-    private Object _previousAssociation;
+    private IdentityService.Association _association;
 
     public DeferredAuthentication(LoginAuthenticator authenticator)
     {
@@ -62,7 +62,7 @@ public class DeferredAuthentication implements Authentication.Deferred
                 IdentityService identityService = loginService.getIdentityService();
 
                 if (identityService != null)
-                    _previousAssociation = identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                    _association = identityService.associate(((Authentication.User)authentication).getUserIdentity());
 
                 return authentication;
             }
@@ -85,7 +85,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 
             Authentication authentication = _authenticator.validateRequest(request, response, true);
             if (authentication instanceof Authentication.User && identityService != null)
-                _previousAssociation = identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                _association = identityService.associate(((Authentication.User)authentication).getUserIdentity());
             return authentication;
         }
         catch (ServerAuthException e)
@@ -107,7 +107,7 @@ public class DeferredAuthentication implements Authentication.Deferred
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
             UserAuthentication authentication = new UserAuthentication("API", identity);
             if (identityService != null)
-                _previousAssociation = identityService.associate(identity);
+                _association = identityService.associate(identity);
             return authentication;
         }
         return null;
@@ -127,9 +127,9 @@ public class DeferredAuthentication implements Authentication.Deferred
         return Authentication.UNAUTHENTICATED;
     }
 
-    public Object getPreviousAssociation()
+    public IdentityService.Association getAssociation()
     {
-        return _previousAssociation;
+        return _association;
     }
 
     /**

@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
@@ -25,6 +26,7 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 
@@ -138,7 +140,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, Request request)
+        public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
                 return new DefaultUserIdentity(null, new UserPrincipal("admin", null), new String[]{"admin"});

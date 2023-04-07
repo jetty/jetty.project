@@ -20,13 +20,13 @@ import java.security.PrivilegedAction;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 
 import org.eclipse.jetty.security.authentication.AuthorizationService;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.ietf.jgss.GSSContext;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * for example {@code HTTP/wonder.com}, using a {@code keyTab} file as the service principal
  * credentials.</p>
  * <p>Upon receiving an HTTP request, the server tries to authenticate the client
- * calling {@link #login(String, Object, Request)} where the GSS APIs are used to
+ * calling {@link #login(String, Object, Function<Boolean, Session>)} where the GSS APIs are used to
  * verify client tokens and (perhaps after a few round-trips) a {@code GSSContext} is
  * established.</p>
  */
@@ -166,10 +166,10 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request)
+    public UserIdentity login(String username, Object credentials,  Function<Boolean, Session> getSession)
     {
         Subject subject = _context._subject;
-        Session httpSession = request.getSession(false);
+        Session httpSession = getSession.apply(false);
         GSSContext gssContext = null;
         if (httpSession != null)
         {
@@ -191,14 +191,14 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
             if (httpSession != null)
                 httpSession.removeAttribute(GSSContextHolder.ATTRIBUTE);
 
-            UserIdentity roles = _authorizationService.getUserIdentity(request, userName);
+            UserIdentity roles = _authorizationService.getUserIdentity(userName, getSession);
             return new SpnegoUserIdentity(subject, principal, roles);
         }
         else
         {
             // The GSS context is not established yet, save it into the HTTP session.
             if (httpSession == null)
-                httpSession = request.getSession(true);
+                httpSession = getSession.apply(true);
             GSSContextHolder holder = new GSSContextHolder(gssContext);
             httpSession.setAttribute(GSSContextHolder.ATTRIBUTE, holder);
 

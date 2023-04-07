@@ -68,7 +68,7 @@ public class SpecExampleConstraintTest
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
-        loginService.putUser("fred", new Password("password"), IdentityService.NO_ROLES);
+        loginService.putUser("fred", new Password("password"), new String[0]);
         loginService.putUser("harry", new Password("password"), new String[]{"HOMEOWNER"});
         loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});

@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.security;
 
-import org.eclipse.jetty.server.Request;
+import java.util.function.Function;
+
+import org.eclipse.jetty.server.Session;
 
 /**
  * LoginService implementation which always denies any attempt to login.
@@ -27,7 +29,7 @@ public class EmptyLoginService implements LoginService
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request)
+    public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
     {
         return null;
     }

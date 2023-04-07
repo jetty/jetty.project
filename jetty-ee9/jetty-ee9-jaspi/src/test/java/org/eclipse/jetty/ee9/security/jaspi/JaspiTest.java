@@ -28,11 +28,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.security.AbstractLoginService;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.RolePrincipal;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.security.AbstractLoginService;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -77,13 +77,13 @@ public class JaspiTest
         }
 
         @Override
-        protected List<RolePrincipal> loadRoleInfo(UserPrincipal user)
+        protected List<org.eclipse.jetty.security.RolePrincipal> loadRoleInfo(org.eclipse.jetty.security.UserPrincipal user)
         {
             return _roles.get(user.getName());
         }
 
         @Override
-        protected UserPrincipal loadUserInfo(String username)
+        protected org.eclipse.jetty.security.UserPrincipal loadUserInfo(String username)
         {
             return _users.get(username);
         }

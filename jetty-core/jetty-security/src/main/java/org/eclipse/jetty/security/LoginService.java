@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.security;
 
-import org.eclipse.jetty.server.Request;
+import java.util.function.Function;
+
+import org.eclipse.jetty.server.Session;
 
 /**
  * Login Service Interface.
@@ -35,15 +37,15 @@ public interface LoginService
      *
      * @param username The username.
      * @param credentials The users credentials.
-     * @param request The request.
+     * @param getSession function to retrieve or create a session.
      * @return A UserIdentity if the credentials matched, otherwise null
      */
-    UserIdentity login(String username, Object credentials, Request request);
+    UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession);
 
     /**
      * Validate a user identity.
      * Validate that a UserIdentity previously created by a call
-     * to {@link #login(String, Object, Request)} is still valid.
+     * to {@link #login(String, Object, Function<Boolean, Session>)} is still valid.
      *
      * @param user The user to validate
      * @return true if authentication has not been revoked for the user.
