@@ -1194,6 +1194,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 jpg.addUrlPattern(url);
             }
 
+            jpg.setErrorOnELNotFound(group.getString("error-on-el-not-found", false, true));
             jpg.setElIgnored(group.getString("el-ignored", false, true));
             jpg.setPageEncoding(group.getString("page-encoding", false, true));
             jpg.setScriptingInvalid(group.getString("scripting-invalid", false, true));

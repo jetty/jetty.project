@@ -57,19 +57,44 @@ Project documentation is available on the Jetty Eclipse website.
 Building
 ========
 
-To build, use:
+[Apache Maven 3.8.0](https://maven.apache.org/) and [OpenJDK](https://adoptium.net/) requirements:
+
+Branch         | Maven Version | Minimum JDK | Recommended JDK
+---------------|---------------|-------------| ---------------
+`jetty-10.0.x` | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional loom and http/3 support)
+`jetty-11.0.x` | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional loom and http/3 support)
+`jetty-12.0.x` | Maven 3.8.6+  | OpenJDK 17  | OpenJDK 17
+
+Full Build with All Tests:
 
 ``` shell
-  mvn clean install
+mvn clean install
 ```
 
-Eclipse Jetty will be built in `jetty-home/target/jetty-home`.
+Fast Build if you need jars and distribution (not running tests, checkstyle, enforcer, license check):
 
-The first build may take a longer than expected as Maven downloads all the dependencies.
+``` shell
+mvn -Pfast clean install
+```
+Optional build tools: 
 
-The build tests do a lot of stress testing, and on some machines it is necessary to set the file descriptor limit to greater than 2048 for the tests to all pass successfully.
+* [`graphviz`](https://graphviz.org/) - used by asciidoctor in the jetty-documentation build to produce various graphs
+* [`Docker`](https://www.docker.com/) - used to run some integration tests for testing third party integrations
 
-It is possible to bypass tests by building with `mvn clean install -DskipTests`.
+Once the build is complete, you can find the built Jetty Maven artifacts in your Maven local repository.
+Along with the following locations of note:
+
+Branches       | Location                                                          | Description
+---------------|-------------------------------------------------------------------|---------
+all            | `jetty-home/target/jetty-home-<ver>.tar.gz`                       | The Jetty Home standalone tarball
+`jetty-10.0.x` | `jetty-runner/target/jetty-runner-<ver>.jar`                      | The Jetty Runner uber jar
+`jetty-11.0.x` | `jetty-runner/target/jetty-runner-<ver>.jar`                      | The Jetty Runner uber jar
+`jetty-12.0.x` | `jetty-ee10/jetty-ee10-runner/target/jetty-ee10-runner-<ver>.jar` | The Jetty Runner uber jar for ee10/Servlet 6 (jakarta.servlet) webapps
+`jetty-12.0.x` | `jetty-ee9/jetty-ee9-runner/target/jetty-ee9-runner-<ver>.jar`    | The Jetty Runner uber jar for ee9/Servlet 5 (jakarta.servlet) webapps
+`jetty-12.0.x` | `jetty-ee8/jetty-ee8-runner/target/jetty-ee8-runner-<ver>.jar`    | The Jetty Runner uber jar for ee8/Servlet 4 (javax.servlet) webapps
+
+Note: The build tests do a lot of stress testing, and on some machines it is necessary to set the 
+file descriptor limit to greater than 2048 for the tests to all pass successfully (check your `ulimit -n` value).
 
 Professional Services
 ---------------------
