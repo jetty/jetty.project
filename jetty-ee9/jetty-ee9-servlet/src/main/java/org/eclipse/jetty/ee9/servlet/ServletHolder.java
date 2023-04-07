@@ -1352,7 +1352,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            try(Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
+            try (Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().init(config);
             }
