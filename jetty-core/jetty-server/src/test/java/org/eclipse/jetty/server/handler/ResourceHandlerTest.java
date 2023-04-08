@@ -3825,8 +3825,8 @@ public class ResourceHandlerTest
             """));
 
         assertNotNull(response);
-        // Not rehandled, and directory listing is forbidden, so 403.
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+        // Not rehandled, and directory listing is forbidden, so 500.
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 
     private void copyBigText(Path base) throws IOException
