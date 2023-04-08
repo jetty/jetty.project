@@ -936,9 +936,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
-            LOG.debug("onRequest for {} on {}{}{} {} {}{}{}", metaData.getURIString(), this, System.lineSeparator(),
-                metaData.getMethod(), metaData.getURIString(), metaData.getHttpVersion(), System.lineSeparator(),
-                metaData.getFields());
+            LOG.debug("onRequest for {} on {}{}{} {} {}{}{}", metaData.getHttpURI().toString(), this, System.lineSeparator(),
+                metaData.getMethod(), metaData.getHttpURI().toString(), metaData.getHttpVersion(), System.lineSeparator(),
+                metaData.getHttpFields());
         }
     }
 
@@ -955,9 +955,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
-            LOG.debug("onProcess for {} on {}{}{} {} {}{}{}", metaData.getURIString(), this, System.lineSeparator(),
-                metaData.getMethod(), metaData.getURIString(), metaData.getHttpVersion(), System.lineSeparator(),
-                metaData.getFields());
+            LOG.debug("onProcess for {} on {}{}{} {} {}{}{}", metaData.getHttpURI().toString(), this, System.lineSeparator(),
+                metaData.getMethod(), metaData.getHttpURI().toString(), metaData.getHttpVersion(), System.lineSeparator(),
+                metaData.getHttpFields());
         }
     }
 
@@ -1068,7 +1068,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 if (handler != null)
                     content = handler.badMessageError(status, reason, fields);
 
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, status, null, fields, BufferUtil.length(content)), content, true);
+                sendResponse(new MetaData.Response(status, null, HttpVersion.HTTP_1_1, fields, BufferUtil.length(content)), content, true);
             }
         }
         catch (IOException e)
@@ -1140,7 +1140,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             // TODO: why can't we just do _coreResponse.setMetaData(response), without copying?
             _coreResponse.setStatus(response.getStatus());
             // TODO: at least avoid copying the headers?
-            _coreResponse.getHeaders().add(response.getFields());
+            _coreResponse.getHeaders().add(response.getHttpFields());
             _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
         _coreResponse.write(complete, content, callback);
@@ -1169,7 +1169,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
             LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}", getRequest().getRequestURI(), this, System.lineSeparator(),
                 info.getStatus(), info.getReason(), info.getHttpVersion(), System.lineSeparator(),
-                info.getFields());
+                info.getHttpFields());
     }
 
     public boolean isCommitted()
@@ -1529,7 +1529,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             if (x instanceof HttpException httpException)
             {
-                MetaData.Response responseMeta = new MetaData.Response(HttpVersion.HTTP_1_1, httpException.getCode(), httpException.getReason(), HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
+                MetaData.Response responseMeta = new MetaData.Response(httpException.getCode(), httpException.getReason(), HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
                 send(_request.getMetaData(), responseMeta, null, true, new Nested(this)
                 {
                     @Override

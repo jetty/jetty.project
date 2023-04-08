@@ -103,7 +103,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
             }
 
-            HttpFields fields = _requestMetaData.getFields();
+            HttpFields fields = _requestMetaData.getHttpFields();
 
             _expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
@@ -114,7 +114,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             {
                 LOG.debug("HTTP2 request #{}/{}, {} {} {}{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                    _requestMetaData.getMethod(), _requestMetaData.getURI(), _requestMetaData.getHttpVersion(),
+                    _requestMetaData.getMethod(), _requestMetaData.getHttpURI(), _requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
 
@@ -242,7 +242,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onTrailer(HeadersFrame frame)
     {
-        HttpFields trailers = frame.getMetaData().getFields().asImmutable();
+        HttpFields trailers = frame.getMetaData().getHttpFields().asImmutable();
         try (AutoLock ignored = lock.lock())
         {
             _demand = false;
@@ -322,10 +322,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 if (contentLength < 0)
                 {
                     _responseMetaData = new MetaData.Response(
-                        response.getHttpVersion(),
-                        response.getStatus(),
-                        response.getReason(),
-                        response.getFields(),
+                        response.getStatus(), response.getReason(), response.getHttpVersion(),
+                        response.getHttpFields(),
                         realContentLength,
                         response.getTrailersSupplier()
                     );
@@ -392,7 +390,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                 System.lineSeparator(), HttpVersion.HTTP_2, response.getStatus(),
-                System.lineSeparator(), response.getFields());
+                System.lineSeparator(), response.getHttpFields());
         }
 
         _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
@@ -495,8 +493,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             {
                 LOG.debug("HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
-                    request.getMethod(), request.getURI(), request.getHttpVersion(),
-                    System.lineSeparator(), request.getFields());
+                    request.getMethod(), request.getHttpURI(), request.getHttpVersion(),
+                    System.lineSeparator(), request.getHttpFields());
             }
 
             return task;

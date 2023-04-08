@@ -251,7 +251,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             {
                 Request br = Request.getBaseRequest(r);
 
-                String headers = _showHeaders ? ("\n" + br.getMetaData().getFields().toString()) : "";
+                String headers = _showHeaders ? ("\n" + br.getMetaData().getHttpFields().toString()) : "";
 
                 StringBuffer url = r.getRequestURL();
                 if (r.getQueryString() != null)

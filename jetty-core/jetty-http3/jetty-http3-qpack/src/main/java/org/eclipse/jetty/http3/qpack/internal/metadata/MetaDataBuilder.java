@@ -36,7 +36,7 @@ public class MetaDataBuilder
     private HostPortHttpField _authority;
     private String _path;
     private String _protocol;
-    private long _contentLength = Long.MIN_VALUE;
+    private long _contentLength = -1;
     private QpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -262,7 +262,7 @@ public class MetaDataBuilder
             {
                 if (_status == null)
                     throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Status");
-                return new MetaData.Response(HttpVersion.HTTP_3, _status, fields, _contentLength);
+                return new MetaData.Response(_status, null, HttpVersion.HTTP_3, fields, _contentLength);
             }
 
             return new MetaData(HttpVersion.HTTP_3, fields, _contentLength);
@@ -279,7 +279,7 @@ public class MetaDataBuilder
             _path = null;
             _protocol = null;
             _size = 0;
-            _contentLength = Long.MIN_VALUE;
+            _contentLength = -1;
         }
     }
 }

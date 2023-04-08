@@ -161,7 +161,7 @@ public class ClientServerTest extends AbstractClientServerTest
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 serverRequestLatch.countDown();
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
                 // Not interested in request data.
                 return null;
             }
@@ -208,7 +208,7 @@ public class ClientServerTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
                 stream.demand();
                 return new Stream.Server.Listener()
                 {
@@ -278,7 +278,7 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 // Send the response headers.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
                 stream.demand();
                 return new Stream.Server.Listener()
                 {
@@ -371,7 +371,7 @@ public class ClientServerTest extends AbstractClientServerTest
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
                 return null;
             }
         });
@@ -422,10 +422,10 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 serverSessionRef.set(stream.getSession());
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                if ("/large".equals(request.getURI().getPath()))
+                if ("/large".equals(request.getHttpURI().getPath()))
                 {
                     HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxResponseHeadersSize));
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, largeHeaders), true))
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true))
                         .whenComplete((s, x) ->
                         {
                             // The response could not be generated, but the stream is still valid.
@@ -441,7 +441,7 @@ public class ClientServerTest extends AbstractClientServerTest
                 }
                 else
                 {
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
                 }
                 return null;
             }

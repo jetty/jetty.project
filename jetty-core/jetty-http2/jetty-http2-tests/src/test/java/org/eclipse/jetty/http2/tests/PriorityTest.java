@@ -43,7 +43,7 @@ public class PriorityTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;
@@ -91,7 +91,7 @@ public class PriorityTest extends AbstractTest
                 try
                 {
                     beforeRequests.await(5, TimeUnit.SECONDS);
-                    MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                    MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                     stream.headers(responseFrame, Callback.NOOP);
                     afterRequests.countDown();
@@ -157,7 +157,7 @@ public class PriorityTest extends AbstractTest
                 assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
                 latch.countDown();
 
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;

@@ -102,7 +102,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                     // ... then send the response.
                     .thenRun(() ->
                     {
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true));
                     });
                 return null;

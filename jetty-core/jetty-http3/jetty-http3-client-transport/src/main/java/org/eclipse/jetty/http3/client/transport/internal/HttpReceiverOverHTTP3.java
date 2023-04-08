@@ -97,7 +97,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
         responseBegin(exchange);
 
-        HttpFields headers = response.getFields();
+        HttpFields headers = response.getHttpFields();
         for (HttpField header : headers)
         {
             responseHeader(exchange, header);
@@ -128,7 +128,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         if (exchange == null)
             return;
 
-        HttpFields trailers = frame.getMetaData().getFields();
+        HttpFields trailers = frame.getMetaData().getHttpFields();
         trailers.forEach(exchange.getResponse()::trailer);
 
         responseSuccess(exchange, null);

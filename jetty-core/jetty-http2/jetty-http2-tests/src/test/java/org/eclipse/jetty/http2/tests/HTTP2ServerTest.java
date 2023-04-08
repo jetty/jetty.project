@@ -580,7 +580,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
                 serverLatch.countDown();
 
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;

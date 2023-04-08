@@ -134,9 +134,9 @@ public class FlowControlStalledTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
 
-                if (request.getURIString().endsWith("/stall"))
+                if (request.getHttpURI().toString().endsWith("/stall"))
                 {
                     stream.headers(new HeadersFrame(stream.getId(), response, null, false), new Callback()
                     {
@@ -230,9 +230,9 @@ public class FlowControlStalledTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
 
-                if (request.getURIString().endsWith("/stall"))
+                if (request.getHttpURI().toString().endsWith("/stall"))
                 {
                     stream.headers(new HeadersFrame(stream.getId(), response, null, false), new Callback()
                     {

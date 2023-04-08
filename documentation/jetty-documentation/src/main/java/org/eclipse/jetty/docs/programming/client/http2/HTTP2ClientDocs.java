@@ -236,7 +236,7 @@ public class HTTP2ClientDocs
                 }
                 else
                 {
-                    System.getLogger("http2").log(INFO, "Received trailers {0}", metaData.getFields());
+                    System.getLogger("http2").log(INFO, "Received trailers {0}", metaData.getHttpFields());
                 }
             }
 
@@ -328,9 +328,9 @@ public class HTTP2ClientDocs
                 // The "request" the client would make for the pushed resource.
                 MetaData.Request pushedRequest = frame.getMetaData();
                 // The pushed "request" URI.
-                HttpURI pushedURI = pushedRequest.getURI();
+                HttpURI pushedURI = pushedRequest.getHttpURI();
                 // The pushed "request" headers.
-                HttpFields pushedRequestHeaders = pushedRequest.getFields();
+                HttpFields pushedRequestHeaders = pushedRequest.getHttpFields();
 
                 // If needed, retrieve the primary stream that triggered the push.
                 Stream primaryStream = pushedStream.getSession().getStream(frame.getStreamId());
@@ -347,7 +347,7 @@ public class HTTP2ClientDocs
                         if (metaData.isResponse())
                         {
                             // The pushed "response" headers.
-                            HttpFields pushedResponseHeaders = metaData.getFields();
+                            HttpFields pushedResponseHeaders = metaData.getHttpFields();
 
                             // Typically a pushed stream has data, so demand for data.
                             stream.demand();

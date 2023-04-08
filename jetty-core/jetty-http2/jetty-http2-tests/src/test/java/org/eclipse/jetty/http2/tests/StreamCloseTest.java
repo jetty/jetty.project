@@ -81,7 +81,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(response, new Callback()
                 {
@@ -123,7 +123,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, false);
                 CompletableFuture<Stream> completable = stream.headers(response);
                 stream.demand();
@@ -218,7 +218,7 @@ public class StreamCloseTest extends AbstractTest
                         });
                     }
                 }, null);
-                HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY), null, true);
+                HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, true);
                 stream.headers(response, Callback.NOOP);
                 return null;
             }
@@ -269,7 +269,7 @@ public class StreamCloseTest extends AbstractTest
                     {
                         assertTrue(pushedStream.isReset());
                         assertTrue(pushedStream.isClosed());
-                        HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY), null, true);
+                        HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, true);
                         stream.headers(response, Callback.NOOP);
                         serverLatch.countDown();
                         callback.succeeded();

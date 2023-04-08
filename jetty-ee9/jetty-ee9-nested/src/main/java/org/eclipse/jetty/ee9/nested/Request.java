@@ -705,7 +705,7 @@ public class Request implements HttpServletRequest
         if (_contentType == null)
         {
             MetaData.Request metadata = _metaData;
-            _contentType = metadata == null ? null : metadata.getFields().get(HttpHeader.CONTENT_TYPE);
+            _contentType = metadata == null ? null : metadata.getHttpFields().get(HttpHeader.CONTENT_TYPE);
         }
         return _contentType;
     }
@@ -776,7 +776,7 @@ public class Request implements HttpServletRequest
 
         _cookiesExtracted = true;
 
-        for (HttpField field : metadata.getFields())
+        for (HttpField field : metadata.getHttpFields())
         {
             if (field.getHeader() == HttpHeader.COOKIE)
             {
@@ -1381,7 +1381,7 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         if (metadata == null)
             return null;
-        HttpURI uri = metadata.getURI();
+        HttpURI uri = metadata.getHttpURI();
         if (uri == null)
             return null;
         return uri.isAbsolute() && metadata.getHttpVersion() == HttpVersion.HTTP_2 ? uri.getPathQuery() : uri.toString();

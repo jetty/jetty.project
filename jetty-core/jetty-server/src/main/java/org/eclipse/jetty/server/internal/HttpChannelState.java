@@ -803,7 +803,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public HttpURI getHttpURI()
         {
-            return _metaData.getURI();
+            return _metaData.getHttpURI();
         }
 
         @Override
@@ -815,7 +815,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public HttpFields getHeaders()
         {
-            return _metaData.getFields();
+            return _metaData.getHttpFields();
         }
 
         @Override
@@ -1193,7 +1193,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 HttpChannelState channel = _request.getHttpChannel();
                 HttpVersion version = channel.getConnectionMetaData().getHttpVersion();
-                MetaData.Response response = new MetaData.Response(version, status, headers);
+                MetaData.Response response = new MetaData.Response(status, null, version, headers);
                 channel._stream.send(_request._metaData, response, false, null, completable);
             }
             else
@@ -1224,9 +1224,7 @@ public class HttpChannelState implements HttpChannel, Components
             httpChannel._stream.prepareResponse(mutableHeaders);
 
             return new MetaData.Response(
-                httpChannel.getConnectionMetaData().getHttpVersion(),
-                _status,
-                null,
+                _status, null, httpChannel.getConnectionMetaData().getHttpVersion(),
                 httpChannel._responseHeaders,
                 httpChannel._committedContentLength,
                 getTrailersSupplier()

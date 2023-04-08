@@ -67,9 +67,9 @@ public class HpackDecoderTest
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
-        assertEquals("/", request.getURI().getPath());
-        assertEquals("www.example.com", request.getURI().getHost());
+        assertEquals(HttpScheme.HTTP.asString(), request.getHttpURI().getScheme());
+        assertEquals("/", request.getHttpURI().getPath());
+        assertEquals("www.example.com", request.getHttpURI().getHost());
         assertFalse(request.iterator().hasNext());
 
         // Second request
@@ -79,9 +79,9 @@ public class HpackDecoderTest
         request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
-        assertEquals("/", request.getURI().getPath());
-        assertEquals("www.example.com", request.getURI().getHost());
+        assertEquals(HttpScheme.HTTP.asString(), request.getHttpURI().getScheme());
+        assertEquals("/", request.getHttpURI().getPath());
+        assertEquals("www.example.com", request.getHttpURI().getHost());
         Iterator<HttpField> iterator = request.iterator();
         assertTrue(iterator.hasNext());
         assertEquals(new HttpField("cache-control", "no-cache"), iterator.next());
@@ -94,9 +94,9 @@ public class HpackDecoderTest
         request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTPS.asString(), request.getURI().getScheme());
-        assertEquals("/index.html", request.getURI().getPath());
-        assertEquals("www.example.com", request.getURI().getHost());
+        assertEquals(HttpScheme.HTTPS.asString(), request.getHttpURI().getScheme());
+        assertEquals("/index.html", request.getHttpURI().getPath());
+        assertEquals("www.example.com", request.getHttpURI().getHost());
         iterator = request.iterator();
         assertTrue(iterator.hasNext());
         assertEquals(new HttpField("custom-key", "custom-value"), iterator.next());
@@ -115,9 +115,9 @@ public class HpackDecoderTest
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
-        assertEquals("/", request.getURI().getPath());
-        assertEquals("www.example.com", request.getURI().getHost());
+        assertEquals(HttpScheme.HTTP.asString(), request.getHttpURI().getScheme());
+        assertEquals("/", request.getHttpURI().getPath());
+        assertEquals("www.example.com", request.getHttpURI().getHost());
         assertFalse(request.iterator().hasNext());
 
         // Second request
@@ -127,9 +127,9 @@ public class HpackDecoderTest
         request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
-        assertEquals("/", request.getURI().getPath());
-        assertEquals("www.example.com", request.getURI().getHost());
+        assertEquals(HttpScheme.HTTP.asString(), request.getHttpURI().getScheme());
+        assertEquals("/", request.getHttpURI().getPath());
+        assertEquals("www.example.com", request.getHttpURI().getHost());
         Iterator<HttpField> iterator = request.iterator();
         assertTrue(iterator.hasNext());
         assertEquals(new HttpField("cache-control", "no-cache"), iterator.next());
@@ -151,10 +151,10 @@ public class HpackDecoderTest
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
-        assertEquals("/", request.getURI().getPath());
-        assertEquals("www.example.com", request.getURI().getHost());
-        assertEquals(1, request.getFields().size());
+        assertEquals(HttpScheme.HTTP.asString(), request.getHttpURI().getScheme());
+        assertEquals("/", request.getHttpURI().getPath());
+        assertEquals("www.example.com", request.getHttpURI().getHost());
+        assertEquals(1, request.getHttpFields().size());
         HttpField field = request.iterator().next();
         assertEquals(HttpHeader.AUTHORIZATION, field.getHeader());
         assertEquals(value, field.getValue());
@@ -174,9 +174,9 @@ public class HpackDecoderTest
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
-        assertEquals("/", request.getURI().getPath());
-        assertEquals("www.example.com", request.getURI().getHost());
+        assertEquals(HttpScheme.HTTP.asString(), request.getHttpURI().getScheme());
+        assertEquals("/", request.getHttpURI().getPath());
+        assertEquals("www.example.com", request.getHttpURI().getHost());
         assertFalse(request.iterator().hasNext());
     }
 
@@ -191,13 +191,13 @@ public class HpackDecoderTest
         MetaData.Response response = (MetaData.Response)decoder.decode(buffer);
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getFields().size(), is(6));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.DATE, "Fri, 15 Jul 2016 02:36:20 GMT"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/html"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_ENCODING, ""));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_LENGTH, "42"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.SERVER, "nghttpx nghttp2/1.12.0"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.VIA, "1.1 nghttpx"));
+        assertThat(response.getHttpFields().size(), is(6));
+        assertThat(response.getHttpFields(), containsHeaderValue(HttpHeader.DATE, "Fri, 15 Jul 2016 02:36:20 GMT"));
+        assertThat(response.getHttpFields(), containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/html"));
+        assertThat(response.getHttpFields(), containsHeaderValue(HttpHeader.CONTENT_ENCODING, ""));
+        assertThat(response.getHttpFields(), containsHeaderValue(HttpHeader.CONTENT_LENGTH, "42"));
+        assertThat(response.getHttpFields(), containsHeaderValue(HttpHeader.SERVER, "nghttpx nghttp2/1.12.0"));
+        assertThat(response.getHttpFields(), containsHeaderValue(HttpHeader.VIA, "1.1 nghttpx"));
     }
 
     @Test
@@ -207,8 +207,8 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         MetaData metaData = decoder.decode(buffer);
-        assertThat(metaData.getFields().get(HttpHeader.HOST), is("localhost0"));
-        assertThat(metaData.getFields().get(HttpHeader.COOKIE), is("abcdefghij"));
+        assertThat(metaData.getHttpFields().get(HttpHeader.HOST), is("localhost0"));
+        assertThat(metaData.getHttpFields().get(HttpHeader.COOKIE), is("abcdefghij"));
         assertThat(decoder.getHpackContext().getMaxDynamicTableSize(), is(50));
         assertThat(decoder.getHpackContext().size(), is(1));
     }
@@ -249,7 +249,7 @@ public class HpackDecoderTest
         MetaData metaData = decoder.decode(buffer);
 
         assertThat(decoder.getHpackContext().getDynamicTableSize(), is(0));
-        assertThat(metaData.getFields().get("host"), Matchers.startsWith("This is a very large field"));
+        assertThat(metaData.getHttpFields().get("host"), Matchers.startsWith("This is a very large field"));
     }
 
     @Test
@@ -451,9 +451,9 @@ public class HpackDecoderTest
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
-        assertEquals("/", request.getURI().getPath());
-        assertEquals("test", request.getURI().getHost());
+        assertEquals(HttpScheme.HTTP.asString(), request.getHttpURI().getScheme());
+        assertEquals("/", request.getHttpURI().getPath());
+        assertEquals("test", request.getHttpURI().getHost());
         assertFalse(request.iterator().hasNext());
     }
 
@@ -538,8 +538,8 @@ public class HpackDecoderTest
         String encoded = "00016800";
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         MetaData metaData = decoder.decode(buffer);
-        assertThat(metaData.getFields().size(), is(1));
-        assertThat(metaData.getFields().get("h"), is(""));
+        assertThat(metaData.getHttpFields().size(), is(1));
+        assertThat(metaData.getHttpFields().get("h"), is(""));
     }
 
     @Test

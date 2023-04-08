@@ -119,7 +119,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         responseBegin(exchange);
 
-        HttpFields headers = response.getFields();
+        HttpFields headers = response.getHttpFields();
         for (HttpField header : headers)
         {
             responseHeader(exchange, header);
@@ -151,7 +151,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (exchange == null)
             return;
 
-        HttpFields trailers = frame.getMetaData().getFields();
+        HttpFields trailers = frame.getMetaData().getHttpFields();
         trailers.forEach(exchange.getResponse()::trailer);
     }
 
@@ -175,7 +175,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         HttpRequest request = exchange.getRequest();
         MetaData.Request metaData = frame.getMetaData();
-        HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
+        HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getHttpURI().toString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
         BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushHandler();

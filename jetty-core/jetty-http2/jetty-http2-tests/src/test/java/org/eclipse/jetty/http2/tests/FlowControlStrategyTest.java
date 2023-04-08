@@ -237,7 +237,7 @@ public abstract class FlowControlStrategyTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 stream.demand();
@@ -323,7 +323,7 @@ public abstract class FlowControlStrategyTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 CompletableFuture<Void> completable = new CompletableFuture<>();
                 stream.headers(responseFrame, Callback.from(completable));
@@ -423,7 +423,7 @@ public abstract class FlowControlStrategyTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 stream.demand();
@@ -522,7 +522,7 @@ public abstract class FlowControlStrategyTest
                 MetaData.Request request = (MetaData.Request)requestFrame.getMetaData();
                 if (HttpMethod.POST.is(request.getMethod()))
                 {
-                    MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                    MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     stream.headers(new HeadersFrame(stream.getId(), metaData, null, false))
                         .thenCompose(s ->
                         {
@@ -536,7 +536,7 @@ public abstract class FlowControlStrategyTest
                 else
                 {
                     // For every stream, send down half the window size of data.
-                    MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                    MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     stream.headers(new HeadersFrame(stream.getId(), metaData, null, false))
                         .thenCompose(s ->
                         {
@@ -644,7 +644,7 @@ public abstract class FlowControlStrategyTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame)
                     .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.wrap(data), true)));
@@ -689,7 +689,7 @@ public abstract class FlowControlStrategyTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
+                MetaData metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 CompletableFuture<Stream> completable = stream.headers(responseFrame);
                 stream.demand();
@@ -1052,7 +1052,7 @@ public abstract class FlowControlStrategyTest
                         {
                             // Release the Data when the stream is already remotely closed.
                             dataList.forEach(Stream.Data::release);
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                         else
