@@ -8,6 +8,7 @@ ee8-security
 client
 
 [lib]
+lib/jetty-openid-${jetty.version}.jar
 lib/jetty-ee8-openid-${jetty.version}.jar
 lib/jetty-util-ajax-${jetty.version}.jar
 

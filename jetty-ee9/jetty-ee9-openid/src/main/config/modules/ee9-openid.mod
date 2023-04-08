@@ -11,6 +11,7 @@ ee9-security
 client
 
 [lib]
+lib/jetty-openid-${jetty.version}.jar
 lib/jetty-ee9-openid-${jetty.version}.jar
 lib/jetty-util-ajax-${jetty.version}.jar
 

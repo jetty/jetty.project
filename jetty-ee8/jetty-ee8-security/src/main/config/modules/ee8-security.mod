@@ -11,4 +11,5 @@ server
 ee8-servlet
 
 [lib]
+lib/jetty-security-${jetty.version}.jar
 lib/jetty-ee8-security-${jetty.version}.jar
