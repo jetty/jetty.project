@@ -18,6 +18,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.HttpContent;
@@ -55,34 +56,41 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class ResourceHandler extends Handler.Wrapper
 {
-    private final ResourceService _resourceService;
-
-    private ByteBufferPool _bufferPool;
-    private Resource _resourceBase;
+    private final ResourceService _resourceService = newResourceService();
+    private ByteBufferPool _byteBufferPool;
+    private Resource _baseResource;
     private Resource _styleSheet;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
 
-    public ResourceHandler()
+    protected ResourceService newResourceService()
     {
-        _resourceService = new ResourceService();
+        return new HandlerResourceService();
+    }
+
+    public ResourceService getResourceService()
+    {
+        return _resourceService;
     }
 
     @Override
     public void doStart() throws Exception
     {
         Context context = ContextHandler.getCurrentContext(getServer());
-        if (_resourceBase == null)
+        if (_baseResource == null)
         {
             if (context != null)
-                _resourceBase = context.getBaseResource();
+                _baseResource = context.getBaseResource();
         }
 
-        _mimeTypes = context == null ? MimeTypes.DEFAULTS : context.getMimeTypes();
+        setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());
 
-        _bufferPool = getByteBufferPool(context);
-        _resourceService.setHttpContentFactory(newHttpContentFactory());
-        _resourceService.setWelcomeFactory(setupWelcomeFactory());
+        _byteBufferPool = getByteBufferPool(context);
+        ResourceService resourceService = getResourceService();
+        resourceService.setHttpContentFactory(newHttpContentFactory());
+        resourceService.setWelcomeFactory(setupWelcomeFactory());
+        if (getStyleSheet() == null)
+            setStyleSheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
     }
@@ -123,7 +131,7 @@ public class ResourceHandler extends Handler.Wrapper
             {
                 String pathInContext = Request.getPathInContext(request);
                 String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
-                Resource welcomePath = _resourceBase.resolve(pathInContext).resolve(welcome);
+                Resource welcomePath = _baseResource.resolve(pathInContext).resolve(welcome);
                 if (Resources.isReadableFile(welcomePath))
                     return welcomeInContext;
             }
@@ -156,12 +164,12 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getBaseResource()
     {
-        return _resourceBase;
+        return _baseResource;
     }
 
     public ByteBufferPool getByteBufferPool()
     {
-        return _bufferPool;
+        return _byteBufferPool;
     }
 
     /**
@@ -230,12 +238,9 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceService.getPrecompressedFormats();
     }
 
-    /**
-     * @return If true, welcome files are redirected rather than forwarded to.
-     */
-    public boolean isRedirectWelcome()
+    public ResourceService.WelcomeMode getWelcomeMode()
     {
-        return _resourceService.isRedirectWelcome();
+        return _resourceService.getWelcomeMode();
     }
 
     /**
@@ -254,7 +259,7 @@ public class ResourceHandler extends Handler.Wrapper
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _resourceBase = base;
+        _baseResource = base;
     }
 
     /**
@@ -328,14 +333,14 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceService.getEncodingCacheSize();
     }
 
-    /**
-     * @param redirectWelcome If true, welcome files are redirected rather than forwarded to.
-     * redirection is always used if the ResourceHandler is not scoped by
-     * a ContextHandler
-     */
-    public void setRedirectWelcome(boolean redirectWelcome)
+    public void setMimeTypes(MimeTypes mimeTypes)
     {
-        _resourceService.setRedirectWelcome(redirectWelcome);
+        _mimeTypes = mimeTypes;
+    }
+
+    public void setWelcomeMode(ResourceService.WelcomeMode welcomeMode)
+    {
+        _resourceService.setWelcomeMode(welcomeMode);
     }
 
     /**
@@ -361,8 +366,31 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public static class ResourceContext extends ContextHandler
     {
+        public ResourceContext()
         {
             setHandler(new ResourceHandler());
+        }
+    }
+
+    private class HandlerResourceService extends ResourceService
+    {
+        @Override
+        protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+        {
+            HttpURI newHttpURI = HttpURI.build(request.getHttpURI()).pathQuery(welcomeTarget);
+            Request newRequest = new Request.Wrapper(request)
+            {
+                @Override
+                public HttpURI getHttpURI()
+                {
+                    return newHttpURI;
+                }
+            };
+
+            if (getServer().handle(newRequest, response, callback))
+                return;
+
+            super.rehandleWelcome(request, response, callback, welcomeTarget);
         }
     }
 }

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.ByteRange;
@@ -58,17 +59,14 @@ import org.slf4j.LoggerFactory;
 public class ResourceService
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
-
-    // TODO: see if we can set this to private eventually
-    public static final int NO_CONTENT_LENGTH = -1;
-    // TODO: see if we can set this to private eventually
-    public static final int USE_KNOWN_CONTENT_LENGTH = -2;
+    private static final int NO_CONTENT_LENGTH = -1;
+    private static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
     private final List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
     private final List<String> _preferredEncodingOrder = new ArrayList<>();
     private WelcomeFactory _welcomeFactory;
-    private boolean _redirectWelcome = false;
+    private WelcomeMode _welcomeMode = WelcomeMode.SERVE;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
     private HttpContent.Factory _contentFactory;
@@ -455,7 +453,6 @@ public class ResourceService
             {
                 uri.path(uri.getCanonicalPath() + "/");
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
                 sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
@@ -469,38 +466,44 @@ public class ResourceService
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
-    public enum WelcomeActionType
+    /**
+     * <p>How welcome targets should be processed.</p>
+     */
+    public enum WelcomeMode
     {
+        /**
+         * The welcome target is used as the location for a redirect response,
+         * sent by {@link #redirectWelcome(Request, Response, Callback, String)}.
+         */
         REDIRECT,
-        SERVE
+        /**
+         * The welcome target is served by
+         * {@link #serveWelcome(Request, Response, Callback, String)}.
+         */
+        SERVE,
+        /**
+         * The welcome target is re-handled by
+         * {@link #rehandleWelcome(Request, Response, Callback, String)}.
+         */
+        REHANDLE
     }
 
     /**
-     * Behavior for a potential welcome action
-     * as determined by {@link ResourceService#processWelcome(Request, Response)}
+     * <p>A welcome target paired with how to process it.</p>
      *
-     * <p>
-     * For {@link WelcomeActionType#REDIRECT} this is the resulting `Location` response header.
-     * For {@link WelcomeActionType#SERVE} this is the resulting path to for welcome serve, note that
-     * this is just a path, and can point to a real file, or a dynamic handler for
-     * welcome processing (such as Jetty core Handler, or EE Servlet), it's up
-     * to the implementation of {@link ResourceService#welcome(Request, Response, Callback)}
-     * to handle the various action types.
-     * </p>
-     *
-     * @param type the type of action
-     * @param target The target URI path of the action.
+     * @param target the welcome target
+     * @param mode the welcome mode
      */
-    public record WelcomeAction(WelcomeActionType type, String target) {}
-
-    private boolean welcome(Request request, Response response, Callback callback) throws IOException
+    public record WelcomeAction(String target, WelcomeMode mode)
     {
-        WelcomeAction welcomeAction = processWelcome(request, response);
+    }
+
+    private boolean welcome(Request request, Response response, Callback callback) throws Exception
+    {
+        WelcomeAction welcomeAction = processWelcome(request);
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("welcome(req={}, resp={}, callback={}) welcomeAction={}",
-                request, response, callback, welcomeAction);
-        }
+            LOG.debug("welcome(req={}, rsp={}, cbk={}) welcomeAction={}", request, response, callback, welcomeAction);
+
         if (welcomeAction == null)
             return false;
 
@@ -508,27 +511,78 @@ public class ResourceService
         return true;
     }
 
-    protected void handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws IOException
+    protected void handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
     {
-        switch (welcomeAction.type)
+        switch (welcomeAction.mode)
         {
-            case REDIRECT ->
-            {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                sendRedirect(request, response, callback, welcomeAction.target);
-            }
+            case REDIRECT -> redirectWelcome(request, response, callback, welcomeAction.target);
             case SERVE ->
-            {
                 // TODO : check conditional headers.
-                HttpContent c = _contentFactory.getContent(welcomeAction.target);
-                sendData(request, response, callback, c, List.of());
-            }
-        }
+                serveWelcome(request, response, callback, welcomeAction.target);
+            case REHANDLE -> rehandleWelcome(request, response, callback, welcomeAction.target);
+        };
     }
 
-    private WelcomeAction processWelcome(Request request, Response response) throws IOException
+    /**
+     * <p>Redirects to the given welcome target.</p>
+     * <p>Implementations should use HTTP redirect APIs to generate
+     * a redirect response whose location is the welcome target.</p>
+     *
+     * @param request the request to redirect
+     * @param response the response
+     * @param callback the callback to complete
+     * @param welcomeTarget the welcome target to redirect to
+     * @throws Exception if the redirection fails
+     */
+    protected void redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
-        String welcomeTarget = _welcomeFactory.getWelcomeTarget(request);
+        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+        sendRedirect(request, response, callback, welcomeTarget);
+    }
+
+    /**
+     * <p>Serves the given welcome target.</p>
+     * <p>Implementations should write the welcome
+     * target bytes over the network to the client.</p>
+     *
+     * @param request the request
+     * @param response the response
+     * @param callback the callback to complete
+     * @param welcomeTarget the welcome target to serve
+     * @throws Exception if serving the welcome target fails
+     */
+    protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    {
+        HttpContent c = _contentFactory.getContent(welcomeTarget);
+        sendData(request, response, callback, c, List.of());
+    }
+
+    /**
+     * <p>Rehandles the given welcome target.</p>
+     * <p>Implementations should call {@link Handler#handle(Request, Response, Callback)}
+     * on a {@code Handler} that may handle the welcome target
+     * differently from the original request.</p>
+     * <p>For example, a request for {@code /ctx/} may be rewritten
+     * as {@code /ctx/index.jsp} and rehandled from the {@code Server}.
+     * In this example, the rehandling of {@code /ctx/index.jsp} may
+     * trigger a different code path so that the rewritten request
+     * is handled by a different {@code Handler}, in this example
+     * one that knows how to handle JSP resources.</p>
+     *
+     * @param request the request
+     * @param response the response
+     * @param callback the callback to complete
+     * @param welcomeTarget the welcome target to rehandle to
+     * @throws Exception if the rehandling fails
+     */
+    protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    {
+        Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
+    }
+
+    private WelcomeAction processWelcome(Request request) throws IOException
+    {
+        String welcomeTarget = getWelcomeFactory().getWelcomeTarget(request);
         if (welcomeTarget == null)
             return null;
 
@@ -537,17 +591,16 @@ public class ResourceService
         if (LOG.isDebugEnabled())
             LOG.debug("welcome={}", welcomeTarget);
 
-        if (_redirectWelcome)
+        WelcomeMode welcomeMode = getWelcomeMode();
+        welcomeTarget = switch (welcomeMode)
         {
-            // Redirect to the index
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-            HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
-            uri.path(URIUtil.addPaths(contextPath, welcomeTarget));
-            return new WelcomeAction(WelcomeActionType.REDIRECT, uri.getPathQuery());
-        }
+            case REDIRECT, REHANDLE -> HttpURI.build(request.getHttpURI())
+                .path(URIUtil.addPaths(contextPath, welcomeTarget))
+                .getPathQuery();
+            case SERVE -> welcomeTarget;
+        };
 
-        // Serve welcome file
-        return new WelcomeAction(WelcomeActionType.SERVE, welcomeTarget);
+        return new WelcomeAction(welcomeTarget, welcomeMode);
     }
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
@@ -716,7 +769,7 @@ public class ResourceService
     }
 
     /**
-     * @return If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * @return If true, directory listings are returned if no welcome target is found. Else 403 Forbidden.
      */
     public boolean isDirAllowed()
     {
@@ -739,12 +792,9 @@ public class ResourceService
         return _precompressedFormats;
     }
 
-    /**
-     * @return If true, welcome files are redirected rather than forwarded to.
-     */
-    public boolean isRedirectWelcome()
+    public WelcomeMode getWelcomeMode()
     {
-        return _redirectWelcome;
+        return _welcomeMode;
     }
 
     public WelcomeFactory getWelcomeFactory()
@@ -769,7 +819,7 @@ public class ResourceService
     }
 
     /**
-     * @param dirAllowed If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * @param dirAllowed If true, directory listings are returned if no welcome target is found. Else 403 Forbidden.
      */
     public void setDirAllowed(boolean dirAllowed)
     {
@@ -817,20 +867,15 @@ public class ResourceService
         return _encodingCacheSize;
     }
 
-    /**
-     * @param redirectWelcome If true, welcome files are redirected rather than forwarded to.
-     * redirection is always used if the ResourceHandler is not scoped by
-     * a ContextHandler
-     */
-    public void setRedirectWelcome(boolean redirectWelcome)
+    public void setWelcomeMode(WelcomeMode welcomeMode)
     {
-        _redirectWelcome = redirectWelcome;
+        _welcomeMode = Objects.requireNonNull(welcomeMode);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, redirectWelcome=%b)", this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._redirectWelcome);
+        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, welcomeMode=%s)", this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._welcomeMode);
     }
 
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)
@@ -841,11 +886,11 @@ public class ResourceService
     public interface WelcomeFactory
     {
         /**
-         * Finds a matching welcome target URI path for the request.
+         * Finds a matching welcome target for the request.
          *
-         * @param request the request to use to determine the matching welcome target from.
+         * @param request the request to use to determine the matching welcome target
          * @return The URI path of the matching welcome target in context or null
-         * (null means no welcome target was found)
+         * if no welcome target was found
          */
         String getWelcomeTarget(Request request) throws IOException;
     }
