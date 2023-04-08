@@ -8,10 +8,10 @@ ee9
 
 [depend]
 ee9-security
+openid
 client
 
 [lib]
-lib/jetty-openid-${jetty.version}.jar
 lib/jetty-ee9-openid-${jetty.version}.jar
 lib/jetty-util-ajax-${jetty.version}.jar
 

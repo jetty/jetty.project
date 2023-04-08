@@ -5,10 +5,10 @@ Adds OpenId Connect authentication to the server.
 
 [depend]
 ee8-security
+openid
 client
 
 [lib]
-lib/jetty-openid-${jetty.version}.jar
 lib/jetty-ee8-openid-${jetty.version}.jar
 lib/jetty-util-ajax-${jetty.version}.jar
 
