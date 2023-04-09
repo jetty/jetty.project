@@ -291,10 +291,10 @@ jetty-ee9/jetty-ee9-runner/src/main/java/org/eclipse/jetty/ee9/runner/package-in
 jetty-ee9/jetty-ee9-runner/src/main/java/org/eclipse/jetty/ee9/runner/Runner.java, 2012-08-29
 jetty-ee9/jetty-ee9-jaas/src/test/java/org/eclipse/jetty/ee9/jaas/spi/PropertyFileLoginModuleTest.java, 2019-07-01
 jetty-ee9/jetty-ee9-jaas/src/test/java/org/eclipse/jetty/ee9/jaas/TestLoginModule.java, 2018-05-01
-jetty-ee9/jetty-ee9-jaas/src/test/java/org/eclipse/jetty/ee9/jaas/JAASLdapLoginServiceTest.java, 2018-08-30
-jetty-ee9/jetty-ee9-jaas/src/test/java/org/eclipse/jetty/ee9/jaas/JAASLoginServiceTest.java, 2018-04-17
+jetty-ee9/jetty-ee9-jaas/src/test/java/org.eclipse.jetty.security.jaas.JAASLdapLoginServiceTest.java, 2018-08-30
+jetty-ee9/jetty-ee9-jaas/src/test/java/org.eclipse.jetty.security.jaas.JAASLoginServiceTest.java, 2018-04-17
 jetty-ee9/jetty-ee9-jaas/src/main/java/module-info.java, 2009-03-24
-jetty-ee9/jetty-ee9-jaas/src/main/java/org/eclipse/jetty/ee9/jaas/JAASLoginService.java, 2009-03-24
+jetty-ee9/jetty-ee9-jaas/src/main/java/org.eclipse.jetty.security.jaas.JAASLoginService.java, 2009-03-24
 jetty-ee9/jetty-ee9-jaas/src/main/java/org/eclipse/jetty/ee9/jaas/JAASUserPrincipal.java, 2003-04-30
 jetty-ee9/jetty-ee9-jaas/src/main/java/org/eclipse/jetty/ee9/jaas/spi/AbstractLoginModule.java, 2009-03-24
 jetty-ee9/jetty-ee9-jaas/src/main/java/org/eclipse/jetty/ee9/jaas/spi/AbstractDatabaseLoginModule.java, 2009-03-24
@@ -1409,9 +1409,9 @@ jetty-ee9/jetty-ee9-tests/jetty-ee9-test-client-transports/src/test/java/org/ecl
 jetty-ee9/jetty-ee9-tests/jetty-ee9-test-client-transports/src/test/java/org/eclipse/jetty/ee9/test/client/transport/AbstractTest.java, 2022-08-17
 jetty-ee9/jetty-ee9-tests/jetty-ee9-test-websocket-client-provided-webapp/src/main/java/org/eclipse/jetty/ee9/tests/webapp/websocket/WebSocketClientServlet.java, 2020-09-29
 jetty-ee9/jetty-ee9-tests/jetty-ee9-test-websocket-client-provided-webapp/src/main/java/org/eclipse/jetty/ee9/tests/webapp/websocket/EchoEndpoint.java, 2012-07-09
-jetty-ee9/jetty-ee9-tests/jetty-ee9-test-loginservice/src/test/java/org/eclipse/jetty/ee9/loginservice/DatabaseLoginServiceTestServer.java, 2014-07-17
-jetty-ee9/jetty-ee9-tests/jetty-ee9-test-loginservice/src/test/java/org/eclipse/jetty/ee9/loginservice/JdbcLoginServiceTest.java, 2010-05-29
-jetty-ee9/jetty-ee9-tests/jetty-ee9-test-loginservice/src/test/java/org/eclipse/jetty/ee9/loginservice/DataSourceLoginServiceTest.java, 2014-07-17
+jetty-ee9/jetty-ee9-tests/jetty-ee9-test-loginservice/src/test/java/org.eclipse.jetty.loginservice.DatabaseLoginServiceTestServer.java, 2014-07-17
+jetty-ee9/jetty-ee9-tests/jetty-ee9-test-loginservice/src/test/java/org.eclipse.jetty.loginservice.JdbcLoginServiceTest.java, 2010-05-29
+jetty-ee9/jetty-ee9-tests/jetty-ee9-test-loginservice/src/test/java/org.eclipse.jetty.loginservice.DataSourceLoginServiceTest.java, 2014-07-17
 jetty-ee9/jetty-ee9-tests/jetty-ee9-test-sessions/jetty-ee9-test-sessions-hazelcast/src/test/java/org/eclipse/jetty/ee9/session/hazelcast/HazelcastClusteredInvalidationSessionTest.java, 2010-01-26
 jetty-ee9/jetty-ee9-tests/jetty-ee9-test-sessions/jetty-ee9-test-sessions-hazelcast/src/test/java/org/eclipse/jetty/ee9/session/hazelcast/client/ClientOrphanedSessionTest.java, 2017-05-29
 jetty-ee9/jetty-ee9-tests/jetty-ee9-test-sessions/jetty-ee9-test-sessions-hazelcast/src/test/java/org/eclipse/jetty/ee9/session/hazelcast/client/HazelcastSessionDataStoreTest.java, 2018-03-28

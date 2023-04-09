@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>JAAS Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the org.eclipse.jetty.jaas package.
+ * be able to see the org.eclipse.jetty.security.jaas package.
  * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
  * which is unknown to the jaas package.
  * </p>

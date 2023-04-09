@@ -16,7 +16,7 @@
     <apacheds.version>2.0.0.AM26</apacheds.version>
     <apache.directory.api.version>2.1.2</apache.directory.api.version>
     <apache.mina.version>2.2.1</apache.mina.version>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.security.jaas.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
