@@ -16,15 +16,20 @@ package org.eclipse.jetty.start;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.FileID;
 
@@ -194,40 +199,60 @@ public class FS
 
     public static void extractZip(Path archive, Path destination) throws IOException
     {
-        try (ZipFile zip = new ZipFile(archive.toFile()))
+        StartLog.info("extract %s to %s", archive, destination);
+        URI jaruri = URI.create("jar:" + archive.toUri());
+        Map<String, ?> fsEnv = Map.of();
+        try (FileSystem zipFs = FileSystems.newFileSystem(jaruri, fsEnv))
         {
-            StartLog.info("extract %s to %s", archive, destination);
-            Enumeration<? extends ZipEntry> entries = zip.entries();
-            while (entries.hasMoreElements())
+            copyZipContents(zipFs.getPath("/"), destination);
+        }
+        catch (FileSystemAlreadyExistsException e)
+        {
+            FileSystem zipFs = FileSystems.getFileSystem(jaruri);
+            copyZipContents(zipFs.getPath("/"), destination);
+        }
+    }
+
+    public static void copyZipContents(Path root, Path destination) throws IOException
+    {
+        if (!Files.exists(destination))
+        {
+            Files.createDirectories(destination);
+        }
+        URI outputDirURI = destination.toUri();
+        URI archiveURI = root.toUri();
+        int archiveURISubIndex = archiveURI.toASCIIString().indexOf("!/") + 2;
+
+        try (Stream<Path> entriesStream = Files.walk(root))
+        {
+            // ensure proper unpack order (eg: directories before files)
+            Stream<Path> sorted = entriesStream
+                .filter((path) -> path.getNameCount() > 0)
+                .filter((path) -> !path.getName(0).toString().equalsIgnoreCase("META-INF"))
+                .sorted();
+
+            Iterator<Path> pathIterator = sorted.iterator();
+            while (pathIterator.hasNext())
             {
-                ZipEntry entry = entries.nextElement();
-
-                if (entry.isDirectory() || entry.getName().startsWith("/META-INF"))
+                Path path = pathIterator.next();
+                URI entryURI = path.toUri();
+                String subURI = entryURI.toASCIIString().substring(archiveURISubIndex);
+                URI outputPathURI = outputDirURI.resolve(subURI);
+                Path outputPath = Path.of(outputPathURI);
+                StartLog.info("zipFs: %s > %s", path, outputPath);
+                if (Files.isDirectory(path))
                 {
-                    // skip
-                    continue;
+                    if (!Files.exists(outputPath))
+                        Files.createDirectory(outputPath);
                 }
-
-                String entryName = entry.getName();
-                Path destFile = destination.resolve(entryName).normalize().toAbsolutePath();
-                // make sure extracted path does not escape the destination directory
-                if (!destFile.startsWith(destination))
+                else if (Files.exists(outputPath))
                 {
-                    throw new IOException(String.format("Malicious Archive %s found with bad entry \"%s\"",
-                        archive, entryName));
-                }
-                if (!Files.exists(destFile))
-                {
-                    FS.ensureDirectoryExists(destFile.getParent());
-                    try (InputStream input = zip.getInputStream(entry))
-                    {
-                        StartLog.debug("extracting %s", destFile);
-                        Files.copy(input, destFile);
-                    }
+                    StartLog.debug("skipping extraction (file exists) %s", outputPath);
                 }
                 else
                 {
-                    StartLog.debug("skipping extract (file exists) %s", destFile);
+                    StartLog.info("extracting %s to %s", path, outputPath);
+                    Files.copy(path, outputPath);
                 }
             }
         }

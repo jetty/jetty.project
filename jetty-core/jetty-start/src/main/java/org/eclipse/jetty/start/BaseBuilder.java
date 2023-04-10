@@ -86,7 +86,6 @@ public class BaseBuilder
             // Handle local directories
             fileInitializers.add(new LocalFileInitializer(baseHome));
 
-            // Downloads are allowed to be performed
             // Setup Maven Local Repo
             Path localRepoDir = args.findMavenLocalRepoDir();
             if (localRepoDir != null)
@@ -106,7 +105,7 @@ public class BaseBuilder
             fileInitializers.add(new BaseHomeFileInitializer(baseHome));
 
             // Normal URL downloads
-            fileInitializers.add(new UriFileInitializer(baseHome));
+            fileInitializers.add(new UriFileInitializer(startArgs, baseHome));
         }
     }
 
