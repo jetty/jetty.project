@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -60,7 +62,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -167,15 +168,14 @@ public class MultiPartServletTest
         }
         content.close();
 
-        Response response = listener.get(30, TimeUnit.MINUTES);
-        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
-        String responseContent = IO.toString(listener.getInputStream());
+        assert400orEof(listener, responseContent ->
+        {
         assertThat(responseContent, containsString("Unable to parse form content"));
         assertThat(responseContent, containsString("Form is larger than max length"));
+        });
     }
 
     @Test
-    @Tag("Flaky")
     public void testManyParts() throws Exception
     {
         start(new HttpServlet()
@@ -206,11 +206,11 @@ public class MultiPartServletTest
             .body(multiPart)
             .send(listener);
 
-        Response response = listener.get(30, TimeUnit.SECONDS);
-        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
-        String responseContent = IO.toString(listener.getInputStream());
+        assert400orEof(listener, responseContent ->
+        {
         assertThat(responseContent, containsString("Unable to parse form content"));
         assertThat(responseContent, containsString("Form with too many keys"));
+        });
     }
 
     @Test
@@ -257,18 +257,29 @@ public class MultiPartServletTest
 
         assertThat(writeError, instanceOf(EofException.class));
 
+        assert400orEof(listener, null);
+    }
+
+    private static void assert400orEof(InputStreamResponseListener listener, Consumer<String> checkbody) throws InterruptedException, TimeoutException
+    {
         // There is a race here, either we fail trying to write some more content OR
         // we get 400 response, for some reason reading the content throws EofException.
+        String responseContent = null;
         try
         {
             Response response = listener.get(30, TimeUnit.SECONDS);
             assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+            responseContent = IO.toString(listener.getInputStream());
         }
-        catch (ExecutionException e)
+        catch (ExecutionException | IOException e)
         {
             Throwable cause = e.getCause();
             assertThat(cause, instanceOf(EofException.class));
+            return;
         }
+
+        if (checkbody != null)
+            checkbody.accept(responseContent);
     }
 
     @Test
