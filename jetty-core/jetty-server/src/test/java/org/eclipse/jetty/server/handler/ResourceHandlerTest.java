@@ -59,7 +59,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -71,7 +70,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -99,23 +97,21 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.oneOf;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Resource Handler test
  */
-@ExtendWith(WorkDirExtension.class)
 public class ResourceHandlerTest
 {
     public WorkDir workDir;
-
     private Path docRoot;
-
     private Server _server;
     private LocalConnector _local;
-
     private ResourceHandler _rootResourceHandler;
-
+    private ContextHandler _contextHandler;
     private ContextHandlerCollection _contextHandlerCollection;
 
     private static void addBasicWelcomeScenarios(Scenarios scenarios)
@@ -675,14 +671,13 @@ public class ResourceHandlerTest
             }
         };
         _rootResourceHandler.setWelcomeFiles("welcome.txt");
-        _rootResourceHandler.setRedirectWelcome(false);
 
-        ContextHandler contextHandler = new ContextHandler("/context");
-        contextHandler.setHandler(_rootResourceHandler);
-        contextHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
+        _contextHandler = new ContextHandler("/context");
+        _contextHandler.setHandler(_rootResourceHandler);
+        _contextHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
 
         _contextHandlerCollection = new ContextHandlerCollection();
-        _contextHandlerCollection.addHandler(contextHandler);
+        _contextHandlerCollection.addHandler(_contextHandler);
 
         _server.setHandler(_contextHandlerCollection);
         _server.start();
@@ -774,7 +769,6 @@ public class ResourceHandlerTest
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.BR);
         _rootResourceHandler.setEtags(true);
 
@@ -802,7 +796,6 @@ public class ResourceHandlerTest
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.BR);
         _rootResourceHandler.setEtags(true);
 
@@ -937,7 +930,6 @@ public class ResourceHandlerTest
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.BR);
         _rootResourceHandler.setEtags(true);
 
@@ -1057,7 +1049,6 @@ public class ResourceHandlerTest
         Files.writeString(file0gz, "fake gzip", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
         _rootResourceHandler.setEtags(true);
 
@@ -1754,7 +1745,7 @@ public class ResourceHandlerTest
             Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678 HTTP/1.1\r
                 Host: local\r
-                Connection: close\r              
+                Connection: close\r
                 \r
                 """, "/context/directory/;JSESSIONID=12345678"),
             Arguments.of("""
@@ -2130,7 +2121,6 @@ public class ResourceHandlerTest
         Files.writeString(file0gz, "fake gzip", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
         _rootResourceHandler.setEtags(true);
 
@@ -3128,7 +3118,6 @@ public class ResourceHandlerTest
         Files.writeString(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
         _rootResourceHandler.setAcceptRanges(true);
 
         String rawResponse = _local.getResponse(scenario.rawRequest);
@@ -3148,7 +3137,7 @@ public class ResourceHandlerTest
 
         getLocalConnectorConfig().setRelativeRedirectAllowed(true);
 
-        _rootResourceHandler.setRedirectWelcome(true);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         _rootResourceHandler.setDirAllowed(false);
         _rootResourceHandler.setWelcomeFiles("index.html");
 
@@ -3341,7 +3330,6 @@ public class ResourceHandlerTest
     public void testWelcome(ResourceHandlerTest.Scenario scenario) throws Exception
     {
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
         _rootResourceHandler.setWelcomeFiles("index.html", "index.htm");
 
         Path one = docRoot.resolve("one");
@@ -3397,7 +3385,7 @@ public class ResourceHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("Hello"));
 
-        _rootResourceHandler.setRedirectWelcome(true);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         response = HttpTester.parseResponse(
             _local.getResponse("""
                 GET /context/dir%3F/ HTTP/1.1\r
@@ -3428,7 +3416,6 @@ public class ResourceHandlerTest
         ResourceHandler altResourceHandler = new ResourceHandler();
         altResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         altResourceHandler.setDirAllowed(false); // Cannot see listings
-        altResourceHandler.setRedirectWelcome(false);
         altResourceHandler.setWelcomeFiles("index.html", "index.htm");
         ContextHandler altContext = new ContextHandler("/context/alt");
         altContext.setHandler(altResourceHandler);
@@ -3438,7 +3425,6 @@ public class ResourceHandlerTest
         ResourceHandler otherResourceHandler = new ResourceHandler();
         otherResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         otherResourceHandler.setDirAllowed(true); // Can see listings
-        otherResourceHandler.setRedirectWelcome(false);
         otherResourceHandler.setWelcomeFiles("index.html", "index.htm");
         ContextHandler otherContext = new ContextHandler("/context/other");
         otherContext.setHandler(otherResourceHandler);
@@ -3446,7 +3432,6 @@ public class ResourceHandlerTest
         otherContext.start(); // Correct behavior, after ContextHandlerCollection is started, it's on us to start the handler.
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(false);
 
         String rawResponse;
         HttpTester.Response response;
@@ -3604,7 +3589,7 @@ public class ResourceHandlerTest
     public void testWelcomeRedirect() throws Exception
     {
         copySimpleTestResource(docRoot);
-        _rootResourceHandler.setRedirectWelcome(true);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("""
                 GET /context/directory/ HTTP/1.1\r
@@ -3625,7 +3610,7 @@ public class ResourceHandlerTest
         Path index = dir.resolve("index.html");
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(true);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         _rootResourceHandler.setWelcomeFiles("index.html", "index.htm");
 
         String rawResponse;
@@ -3711,7 +3696,7 @@ public class ResourceHandlerTest
         Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(true);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         _rootResourceHandler.setWelcomeFiles("index.html");
 
         String rawResponse;
@@ -3760,7 +3745,7 @@ public class ResourceHandlerTest
         Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
         _rootResourceHandler.setDirAllowed(false);
-        _rootResourceHandler.setRedirectWelcome(true);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         _rootResourceHandler.setWelcomeFiles("index.html");
 
         String rawResponse;
@@ -3785,6 +3770,63 @@ public class ResourceHandlerTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3B/index.html"));
+    }
+
+    @Test
+    public void testWelcomeRehandleIsRehandled() throws Exception
+    {
+        Path dir = docRoot.resolve("rehandle");
+        FS.ensureDirExists(dir);
+        Path index = dir.resolve("index.txt");
+        Files.writeString(index, "Hello Index", UTF_8);
+
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REHANDLE);
+        _rootResourceHandler.setWelcomeFiles("index.txt");
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("""
+            GET /context/rehandle/ HTTP/1.1
+            Host: localhost
+                        
+            """));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getContent(), containsString("Hello Index"));
+    }
+
+    @Test
+    public void testWelcomeRehandleIsNotRehandled() throws Exception
+    {
+        Path dir = docRoot.resolve("rehandle");
+        FS.ensureDirExists(dir);
+        Path index = dir.resolve("index.txt");
+        Files.writeString(index, "Hello Index", UTF_8);
+
+        _server.stop();
+        _rootResourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected ResourceService newResourceService()
+            {
+                // A plain ResourceService does not re-handle.
+                return new ResourceService();
+            }
+        };
+        _rootResourceHandler.setDirAllowed(false);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REHANDLE);
+        _rootResourceHandler.setWelcomeFiles("index.txt");
+        _contextHandler.setHandler(_rootResourceHandler);
+        _server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("""
+            GET /context/rehandle/ HTTP/1.1
+            Host: localhost
+                        
+            """));
+
+        assertNotNull(response);
+        // Not rehandled, and directory listing is forbidden, so 500.
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 
     private void copyBigText(Path base) throws IOException

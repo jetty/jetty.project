@@ -40,9 +40,7 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
         _matchSuffix = "/" + _resource.getFileName();
         _contentType = contentType;
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("resource=({}) {}, resource.getFileName()={}", _resource.getClass().getName(), _resource, _resource.getFileName());
-        }
     }
 
     /**
