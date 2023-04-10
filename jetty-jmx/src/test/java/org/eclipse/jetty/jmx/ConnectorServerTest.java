@@ -24,7 +24,7 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -227,10 +227,10 @@ public class ConnectorServerTest
     public void testJMXOverTLS() throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.p12").toString();
-        String keyStorePassword = "storepwd";
-        sslContextFactory.setKeyStorePath(keyStorePath);
-        sslContextFactory.setKeyStorePassword(keyStorePassword);
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslContextFactory.start();
 
         // The RMIClientSocketFactory is stored within the RMI stub.
@@ -242,8 +242,11 @@ public class ConnectorServerTest
         // trustStore because the server certificate is self-signed.
         // The server needs to contact the RMI registry and therefore also
         // needs these system properties.
-        System.setProperty("javax.net.ssl.trustStore", keyStorePath);
-        System.setProperty("javax.net.ssl.trustStorePassword", keyStorePassword);
+        String trustStoreFilePath =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getTrustStore(),
+                TestKeyStoreFactory.KEY_STORE_PASSWORD).getCanonicalPath();
+        System.setProperty("javax.net.ssl.trustStore", trustStoreFilePath);
+        System.setProperty("javax.net.ssl.trustStorePassword", TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         connectorServer = new ConnectorServer(new JMXServiceURL("rmi", null, 1100, "/jndi/rmi://localhost:1100/jmxrmi"), null, objectName, sslContextFactory);
         connectorServer.start();

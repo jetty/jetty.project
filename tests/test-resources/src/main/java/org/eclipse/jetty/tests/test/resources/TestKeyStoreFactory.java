@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.tests.test.resources;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.UUID;
 
 public class TestKeyStoreFactory
 {
@@ -40,6 +45,24 @@ public class TestKeyStoreFactory
     {
         return getKeyStore("org.eclipse.jetty.tests.test.resources/certs/trustStore.jks",
                 KEY_STORE_PASSWORD);
+    }
+
+    public static File getKeyStoreAsFile(KeyStore keyStore, String keyStorePassword)
+    {
+        File tempKeyStoreFile = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        if (tempKeyStoreFile.exists())
+        {
+            tempKeyStoreFile.delete();
+        }
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(tempKeyStoreFile))
+        {
+            keyStore.store(keyStoreOutputStream, keyStorePassword.toCharArray());
+        }
+        catch (GeneralSecurityException | IOException e)
+        {
+            throw new IllegalStateException("Error writing keystore to file", e);
+        }
+        return tempKeyStoreFile;
     }
 
     private static KeyStore getKeyStore(String resourcePath, String password)
