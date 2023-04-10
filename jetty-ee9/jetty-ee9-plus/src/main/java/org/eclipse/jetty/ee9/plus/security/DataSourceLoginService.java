@@ -67,7 +67,7 @@ public class DataSourceLoginService extends AbstractLoginService
     /**
      * DBUser
      */
-    public class DBUserPrincipal extends UserPrincipal
+    public static class DBUserPrincipal extends UserPrincipal
     {
         private int _key;
 
