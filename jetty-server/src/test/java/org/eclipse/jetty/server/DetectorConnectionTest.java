@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -87,10 +87,11 @@ public class DetectorConnectionTest
 
     private String getResponseOverSsl(String request) throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
-        SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslContextFactory.start();
 
         SSLSocketFactory socketFactory = sslContextFactory.getSslContext().getSocketFactory();
@@ -216,10 +217,11 @@ public class DetectorConnectionTest
     @Test
     public void testDetectingSslProxyToHttpNoSslWithProxy() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
@@ -247,10 +249,11 @@ public class DetectorConnectionTest
     @Test
     public void testDetectingSslProxyToHttpWithSslNoProxy() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
@@ -271,10 +274,11 @@ public class DetectorConnectionTest
     @Test
     public void testDetectingSslProxyToHttpWithSslWithProxy() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
@@ -297,10 +301,11 @@ public class DetectorConnectionTest
     @Test
     public void testDetectionUnsuccessfulUpgradesToNextProtocol() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
@@ -321,10 +326,11 @@ public class DetectorConnectionTest
     @Test
     public void testDetectorToNextDetector() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
@@ -386,10 +392,11 @@ public class DetectorConnectionTest
     @Test
     public void testDetectorWithProxyThatHasNoNextProto() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory();
@@ -412,10 +419,11 @@ public class DetectorConnectionTest
     @Test
     public void testOptionalSsl() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
@@ -439,10 +447,11 @@ public class DetectorConnectionTest
     @Test
     public void testDetectorThatHasNoConfiguredNextProto() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
         DetectorConnectionFactory detector = new DetectorConnectionFactory(ssl);
@@ -610,10 +619,11 @@ public class DetectorConnectionTest
     @Test
     public void testGeneratedProtocolNames()
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(HttpVersion.HTTP_1_1.asString());
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());

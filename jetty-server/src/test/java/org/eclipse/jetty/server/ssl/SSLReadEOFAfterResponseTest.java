@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -29,8 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -43,10 +41,11 @@ public class SSLReadEOFAfterResponseTest
     @Test
     public void testReadEOFAfterResponse() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server, sslContextFactory);

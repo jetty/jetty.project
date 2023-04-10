@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +39,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -83,10 +82,11 @@ public class ThreadStarvationTest
         // HTTPS/SSL/TLS
         ConnectorProvider https = (server, acceptors, selectors) ->
         {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
-            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+            sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+            sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+            sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
             ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();

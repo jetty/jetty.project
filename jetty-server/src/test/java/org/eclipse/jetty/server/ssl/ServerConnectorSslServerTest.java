@@ -14,19 +14,16 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,7 +38,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
@@ -73,29 +70,30 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     @BeforeEach
     public void init() throws Exception
     {
-        String keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12").toString();
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
+        serverSslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-        ServerConnector connector = new ServerConnector(_server, null, null, pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
+        ServerConnector connector = new ServerConnector(_server, null, null, pool, 1, 1, AbstractConnectionFactory.getFactories(serverSslContextFactory, httpConnectionFactory));
         SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
         secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
         httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
 
         startServer(connector);
 
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keystore);
-        _sslContext = SSLContext.getInstance("TLS");
-        _sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.start();
+
+        _sslContext = clientSslContextFactory.getSslContext();
+        clientSslContextFactory.stop();
 
         try
         {

@@ -14,13 +14,11 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URI;
-import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.Future;
@@ -30,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -39,6 +36,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,28 +54,29 @@ public class SSLSelectChannelConnectorLoadTest
     @BeforeAll
     public static void startServer() throws Exception
     {
-        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore.p12";
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
+        serverSslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         server = new Server();
-        connector = new ServerConnector(server, sslContextFactory);
+        connector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(connector);
 
         server.setHandler(new EmptyHandler());
 
         server.start();
 
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = new FileInputStream(keystorePath))
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keystore);
-        sslContext = SSLContext.getInstance("SSL");
-        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.start();
+
+        sslContext = clientSslContextFactory.getSslContext();
+        clientSslContextFactory.stop();
     }
 
     @AfterAll

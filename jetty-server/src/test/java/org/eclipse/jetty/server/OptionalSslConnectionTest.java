@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -46,10 +46,11 @@ public class OptionalSslConnectionTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConfiguration httpConfig = new HttpConfiguration();
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
@@ -206,10 +207,11 @@ public class OptionalSslConnectionTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         HttpConfiguration httpConfig = new HttpConfiguration();
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);

@@ -55,7 +55,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -119,10 +119,11 @@ public class SSLEngineTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         server = new Server();
         HttpConnectionFactory http = new HttpConnectionFactory();

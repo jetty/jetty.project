@@ -56,6 +56,7 @@ import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
@@ -306,10 +307,12 @@ public class SniSslConnectionFactoryTest
     @Test
     public void testWrongSNIRejectedConnectionWithNonSNIKeystore() throws Exception
     {
+        String keyStoreFilePath =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getServerKeyStore(),
+                        TestKeyStoreFactory.KEY_STORE_PASSWORD).getCanonicalPath();
         start(ssl ->
         {
-            // Keystore has only one certificate, but we want to enforce SNI.
-            ssl.setKeyStorePath("src/test/resources/keystore.p12");
+            ssl.setKeyStorePath(keyStoreFilePath);
             ssl.setSniRequired(true);
         });
 

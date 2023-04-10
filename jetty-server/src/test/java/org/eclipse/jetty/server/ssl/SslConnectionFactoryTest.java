@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -43,6 +41,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -64,10 +63,6 @@ public class SslConnectionFactoryTest
     @BeforeEach
     public void before() throws Exception
     {
-        String keystorePath = "src/test/resources/keystore.p12";
-        File keystoreFile = new File(keystorePath);
-        if (!keystoreFile.exists())
-            throw new FileNotFoundException(keystoreFile.getAbsolutePath());
 
         _server = new Server();
 
@@ -77,8 +72,10 @@ public class SslConnectionFactoryTest
         httpConfig.setOutputBufferSize(32768);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
         sslConnectionFactory.setEnsureSecureRequestCustomizer(true);
@@ -122,7 +119,7 @@ public class SslConnectionFactoryTest
     @Test
     public void testSNIConnect() throws Exception
     {
-        String response = getResponse("localhost", "localhost", "localhost");
+        String response = getResponse("localhost", "localhost", "server");
         assertThat(response, Matchers.containsString("host=localhost"));
     }
 

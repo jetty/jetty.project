@@ -22,6 +22,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -38,22 +39,23 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeEach
     public void init() throws Exception
     {
-        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore.p12";
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        ServerConnector connector = new ServerConnector(_server, 1, 1, sslContextFactory);
+        SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
+        serverSslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        ServerConnector connector = new ServerConnector(_server, 1, 1, serverSslContextFactory);
         connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
         startServer(connector);
 
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = new FileInputStream(keystorePath))
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keystore);
-        __sslContext = SSLContext.getInstance("SSL");
-        __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.start();
+
+        __sslContext = clientSslContextFactory.getSslContext();
+        clientSslContextFactory.stop();
     }
 }

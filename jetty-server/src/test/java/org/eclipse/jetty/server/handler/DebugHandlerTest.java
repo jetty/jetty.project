@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,10 +68,11 @@ public class DebugHandlerTest
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
 
-        File keystorePath = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         ServerConnector sslConnector = new ServerConnector(server, null, null, pool, 1, 1,
             AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
@@ -100,16 +100,6 @@ public class DebugHandlerTest
 
         serverURI = URI.create(String.format("http://%s:%d/", host, httpConnector.getLocalPort()));
         secureServerURI = URI.create(String.format("https://%s:%d/", host, sslConnector.getLocalPort()));
-
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keystore);
-        sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
         try
         {

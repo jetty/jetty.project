@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -28,10 +27,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -157,9 +155,10 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     public void testSSLOpenRequestClose() throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
-        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         server.addBean(sslContextFactory);
 
         server.removeConnector(connector);

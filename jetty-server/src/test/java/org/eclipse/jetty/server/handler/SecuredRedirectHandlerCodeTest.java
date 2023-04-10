@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -30,7 +29,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 
@@ -104,10 +103,11 @@ public class SecuredRedirectHandlerCodeTest
     private void startServer(int redirectCode) throws Exception
     {
         // Setup SSL
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         server = new Server();
 
