@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
@@ -34,7 +33,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -139,9 +138,10 @@ public class SslConnectionTest
     @BeforeEach
     public void initSSL() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
-        _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
-        _sslCtxFactory.setKeyStorePassword("storepwd");
+        _sslCtxFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        _sslCtxFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        _sslCtxFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        _sslCtxFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         _sslCtxFactory.setRenegotiationAllowed(true);
         _sslCtxFactory.setRenegotiationLimit(-1);
         startManager();

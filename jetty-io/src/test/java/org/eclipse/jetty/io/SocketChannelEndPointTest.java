@@ -15,7 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +38,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -624,9 +623,10 @@ public class SocketChannelEndPointTest
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
             _normalScenario = normalScenario;
-            File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
-            _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
-            _sslCtxFactory.setKeyStorePassword("storepwd");
+            _sslCtxFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+            _sslCtxFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+            _sslCtxFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+            _sslCtxFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
             _sslCtxFactory.start();
         }
 
