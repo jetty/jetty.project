@@ -1176,7 +1176,7 @@ public class StartArgs
         if (ARG_ALLOW_INSECURE_HTTP_DOWNLOADS.equals(arg))
         {
             allowInsecureHttpDownloads = true;
-            return;
+            return environment;
         }
 
         // Enable forked execution of Jetty server
