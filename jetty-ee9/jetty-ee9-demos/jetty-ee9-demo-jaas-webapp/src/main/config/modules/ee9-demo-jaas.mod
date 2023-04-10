@@ -13,7 +13,7 @@ webapp
 [depends]
 demo-jaas
 ee9-deploy
-ee9-jaas
+jaas
 jdbc
 ee9-jsp
 ee9-annotations

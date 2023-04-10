@@ -7,10 +7,7 @@ Enables JAAS for deployed web applications.
 ee8
 
 [depend]
-server
-
-[lib]
-lib/jetty-ee8-jaas-${jetty.version}.jar
+security
 
 [xml]
 etc/jetty-jaas.xml
