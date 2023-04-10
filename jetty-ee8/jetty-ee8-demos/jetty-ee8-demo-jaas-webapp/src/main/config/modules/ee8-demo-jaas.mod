@@ -13,7 +13,7 @@ webapp
 [depends]
 demo-jaas
 ee8-deploy
-ee8-jaas
+jaas
 jdbc
 ee8-jsp
 ee8-annotations
