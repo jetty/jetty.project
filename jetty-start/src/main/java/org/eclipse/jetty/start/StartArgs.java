@@ -54,6 +54,7 @@ public class StartArgs
     public static final String VERSION;
     public static final Set<String> ALL_PARTS = Set.of("java", "opts", "path", "main", "args");
     public static final Set<String> ARG_PARTS = Set.of("args");
+    public static final String ARG_ALLOW_INSECURE_HTTP_DOWNLOADS = "--allow-insecure-http-downloads";
 
     private static final String JETTY_VERSION_KEY = "jetty.version";
     private static final String JETTY_TAG_NAME_KEY = "jetty.tag.version";
@@ -216,6 +217,7 @@ public class StartArgs
 
     private boolean exec = false;
     private String execProperties;
+    private boolean allowInsecureHttpDownloads = false;
     private boolean approveAllLicenses = false;
 
     public StartArgs(BaseHome baseHome)
@@ -960,6 +962,11 @@ public class StartArgs
         return false;
     }
 
+    public boolean isAllowInsecureHttpDownloads()
+    {
+        return allowInsecureHttpDownloads;
+    }
+
     public boolean isApproveAllLicenses()
     {
         return approveAllLicenses;
@@ -1241,6 +1248,13 @@ public class StartArgs
             execProperties = Props.getValue(arg);
             if (!execProperties.endsWith(".properties"))
                 throw new UsageException(UsageException.ERR_BAD_ARG, "--exec-properties filename must have .properties suffix: %s", execProperties);
+            return;
+        }
+
+        // Allow insecure-http downloads
+        if (ARG_ALLOW_INSECURE_HTTP_DOWNLOADS.equals(arg))
+        {
+            allowInsecureHttpDownloads = true;
             return;
         }
 
