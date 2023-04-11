@@ -16,6 +16,7 @@ package org.eclipse.jetty.tests.distribution.openid;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,8 +38,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ public class OpenIdProvider extends ContainerLifeCycle
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
     private static final String AUTH_PATH = "/auth";
     private static final String TOKEN_PATH = "/token";
+    private static final String END_SESSION_PATH = "/end_session";
     private final Map<String, User> issuedAuthCodes = new HashMap<>();
 
     protected final String clientId;
@@ -59,13 +61,15 @@ public class OpenIdProvider extends ContainerLifeCycle
     private int port = 0;
     private String provider;
     private User preAuthedUser;
+    private final CounterStatistic loggedInUsers = new CounterStatistic();
+    private long _idTokenDuration = Duration.ofSeconds(10).toMillis();
 
     public static void main(String[] args) throws Exception
     {
         String clientId = "CLIENT_ID123";
         String clientSecret = "PASSWORD123";
         int port = 5771;
-        String redirectUri = "http://localhost:8080/openid/auth";
+        String redirectUri = "http://localhost:8080/j_security_check";
 
         OpenIdProvider openIdProvider = new OpenIdProvider(clientId, clientSecret);
         openIdProvider.addRedirectUri(redirectUri);
@@ -92,12 +96,23 @@ public class OpenIdProvider extends ContainerLifeCycle
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        contextHandler.addServlet(new ServletHolder(new OpenIdConfigServlet()), CONFIG_PATH);
-        contextHandler.addServlet(new ServletHolder(new OpenIdAuthEndpoint()), AUTH_PATH);
-        contextHandler.addServlet(new ServletHolder(new OpenIdTokenEndpoint()), TOKEN_PATH);
+        contextHandler.addServlet(new ServletHolder(new ConfigServlet()), CONFIG_PATH);
+        contextHandler.addServlet(new ServletHolder(new AuthEndpoint()), AUTH_PATH);
+        contextHandler.addServlet(new ServletHolder(new TokenEndpoint()), TOKEN_PATH);
+        contextHandler.addServlet(new ServletHolder(new EndSessionEndpoint()), END_SESSION_PATH);
         server.setHandler(contextHandler);
 
         addBean(server);
+    }
+
+    public void setIdTokenDuration(long duration)
+    {
+        _idTokenDuration = duration;
+    }
+
+    public long getIdTokenDuration()
+    {
+        return _idTokenDuration;
     }
 
     public void join() throws InterruptedException
@@ -111,6 +126,11 @@ public class OpenIdProvider extends ContainerLifeCycle
         String authEndpoint = provider + AUTH_PATH;
         String tokenEndpoint = provider + TOKEN_PATH;
         return new OpenIdConfiguration(provider, authEndpoint, tokenEndpoint, clientId, clientSecret, null);
+    }
+
+    public CounterStatistic getLoggedInUsers()
+    {
+        return loggedInUsers;
     }
 
     @Override
@@ -145,7 +165,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         redirectUris.add(uri);
     }
 
-    public class OpenIdAuthEndpoint extends HttpServlet
+    public class AuthEndpoint extends HttpServlet
     {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
@@ -165,7 +185,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
 
             String scopeString = req.getParameter("scope");
-            List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(StringUtil.csvSplit(scopeString));
+            List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(scopeString.split(" "));
             if (!scopes.contains("openid"))
             {
                 resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no openid scope");
@@ -253,7 +273,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         }
     }
 
-    public class OpenIdTokenEndpoint extends HttpServlet
+    private class TokenEndpoint extends HttpServlet
     {
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -278,20 +298,53 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
 
             String accessToken = "ABCDEFG";
-            long expiry = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis();
+            long accessTokenDuration = Duration.ofMinutes(10).toSeconds();
             String response = "{" +
                 "\"access_token\": \"" + accessToken + "\"," +
-                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId)) + "\"," +
-                "\"expires_in\": " + expiry + "," +
+                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId, _idTokenDuration)) + "\"," +
+                "\"expires_in\": " + accessTokenDuration + "," +
                 "\"token_type\": \"Bearer\"" +
                 "}";
 
+            loggedInUsers.increment();
             resp.setContentType("text/plain");
             resp.getWriter().print(response);
         }
     }
 
-    public class OpenIdConfigServlet extends HttpServlet
+    private class EndSessionEndpoint extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        {
+            doPost(req, resp);
+        }
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        {
+            String idToken = req.getParameter("id_token_hint");
+            if (idToken == null)
+            {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "no id_token_hint");
+                return;
+            }
+
+            String logoutRedirect = req.getParameter("post_logout_redirect_uri");
+            if (logoutRedirect == null)
+            {
+                resp.setStatus(HttpServletResponse.SC_OK);
+                resp.getWriter().println("logout success on end_session_endpoint");
+                return;
+            }
+
+            loggedInUsers.decrement();
+            resp.setContentType("text/plain");
+            resp.sendRedirect(logoutRedirect);
+        }
+    }
+
+    private class ConfigServlet extends HttpServlet
     {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
@@ -300,6 +353,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"issuer\": \"" + provider + "\"," +
                 "\"authorization_endpoint\": \"" + provider + AUTH_PATH + "\"," +
                 "\"token_endpoint\": \"" + provider + TOKEN_PATH + "\"," +
+                "\"end_session_endpoint\": \"" + provider + END_SESSION_PATH + "\"," +
                 "}";
 
             resp.getWriter().write(discoveryDocument);
@@ -332,10 +386,24 @@ public class OpenIdProvider extends ContainerLifeCycle
             return subject;
         }
 
-        public String getIdToken(String provider, String clientId)
+        public String getIdToken(String provider, String clientId, long duration)
         {
-            long expiry = System.currentTimeMillis() + Duration.ofMinutes(1).toMillis();
-            return JwtEncoder.createIdToken(provider, clientId, subject, name, expiry);
+            long expiryTime = Instant.now().plusMillis(duration).getEpochSecond();
+            return JwtEncoder.createIdToken(provider, clientId, subject, name, expiryTime);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (!(obj instanceof User))
+                return false;
+            return Objects.equals(subject, ((User)obj).subject) && Objects.equals(name, ((User)obj).name);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(subject, name);
         }
     }
 }
