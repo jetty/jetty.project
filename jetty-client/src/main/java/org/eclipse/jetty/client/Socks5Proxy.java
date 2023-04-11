@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.ProxyConfiguration.Proxy;
 import org.eclipse.jetty.client.api.Connection;
@@ -102,7 +103,7 @@ public class Socks5Proxy extends Proxy
             {
                 case Init:
                     ByteBuffer init = ByteBuffer.allocate(4);
-                    if(username == null || username.isEmpty())
+                    if (username == null || username.isEmpty())
                     {
                         init.put(SockConst.VER).put((byte)1).put(AuthType.NO_AUTH);
                         init.flip();
@@ -116,8 +117,8 @@ public class Socks5Proxy extends Proxy
                     this.getEndPoint().write(this, init);
                     break;
                 case Auth:
-                    byte uLen = (byte) username.length();
-                    byte pLen = (byte) (password == null ? 0 : password.length());
+                    byte uLen = (byte)username.length();
+                    byte pLen = (byte)(password == null ? 0 : password.length());
                     ByteBuffer userPass = ByteBuffer.allocate(3 + uLen + pLen);
                     userPass.put(SockConst.UserPassVer)
                         .put(uLen)
@@ -142,7 +143,7 @@ public class Socks5Proxy extends Proxy
                             .put(CMD.CONNECT)
                             .put(SockConst.RSV)
                             .put(AddrType.IPV4);
-                        for(int i = 1; i <= 4; ++i) 
+                        for (int i = 1; i <= 4; ++i) 
                         {
                             buffer.put((byte)Integer.parseInt(matcher.group(i)));
                         }
@@ -213,7 +214,7 @@ public class Socks5Proxy extends Proxy
                         return;
                     }
                 } 
-                while(!parser.parse(buffer));
+                while (!parser.parse(buffer));
             } 
             catch (Exception e) 
             {
@@ -226,21 +227,21 @@ public class Socks5Proxy extends Proxy
             switch (responseStage)
             {
                 case Init:
-                    if(bs[0] != SockConst.VER)
+                    if (bs[0] != SockConst.VER)
                     {
                         throw new SocketException("SOCKS5 tunnel failed with err VER " + bs[0]);
                     }
-                    if(bs[1] == AuthType.NO_AUTH)
+                    if (bs[1] == AuthType.NO_AUTH)
                     {
                         requestStage = RequestStage.Connecting;
                         writeHandshakeCmd();
                     } 
-                    else if(bs[1] == AuthType.USER_PASS)
+                    else if (bs[1] == AuthType.USER_PASS)
                     {
                         requestStage = RequestStage.Auth;
                         writeHandshakeCmd();
                     } 
-                    else if(bs[1] == AuthType.NO_ACCEPTABLE)
+                    else if (bs[1] == AuthType.NO_ACCEPTABLE)
                     {
                         throw new SocketException("SOCKS : No acceptable methods");
                     } 
@@ -250,11 +251,11 @@ public class Socks5Proxy extends Proxy
                     }
                     break;
                 case Auth:
-                    if(bs[0] != SockConst.UserPassVer)
+                    if (bs[0] != SockConst.UserPassVer)
                     {
                         throw new SocketException("SOCKS5 tunnel failed with err UserPassVer " + bs[0]);
                     }
-                    if(bs[1] != SockConst.SUCCEEDED)
+                    if (bs[1] != SockConst.SUCCEEDED)
                     {
                         throw new SocketException("SOCKS : authentication failed");
                     }
@@ -263,7 +264,7 @@ public class Socks5Proxy extends Proxy
                     writeHandshakeCmd();
                     break;
                 case Connecting:
-                    if(bs[0] != SockConst.VER)
+                    if (bs[0] != SockConst.VER)
                     {
                         throw new SocketException("SOCKS5 tunnel failed with err VER " + bs[0]);
                     }
