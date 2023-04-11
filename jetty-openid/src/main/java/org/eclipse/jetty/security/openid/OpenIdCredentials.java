@@ -15,6 +15,7 @@ package org.eclipse.jetty.security.openid;
 
 import java.io.Serializable;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -137,10 +138,22 @@ public class OpenIdCredentials implements Serializable
             throw new AuthenticationException("Authorized party claim value should be the client_id");
 
         // Check that the ID token has not expired by checking the exp claim.
-        long expiry = (Long)claims.get("exp");
-        long currentTimeSeconds = (long)(System.currentTimeMillis() / 1000F);
-        if (currentTimeSeconds > expiry)
+        if (isExpired())
             throw new AuthenticationException("ID Token has expired");
+    }
+
+    public boolean isExpired()
+    {
+        return checkExpiry(claims);
+    }
+
+    public static boolean checkExpiry(Map<String, Object> claims)
+    {
+        if (claims == null)
+            return true;
+
+        // Check that the ID token has not expired by checking the exp claim.
+        return Instant.ofEpochSecond((Long)claims.get("exp")).isBefore(Instant.now());
     }
 
     private void validateAudience(OpenIdConfiguration configuration) throws AuthenticationException
