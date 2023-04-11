@@ -813,7 +813,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start("--add-modules=ssl-patch"))
             {
-                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), run2.getLogs().stream().toList().toString());
                 assertEquals(0, run2.getExitValue());
 
                 int port = distribution.freePort();
