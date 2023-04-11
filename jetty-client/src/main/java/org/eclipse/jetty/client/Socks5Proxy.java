@@ -1,3 +1,16 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
 package org.eclipse.jetty.client;
 
 
@@ -116,7 +129,7 @@ public class Socks5Proxy extends Proxy {
           setResponseStage(ResponseStage.Connecting);
           Matcher matcher = IPv4_PATTERN.matcher(host);
           if (matcher.matches()) {
-            // 连接IP地址
+            // ip
             ByteBuffer buffer = ByteBuffer.allocate(10);
             buffer.put(SockConst.VER)
               .put(CMD.CONNECT)
@@ -130,7 +143,7 @@ public class Socks5Proxy extends Proxy {
             buffer.flip();
             this.getEndPoint().write(this, buffer);
           } else {
-            // 连接域名
+            // domain
             byte[] hostBytes = host.getBytes(StandardCharsets.UTF_8);
             ByteBuffer buffer = ByteBuffer.allocate(7 + hostBytes.length);
             buffer.put(SockConst.VER)
@@ -213,7 +226,7 @@ public class Socks5Proxy extends Proxy {
           if(bs[1] != SockConst.SUCCEEDED){
             throw new SocketException("SOCKS : authentication failed");
           }
-          // 认证通过
+          // authorization successful
           requestStage = RequestStage.Connecting;
           writeHandshakeCmd();
           break;
@@ -262,15 +275,12 @@ public class Socks5Proxy extends Proxy {
           break;
         case ConnectedDomainName:
         case ConnectedIpV6:
-          // 1个字节，读取长度
           variableLen = 2 + bs[0];
           setResponseStage(ResponseStage.READ_REPLY_VARIABLE);
           fillInterested();
           break;
         case ConnectedIpV4:
         case READ_REPLY_VARIABLE:
-          // ipv4会读取到了6个字节
-          // 读取到了variableLen个字节
           tunnel();
           break;
         default:
