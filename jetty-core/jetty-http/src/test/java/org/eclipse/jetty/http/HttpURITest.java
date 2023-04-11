@@ -31,6 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -931,5 +932,11 @@ public class HttpURITest
         built = HttpURI.build(orig).path("/context/info").param("param=value").asImmutable();
         assertThat(built.getParam(), is(orig.getParam()));
         assertThat(built.toString(), is(orig.toString()));
+    }
+
+    @Test
+    public void testUriCompliance()
+    {
+        assertThat(UriCompliance.from(UriCompliance.DEFAULT.getName()), sameInstance(UriCompliance.DEFAULT));
     }
 }

@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.http3.qpack.internal.util.HuffmanDecoder;
-import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.HuffmanDecoder;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;

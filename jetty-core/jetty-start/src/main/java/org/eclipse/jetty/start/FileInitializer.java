@@ -109,7 +109,11 @@ public abstract class FileInitializer
 
         Path destination = _basehome.getBasePath(location);
 
-        // now on copy/download paths (be safe above all else)
+        // We restrict our behavior to only modifying what exists in ${jetty.base}.
+        // If the user decides they want to use advanced setups, such as symlinks to point
+        // to content outside of ${jetty.base}, that is their decision ad we will not
+        // attempt to save them from themselves.
+        // Note: All copy and extract steps, will not replace files that already exist.
         if (destination != null && !destination.startsWith(_basehome.getBasePath()))
             throw new IOException("For security reasons, Jetty start is unable to process file resource not in ${jetty.base} - " + location);
 
@@ -118,35 +122,6 @@ public abstract class FileInitializer
             destination = destination.resolve(uri.getSchemeSpecificPart().substring(uri.getSchemeSpecificPart().lastIndexOf('/') + 1));
 
         return destination;
-    }
-
-    protected void download(URI uri, Path destination) throws IOException
-    {
-        if (FS.ensureDirectoryExists(destination.getParent()))
-            StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
-
-        StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
-
-        URLConnection connection = uri.toURL().openConnection();
-
-        if (connection instanceof HttpURLConnection)
-        {
-            HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-            http.setInstanceFollowRedirects(true);
-            http.setAllowUserInteraction(false);
-
-            int status = http.getResponseCode();
-
-            if (status != HttpURLConnection.HTTP_OK)
-            {
-                throw new IOException("URL GET Failure [" + status + "/" + http.getResponseMessage() + "] on " + uri);
-            }
-        }
-
-        try (InputStream in = connection.getInputStream())
-        {
-            Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
-        }
     }
 
     /**
@@ -199,7 +174,11 @@ public abstract class FileInitializer
                     if (copyDirectory(from, to))
                         modified = true;
                 }
-                else if (!Files.exists(to))
+                else if (Files.exists(to))
+                {
+                    StartLog.debug("skipping copy (file exists in destination) %s", to);
+                }
+                else
                 {
                     StartLog.info("copy %s to %s", _basehome.toShortForm(from), _basehome.toShortForm(to));
                     Files.copy(from, to);

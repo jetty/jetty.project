@@ -16,9 +16,9 @@ package org.eclipse.jetty.http2.hpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.compression.HuffmanDecoder;
+import org.eclipse.jetty.http.compression.NBitIntegerParser;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
-import org.eclipse.jetty.http2.hpack.internal.Huffman;
-import org.eclipse.jetty.http2.hpack.internal.NBitInteger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -425,10 +425,10 @@ public class HpackContextTest
             int huff = 0xff & buffer.get();
             assertTrue((0x80 & huff) == 0x80);
 
-            int len = NBitInteger.decode(buffer, 7);
+            int len = NBitIntegerParser.decode(buffer, 7);
 
             assertEquals(len, buffer.remaining());
-            String value = Huffman.decode(buffer);
+            String value = HuffmanDecoder.decode(buffer, buffer.remaining());
 
             assertEquals(entry.getHttpField().getValue(), value);
         }

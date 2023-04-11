@@ -22,7 +22,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
-import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 import org.xml.sax.SAXException;
@@ -42,7 +41,7 @@ import org.xml.sax.SAXException;
  * <dd>optional type and classifier requirement</dd>
  * </dl>
  */
-public class MavenLocalRepoFileInitializer extends FileInitializer
+public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
 {
     public static class Coordinates
     {
@@ -124,6 +123,19 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
         this.readonly = readonly;
         this.mavenRepoUri = mavenRepoUri;
+    }
+
+    @Override
+    protected boolean allowInsecureHttpDownloads()
+    {
+        // Always allow insecure http downloads in this file initializer.
+
+        // The user is either using the DEFAULT_REMOTE_REPO, or has redeclared it to a new URI.
+        // If the `maven.repo.uri` property has been changed from default, this indicates a change
+        // to a different maven uri, overwhelmingly pointing to a maven repository manager
+        // like artifactory or nexus.   This is viewed as an intentional decision by the
+        // user and as such we should not put additional hurdles in their way.
+        return true;
     }
 
     private static Path newTempRepo()

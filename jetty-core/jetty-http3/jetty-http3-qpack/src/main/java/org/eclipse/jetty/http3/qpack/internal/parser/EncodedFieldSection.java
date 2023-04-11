@@ -19,13 +19,13 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.compression.EncodingException;
+import org.eclipse.jetty.http.compression.NBitIntegerParser;
+import org.eclipse.jetty.http.compression.NBitStringParser;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.metadata.MetaDataBuilder;
-import org.eclipse.jetty.http3.qpack.internal.util.EncodingException;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitStringParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
@@ -19,10 +19,17 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class HuffmanDecoder
 {
-    static final char EOS = HuffmanEncoder.EOS;
-    static final char[] tree = HuffmanEncoder.tree;
-    static final char[] rowsym = HuffmanEncoder.rowsym;
-    static final byte[] rowbits = HuffmanEncoder.rowbits;
+    public static String decode(ByteBuffer buffer, int length) throws EncodingException
+    {
+        HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
+        huffmanDecoder.setLength(length);
+        String decoded = huffmanDecoder.decode(buffer);
+        if (decoded == null)
+            throw new EncodingException("invalid string encoding");
+
+        huffmanDecoder.reset();
+        return decoded;
+    }
 
     private final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
     private int _length = 0;
@@ -51,18 +58,18 @@ public class HuffmanDecoder
             while (_bits >= 8)
             {
                 int c = (_current >>> (_bits - 8)) & 0xFF;
-                _node = tree[_node * 256 + c];
-                if (rowbits[_node] != 0)
+                _node = Huffman.tree[_node * 256 + c];
+                if (Huffman.rowbits[_node] != 0)
                 {
-                    if (rowsym[_node] == EOS)
+                    if (Huffman.rowsym[_node] == Huffman.EOS)
                     {
                         reset();
                         throw new EncodingException("eos_in_content");
                     }
 
                     // terminal node
-                    _utf8.append((byte)(0xFF & rowsym[_node]));
-                    _bits -= rowbits[_node];
+                    _utf8.append((byte)(0xFF & Huffman.rowsym[_node]));
+                    _bits -= Huffman.rowbits[_node];
                     _node = 0;
                 }
                 else
@@ -77,9 +84,9 @@ public class HuffmanDecoder
         {
             int c = (_current << (8 - _bits)) & 0xFF;
             int lastNode = _node;
-            _node = tree[_node * 256 + c];
+            _node = Huffman.tree[_node * 256 + c];
 
-            if (rowbits[_node] == 0 || rowbits[_node] > _bits)
+            if (Huffman.rowbits[_node] == 0 || Huffman.rowbits[_node] > _bits)
             {
                 int requiredPadding = 0;
                 for (int i = 0; i < _bits; i++)
@@ -94,8 +101,8 @@ public class HuffmanDecoder
                 break;
             }
 
-            _utf8.append((byte)(0xFF & rowsym[_node]));
-            _bits -= rowbits[_node];
+            _utf8.append((byte)(0xFF & Huffman.rowsym[_node]));
+            _bits -= Huffman.rowbits[_node];
             _node = 0;
         }
 

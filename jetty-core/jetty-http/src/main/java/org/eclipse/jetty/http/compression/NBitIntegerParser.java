@@ -11,12 +11,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
 public class NBitIntegerParser
 {
+    public static int decode(ByteBuffer buffer, int prefix) throws EncodingException
+    {
+        // TODO: This is a fix for HPACK as it already takes the first byte of the encoded integer.
+        if (prefix != 8)
+            buffer.position(buffer.position() - 1);
+
+        NBitIntegerParser parser = new NBitIntegerParser();
+        parser.setPrefix(prefix);
+        int decodedInt = parser.decodeInt(buffer);
+        if (decodedInt < 0)
+            throw new EncodingException("invalid integer encoding");
+        parser.reset();
+        return decodedInt;
+    }
+
     private int _prefix;
     private long _total;
     private long _multiplier;

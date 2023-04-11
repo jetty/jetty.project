@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
-import java.nio.ByteBuffer;
-
-public class HuffmanEncoder
+public class Huffman
 {
+    private Huffman()
+    {
+    }
 
     // Appendix C: Huffman Codes
     // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-12#appendix-C
@@ -284,7 +285,7 @@ public class HuffmanEncoder
     static final int[][] LCCODES = new int[CODES.length][];
     static final char EOS = 256;
 
-    // Huffman decode tree stored in a flattened char array for good 
+    // Huffman decode tree stored in a flattened char array for good
     // locality of reference.
     static final char[] tree;
     static final char[] rowsym;
@@ -300,9 +301,9 @@ public class HuffmanEncoder
         }
 
         int r = 0;
-        for (int i = 0; i < CODES.length; i++)
+        for (int[] ints : CODES)
         {
-            r += (CODES[i][1] + 7) / 8;
+            r += (ints[1] + 7) / 8;
         }
         tree = new char[r * 256];
         rowsym = new char[r];
@@ -343,131 +344,6 @@ public class HuffmanEncoder
             {
                 tree[i] = (char)terminal;
             }
-        }
-    }
-
-    public static int octetsNeeded(String s)
-    {
-        return octetsNeeded(CODES, s);
-    }
-
-    public static int octetsNeeded(byte[] b)
-    {
-        return octetsNeeded(CODES, b);
-    }
-
-    public static void encode(ByteBuffer buffer, String s)
-    {
-        encode(CODES, buffer, s);
-    }
-
-    public static void encode(ByteBuffer buffer, byte[] b)
-    {
-        encode(CODES, buffer, b);
-    }
-
-    public static int octetsNeededLC(String s)
-    {
-        return octetsNeeded(LCCODES, s);
-    }
-
-    public static void encodeLC(ByteBuffer buffer, String s)
-    {
-        encode(LCCODES, buffer, s);
-    }
-
-    private static int octetsNeeded(final int[][] table, String s)
-    {
-        int needed = 0;
-        int len = s.length();
-        for (int i = 0; i < len; i++)
-        {
-            char c = s.charAt(i);
-            if (c >= 128 || c < ' ')
-                return -1;
-            needed += table[c][1];
-        }
-
-        return (needed + 7) / 8;
-    }
-
-    private static int octetsNeeded(final int[][] table, byte[] b)
-    {
-        int needed = 0;
-        int len = b.length;
-        for (int i = 0; i < len; i++)
-        {
-            int c = 0xFF & b[i];
-            needed += table[c][1];
-        }
-        return (needed + 7) / 8;
-    }
-
-    /**
-     * @param table The table to encode by
-     * @param buffer The buffer to encode to
-     * @param s The string to encode
-     */
-    private static void encode(final int[][] table, ByteBuffer buffer, String s)
-    {
-        long current = 0;
-        int n = 0;
-        int len = s.length();
-        for (int i = 0; i < len; i++)
-        {
-            char c = s.charAt(i);
-            if (c >= 128 || c < ' ')
-                throw new IllegalArgumentException();
-            int code = table[c][0];
-            int bits = table[c][1];
-
-            current <<= bits;
-            current |= code;
-            n += bits;
-
-            while (n >= 8)
-            {
-                n -= 8;
-                buffer.put((byte)(current >> n));
-            }
-        }
-
-        if (n > 0)
-        {
-            current <<= (8 - n);
-            current |= (0xFF >>> n);
-            buffer.put((byte)(current));
-        }
-    }
-
-    private static void encode(final int[][] table, ByteBuffer buffer, byte[] b)
-    {
-        long current = 0;
-        int n = 0;
-
-        int len = b.length;
-        for (int i = 0; i < len; i++)
-        {
-            int c = 0xFF & b[i];
-            int code = table[c][0];
-            int bits = table[c][1];
-
-            current <<= bits;
-            current |= code;
-            n += bits;
-
-            while (n >= 8)
-            {
-                n -= 8;
-                buffer.put((byte)(current >> n));
-            }
-        }
-
-        if (n > 0)
-        {
-            current <<= (8 - n);
-            current |= (0xFF >>> n);
-            buffer.put((byte)(current));
         }
     }
 }

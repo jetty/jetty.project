@@ -135,9 +135,10 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     @Override
     public boolean validate(UserIdentity user)
     {
-        if (!(user.getUserPrincipal() instanceof OpenIdUserPrincipal))
+        if (!(user.getUserPrincipal() instanceof OpenIdUserPrincipal userPrincipal))
             return false;
-
+        if (configuration.isLogoutWhenIdTokenIsExpired() && userPrincipal.getCredentials().isExpired())
+            return false;
         return loginService == null || loginService.validate(user);
     }
 
