@@ -24,8 +24,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http2.hpack.internal.Huffman;
-import org.eclipse.jetty.http2.hpack.internal.NBitInteger;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http2.hpack.internal.StaticTableHttpField;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -460,19 +460,19 @@ public class HpackContext
             String value = field.getValue();
             if (value != null && value.length() > 0)
             {
-                int huffmanLen = Huffman.octetsNeeded(value);
+                int huffmanLen = HuffmanEncoder.octetsNeeded(value);
                 if (huffmanLen < 0)
                     throw new IllegalStateException("bad value");
-                int lenLen = NBitInteger.octetsNeeded(7, huffmanLen);
+                int lenLen = NBitIntegerEncoder.octetsNeeded(7, huffmanLen);
                 _huffmanValue = new byte[1 + lenLen + huffmanLen];
                 ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);
 
                 // Indicate Huffman
                 buffer.put((byte)0x80);
                 // Add huffman length
-                NBitInteger.encode(buffer, 7, huffmanLen);
+                NBitIntegerEncoder.encode(buffer, 7, huffmanLen);
                 // Encode value
-                Huffman.encode(buffer, value);
+                HuffmanEncoder.encode(buffer, value);
             }
             else
                 _huffmanValue = null;

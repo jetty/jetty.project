@@ -29,10 +29,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
-import org.eclipse.jetty.http2.hpack.internal.Huffman;
-import org.eclipse.jetty.http2.hpack.internal.NBitInteger;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -288,7 +288,7 @@ public class HpackEncoder
         if (maxDynamicTableSize > _remoteMaxDynamicTableSize)
             throw new IllegalArgumentException();
         buffer.put((byte)0x20);
-        NBitInteger.encode(buffer, 5, maxDynamicTableSize);
+        NBitIntegerEncoder.encode(buffer, 5, maxDynamicTableSize);
         _context.resize(maxDynamicTableSize);
     }
 
@@ -317,9 +317,9 @@ public class HpackEncoder
             {
                 int index = _context.index(entry);
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer, 7, index);
+                NBitIntegerEncoder.encode(buffer, 7, index);
                 if (_debug)
-                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + (1 + NBitInteger.octetsNeeded(7, index));
+                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(7, index));
             }
         }
         else
@@ -393,19 +393,19 @@ public class HpackEncoder
 
                     if (_debug)
                         encoding = "Lit" +
-                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octetsNeeded(4, _context.index(name))))) +
+                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name))))) +
                             (huffman ? "HuffV" : "LitV") +
                             (neverIndex ? "!!Idx" : "!Idx");
                 }
                 else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && !"0".equals(field.getValue()))
                 {
-                    // The field is too large or a non zero content length, so do not index.
+                    // The field is too large or a non-zero content length, so do not index.
                     indexed = false;
                     encodeName(buffer, (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, true, field.getValue());
                     if (_debug)
                         encoding = "Lit" +
-                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitInteger.octetsNeeded(4, _context.index(name)))) +
+                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name)))) +
                             "HuffV!Idx";
                 }
                 else
@@ -416,7 +416,7 @@ public class HpackEncoder
                     encodeName(buffer, (byte)0x40, 6, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
-                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octetsNeeded(6, _context.index(name))))) +
+                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(6, _context.index(name))))) +
                             (huffman ? "HuffVIdx" : "LitVIdx");
                 }
             }
@@ -441,12 +441,12 @@ public class HpackEncoder
             // leave name index bits as 0
             // Encode the name always with lowercase huffman
             buffer.put((byte)0x80);
-            NBitInteger.encode(buffer, 7, Huffman.octetsNeededLC(name));
-            Huffman.encodeLC(buffer, name);
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLC(name));
+            HuffmanEncoder.encodeLC(buffer, name);
         }
         else
         {
-            NBitInteger.encode(buffer, bits, _context.index(entry));
+            NBitIntegerEncoder.encode(buffer, bits, _context.index(entry));
         }
     }
 
@@ -457,25 +457,25 @@ public class HpackEncoder
             // huffman literal value
             buffer.put((byte)0x80);
 
-            int needed = Huffman.octetsNeeded(value);
+            int needed = HuffmanEncoder.octetsNeeded(value);
             if (needed >= 0)
             {
-                NBitInteger.encode(buffer, 7, needed);
-                Huffman.encode(buffer, value);
+                NBitIntegerEncoder.encode(buffer, 7, needed);
+                HuffmanEncoder.encode(buffer, value);
             }
             else
             {
                 // Not iso_8859_1
                 byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(bytes));
-                Huffman.encode(buffer, bytes);
+                NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(bytes));
+                HuffmanEncoder.encode(buffer, bytes);
             }
         }
         else
         {
             // add literal assuming iso_8859_1
             buffer.put((byte)0x00).mark();
-            NBitInteger.encode(buffer, 7, value.length());
+            NBitIntegerEncoder.encode(buffer, 7, value.length());
             for (int i = 0; i < value.length(); i++)
             {
                 char c = value.charAt(i);
@@ -484,7 +484,7 @@ public class HpackEncoder
                     // Not iso_8859_1, so re-encode as UTF-8
                     buffer.reset();
                     byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                    NBitInteger.encode(buffer, 7, bytes.length);
+                    NBitIntegerEncoder.encode(buffer, 7, bytes.length);
                     buffer.put(bytes, 0, bytes.length);
                     return;
                 }
