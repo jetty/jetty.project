@@ -126,7 +126,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * The default compliance mode allows no violations from <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
      * and is equivalent to {@link #RFC3986} compliance.
      */
-    public static final UriCompliance DEFAULT = RFC3986;
+    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", RFC3986.getAllowed());
 
     /**
      * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT},
