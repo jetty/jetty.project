@@ -55,6 +55,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private String tokenEndpoint;
     private String endSessionEndpoint;
     private boolean authenticateNewUsers = false;
+    private boolean logoutWhenIdTokenIsExpired = false;
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
@@ -196,8 +197,8 @@ public class OpenIdConfiguration extends ContainerLifeCycle
             {
                 Map<?, ?> rawResult = (Map<?, ?>)parsedResult;
                 result = rawResult.entrySet().stream()
-                        .filter(entry -> entry.getValue() != null)
-                        .collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
+                    .filter(entry -> entry.getValue() != null)
+                    .collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
                 if (LOG.isDebugEnabled())
                     LOG.debug("discovery document {}", result);
                 return result;
@@ -243,8 +244,8 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     {
         return tokenEndpoint;
     }
-    
-    public String getEndSessionEndpoint() 
+
+    public String getEndSessionEndpoint()
     {
         return endSessionEndpoint;
     }
@@ -273,6 +274,16 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public void setAuthenticateNewUsers(boolean authenticateNewUsers)
     {
         this.authenticateNewUsers = authenticateNewUsers;
+    }
+
+    public boolean isLogoutWhenIdTokenIsExpired()
+    {
+        return logoutWhenIdTokenIsExpired;
+    }
+
+    public void setLogoutWhenIdTokenIsExpired(boolean logoutWhenIdTokenIsExpired)
+    {
+        this.logoutWhenIdTokenIsExpired = logoutWhenIdTokenIsExpired;
     }
 
     private static HttpClient newHttpClient()

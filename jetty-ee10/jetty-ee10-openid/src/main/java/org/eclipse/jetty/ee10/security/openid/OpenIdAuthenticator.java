@@ -250,10 +250,14 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public void logout(Request request)
     {
         attemptLogoutRedirect(request);
+        logoutWithoutRedirect(request);
+    }
+
+    private void logoutWithoutRedirect(Request request)
+    {
         super.logout(request);
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        HttpServletRequest httpRequest = servletContextRequest.getHttpServletRequest();
-        HttpSession session = httpRequest.getSession(false);
+        HttpSession session = servletContextRequest.getHttpServletRequest().getSession(false);
 
         if (session == null)
             return;
@@ -268,13 +272,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     /**
-     * This will attempt to redirect the request to the end_session_endpoint, and finally to the {@link #REDIRECT_PATH}.
+     * <p>This will attempt to redirect the request to the end_session_endpoint, and finally to the {@link #REDIRECT_PATH}.</p>
      *
-     * If end_session_endpoint is defined the request will be redirected to the end_session_endpoint, the optional
-     * post_logout_redirect_uri parameter will be set if {@link #REDIRECT_PATH} is non-null.
+     * <p>If end_session_endpoint is defined the request will be redirected to the end_session_endpoint, the optional
+     * post_logout_redirect_uri parameter will be set if {@link #REDIRECT_PATH} is non-null.</p>
      *
-     * If the end_session_endpoint is not defined then the request will be redirected to {@link #REDIRECT_PATH} if it is a
-     * non-null value, otherwise no redirection will be done.
+     * <p>If the end_session_endpoint is not defined then the request will be redirected to {@link #REDIRECT_PATH} if it is a
+     * non-null value, otherwise no redirection will be done.</p>
      *
      * @param request the request to redirect.
      */
@@ -375,6 +379,17 @@ public class OpenIdAuthenticator extends LoginAuthenticator
          */
     }
 
+    private boolean hasExpiredIdToken(HttpSession session)
+    {
+        if (session != null)
+        {
+            Map<String, Object> claims = (Map)session.getAttribute(CLAIMS);
+            if (claims != null)
+                return OpenIdCredentials.checkExpiry(claims);
+        }
+        return false;
+    }
+
     @Override
     public Authentication validateRequest(Request req, Response res, Callback cb, boolean mandatory) throws ServerAuthException
     {
@@ -391,6 +406,17 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (uri == null)
             uri = "/";
 
+        HttpSession session = request.getSession(false);
+        if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
+        {
+            // After logout, fall through to the code below and send another login challenge.
+            logoutWithoutRedirect(req);
+
+            // If we expired a valid authentication we do not want to defer authentication,
+            // we want to try re-authenticate the user.
+            mandatory = true;
+        }
+
         mandatory |= isJSecurityCheck(uri);
         if (!mandatory)
             return new DeferredAuthentication(this);
@@ -401,7 +427,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         try
         {
             // Get the Session.
-            HttpSession session = request.getSession();
+            if (session == null)
+                session = request.getSession(true);
             if (request.isRequestedSessionIdFromURL())
             {
                 sendError(req, res, cb, "Session ID must be a cookie to support OpenID authentication");
@@ -476,10 +503,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authentication);
-                    synchronized (session)
-                    {
-                        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-                    }
+                    logoutWithoutRedirect(req);
                 }
                 else
                 {
@@ -512,10 +536,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             }
                         }
                     }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth {}", authentication);
+                    return authentication;
                 }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("auth {}", authentication);
-                return authentication;
             }
 
             // If we can't send challenge.
