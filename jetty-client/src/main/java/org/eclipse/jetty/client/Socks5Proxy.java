@@ -58,8 +58,6 @@ public class Socks5Proxy extends Proxy
         super(address, secure, null, null);
     }
 
-
-
     @Override
     public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory) 
     {
@@ -85,7 +83,6 @@ public class Socks5Proxy extends Proxy
         private ResponseStage responseStage = null;
         private int variableLen;
 
-
         public Socks5ProxyConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context) 
         {
             super(endPoint, executor);
@@ -101,7 +98,8 @@ public class Socks5Proxy extends Proxy
 
         private void writeHandshakeCmd() 
         {
-            switch (requestStage){
+            switch (requestStage)
+            {
                 case Init:
                     ByteBuffer init = ByteBuffer.allocate(4);
                     if(username == null || username.isEmpty())
@@ -169,8 +167,8 @@ public class Socks5Proxy extends Proxy
                         this.getEndPoint().write(this, buffer);
                     }
                     break;
-                }
             }
+        }
 
         public void succeeded() 
         {
@@ -214,8 +212,8 @@ public class Socks5Proxy extends Proxy
                         this.fillInterested();
                         return;
                     }
-                } while(!parser.parse(buffer));
-
+                } 
+                while(!parser.parse(buffer));
             } 
             catch (Exception e) 
             {
@@ -354,7 +352,6 @@ public class Socks5Proxy extends Proxy
                 this.failed(e);
             }
         }
-
 
         void setResponseStage(ResponseStage responseStage) 
         {
