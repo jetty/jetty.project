@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -40,7 +39,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -65,10 +63,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
-
-        int httpPort = distribution.freePort();
-        int httpsPort = distribution.freePort();
-        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
             "--add-modules=http," + toEnvironment("demos", env)
@@ -111,8 +105,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         int httpPort = distribution.freePort();
-        int httpsPort = distribution.freePort();
-        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
             "--add-modules=http," + toEnvironment("demos", env)
@@ -126,9 +118,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
-                "jetty.ssl.port=" + httpsPort
+                "jetty.http.port=" + httpPort
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -206,8 +196,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 .build();
 
         int httpPort = distribution.freePort();
-        int httpsPort = distribution.freePort();
-        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
                 "--add-modules=http," + toEnvironment("demos", env)
@@ -221,9 +209,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
-                    "jetty.http.port=" + httpPort,
-                    "jetty.httpConfig.port=" + httpsPort,
-                    "jetty.ssl.port=" + httpsPort
+                    "jetty.http.port=" + httpPort
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -257,8 +243,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         int httpPort = distribution.freePort();
-        int httpsPort = distribution.freePort();
-        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
             "--add-modules=http," + toEnvironment("demos", env)
@@ -272,9 +256,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
-                "jetty.ssl.port=" + httpsPort
+                "jetty.http.port=" + httpPort
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -316,8 +298,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         int httpPort = distribution.freePort();
-        int httpsPort = distribution.freePort();
-        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
             "--add-modules=http," + toEnvironment("demos", env)
@@ -329,9 +309,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
-                "jetty.ssl.port=" + httpsPort
+                "jetty.http.port=" + httpPort
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -386,13 +364,10 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = distribution.freePort();
-            int httpsPort = distribution.freePort();
             String[] argsStart = {
                 "--jpms",
                 "--debug",
-                "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
-                "jetty.ssl.port=" + httpsPort
+                "jetty.http.port=" + httpPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -430,11 +405,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = distribution.freePort();
-            int httpsPort = distribution.freePort();
             String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
-                "jetty.ssl.port=" + httpsPort
+                "jetty.http.port=" + httpPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
