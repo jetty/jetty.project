@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -242,7 +243,7 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing)
+    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
     {
         if (isJSecurityCheck(pathInContext))
             return Constraint.Authentication.REQUIRE;

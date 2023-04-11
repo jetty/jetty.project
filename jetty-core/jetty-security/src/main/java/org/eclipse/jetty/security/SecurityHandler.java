@@ -445,7 +445,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
         // Determine Constraint.Authentication
         Constraint.Authentication constraintAuthentication = constraint.getAuthentication();
-        constraintAuthentication = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthentication);
+        constraintAuthentication = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthentication, request::getSession);
         boolean mustValidate = constraintAuthentication != Constraint.Authentication.REQUIRE_NONE;
 
         try

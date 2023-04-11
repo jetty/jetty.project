@@ -14,12 +14,14 @@
 package org.eclipse.jetty.security;
 
 import java.util.Set;
+import java.util.function.Function;
 
 import org.eclipse.jetty.security.Authentication.User;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -74,11 +76,13 @@ public interface Authenticator
      * this authenticator.  This is typically used to vary protection on special URIs known to a
      * specific {@link Authenticator} (e.g. /j_security_check for
      * the {@link org.eclipse.jetty.security.authentication.FormAuthenticator}.
+     *
      * @param pathInContext The pathInContext to potentially constrain.
      * @param existing The existing authentication constraint for the pathInContext determined independently of {@link Authenticator}
+     * @param getSession Function to get or create a {@link Session}.
      * @return The {@link Constraint.Authentication} to apply.
      */
-    default Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing)
+    default Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
     {
         return existing == null ? Constraint.Authentication.REQUIRE_NONE : existing;
     }

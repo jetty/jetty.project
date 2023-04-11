@@ -21,6 +21,7 @@ import java.security.SecureRandom;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -402,9 +403,9 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing)
+    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
     {
-        Session session = request.getSession(false);
+        Session session = getSession.apply(false);
         if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
             return Constraint.Authentication.REQUIRE;
 
