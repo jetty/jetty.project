@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -31,7 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -213,11 +212,12 @@ public class SSLAsyncIOServletTest
 
         public void start(HttpServlet servlet) throws Exception
         {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
 
             sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
-            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+            sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+            sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+            sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
             server = new Server();
 
