@@ -813,13 +813,14 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start("--add-modules=ssl-patch"))
             {
-                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), run2.getLogs().stream().toList().toString());
+                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), String.join("", run2.getLogs()));
                 assertEquals(0, run2.getExitValue());
 
                 int port = distribution.freePort();
                 try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port))
                 {
-                    assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                    assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                            String.join("", run3.getLogs()));
 
                     // Check for the protocol order: fcgi must be after ssl and before http.
                     assertTrue(run3.getLogs().stream()
