@@ -15,6 +15,7 @@ package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,13 +62,14 @@ public class OpenIdProvider extends ContainerLifeCycle
     private String provider;
     private User preAuthedUser;
     private final CounterStatistic loggedInUsers = new CounterStatistic();
+    private long _idTokenDuration = Duration.ofSeconds(10).toMillis();
 
     public static void main(String[] args) throws Exception
     {
         String clientId = "CLIENT_ID123";
         String clientSecret = "PASSWORD123";
         int port = 5771;
-        String redirectUri = "http://localhost:8080/openid/auth";
+        String redirectUri = "http://localhost:8080/j_security_check";
 
         OpenIdProvider openIdProvider = new OpenIdProvider(clientId, clientSecret);
         openIdProvider.addRedirectUri(redirectUri);
@@ -100,6 +102,16 @@ public class OpenIdProvider extends ContainerLifeCycle
         server.setHandler(contexts);
 
         addBean(server);
+    }
+
+    public void setIdTokenDuration(long duration)
+    {
+        _idTokenDuration = duration;
+    }
+
+    public long getIdTokenDuration()
+    {
+        return _idTokenDuration;
     }
 
     public void join() throws InterruptedException
@@ -313,11 +325,11 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
 
             String accessToken = "ABCDEFG";
-            long expiry = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis();
+            long accessTokenDuration = Duration.ofMinutes(10).toSeconds();
             String content = "{" +
                 "\"access_token\": \"" + accessToken + "\"," +
-                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId)) + "\"," +
-                "\"expires_in\": " + expiry + "," +
+                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId, _idTokenDuration)) + "\"," +
+                "\"expires_in\": " + accessTokenDuration + "," +
                 "\"token_type\": \"Bearer\"" +
                 "}";
 
@@ -410,10 +422,10 @@ public class OpenIdProvider extends ContainerLifeCycle
             return subject;
         }
 
-        public String getIdToken(String provider, String clientId)
+        public String getIdToken(String provider, String clientId, long duration)
         {
-            long expiry = System.currentTimeMillis() + Duration.ofMinutes(1).toMillis();
-            return JwtEncoder.createIdToken(provider, clientId, subject, name, expiry);
+            long expiryTime = Instant.now().plusMillis(duration).getEpochSecond();
+            return JwtEncoder.createIdToken(provider, clientId, subject, name, expiryTime);
         }
 
         @Override
@@ -422,6 +434,12 @@ public class OpenIdProvider extends ContainerLifeCycle
             if (!(obj instanceof User))
                 return false;
             return Objects.equals(subject, ((User)obj).subject) && Objects.equals(name, ((User)obj).name);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(subject, name);
         }
     }
 }

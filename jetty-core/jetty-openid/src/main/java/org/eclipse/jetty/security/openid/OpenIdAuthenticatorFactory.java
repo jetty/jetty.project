@@ -19,7 +19,6 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
 
 public class OpenIdAuthenticatorFactory implements Authenticator.Factory
 {
@@ -28,7 +27,7 @@ public class OpenIdAuthenticatorFactory implements Authenticator.Factory
     {
         LoginService loginService = configuration.getLoginService();
         String auth = configuration.getAuthMethod();
-        if (Constraint.__OPENID_AUTH.equalsIgnoreCase(auth))
+        if (Authenticator.OPENID_AUTH.equalsIgnoreCase(auth))
         {
             // If we have an OpenIdLoginService we can extract the configuration.
             if (loginService instanceof OpenIdLoginService)

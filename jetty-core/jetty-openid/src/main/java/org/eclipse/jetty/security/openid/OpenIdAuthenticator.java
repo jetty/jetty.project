@@ -252,12 +252,15 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public void logout(Request request, Response response)
     {
         attemptLogoutRedirect(request, response);
+        logoutWithoutRedirect(request, response);
+    }
+
+    private void logoutWithoutRedirect(Request request, Response response)
+    {
         super.logout(request, response);
         Session session = request.getSession(false);
-
         if (session == null)
             return;
-
         synchronized (session)
         {
             session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
@@ -267,14 +270,25 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         }
     }
 
+    private boolean hasExpiredIdToken(Session session)
+    {
+        if (session != null)
+        {
+            Map<String, Object> claims = (Map)session.getAttribute(CLAIMS);
+            if (claims != null)
+                return OpenIdCredentials.checkExpiry(claims);
+        }
+        return false;
+    }
+
     /**
-     * This will attempt to redirect the request to the end_session_endpoint, and finally to the {@link #REDIRECT_PATH}.
+     * <p>This will attempt to redirect the request to the end_session_endpoint, and finally to the {@link #REDIRECT_PATH}.</p>
      *
-     * If end_session_endpoint is defined the request will be redirected to the end_session_endpoint, the optional
-     * post_logout_redirect_uri parameter will be set if {@link #REDIRECT_PATH} is non-null.
+     * <p>If end_session_endpoint is defined the request will be redirected to the end_session_endpoint, the optional
+     * post_logout_redirect_uri parameter will be set if {@link #REDIRECT_PATH} is non-null.</p>
      *
-     * If the end_session_endpoint is not defined then the request will be redirected to {@link #REDIRECT_PATH} if it is a
-     * non-null value, otherwise no redirection will be done.
+     * <p>If the end_session_endpoint is not defined then the request will be redirected to {@link #REDIRECT_PATH} if it is a
+     * non-null value, otherwise no redirection will be done.</p>
      *
      * @param request the request to redirect.
      */
@@ -390,6 +404,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     @Override
     public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing)
     {
+        Session session = request.getSession(false);
+        if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
+            return Constraint.Authentication.REQUIRE;
+
         if (isJSecurityCheck(pathInContext))
             return Constraint.Authentication.REQUIRE;
         if (isErrorPage(pathInContext))
@@ -407,10 +425,18 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (uri == null)
             uri = "/";
 
+        Session session = request.getSession(false);
+        if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
+        {
+            // After logout, fall through to the code below and send another login challenge.
+            logoutWithoutRedirect(request, response);
+        }
+
         try
         {
             // Get the Session.
-            Session session = request.getSession(true);
+            if (session == null)
+                session = request.getSession(true);
             if (session == null)
             {
                 sendError(request, response, cb, "session could not be created");
@@ -496,10 +522,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authentication);
-                    synchronized (session)
-                    {
-                        session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
-                    }
+                    logoutWithoutRedirect(request, response);
                 }
                 else
                 {
@@ -529,10 +552,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             }
                         }
                     }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth {}", authentication);
+                    return authentication;
                 }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("auth {}", authentication);
-                return authentication;
             }
 
             // If we can't send challenge.
