@@ -18,6 +18,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
@@ -67,12 +69,12 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
 
         int nameIdx = HpackContext.staticIndex(header);
         if (nameIdx > 0)
-            NBitInteger.encode(buffer, bits, nameIdx);
+            NBitIntegerEncoder.encode(buffer, bits, nameIdx);
         else
         {
             buffer.put((byte)0x80);
-            NBitInteger.encode(buffer, 7, Huffman.octetsNeededLC(name));
-            Huffman.encodeLC(buffer, name);
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLC(name));
+            HuffmanEncoder.encodeLC(buffer, name);
         }
 
         HpackEncoder.encodeValue(buffer, huffman, value);

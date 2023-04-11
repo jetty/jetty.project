@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.compression.NBitIntegerParser;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncodedFieldSection;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;

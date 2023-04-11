@@ -11,18 +11,28 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
+import static org.eclipse.jetty.http.compression.Huffman.rowbits;
+import static org.eclipse.jetty.http.compression.Huffman.rowsym;
+
 public class HuffmanDecoder
 {
-    static final char EOS = HuffmanEncoder.EOS;
-    static final char[] tree = HuffmanEncoder.tree;
-    static final char[] rowsym = HuffmanEncoder.rowsym;
-    static final byte[] rowbits = HuffmanEncoder.rowbits;
+    public static String decode(ByteBuffer buffer, int length) throws EncodingException
+    {
+        HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
+        huffmanDecoder.setLength(length);
+        String decoded = huffmanDecoder.decode(buffer);
+        if (decoded == null)
+            throw new EncodingException("invalid string encoding");
+
+        huffmanDecoder.reset();
+        return decoded;
+    }
 
     private final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
     private int _length = 0;
@@ -51,10 +61,10 @@ public class HuffmanDecoder
             while (_bits >= 8)
             {
                 int c = (_current >>> (_bits - 8)) & 0xFF;
-                _node = tree[_node * 256 + c];
+                _node = Huffman.tree[_node * 256 + c];
                 if (rowbits[_node] != 0)
                 {
-                    if (rowsym[_node] == EOS)
+                    if (rowsym[_node] == Huffman.EOS)
                     {
                         reset();
                         throw new EncodingException("eos_in_content");
@@ -77,7 +87,7 @@ public class HuffmanDecoder
         {
             int c = (_current << (8 - _bits)) & 0xFF;
             int lastNode = _node;
-            _node = tree[_node * 256 + c];
+            _node = Huffman.tree[_node * 256 + c];
 
             if (rowbits[_node] == 0 || rowbits[_node] > _bits)
             {

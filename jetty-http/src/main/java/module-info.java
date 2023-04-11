@@ -18,6 +18,7 @@ module org.eclipse.jetty.http
     requires transitive org.eclipse.jetty.io;
 
     exports org.eclipse.jetty.http;
+    exports org.eclipse.jetty.http.compression;
     exports org.eclipse.jetty.http.pathmap;
 
     uses org.eclipse.jetty.http.HttpFieldPreEncoder;

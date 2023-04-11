@@ -15,9 +15,9 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -54,7 +54,7 @@ public class IndexedNameEntryInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
+        int size = NBitIntegerEncoder.octetsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
         ByteBuffer buffer = lease.acquire(size, false);
 
         // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
