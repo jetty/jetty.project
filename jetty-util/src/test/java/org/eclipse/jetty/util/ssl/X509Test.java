@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.ssl;
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -127,9 +128,8 @@ public class X509Test
     public void testServerClassWithSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
-        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        serverSsl.setKeyStoreResource(new PathResource(keystorePath));
-        serverSsl.setKeyStorePassword("storepwd");
+        serverSsl.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverSsl.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         serverSsl.start();
     }
 
@@ -137,9 +137,8 @@ public class X509Test
     public void testClientClassWithSni() throws Exception
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
-        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        clientSsl.setKeyStoreResource(new PathResource(keystorePath));
-        clientSsl.setKeyStorePassword("storepwd");
+        clientSsl.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSsl.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         clientSsl.start();
     }
 
@@ -147,9 +146,8 @@ public class X509Test
     public void testServerClassWithoutSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
-        serverSsl.setKeyStoreResource(keystoreResource);
-        serverSsl.setKeyStorePassword("storepwd");
+        serverSsl.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverSsl.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         serverSsl.start();
     }
 
@@ -157,9 +155,8 @@ public class X509Test
     public void testClientClassWithoutSni() throws Exception
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
-        clientSsl.setKeyStoreResource(keystoreResource);
-        clientSsl.setKeyStorePassword("storepwd");
+        clientSsl.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSsl.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         clientSsl.start();
     }
 }

@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -39,6 +38,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.X509ExtendedKeyManager;
 
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -175,12 +175,8 @@ public class SslContextFactoryTest
     public void testNoTsSetKs() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        KeyStore ks = KeyStore.getInstance("PKCS12");
-        try (InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore.p12"))
-        {
-            ks.load(keystoreInputStream, "storepwd".toCharArray());
-        }
-        cf.setKeyStore(ks);
+        cf.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        cf.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         cf.start();
 
@@ -199,10 +195,13 @@ public class SslContextFactoryTest
     public void testNoTsResourceKs() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
+        String keyStoreFilePath =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getServerKeyStore(),
+                        TestKeyStoreFactory.KEY_STORE_PASSWORD).getCanonicalPath();
+        Resource keystoreResource = Resource.newResource(keyStoreFilePath);
 
         cf.setKeyStoreResource(keystoreResource);
-        cf.setKeyStorePassword("storepwd");
+        cf.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         cf.setTrustStoreResource(keystoreResource);
         cf.setTrustStorePassword(null);
 
@@ -214,14 +213,22 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsResourceKs() throws Exception
     {
+        File keyStoreFile =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getServerKeyStore(),
+                        TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        File trustStoreFile =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getTrustStore(),
+                        TestKeyStoreFactory.KEY_STORE_PASSWORD);
+
+
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
-        Resource truststoreResource = Resource.newSystemResource("keystore.p12");
+        Resource keystoreResource = Resource.newResource(keyStoreFile);
+        Resource truststoreResource = Resource.newResource(trustStoreFile);
 
         cf.setKeyStoreResource(keystoreResource);
-        cf.setKeyStorePassword("storepwd");
+        cf.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         cf.setTrustStoreResource(truststoreResource);
-        cf.setTrustStorePassword("storepwd");
+        cf.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         cf.start();
 
@@ -231,12 +238,19 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
+        File keyStoreFile =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getServerKeyStore(),
+                        TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        File trustStoreFile =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getTrustStore(),
+                        TestKeyStoreFactory.KEY_STORE_PASSWORD);
+
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
-        Resource truststoreResource = Resource.newSystemResource("keystore.p12");
+        Resource keystoreResource = Resource.newResource(keyStoreFile);
+        Resource truststoreResource = Resource.newResource(trustStoreFile);
 
         cf.setKeyStoreResource(keystoreResource);
-        cf.setKeyStorePassword("storepwd");
+        cf.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         cf.setTrustStoreResource(truststoreResource);
         cf.setTrustStorePassword("wrong_storepwd");
 
@@ -348,9 +362,9 @@ public class SslContextFactoryTest
     public void testNonDefaultKeyStoreTypeUsedForTrustStore() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        cf.setKeyStoreResource(Resource.newSystemResource("keystore.p12"));
+        cf.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
         cf.setKeyStoreType("pkcs12");
-        cf.setKeyStorePassword("storepwd");
+        cf.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         cf.start();
         cf.stop();
 
@@ -401,8 +415,8 @@ public class SslContextFactoryTest
             }
         };
         // This test requires a SNI keystore so that the X509ExtendedKeyManager is wrapped.
-        serverTLS.setKeyStoreResource(Resource.newSystemResource("keystore_sni.p12"));
-        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         serverTLS.setKeyManagerFactoryAlgorithm("PKIX");
         // Don't pick a default certificate if SNI does not match.
         serverTLS.setSniRequired(true);
@@ -415,7 +429,7 @@ public class SslContextFactoryTest
              SSLSocket clientSocket = clientTLS.newSslSocket())
         {
             SSLParameters sslParameters = clientSocket.getSSLParameters();
-            String hostName = "jetty.eclipse.org";
+            String hostName = "localhost";
             sslParameters.setServerNames(Collections.singletonList(new SNIHostName(hostName)));
             clientSocket.setSSLParameters(sslParameters);
             clientSocket.connect(new InetSocketAddress("localhost", serverSocket.getLocalPort()), 5000);
@@ -432,7 +446,7 @@ public class SslContextFactoryTest
                         Certificate[] certificates = clientSocket.getSession().getPeerCertificates();
                         assertThat(certificates.length, greaterThan(0));
                         X509Certificate certificate = (X509Certificate)certificates[0];
-                        assertThat(certificate.getSubjectX500Principal().getName(), startsWith("CN=" + hostName));
+                        assertThat(certificate.getSubjectX500Principal().getName(), startsWith("CN=server"));
                         // Send some data to verify communication is ok.
                         OutputStream output = clientSocket.getOutputStream();
                         output.write(data);
