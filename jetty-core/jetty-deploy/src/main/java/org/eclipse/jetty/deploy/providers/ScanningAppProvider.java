@@ -161,13 +161,13 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                         Files.exists(path.getParent().resolve(basename + ".WAR")) ||
                         Files.exists(path.getParent().resolve(basename + "/WEB-INF")));
             boolean coreProvider = _deploymentManager.getAppProviders().stream()
-                .map(AppProvider::getEnvironmentName).anyMatch(Environment.CORE.getName()::equals);
+                .map(AppProvider::getEnvironmentName).anyMatch(Environment.SERVER.getName()::equals);
 
             // TODO review these heuristics... or even if we should have them at all
             if (isWebapp || (Files.isDirectory(path) && _deploymentManager.getDefaultEnvironmentName() != null))
                 environmentName = _deploymentManager.getDefaultEnvironmentName();
             else if (coreProvider)
-                environmentName = Environment.CORE.getName();
+                environmentName = Environment.SERVER.getName();
 
             if (StringUtil.isNotBlank(environmentName))
             {
@@ -213,10 +213,10 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             throw new IllegalStateException("No configuration dir specified");
         if (_environmentName == null)
         {
-            List<Environment> nonCore = Environment.getAll().stream().filter(environment -> !environment.equals(Environment.CORE)).toList();
-            if (nonCore.size() != 1)
+            List<Environment> nonServer = Environment.getAll().stream().filter(environment -> !environment.equals(Environment.SERVER)).toList();
+            if (nonServer.size() != 1)
                 throw new IllegalStateException("No environment configured");
-            _environmentName = nonCore.get(0).getName();
+            _environmentName = nonServer.get(0).getName();
         }
 
         Environment environment = Environment.get(_environmentName);

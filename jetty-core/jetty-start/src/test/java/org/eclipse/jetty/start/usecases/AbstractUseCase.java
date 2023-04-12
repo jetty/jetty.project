@@ -157,7 +157,7 @@ public abstract class AbstractUseCase
 
         public List<String> getXmls()
         {
-            return startArgs.getCoreEnvironment().getXmlFiles().stream()
+            return startArgs.getServerEnvironment().getXmlFiles().stream()
                 .map(p -> baseHome.toShortForm(p))
                 .collect(Collectors.toList());
         }
@@ -165,7 +165,7 @@ public abstract class AbstractUseCase
         public List<String> getLibs()
         {
             return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(startArgs.getCoreEnvironment().getClasspath().iterator(), Spliterator.ORDERED), false)
+                Spliterators.spliteratorUnknownSize(startArgs.getServerEnvironment().getClasspath().iterator(), Spliterator.ORDERED), false)
                 .map(f -> baseHome.toShortForm(f))
                 .collect(Collectors.toList());
         }
@@ -182,7 +182,7 @@ public abstract class AbstractUseCase
 
         public List<String> getProperties()
         {
-            Props props = startArgs.getCoreEnvironment().getProperties();
+            Props props = startArgs.getServerEnvironment().getProperties();
 
             Predicate<Props.Prop> propPredicate = (p) ->
             {

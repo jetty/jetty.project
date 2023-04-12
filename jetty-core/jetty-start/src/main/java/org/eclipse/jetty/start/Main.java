@@ -239,14 +239,14 @@ public class Main
         args.dumpSystemProperties(out);
 
 
-        Environment coreEnvironment = args.getCoreEnvironment();
+        Environment serverEnvironment = args.getServerEnvironment();
 
-        // Dump Core Properties
-        coreEnvironment.dumpProperties(out);
-        // Dump Core Classpath
-        dumpClasspathWithVersions(coreEnvironment.getName(), out, coreEnvironment.getClasspath());
-        // Dump Core Resolved XMLs
-        coreEnvironment.dumpActiveXmls(out);
+        // Dump Server Properties
+        serverEnvironment.dumpProperties(out);
+        // Dump Server Classpath
+        dumpClasspathWithVersions(serverEnvironment.getName(), out, serverEnvironment.getClasspath());
+        // Dump Server Resolved XMLs
+        serverEnvironment.dumpActiveXmls(out);
 
         for (Environment environment : args.getEnvironments())
         {
@@ -317,7 +317,7 @@ public class Main
 
         Props props = baseHome.getConfigSources().getProps();
         Prop home = props.getProp(BaseHome.JETTY_HOME);
-        Props argProps = args.getCoreEnvironment().getProperties();
+        Props argProps = args.getServerEnvironment().getProperties();
         if (!argProps.containsKey(BaseHome.JETTY_HOME))
             argProps.setProperty(home);
         argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
@@ -390,7 +390,7 @@ public class Main
         StartLog.debug("StartArgs: %s", args);
 
         // Get Desired Classpath based on user provided Active Options.
-        Classpath classpath = args.getCoreEnvironment().getClasspath();
+        Classpath classpath = args.getServerEnvironment().getClasspath();
 
         // Show the usage information and return
         if (args.isHelp())
@@ -401,7 +401,7 @@ public class Main
         // Show the version information and return
         if (args.isListClasspath())
         {
-            dumpClasspathWithVersions("Core", System.out, classpath);
+            dumpClasspathWithVersions("Server", System.out, classpath);
         }
 
         // Show configuration
@@ -428,7 +428,7 @@ public class Main
             Path outputFile = baseHome.getBasePath(args.getModuleGraphFilename());
             System.out.printf("Generating GraphViz Graph of Jetty Modules at %s%n", baseHome.toShortForm(outputFile));
             ModuleGraphWriter writer = new ModuleGraphWriter();
-            writer.config(args.getCoreEnvironment().getProperties());
+            writer.config(args.getServerEnvironment().getProperties());
             writer.write(args.getAllModules(), outputFile);
         }
 
@@ -451,7 +451,7 @@ public class Main
             {
                 for (StartIni ini : config.getStartInis())
                 {
-                    ini.update(baseHome, args.getCoreEnvironment().getProperties());
+                    ini.update(baseHome, args.getServerEnvironment().getProperties());
                 }
             }
         }
@@ -534,7 +534,7 @@ public class Main
 
     private void doStop(StartArgs args)
     {
-        Props argsProps = args.getCoreEnvironment().getProperties();
+        Props argsProps = args.getServerEnvironment().getProperties();
         final Prop stopHostProp = argsProps.getProp("STOP.HOST", true);
         final Prop stopPortProp = argsProps.getProp("STOP.PORT", true);
         final Prop stopKeyProp = argsProps.getProp("STOP.KEY", true);

@@ -32,6 +32,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -133,7 +134,7 @@ public class StartArgs
 
     private final Map<String, String> systemPropertySource = new HashMap<>();
 
-    private static final Map<String, Environment> _environments = new HashMap<>();
+    private static final Map<String, Environment> _environments = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     // jetty.base - build out commands
     /**
@@ -193,25 +194,25 @@ public class StartArgs
     private boolean allowInsecureHttpDownloads = false;
     private boolean approveAllLicenses = false;
 
-    private final Environment coreEnvironment;
+    private final Environment serverEnvironment;
 
     public StartArgs(BaseHome baseHome)
     {
         this.baseHome = baseHome;
-        coreEnvironment = new Environment("Core", baseHome);
+        serverEnvironment = new Environment("Server", baseHome);
     }
 
     public void expandEnvironments(List<Module> activeModules) throws IOException
     {
         // 5) Lib & XML Expansion / Resolution
         expandSystemProperties();
-        coreEnvironment.resolveLibs();
+        serverEnvironment.resolveLibs();
         expandModules(activeModules);
 
         // 6) Resolve Extra XMLs
         // 7) JPMS Expansion
         // 8) Resolve Property Files
-        coreEnvironment.resolve();
+        serverEnvironment.resolve();
 
         // 7) JPMS Expansion
         resolveJPMS(activeModules); // TODO we need layers
@@ -224,9 +225,9 @@ public class StartArgs
         }
     }
 
-    public Environment getCoreEnvironment()
+    public Environment getServerEnvironment()
     {
-        return coreEnvironment;
+        return serverEnvironment;
     }
 
     public Collection<Environment> getEnvironments()
@@ -256,7 +257,7 @@ public class StartArgs
     private Environment getEnvironment(Module module)
     {
         String envName = module == null ? null : module.getEnvironment();
-        Environment environment = envName == null ? getCoreEnvironment() : getEnvironment(envName);
+        Environment environment = envName == null ? getServerEnvironment() : getEnvironment(envName);
         return environment;
     }
 
@@ -278,16 +279,16 @@ public class StartArgs
         dumpSystemProperty(out, "user.language");
         dumpSystemProperty(out, "user.country");
 
-        // Jetty Environment
+        // Jetty Server Environment
         out.println();
-        out.println("Jetty Core Environment:");
-        out.println("-----------------------");
-        Environment coreEnvironment = getCoreEnvironment();
-        coreEnvironment.dumpProperty(out, JETTY_VERSION_KEY);
-        coreEnvironment.dumpProperty(out, JETTY_TAG_NAME_KEY);
-        coreEnvironment.dumpProperty(out, JETTY_BUILDNUM_KEY);
-        coreEnvironment.dumpProperty(out, "jetty.home");
-        coreEnvironment.dumpProperty(out, "jetty.base");
+        out.println("Jetty Server Environment:");
+        out.println("-------------------------");
+        Environment serverEnvironment = getServerEnvironment();
+        serverEnvironment.dumpProperty(out, JETTY_VERSION_KEY);
+        serverEnvironment.dumpProperty(out, JETTY_TAG_NAME_KEY);
+        serverEnvironment.dumpProperty(out, JETTY_BUILDNUM_KEY);
+        serverEnvironment.dumpProperty(out, "jetty.home");
+        serverEnvironment.dumpProperty(out, "jetty.base");
 
         // Jetty Configuration Environment
         out.println();
@@ -371,13 +372,13 @@ public class StartArgs
             return; // done
         }
 
-        if (getCoreEnvironment().getProperties().containsKey(key))
+        if (getServerEnvironment().getProperties().containsKey(key))
         {
-            Prop prop = getCoreEnvironment().getProperties().getProp(key);
+            Prop prop = getServerEnvironment().getProperties().getProp(key);
             if (prop == null)
                 return; // no value set;
 
-            String val = getCoreEnvironment().getProperties().expand(prop.value);
+            String val = getServerEnvironment().getProperties().expand(prop.value);
             // setup system property
             systemPropertySource.put(key, "property:" + prop.source);
             System.setProperty(key, val);
@@ -393,10 +394,10 @@ public class StartArgs
 
         for (String key : systemPropertySource.keySet())
         {
-            String value = getCoreEnvironment().getProperties().getString(key);
+            String value = getServerEnvironment().getProperties().getString(key);
             if (value != null)
             {
-                String expanded = getCoreEnvironment().getProperties().expand(value);
+                String expanded = getServerEnvironment().getProperties().expand(value);
                 if (!value.equals(expanded))
                     System.setProperty(key, expanded);
             }
@@ -529,7 +530,7 @@ public class StartArgs
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 
-            Props properties = coreEnvironment.getProperties();
+            Props properties = serverEnvironment.getProperties();
             for (String x : getJvmArgSources().keySet())
             {
                 if (x.startsWith("-D"))
@@ -559,7 +560,7 @@ public class StartArgs
         {
             if (isJPMS())
             {
-                Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(coreEnvironment.getClasspath().spliterator(), false)
+                Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(serverEnvironment.getClasspath().spliterator(), false)
                     .collect(Collectors.groupingBy(Files::isDirectory));
                 Set<Path> files = new HashSet<>(dirsAndFiles.get(false));
 
@@ -567,7 +568,7 @@ public class StartArgs
                 // ee9 may use jakarta.annotation 2.0.0
                 // but ee10 use jakarta.annotation 2.1.0
                 // and both having different module-info.
-                getEnvironments().stream().filter(environment -> !environment.getName().equals(coreEnvironment.getName()))
+                getEnvironments().stream().filter(environment -> !environment.getName().equals(serverEnvironment.getName()))
                         .forEach(environment ->
                         {
                             Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(environment.getClasspath().spliterator(), false)
@@ -609,7 +610,7 @@ public class StartArgs
             else
             {
                 cmd.addRawArg("--class-path");
-                cmd.addRawArg(coreEnvironment.getClasspath().toString());
+                cmd.addRawArg(serverEnvironment.getClasspath().toString());
             }
         }
 
@@ -623,7 +624,7 @@ public class StartArgs
         // do properties and xmls
         if (parts.contains("args"))
         {
-            Props properties = coreEnvironment.getProperties();
+            Props properties = serverEnvironment.getProperties();
             if (dryRun && execProperties == null)
             {
                 // pass properties as args
@@ -653,12 +654,12 @@ public class StartArgs
                 cmd.addRawArg(propPath.toAbsolutePath().toString());
             }
 
-            for (Path xml : coreEnvironment.getXmlFiles())
+            for (Path xml : serverEnvironment.getXmlFiles())
             {
                 cmd.addRawArg(xml.toAbsolutePath().toString());
             }
 
-            for (Path propertyFile : coreEnvironment.getPropertyFiles())
+            for (Path propertyFile : serverEnvironment.getPropertyFiles())
             {
                 cmd.addRawArg(propertyFile.toAbsolutePath().toString());
             }
@@ -668,7 +669,7 @@ public class StartArgs
         {
             for (Environment environment : getEnvironments())
             {
-                if (environment == coreEnvironment)
+                if (environment == serverEnvironment)
                     continue;
                 cmd.addArg("--env");
                 cmd.addArg(environment.getName());
@@ -702,7 +703,7 @@ public class StartArgs
         {
             for (String line : module.getJPMS())
             {
-                line = getCoreEnvironment().getProperties().expand(line);
+                line = getServerEnvironment().getProperties().expand(line);
                 String directive;
                 if (line.startsWith(directive = "add-modules:"))
                 {
@@ -793,7 +794,7 @@ public class StartArgs
     public String getMainClassname()
     {
         String mainClass = System.getProperty("jetty.server", isJPMS() ? MODULE_MAIN_CLASS : MAIN_CLASS);
-        Prop mainClassProp = getCoreEnvironment().getProperties().getProp("main.class", true);
+        Prop mainClassProp = getServerEnvironment().getProperties().getProp("main.class", true);
         if (mainClassProp != null)
             return mainClassProp.value;
         return mainClass;
@@ -801,7 +802,7 @@ public class StartArgs
 
     public String getMavenLocalRepoDir()
     {
-        String localRepo = getCoreEnvironment().getProperties().getString("maven.local.repo");
+        String localRepo = getServerEnvironment().getProperties().getString("maven.local.repo");
 
         if (Utils.isBlank(localRepo))
             localRepo = System.getenv("JETTY_MAVEN_LOCAL_REPO");
@@ -1003,8 +1004,8 @@ public class StartArgs
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
         while (iter.hasPrevious())
         {
-            // Each source starts with core environment.
-            Environment environment = getCoreEnvironment();
+            // Each source starts with server environment.
+            Environment environment = getServerEnvironment();
 
             ConfigSource source = iter.previous();
             for (RawArgs.Entry arg : source.getArgs())
@@ -1264,7 +1265,7 @@ public class StartArgs
             selectModules(source, moduleNames);
             Module module = getAllModules().get(moduleNames.get(moduleNames.size() - 1));
             String envName = module == null ? null : module.getEnvironment();
-            return envName == null ? coreEnvironment : getEnvironment(envName);
+            return envName == null ? serverEnvironment : getEnvironment(envName);
         }
 
         // Skip [files] validation on a module
@@ -1284,7 +1285,7 @@ public class StartArgs
         }
 
         if (environment == null)
-            environment = getCoreEnvironment();
+            environment = getServerEnvironment();
 
         // Arbitrary Libraries
         if (arg.startsWith("--lib=") || arg.startsWith("--libs="))
@@ -1431,7 +1432,7 @@ public class StartArgs
     public void setProperty(Environment environment, String key, String value, String source)
     {
         if (environment == null)
-            environment = getCoreEnvironment();
+            environment = getServerEnvironment();
         Props properties = environment.getProperties();
 
         // Special / Prevent override from start.ini's
@@ -1501,6 +1502,6 @@ public class StartArgs
     public String toString()
     {
         return String.format("%s[enabledModules=%s, xml=%s, properties=%s, jvmArgs=%s]",
-            getClass().getSimpleName(), modules, getCoreEnvironment().getXmlFiles(), getCoreEnvironment().getProperties(), jvmArgSources.keySet());
+            getClass().getSimpleName(), modules, getServerEnvironment().getXmlFiles(), getServerEnvironment().getProperties(), jvmArgSources.keySet());
     }
 }
