@@ -260,6 +260,12 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
+        public StringBuffer getRequestURL()
+        {
+            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
+        }
+
+        @Override
         public Object getAttribute(String name)
         {
             if (name == null)
