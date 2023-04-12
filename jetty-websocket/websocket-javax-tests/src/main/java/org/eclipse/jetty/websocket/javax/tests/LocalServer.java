@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -190,8 +191,10 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             httpConfig.setSendDateHeader(false);
 
             sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath());
-            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+            sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+            sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+            sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
             sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA", "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
                 "SSL_RSA_EXPORT_WITH_RC4_40_MD5", "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA", "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
