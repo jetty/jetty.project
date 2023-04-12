@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.JavaVersion;
@@ -384,8 +385,10 @@ public class TransportScenario
 
     private void configureSslContextFactory(SslContextFactory sslContextFactory)
     {
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
     }

@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -215,8 +216,10 @@ public class HttpClientTransportDynamicTest
 
     private void configureSslContextFactory(SslContextFactory sslContextFactory)
     {
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         // The mandatory HTTP/2 cipher.
         sslContextFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
     }

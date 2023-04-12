@@ -70,6 +70,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -111,8 +112,10 @@ public class ProxyWithDynamicTransportTest
     private void startServer(Handler handler) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
 
@@ -142,8 +145,10 @@ public class ProxyWithDynamicTransportTest
     private void startProxy(ConnectHandler connectHandler) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
 

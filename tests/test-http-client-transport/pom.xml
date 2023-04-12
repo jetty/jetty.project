@@ -151,6 +151,11 @@
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-resources</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>
