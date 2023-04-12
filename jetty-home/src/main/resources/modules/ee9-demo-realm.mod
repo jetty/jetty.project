@@ -3,23 +3,19 @@
 [description]
 Configure a demo authentication realm.
 
-[environment]
-ee9
-
 [tags]
 demo
 
 [depends]
-ee9-servlet
-ee9-security
+security
 
 [xml]
-etc/jetty-ee9-demo-realm.xml
+etc/jetty-demo-realm.xml
 
 [files]
-basehome:modules/demo.d/jetty-ee9-demo-realm.xml|etc/jetty-ee9-demo-realm.xml
-basehome:modules/demo.d/jetty-ee9-demo-realm.properties|etc/jetty-ee9-demo-realm.properties
+basehome:modules/demo.d/jetty-demo-realm.xml|etc/jetty-demo-realm.xml
+basehome:modules/demo.d/jetty-demo-realm.properties|etc/jetty-demo-realm.properties
 
 [ini-template]
 # Create and configure the test realm
-jetty.demo.realm=etc/jetty-ee9-demo-realm.properties
+jetty.demo.realm=etc/jetty-demo-realm.properties

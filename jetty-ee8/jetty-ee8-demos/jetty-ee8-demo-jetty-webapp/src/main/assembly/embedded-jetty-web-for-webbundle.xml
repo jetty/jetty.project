@@ -52,7 +52,7 @@ detected.
       <New class="org.eclipse.jetty.security.HashLoginService">
 	    <Set name="name">Test Realm</Set>
 	    <Set name="config">
-	       <Property name="web-inf.uri">/ee9-demo-realm.properties</Property>      
+	       <Property name="web-inf.uri">/demo-realm.properties</Property>
 	    </Set>
             <!-- To enable reload of realm when properties change, uncomment the following lines -->
             <!--

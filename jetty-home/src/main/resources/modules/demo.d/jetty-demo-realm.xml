@@ -13,7 +13,7 @@
   <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
     <Arg><Ref refid="Server" /></Arg>
     <Call id="realmResource" name="newResource">
-      <Arg><Property name="jetty.demo.realm" default="etc/jetty-ee9-demo-realm.properties" /></Arg>
+      <Arg><Property name="jetty.demo.realm" default="etc/jetty-demo-realm.properties" /></Arg>
     </Call>
   </Call>
 

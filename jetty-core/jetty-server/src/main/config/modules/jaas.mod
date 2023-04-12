@@ -3,11 +3,11 @@
 [description]
 Enables JAAS for deployed web applications.
 
-[environment]
-ee8
-
 [depend]
 security
+
+[before]
+deploy
 
 [xml]
 etc/jetty-jaas.xml
