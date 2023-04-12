@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.TypeUtil;
 public interface Environment extends Attributes
 {
     // Ensure there is a core environment for possible later deployments to it
-    Environment CORE = ensure("Core");
+    Environment CORE = ensure("core");
 
     static Collection<Environment> getAll()
     {

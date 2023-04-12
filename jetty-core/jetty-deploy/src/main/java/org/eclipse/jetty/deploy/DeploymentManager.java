@@ -187,6 +187,12 @@ public class DeploymentManager extends ContainerLifeCycle
         }
     }
 
+    public boolean hasAppProviderFor(String name)
+    {
+        return name != null && getAppProviders().stream()
+            .map(AppProvider::getEnvironmentName).anyMatch(name::equalsIgnoreCase);
+    }
+
     public Collection<AppProvider> getAppProviders()
     {
         return Collections.unmodifiableList(_providers);
