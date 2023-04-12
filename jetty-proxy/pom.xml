@@ -77,5 +77,10 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-resources</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

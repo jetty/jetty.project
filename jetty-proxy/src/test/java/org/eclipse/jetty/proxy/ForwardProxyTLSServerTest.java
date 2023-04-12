@@ -19,17 +19,13 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyStore;
-import java.security.Principal;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.X509ExtendedKeyManager;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -58,7 +54,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -145,18 +141,20 @@ public class ForwardProxyTLSServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
-        sslContextFactory.setKeyStorePath(keyStorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         return sslContextFactory;
     }
 
     private static SslContextFactory.Server newProxySslContextFactory()
     {
         SslContextFactory.Server proxyTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("proxy_keystore.p12").getAbsolutePath();
-        proxyTLS.setKeyStorePath(keyStorePath);
-        proxyTLS.setKeyStorePassword("storepwd");
+        proxyTLS.setKeyStore(TestKeyStoreFactory.getProxyKeyStore());
+        proxyTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        proxyTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        proxyTLS.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         return proxyTLS;
     }
 
@@ -644,54 +642,20 @@ public class ForwardProxyTLSServerTest
     @Test
     public void testBothProxyAndServerNeedClientAuth() throws Exception
     {
-        // See src/test/resources/readme_keystores.txt.
-
         SslContextFactory.Server serverTLS = newServerSslContextFactory();
         serverTLS.setNeedClientAuth(true);
         startTLSServer(serverTLS, new ServerHandler());
-        int serverPort = serverConnector.getLocalPort();
 
         SslContextFactory.Server proxyTLS = newProxySslContextFactory();
         proxyTLS.setEndpointIdentificationAlgorithm(null);
         proxyTLS.setNeedClientAuth(true);
         startProxy(proxyTLS);
-        int proxyPort = proxyConnector.getLocalPort();
 
-        String proxyAlias = "client_to_proxy";
-        String serverAlias = "client_to_server";
-        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client()
-        {
-            @Override
-            protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
-            {
-                KeyManager[] keyManagers = super.getKeyManagers(keyStore);
-                for (int i = 0; i < keyManagers.length; i++)
-                {
-                    KeyManager keyManager = keyManagers[i];
-                    if (keyManager instanceof X509ExtendedKeyManager)
-                    {
-                        X509ExtendedKeyManager extKeyManager = (X509ExtendedKeyManager)keyManager;
-                        keyManagers[i] = new X509ExtendedKeyManagerWrapper(extKeyManager)
-                        {
-                            @Override
-                            public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
-                            {
-                                int port = engine.getPeerPort();
-                                if (port == serverPort)
-                                    return serverAlias;
-                                else if (port == proxyPort)
-                                    return proxyAlias;
-                                else
-                                    return super.chooseEngineClientAlias(keyType, issuers, engine);
-                            }
-                        };
-                    }
-                }
-                return keyManagers;
-            }
-        };
-        clientSslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_keystore.p12").getAbsolutePath());
-        clientSslContextFactory.setKeyStorePassword("storepwd");
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientSslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientSslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientSslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSelectors(1);
@@ -745,8 +709,10 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_server_keystore.p12").getAbsolutePath());
-        clientTLS.setKeyStorePassword("storepwd");
+        clientTLS.setKeyStore(TestKeyStoreFactory.getClientKeyStore());
+        clientTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        clientTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        clientTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         clientTLS.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSelectors(1);
@@ -763,8 +729,10 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_proxy_keystore.p12").getAbsolutePath());
-        proxyClientTLS.setKeyStorePassword("storepwd");
+        proxyClientTLS.setKeyStore(TestKeyStoreFactory.getProxyKeyStore());
+        proxyClientTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        proxyClientTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        proxyClientTLS.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         proxyClientTLS.setEndpointIdentificationAlgorithm(null);
         proxyClientTLS.start();
         HttpProxy httpProxy = new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxyClientTLS);

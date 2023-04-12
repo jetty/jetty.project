@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
@@ -72,9 +73,8 @@ public class ForwardProxyServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
-        serverTLS.setKeyStorePath(keyStorePath);
-        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         return serverTLS;
     }
 
