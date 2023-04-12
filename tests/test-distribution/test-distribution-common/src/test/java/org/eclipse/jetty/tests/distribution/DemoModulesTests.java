@@ -109,7 +109,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
+            "--add-modules=http," + toEnvironment("demo-jsp", env)
         };
 
         String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
@@ -158,7 +158,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-                "--add-modules=http," + toEnvironment("demos", env)
+                "--add-modules=http," + toEnvironment("demo-jaas", env)
         };
         
         String baseURI = "http://localhost:%d/%s-test-jaas".formatted(httpPort, env);
@@ -208,7 +208,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-                "--add-modules=http," + toEnvironment("demos", env)
+                "--add-modules=http," + toEnvironment("demo-jsp", env)
         };
 
         String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
@@ -259,7 +259,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
+            "--add-modules=http," + toEnvironment("demo-async-rest", env)
         };
 
         String baseURI = "http://localhost:%d/%s-demo-async-rest".formatted(httpPort, env);

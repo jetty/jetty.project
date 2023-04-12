@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Demo Spec webapp
+Demo EE8 JAAS webapp
 
 [environment]
 ee8
