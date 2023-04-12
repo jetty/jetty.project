@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
@@ -43,8 +44,10 @@ public class HTTP2FromWebAppIT
         Server server = new Server();
 
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        serverTLS.setKeyStorePath("src/test/resources/keystore.p12");
-        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        serverTLS.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        serverTLS.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        serverTLS.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         serverTLS.setCipherComparator(new HTTP2Cipher.CipherComparator());
 
         HttpConfiguration httpsConfig = new HttpConfiguration();
