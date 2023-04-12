@@ -56,7 +56,7 @@ public class Modules implements Iterable<Module>
         this._args = args;
 
         // Allow override mostly for testing
-        if (!args.getServerEnvironment().getProperties().containsKey("java.version"))
+        if (!args.getJvmEnvironment().getProperties().containsKey("java.version"))
         {
             String javaVersion = System.getProperty("java.version");
             if (javaVersion != null)
@@ -458,13 +458,13 @@ public class Modules implements Iterable<Module>
             newlyEnabled.add(module.getName());
 
             // Expand module properties
-            module.expandDependencies(_args.getServerEnvironment().getProperties());
+            module.expandDependencies(_args.getJvmEnvironment().getProperties());
 
             // Apply default configuration
             if (module.hasDefaultConfig())
             {
                 String source = module.getName() + "[ini]";
-                Environment environment = _args.getServerEnvironment();
+                Environment environment = _args.getJvmEnvironment();
                 environment = _args.parse(environment, "--module=" + module.getName(), source);
 
                 for (String line : module.getIniSection())
@@ -497,7 +497,7 @@ public class Modules implements Iterable<Module>
                     Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
                     if (!isConditional || Files.exists(file))
                     {
-                        registerModule(file).expandDependencies(_args.getServerEnvironment().getProperties());
+                        registerModule(file).expandDependencies(_args.getJvmEnvironment().getProperties());
                         providers = _provided.get(dependentModule);
                         if (providers == null || providers.isEmpty())
                             throw new UsageException("Module %s does not provide %s", _baseHome.toShortForm(file), dependentModule);

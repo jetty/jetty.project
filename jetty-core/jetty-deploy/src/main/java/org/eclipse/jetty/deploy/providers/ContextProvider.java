@@ -360,7 +360,7 @@ public class ContextProvider extends ScanningAppProvider
                 xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
 
                 // If it is a core context environment, then look for a classloader
-                ClassLoader coreContextClassLoader = Environment.SERVER.equals(environment) ? findCoreContextClassLoader(path) : null;
+                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
                 if (coreContextClassLoader != null)
                     Thread.currentThread().setContextClassLoader(coreContextClassLoader);
 
@@ -455,7 +455,7 @@ public class ContextProvider extends ScanningAppProvider
 
         if (urls.isEmpty())
             return null;
-        return new URLClassLoader(urls.toArray(new URL[0]), Environment.SERVER.getClassLoader());
+        return new URLClassLoader(urls.toArray(new URL[0]), Environment.CORE.getClassLoader());
     }
 
     protected void initializeContextPath(ContextHandler context, Path path)

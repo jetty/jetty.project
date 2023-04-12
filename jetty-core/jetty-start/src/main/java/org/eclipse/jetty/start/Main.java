@@ -239,7 +239,7 @@ public class Main
         args.dumpSystemProperties(out);
 
 
-        Environment serverEnvironment = args.getServerEnvironment();
+        Environment serverEnvironment = args.getJvmEnvironment();
 
         // Dump Server Properties
         serverEnvironment.dumpProperties(out);
@@ -317,7 +317,7 @@ public class Main
 
         Props props = baseHome.getConfigSources().getProps();
         Prop home = props.getProp(BaseHome.JETTY_HOME);
-        Props argProps = args.getServerEnvironment().getProperties();
+        Props argProps = args.getJvmEnvironment().getProperties();
         if (!argProps.containsKey(BaseHome.JETTY_HOME))
             argProps.setProperty(home);
         argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
@@ -390,7 +390,7 @@ public class Main
         StartLog.debug("StartArgs: %s", args);
 
         // Get Desired Classpath based on user provided Active Options.
-        Classpath classpath = args.getServerEnvironment().getClasspath();
+        Classpath classpath = args.getJvmEnvironment().getClasspath();
 
         // Show the usage information and return
         if (args.isHelp())
@@ -428,7 +428,7 @@ public class Main
             Path outputFile = baseHome.getBasePath(args.getModuleGraphFilename());
             System.out.printf("Generating GraphViz Graph of Jetty Modules at %s%n", baseHome.toShortForm(outputFile));
             ModuleGraphWriter writer = new ModuleGraphWriter();
-            writer.config(args.getServerEnvironment().getProperties());
+            writer.config(args.getJvmEnvironment().getProperties());
             writer.write(args.getAllModules(), outputFile);
         }
 
@@ -451,7 +451,7 @@ public class Main
             {
                 for (StartIni ini : config.getStartInis())
                 {
-                    ini.update(baseHome, args.getServerEnvironment().getProperties());
+                    ini.update(baseHome, args.getJvmEnvironment().getProperties());
                 }
             }
         }
@@ -534,7 +534,7 @@ public class Main
 
     private void doStop(StartArgs args)
     {
-        Props argsProps = args.getServerEnvironment().getProperties();
+        Props argsProps = args.getJvmEnvironment().getProperties();
         final Prop stopHostProp = argsProps.getProp("STOP.HOST", true);
         final Prop stopPortProp = argsProps.getProp("STOP.PORT", true);
         final Prop stopKeyProp = argsProps.getProp("STOP.KEY", true);
