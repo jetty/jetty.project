@@ -29,6 +29,7 @@ import java.util.Properties;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -77,9 +78,12 @@ public class XmlBasedJettyServer
         Path webappsDir = MavenTestingUtils.getTargetPath("webapps");
         properties.setProperty("test.webapps", webappsDir.toString());
 
-        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore.p12");
-        properties.setProperty("jetty.sslContext.keyStorePath", keystorePath.toString());
-        properties.setProperty("jetty.sslContext.keyStorePassword", "storepwd");
+
+        String keystorePath =
+                TestKeyStoreFactory.getKeyStoreAsFile(TestKeyStoreFactory.getServerKeyStore(),
+                        TestKeyStoreFactory.KEY_STORE_PASSWORD).getCanonicalPath();
+        properties.setProperty("jetty.sslContext.keyStorePath", keystorePath);
+        properties.setProperty("jetty.sslContext.keyStorePassword", TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         // Write out configuration for use by ConfigurationManager.
         Path testConfig = targetDir.resolve("testable-jetty-server-config.properties");

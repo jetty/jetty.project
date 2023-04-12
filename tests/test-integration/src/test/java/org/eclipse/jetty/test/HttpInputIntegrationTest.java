@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -91,8 +92,10 @@ public class HttpInputIntegrationTest
 
         // SSL Context Factory for HTTPS and HTTP/2
         __sslContextFactory = new SslContextFactory.Server();
-        __sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        __sslContextFactory.setKeyStorePassword("storepwd");
+        __sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        __sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        __sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        __sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         // HTTPS Configuration
         HttpConfiguration sslConfig = new HttpConfiguration(__config);
