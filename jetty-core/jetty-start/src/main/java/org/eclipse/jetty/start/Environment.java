@@ -23,6 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+/**
+ * A start environment that contains the configurations that will be used to
+ * build a runtime {@code org.eclipse.jetty.util.component.Environment} via
+ * {@code --env} arguments passed to {@code org.eclipse.jetty.xml.XmlConfiguration#main(java.lang.String...)}
+ */
 public class Environment
 {
     private final BaseHome _baseHome;
@@ -79,8 +84,8 @@ public class Environment
 
     public void addUniquePropertyFile(String propertyFileRef, Path propertyFile) throws IOException
     {
-        if (!"core".equalsIgnoreCase(getName()))
-            throw new IllegalStateException("Property files not supported in non core environments");
+        if (!"server".equalsIgnoreCase(getName()))
+            throw new IllegalStateException("Property files not supported in non Server environments");
 
         if (!FS.canReadFile(propertyFile))
         {

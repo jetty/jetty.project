@@ -931,25 +931,4 @@ public class Server extends Handler.Wrapper implements Attributes
             return "ServerContext@%x".formatted(Server.this.hashCode());
         }
     }
-
-    private class ServerEnvironment extends Attributes.Wrapper implements Environment
-    {
-        private ServerEnvironment()
-        {
-            super(Server.this);
-        }
-
-        @Override
-        public String getName()
-        {
-            return "Server";
-        }
-
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            return Server.class.getClassLoader();
-        }
-    }
-
 }

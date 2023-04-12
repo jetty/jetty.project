@@ -17,14 +17,17 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.TypeUtil;
 
+/**
+ * A named runtime environment containing a {@link ClassLoader} and {@link Attributes}.
+ */
 public interface Environment extends Attributes
 {
-    Environment CORE = ensure("core");
+    Environment SERVER = ensure("Server");
 
     static Collection<Environment> getAll()
     {
@@ -46,10 +49,22 @@ public interface Environment extends Attributes
         return Named.__environments.put(environment.getName(), environment);
     }
 
+    /**
+     * @return The case insensitvie name of the environment.
+     */
     String getName();
 
+    /**
+     * @return The {@link ClassLoader} for the environment or if non set, then the {@link ClassLoader} that
+     * loaded the environment implementation.
+     */
     ClassLoader getClassLoader();
 
+    /**
+     * Run a {@link Runnable} in the environment, i.e. with current {@link Thread#getContextClassLoader()} set to
+     * {@link #getClassLoader()}.
+     * @param runnable The {@link Runnable} to run in the environment.
+     */
     default void run(Runnable runnable)
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -66,7 +81,7 @@ public interface Environment extends Attributes
 
     class Named extends Attributes.Mapped implements Environment, Dumpable
     {
-        private static final Map<String, Environment> __environments = new ConcurrentHashMap<>();
+        private static final Map<String, Environment> __environments = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         private final String _name;
         private final ClassLoader _classLoader;
 
