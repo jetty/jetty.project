@@ -194,6 +194,8 @@ public class StartArgs
     private boolean allowInsecureHttpDownloads = false;
     private boolean approveAllLicenses = false;
 
+    /** The server environment holds the main configuration for the server.  It is never created
+      * as a real environment within the server, as it ultimately becomes the JVM environment. */
     private final Environment serverEnvironment;
 
     public StartArgs(BaseHome baseHome)
