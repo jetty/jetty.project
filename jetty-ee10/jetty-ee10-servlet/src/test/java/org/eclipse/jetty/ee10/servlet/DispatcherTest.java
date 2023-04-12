@@ -142,7 +142,10 @@ public class DispatcherTest
     {
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
         _contextHandler.addServlet(AlwaysForwardServlet.class, "/AlwaysForwardServlet/*");
-        _contextHandler.addServlet(ForwardEchoURIServlet.class, "/echo/*");
+        ServletHolder holder = _contextHandler.getServletHandler().newServletHolder(Source.EMBEDDED);
+        holder.setHeldClass(ForwardEchoURIServlet.class);
+        holder.setName("ForwardEchoURIServlet"); //use easy-to-test name
+        _contextHandler.addServlet(holder, "/echo/*");
 
 
         String rawResponse = _connector.getResponse("""
@@ -155,13 +158,14 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Content-Type: text/plain\r
-            Content-Length: 123\r
+            Content-Length: 146\r
             Connection: close\r
             \r
             /context\r
             /echo\r
             null\r
             /context/echo\r
+            ForwardEchoURIServlet\r
             /context\r
             ForwardServlet\r
             null\r
@@ -226,7 +230,10 @@ public class DispatcherTest
     @Test
     public void testNamedForward() throws Exception
     {
-        _contextHandler.addServlet(NamedForwardServlet.class, "/forward/*");
+        ServletHolder holder = _contextHandler.getServletHandler().newServletHolder(Source.EMBEDDED);
+        holder.setHeldClass(NamedForwardServlet.class);
+        holder.setName("NamedForwardServlet"); //use easy-to-test name
+        _contextHandler.addServlet(holder, "/forward/*");
         String echo = _contextHandler.addServlet(ForwardEchoURIServlet.class, "/echo/*").getName();
 
         String rawResponse = _connector.getResponse(("""
@@ -239,13 +246,14 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Content-Type: text/plain\r
-            Content-Length: 98\r
+            Content-Length: 119\r
             Connection: close\r
             \r
             /context\r
             /forward\r
             /info\r
             /context/forward/info;param=value\r
+            NamedForwardServlet\r
             null\r
             null\r
             null\r
@@ -1203,9 +1211,11 @@ public class DispatcherTest
             response.getOutputStream().println(request.getServletPath());
             response.getOutputStream().println(request.getPathInfo());
             response.getOutputStream().println(request.getRequestURI());
+            HttpServletMapping mapping = request.getHttpServletMapping();
+            response.getOutputStream().println(mapping == null ? null : mapping.getServletName());
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-            HttpServletMapping mapping = (HttpServletMapping)request.getAttribute(RequestDispatcher.FORWARD_MAPPING);
-            response.getOutputStream().println(mapping == null ? null : mapping.getMatchValue());
+            HttpServletMapping attrMapping = (HttpServletMapping)request.getAttribute(RequestDispatcher.FORWARD_MAPPING);
+            response.getOutputStream().println(attrMapping == null ? null : attrMapping.getMatchValue());
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));

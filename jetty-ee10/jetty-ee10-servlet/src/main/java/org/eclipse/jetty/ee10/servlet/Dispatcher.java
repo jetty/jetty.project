@@ -238,6 +238,9 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public HttpServletMapping getHttpServletMapping()
         {
+            if (_named != null)
+                return super.getHttpServletMapping();
+
             return _servletPathMapping;
         }
 
