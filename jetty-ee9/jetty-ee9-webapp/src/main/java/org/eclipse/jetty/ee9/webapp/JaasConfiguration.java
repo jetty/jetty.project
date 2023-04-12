@@ -33,7 +33,7 @@ public class JaasConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.ee9.jaas.");
+        protectAndExpose("org.eclipse.jetty.security.jaas.");
     }
 
     @Override
