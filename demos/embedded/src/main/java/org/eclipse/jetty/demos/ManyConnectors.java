@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
@@ -35,12 +36,6 @@ public class ManyConnectors
 {
     public static Server createServer(int plainPort, int securePort) throws Exception
     {
-        // Since this example shows off SSL configuration, we need a keystore
-        // with the appropriate key.
-        Path keystorePath = Paths.get("src/main/resources/etc/keystore.p12").toAbsolutePath();
-        if (!Files.exists(keystorePath))
-            throw new FileNotFoundException(keystorePath.toString());
-
         // Create a basic jetty server object without declaring the port. Since
         // we are configuring connectors directly we'll be setting ports on
         // those connectors.
@@ -75,8 +70,10 @@ public class ManyConnectors
         // keystore to be used.
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath.toString());
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         // OPTIONAL: Un-comment the following to use Conscrypt for SSL instead of
         // the native JSSE implementation.

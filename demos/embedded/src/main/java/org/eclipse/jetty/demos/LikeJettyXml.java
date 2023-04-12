@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -104,14 +105,11 @@ public class LikeJettyXml
 
         // === jetty-https.xml ===
         // SSL Context Factory
-        Path keystorePath = Paths.get("src/main/resources/etc/keystore.p12").toAbsolutePath();
-        if (!Files.exists(keystorePath))
-            throw new FileNotFoundException(keystorePath.toString());
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath.toString());
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStorePath(keystorePath.toString());
-        sslContextFactory.setTrustStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
 
         // SSL HTTP Configuration
         HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);

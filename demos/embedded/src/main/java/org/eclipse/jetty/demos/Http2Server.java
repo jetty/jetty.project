@@ -54,6 +54,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.PushCacheFilter;
+import org.eclipse.jetty.tests.test.resources.TestKeyStoreFactory;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.LoggerFactory;
@@ -98,12 +99,11 @@ public class Http2Server
         server.addConnector(http);
 
         // SSL Context Factory for HTTPS and HTTP/2
-        Path keystorePath = Paths.get("src/main/resources/etc/keystore.p12").toAbsolutePath();
-        if (!Files.exists(keystorePath))
-            throw new FileNotFoundException(keystorePath.toString());
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath.toString());
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStore(TestKeyStoreFactory.getServerKeyStore());
+        sslContextFactory.setKeyStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
+        sslContextFactory.setTrustStore(TestKeyStoreFactory.getTrustStore());
+        sslContextFactory.setTrustStorePassword(TestKeyStoreFactory.KEY_STORE_PASSWORD);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
         // sslContextFactory.setProvider("Conscrypt");
 
