@@ -6,6 +6,9 @@ Setup for jaas demos.
 [tags]
 demo
 
+[depend]
+jaas
+
 [files]
 basehome:modules/demo.d/demo-login.conf|etc/demo-login.conf
 basehome:modules/demo.d/demo-login.properties|etc/demo-login.properties

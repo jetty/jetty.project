@@ -8,6 +8,7 @@ ee10
 
 [depend]
 server
+jaas
 
 [lib]
 lib/jetty-ee10-jaas-${jetty.version}.jar
