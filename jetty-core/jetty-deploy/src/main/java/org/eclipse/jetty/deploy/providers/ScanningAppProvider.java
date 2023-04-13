@@ -188,7 +188,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             }
 
             // If we are the default provider then we may warn
-            if (defaultEnvironmentName != null && defaultEnvironmentName.equalsIgnoreCase(getEnvironmentName()))
+            if (getEnvironmentName().equalsIgnoreCase(defaultEnvironmentName))
             {
                 // if the app specified an environment name, then produce warning if there is no provider for it.
                 if (!_deploymentManager.hasAppProviderFor(environmentName))
