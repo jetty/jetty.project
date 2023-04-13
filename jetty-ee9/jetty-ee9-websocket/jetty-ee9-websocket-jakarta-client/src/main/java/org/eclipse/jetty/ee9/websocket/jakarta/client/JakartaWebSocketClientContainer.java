@@ -15,14 +15,15 @@ package org.eclipse.jetty.ee9.websocket.jakarta.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import jakarta.websocket.ClientEndpoint;
@@ -43,8 +44,8 @@ import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketExtensionC
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -63,13 +64,14 @@ import org.slf4j.LoggerFactory;
 public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer implements jakarta.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketClientContainer.class);
-    private static final AtomicReference<ContainerLifeCycle> SHUTDOWN_CONTAINER = new AtomicReference<>();
+    private static final Map<ClassLoader, ContainerLifeCycle> SHUTDOWN_MAP = new ConcurrentHashMap<>();
 
     public static void setShutdownContainer(ContainerLifeCycle container)
     {
-        SHUTDOWN_CONTAINER.set(container);
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        SHUTDOWN_MAP.compute(cl, (k, v) -> container);
         if (LOG.isDebugEnabled())
-            LOG.debug("initialized {} to {}", String.format("%s@%x", SHUTDOWN_CONTAINER.getClass().getSimpleName(), SHUTDOWN_CONTAINER.hashCode()), container);
+            LOG.debug("initialized shutdown map@{} to [{}={}]", SHUTDOWN_MAP.hashCode(), cl, container);
     }
 
     protected WebSocketCoreClient coreClient;
@@ -175,10 +177,8 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         JakartaClientUpgradeRequest upgradeRequest = new JakartaClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
         EndpointConfig config = configuredEndpoint.getConfig();
-        if (config instanceof ClientEndpointConfig)
+        if (config instanceof ClientEndpointConfig clientEndpointConfig)
         {
-            ClientEndpointConfig clientEndpointConfig = (ClientEndpointConfig)config;
-
             JsrUpgradeListener jsrUpgradeListener = new JsrUpgradeListener(clientEndpointConfig.getConfigurator());
             upgradeRequest.addListener(jsrUpgradeListener);
 
@@ -309,27 +309,40 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStart() {}", this);
 
-        // If we are running in Jetty register shutdown with the ContextHandler.
-        if (addToContextHandler())
+        // Mechanism 1.
+        // - When this class is used by a web app, and it is loaded from the server
+        //   class-path, so ContextHandler can be seen from this class' ClassLoader.
+        // - When this class is used on the server in embedded code, so the same
+        //   ClassLoader can load both this class and ContextHandler.
+        Object contextHandler = getContextHandler();
+        if (contextHandler != null)
         {
+            Container.addBean(contextHandler, this, true);
             if (LOG.isDebugEnabled())
-                LOG.debug("Shutdown registered with ContextHandler");
+                LOG.debug("{} registered for ContextHandler shutdown to {}", this, contextHandler);
             return;
         }
 
-        // If we are running inside a different ServletContainer we can register with the SHUTDOWN_CONTAINER static.
-        ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
-        if (shutdownContainer != null)
+        // Mechanism 2.
+        // - When this class is used by a web app, and it is loaded from the web app
+        //   ClassLoader because all the necessary jars have been put in WEB-INF/lib.
+        //   In this case the ContextHandler class cannot be loaded by this class'
+        //   ClassLoader, and we rely on the JakartaWebSocketShutdownContainer.
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        ContainerLifeCycle container = SHUTDOWN_MAP.get(cl);
+        if (container != null)
         {
-            shutdownContainer.addManaged(this);
+            container.addManaged(this);
             if (LOG.isDebugEnabled())
-                LOG.debug("Shutdown registered with ShutdownContainer {}", shutdownContainer);
+                LOG.debug("{} registered for Context shutdown to {}", this, container);
             return;
         }
 
+        // Mechanism 3.
+        // - When this class is used on the client side.
         ShutdownThread.register(this);
         if (LOG.isDebugEnabled())
-            LOG.debug("Shutdown registered with ShutdownThread");
+            LOG.debug("{} registered for JVM shutdown", this);
     }
 
     protected void doClientStop()
@@ -337,75 +350,48 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (LOG.isDebugEnabled())
             LOG.debug("doClientStop() {}", this);
 
-        // Remove from context handler if running in Jetty server.
-        removeFromContextHandler();
-
-        // Remove from the Shutdown Container.
-        ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
-        if (shutdownContainer != null && shutdownContainer.contains(this))
+        Object contextHandler = getContextHandler();
+        if (contextHandler != null)
         {
-            // Un-manage first as we don't want to call stop again while in STOPPING state.
-            shutdownContainer.unmanage(this);
-            shutdownContainer.removeBean(this);
+            Container.unmanage(contextHandler, this);
+            Container.removeBean(contextHandler, this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} deregistered for ContextHandler shutdown from {}", this, contextHandler);
+            return;
         }
 
-        // If not running in a server we need to de-register with the shutdown thread.
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        ContainerLifeCycle container = SHUTDOWN_MAP.get(cl);
+        if (container != null)
+        {
+            // As we are already stopping this instance, un-manage first
+            // to avoid that removeBean() stops again this instance.
+            container.unmanage(this);
+            if (container.removeBean(this))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} deregistered for Context shutdown from {}", this, container);
+                return;
+            }
+        }
+
         ShutdownThread.deregister(this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} deregistered for JVM shutdown", this);
     }
 
-    private boolean addToContextHandler()
+    public Object getContextHandler()
     {
         try
         {
-            Object context = getClass().getClassLoader()
-                .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
-                .getMethod("getCurrentContext")
+            return getClass().getClassLoader()
+                .loadClass("org.eclipse.jetty.ee9.nested.ContextHandler")
+                .getMethod("getCurrentContextHandler")
                 .invoke(null);
-
-            Object contextHandler = context.getClass()
-                .getMethod("getContextHandler")
-                .invoke(context);
-
-            contextHandler.getClass()
-                .getMethod("addManaged", LifeCycle.class)
-                .invoke(contextHandler, this);
-
-            return true;
         }
-        catch (Throwable throwable)
+        catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("error from addToContextHandler() for {}", this, throwable);
-            return false;
-        }
-    }
-
-    private void removeFromContextHandler()
-    {
-        try
-        {
-            Object context = getClass().getClassLoader()
-                .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
-                .getMethod("getCurrentContext")
-                .invoke(null);
-
-            Object contextHandler = context.getClass()
-                .getMethod("getContextHandler")
-                .invoke(context);
-
-            // Un-manage first as we don't want to call stop again while in STOPPING state.
-            contextHandler.getClass()
-                .getMethod("unmanage", Object.class)
-                .invoke(contextHandler, this);
-
-            contextHandler.getClass()
-                .getMethod("removeBean", Object.class)
-                .invoke(contextHandler, this);
-        }
-        catch (Throwable throwable)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("error from removeFromContextHandler() for {}", this, throwable);
+            return null;
         }
     }
 }
