@@ -1238,6 +1238,7 @@ public class DispatcherTest
             assertEquals("/context/AssertForwardServlet", request.getRequestURI());
             assertEquals("/context", request.getContextPath());
             assertEquals("/AssertForwardServlet", request.getServletPath());
+            assertEquals("http://local:80/context/AssertForwardServlet", request.getRequestURL().toString());
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
