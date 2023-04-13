@@ -161,8 +161,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                     Files.exists(path.getParent().resolve(basename + ".war")) ||
                         Files.exists(path.getParent().resolve(basename + ".WAR")) ||
                         Files.exists(path.getParent().resolve(basename + "/WEB-INF")));
-            boolean coreProvider = _deploymentManager.getAppProviders().stream()
-                .map(AppProvider::getEnvironmentName).anyMatch(Environment.CORE.getName()::equalsIgnoreCase);
+            boolean coreProvider = _deploymentManager.hasAppProviderFor(Environment.CORE.getName());
 
             // TODO review these heuristics... or even if we should have them at all
             if (isWebapp || (Files.isDirectory(path) && defaultEnvironmentName != null))
@@ -189,12 +188,10 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             }
 
             // If we are the default provider then we may warn
-            if (defaultEnvironmentName != null && defaultEnvironmentName.equalsIgnoreCase(getEnvironmentName()))
+            if (getEnvironmentName().equalsIgnoreCase(defaultEnvironmentName))
             {
                 // if the app specified an environment name, then produce warning if there is no provider for it.
-                boolean appProvider4env = _deploymentManager.getAppProviders().stream()
-                    .map(AppProvider::getEnvironmentName).anyMatch(environmentName::equalsIgnoreCase);
-                if (!appProvider4env)
+                if (!_deploymentManager.hasAppProviderFor(environmentName))
                     LOG.warn("No AppProvider with environment {} for {}", environmentName, app);
                 return null;
             }
