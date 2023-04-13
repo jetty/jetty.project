@@ -817,7 +817,8 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(0, run2.getExitValue());
 
                 int port = distribution.freePort();
-                try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port))
+                int sslPort = distribution.freePort();
+                try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.ssl.port=" + sslPort))
                 {
                     assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
                             String.join("", run3.getLogs()));
