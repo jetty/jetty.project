@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.http.HttpMethod;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,10 +122,10 @@ public class DataConstraintsTest
     @Test
     public void testIntegral() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setAuthenticate(false);
         constraint0.setName("integral");
-        constraint0.setDataConstraint(Constraint.DC_INTEGRAL);
+        constraint0.setDataConstraint(ServletConstraint.DC_INTEGRAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/integral/*");
         mapping0.setConstraint(constraint0);
@@ -153,10 +153,10 @@ public class DataConstraintsTest
     @Test
     public void testConfidential() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setAuthenticate(false);
         constraint0.setName("confid");
-        constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        constraint0.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
         mapping0.setConstraint(constraint0);
@@ -184,9 +184,9 @@ public class DataConstraintsTest
     @Test
     public void testConfidentialWithNoRolesSetAndNoMethodRestriction() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setName("confid");
-        constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        constraint0.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
         mapping0.setConstraint(constraint0);
@@ -210,9 +210,9 @@ public class DataConstraintsTest
     @Test
     public void testConfidentialWithNoRolesSetAndMethodRestriction() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setName("confid");
-        constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        constraint0.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
         mapping0.setMethod(HttpMethod.POST.asString());
@@ -243,10 +243,10 @@ public class DataConstraintsTest
     @Test
     public void testConfidentialWithRolesSetAndMethodRestriction() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("confid");
-        constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        constraint0.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
         mapping0.setMethod(HttpMethod.POST.asString());
@@ -277,11 +277,11 @@ public class DataConstraintsTest
     @Test
     public void testConfidentialWithRolesSetAndMethodRestrictionAndAuthenticationRequired() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setAuthenticate(true);
         constraint0.setName("confid");
-        constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        constraint0.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
         mapping0.setMethod(HttpMethod.POST.asString());
@@ -324,7 +324,7 @@ public class DataConstraintsTest
     @Test
     public void testRestrictedWithoutAuthenticator() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setAuthenticate(true);
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
@@ -356,7 +356,7 @@ public class DataConstraintsTest
     @Test
     public void testRestrictedWithoutAuthenticatorAndMethod() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setAuthenticate(true);
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
@@ -389,7 +389,7 @@ public class DataConstraintsTest
     @Test
     public void testRestricted() throws Exception
     {
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setAuthenticate(true);
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");

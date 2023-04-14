@@ -18,8 +18,6 @@ import java.util.List;
 
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity;
-import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
-import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.ee.security.ConstraintAware;
 import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
@@ -27,7 +25,6 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,22 +105,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     }
 
     /**
-     * Make a jetty Constraint object, which represents the <code>&lt;auth-constraint&gt;</code> and
-     * <code>&lt;user-data-constraint&gt;</code> elements, based on the security annotation.
-     *
-     * @param servlet the servlet
-     * @param rolesAllowed the roles allowed
-     * @param permitOrDeny the role / permission semantic
-     * @param transport the transport guarantee
-     * @return the constraint
-     */
-    protected Constraint makeConstraint(Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
-    {
-        // TODO return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
-        return null;
-    }
-
-    /**
      * Get the ServletMappings for the servlet's class.
      *
      * @param className the class name
@@ -131,7 +112,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      */
     protected List<ServletMapping> getServletMappings(String className)
     {
-        List<ServletMapping> results = new ArrayList<ServletMapping>();
+        List<ServletMapping> results = new ArrayList<>();
         ServletMapping[] mappings = _context.getServletHandler().getServletMappings();
         for (ServletMapping mapping : mappings)
         {

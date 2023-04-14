@@ -34,7 +34,6 @@ import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
 import org.eclipse.jetty.security.SpnegoUserIdentity;
 import org.eclipse.jetty.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +56,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 
     public ConfigurableSpnegoAuthenticator()
     {
-        this(Constraint.__SPNEGO_AUTH);
+        this(SPNEGO_AUTH);
     }
 
     /**

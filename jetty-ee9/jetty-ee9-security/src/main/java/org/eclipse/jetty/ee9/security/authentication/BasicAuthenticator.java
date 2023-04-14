@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.util.security.Constraint;
 
 public class BasicAuthenticator extends LoginAuthenticator
 {
@@ -47,7 +46,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__BASIC_AUTH;
+        return BASIC_AUTH;
     }
 
     @Override

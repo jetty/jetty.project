@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -96,7 +95,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__DIGEST_AUTH;
+        return DIGEST_AUTH;
     }
 
     @Override

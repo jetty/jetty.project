@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
@@ -51,7 +50,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__CERT_AUTH;
+        return Authenticator.CERT_AUTH;
     }
 
     @Override

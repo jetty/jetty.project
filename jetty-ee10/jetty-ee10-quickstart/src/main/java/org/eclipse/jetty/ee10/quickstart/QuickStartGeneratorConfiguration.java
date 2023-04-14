@@ -53,13 +53,13 @@ import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.AttributeNormalizer;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlAppendable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -315,7 +315,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             if (security.getRealmName() != null)
                 out.tag("realm-name", origin(md, "realm-name"), security.getRealmName());
 
-            if (Constraint.__FORM_AUTH.equalsIgnoreCase(security.getAuthMethod()))
+            if (Authenticator.FORM_AUTH.equalsIgnoreCase(security.getAuthMethod()))
             {
                 out.openTag("form-login-config");
                 out.tag("form-login-page", origin(md, "form-login-page"), security.getParameter(FormAuthenticator.__FORM_LOGIN_PAGE));

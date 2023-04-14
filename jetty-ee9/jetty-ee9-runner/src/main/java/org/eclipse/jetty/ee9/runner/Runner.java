@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
@@ -53,7 +54,6 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -354,7 +354,7 @@ public class Runner
                                     ResourceFactory resourceFactory = ResourceFactory.of(statsContext);
                                     Resource statsResource = resourceFactory.newResource(_statsPropFile);
                                     final HashLoginService loginService = new HashLoginService("StatsRealm", statsResource);
-                                    Constraint constraint = new Constraint();
+                                    ServletConstraint constraint = new ServletConstraint();
                                     constraint.setName("Admin Only");
                                     constraint.setRoles(new String[]{"admin"});
                                     constraint.setAuthenticate(true);

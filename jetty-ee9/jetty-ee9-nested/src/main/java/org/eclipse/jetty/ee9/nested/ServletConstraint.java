@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.security;
+package org.eclipse.jetty.ee9.nested;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -21,23 +21,8 @@ import java.util.Arrays;
  *
  * Describe an auth and/or data constraint.
  */
-public class Constraint implements Cloneable, Serializable
+public class ServletConstraint implements Cloneable, Serializable
 {
-    public static final String __BASIC_AUTH = "BASIC";
-
-    public static final String __FORM_AUTH = "FORM";
-
-    public static final String __DIGEST_AUTH = "DIGEST";
-
-    public static final String __CERT_AUTH = "CLIENT_CERT";
-
-    public static final String __CERT_AUTH2 = "CLIENT-CERT";
-
-    public static final String __SPNEGO_AUTH = "SPNEGO";
-
-    public static final String __NEGOTIATE_AUTH = "NEGOTIATE";
-    public static final String __OPENID_AUTH = "OPENID";
-
     public static final int DC_NONE = 0;
     public static final int DC_INTEGRAL = 1;
     public static final int DC_CONFIDENTIAL = 2;
@@ -62,7 +47,7 @@ public class Constraint implements Cloneable, Serializable
     /**
      * Constructor.
      */
-    public Constraint()
+    public ServletConstraint()
     {
     }
 
@@ -72,7 +57,7 @@ public class Constraint implements Cloneable, Serializable
      * @param name the name
      * @param role the role
      */
-    public Constraint(String name, String role)
+    public ServletConstraint(String name, String role)
     {
         setName(name);
         setRoles(new String[]{role});

@@ -27,9 +27,9 @@ import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +79,7 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Credentials: {}", credentials);
-                if (login(clientSubject, credentials, Constraint.__BASIC_AUTH, messageInfo))
+                if (login(clientSubject, credentials, Authenticator.BASIC_AUTH, messageInfo))
                 {
                     return AuthStatus.SUCCESS;
                 }

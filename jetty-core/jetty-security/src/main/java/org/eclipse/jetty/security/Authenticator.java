@@ -40,10 +40,10 @@ public interface Authenticator
     String FORM_AUTH = "FORM";
     String DIGEST_AUTH = "DIGEST";
     String CERT_AUTH = "CLIENT_CERT";
+    String CERT_AUTH2 = "CLIENT-CERT";
     String SPNEGO_AUTH = "SPNEGO";
     String NEGOTIATE_AUTH = "NEGOTIATE";
     String OPENID_AUTH = "OPENID";
-
 
     /**
      * Configure the Authenticator

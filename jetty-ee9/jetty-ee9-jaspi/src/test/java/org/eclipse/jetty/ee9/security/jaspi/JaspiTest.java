@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.AbstractLoginService;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
@@ -140,7 +140,7 @@ public class JaspiTest
         security.setAuthenticatorFactory(jaspiAuthFactory);
         // security.setAuthenticator(new BasicAuthenticator());
 
-        Constraint constraint = new Constraint("All", "users");
+        ServletConstraint constraint = new ServletConstraint("All", "users");
         constraint.setAuthenticate(true);
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/jaspi/*");
