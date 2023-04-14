@@ -150,6 +150,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
 
         String environmentName = app.getEnvironmentName();
 
+        String defaultEnvironmentName = _deploymentManager.getDefaultEnvironmentName();
         if (StringUtil.isBlank(environmentName))
         {
             // We may be able to default the environmentName
@@ -160,12 +161,11 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                     Files.exists(path.getParent().resolve(basename + ".war")) ||
                         Files.exists(path.getParent().resolve(basename + ".WAR")) ||
                         Files.exists(path.getParent().resolve(basename + "/WEB-INF")));
-            boolean coreProvider = _deploymentManager.getAppProviders().stream()
-                .map(AppProvider::getEnvironmentName).anyMatch(Environment.CORE.getName()::equals);
+            boolean coreProvider = _deploymentManager.hasAppProviderFor(Environment.CORE.getName());
 
             // TODO review these heuristics... or even if we should have them at all
-            if (isWebapp || (Files.isDirectory(path) && _deploymentManager.getDefaultEnvironmentName() != null))
-                environmentName = _deploymentManager.getDefaultEnvironmentName();
+            if (isWebapp || (Files.isDirectory(path) && defaultEnvironmentName != null))
+                environmentName = defaultEnvironmentName;
             else if (coreProvider)
                 environmentName = Environment.CORE.getName();
 
@@ -180,7 +180,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         if (StringUtil.isNotBlank(environmentName))
         {
             // If the app specifies the environment for this provider, then this deployer will deploy it.
-            if (Objects.equals(environmentName, getEnvironmentName()))
+            if (environmentName.equalsIgnoreCase(getEnvironmentName()))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} created {}", this, app);
@@ -188,12 +188,10 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             }
 
             // If we are the default provider then we may warn
-            if (Objects.equals(getEnvironmentName(), _deploymentManager.getDefaultEnvironmentName()))
+            if (getEnvironmentName().equalsIgnoreCase(defaultEnvironmentName))
             {
                 // if the app specified an environment name, then produce warning if there is no provider for it.
-                boolean appProvider4env = _deploymentManager.getAppProviders().stream()
-                    .map(AppProvider::getEnvironmentName).anyMatch(environmentName::equals);
-                if (!appProvider4env)
+                if (!_deploymentManager.hasAppProviderFor(environmentName))
                     LOG.warn("No AppProvider with environment {} for {}", environmentName, app);
                 return null;
             }

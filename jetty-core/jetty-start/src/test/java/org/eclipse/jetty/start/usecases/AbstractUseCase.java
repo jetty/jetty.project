@@ -33,10 +33,10 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.start.BaseHome;
-import org.eclipse.jetty.start.Environment;
 import org.eclipse.jetty.start.Main;
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartArgs;
+import org.eclipse.jetty.start.StartEnvironment;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -157,7 +157,7 @@ public abstract class AbstractUseCase
 
         public List<String> getXmls()
         {
-            return startArgs.getCoreEnvironment().getXmlFiles().stream()
+            return startArgs.getJettyEnvironment().getXmlFiles().stream()
                 .map(p -> baseHome.toShortForm(p))
                 .collect(Collectors.toList());
         }
@@ -165,24 +165,24 @@ public abstract class AbstractUseCase
         public List<String> getLibs()
         {
             return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(startArgs.getCoreEnvironment().getClasspath().iterator(), Spliterator.ORDERED), false)
+                Spliterators.spliteratorUnknownSize(startArgs.getJettyEnvironment().getClasspath().iterator(), Spliterator.ORDERED), false)
                 .map(f -> baseHome.toShortForm(f))
                 .collect(Collectors.toList());
         }
 
-        public Collection<Environment> getEnvironments()
+        public Collection<StartEnvironment> getEnvironments()
         {
             return startArgs.getEnvironments();
         }
 
-        public Environment getEnvironment(String name)
+        public StartEnvironment getEnvironment(String name)
         {
             return startArgs.getEnvironment(name);
         }
 
         public List<String> getProperties()
         {
-            Props props = startArgs.getCoreEnvironment().getProperties();
+            Props props = startArgs.getJettyEnvironment().getProperties();
 
             Predicate<Props.Prop> propPredicate = (p) ->
             {

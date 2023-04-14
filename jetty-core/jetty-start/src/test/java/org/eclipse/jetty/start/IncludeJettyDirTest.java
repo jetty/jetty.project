@@ -59,7 +59,7 @@ public class IncludeJettyDirTest
 
         public void assertProperty(String key, String expectedValue)
         {
-            Prop prop = args.getCoreEnvironment().getProperties().getProp(key);
+            Prop prop = args.getJettyEnvironment().getProperties().getProp(key);
             String prefix = "Prop[" + key + "]";
             assertThat(prefix + " should have a value", prop, notNullValue());
             assertThat(prefix + " value", prop.value, is(expectedValue));
