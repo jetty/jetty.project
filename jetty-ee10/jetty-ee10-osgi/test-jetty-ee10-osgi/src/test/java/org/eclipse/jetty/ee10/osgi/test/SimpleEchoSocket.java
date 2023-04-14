@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.osgi.test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -56,8 +57,8 @@ public class SimpleEchoSocket
         this.session = session;
         try
         {
-            session.getRemote().sendString("Foo");
-            session.close(StatusCode.NORMAL, "I'm done");
+            session.sendText("Foo", Callback.NOOP);
+            session.close(StatusCode.NORMAL, "I'm done", Callback.NOOP);
         }
         catch (Throwable t)
         {

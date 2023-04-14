@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -100,9 +101,9 @@ public class WebSocketStopTest
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("permessage-deflate");
         Session session = client.connect(clientSocket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
-        clientSocket.session.getRemote().sendString("init deflater");
+        clientSocket.session.sendText("init deflater", Callback.NOOP);
         assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("init deflater"));
-        session.close(StatusCode.NORMAL, null);
+        session.close(StatusCode.NORMAL, null, Callback.NOOP);
 
         // make sure both sides are closed
         clientSocket.session.close();
@@ -114,7 +115,7 @@ public class WebSocketStopTest
         assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
 
         IOException error = assertThrows(IOException.class,
-            () -> session.getRemote().sendString("this should fail before ExtensionStack"));
+            () -> session.sendText("this should fail before ExtensionStack", Callback.NOOP));
         assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
     }
 }

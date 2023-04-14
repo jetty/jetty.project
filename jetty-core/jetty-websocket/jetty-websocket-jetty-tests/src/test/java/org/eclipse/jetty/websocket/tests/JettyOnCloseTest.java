@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -123,7 +124,7 @@ public class JettyOnCloseTest
         client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
 
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        serverEndpoint.setOnClose((session) -> session.close(StatusCode.SERVICE_RESTART, "custom close reason"));
+        serverEndpoint.setOnClose((session) -> session.close(StatusCode.SERVICE_RESTART, "custom close reason", Callback.NOOP));
 
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -139,9 +140,9 @@ public class JettyOnCloseTest
         client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
 
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        serverEndpoint.setOnClose(Session::close);
+        serverEndpoint.setOnClose(session -> session.close());
 
-        serverEndpoint.session.close(StatusCode.NORMAL, "first close");
+        serverEndpoint.session.close(StatusCode.NORMAL, "first close", Callback.NOOP);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeCode, is(StatusCode.NORMAL));
         assertThat(clientEndpoint.closeReason, is("first close"));
@@ -157,11 +158,11 @@ public class JettyOnCloseTest
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         serverEndpoint.setOnClose((session) ->
         {
-            session.close(StatusCode.SERVER_ERROR, "abnormal close 2");
+            session.close(StatusCode.SERVER_ERROR, "abnormal close 2", Callback.NOOP);
             clientEndpoint.unBlockClose();
         });
 
-        serverEndpoint.session.close(StatusCode.PROTOCOL, "abnormal close 1");
+        serverEndpoint.session.close(StatusCode.PROTOCOL, "abnormal close 1", Callback.NOOP);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeCode, is(StatusCode.PROTOCOL));
         assertThat(clientEndpoint.closeReason, is("abnormal close 1"));

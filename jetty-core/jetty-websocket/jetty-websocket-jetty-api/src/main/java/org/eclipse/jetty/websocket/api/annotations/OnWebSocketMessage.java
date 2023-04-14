@@ -21,14 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
 
 /**
- * Annotation for tagging methods to receive Binary or Text Message events.
- * <p>
- * Acceptable method patterns.<br>
- * Note: {@code methodName} can be any name you want to use.
- * <p>
+ * <p>Annotation for methods to receive BINARY or TEXT WebSocket events.</p>
+ * <p>Acceptable method patterns:</p>
  * <u>Text Message Versions</u>
  * <ol>
  * <li>{@code public void methodName(String text)}</li>
@@ -49,19 +45,17 @@ import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
  * </ol>
  * <u>Partial Message Variations</u>
  * <p>These are used to receive partial messages without aggregating them into a complete WebSocket message. Instead the a boolean
- * argument is supplied to indicate whether this is the last segment of data of the message. See {@link WebSocketPartialListener}
- * interface for more details on partial messages.</p>
+ * argument is supplied to indicate whether this is the last segment of data of the message.</p>
  * <ol>
  * <li>{@code public void methodName(ByteBuffer payload, boolean last)}</li>
  * <li>{@code public void methodName(String payload, boolean last)}</li>
  * </ol>
  * <p>Note: Similar to the signatures above these can all be used with an optional first {@link Session} parameter.</p>
  */
+// TODO: improve javadocs
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(value =
-    {ElementType.METHOD})
+@Target(ElementType.METHOD)
 public @interface OnWebSocketMessage
 {
-    /* no config */
 }

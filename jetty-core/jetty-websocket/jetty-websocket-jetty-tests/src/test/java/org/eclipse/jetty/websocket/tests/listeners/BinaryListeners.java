@@ -20,9 +20,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,21 +41,21 @@ public class BinaryListeners
         ).map(Arguments::of);
     }
 
-    public static class OffsetByteArrayWholeListener extends AbstractListener implements WebSocketListener
+    public static class OffsetByteArrayWholeListener extends Session.Listener.Abstract
     {
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        public void onWebSocketBinary(ByteBuffer payload, Callback callback)
         {
-            sendBinary(BufferUtil.toBuffer(payload, offset, len), true);
+            getSession().sendPartialBinary(payload, true, callback);
         }
     }
 
-    public static class OffsetByteBufferPartialListener extends AbstractListener implements WebSocketPartialListener
+    public static class OffsetByteBufferPartialListener extends Session.Listener.Abstract
     {
         @Override
-        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
+        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
-            sendBinary(payload, fin);
+            getSession().sendPartialBinary(payload, fin, callback);
         }
     }
 

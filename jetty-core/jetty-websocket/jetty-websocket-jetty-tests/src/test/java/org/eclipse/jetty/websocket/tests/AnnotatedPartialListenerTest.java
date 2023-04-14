@@ -24,9 +24,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
@@ -42,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AnnotatedPartialListenerTest
 {
-    public static class PartialEchoSocket implements WebSocketPartialListener
+    public static class PartialEchoSocket implements Session.Listener
     {
         private Session session;
 
@@ -53,15 +52,15 @@ public class AnnotatedPartialListenerTest
         }
 
         @Override
-        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
+        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
-            session.getRemote().sendPartialBytes(payload, fin, WriteCallback.NOOP);
+            session.sendPartialBinary(payload, fin, callback);
         }
 
         @Override
         public void onWebSocketPartialText(String payload, boolean fin)
         {
-            session.getRemote().sendPartialString(payload, fin, WriteCallback.NOOP);
+            session.sendPartialText(payload, fin, Callback.NOOP);
         }
     }
 
@@ -175,9 +174,10 @@ public class AnnotatedPartialListenerTest
         PartialStringListener endpoint = new PartialStringListener();
         try (Session session = client.connect(endpoint, serverUri).get(5, TimeUnit.SECONDS))
         {
-            session.getRemote().sendPartialString("hell", false);
-            session.getRemote().sendPartialString("o w", false);
-            session.getRemote().sendPartialString("orld", true);
+            Callback.Completable.with(c -> session.sendPartialText("hell", false, c))
+                .compose(c -> session.sendPartialText("o w", false, c))
+                .compose(c -> session.sendPartialText("orld", true, c))
+                .get();
         }
 
         PartialStringListener.MessageSegment segment;
@@ -201,9 +201,12 @@ public class AnnotatedPartialListenerTest
         PartialByteBufferListener endpoint = new PartialByteBufferListener();
         try (Session session = client.connect(endpoint, serverUri).get(5, TimeUnit.SECONDS))
         {
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("hell"), false);
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("o w"), false);
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("orld"), true);
+            ByteBuffer buffer2 = BufferUtil.toBuffer("hell");
+            session.sendPartialBinary(buffer2, false, Callback.NOOP);
+            ByteBuffer buffer1 = BufferUtil.toBuffer("o w");
+            session.sendPartialBinary(buffer1, false, Callback.NOOP);
+            ByteBuffer buffer = BufferUtil.toBuffer("orld");
+            session.sendPartialBinary(buffer, true, Callback.NOOP);
         }
 
         PartialByteBufferListener.MessageSegment segment;

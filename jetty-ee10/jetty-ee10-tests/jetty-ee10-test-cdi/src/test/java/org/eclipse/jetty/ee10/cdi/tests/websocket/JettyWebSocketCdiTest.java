@@ -27,6 +27,7 @@ import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletConta
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -112,7 +113,7 @@ public class JettyWebSocketCdiTest
         TestClientEndpoint clientEndpoint = new TestClientEndpoint();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
         Session session = _client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
-        session.getRemote().sendString("hello world");
+        session.sendText("hello world", Callback.NOOP);
         assertThat(clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS), is("hello world"));
         session.close();
         assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
@@ -136,7 +137,7 @@ public class JettyWebSocketCdiTest
         @OnWebSocketMessage
         public void onMessage(String message) throws IOException
         {
-            this.session.getRemote().sendString(message);
+            this.session.sendText(message, Callback.NOOP);
         }
 
         @OnWebSocketError

@@ -20,13 +20,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -60,7 +58,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final Logger log;
     private final WebSocketContainer container;
     private final Object endpointInstance;
-    private final BatchMode batchMode;
     private final AtomicBoolean closeNotified = new AtomicBoolean();
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
@@ -92,14 +89,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                                       Class<? extends MessageSink> binarySinkClass,
                                       MethodHandle frameHandle,
                                       MethodHandle pingHandle, MethodHandle pongHandle,
-                                      BatchMode batchMode,
                                       Configuration.Customizer customizer)
     {
         this.log = LoggerFactory.getLogger(endpointInstance.getClass());
-
         this.container = container;
         this.endpointInstance = endpointInstance;
-
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
         this.errorHandle = errorHandle;
@@ -110,8 +104,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.frameHandle = frameHandle;
         this.pingHandle = pingHandle;
         this.pongHandle = pongHandle;
-
-        this.batchMode = batchMode;
         this.customizer = customizer;
     }
 
@@ -135,18 +127,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         return upgradeResponse;
     }
 
-    public BatchMode getBatchMode()
-    {
-        return batchMode;
-    }
-
     public WebSocketSession getSession()
     {
         return session;
     }
 
     @Override
-    public void onOpen(CoreSession coreSession, Callback callback)
+    public void onOpen(CoreSession coreSession, org.eclipse.jetty.util.Callback callback)
     {
         try
         {
@@ -189,7 +176,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         try (AutoLock l = lock.lock())
         {
@@ -212,7 +199,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 state = SuspendState.CLOSED;
         }
 
-        // Send to raw frame handling on user side (eg: WebSocketFrameListener)
         if (frameHandle != null)
         {
             try
@@ -251,7 +237,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onError(Throwable cause, Callback callback)
+    public void onError(Throwable cause, org.eclipse.jetty.util.Callback callback)
     {
         try
         {
@@ -275,13 +261,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    private void onCloseFrame(Frame frame, Callback callback)
+    private void onCloseFrame(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         notifyOnClose(CloseStatus.getCloseStatus(frame), callback);
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus, Callback callback)
+    public void onClosed(CloseStatus closeStatus, org.eclipse.jetty.util.Callback callback)
     {
         try (AutoLock l = lock.lock())
         {
@@ -293,7 +279,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
     }
 
-    private void notifyOnClose(CloseStatus closeStatus, Callback callback)
+    private void notifyOnClose(CloseStatus closeStatus, org.eclipse.jetty.util.Callback callback)
     {
         // Make sure onClose is only notified once.
         if (!closeNotified.compareAndSet(false, true))
@@ -320,7 +306,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         return String.format("%s@%x[%s]", this.getClass().getSimpleName(), this.hashCode(), endpointInstance.getClass().getName());
     }
 
-    private void acceptMessage(Frame frame, Callback callback)
+    private void acceptMessage(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         // No message sink is active
         if (activeMessageSink == null)
@@ -336,7 +322,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             activeMessageSink = null;
     }
 
-    private void onBinaryFrame(Frame frame, Callback callback)
+    private void onBinaryFrame(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = binarySink;
@@ -344,12 +330,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         acceptMessage(frame, callback);
     }
 
-    private void onContinuationFrame(Frame frame, Callback callback)
+    private void onContinuationFrame(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         acceptMessage(frame, callback);
     }
 
-    private void onPingFrame(Frame frame, Callback callback)
+    private void onPingFrame(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         if (pingHandle != null)
         {
@@ -372,17 +358,17 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         else
         {
             // Automatically respond.
-            getSession().getRemote().sendPong(frame.getPayload(), new WriteCallback()
+            getSession().sendPong(frame.getPayload(), new Callback()
             {
                 @Override
-                public void writeSuccess()
+                public void succeed()
                 {
                     callback.succeeded();
                     demand();
                 }
 
                 @Override
-                public void writeFailed(Throwable x)
+                public void fail(Throwable x)
                 {
                     // Ignore failures, we might be output closed and receive ping.
                     callback.succeeded();
@@ -392,7 +378,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    private void onPongFrame(Frame frame, Callback callback)
+    private void onPongFrame(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         if (pongHandle != null)
         {
@@ -414,7 +400,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         demand();
     }
 
-    private void onTextFrame(Frame frame, Callback callback)
+    private void onTextFrame(Frame frame, org.eclipse.jetty.util.Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = textSink;

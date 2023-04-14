@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -123,7 +124,7 @@ public class WebSocketStatsTest
         {
             for (int i = 0; i < numMessages; i++)
             {
-                session.getRemote().sendString(msgText);
+                session.sendText(msgText, Callback.NOOP);
             }
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));

@@ -18,9 +18,8 @@ import java.io.Reader;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.jupiter.params.provider.Arguments;
@@ -38,21 +37,21 @@ public class TextListeners
         ).map(Arguments::of);
     }
 
-    public static class StringWholeListener extends AbstractListener implements WebSocketListener
+    public static class StringWholeListener extends Session.Listener.Abstract
     {
         @Override
         public void onWebSocketText(String message)
         {
-            sendText(message, true);
+            getSession().sendPartialText(message, true, Callback.NOOP);
         }
     }
 
-    public static class StringPartialListener extends AbstractListener implements WebSocketPartialListener
+    public static class StringPartialListener extends Session.Listener.Abstract
     {
         @Override
         public void onWebSocketPartialText(String message, boolean fin)
         {
-            sendText(message, fin);
+            getSession().sendPartialText(message, fin, Callback.NOOP);
         }
     }
 

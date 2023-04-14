@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -112,7 +113,7 @@ public class WebSocketServletExamplesTest
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             String message = "hello world";
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
 
             String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));
@@ -136,7 +137,7 @@ public class WebSocketServletExamplesTest
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             String message = "hello world";
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
 
             String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));
@@ -162,7 +163,7 @@ public class WebSocketServletExamplesTest
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             String message = "hello world";
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
 
             String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));

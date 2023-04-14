@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -91,7 +90,7 @@ public class JettyWebSocketFrameHandlerTest
         return endpointFactory.newJettyFrameHandler(wsEndpoint);
     }
 
-    public static class ConnectionOnly implements WebSocketConnectionListener
+    public static class ConnectionOnly implements Session.Listener
     {
         public EventQueue events = new EventQueue();
 

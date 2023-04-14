@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -28,6 +29,6 @@ public class GetAuthHeaderEndpoint
     {
         String authHeaderName = "Authorization";
         String authHeaderValue = session.getUpgradeRequest().getHeader(authHeaderName);
-        session.getRemote().sendString("Header[" + authHeaderName + "]=" + authHeaderValue);
+        session.sendText("Header[" + authHeaderName + "]=" + authHeaderValue, Callback.NOOP);
     }
 }

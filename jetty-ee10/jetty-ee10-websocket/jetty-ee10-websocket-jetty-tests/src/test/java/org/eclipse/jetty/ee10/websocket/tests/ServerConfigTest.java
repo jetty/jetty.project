@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.websocket.tests;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -84,7 +85,7 @@ public class ServerConfigTest
         return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
-    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE, batchMode = BatchMode.ON)
+    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE)
     public static class AnnotatedConfigEndpoint extends EventSocket
     {
     }
@@ -234,7 +235,8 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(MESSAGE));
+        ByteBuffer buffer = BufferUtil.toBuffer(MESSAGE);
+        clientEndpoint.session.sendBinary(buffer, Callback.NOOP);
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));
@@ -255,7 +257,7 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString("hello world");
+        clientEndpoint.session.sendText("hello world", Callback.NOOP);
         String msg = serverEndpoint.textMessages.poll(500, TimeUnit.MILLISECONDS);
         assertThat(msg, is("hello world"));
         Thread.sleep(IDLE_TIMEOUT + 500);
@@ -279,7 +281,7 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString(MESSAGE);
+        clientEndpoint.session.sendText(MESSAGE, Callback.NOOP);
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));

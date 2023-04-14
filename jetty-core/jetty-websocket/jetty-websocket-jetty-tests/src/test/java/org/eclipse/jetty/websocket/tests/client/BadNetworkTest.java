@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
@@ -122,7 +122,7 @@ public class BadNetworkTest
         Session session = future.get(30, TimeUnit.SECONDS);
 
         // Have server disconnect abruptly
-        session.getRemote().sendString("abort");
+        session.sendText("abort", Callback.NOOP);
 
         // Client Socket should see a close event, with status NO_CLOSE
         // This event is automatically supplied by the underlying WebSocketClientConnection
@@ -130,34 +130,28 @@ public class BadNetworkTest
         wsocket.assertReceivedCloseEvent(5000, is(StatusCode.NO_CLOSE), containsString(""));
     }
 
-    public static class ServerEndpoint implements WebSocketListener
+    public static class ServerEndpoint implements Session.Listener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ClientCloseTest.ServerEndpoint.class);
         private Session session;
 
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        public void onWebSocketBinary(ByteBuffer payload, Callback callback)
         {
+            callback.succeed();
         }
 
         @Override
         public void onWebSocketText(String message)
         {
-            try
+            if (message.equals("abort"))
             {
-                if (message.equals("abort"))
-                {
-                    session.disconnect();
-                }
-                else
-                {
-                    // simple echo
-                    session.getRemote().sendString(message);
-                }
+                session.disconnect();
             }
-            catch (IOException e)
+            else
             {
-                LOG.warn("Failed to send string", e);
+                // simple echo
+                session.sendText(message, Callback.NOOP);
             }
         }
 

@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -86,7 +87,7 @@ public class WebSocketClientServlet extends HttpServlet
             ClientSocket clientSocket = new ClientSocket();
             URI wsUri = WSURI.toWebsocket(req.getRequestURL()).resolve("echo");
             client.connect(clientSocket, wsUri).get(5, TimeUnit.SECONDS);
-            clientSocket.session.getRemote().sendString("test message");
+            clientSocket.session.sendText("test message", Callback.NOOP);
             String response = clientSocket.textMessages.poll(5, TimeUnit.SECONDS);
             clientSocket.session.close();
             clientSocket.closeLatch.await(5, TimeUnit.SECONDS);

@@ -14,172 +14,149 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.Closeable;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import java.nio.ByteBuffer;
 
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.
  */
-public interface Session extends WebSocketPolicy, Closeable
+public interface Session extends Configurable, Closeable
 {
     /**
-     * Request a close of the current conversation with a normal status code and no reason phrase.
-     * <p>
-     * This will enqueue a graceful close to the remote endpoint.
+     * <p>Initiates the asynchronous send of a BINARY message, notifying
+     * the given callback when the message send is completed, either
+     * successfully or with a failure.</p>
      *
-     * @see #close(CloseStatus)
-     * @see #close(int, String)
+     * @param buffer the message bytes to send
+     * @param callback callback to notify when the send operation is complete
+     */
+    void sendBinary(ByteBuffer buffer, Callback callback);
+
+    /**
+     * <p>Initiates the asynchronous send of a BINARY frame, possibly part
+     * of a larger binary message, notifying the given callback when the frame
+     * send is completed, either successfully or with a failure.</p>
+     * <p>Non-final frames must be sent with the parameter {@code last=false}.
+     * The final frame must be sent with {@code last=true}.</p>
+     *
+     * @param buffer the frame bytes to send
+     * @param last whether this is the last frame of the message
+     * @param callback callback to notify when the send operation is complete
+     */
+    void sendPartialBinary(ByteBuffer buffer, boolean last, Callback callback);
+
+    /**
+     * <p>Initiates the asynchronous send of a TEXT message, notifying
+     * the given callback when the message send is completed, either
+     * successfully or with a failure.</p>
+     *
+     * @param text the message text to send
+     * @param callback callback to notify when the send operation is complete
+     */
+    void sendText(String text, Callback callback);
+
+    /**
+     * <p>Initiates the asynchronous send of a TEXT frame, possibly part
+     * of a larger binary message, notifying the given callback when the frame
+     * send is completed, either successfully or with a failure.</p>
+     * <p>Non-final frames must be sent with the parameter {@code last=false}.
+     * The final frame must be sent with {@code last=true}.</p>
+     *
+     * @param text the frame text to send
+     * @param last whether this is the last frame of the message
+     * @param callback callback to notify when the send operation is complete
+     */
+    void sendPartialText(String text, boolean last, Callback callback);
+
+    /**
+     * <p>Initiates the asynchronous send of a PING frame, notifying the given
+     * callback when the frame send is completed, either successfully or with
+     * a failure.</p>
+     *
+     * @param applicationData the data to be carried in the PING frame
+     * @param callback callback to notify when the send operation is complete
+     */
+    void sendPing(ByteBuffer applicationData, Callback callback);
+
+    /**
+     * <p>Initiates the asynchronous send of a PONG frame, notifying the given
+     * callback when the frame send is completed, either successfully or with
+     * a failure.</p>
+     *
+     * @param applicationData the data to be carried in the PONG frame
+     * @param callback callback to notify when the send operation is complete
+     */
+    void sendPong(ByteBuffer applicationData, Callback callback);
+
+    /**
+     * <p>Equivalent to {@code close(StatusCode.NORMAL, null, Callback.NOOP)}.</p>
+     *
+     * @see #close(int, String, Callback)
      * @see #disconnect()
      */
     @Override
-    void close();
-
-    /**
-     * Request Close the current conversation, giving a reason for the closure. Note the websocket spec defines the acceptable uses of status codes and reason
-     * phrases.
-     * <p>
-     * This will enqueue a graceful close to the remote endpoint.
-     *
-     * @param closeStatus the reason for the closure
-     * @see #close()
-     * @see #close(int, String)
-     * @see #disconnect()
-     */
-    void close(CloseStatus closeStatus);
-
-    /**
-     * Send a websocket Close frame, with status code.
-     * <p>
-     * This will enqueue a graceful close to the remote endpoint.
-     *
-     * @param statusCode the status code
-     * @param reason the (optional) reason. (can be null for no reason)
-     * @see StatusCode
-     * @see #close()
-     * @see #close(CloseStatus)
-     * @see #disconnect()
-     */
-    void close(int statusCode, String reason);
-
-    /**
-     * Send a websocket Close frame, with status code.
-     * <p>
-     * This will enqueue a graceful close to the remote endpoint.
-     *
-     * @param statusCode the status code
-     * @param reason the (optional) reason. (can be null for no reason)
-     * @param callback the callback to track close frame sent (or failed)
-     * @see StatusCode
-     * @see #close()
-     * @see #close(CloseStatus)
-     * @see #disconnect()
-     */
-    default void close(int statusCode, String reason, WriteCallback callback)
+    default void close()
     {
-        try
-        {
-            close(statusCode, reason);
-            callback.writeSuccess();
-        }
-        catch (Throwable t)
-        {
-            callback.writeFailed(t);
-        }
+        close(StatusCode.NORMAL, null, Callback.NOOP);
     }
 
     /**
-     * Issue a harsh disconnect of the underlying connection.
-     * <p>
-     * This will terminate the connection, without sending a websocket close frame.
-     * <p>
-     * Once called, any read/write activity on the websocket from this point will be indeterminate.
-     * <p>
-     * Once the underlying connection has been determined to be closed, the various onClose() events (either
-     * {@link WebSocketListener#onWebSocketClose(int, String)} or {@link OnWebSocketClose}) will be called on your
-     * websocket.
+     * <p>Sends a websocket CLOSE frame, with status code and reason, notifying
+     * the given callback when the frame send is completed, either successfully
+     * or with a failure.</p>
      *
+     * @param statusCode the status code
+     * @param reason the (optional) reason
+     * @param callback callback to notify when the send operation is complete
+     * @see StatusCode
      * @see #close()
-     * @see #close(CloseStatus)
-     * @see #close(int, String)
+     * @see #disconnect()
+     */
+    void close(int statusCode, String reason, Callback callback);
+
+    /**
+     * <p>Abruptly closes the WebSocket connection without sending a CLOSE frame.</p>
+     *
+     * @see #close(int, String, Callback)
      */
     void disconnect();
 
     /**
-     * The Local Socket Address for the active Session
-     * <p>
-     * Do not assume that this will return a {@link InetSocketAddress} in all cases.
-     * Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-     * without supporting {@link InetSocketAddress}
-     * </p>
-     *
-     * @return the SocketAddress for the local connection, or null if not supported by Session
+     * @return the local SocketAddress for the connection, if available
      */
-    SocketAddress getLocalAddress();
+    SocketAddress getLocalSocketAddress();
 
     /**
-     * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
-     *
-     * @return the policy in use
+     * @return the remote SocketAddress for the connection, if available
      */
-    default WebSocketPolicy getPolicy()
-    {
-        return this;
-    }
+    SocketAddress getRemoteSocketAddress();
 
     /**
-     * Returns the version of the websocket protocol currently being used. This is taken as the value of the Sec-WebSocket-Version header used in the opening
-     * handshake. i.e. "13".
+     * <p>Returns the version of the WebSocket protocol currently being used.</p>
+     * <p>This is taken as the value of the {@code Sec-WebSocket-Version} header
+     * used in the {@link #getUpgradeRequest() upgrade request}.
      *
-     * @return the protocol version
+     * @return the WebSocket protocol version
      */
     String getProtocolVersion();
 
     /**
-     * Return a reference to the RemoteEndpoint object representing the other end of this conversation.
-     *
-     * @return the remote endpoint
-     */
-    RemoteEndpoint getRemote();
-
-    /**
-     * The Remote Socket Address for the active Session
-     * <p>
-     * Do not assume that this will return a {@link InetSocketAddress} in all cases.
-     * Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-     * without supporting {@link InetSocketAddress}
-     * </p>
-     *
-     * @return the SocketAddress for the remote connection, or null if not supported by Session
-     */
-    SocketAddress getRemoteAddress();
-
-    /**
-     * Get the UpgradeRequest used to create this session
-     *
      * @return the UpgradeRequest used to create this session
      */
     UpgradeRequest getUpgradeRequest();
 
     /**
-     * Get the UpgradeResponse used to create this session
-     *
      * @return the UpgradeResponse used to create this session
      */
     UpgradeResponse getUpgradeResponse();
 
     /**
-     * Return true if and only if the underlying socket is open.
-     *
      * @return whether the session is open
      */
     boolean isOpen();
 
     /**
-     * Return true if and only if the underlying socket is using a secure transport.
-     *
-     * @return whether its using a secure transport
+     * @return whether the underlying socket is using a secure transport
      */
     boolean isSecure();
 
@@ -193,5 +170,157 @@ public interface Session extends WebSocketPolicy, Closeable
      *
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
+    // TODO: remove and replace with demand()
+    //  Add autodemand?!?
     SuspendToken suspend();
+
+    interface Listener
+    {
+        /**
+         * <p>A WebSocket {@link Session} has connected successfully and is ready to be used.</p>
+         * <p>Applications can store the given {@link Session} as a field so it can be used
+         * to send messages back to the other peer.</p>
+         *
+         * @param session the WebSocket session
+         */
+        default void onWebSocketConnect(Session session)
+        {
+        }
+
+        /**
+         * <p>A WebSocket frame has been received.</p>
+         * <p>The received frames may be control frames such as PING, PONG or CLOSE,
+         * or data frames either BINARY or TEXT.</p>
+         *
+         * @param frame the received frame
+         */
+        default void onWebSocketFrame(Frame frame, Callback callback)
+        {
+            callback.succeed();
+        }
+
+        /**
+         * <p>A WebSocket PING frame has been received.</p>
+         *
+         * @param payload the PING payload
+         */
+        default void onWebSocketPing(ByteBuffer payload)
+        {
+        }
+
+        /**
+         * <p>A WebSocket PONG frame has been received.</p>
+         *
+         * @param payload the PONG payload
+         */
+        default void onWebSocketPong(ByteBuffer payload)
+        {
+        }
+
+        /**
+         * <p>A WebSocket BINARY (or associated CONTINUATION) frame has been received.</p>
+         * <p>The {@code ByteBuffer} is read-only, and will be recycled when the {@code callback}
+         * is completed.</p>
+         *
+         * @param payload the BINARY frame payload
+         * @param last whether this is the last frame
+         * @param callback the callback to complete when the payload has been processed
+         */
+        default void onWebSocketPartialBinary(ByteBuffer payload, boolean last, Callback callback)
+        {
+            callback.succeed();
+        }
+
+        /**
+         * <p>A WebSocket TEXT (or associated CONTINUATION) frame has been received.</p>
+         *
+         * @param payload the text message payload
+         * <p>
+         * Note that due to framing, there is a above average chance of any UTF8 sequences being split on the
+         * border between two frames will result in either the previous frame, or the next frame having an
+         * invalid UTF8 sequence, but the combined frames having a valid UTF8 sequence.
+         * <p>
+         * The String being provided here will not end in a split UTF8 sequence. Instead this partial sequence
+         * will be held over until the next frame is received.
+         * @param last whether this is the last frame
+         */
+        default void onWebSocketPartialText(String payload, boolean last)
+        {
+        }
+
+        /**
+         * <p>A WebSocket BINARY message has been received.</p>
+         *
+         * @param payload the raw payload array received
+         */
+        default void onWebSocketBinary(ByteBuffer payload, Callback callback)
+        {
+            callback.succeed();
+        }
+
+        /**
+         * <p>A WebSocket TEXT message has been received.</p>
+         *
+         * @param message the text payload
+         */
+        default void onWebSocketText(String message)
+        {
+        }
+
+        /**
+         * <p>A WebSocket error has occurred during the processing of WebSocket frames.</p>
+         * <p>Usually errors occurs from bad or malformed incoming packets, for example
+         * text frames that do not contain UTF-8 bytes, frames that are too big, or other
+         * violations of the WebSocket specification.</p>
+         * <p>The WebSocket {@link Session} will be closed, but applications may
+         * explicitly {@link Session#close(int, String, Callback) close} the
+         * {@link Session} providing a different status code or reason.</p>
+         *
+         * @param cause the error that occurred
+         */
+        default void onWebSocketError(Throwable cause)
+        {
+        }
+
+        /**
+         * <p>The WebSocket {@link Session} has been closed.</p>
+         *
+         * @param statusCode the close {@link StatusCode status code}
+         * @param reason the optional reason for the close
+         */
+        default void onWebSocketClose(int statusCode, String reason)
+        {
+        }
+
+        /**
+         * @return whether the invocation of methods of this class is
+         * guaranteed to be non-blocking.
+         */
+        default boolean isNonBlocking()
+        {
+            return false;
+        }
+
+        abstract class Abstract implements Listener
+        {
+            private volatile Session session;
+
+            @Override
+            public void onWebSocketConnect(Session session)
+            {
+                this.session = session;
+            }
+
+            public Session getSession()
+            {
+                return session;
+            }
+
+            public boolean isConnected()
+            {
+                Session session = this.session;
+                return session != null && session.isOpen();
+            }
+        }
+    }
 }

@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -39,6 +40,6 @@ public class ParamsEndpoint
             msg.append("\n");
         }
 
-        session.getRemote().sendString(msg.toString());
+        session.sendText(msg.toString(), Callback.NOOP);
     }
 }

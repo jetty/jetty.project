@@ -19,22 +19,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.api.Session;
-
 /**
- * Annotation for tagging methods to receive connection open events.
- * <p>
- * Only 1 acceptable method pattern for this annotation.<br>
- * Note: {@code methodName} can be any name you want to use.
+ * <p>Annotation for methods to receive WebSocket connect events.</p>
+ * <p>Acceptable method patterns:</p>
  * <ol>
- * <li><code>public void methodName({@link Session} session)</code></li>
+ * <li>{@code public void <methodName>(Session session)}</li>
  * </ol>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(value =
-    {ElementType.METHOD})
+@Target(ElementType.METHOD)
 public @interface OnWebSocketConnect
 {
-    /* no config */
 }

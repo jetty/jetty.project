@@ -26,7 +26,6 @@ import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -71,13 +70,11 @@ public class WebSocketChatServlet extends JettyWebSocketServlet implements Jetty
     public class ChatWebSocket
     {
         volatile Session session;
-        volatile RemoteEndpoint remote;
 
         @OnWebSocketConnect
-        public void onOpen(Session sess)
+        public void onOpen(Session session)
         {
-            this.session = sess;
-            this.remote = sess.getRemote();
+            this.session = session;
             members.add(this);
         }
 
@@ -103,7 +100,7 @@ public class WebSocketChatServlet extends JettyWebSocketServlet implements Jetty
                 }
 
                 // Async write the message back.
-                member.remote.sendString(data, null);
+                member.session.sendText(data, null);
             }
         }
 

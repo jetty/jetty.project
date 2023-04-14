@@ -13,19 +13,14 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -44,14 +39,15 @@ public class EndPoints
     {
     }
 
-    public static class ListenerBasicSocket implements WebSocketListener
+    public static class ListenerBasicSocket implements Session.Listener
     {
         public EventQueue events = new EventQueue();
 
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        public void onWebSocketBinary(ByteBuffer payload, Callback callback)
         {
-            events.add("onWebSocketBinary([%d], %d, %d)", payload.length, offset, len);
+            events.add("onWebSocketBinary([%d])", payload.remaining());
+            callback.succeed();
         }
 
         @Override
@@ -79,7 +75,7 @@ public class EndPoints
         }
     }
 
-    public static class ListenerFrameSocket implements WebSocketFrameListener
+    public static class ListenerFrameSocket implements Session.Listener
     {
         public EventQueue events = new EventQueue();
 
@@ -102,13 +98,14 @@ public class EndPoints
         }
 
         @Override
-        public void onWebSocketFrame(Frame frame)
+        public void onWebSocketFrame(Frame frame, Callback callback)
         {
             events.add("onWebSocketFrame(%s)", frame.toString());
+            callback.succeed();
         }
     }
 
-    public static class ListenerPartialSocket implements WebSocketPartialListener
+    public static class ListenerPartialSocket implements Session.Listener
     {
         public EventQueue events = new EventQueue();
 
@@ -137,13 +134,14 @@ public class EndPoints
         }
 
         @Override
-        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
+        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
             events.add("onWebSocketPartialBinary(%s, %b)", BufferUtil.toDetailString(payload), fin);
+            callback.succeed();
         }
     }
 
-    public static class ListenerPingPongSocket implements WebSocketPingPongListener
+    public static class ListenerPingPongSocket implements Session.Listener
     {
         public EventQueue events = new EventQueue();
 
@@ -403,14 +401,7 @@ public class EndPoints
         @OnWebSocketMessage
         public void echoBin(byte[] buf, int offset, int length)
         {
-            try
-            {
-                getRemote().sendBytes(ByteBuffer.wrap(buf, offset, length));
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
+            getSession().sendBinary(ByteBuffer.wrap(buf, offset, length), Callback.NOOP);
         }
     }
 
@@ -423,12 +414,6 @@ public class EndPoints
     public static class MyEchoSocket
     {
         private Session session;
-        private RemoteEndpoint remote;
-
-        public RemoteEndpoint getRemote()
-        {
-            return remote;
-        }
 
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
@@ -440,7 +425,11 @@ public class EndPoints
         public void onConnect(Session session)
         {
             this.session = session;
-            this.remote = session.getRemote();
+        }
+
+        public Session getSession()
+        {
+            return session;
         }
 
         @OnWebSocketMessage
@@ -453,14 +442,7 @@ public class EndPoints
                 return;
             }
 
-            try
-            {
-                remote.sendString(message);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
+            session.sendText(message, Callback.NOOP);
         }
     }
 
@@ -478,7 +460,7 @@ public class EndPoints
         @OnWebSocketMessage
         public void onText(Session session, String text)
         {
-            session.getRemote().sendString(text, null);
+            session.sendText(text, null);
         }
     }
 

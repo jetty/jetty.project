@@ -15,29 +15,32 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.websocket.api.CloseStatus;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class WebSocketSession implements Session, SuspendToken, Dumpable
 {
     private final CoreSession coreSession;
     private final JettyWebSocketFrameHandler frameHandler;
-    private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
+    private byte messageType = OpCode.UNDEFINED;
 
     public WebSocketSession(WebSocketContainer container, CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
     {
@@ -45,46 +48,109 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
         this.coreSession = Objects.requireNonNull(coreSession);
         this.upgradeRequest = frameHandler.getUpgradeRequest();
         this.upgradeResponse = frameHandler.getUpgradeResponse();
-        this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession, frameHandler.getBatchMode());
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionCreated(this));
     }
 
     @Override
-    public void close()
+    public void sendBinary(ByteBuffer buffer, Callback callback)
     {
-        coreSession.close(StatusCode.NORMAL, null, Callback.NOOP);
+        callback = Objects.requireNonNullElse(callback, Callback.NOOP);
+        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(buffer),
+            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail),
+            false);
     }
 
     @Override
-    public void close(CloseStatus closeStatus)
+    public void sendPartialBinary(ByteBuffer buffer, boolean last, Callback callback)
     {
-        coreSession.close(closeStatus.getCode(), closeStatus.getPhrase(), Callback.NOOP);
-    }
-
-    @Override
-    public void close(int statusCode, String reason)
-    {
-        coreSession.close(statusCode, reason, Callback.NOOP);
-    }
-
-    @Override
-    public void close(int statusCode, String reason, WriteCallback callback)
-    {
-        coreSession.close(statusCode, reason, Callback.from(callback::writeSuccess, callback::writeFailed));
-    }
-
-    @Override
-    public WebSocketBehavior getBehavior()
-    {
-        switch (coreSession.getBehavior())
+        callback = Objects.requireNonNullElse(callback, Callback.NOOP);
+        Frame frame = switch (messageType)
         {
-            case CLIENT:
-                return WebSocketBehavior.CLIENT;
-            case SERVER:
-                return WebSocketBehavior.SERVER;
-            default:
-                return null;
+            case OpCode.UNDEFINED ->
+            {
+                // new message
+                messageType = OpCode.BINARY;
+                yield new Frame(OpCode.BINARY);
+            }
+            case OpCode.BINARY -> new Frame(OpCode.CONTINUATION);
+            default ->
+            {
+                callback.fail(new ProtocolException("Attempt to send partial BINARY during " + OpCode.name(messageType)));
+                yield null;
+            }
+        };
+
+        if (frame != null)
+        {
+            frame.setPayload(buffer);
+            frame.setFin(last);
+
+            var cb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+            coreSession.sendFrame(frame, cb, false);
+
+            if (last)
+                messageType = OpCode.UNDEFINED;
         }
+    }
+
+    @Override
+    public void sendText(String text, Callback callback)
+    {
+        callback = Objects.requireNonNullElse(callback, Callback.NOOP);
+        var cb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, false);
+    }
+
+    @Override
+    public void sendPartialText(String text, boolean last, Callback callback)
+    {
+        Frame frame = switch (messageType)
+        {
+            case OpCode.UNDEFINED ->
+            {
+                // new message
+                messageType = OpCode.TEXT;
+                yield new Frame(OpCode.TEXT);
+            }
+            case OpCode.TEXT -> new Frame(OpCode.CONTINUATION);
+            default ->
+            {
+                callback.fail(new ProtocolException("Attempt to send partial TEXT during " + OpCode.name(messageType)));
+                yield null;
+            }
+        };
+
+        if (frame != null)
+        {
+            frame.setPayload(BufferUtil.toBuffer(text, UTF_8));
+            frame.setFin(last);
+
+            var cb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+            coreSession.sendFrame(frame, cb, false);
+
+            if (last)
+                messageType = OpCode.UNDEFINED;
+        }
+    }
+
+    @Override
+    public void sendPing(ByteBuffer applicationData, Callback callback)
+    {
+        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData),
+            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail), false);
+    }
+
+    @Override
+    public void sendPong(ByteBuffer applicationData, Callback callback)
+    {
+        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
+            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail), false);
+    }
+
+    @Override
+    public void close(int statusCode, String reason, Callback callback)
+    {
+        coreSession.close(statusCode, reason, org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail));
     }
 
     @Override
@@ -94,45 +160,15 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     }
 
     @Override
-    public int getInputBufferSize()
-    {
-        return coreSession.getInputBufferSize();
-    }
-
-    @Override
-    public int getOutputBufferSize()
-    {
-        return coreSession.getOutputBufferSize();
-    }
-
-    @Override
-    public long getMaxBinaryMessageSize()
-    {
-        return coreSession.getMaxBinaryMessageSize();
-    }
-
-    @Override
-    public long getMaxTextMessageSize()
-    {
-        return coreSession.getMaxTextMessageSize();
-    }
-
-    @Override
-    public long getMaxFrameSize()
-    {
-        return coreSession.getMaxFrameSize();
-    }
-
-    @Override
-    public boolean isAutoFragment()
-    {
-        return coreSession.isAutoFragment();
-    }
-
-    @Override
     public void setIdleTimeout(Duration duration)
     {
         coreSession.setIdleTimeout(duration);
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return coreSession.getInputBufferSize();
     }
 
     @Override
@@ -142,9 +178,21 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     }
 
     @Override
+    public int getOutputBufferSize()
+    {
+        return coreSession.getOutputBufferSize();
+    }
+
+    @Override
     public void setOutputBufferSize(int size)
     {
         coreSession.setOutputBufferSize(size);
+    }
+
+    @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return coreSession.getMaxBinaryMessageSize();
     }
 
     @Override
@@ -154,9 +202,21 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     }
 
     @Override
+    public long getMaxTextMessageSize()
+    {
+        return coreSession.getMaxTextMessageSize();
+    }
+
+    @Override
     public void setMaxTextMessageSize(long size)
     {
         coreSession.setMaxTextMessageSize(size);
+    }
+
+    @Override
+    public long getMaxFrameSize()
+    {
+        return coreSession.getMaxFrameSize();
     }
 
     @Override
@@ -166,21 +226,33 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     }
 
     @Override
+    public boolean isAutoFragment()
+    {
+        return coreSession.isAutoFragment();
+    }
+
+    @Override
     public void setAutoFragment(boolean autoFragment)
     {
         coreSession.setAutoFragment(autoFragment);
     }
 
     @Override
-    public String getProtocolVersion()
+    public int getMaxOutgoingFrames()
     {
-        return upgradeRequest.getProtocolVersion();
+        return coreSession.getMaxOutgoingFrames();
     }
 
     @Override
-    public JettyWebSocketRemoteEndpoint getRemote()
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
     {
-        return remoteEndpoint;
+        coreSession.setMaxOutgoingFrames(maxOutgoingFrames);
+    }
+
+    @Override
+    public String getProtocolVersion()
+    {
+        return upgradeRequest.getProtocolVersion();
     }
 
     @Override
@@ -202,13 +274,13 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     }
 
     @Override
-    public SocketAddress getLocalAddress()
+    public SocketAddress getLocalSocketAddress()
     {
         return coreSession.getLocalAddress();
     }
 
     @Override
-    public SocketAddress getRemoteAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
         return coreSession.getRemoteAddress();
     }
@@ -246,21 +318,20 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, upgradeRequest, coreSession, remoteEndpoint, frameHandler);
+        Dumpable.dumpObjects(out, indent, this, upgradeRequest, coreSession, frameHandler);
     }
 
     @Override
     public String dumpSelf()
     {
-        return String.format("%s@%x[behavior=%s,idleTimeout=%dms]",
+        return String.format("%s@%x[idleTimeout=%dms]",
             this.getClass().getSimpleName(), hashCode(),
-            getPolicy().getBehavior(),
             getIdleTimeout().toMillis());
     }
 
     @Override
     public String toString()
     {
-        return String.format("WebSocketSession[%s,to=%s,%s,%s]", getBehavior(), getIdleTimeout(), coreSession, frameHandler);
+        return String.format("WebSocketSession[to=%s,%s,%s]", getIdleTimeout(), coreSession, frameHandler);
     }
 }

@@ -35,7 +35,6 @@ public class EventSocket
     private static final Logger LOG = LoggerFactory.getLogger(EventSocket.class);
 
     public Session session;
-    private String behavior;
 
     public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
     public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
@@ -51,7 +50,6 @@ public class EventSocket
     public void onOpen(Session session)
     {
         this.session = session;
-        behavior = session.getPolicy().getBehavior().name();
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onOpen(): {}", this, session);
         openLatch.countDown();
@@ -96,6 +94,6 @@ public class EventSocket
     @Override
     public String toString()
     {
-        return String.format("[%s@%s]", behavior, Integer.toHexString(hashCode()));
+        return String.format("[%s@%x]", getClass().getSimpleName(), hashCode());
     }
 }

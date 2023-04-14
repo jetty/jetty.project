@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 
@@ -25,6 +26,6 @@ public class FastCloseEndpoint extends AbstractCloseEndpoint
     public void onWebSocketConnect(Session sess)
     {
         log.debug("onWebSocketConnect({})", sess);
-        sess.close(StatusCode.NORMAL, "FastCloseServer");
+        sess.close(StatusCode.NORMAL, "FastCloseServer", Callback.NOOP);
     }
 }

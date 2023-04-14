@@ -24,8 +24,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -116,10 +116,9 @@ public class FrameAnnotationTest
         {
             session = futSession.get(5, SECONDS);
 
-            RemoteEndpoint clientRemote = session.getRemote();
-            clientRemote.sendPartialString("hello", false);
-            clientRemote.sendPartialString(" ", false);
-            clientRemote.sendPartialString("world", true);
+            session.sendPartialText("hello", false, Callback.NOOP);
+            session.sendPartialText(" ", false, Callback.NOOP);
+            session.sendPartialText("world", true, Callback.NOOP);
 
             String event = serverEndpoint.frameEvents.poll(5, SECONDS);
             assertThat("Event", event, is("FRAME[TEXT,fin=false,payload=hello,len=5]"));

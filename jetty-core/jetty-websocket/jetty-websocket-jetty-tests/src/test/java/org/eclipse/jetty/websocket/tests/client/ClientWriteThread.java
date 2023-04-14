@@ -16,8 +16,6 @@ package org.eclipse.jetty.websocket.tests.client;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
 import org.slf4j.Logger;
@@ -61,11 +59,10 @@ public class ClientWriteThread extends Thread
             LOG.debug("Writing {} messages to {}", messageCount, session);
             LOG.debug("Artificial Slowness {} ms", slowness);
             FutureWriteCallback lastMessage = null;
-            RemoteEndpoint remote = session.getRemote();
             while (m.get() < messageCount)
             {
                 lastMessage = new FutureWriteCallback();
-                remote.sendString(message + "/" + m.get() + "/", lastMessage);
+                session.sendText(message + "/" + m.get() + "/", lastMessage);
 
                 m.incrementAndGet();
 
@@ -74,8 +71,6 @@ public class ClientWriteThread extends Thread
                     TimeUnit.MILLISECONDS.sleep(slowness);
                 }
             }
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
             // block on write of last message
             if (lastMessage != null)
                 lastMessage.get(2, TimeUnit.MINUTES); // block on write

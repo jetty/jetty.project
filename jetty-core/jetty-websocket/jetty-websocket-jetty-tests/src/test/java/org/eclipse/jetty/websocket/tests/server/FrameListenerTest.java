@@ -24,10 +24,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -112,10 +111,9 @@ public class FrameListenerTest
         {
             session = futSession.get(5, SECONDS);
 
-            RemoteEndpoint clientRemote = session.getRemote();
-            clientRemote.sendPartialString("hello", false);
-            clientRemote.sendPartialString(" ", false);
-            clientRemote.sendPartialString("world", true);
+            session.sendPartialText("hello", false, Callback.NOOP);
+            session.sendPartialText(" ", false, Callback.NOOP);
+            session.sendPartialText("world", true, Callback.NOOP);
 
             String event = serverEndpoint.frameEvents.poll(5, SECONDS);
             assertThat("Event", event, is("FRAME[TEXT,fin=false,payload=hello,len=5]"));
@@ -130,7 +128,7 @@ public class FrameListenerTest
         }
     }
 
-    public static class FrameEndpoint implements WebSocketFrameListener
+    public static class FrameEndpoint implements Session.Listener
     {
         public Session session;
         public CountDownLatch closeLatch = new CountDownLatch(1);
@@ -155,13 +153,14 @@ public class FrameListenerTest
         }
 
         @Override
-        public void onWebSocketFrame(Frame frame)
+        public void onWebSocketFrame(Frame frame, Callback callback)
         {
             frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
                 OpCode.name(frame.getOpCode()),
                 frame.isFin(),
                 BufferUtil.toUTF8String(frame.getPayload()),
                 frame.getPayloadLength()));
+            callback.succeed();
         }
     }
 }

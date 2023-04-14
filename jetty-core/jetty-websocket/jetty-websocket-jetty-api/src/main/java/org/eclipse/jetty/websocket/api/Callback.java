@@ -13,14 +13,17 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+
 /**
  * Callback for Write events.
  * <p>
  * NOTE: We don't expose org.eclipse.jetty.util.Callback here as that would complicate matters with the WebAppContext's classloader isolation.
  */
-public interface WriteCallback
+public interface Callback
 {
-    WriteCallback NOOP = new WriteCallback()
+    Callback NOOP = new Callback()
     {
     };
 
@@ -31,7 +34,7 @@ public interface WriteCallback
      *
      * @param x the reason for the write failure
      */
-    default void writeFailed(Throwable x)
+    default void fail(Throwable x)
     {
     }
 
@@ -40,23 +43,42 @@ public interface WriteCallback
      * Callback invoked when the write succeeds.
      * </p>
      *
-     * @see #writeFailed(Throwable)
+     * @see #fail(Throwable)
      */
-    default void writeSuccess()
+    default void succeed()
     {
     }
 
-    @Deprecated
-    class Adaptor implements WriteCallback
+    class Completable extends CompletableFuture<Void> implements Callback
     {
-        @Override
-        public void writeFailed(Throwable x)
+        public static Completable with(Consumer<Completable> consumer)
+        {
+            Completable completable = new Completable();
+            consumer.accept(completable);
+            return completable;
+        }
+
+        private Completable()
         {
         }
 
         @Override
-        public void writeSuccess()
+        public void succeed()
         {
+            complete(null);
+        }
+
+        @Override
+        public void fail(Throwable x)
+        {
+            completeExceptionally(x);
+        }
+
+        public Completable compose(Consumer<Completable> consumer)
+        {
+            Completable completable = new Completable();
+            thenAccept(ignored -> consumer.accept(completable));
+            return completable;
         }
     }
 }

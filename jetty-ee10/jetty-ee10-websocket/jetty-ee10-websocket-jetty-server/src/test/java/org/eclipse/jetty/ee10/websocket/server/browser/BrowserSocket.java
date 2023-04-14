@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.websocket.server.browser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -28,7 +29,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -43,13 +44,13 @@ public class BrowserSocket
 {
     private static class WriteMany implements Runnable
     {
-        private RemoteEndpoint remote;
+        private Session session;
         private int size;
         private int count;
 
-        public WriteMany(RemoteEndpoint remote, int size, int count)
+        public WriteMany(Session session, int size, int count)
         {
-            this.remote = remote;
+            this.session = session;
             this.size = size;
             this.count = count;
         }
@@ -71,7 +72,7 @@ public class BrowserSocket
                     randomText[i] = letters[rand.nextInt(lettersLen)];
                 }
                 msg = String.format("ManyThreads [%s]", String.valueOf(randomText));
-                remote.sendString(msg, null);
+                session.sendText(msg, null);
             }
         }
     }
@@ -186,15 +187,9 @@ public class BrowserSocket
                 }
                 case "ping":
                 {
-                    try
-                    {
-                        LOG.info("PING!");
-                        this.session.getRemote().sendPing(BufferUtil.toBuffer("ping from server"));
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.warn("Unable to send ping", e);
-                    }
+                    LOG.info("PING!");
+                    ByteBuffer b = BufferUtil.toBuffer("ping from server");
+                    this.session.sendPing(b, Callback.NOOP);
                     break;
                 }
                 case "many":
@@ -218,7 +213,7 @@ public class BrowserSocket
                     // Setup threads
                     for (int n = 0; n < threadCount; n++)
                     {
-                        threads[n] = new Thread(new WriteMany(session.getRemote(), size, count), "WriteMany[" + n + "]");
+                        threads[n] = new Thread(new WriteMany(session, size, count), "WriteMany[" + n + "]");
                     }
 
                     // Execute threads
@@ -289,7 +284,7 @@ public class BrowserSocket
         }
 
         // Async write
-        session.getRemote().sendString(message, null);
+        session.sendText(message, null);
     }
 
     private void writeMessage(String format, Object... args)

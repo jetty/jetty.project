@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -91,9 +92,9 @@ public class SuspendResumeTest
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);
 
-        clientSocket.session.getRemote().sendString("suspend");
-        clientSocket.session.getRemote().sendString("suspend");
-        clientSocket.session.getRemote().sendString("hello world");
+        clientSocket.session.sendText("suspend", Callback.NOOP);
+        clientSocket.session.sendText("suspend", Callback.NOOP);
+        clientSocket.session.sendText("hello world", Callback.NOOP);
 
         assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("suspend"));
         assertNull(serverSocket.textMessages.poll(1, TimeUnit.SECONDS));
@@ -126,18 +127,18 @@ public class SuspendResumeTest
 
         // verify connection by sending a message from server to client
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
-        serverSocket.session.getRemote().sendString("verification");
+        serverSocket.session.sendText("verification", Callback.NOOP);
         assertThat(clientSocket.textMessages.poll(5, TimeUnit.SECONDS), is("verification"));
 
         // suspend the client so that no read events occur
         SuspendToken suspendToken = clientSocket.session.suspend();
 
         // verify client can still send messages
-        clientSocket.session.getRemote().sendString("message-from-client");
+        clientSocket.session.sendText("message-from-client", Callback.NOOP);
         assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("message-from-client"));
 
         // the message is not received as it is suspended
-        serverSocket.session.getRemote().sendString("message-from-server");
+        serverSocket.session.sendText("message-from-server", Callback.NOOP);
         assertNull(clientSocket.textMessages.poll(2, TimeUnit.SECONDS));
 
         // client should receive message after it resumes
@@ -164,7 +165,7 @@ public class SuspendResumeTest
 
         // verify connection by sending a message from server to client
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
-        serverSocket.session.getRemote().sendString("verification");
+        serverSocket.session.sendText("verification", Callback.NOOP);
         assertThat(clientSocket.textMessages.poll(5, TimeUnit.SECONDS), is("verification"));
 
         // make sure both sides are closed

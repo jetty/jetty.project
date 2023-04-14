@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -26,6 +27,6 @@ public class AnnoMaxMessageEndpoint
     @OnWebSocketMessage
     public void onMessage(Session session, String msg) throws IOException
     {
-        session.getRemote().sendString(msg);
+        session.sendText(msg, Callback.NOOP);
     }
 }
