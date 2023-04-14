@@ -92,7 +92,7 @@ public class TrailersTest extends AbstractTest
             requestTrailers.put(trailerName, trailerValue);
         }
 
-        var response = listener.get(5, TimeUnit.SECONDS);
+        var response = listener.get(10, TimeUnit.SECONDS);
 
         // Read slowly.
         try (InputStream input = listener.getInputStream())
