@@ -101,7 +101,7 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
         Constraint expectedConstraint = new Constraint.Builder()
-            .authentication(Constraint.Authentication.REQUIRE)
+            .authentication(Constraint.Authentication.REQUIRE_ANY_ROLE)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
@@ -160,7 +160,7 @@ public class TestSecurityAnnotationConversions
         Constraint expectedConstraint = new Constraint.Builder()
             .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("tom", "dick", "harry")
-            .confidential(true)
+            .secure(true)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
@@ -191,7 +191,7 @@ public class TestSecurityAnnotationConversions
         Constraint expectedConstraint1 = new Constraint.Builder()
             .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("tom", "dick", "harry")
-            .confidential(true)
+            .secure(true)
             .build();
 
         //a Constraint for the PermitAll on the doGet method with a userdata
@@ -243,12 +243,12 @@ public class TestSecurityAnnotationConversions
         Constraint expectedConstraint1 = new Constraint.Builder()
             .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("tom", "dick", "harry")
-            .confidential(true).build();
+            .secure(true).build();
 
         //a Constraint for the Permit on the GET method with a userdata
         //constraint of DC_CONFIDENTIAL
         Constraint expectedConstraint2 = new Constraint.Builder()
-            .confidential(true)
+            .secure(true)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
@@ -294,7 +294,7 @@ public class TestSecurityAnnotationConversions
                         matched = true;
 
                         assertEquals(em.getConstraint().getAuthentication(), am.getConstraint().getAuthentication());
-                        assertEquals(em.getConstraint().isConfidential(), am.getConstraint().isConfidential());
+                        assertEquals(em.getConstraint().isSecure(), am.getConstraint().isSecure());
                         if (em.getMethodOmissions() == null)
                         {
                             assertNull(am.getMethodOmissions());

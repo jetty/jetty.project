@@ -80,7 +80,7 @@ public class CustomRequestLogTest
 
         Constraint constraint = new Constraint.Builder()
             .name("auth")
-            .authentication(Constraint.Authentication.REQUIRE).build();
+            .authentication(Constraint.Authentication.REQUIRE_ANY_ROLE).build();
 
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/secure/*");

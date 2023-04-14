@@ -81,15 +81,14 @@ public class SpecExampleConstraintTest
         _server.setHandler(_context);
         
         /*
-        
         <security-constraint>
         <web-resource-collection>
         <web-resource-name>precluded methods</web-resource-name>
         <url-pattern>/*</url-pattern>
         <url-pattern>/acme/wholesale/*</url-pattern>
         <url-pattern>/acme/retail/*</url-pattern>
-        <http-method-exception>GET</http-method-exception>
-        <http-method-exception>POST</http-method-exception>
+        <http-method-omission>GET</http-method-omission>
+        <http-method-omission>POST</http-method-omission>
         </web-resource-collection>
         <auth-constraint/>
         </security-constraint>
@@ -161,7 +160,7 @@ public class SpecExampleConstraintTest
             .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .name("wholesale 2")
             .roles("CONTRACTOR")
-            .confidential(true)
+            .secure(true)
             .build();
         ConstraintMapping mapping5 = new ConstraintMapping();
         mapping5.setPathSpec("/acme/wholesale/*");
@@ -173,19 +172,19 @@ public class SpecExampleConstraintTest
         mapping6.setConstraint(constraint2);
         
         /*
-<security-constraint>
-<web-resource-collection>
-<web-resource-name>retail</web-resource-name>
-<url-pattern>/acme/retail/*</url-pattern>
-<http-method>GET</http-method>
-<http-method>POST</http-method>
-</web-resource-collection>
-<auth-constraint>
-<role-name>CONTRACTOR</role-name>
-<role-name>HOMEOWNER</role-name>
-</auth-constraint>
-</security-constraint>
-*/
+          <security-constraint>
+           <web-resource-collection>
+            <web-resource-name>retail</web-resource-name>
+            <url-pattern>/acme/retail/*</url-pattern>
+            <http-method>GET</http-method>
+            <http-method>POST</http-method>
+           </web-resource-collection>
+           <auth-constraint>
+            <role-name>CONTRACTOR</role-name>
+            <role-name>HOMEOWNER</role-name>
+           </auth-constraint>
+          </security-constraint>
+         */
         Constraint constraint4 = new Constraint.Builder()
             .name("retail")
             .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
@@ -276,13 +275,13 @@ public class SpecExampleConstraintTest
 
         String response;
         /*
-          /star                 all methods except GET/POST forbidden
-          /acme/wholesale/star  all methods except GET/POST forbidden
-          /acme/retail/star     all methods except GET/POST forbidden
-          /acme/wholesale/star  GET must be in role CONTRACTOR or SALESCLERK
-          /acme/wholesale/star  POST must be in role CONTRACTOR and confidential transport
-          /acme/retail/star     GET must be in role CONTRACTOR or HOMEOWNER
-          /acme/retail/star     POST must be in role CONTRACTOR or HOMEOWNER
+          /*                 all methods except GET/POST forbidden
+          /acme/wholesale/*  all methods except GET/POST forbidden
+          /acme/retail/*     all methods except GET/POST forbidden
+          /acme/wholesale/*  GET must be in role CONTRACTOR or SALESCLERK
+          /acme/wholesale/*  POST must be in role CONTRACTOR and confidential transport
+          /acme/retail/*     GET must be in role CONTRACTOR or HOMEOWNER
+          /acme/retail/*     POST must be in role CONTRACTOR or HOMEOWNER
         */
 
         //a user in role HOMEOWNER is forbidden HEAD request
@@ -312,7 +311,6 @@ public class SpecExampleConstraintTest
         response = _connector.getResponse("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
             "Authorization: Basic " + encodedChris + "\r\n" +
             "\r\n");
-
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
         //a user in role CONTRACTOR can only do a post if confidential

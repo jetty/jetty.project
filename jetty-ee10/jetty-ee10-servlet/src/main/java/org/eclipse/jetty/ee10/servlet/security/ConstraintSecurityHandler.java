@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.servlet.HttpConstraintElement;
 import jakarta.servlet.HttpMethodConstraintElement;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.ee.security.ConstraintAware;
 import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.Constraint;
@@ -71,28 +74,35 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected Constraint getConstraint(String pathInContext, Request request)
     {
-        // TODO
-        return null;
-    }
+        MatchedResource<Map<String, Constraint>> resource = _constraintRoles.getMatched(pathInContext);
+        if (resource == null)
+            return null;
 
-    /**
-     * Create a security constraint
-     *
-     * @param name the name of the constraint
-     * @param authenticate true to authenticate
-     * @param roles list of roles
-     * @param dataConstraint the data constraint
-     * @return the constraint
-     */
-    public static Constraint createConstraint(String name, boolean authenticate, String[] roles, int dataConstraint)
-    {
-        Constraint.Builder constraint = new Constraint.Builder();
-        if (name != null)
-            constraint.name(name);
-        constraint.authentication(authenticate ? Constraint.Authentication.REQUIRE : Constraint.Authentication.REQUIRE_NONE);
-        constraint.roles(roles);
-        constraint.confidential(dataConstraint > 0);
-        return constraint.build();
+        Map<String, Constraint> mappings = resource.getResource();
+        if (mappings == null)
+            return null;
+
+        String httpMethod = request.getMethod();
+        Constraint constraint = mappings.get(httpMethod);
+        if (constraint == null)
+        {
+            //No specific http-method names matched
+            //Get info for constraint that matches all methods if it exists
+            constraint = mappings.get(ALL_METHODS);
+
+            //Get info for constraints that name method omissions where target method name is not omitted
+            //(ie matches because target method is not omitted, hence considered covered by the constraint)
+            for (Map.Entry<String, Constraint> entry : mappings.entrySet())
+            {
+                if (entry.getKey() != null && entry.getKey().endsWith(OMISSION_SUFFIX) && !entry.getKey().contains(httpMethod))
+                    constraint = combineServletConstraints(constraint, entry.getValue());
+            }
+
+            if (constraint == null && isDenyUncoveredHttpMethods())
+                constraint = Constraint.FORBIDDEN;
+        }
+
+        return constraint;
     }
 
     /**
@@ -144,7 +154,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
 
         //Equivalent to //<user-data-constraint><transport-guarantee>CONFIDENTIAL</transport-guarantee></user-data-constraint>
-        constraint.confidential(transport.equals((TransportGuarantee.CONFIDENTIAL)));
+        constraint.secure(transport.equals((TransportGuarantee.CONFIDENTIAL)));
 
         return constraint.build();
     }
@@ -394,6 +404,29 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         _constraintMappings.addAll(_durableConstraintMappings);
     }
 
+    protected Constraint combineServletConstraints(Constraint constraintA, Constraint constraintB)
+    {
+        // This method is almost identical to Constraint.combine, except that secure constraints
+        // are anded rather than or'd to meet the crazy servlet spec requirements.
+
+        if (constraintA == null)
+            return constraintB == null ? Constraint.NONE : constraintB;
+        if (constraintB == null)
+            return constraintA;
+
+        Set<String> roles = constraintA.getRoles();
+        if (roles == null)
+            roles = constraintB.getRoles();
+        else if (constraintB.getRoles() != null || constraintB.getRoles() != null)
+            roles = Stream.concat(roles.stream(), constraintB.getRoles().stream()).collect(Collectors.toSet());
+
+        return Constraint.from(
+            constraintA.isForbidden() || constraintB.isForbidden(),
+            constraintA.isSecure() && constraintB.isSecure(),
+            Constraint.Authentication.combine(constraintA.getAuthentication(), constraintB.getAuthentication()),
+            roles);
+    }
+
     /**
      * Create and combine the constraint with the existing processed
      * constraints.
@@ -423,12 +456,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             httpMethod = ALL_METHODS;
         Constraint constraint = mappings.get(httpMethod);
         if (constraint == null)
-            constraint = Constraint.combine(Constraint.NONE, allMethodsConstraint);
-        if (constraint.isForbidden())
+            constraint = allMethodsConstraint;
+        if (constraint != null && constraint.isForbidden())
             return;
 
         // add in info from the constraint
-        constraint = Constraint.combine(constraint, mapping.getConstraint());
+        constraint = combineServletConstraints(constraint, mapping.getConstraint());
 
         if (constraint.isForbidden())
         {
@@ -468,7 +501,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             sb.append(omissions[i]);
         }
         sb.append(OMISSION_SUFFIX);
-        mappings.put(sb.toString(), Constraint.combine(Constraint.NONE, mapping.getConstraint()));
+        mappings.put(sb.toString(), mapping.getConstraint());
     }
 
     @Override

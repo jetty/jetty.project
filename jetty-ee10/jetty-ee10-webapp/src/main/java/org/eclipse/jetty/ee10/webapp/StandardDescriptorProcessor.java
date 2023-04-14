@@ -1316,7 +1316,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                     case ConstraintSecurityHandler.ANY_ROLE ->
                     {
-                        scBase.authentication(Constraint.Authentication.REQUIRE);
+                        scBase.authentication(Constraint.Authentication.REQUIRE_ANY_ROLE);
                         roles = null;
                     }
                     default ->
@@ -1344,7 +1344,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             data = data.get("transport-guarantee");
             String guarantee = data.toString(false, true).toUpperCase(Locale.ENGLISH);
-            scBase.confidential(
+            scBase.secure(
                 switch (guarantee)
                 {
                     case "INTEGRAL", "CONFIDENTIAL" -> true;

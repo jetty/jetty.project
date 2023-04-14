@@ -246,7 +246,7 @@ public class FormAuthenticator extends LoginAuthenticator
     public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
     {
         if (isJSecurityCheck(pathInContext))
-            return Constraint.Authentication.REQUIRE;
+            return Constraint.Authentication.REQUIRE_ANY_ROLE;
         if (isLoginOrErrorPage(pathInContext))
             return Constraint.Authentication.REQUIRE_NONE;
         return existing;

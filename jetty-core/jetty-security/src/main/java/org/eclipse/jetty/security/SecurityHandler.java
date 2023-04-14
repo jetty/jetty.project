@@ -437,7 +437,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
 
         // Check data constraints
-        if (constraint.isConfidential() && !request.isSecure())
+        if (constraint.isSecure() && !request.isSecure())
         {
             redirectToSecure(request, response, callback);
             return true;
@@ -542,7 +542,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         return switch (constraint.getAuthentication())
         {
             case REQUIRE_NONE -> false;
-            case REQUIRE -> userIdentity == null || userIdentity.getUserPrincipal() == null;
+            case REQUIRE_ANY_ROLE -> userIdentity == null || userIdentity.getUserPrincipal() == null;
             case REQUIRE_KNOWN_ROLE ->
             {
                 if (userIdentity != null && userIdentity.getUserPrincipal() != null)
