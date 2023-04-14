@@ -51,7 +51,7 @@ public interface Environment extends Attributes
     }
 
     /**
-     * @return The case insensitvie name of the environment.
+     * @return The case-insensitive name of the environment.
      */
     String getName();
 
