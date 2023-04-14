@@ -400,7 +400,7 @@ public class Main
         // Show the version information and return
         if (args.isListClasspath())
         {
-            dumpClasspathWithVersions("Server", System.out, classpath);
+            dumpClasspathWithVersions("Jetty", System.out, classpath);
         }
 
         // Show configuration

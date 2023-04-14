@@ -269,8 +269,8 @@ public class StartArgs
     {
         // Java Details
         out.println();
-        out.println("Key System Properties:");
-        out.println("----------------------");
+        out.println("JVM Version & Properties:");
+        out.println("-------------------------");
         dumpSystemProperty(out, "java.home");
         dumpSystemProperty(out, "java.vm.vendor");
         dumpSystemProperty(out, "java.vm.version");
@@ -285,8 +285,8 @@ public class StartArgs
 
         // Jetty Server Environment
         out.println();
-        out.println("Jetty Version:");
-        out.println("--------------");
+        out.println("Jetty Version & Properties:");
+        out.println("---------------------------");
         StartEnvironment jettyEnvironment = getJettyEnvironment();
         jettyEnvironment.dumpProperty(out, JETTY_VERSION_KEY);
         jettyEnvironment.dumpProperty(out, JETTY_TAG_NAME_KEY);
@@ -569,10 +569,10 @@ public class StartArgs
                     .collect(Collectors.groupingBy(Files::isDirectory));
                 Set<Path> files = new HashSet<>(dirsAndFiles.get(false));
 
-                // FIXMW I'm not sure it's a good idea especially with multiple environment..
-                // ee9 may use jakarta.annotation 2.0.0
-                // but ee10 use jakarta.annotation 2.1.0
-                // and both having different module-info.
+                // FIXME I'm not sure it's a good idea especially with multiple environment..
+                //       ee9 may use jakarta.annotation 2.0.0
+                //       but ee10 use jakarta.annotation 2.1.0
+                //       and both having different module-info.
                 getEnvironments().stream().filter(environment -> !environment.getName().equals(jettyEnvironment.getName()))
                         .forEach(environment ->
                         {
@@ -590,7 +590,7 @@ public class StartArgs
                 });
 
 
-                if (files != null && !files.isEmpty())
+                if (!files.isEmpty())
                 {
                     cmd.addRawArg("--module-path");
                     String modules = files.stream()
@@ -1009,7 +1009,7 @@ public class StartArgs
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
         while (iter.hasPrevious())
         {
-            // Each source starts with server environment.
+            // Start with the Jetty environment.
             StartEnvironment environment = getJettyEnvironment();
 
             ConfigSource source = iter.previous();
