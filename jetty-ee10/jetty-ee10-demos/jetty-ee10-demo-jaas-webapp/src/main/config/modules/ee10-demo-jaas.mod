@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Demo Spec webapp
+Demo EE10 JAAS webapp
 
 [environment]
 ee10
@@ -13,7 +13,7 @@ webapp
 [depends]
 demo-jaas
 ee10-deploy
-ee10-jaas
+jaas
 jdbc
 ee10-jsp
 ee10-annotations
