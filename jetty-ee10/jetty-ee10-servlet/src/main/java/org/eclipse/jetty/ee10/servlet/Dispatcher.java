@@ -238,6 +238,9 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public HttpServletMapping getHttpServletMapping()
         {
+            if (_named != null)
+                return super.getHttpServletMapping();
+
             return _servletPathMapping;
         }
 
@@ -257,6 +260,12 @@ public class Dispatcher implements RequestDispatcher
         public String getRequestURI()
         {
             return _uri == null ? super.getRequestURI() : _uri.getPath();
+        }
+
+        @Override
+        public StringBuffer getRequestURL()
+        {
+            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
         }
 
         @Override

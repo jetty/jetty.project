@@ -73,6 +73,6 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
     @Override
     public String toString()
     {
-        return "%s@%x[r=%d,%s]".formatted(getClass().getSimpleName(), hashCode(), refCount.get(), BufferUtil.toDetailString(byteBuffer));
+        return "%s@%x[rc=%d,%s]".formatted(getClass().getSimpleName(), hashCode(), refCount.get(), BufferUtil.toDetailString(byteBuffer));
     }
 }

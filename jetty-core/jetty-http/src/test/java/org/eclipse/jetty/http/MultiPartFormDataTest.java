@@ -16,16 +16,22 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,11 +56,13 @@ public class MultiPartFormDataTest
     private static final AtomicInteger testCounter = new AtomicInteger();
 
     private Path _tmpDir;
+    private List<Content.Chunk> _allocatedChunks;
 
     @BeforeEach
     public void prepare()
     {
         _tmpDir = MavenTestingUtils.getTargetTestingPath(String.valueOf(testCounter.incrementAndGet()));
+        _allocatedChunks = new ArrayList<>();
     }
 
     @AfterEach
@@ -62,6 +70,33 @@ public class MultiPartFormDataTest
     {
         if (Files.exists(_tmpDir))
             FS.deleteDirectory(_tmpDir);
+        int leaks = 0;
+        for (Content.Chunk chunk : _allocatedChunks)
+        {
+            // Any release that does not return true is a leak.
+            if (!chunk.release())
+                leaks++;
+        }
+        assertThat("Leaked " + leaks + "/" + _allocatedChunks.size() + " chunk(s)", leaks, is(0));
+    }
+
+    Content.Chunk asChunk(String data, boolean last)
+    {
+        byte[] b = data.getBytes(StandardCharsets.UTF_8);
+        ByteBuffer buffer = BufferUtil.allocate(b.length);
+        BufferUtil.append(buffer, b);
+        Content.Chunk chunk = Content.Chunk.from(buffer, last);
+        _allocatedChunks.add(chunk);
+        return chunk;
+    }
+
+    Content.Chunk asChunk(ByteBuffer data, boolean last)
+    {
+        ByteBuffer buffer = BufferUtil.allocate(data.remaining());
+        BufferUtil.append(buffer, data);
+        Content.Chunk chunk = Content.Chunk.from(buffer, last);
+        _allocatedChunks.add(chunk);
+        return chunk;
     }
 
     @Test
@@ -81,10 +116,11 @@ public class MultiPartFormDataTest
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        formData.parse(asChunk(str, true));
 
         formData.handle((parts, failure) ->
         {
+            assertNull(parts);
             assertInstanceOf(BadMessageException.class, failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("bad last boundary"));
             return null;
@@ -110,7 +146,7 @@ public class MultiPartFormDataTest
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        formData.parse(asChunk(str, true));
 
         formData.whenComplete((parts, failure) ->
         {
@@ -118,6 +154,7 @@ public class MultiPartFormDataTest
             assertNull(failure);
             assertNotNull(parts);
             assertEquals(0, parts.size());
+            parts.close();
         }).get(5, TimeUnit.SECONDS);
     }
 
@@ -135,7 +172,7 @@ public class MultiPartFormDataTest
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        formData.parse(asChunk(str, true));
 
         formData.whenComplete((parts, failure) ->
         {
@@ -143,6 +180,7 @@ public class MultiPartFormDataTest
             assertNull(failure);
             assertNotNull(parts);
             assertEquals(0, parts.size());
+            parts.close();
         }).get(5, TimeUnit.SECONDS);
     }
 
@@ -182,34 +220,36 @@ public class MultiPartFormDataTest
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        formData.parse(asChunk(str, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-        assertThat(parts.size(), is(4));
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(4));
 
-        MultiPart.Part fileName = parts.getFirst("fileName");
-        assertThat(fileName, notNullValue());
-        Content.Source partContent = fileName.getContentSource();
-        assertThat(partContent.getLength(), is(3L));
-        assertThat(Content.Source.asString(partContent), is("abc"));
+            MultiPart.Part fileName = parts.getFirst("fileName");
+            assertThat(fileName, notNullValue());
+            Content.Source partContent = fileName.getContentSource();
+            assertThat(partContent.getLength(), is(3L));
+            assertThat(Content.Source.asString(partContent), is("abc"));
 
-        MultiPart.Part desc = parts.getFirst("desc");
-        assertThat(desc, notNullValue());
-        partContent = desc.getContentSource();
-        assertThat(partContent.getLength(), is(3L));
-        assertThat(Content.Source.asString(partContent), is("123"));
+            MultiPart.Part desc = parts.getFirst("desc");
+            assertThat(desc, notNullValue());
+            partContent = desc.getContentSource();
+            assertThat(partContent.getLength(), is(3L));
+            assertThat(Content.Source.asString(partContent), is("123"));
 
-        MultiPart.Part title = parts.getFirst("title");
-        assertThat(title, notNullValue());
-        partContent = title.getContentSource();
-        assertThat(partContent.getLength(), is(3L));
-        assertThat(Content.Source.asString(partContent), is("ttt"));
+            MultiPart.Part title = parts.getFirst("title");
+            assertThat(title, notNullValue());
+            partContent = title.getContentSource();
+            assertThat(partContent.getLength(), is(3L));
+            assertThat(Content.Source.asString(partContent), is("ttt"));
 
-        MultiPart.Part datafile = parts.getFirst("datafile5239138112980980385.txt");
-        assertThat(datafile, notNullValue());
-        partContent = datafile.getContentSource();
-        assertThat(partContent.getLength(), is(3L));
-        assertThat(Content.Source.asString(partContent), is("000"));
+            MultiPart.Part datafile = parts.getFirst("datafile5239138112980980385.txt");
+            assertThat(datafile, notNullValue());
+            partContent = datafile.getContentSource();
+            assertThat(partContent.getLength(), is(3L));
+            assertThat(Content.Source.asString(partContent), is("000"));
+        }
     }
 
     @Test
@@ -220,6 +260,7 @@ public class MultiPartFormDataTest
 
         formData.handle((parts, failure) ->
         {
+            assertNull(parts);
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
             return null;
@@ -231,10 +272,11 @@ public class MultiPartFormDataTest
     {
         MultiPartFormData formData = new MultiPartFormData("boundary");
         String body = "              \n\n\n\r\n\r\n\r\n\r\n";
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
         formData.handle((parts, failure) ->
         {
+            assertNull(parts);
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
             return null;
@@ -268,19 +310,20 @@ public class MultiPartFormDataTest
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-
-        assertThat(parts.size(), is(2));
-        MultiPart.Part part1 = parts.getFirst("field1");
-        assertThat(part1, notNullValue());
-        Content.Source partContent = part1.getContentSource();
-        assertThat(Content.Source.asString(partContent), is("Joe Blow"));
-        MultiPart.Part part2 = parts.getFirst("stuff");
-        assertThat(part2, notNullValue());
-        partContent = part2.getContentSource();
-        assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(2));
+            MultiPart.Part part1 = parts.getFirst("field1");
+            assertThat(part1, notNullValue());
+            Content.Source partContent = part1.getContentSource();
+            assertThat(Content.Source.asString(partContent), is("Joe Blow"));
+            MultiPart.Part part2 = parts.getFirst("stuff");
+            assertThat(part2, notNullValue());
+            partContent = part2.getContentSource();
+            assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
+        }
     }
 
     @Test
@@ -304,16 +347,17 @@ public class MultiPartFormDataTest
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-
-        // The first boundary must be on a new line, so the first "part" is not recognized as such.
-        assertThat(parts.size(), is(1));
-        MultiPart.Part part2 = parts.getFirst("stuff");
-        assertThat(part2, notNullValue());
-        Content.Source partContent = part2.getContentSource();
-        assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            // The first boundary must be on a new line, so the first "part" is not recognized as such.
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part2 = parts.getFirst("stuff");
+            assertThat(part2, notNullValue());
+            Content.Source partContent = part2.getContentSource();
+            assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
+        }
     }
 
     @Test
@@ -329,18 +373,20 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-        assertThat(parts.size(), is(1));
-        MultiPart.Part part = parts.get(0);
-        assertEquals("file", part.getName());
-        assertEquals("file.txt", part.getFileName());
-        // Since the default max memory size is 0, the file is always saved on disk.
-        assertThat(part, instanceOf(MultiPart.PathPart.class));
-        MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
-        assertTrue(Files.exists(pathPart.getPath()));
-        assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Content.Source.asString(part.getContentSource()));
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part = parts.get(0);
+            assertEquals("file", part.getName());
+            assertEquals("file.txt", part.getFileName());
+            // Since the default max memory size is 0, the file is always saved on disk.
+            assertThat(part, instanceOf(MultiPart.PathPart.class));
+            MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
+            assertTrue(Files.exists(pathPart.getPath()));
+            assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Content.Source.asString(part.getContentSource()));
+        }
     }
 
     @Test
@@ -358,10 +404,11 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
         formData.handle((parts, failure) ->
         {
+            assertNull(parts);
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("max length exceeded"));
             return null;
@@ -383,10 +430,11 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
         formData.handle((parts, failure) ->
         {
+            assertNull(parts);
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("max file size exceeded"));
             return null;
@@ -414,21 +462,23 @@ public class MultiPartFormDataTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-        assertNotNull(parts);
-        assertEquals(2, parts.size());
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(parts);
+            assertEquals(2, parts.size());
 
-        MultiPart.Part part1 = parts.get(0);
-        assertThat(part1, instanceOf(MultiPart.ChunksPart.class));
-        assertEquals(chunk, Content.Source.asString(part1.getContentSource()));
+            MultiPart.Part part1 = parts.get(0);
+            assertThat(part1, instanceOf(MultiPart.ChunksPart.class));
+            assertEquals(chunk, Content.Source.asString(part1.getContentSource()));
 
-        MultiPart.Part part2 = parts.get(1);
-        assertThat(part2, instanceOf(MultiPart.PathPart.class));
-        MultiPart.PathPart pathPart2 = (MultiPart.PathPart)part2;
-        assertTrue(Files.exists(pathPart2.getPath()));
-        assertEquals(chunk.repeat(4), Content.Source.asString(part2.getContentSource()));
+            MultiPart.Part part2 = parts.get(1);
+            assertThat(part2, instanceOf(MultiPart.PathPart.class));
+            MultiPart.PathPart pathPart2 = (MultiPart.PathPart)part2;
+            assertTrue(Files.exists(pathPart2.getPath()));
+            assertEquals(chunk.repeat(4), Content.Source.asString(part2.getContentSource()));
+        }
     }
 
     @Test
@@ -452,27 +502,29 @@ public class MultiPartFormDataTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-        assertNotNull(parts);
-        assertEquals(2, parts.size());
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(parts);
+            assertEquals(2, parts.size());
 
-        MultiPart.Part part1 = parts.get(0);
-        assertThat(part1, instanceOf(MultiPart.ChunksPart.class));
-        Path newPath1 = _tmpDir.resolve("file1.2.txt");
-        part1.writeTo(newPath1);
-        assertTrue(Files.exists(newPath1));
+            MultiPart.Part part1 = parts.get(0);
+            assertThat(part1, instanceOf(MultiPart.ChunksPart.class));
+            Path newPath1 = _tmpDir.resolve("file1.2.txt");
+            part1.writeTo(newPath1);
+            assertTrue(Files.exists(newPath1));
 
-        MultiPart.Part part2 = parts.get(1);
-        assertThat(part2, instanceOf(MultiPart.PathPart.class));
-        MultiPart.PathPart pathPart2 = (MultiPart.PathPart)part2;
-        assertTrue(Files.exists(pathPart2.getPath()));
-        // Create the file in a different directory.
-        Path newPath2 = Files.createTempFile("file2.2", ".txt");
-        part2.writeTo(newPath2);
-        assertTrue(Files.exists(newPath2));
-        Files.delete(newPath2);
+            MultiPart.Part part2 = parts.get(1);
+            assertThat(part2, instanceOf(MultiPart.PathPart.class));
+            MultiPart.PathPart pathPart2 = (MultiPart.PathPart)part2;
+            assertTrue(Files.exists(pathPart2.getPath()));
+            // Create the file in a different directory.
+            Path newPath2 = Files.createTempFile("file2.2", ".txt");
+            part2.writeTo(newPath2);
+            assertTrue(Files.exists(newPath2));
+            Files.delete(newPath2);
+        }
     }
 
     @Test
@@ -489,18 +541,21 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-        assertNotNull(parts);
-        assertEquals(1, parts.size());
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(parts);
+            assertEquals(1, parts.size());
 
-        MultiPart.Part part = parts.get(0);
-        assertThat(part, instanceOf(MultiPart.PathPart.class));
-        MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
-        assertTrue(Files.exists(pathPart.getPath()));
-        pathPart.delete();
-        assertFalse(Files.exists(pathPart.getPath()));
+            MultiPart.Part part = parts.get(0);
+            assertThat(part, instanceOf(MultiPart.PathPart.class));
+            MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
+            Path path = pathPart.getPath();
+            assertTrue(Files.exists(path));
+            pathPart.delete();
+            assertFalse(Files.exists(path));
+        }
     }
 
     @Test
@@ -522,18 +577,18 @@ public class MultiPartFormDataTest
             --AaB03x--\r
             """;
         // Parse only part of the content.
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), false));
-        assertEquals(1, formData.getParts().size());
+        formData.parse(asChunk(body, false));
+        assertEquals(1, formData.getPartsSize());
 
         // Abort MultiPartFormData.
         formData.completeExceptionally(new IOException());
 
         // Parse the rest of the content.
-        formData.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
+        formData.parse(asChunk(terminator, true));
 
         // Try to get the parts, it should fail.
         assertThrows(ExecutionException.class, () -> formData.get(5, TimeUnit.SECONDS));
-        assertEquals(0, formData.getParts().size());
+        assertEquals(0, formData.getPartsSize());
     }
 
     @Test
@@ -551,10 +606,11 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
         formData.handle((parts, failure) ->
         {
+            assertNull(parts);
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("headers max length exceeded: 32"));
             return null;
@@ -591,24 +647,25 @@ public class MultiPartFormDataTest
             \r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(body1), false));
-        formData.parse(Content.Chunk.from(isoCedilla, false));
-        formData.parse(Content.Chunk.from(UTF_8.encode(body2), false));
-        formData.parse(Content.Chunk.from(utfCedilla, false));
-        formData.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
+        formData.parse(asChunk(body1, false));
+        formData.parse(asChunk(isoCedilla, false));
+        formData.parse(asChunk(body2, false));
+        formData.parse(asChunk(utfCedilla, false));
+        formData.parse(asChunk(terminator, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            Charset defaultCharset = formData.getDefaultCharset();
+            assertEquals(ISO_8859_1, defaultCharset);
 
-        Charset defaultCharset = formData.getDefaultCharset();
-        assertEquals(ISO_8859_1, defaultCharset);
+            MultiPart.Part iso = parts.getFirst("iso");
+            String cedilla = iso.getContentAsString(defaultCharset);
+            assertEquals("ç", cedilla);
 
-        MultiPart.Part iso = parts.getFirst("iso");
-        String cedilla = iso.getContentAsString(defaultCharset);
-        assertEquals("ç", cedilla);
-
-        MultiPart.Part utf = parts.getFirst("utf");
-        cedilla = utf.getContentAsString(defaultCharset);
-        assertEquals("ç", cedilla);
+            MultiPart.Part utf = parts.getFirst("utf");
+            cedilla = utf.getContentAsString(defaultCharset);
+            assertEquals("ç", cedilla);
+        }
     }
 
     @Test
@@ -626,13 +683,14 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(contents), true));
+        formData.parse(asChunk(contents, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-
-        assertThat(parts.size(), is(1));
-        MultiPart.Part part = parts.get(0);
-        assertThat(part.getFileName(), is("Taken on Aug 22 \\ 2012.jpg"));
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part = parts.get(0);
+            assertThat(part.getFileName(), is("Taken on Aug 22 \\ 2012.jpg"));
+        }
     }
 
     @Test
@@ -650,13 +708,14 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(contents), true));
+        formData.parse(asChunk(contents, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-
-        assertThat(parts.size(), is(1));
-        MultiPart.Part part = parts.get(0);
-        assertThat(part.getFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part = parts.get(0);
+            assertThat(part.getFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        }
     }
 
     @Test
@@ -674,13 +733,14 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(contents), true));
+        formData.parse(asChunk(contents, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
-
-        assertThat(parts.size(), is(1));
-        MultiPart.Part part = parts.get(0);
-        assertThat(part.getFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part = parts.get(0);
+            assertThat(part.getFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        }
     }
 
     @Test
@@ -698,16 +758,17 @@ public class MultiPartFormDataTest
             sssaaa\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(asChunk(body, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part = parts.get(0);
+            assertThat(part, instanceOf(MultiPart.PathPart.class));
 
-        assertThat(parts.size(), is(1));
-        MultiPart.Part part = parts.get(0);
-        assertThat(part, instanceOf(MultiPart.PathPart.class));
-
-        MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
-        assertTrue(Files.exists(pathPart.getPath()));
+            MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
+            assertTrue(Files.exists(pathPart.getPath()));
+        }
     }
 
     @Test
@@ -729,22 +790,23 @@ public class MultiPartFormDataTest
             AAAAA\r
             --AaB03x--\r
             """;
-        formData.parse(Content.Chunk.from(UTF_8.encode(sameNames), true));
+        formData.parse(asChunk(sameNames, true));
 
-        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
+        try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
+        {
+            assertEquals(2, parts.size());
 
-        assertEquals(2, parts.size());
+            List<MultiPart.Part> partsList = parts.getAll("stuff");
 
-        List<MultiPart.Part> partsList = parts.getAll("stuff");
+            assertEquals(2, partsList.size());
 
-        assertEquals(2, partsList.size());
+            MultiPart.Part part1 = partsList.get(0);
+            assertEquals("stuff1.txt", part1.getFileName());
+            assertEquals("00000", part1.getContentAsString(formData.getDefaultCharset()));
 
-        MultiPart.Part part1 = partsList.get(0);
-        assertEquals("stuff1.txt", part1.getFileName());
-        assertEquals("00000", part1.getContentAsString(formData.getDefaultCharset()));
-
-        MultiPart.Part part2 = partsList.get(1);
-        assertEquals("stuff2.txt", part2.getFileName());
-        assertEquals("AAAAA", part2.getContentAsString(formData.getDefaultCharset()));
+            MultiPart.Part part2 = partsList.get(1);
+            assertEquals("stuff2.txt", part2.getFileName());
+            assertEquals("AAAAA", part2.getContentAsString(formData.getDefaultCharset()));
+        }
     }
 }
