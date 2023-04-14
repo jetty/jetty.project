@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 
 import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
-import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;

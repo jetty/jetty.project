@@ -20,11 +20,11 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.security.Constraint;
@@ -119,7 +119,8 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      */
     protected Constraint makeConstraint(Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
-        return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
+        // TODO return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
+        return null;
     }
 
     /**

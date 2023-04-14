@@ -22,15 +22,17 @@ import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServlet;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.security.Constraint;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -98,9 +100,9 @@ public class TestSecurityAnnotationConversions
 
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
-        Constraint expectedConstraint = new Constraint();
-        expectedConstraint.setAuthenticate(true);
-        expectedConstraint.setDataConstraint(Constraint.DC_NONE);
+        Constraint expectedConstraint = new Constraint.Builder()
+            .authentication(Constraint.Authentication.REQUIRE)
+            .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
 
@@ -155,10 +157,11 @@ public class TestSecurityAnnotationConversions
 
         //set up the expected outcomes:compareResults
         //1 ConstraintMapping per ServletMapping
-        Constraint expectedConstraint = new Constraint();
-        expectedConstraint.setAuthenticate(true);
-        expectedConstraint.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint = new Constraint.Builder()
+            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
+            .roles("tom", "dick", "harry")
+            .confidential(true)
+            .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
         expectedMappings[0] = new ConstraintMapping();
@@ -185,15 +188,15 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
-        Constraint expectedConstraint1 = new Constraint();
-        expectedConstraint1.setAuthenticate(true);
-        expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint1.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint1 = new Constraint.Builder()
+            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
+            .roles("tom", "dick", "harry")
+            .confidential(true)
+            .build();
 
         //a Constraint for the PermitAll on the doGet method with a userdata
         //constraint of DC_CONFIDENTIAL inherited from the class
-        Constraint expectedConstraint2 = new Constraint();
-        expectedConstraint2.setDataConstraint(Constraint.DC_NONE);
+        Constraint expectedConstraint2 = Constraint.NONE;
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
@@ -237,15 +240,16 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
-        Constraint expectedConstraint1 = new Constraint();
-        expectedConstraint1.setAuthenticate(true);
-        expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint1.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint1 = new Constraint.Builder()
+            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
+            .roles("tom", "dick", "harry")
+            .confidential(true).build();
 
         //a Constraint for the Permit on the GET method with a userdata
         //constraint of DC_CONFIDENTIAL
-        Constraint expectedConstraint2 = new Constraint();
-        expectedConstraint2.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint2 = new Constraint.Builder()
+            .confidential(true)
+            .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
@@ -289,8 +293,8 @@ public class TestSecurityAnnotationConversions
                     {
                         matched = true;
 
-                        assertEquals(em.getConstraint().getAuthenticate(), am.getConstraint().getAuthenticate());
-                        assertEquals(em.getConstraint().getDataConstraint(), am.getConstraint().getDataConstraint());
+                        assertEquals(em.getConstraint().getAuthentication(), am.getConstraint().getAuthentication());
+                        assertEquals(em.getConstraint().isConfidential(), am.getConstraint().isConfidential());
                         if (em.getMethodOmissions() == null)
                         {
                             assertNull(am.getMethodOmissions());
@@ -306,7 +310,7 @@ public class TestSecurityAnnotationConversions
                         }
                         else
                         {
-                            assertTrue(Arrays.equals(em.getConstraint().getRoles(), am.getConstraint().getRoles()));
+                            assertThat(am.getConstraint().getRoles(), Matchers.contains(em.getConstraint().getRoles()));
                         }
                     }
                 }

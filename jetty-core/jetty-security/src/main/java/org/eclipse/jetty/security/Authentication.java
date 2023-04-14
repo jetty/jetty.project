@@ -215,6 +215,12 @@ public interface Authentication
             return "FAILURE";
         }
     };
+
+    /**
+     * Authentication success sent.
+     * <p>
+     * This convenience instance is for when an authentication success has been sent.
+     */
     Authentication SEND_SUCCESS = new ResponseSent()
     {
         @Override

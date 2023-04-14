@@ -55,8 +55,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
-import org.eclipse.jetty.ee10.servlet.security.Authentication;
-import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -70,6 +68,9 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
@@ -107,7 +108,6 @@ public class ServletApiRequest implements HttpServletRequest
     private Fields _contentParameters;
     private Fields _parameters;
     private Fields _queryParameters;
-    private Authentication _authentication;
     private String _method;
     private ServletMultiPartFormData.Parts _parts;
     private boolean _asyncSupported = true;
@@ -129,14 +129,24 @@ public class ServletApiRequest implements HttpServletRequest
         return _contentParameters;
     }
 
-    public void setAuthentication(Authentication authentication)
-    {
-        _authentication = authentication;
-    }
-
     public Authentication getAuthentication()
     {
-        return _authentication;
+        return Authentication.getAuthentication(getServletContextRequest());
+    }
+
+    private Authentication getUndeferredAuthentication()
+    {
+        Authentication authentication = getAuthentication();
+        if (authentication instanceof DeferredAuthentication deferredAuthentication)
+        {
+            Authentication undeferred = deferredAuthentication.authenticate(getServletContextRequest());
+            if (undeferred != null && undeferred != authentication)
+            {
+                authentication = undeferred;
+                Authentication.setAuthentication(getServletContextRequest(), authentication);
+            }
+        }
+        return authentication;
     }
 
     @Override
@@ -215,11 +225,9 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getAuthType()
     {
-        if (_authentication instanceof Authentication.Deferred)
-            setAuthentication(((Authentication.Deferred)_authentication).authenticate(_request));
-
-        if (_authentication instanceof Authentication.User)
-            return ((Authentication.User)_authentication).getAuthMethod();
+        Authentication authentication = getUndeferredAuthentication();
+        if (authentication instanceof Authentication.User userAuthentication)
+            return userAuthentication.getAuthMethod();
         return null;
     }
 
@@ -319,23 +327,21 @@ public class ServletApiRequest implements HttpServletRequest
     {
         //obtain any substituted role name from the destination servlet
         String linkedRole = _request._mappedServlet.getServletHolder().getUserRoleLink(role);
-        if (_authentication instanceof Authentication.Deferred)
-            setAuthentication(((Authentication.Deferred)_authentication).authenticate(_request));
+        Authentication authentication = getUndeferredAuthentication();
 
-        if (_authentication instanceof Authentication.User)
-            return ((Authentication.User)_authentication).isUserInRole(linkedRole);
+        if (authentication instanceof Authentication.User userAuthentication)
+            return userAuthentication.isUserInRole(linkedRole);
         return false;
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        if (_authentication instanceof Authentication.Deferred)
-            setAuthentication(((Authentication.Deferred)_authentication).authenticate(_request));
+        Authentication authentication = getUndeferredAuthentication();
 
-        if (_authentication instanceof Authentication.User)
+        if (authentication instanceof Authentication.User userAuthentication)
         {
-            UserIdentity user = ((Authentication.User)_authentication).getUserIdentity();
+            UserIdentity user = userAuthentication.getUserIdentity();
             return user.getUserPrincipal();
         }
 
@@ -432,18 +438,14 @@ public class ServletApiRequest implements HttpServletRequest
             return true;
 
         //do the authentication
-        if (_authentication instanceof Authentication.Deferred)
-        {
-            setAuthentication(((Authentication.Deferred)_authentication)
-                .authenticate(_request, _request.getResponse(), getServletContextRequest().getServletChannel().getCallback()));
-        }
+        Authentication authentication = getUndeferredAuthentication();
 
         //if the authentication did not succeed
-        if (_authentication instanceof Authentication.Deferred)
+        if (authentication instanceof DeferredAuthentication)
             response.sendError(HttpStatus.UNAUTHORIZED_401);
 
         //if the authentication is incomplete, return false
-        if (!(_authentication instanceof Authentication.ResponseSent))
+        if (!(authentication instanceof Authentication.ResponseSent))
             return false;
 
         //TODO: this should only be returned IFF the authenticator has NOT set the response,
@@ -455,25 +457,25 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public void login(String username, String password) throws ServletException
     {
-        if (_authentication instanceof Authentication.LoginAuthentication)
+        try
         {
-            Authentication auth = ((Authentication.LoginAuthentication)_authentication).login(username, password, _request);
-            if (auth == null)
+            Authentication.User userAuthentication = Authentication.login(
+                username, password, getServletContextRequest(), getServletContextRequest().getResponse());
+
+            if (userAuthentication == null)
                 throw new Authentication.Failed("Authentication failed for username '" + username + "'");
-            else
-                _authentication = auth;
         }
-        else
+        catch (Throwable t)
         {
-            throw new Authentication.Failed("Authenticated failed for username '" + username + "'. Already authenticated as " + _authentication);
+            throw new ServletException(t.getMessage(), t);
         }
     }
 
     @Override
     public void logout() throws ServletException
     {
-        if (_authentication instanceof Authentication.LogoutAuthentication)
-            _authentication = ((Authentication.LogoutAuthentication)_authentication).logout(_request);
+        if (!Authentication.logout(getServletContextRequest(), getServletContextRequest().getResponse()))
+            throw new ServletException("logout failed");
     }
 
     @Override
@@ -646,23 +648,16 @@ public class ServletApiRequest implements HttpServletRequest
         if (_async != null)
         {
             // This switch works by allowing the attribute to get underneath any dispatch wrapper.
-            switch (name)
+            return switch (name)
             {
-                case AsyncContext.ASYNC_REQUEST_URI:
-                    return getRequestURI();
-                case AsyncContext.ASYNC_CONTEXT_PATH:
-                    return getContextPath();
-                case AsyncContext.ASYNC_SERVLET_PATH:
-                    return getServletPath();
-                case AsyncContext.ASYNC_PATH_INFO:
-                    return getPathInfo();
-                case AsyncContext.ASYNC_QUERY_STRING:
-                    return getQueryString();
-                case AsyncContext.ASYNC_MAPPING:
-                    return getHttpServletMapping();
-                default:
-                    break;
-            }
+                case AsyncContext.ASYNC_REQUEST_URI -> getRequestURI();
+                case AsyncContext.ASYNC_CONTEXT_PATH -> getContextPath();
+                case AsyncContext.ASYNC_SERVLET_PATH -> getServletPath();
+                case AsyncContext.ASYNC_PATH_INFO -> getPathInfo();
+                case AsyncContext.ASYNC_QUERY_STRING -> getQueryString();
+                case AsyncContext.ASYNC_MAPPING -> getHttpServletMapping();
+                default -> _request.getAttribute(name);
+            };
         }
 
         return _request.getAttribute(name);

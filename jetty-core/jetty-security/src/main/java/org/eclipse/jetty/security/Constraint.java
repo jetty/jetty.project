@@ -90,7 +90,7 @@ public interface Constraint
         public Builder()
         {}
 
-        Builder(Constraint constraint)
+        public Builder(Constraint constraint)
         {
             _forbidden = constraint.isForbidden();
             _confidential = constraint.isConfidential();

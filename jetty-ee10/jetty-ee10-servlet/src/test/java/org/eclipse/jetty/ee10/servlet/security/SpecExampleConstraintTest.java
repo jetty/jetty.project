@@ -23,13 +23,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,7 @@ public class SpecExampleConstraintTest
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
-        loginService.putUser("fred", new Password("password"), IdentityService.NO_ROLES);
+        loginService.putUser("fred", new Password("password"), new String[0]);
         loginService.putUser("harry", new Password("password"), new String[]{"HOMEOWNER"});
         loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
@@ -95,9 +95,10 @@ public class SpecExampleConstraintTest
         </security-constraint>
         */
 
-        Constraint constraint0 = new Constraint();
-        constraint0.setAuthenticate(true);
-        constraint0.setName("precluded methods");
+        Constraint constraint0 = new Constraint.Builder()
+            .authentication(Constraint.Authentication.REQUIRE)
+            .name("precluded methods")
+            .build();
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/*");
         mapping0.setConstraint(constraint0);
@@ -114,7 +115,6 @@ public class SpecExampleConstraintTest
         mapping2.setMethodOmissions(new String[]{"GET", "POST"});
         
         /*
-        
         <security-constraint>
         <web-resource-collection>
         <web-resource-name>wholesale</web-resource-name>
@@ -127,10 +127,11 @@ public class SpecExampleConstraintTest
         </auth-constraint>
         </security-constraint>
         */
-        Constraint constraint1 = new Constraint();
-        constraint1.setAuthenticate(true);
-        constraint1.setName("wholesale");
-        constraint1.setRoles(new String[]{"SALESCLERK"});
+        Constraint constraint1 = new Constraint.Builder()
+            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
+            .name("wholesale")
+            .roles("SALESCLEARK")
+            .build();
         ConstraintMapping mapping3 = new ConstraintMapping();
         mapping3.setPathSpec("/acme/wholesale/*");
         mapping3.setConstraint(constraint1);
@@ -156,11 +157,12 @@ public class SpecExampleConstraintTest
           </user-data-constraint>
         </security-constraint>
          */
-        Constraint constraint2 = new Constraint();
-        constraint2.setAuthenticate(true);
-        constraint2.setName("wholesale 2");
-        constraint2.setRoles(new String[]{"CONTRACTOR"});
-        constraint2.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint constraint2 = new Constraint.Builder()
+            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
+            .name("wholesale 2")
+            .roles("CONTRACTOR")
+            .confidential(true)
+            .build();
         ConstraintMapping mapping5 = new ConstraintMapping();
         mapping5.setPathSpec("/acme/wholesale/*");
         mapping5.setMethod("GET");
@@ -184,10 +186,11 @@ public class SpecExampleConstraintTest
 </auth-constraint>
 </security-constraint>
 */
-        Constraint constraint4 = new Constraint();
-        constraint4.setName("retail");
-        constraint4.setAuthenticate(true);
-        constraint4.setRoles(new String[]{"CONTRACTOR", "HOMEOWNER"});
+        Constraint constraint4 = new Constraint.Builder()
+            .name("retail")
+            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
+            .roles("CONTRACTOR", "HOMEOWNER")
+            .build();
         ConstraintMapping mapping7 = new ConstraintMapping();
         mapping7.setPathSpec("/acme/retail/*");
         mapping7.setMethod("GET");
@@ -202,11 +205,9 @@ public class SpecExampleConstraintTest
         knownRoles.add("HOMEOWNER");
         knownRoles.add("SALESCLERK");
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0, mapping1, mapping2, mapping3, mapping4, mapping5,
-                mapping6, mapping7, mapping8
-            }), knownRoles);
+        _security.setConstraintMappings(
+            Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6, mapping7, mapping8),
+            knownRoles);
     }
 
     @AfterEach

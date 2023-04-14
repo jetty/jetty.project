@@ -20,9 +20,7 @@ import java.util.Arrays;
  * Constraint
  *
  * Describe an auth and/or data constraint.
- * TODO remove or move to EE9
  */
-@Deprecated
 public class Constraint implements Cloneable, Serializable
 {
     public static final String __BASIC_AUTH = "BASIC";

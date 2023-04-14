@@ -27,10 +27,10 @@ import jakarta.security.auth.message.callback.PrivateKeyCallback;
 import jakarta.security.auth.message.callback.SecretKeyCallback;
 import jakarta.security.auth.message.callback.TrustStoreCallback;
 import org.eclipse.jetty.ee10.security.jaspi.callback.CredentialValidationCallback;
-import org.eclipse.jetty.ee10.servlet.security.LoginService;
-import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginCallback;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginCallbackImpl;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.UserIdentity;
 
 /**
  * This {@link CallbackHandler} will bridge {@link Callback}s to handle to the given to the Jetty {@link LoginService}.

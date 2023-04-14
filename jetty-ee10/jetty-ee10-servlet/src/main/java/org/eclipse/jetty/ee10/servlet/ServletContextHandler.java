@@ -67,12 +67,12 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -1545,7 +1545,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
         {
             HashSet<String> union = new HashSet<>();
-            Set<String> existing = ((ConstraintAware)_securityHandler).getRoles();
+            Set<String> existing = ((ConstraintAware)_securityHandler).getKnownRoles();
             if (existing != null)
                 union.addAll(existing);
             union.addAll(Arrays.asList(roleNames));
