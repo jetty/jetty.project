@@ -65,7 +65,7 @@ public class Socks5Proxy extends Proxy
 
     public Socks5Proxy addAuthentication(Authentication authentication)
     {
-        if(authorizations.size() >= MAX_AUTHRATIONS)
+        if (authorizations.size() >= MAX_AUTHRATIONS)
         {
             throw new IllegalArgumentException("too much authentications");
         }
