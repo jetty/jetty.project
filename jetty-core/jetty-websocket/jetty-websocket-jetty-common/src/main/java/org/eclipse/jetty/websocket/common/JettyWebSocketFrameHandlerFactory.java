@@ -24,7 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -310,19 +309,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createAnnotatedMetadata(WebSocket anno, Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
-
-        int max = anno.inputBufferSize();
-        if (max >= 0)
-            metadata.setInputBufferSize(max);
-        max = anno.maxBinaryMessageSize();
-        if (max >= 0)
-            metadata.setMaxBinaryMessageSize(max);
-        max = anno.maxTextMessageSize();
-        if (max >= 0)
-            metadata.setMaxTextMessageSize(max);
-        max = anno.idleTimeout();
-        if (max >= 0)
-            metadata.setIdleTimeout(Duration.ofMillis(max));
 
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;

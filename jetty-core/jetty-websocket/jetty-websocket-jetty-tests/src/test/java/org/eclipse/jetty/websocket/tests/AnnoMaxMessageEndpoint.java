@@ -17,13 +17,19 @@ import java.io.IOException;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-@SuppressWarnings("unused")
-@WebSocket(maxTextMessageSize = 100 * 1024)
+@WebSocket
 public class AnnoMaxMessageEndpoint
 {
+    @OnWebSocketConnect
+    public void onConnect(Session session)
+    {
+        session.setMaxTextMessageSize(100 * 1024);
+    }
+
     @OnWebSocketMessage
     public void onMessage(Session session, String msg) throws IOException
     {

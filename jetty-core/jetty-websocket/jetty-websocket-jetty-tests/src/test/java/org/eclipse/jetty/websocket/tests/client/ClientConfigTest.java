@@ -63,7 +63,7 @@ public class ClientConfigTest
 
     public static Stream<Arguments> data()
     {
-        return Stream.of("clientConfig", "annotatedConfig", "sessionConfig").map(Arguments::of);
+        return Stream.of("clientConfig", "sessionConfig").map(Arguments::of);
     }
 
     @BeforeEach
@@ -94,11 +94,6 @@ public class ClientConfigTest
         server.stop();
     }
 
-    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE)
-    public static class AnnotatedConfigEndpoint extends EventSocket
-    {
-    }
-
     @WebSocket
     public static class SessionConfigEndpoint extends EventSocket
     {
@@ -125,7 +120,6 @@ public class ClientConfigTest
                 client.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
                 yield new EventSocket();
             }
-            case "annotatedConfig" -> new AnnotatedConfigEndpoint();
             case "sessionConfig" -> new SessionConfigEndpoint();
             default -> throw new IllegalStateException();
         };

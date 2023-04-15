@@ -65,7 +65,6 @@ public class ServerConfigTest
     private static final int MAX_MESSAGE_SIZE = 20;
     private static final int IDLE_TIMEOUT = 500;
 
-    private final EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
     private final EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
     private final EventSocket standardEndpoint = new EventSocket();
 
@@ -74,7 +73,6 @@ public class ServerConfigTest
         return switch (path)
         {
             case "servletConfig", "containerConfig" -> standardEndpoint;
-            case "annotatedConfig" -> annotatedEndpoint;
             case "sessionConfig" -> sessionConfigEndpoint;
             default -> throw new IllegalStateException();
         };
@@ -82,25 +80,20 @@ public class ServerConfigTest
 
     public static Stream<Arguments> data()
     {
-        return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
-    }
-
-    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE)
-    public static class AnnotatedConfigEndpoint extends EventSocket
-    {
+        return Stream.of("servletConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
     @WebSocket
     public static class SessionConfigEndpoint extends EventSocket
     {
         @Override
-        public void onOpen(Session session)
+        public void onConnect(Session session)
         {
             session.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
             session.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
             session.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
             session.setInputBufferSize(INPUT_BUFFER_SIZE);
-            super.onOpen(session);
+            super.onConnect(session);
         }
     }
 
@@ -114,15 +107,6 @@ public class ServerConfigTest
             factory.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
             factory.setInputBufferSize(INPUT_BUFFER_SIZE);
             factory.addMapping("/", (req, resp) -> standardEndpoint);
-        }
-    }
-
-    public class WebSocketAnnotatedConfigServlet extends JettyWebSocketServlet
-    {
-        @Override
-        public void configure(JettyWebSocketServletFactory factory)
-        {
-            factory.addMapping("/", (req, resp) -> annotatedEndpoint);
         }
     }
 
@@ -172,7 +156,6 @@ public class ServerConfigTest
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         contextHandler.addServlet(new ServletHolder(new WebSocketFactoryConfigServlet()), "/servletConfig");
-        contextHandler.addServlet(new ServletHolder(new WebSocketAnnotatedConfigServlet()), "/annotatedConfig");
         contextHandler.addServlet(new ServletHolder(new WebSocketSessionConfigServlet()), "/sessionConfig");
         server.setHandler(contextHandler);
 

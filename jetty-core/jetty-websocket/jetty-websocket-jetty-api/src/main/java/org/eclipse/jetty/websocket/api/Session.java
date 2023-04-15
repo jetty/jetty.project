@@ -292,15 +292,6 @@ public interface Session extends Configurable, Closeable
         {
         }
 
-        /**
-         * @return whether the invocation of methods of this class is
-         * guaranteed to be non-blocking.
-         */
-        default boolean isNonBlocking()
-        {
-            return false;
-        }
-
         abstract class Abstract implements Listener
         {
             private volatile Session session;

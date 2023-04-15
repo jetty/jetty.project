@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Basic Echo Client Socket
  */
-@WebSocket(maxTextMessageSize = 64 * 1024)
+@WebSocket
 public class JettySimpleEchoSocket
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettySimpleEchoSocket.class);
@@ -60,6 +60,7 @@ public class JettySimpleEchoSocket
     {
         LOG.debug("Got connect: {}", session);
         this.session = session;
+        session.setMaxTextMessageSize(64 * 1024);
         try
         {
             session.sendText("Foo", Callback.NOOP);

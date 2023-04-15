@@ -65,7 +65,6 @@ public class ServerConfigTest
     private static final int MAX_MESSAGE_SIZE = 20;
     private static final int IDLE_TIMEOUT = 500;
 
-    private final EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
     private final EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
     private final EventSocket standardEndpoint = new EventSocket();
 
@@ -74,7 +73,6 @@ public class ServerConfigTest
         return switch (path)
             {
                 case "servletConfig", "containerConfig" -> standardEndpoint;
-                case "annotatedConfig" -> annotatedEndpoint;
                 case "sessionConfig" -> sessionConfigEndpoint;
                 default -> throw new IllegalStateException();
             };
@@ -83,11 +81,6 @@ public class ServerConfigTest
     public static Stream<Arguments> data()
     {
         return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
-    }
-
-    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE)
-    public static class AnnotatedConfigEndpoint extends EventSocket
-    {
     }
 
     @WebSocket
@@ -117,16 +110,6 @@ public class ServerConfigTest
                     container.setInputBufferSize(INPUT_BUFFER_SIZE);
                     container.addMapping("/", (rq, rs, cb) -> wsEndPoint);
                 });
-        }
-    }
-
-    public static class AnnotatedConfigWebSocketUpgradeHandler
-    {
-        public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Object wsEndPoint)
-        {
-            return WebSocketUpgradeHandler.from(server, context)
-                .configure(container ->
-                    container.addMapping("/", (rq, rs, cb) -> wsEndPoint));
         }
     }
 
@@ -179,7 +162,6 @@ public class ServerConfigTest
         PathMappingsHandler pathsHandler = new PathMappingsHandler();
         context.setHandler(pathsHandler);
         pathsHandler.addMapping(new ServletPathSpec("/servletConfig"), ConfigWebSocketUpgradeHandler.from(server, context, standardEndpoint));
-        pathsHandler.addMapping(new ServletPathSpec("/annotatedConfig"), AnnotatedConfigWebSocketUpgradeHandler.from(server, context, annotatedEndpoint));
         pathsHandler.addMapping(new ServletPathSpec("/sessionConfig"), SessionConfigWebSocketUpgradeHandler.from(server, context, sessionConfigEndpoint));
         pathsHandler.addMapping(new ServletPathSpec("/"), WebSocketUpgradeHandler.from(server, context)
             .configure(container ->

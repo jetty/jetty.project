@@ -27,12 +27,10 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 /**
  * Basic Echo Client Socket
  */
-@WebSocket(maxTextMessageSize = 64 * 1024)
+@WebSocket
 public class SimpleEchoSocket
 {
     private final CountDownLatch closeLatch;
-    @SuppressWarnings("unused")
-    private Session session;
 
     public SimpleEchoSocket()
     {
@@ -47,14 +45,13 @@ public class SimpleEchoSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        this.session = null;
         this.closeLatch.countDown(); // trigger latch
     }
 
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
-        this.session = session;
+        session.setMaxTextMessageSize(64 * 1024);
         try
         {
             session.sendText("Foo", Callback.NOOP);
