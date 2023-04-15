@@ -126,7 +126,8 @@ public class Socks5
         }
 
         @Override
-        public byte getAuthType() {
+        public byte getAuthType() 
+        {
             return AuthType.USER_PASS;
         }
 
@@ -140,7 +141,7 @@ public class Socks5
                 .put(uLen)
                 .put(username.getBytes(StandardCharsets.UTF_8))
                 .put(pLen);
-            if(password != null)
+            if (password != null)
             {
                 userPass.put(password.getBytes(StandardCharsets.UTF_8));
             }
