@@ -52,9 +52,7 @@ public class PartialStringMessageSink extends AbstractMessageSink
                 String partial = out.takePartialString(() -> new BadPayloadException("Invalid UTF-8"));
                 methodHandle.invoke(partial, false);
             }
-
             callback.succeeded();
-            session.demand(1);
         }
         catch (Throwable t)
         {

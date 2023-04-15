@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class WebSocketSession implements Session, SuspendToken, Dumpable
+public class WebSocketSession implements Session, Dumpable
 {
     private final CoreSession coreSession;
     private final JettyWebSocketFrameHandler frameHandler;
@@ -49,6 +48,12 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
         this.upgradeRequest = frameHandler.getUpgradeRequest();
         this.upgradeResponse = frameHandler.getUpgradeResponse();
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionCreated(this));
+    }
+
+    @Override
+    public void demand()
+    {
+        coreSession.demand(1);
     }
 
     @Override
@@ -295,19 +300,6 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     public UpgradeResponse getUpgradeResponse()
     {
         return this.upgradeResponse;
-    }
-
-    @Override
-    public SuspendToken suspend()
-    {
-        frameHandler.suspend();
-        return this;
-    }
-
-    @Override
-    public void resume()
-    {
-        frameHandler.resume();
     }
 
     public CoreSession getCoreSession()

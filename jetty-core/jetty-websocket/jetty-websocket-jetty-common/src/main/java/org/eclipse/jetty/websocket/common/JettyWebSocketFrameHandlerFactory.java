@@ -155,28 +155,10 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        final MethodHandle openHandle = InvokerUtils.bindTo(metadata.getConnectHandle(), endpointInstance);
-        final MethodHandle closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
-        final MethodHandle errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
-        final MethodHandle textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
-        final MethodHandle binaryHandle = InvokerUtils.bindTo(metadata.getBinaryHandle(), endpointInstance);
-        final Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
-        final Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
-        final MethodHandle frameHandle = InvokerUtils.bindTo(metadata.getFrameHandle(), endpointInstance);
-        final MethodHandle pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
-        final MethodHandle pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
-
         // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
         components.getObjectFactory().decorate(endpointInstance);
 
-        return new JettyWebSocketFrameHandler(
-            container,
-            endpointInstance,
-            openHandle, closeHandle, errorHandle,
-            textHandle, binaryHandle,
-            textSinkClass, binarySinkClass,
-            frameHandle, pingHandle, pongHandle,
-            metadata);
+        return new JettyWebSocketFrameHandler(container, endpointInstance, metadata);
     }
 
     public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
@@ -226,6 +208,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createListenerMetadata(Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
+        metadata.setAutoDemanding(Session.Listener.AutoDemanding.class.isAssignableFrom(endpointClass));
+
         MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
 
         Method connectMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketConnect", Session.class);
@@ -309,6 +293,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createAnnotatedMetadata(WebSocket anno, Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
+        metadata.setAutoDemanding(anno.autoDemand());
 
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;

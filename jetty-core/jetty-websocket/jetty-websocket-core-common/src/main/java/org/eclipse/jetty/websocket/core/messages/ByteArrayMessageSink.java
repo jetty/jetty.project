@@ -38,9 +38,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         // The jakarta layer instead uses decoders for whole byte array messages instead of this message sink.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
         if (methodHandle.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
-        {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override
@@ -57,7 +55,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             }
 
             // If we are fin and no OutputStream has been created we don't need to aggregate.
-            if (frame.isFin() && (out == null))
+            if (frame.isFin() && out == null)
             {
                 if (frame.hasPayload())
                 {
@@ -65,10 +63,10 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                     methodHandle.invoke(buf, 0, buf.length);
                 }
                 else
+                {
                     methodHandle.invoke(EMPTY_BUFFER, 0, 0);
-
+                }
                 callback.succeeded();
-                session.demand(1);
                 return;
             }
 
@@ -88,8 +86,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 byte[] buf = out.takeByteArray();
                 methodHandle.invoke(buf, 0, buf.length);
             }
-
-            session.demand(1);
         }
         catch (Throwable t)
         {
@@ -100,10 +96,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         finally
         {
             if (frame.isFin())
-            {
-                // reset
                 out = null;
-            }
         }
     }
 }

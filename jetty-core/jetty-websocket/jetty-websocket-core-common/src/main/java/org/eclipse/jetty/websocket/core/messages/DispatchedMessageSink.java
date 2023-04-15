@@ -120,46 +120,32 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
                 try
                 {
                     methodHandle.invoke(typeSink);
-                    if (typeSink instanceof Closeable)
-                        IO.close((Closeable)typeSink);
+                    if (typeSink instanceof Closeable closeable)
+                        IO.close(closeable);
 
                     dispatchComplete.complete(null);
                 }
                 catch (Throwable throwable)
                 {
-                    if (typeSink instanceof Closeable)
-                        IO.close((Closeable)typeSink);
+                    if (typeSink instanceof Closeable closeable)
+                        IO.close(closeable);
 
                     dispatchComplete.completeExceptionally(throwable);
                 }
             });
         }
 
-        Callback frameCallback;
+        Callback frameCallback = callback;
         if (frame.isFin())
         {
             // This is the final frame we should wait for the frame callback and the dispatched thread.
-            Callback.Completable finComplete = Callback.Completable.from(callback);
-            frameCallback = finComplete;
-            CompletableFuture.allOf(dispatchComplete, finComplete).whenComplete((aVoid, throwable) ->
+            Callback.Completable frameComplete = Callback.Completable.from(callback);
+            frameCallback = frameComplete;
+            CompletableFuture.allOf(dispatchComplete, frameComplete).whenComplete((result, failure) ->
             {
                 typeSink = null;
                 dispatchComplete = null;
-                if (throwable == null)
-                    session.demand(1);
             });
-        }
-        else
-        {
-            frameCallback = new Callback.Nested(callback)
-            {
-                @Override
-                public void succeeded()
-                {
-                    super.succeeded();
-                    session.demand(1);
-                }
-            };
         }
 
         typeSink.accept(frame, frameCallback);

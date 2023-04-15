@@ -47,7 +47,7 @@ public class EventSocket
     public CountDownLatch closeLatch = new CountDownLatch(1);
 
     @OnWebSocketConnect
-    public void onOpen(Session session)
+    public void onConnect(Session session)
     {
         this.session = session;
         if (LOG.isDebugEnabled())

@@ -104,11 +104,15 @@ public interface FrameHandler extends IncomingFrames
     void onClosed(CloseStatus closeStatus, Callback callback);
 
     /**
-     * Does the FrameHandler manage it's own demand?
+     * <p>Whether this {@link FrameHandler} automatically demands for more WebSocket frames after
+     * returning from {@link #onOpen(CoreSession, Callback)} and {@link #onFrame(Frame, Callback)}.</p>
+     * <p>If the demand is not automatic, then {@link CoreSession#demand(long)} must be explicitly
+     * invoked to receive more WebSocket frames (both control and data frames).</p>
      *
      * @return true if demand will be managed by an automatic call to demand(1) after every succeeded callback passed to
      * {@link #onFrame(Frame, Callback)}. If false the FrameHandler will need to manage its own demand by calling
      * {@link CoreSession#demand(long)} when it is willing to receive new Frames.
+     * @see CoreSession#isAutoDemanding()
      */
     default boolean isAutoDemanding()
     {

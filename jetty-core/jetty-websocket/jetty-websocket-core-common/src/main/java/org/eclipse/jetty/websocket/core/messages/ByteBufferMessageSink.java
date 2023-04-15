@@ -40,9 +40,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         Objects.requireNonNull(methodHandle, "MethodHandle");
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
         if (methodHandle.type() != onMessageType)
-        {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override
@@ -59,15 +57,12 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             }
 
             // If we are fin and no OutputStream has been created we don't need to aggregate.
-            if (frame.isFin() && (out == null))
+            if (frame.isFin() && out == null)
             {
                 if (frame.hasPayload())
-                    methodHandle.invoke(frame.getPayload());
+                    methodHandle.invoke(frame.getPayload(), callback);
                 else
-                    methodHandle.invoke(BufferUtil.EMPTY_BUFFER);
-
-                callback.succeeded();
-                session.demand(1);
+                    methodHandle.invoke(BufferUtil.EMPTY_BUFFER, callback);
                 return;
             }
 
@@ -88,18 +83,15 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 RetainableByteBuffer buffer = bufferPool.acquire(out.getLength(), false);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 out.writeTo(byteBuffer);
-
                 try
                 {
-                    methodHandle.invoke(byteBuffer);
+                    methodHandle.invoke(byteBuffer, callback);
                 }
                 finally
                 {
                     buffer.release();
                 }
             }
-
-            session.demand(1);
         }
         catch (Throwable t)
         {
@@ -110,9 +102,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         finally
         {
             if (frame.isFin())
-            {
                 out = null;
-            }
         }
     }
 }

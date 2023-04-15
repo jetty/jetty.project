@@ -113,9 +113,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         }
     }
 
-    /**
-     * @return True if the sessions handling is demanding.
-     */
+    @Override
     public boolean isAutoDemanding()
     {
         return autoDemanding;
@@ -382,26 +380,25 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("ConnectionState: Transition to CONNECTED");
 
-        Callback openCallback = Callback.from(
-            () ->
-            {
-                sessionState.onOpen();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ConnectionState: Transition to OPEN");
-                if (autoDemanding)
-                    autoDemand();
-            },
-            x ->
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Error during OPEN", x);
-                processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
-            });
+        Callback openCallback = Callback.from(() ->
+        {
+            sessionState.onOpen();
+            if (LOG.isDebugEnabled())
+                LOG.debug("ConnectionState: Transition to OPEN");
+        },
+        x ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Error during OPEN", x);
+            processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
+        });
 
         try
         {
             // Open connection and handler
             handle(() -> handler.onOpen(this, openCallback));
+            if (isAutoDemanding())
+                autoDemand();
         }
         catch (Throwable t)
         {
@@ -417,7 +414,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public void demand(long n)
     {
-        if (autoDemanding)
+        if (isAutoDemanding())
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
         getExtensionStack().demand(n);
     }
@@ -655,13 +652,9 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    Callback handlerCallback = !isAutoDemanding() ? callback : Callback.from(() ->
-                    {
-                        callback.succeeded();
+                    handle(() -> handler.onFrame(frame, callback));
+                    if (isAutoDemanding())
                         autoDemand();
-                    }, callback::failed);
-
-                    handle(() -> handler.onFrame(frame, handlerCallback));
                     return;
                 }
 
@@ -677,22 +670,21 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 }
                 else
                 {
-                    closeCallback = Callback.from(
-                        () ->
+                    closeCallback = Callback.from(() ->
+                    {
+                        if (sessionState.isOutputOpen())
                         {
-                            if (sessionState.isOutputOpen())
-                            {
-                                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("ConnectionState: sending close response {}", closeStatus);
-                                close(closeStatus == null ? CloseStatus.NO_CODE_STATUS : closeStatus, callback);
-                            }
-                            else
-                            {
-                                callback.succeeded();
-                            }
-                        },
-                        x -> processHandlerError(x, callback));
+                            CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("ConnectionState: sending close response {}", closeStatus);
+                            close(closeStatus == null ? CloseStatus.NO_CODE_STATUS : closeStatus, callback);
+                        }
+                        else
+                        {
+                            callback.succeeded();
+                        }
+                    },
+                    x -> processHandlerError(x, callback));
                 }
 
                 handler.onFrame(frame, closeCallback);

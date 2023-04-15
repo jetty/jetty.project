@@ -87,13 +87,13 @@ public class ServerConfigTest
     public static class SessionConfigEndpoint extends EventSocket
     {
         @Override
-        public void onOpen(Session session)
+        public void onConnect(Session session)
         {
             session.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
             session.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
             session.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
             session.setInputBufferSize(INPUT_BUFFER_SIZE);
-            super.onOpen(session);
+            super.onConnect(session);
         }
     }
 

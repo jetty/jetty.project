@@ -39,9 +39,7 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
                 byte[] buffer = frame.hasPayload() ? BufferUtil.toArray(frame.getPayload()) : EMPTY_BUFFER;
                 methodHandle.invoke(buffer, frame.isFin());
             }
-
             callback.succeeded();
-            session.demand(1);
         }
         catch (Throwable t)
         {

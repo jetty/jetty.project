@@ -28,14 +28,28 @@ public interface Callback
     };
 
     /**
-     * <p>
-     * Callback invoked when the write fails.
-     * </p>
+     * Creates a callback from the given success and failure lambdas.
      *
-     * @param x the reason for the write failure
+     * @param success called when the callback succeeds
+     * @param failure called when the callback fails
+     * @return a new callback
      */
-    default void fail(Throwable x)
+    static Callback from(Runnable success, Consumer<Throwable> failure)
     {
+        return new Callback()
+        {
+            @Override
+            public void succeed()
+            {
+                success.run();
+            }
+
+            @Override
+            public void fail(Throwable x)
+            {
+                failure.accept(x);
+            }
+        };
     }
 
     /**
@@ -46,6 +60,17 @@ public interface Callback
      * @see #fail(Throwable)
      */
     default void succeed()
+    {
+    }
+
+    /**
+     * <p>
+     * Callback invoked when the write fails.
+     * </p>
+     *
+     * @param x the reason for the write failure
+     */
+    default void fail(Throwable x)
     {
     }
 

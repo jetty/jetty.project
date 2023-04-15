@@ -152,15 +152,29 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
     void abort();
 
     /**
-     * Manage flow control by indicating demand for handling Frames.  A call to
-     * {@link FrameHandler#onFrame(Frame, Callback)} will only be made if a
-     * corresponding demand has been signaled.   It is an error to call this method
-     * if {@link FrameHandler#isAutoDemanding()} returns true.
+     * <p>Manages flow control by indicating demand for WebSocket frames.</p>
+     * <p>A call to {@link FrameHandler#onFrame(Frame, Callback)} will only
+     * be made if there is demand.</p>
+     * <p>It is an error to call this method if {@link #isAutoDemanding()}
+     * returns {@code true}.</p>
      *
-     * @param n The number of frames that can be handled (in sequential calls to
-     * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
+     * @param n the number of frames that can be handled in sequential calls to
+     * {@link FrameHandler#onFrame(Frame, Callback)}, must be positive.
      */
     void demand(long n);
+
+    /**
+     * <p>Returns whether demand for WebSocket frames is automatically performed
+     * upon successful return of {@link FrameHandler#onOpen(CoreSession, Callback)}
+     * and {@link FrameHandler#onFrame(Frame, Callback)} methods.</p>
+     * <p>If the demand is not automatic, then {@link #demand(long)} must be
+     * explicitly invoked to receive more WebSocket frames (both control and
+     * data frames, including CLOSE frames).</p>
+     *
+     * @return whether demand for frames is automatic
+     * @see FrameHandler#isAutoDemanding()
+     */
+    boolean isAutoDemanding();
 
     /**
      * @return true if an extension has been negotiated which uses the RSV1 bit.
@@ -289,6 +303,12 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         @Override
         public void demand(long n)
         {
+        }
+
+        @Override
+        public boolean isAutoDemanding()
+        {
+            return false;
         }
 
         @Override

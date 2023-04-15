@@ -17,11 +17,21 @@ import java.io.Closeable;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.
  */
 public interface Session extends Configurable, Closeable
 {
+    /**
+     * <p>Explicitly demands for WebSocket frames.</p>
+     * <p>This method should be called only when the WebSocket endpoint is not
+     * demanding automatically, as defined by {@link WebSocket#autoDemand()}
+     * and {@link Listener.AutoDemanding}.</p>
+     */
+    void demand();
+
     /**
      * <p>Initiates the asynchronous send of a BINARY message, notifying
      * the given callback when the message send is completed, either
@@ -160,20 +170,6 @@ public interface Session extends Configurable, Closeable
      */
     boolean isSecure();
 
-    /**
-     * Suspend the delivery of incoming WebSocket frames.
-     * <p>
-     * If this is called from inside the scope of the message handler the suspend takes effect immediately.
-     * If suspend is called outside the scope of the message handler then the call may take effect
-     * after 1 more frame is delivered.
-     * </p>
-     *
-     * @return the suspend token suitable for resuming the reading of data on the connection.
-     */
-    // TODO: remove and replace with demand()
-    //  Add autodemand?!?
-    SuspendToken suspend();
-
     interface Listener
     {
         /**
@@ -289,6 +285,16 @@ public interface Session extends Configurable, Closeable
          * @param reason the optional reason for the close
          */
         default void onWebSocketClose(int statusCode, String reason)
+        {
+        }
+
+        /**
+         * <p>Tag interface that signals that the WebSocket endpoint
+         * is demanding for WebSocket frames automatically.</p>
+         *
+         * @see WebSocket#autoDemand()
+         */
+        interface AutoDemanding
         {
         }
 
