@@ -29,8 +29,8 @@ import org.eclipse.jetty.client.Socks5.AuthType;
 import org.eclipse.jetty.client.Socks5.Authentication;
 import org.eclipse.jetty.client.Socks5.Command;
 import org.eclipse.jetty.client.Socks5.NoAuthentication;
-import org.eclipse.jetty.client.Socks5.RequestStage;
 import org.eclipse.jetty.client.Socks5.Reply;
+import org.eclipse.jetty.client.Socks5.RequestStage;
 import org.eclipse.jetty.client.Socks5.ResponseStage;
 import org.eclipse.jetty.client.Socks5.SockConst;
 import org.eclipse.jetty.client.api.Connection;
@@ -38,7 +38,6 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -132,7 +131,7 @@ public class Socks5Proxy extends Proxy
                     int authLen = authorizations.size();
                     ByteBuffer init = ByteBuffer.allocate(2 + authLen);
                     init.put(SockConst.VER).put((byte)authLen);
-                    for(byte type : authorizations.keySet())
+                    for (byte type : authorizations.keySet())
                     {
                         init.put(type);
                     }
@@ -259,7 +258,7 @@ public class Socks5Proxy extends Proxy
                     else 
                     {
                         selectedAuthentication = authorizations.get(bs[1]);
-                        if(selectedAuthentication == null)
+                        if (selectedAuthentication == null)
                         {
                             throw new SocketException("SOCKS5 tunnel failed with unknown auth type");
                         }
@@ -435,8 +434,6 @@ public class Socks5Proxy extends Proxy
                 return expectedLength - this.cursor;
             }
         }
-
-
     }
 
     public static class Socks5ProxyClientConnectionFactory implements ClientConnectionFactory 
