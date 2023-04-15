@@ -24,10 +24,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
+
 import org.eclipse.jetty.client.Socks5.AddrType;
 import org.eclipse.jetty.client.Socks5.AuthType;
 import org.eclipse.jetty.client.Socks5.Command;
@@ -805,9 +805,12 @@ public class Socks5ProxyTest
         }
     }
 
-    private boolean containAuthType(byte[] methods, byte method){
-        for(byte m : methods){
-            if(m == method){
+    private boolean containAuthType(byte[] methods, byte method)
+    {
+        for (byte m : methods)
+        {
+            if (m == method)
+            {
                 return true;
             }
         }
