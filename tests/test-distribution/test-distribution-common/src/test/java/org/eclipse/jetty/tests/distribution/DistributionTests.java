@@ -1137,7 +1137,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start("--dry-run"))
             {
-                run2.awaitFor(5, TimeUnit.SECONDS);
+                run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS);
                 Queue<String> logs = run2.getLogs();
                 assertThat(logs.size(), equalTo(1));
                 assertThat(logs.poll(), not(containsString("${jetty.home.uri}")));
@@ -1159,7 +1159,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         String[] args1 = {"--add-module=server,http,deploy,requestlog"};
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             // Setup custom format string with spaces
@@ -1317,7 +1317,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=threadpool-virtual-preview,http"))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             int httpPort = distribution.freePort();
