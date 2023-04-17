@@ -96,18 +96,6 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
         return AuthStatus.SEND_SUCCESS;
     }
 
-    /**
-     * @param messageInfo message info to examine for mandatory flag
-     * @return whether authentication is mandatory or optional
-     */
-    protected boolean isMandatory(MessageInfo messageInfo)
-    {
-        String mandatory = (String)messageInfo.getMap().get(JaspiMessageInfo.MANDATORY_KEY);
-        if (mandatory == null)
-            return false;
-        return Boolean.parseBoolean(mandatory);
-    }
-
     protected boolean login(Subject clientSubject, String credentials, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ') + 1);

@@ -40,7 +40,6 @@ import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.WrappedAuthConfiguration;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Request;
@@ -156,16 +155,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
     @Override
     public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
     {
-        // TODO handle mandatory better
-        JaspiMessageInfo info = new JaspiMessageInfo(request, response, callback, false);
+        JaspiMessageInfo info = new JaspiMessageInfo(request, response, callback);
         request.setAttribute("org.eclipse.jetty.ee10.security.jaspi.info", info);
 
-        Authentication a = validateRequest(info);
-
-        //if it's not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
-        if (_allowLazyAuthentication && !info.isAuthMandatory() && a == null)
-            a = new DeferredAuthentication(this);
-        return a;
+        return validateRequest(info);
     }
 
     public Authentication validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException

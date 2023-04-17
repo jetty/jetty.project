@@ -85,10 +85,6 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
                 }
             }
 
-            if (!isMandatory(messageInfo))
-            {
-                return AuthStatus.SUCCESS;
-            }
             response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + _realmName + '"');
             Response.writeError(request, response, jaspiMessageInfo.getCallback(), HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;

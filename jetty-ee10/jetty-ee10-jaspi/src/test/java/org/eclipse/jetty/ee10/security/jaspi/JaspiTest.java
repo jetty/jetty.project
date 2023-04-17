@@ -137,7 +137,6 @@ public class JaspiTest
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
         context.setHandler(security);
         security.setAuthenticatorFactory(jaspiAuthFactory);
-        // security.setAuthenticator(new BasicAuthenticator());
 
         Constraint constraint = new Constraint.Builder()
             .name("All")
@@ -202,7 +201,7 @@ public class JaspiTest
     @Test
     public void testOtherNoAuth() throws Exception
     {
-        String response = _connector.getResponse("GET /other/test HTTP/1.0\n\n");
+        String response = _connector.getResponse("GET /other/jaspi/test HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
     }
 
@@ -210,7 +209,7 @@ public class JaspiTest
     public void testOtherAuth() throws Exception
     {
         String response = _connector.getResponse("""
-            GET /other/test HTTP/1.0
+            GET /other/jaspi/test HTTP/1.0
             X-Forwarded-User: user
 
             """);
