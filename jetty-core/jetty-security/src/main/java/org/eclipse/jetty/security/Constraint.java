@@ -176,7 +176,7 @@ public interface Constraint
     Constraint AUTHENTICATED_KNOWN_ROLE = from(false, false, Authentication.REQUIRE_KNOWN_ROLE);
 
     /**
-     * <p>Combine two Constraints by:
+     * <p>Combine two Constraints by:</p>
      * <ul>
      *     <li>{@code Null} values are ignored.</li>
      *     <li>Union of role sets.</li>
@@ -184,7 +184,6 @@ public interface Constraint
      *     <li>Forbidden is OR'd</li>
      *     <li>Secure is OR'd</li>
      * </ul>
-     * </p>
      * <p>Note that this combination is not equivalent to the combination done by the EE servlet specification.</p>
      * @param a Constraint to combine
      * @param b Constraint to combine
