@@ -360,28 +360,6 @@ public class Request implements HttpServletRequest
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
-    /**
-     * A response is being committed for a session,
-     * potentially write the session out before the
-     * client receives the response.
-     *
-     * @param session the session
-     */
-    private void commitSession(ManagedSession session)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Response {} committing for session {}", this, session);
-
-        //try and scope to a request and context before committing the session
-        HttpSession httpSession = session.getApi();
-        ServletContext ctx = httpSession.getServletContext();
-        ContextHandler handler = ContextHandler.getContextHandler(ctx);
-        if (handler == null)
-            session.commit();
-        else
-            handler.handle(this, session::commit);
-    }
-
     private MultiMap<String> getParameters()
     {
         if (!_contentParamsExtracted)
