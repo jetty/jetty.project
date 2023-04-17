@@ -216,7 +216,7 @@ public class JaspiTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
-    public class TestServlet extends HttpServlet
+    public static class TestServlet extends HttpServlet
     {
         @Override
         protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
