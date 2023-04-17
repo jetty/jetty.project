@@ -39,7 +39,7 @@ public class AnnotationIntrospector
 
     private final AutoLock _lock = new AutoLock();
     private final Set<Class<?>> _introspectedClasses = new HashSet<>();
-    private final List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
+    private final List<IntrospectableAnnotationHandler> _handlers = new ArrayList<>();
     private final WebAppContext _context;
 
     /**
@@ -49,7 +49,7 @@ public class AnnotationIntrospector
      */
     public interface IntrospectableAnnotationHandler
     {
-        public void handle(Class<?> clazz);
+        void handle(Class<?> clazz);
     }
 
     /**
@@ -131,12 +131,11 @@ public class AnnotationIntrospector
         if (metaInfo == null)
             return true;  //no information about the object to introspect, assume introspectable
 
-        @SuppressWarnings("rawtypes")
-        BaseHolder holder = null;
+        BaseHolder<?> holder;
 
         try
         {
-            holder = (BaseHolder)metaInfo;
+            holder = (BaseHolder<?>)metaInfo;
         }
         catch (ClassCastException e)
         {

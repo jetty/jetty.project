@@ -29,11 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ServletSecurityAnnotationHandler
- *
- * Inspect a class to see if it has an <code>&#064;ServletSecurity</code> annotation on it,
+ * <p>Inspect a class to see if it has an <code>&#064;ServletSecurity</code> annotation on it,
  * setting up the <code>&lt;security-constraint&gt;s</code>.
- *
+ * </p><p>
  * A servlet can be defined in:
  * <ul>
  * <li>web.xml</li>
@@ -41,9 +39,9 @@ import org.slf4j.LoggerFactory;
  * <li>@WebServlet annotation discovered</li>
  * <li>ServletContext.createServlet</li>
  * </ul>
- *
+ * </p><p>
  * The ServletSecurity annotation for a servlet should only be processed
- * iff metadata-complete == false.
+ * iff metadata-complete == false.</p>
  */
 public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
@@ -55,15 +53,15 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     }
 
     @Override
-    public void doHandle(Class clazz)
+    public void doHandle(Class<?> clazz)
     {
-        if (!(_context.getSecurityHandler() instanceof ConstraintAware))
+        if (!(_context.getSecurityHandler() instanceof ConstraintAware securityHandler))
         {
             LOG.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
             return;
         }
 
-        ServletSecurity servletSecurity = (ServletSecurity)clazz.getAnnotation(ServletSecurity.class);
+        ServletSecurity servletSecurity = clazz.getAnnotation(ServletSecurity.class);
         if (servletSecurity == null)
             return;
 
@@ -80,7 +78,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         }
 
         //Make a fresh list
-        constraintMappings = new ArrayList<ConstraintMapping>();
+        constraintMappings = new ArrayList<>();
 
         ServletSecurityElement securityElement = new ServletSecurityElement(servletSecurity);
         for (ServletMapping sm : servletMappings)
@@ -93,12 +91,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         }
 
         //set up the security constraints produced by the annotation
-        ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
-
-        for (ConstraintMapping m : constraintMappings)
-        {
-            securityHandler.addConstraintMapping(m);
-        }
+        constraintMappings.forEach(securityHandler::addConstraintMapping);
 
         //Servlet Spec 3.1 requires paths with uncovered http methods to be reported
         securityHandler.checkPathsWithUncoveredHttpMethods();
@@ -150,10 +143,10 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             //and we will not be processing the annotation (ie web.xml or programmatic override).
             for (int i = 0; constraintMappings != null && i < constraintMappings.size() && !exists; i++)
             {
-                for (int j = 0; j < pathSpecs.length; j++)
+                for (String pathSpec : pathSpecs)
                 {
                     //TODO decide if we need to check the origin
-                    if (pathSpecs[j].equals(constraintMappings.get(i).getPathSpec()))
+                    if (pathSpec.equals(constraintMappings.get(i).getPathSpec()))
                     {
                         exists = true;
                         break;

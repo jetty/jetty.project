@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.util.Arrays;
 import java.util.List;
 
 import jakarta.servlet.annotation.HttpConstraint;
@@ -33,10 +32,10 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestSecurityAnnotationConversions
@@ -88,7 +87,6 @@ public class TestSecurityAnnotationConversions
     @Test
     public void testDenyAllOnClass() throws Exception
     {
-
         WebAppContext wac = makeWebAppContext(DenyServlet.class.getCanonicalName(), "denyServlet", new String[]{
             "/foo/*", "*.foo"
         });
@@ -101,7 +99,7 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
         Constraint expectedConstraint = new Constraint.Builder()
-            .authentication(Constraint.Authentication.REQUIRE_ANY_ROLE)
+            .forbidden(true)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
@@ -194,8 +192,7 @@ public class TestSecurityAnnotationConversions
             .secure(true)
             .build();
 
-        //a Constraint for the PermitAll on the doGet method with a userdata
-        //constraint of DC_CONFIDENTIAL inherited from the class
+        //a Constraint for the PermitAll on the doGet method
         Constraint expectedConstraint2 = Constraint.NONE;
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
@@ -279,9 +276,8 @@ public class TestSecurityAnnotationConversions
         assertNotNull(actualMappings);
         assertEquals(expectedMappings.length, actualMappings.size());
 
-        for (int k = 0; k < actualMappings.size(); k++)
+        for (ConstraintMapping am : actualMappings)
         {
-            ConstraintMapping am = actualMappings.get(k);
             boolean matched = false;
 
             for (int i = 0; i < expectedMappings.length && !matched; i++)
@@ -301,7 +297,7 @@ public class TestSecurityAnnotationConversions
                         }
                         else
                         {
-                            assertTrue(Arrays.equals(am.getMethodOmissions(), em.getMethodOmissions()));
+                            assertArrayEquals(am.getMethodOmissions(), em.getMethodOmissions());
                         }
 
                         if (em.getConstraint().getRoles() == null)
@@ -310,7 +306,7 @@ public class TestSecurityAnnotationConversions
                         }
                         else
                         {
-                            assertThat(am.getConstraint().getRoles(), Matchers.contains(em.getConstraint().getRoles()));
+                            assertThat(am.getConstraint().getRoles(), Matchers.equalTo(em.getConstraint().getRoles()));
                         }
                     }
                 }

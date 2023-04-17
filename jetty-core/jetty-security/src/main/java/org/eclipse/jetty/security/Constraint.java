@@ -56,6 +56,7 @@ public interface Constraint
 
     /**
      * @return true if the {@code Constraint} forbids all access.
+     * TODO this should just be another Authentication mode.
      */
     boolean isForbidden();
 
@@ -112,6 +113,7 @@ public interface Constraint
         public Builder forbidden(boolean forbidden)
         {
             _forbidden = forbidden;
+            _authentication = Authentication.REQUIRE_NONE;
             return this;
         }
 
@@ -134,6 +136,7 @@ public interface Constraint
         public Builder authentication(Authentication authentication)
         {
             _authentication = authentication;
+            _forbidden = false;
             return this;
         }
 
