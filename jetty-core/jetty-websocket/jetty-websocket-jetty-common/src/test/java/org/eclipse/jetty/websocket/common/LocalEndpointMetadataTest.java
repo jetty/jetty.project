@@ -14,10 +14,10 @@
 package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.messages.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
@@ -105,31 +105,6 @@ public class LocalEndpointMetadataTest
     }
 
     /**
-     * Test Case for socket for binary array messages
-     */
-    @Test
-    public void testAnnotatedBinaryArraySocket() throws Exception
-    {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.AnnotatedBinaryArraySocket.class);
-
-        String classId = EndPoints.AnnotatedBinaryArraySocket.class.getSimpleName();
-
-        assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
-        assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
-
-        assertThat(classId + ".textHandle", metadata.getTextHandle(), nullValue());
-        assertThat(classId + ".textSink", metadata.getTextSink(), nullValue());
-
-        assertThat(classId + ".openHandle", metadata.getConnectHandle(), EXISTS);
-        assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
-        assertThat(classId + ".errorHandle", metadata.getErrorHandle(), nullValue());
-
-        assertThat(classId + ".frameHandle", metadata.getFrameHandle(), nullValue());
-        assertThat(classId + ".pingHandle", metadata.getPingHandle(), nullValue());
-        assertThat(classId + ".pongHandle", metadata.getPongHandle(), nullValue());
-    }
-
-    /**
      * Test Case for socket for binary stream messages
      */
     @Test
@@ -165,7 +140,7 @@ public class LocalEndpointMetadataTest
         String classId = EndPoints.MyEchoBinarySocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
-        assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
+        assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteBufferMessageSink.class));
 
         assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
         assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(StringMessageSink.class));
@@ -337,7 +312,7 @@ public class LocalEndpointMetadataTest
         String classId = EndPoints.ListenerBasicSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
-        assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
+        assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteBufferMessageSink.class));
 
         assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
         assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(StringMessageSink.class));

@@ -39,7 +39,7 @@ public class EndPoints
     {
     }
 
-    public static class ListenerBasicSocket implements Session.Listener
+    public static class ListenerBasicSocket implements Session.Listener.AutoDemanding
     {
         public EventQueue events = new EventQueue();
 
@@ -75,7 +75,7 @@ public class EndPoints
         }
     }
 
-    public static class ListenerFrameSocket implements Session.Listener
+    public static class ListenerFrameSocket implements Session.Listener.AutoDemanding
     {
         public EventQueue events = new EventQueue();
 
@@ -105,7 +105,7 @@ public class EndPoints
         }
     }
 
-    public static class ListenerPartialSocket implements Session.Listener
+    public static class ListenerPartialSocket implements Session.Listener.AutoDemanding
     {
         public EventQueue events = new EventQueue();
 
@@ -141,7 +141,7 @@ public class EndPoints
         }
     }
 
-    public static class ListenerPingPongSocket implements Session.Listener
+    public static class ListenerPingPongSocket implements Session.Listener.AutoDemanding
     {
         public EventQueue events = new EventQueue();
 
@@ -182,52 +182,15 @@ public class EndPoints
     @WebSocket
     public static class BadDuplicateBinarySocket
     {
-        /**
-         * First method
-         *
-         * @param payload the payload
-         * @param offset the offset
-         * @param len the len
-         */
         @OnWebSocketMessage
-        public void binMe(byte[] payload, int offset, int len)
+        public void binMe(ByteBuffer payload, Callback callback)
         {
-            /* ignore */
+            callback.succeed();
         }
 
-        /**
-         * Second method (also binary)
-         *
-         * @param stream the input stream
-         */
         @OnWebSocketMessage
         public void streamMe(InputStream stream)
         {
-            /* ignore */
-        }
-    }
-
-    @WebSocket
-    public static class AnnotatedBinaryArraySocket
-    {
-        public EventQueue events = new EventQueue();
-
-        @OnWebSocketMessage
-        public void onBinary(byte[] payload, int offset, int length)
-        {
-            events.add("onBinary([%d],%d,%d)", payload.length, offset, length);
-        }
-
-        @OnWebSocketClose
-        public void onClose(int statusCode, String reason)
-        {
-            events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
-        }
-
-        @OnWebSocketConnect
-        public void onConnect(Session sess)
-        {
-            events.add("onConnect(%s)", sess);
         }
     }
 
@@ -380,15 +343,10 @@ public class EndPoints
     @WebSocket
     public static class FrameSocket
     {
-        /**
-         * A frame
-         *
-         * @param frame the frame
-         */
         @OnWebSocketFrame
-        public void frameMe(Frame frame)
+        public void frameMe(Frame frame, Callback callback)
         {
-            /* ignore */
+            callback.succeed();
         }
     }
 
@@ -399,9 +357,9 @@ public class EndPoints
     public static class MyEchoBinarySocket extends MyEchoSocket
     {
         @OnWebSocketMessage
-        public void echoBin(byte[] buf, int offset, int length)
+        public void echoBin(ByteBuffer payload, Callback callback)
         {
-            getSession().sendBinary(ByteBuffer.wrap(buf, offset, length), Callback.NOOP);
+            getSession().sendBinary(payload, callback);
         }
     }
 
@@ -414,12 +372,6 @@ public class EndPoints
     public static class MyEchoSocket
     {
         private Session session;
-
-        @OnWebSocketClose
-        public void onClose(int statusCode, String reason)
-        {
-            this.session = null;
-        }
 
         @OnWebSocketConnect
         public void onConnect(Session session)
@@ -443,6 +395,12 @@ public class EndPoints
             }
 
             session.sendText(message, Callback.NOOP);
+        }
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason)
+        {
+            this.session = null;
         }
     }
 
