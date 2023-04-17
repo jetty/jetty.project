@@ -39,6 +39,7 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.WrappedAuthConfiguration;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
@@ -212,7 +213,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
                         }
                         if (principal == null)
                         {
-                            return null;
+                            principal = new UserPrincipal(principalName, null);
                         }
                     }
                     GroupPrincipalCallback groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
