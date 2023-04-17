@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http;
 
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -21,14 +20,15 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -72,15 +72,80 @@ public class HuffmanTest
         assertEquals(hex.length() / 2, HuffmanEncoder.octetsNeeded(expected));
     }
 
-    @ParameterizedTest(name = "[{index}]") // don't include unprintable character in test display-name
-    @ValueSource(chars = {(char)128, (char)0, (char)-1, ' ' - 1})
-    public void testEncode8859Only(char bad)
+    public static Stream<Arguments> testDecode8859OnlyArguments()
     {
-        String s = "bad '" + bad + "'";
+        return Stream.of(
+            // These are valid characters for ISO-8859-1.
+            Arguments.of("FfFe6f", (char)128),
+            Arguments.of("FfFfFbBf", (char)255),
 
-        assertThat(HuffmanEncoder.octetsNeeded(s), Matchers.is(-1));
+            // RFC9110 specifies these to be replaced as ' ' during decoding.
+            Arguments.of("FfC7", ' '), // (char)0
+            Arguments.of("FfFfFfF7", ' '), // '\r'
+            Arguments.of("FfFfFfF3", ' '), // '\n'
 
-        assertThrows(BufferOverflowException.class,
-            () -> HuffmanEncoder.encode(BufferUtil.allocate(32), s));
+            // We replace control chars with the default replacement character of '?'.
+            Arguments.of("FfFfFfBf", '?') // (char)(' ' - 1)
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}]") // don't include unprintable character in test display-name
+    @MethodSource("testDecode8859OnlyArguments")
+    public void testDecode8859Only(String hexString, char expected) throws Exception
+    {
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(hexString));
+        String decoded = HuffmanDecoder.decode(buffer, buffer.remaining());
+        assertThat(decoded, equalTo("" + expected));
+    }
+
+    public static Stream<Arguments> testEncode8859OnlyArguments()
+    {
+        return Stream.of(
+            Arguments.of((char)128, (char)128),
+            Arguments.of((char)255, (char)255),
+            Arguments.of((char)0, null),
+            Arguments.of('\r', null),
+            Arguments.of('\n', null),
+            Arguments.of((char)456, null),
+            Arguments.of((char)256, null),
+            Arguments.of((char)-1, null),
+            Arguments.of((char)(' ' - 1), null)
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}]") // don't include unprintable character in test display-name
+    @MethodSource("testEncode8859OnlyArguments")
+    public void testEncode8859Only(char value, Character expectedValue) throws Exception
+    {
+        String s = "value = '" + value + "'";
+
+        // If expected is null we should not be able to encode.
+        if (expectedValue == null)
+        {
+            assertThat(HuffmanEncoder.octetsNeeded(s), equalTo(-1));
+            assertThrows(Throwable.class, () -> encode(s));
+            return;
+        }
+
+        String expected = "value = '" + expectedValue + "'";
+        assertThat(HuffmanEncoder.octetsNeeded(s), greaterThan(0));
+        ByteBuffer buffer = encode(s);
+        String decode = decode(buffer);
+        System.err.println("decoded: " + decode);
+        assertThat(decode, equalTo(expected));
+    }
+
+    private ByteBuffer encode(String s)
+    {
+        ByteBuffer buffer = BufferUtil.allocate(32);
+        BufferUtil.clearToFill(buffer);
+        HuffmanEncoder.encode(buffer, s);
+        BufferUtil.flipToFlush(buffer, 0);
+        return buffer;
+    }
+
+    private String decode(ByteBuffer buffer) throws Exception
+    {
+        return HuffmanDecoder.decode(buffer, buffer.remaining());
     }
 }

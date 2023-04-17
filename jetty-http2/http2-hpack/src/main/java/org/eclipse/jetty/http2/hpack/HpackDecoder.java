@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.NBitIntegerParser;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ public class HpackDecoder
 
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
+    private final HuffmanDecoder _huffmanDecoder;
     private int _localMaxDynamicTableSize;
 
     /**
@@ -50,6 +52,7 @@ public class HpackDecoder
         _context = new HpackContext(localMaxDynamicTableSize);
         _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
+        _huffmanDecoder = new HuffmanDecoder();
     }
 
     public HpackContext getHpackContext()
@@ -168,7 +171,7 @@ public class HpackDecoder
                     if (huffmanName)
                         name = huffmanDecode(buffer, length);
                     else
-                        name = toASCIIString(buffer, length);
+                        name = toISO8859String(buffer, length);
                     check:
                     for (int i = name.length(); i-- > 0; )
                     {
@@ -209,7 +212,7 @@ public class HpackDecoder
                 if (huffmanValue)
                     value = huffmanDecode(buffer, length);
                 else
-                    value = toASCIIString(buffer, length);
+                    value = toISO8859String(buffer, length);
 
                 // Make the new field
                 HttpField field;
@@ -288,7 +291,11 @@ public class HpackDecoder
     {
         try
         {
-            return HuffmanDecoder.decode(buffer, length);
+            _huffmanDecoder.setLength(length);
+            String decoded = _huffmanDecoder.decode(buffer);
+            if (decoded == null)
+                throw new HpackException.CompressionException("invalid string encoding");
+            return decoded;
         }
         catch (EncodingException e)
         {
@@ -296,16 +303,20 @@ public class HpackDecoder
             compressionException.initCause(e);
             throw compressionException;
         }
+        finally
+        {
+            _huffmanDecoder.reset();
+        }
     }
 
-    public static String toASCIIString(ByteBuffer buffer, int length)
+    public static String toISO8859String(ByteBuffer buffer, int length)
     {
-        StringBuilder builder = new StringBuilder(length);
+        CharsetStringBuilder.Iso8859StringBuilder builder = new CharsetStringBuilder.Iso8859StringBuilder();
         for (int i = 0; i < length; ++i)
         {
             builder.append((char)(0x7F & buffer.get()));
         }
-        return builder.toString();
+        return builder.build();
     }
 
     @Override

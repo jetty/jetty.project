@@ -346,4 +346,47 @@ public class Huffman
             }
         }
     }
+
+    public static boolean isIllegalCharacter(char c)
+    {
+        return (c >= 256 || c < ' ');
+    }
+
+    public static char getReplacementCharacter(char c)
+    {
+        switch (c)
+        {
+            // A recipient of CR, LF, or NUL within a field value MUST either reject the message
+            // or replace each of those characters with SP before further processing
+            case '\r':
+            case '\n':
+            case 0x00:
+                return ' ';
+
+            default:
+                if (c >= 256 || c < ' ')
+                    return '?';
+        }
+
+        return c;
+    }
+
+    public static int getReplacementCharacter(int i)
+    {
+        switch (i)
+        {
+            // A recipient of CR, LF, or NUL within a field value MUST either reject the message
+            // or replace each of those characters with SP before further processing
+            case '\r':
+            case '\n':
+            case 0x00:
+                return ' ';
+
+            default:
+                if (i >= 256 || i < ' ')
+                    return '?';
+        }
+
+        return i;
+    }
 }

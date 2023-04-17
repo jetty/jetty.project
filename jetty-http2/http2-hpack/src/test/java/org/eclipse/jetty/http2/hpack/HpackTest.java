@@ -134,26 +134,27 @@ public class HpackTest
     }
 
     @Test
-    public void encodeDecodeNonAscii() throws Exception
+    public void encodeNonAscii() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
 
         HttpFields fields0 = HttpFields.build()
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             .add("Cookie", "[\uD842\uDF9F]")
             .add("custom-key", "[\uD842\uDF9F]");
         Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);
 
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original0);
-        BufferUtil.flipToFlush(buffer, 0);
-        Response decoded0 = (Response)decoder.decode(buffer);
+        HpackException.SessionException throwable = assertThrows(HpackException.SessionException.class, () ->
+        {
+            BufferUtil.clearToFill(buffer);
+            encoder.encode(buffer, original0);
+            BufferUtil.flipToFlush(buffer, 0);
+        });
 
-        assertMetaDataSame(original0, decoded0);
+        assertThat(throwable.getMessage(), containsString("Could not hpack encode"));
     }
-    
+
     @Test
     public void evictReferencedFieldTest() throws Exception
     {

@@ -50,12 +50,12 @@ public class HuffmanEncoder
         encode(CODES, buffer, b);
     }
 
-    public static int octetsNeededLC(String s)
+    public static int octetsNeededLowercase(String s)
     {
         return octetsNeeded(LCCODES, s);
     }
 
-    public static void encodeLC(ByteBuffer buffer, String s)
+    public static void encodeLowercase(ByteBuffer buffer, String s)
     {
         encode(LCCODES, buffer, s);
     }
@@ -67,7 +67,7 @@ public class HuffmanEncoder
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(i);
-            if (c >= 128 || c < ' ')
+            if (Huffman.isIllegalCharacter(c))
                 return -1;
             needed += table[c][1];
         }
@@ -88,8 +88,8 @@ public class HuffmanEncoder
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(i);
-            if (c >= 128 || c < ' ')
-                throw new IllegalArgumentException();
+            if (Huffman.isIllegalCharacter(c))
+                 throw new IllegalArgumentException();
             int code = table[c][0];
             int bits = table[c][1];
 
@@ -119,9 +119,9 @@ public class HuffmanEncoder
 
         for (byte value : b)
         {
-            int c = 0xFF & value;
-            int code = table[c][0];
-            int bits = table[c][1];
+            int i = 0xFF & value;
+            int code = table[i][0];
+            int bits = table[i][1];
 
             current <<= bits;
             current |= code;

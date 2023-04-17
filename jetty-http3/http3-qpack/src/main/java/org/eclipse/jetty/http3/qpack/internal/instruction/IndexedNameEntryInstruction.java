@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
@@ -72,7 +73,7 @@ public class IndexedNameEntryInstruction implements Instruction
         {
             buffer.put((byte)(0x00));
             NBitIntegerEncoder.encode(buffer, 7, _value.length());
-            buffer.put(_value.getBytes());
+            buffer.put(_value.getBytes(StandardCharsets.ISO_8859_1));
         }
 
         BufferUtil.flipToFlush(buffer, 0);

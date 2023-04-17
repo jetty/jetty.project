@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
@@ -69,7 +70,7 @@ public class LiteralNameEntryInstruction implements Instruction
         {
             buffer.put((byte)(0x40));
             NBitIntegerEncoder.encode(buffer, 5, _name.length());
-            buffer.put(_name.getBytes());
+            buffer.put(_name.getBytes(StandardCharsets.ISO_8859_1));
         }
 
         if (_huffmanValue)
@@ -82,7 +83,7 @@ public class LiteralNameEntryInstruction implements Instruction
         {
             buffer.put((byte)(0x00));
             NBitIntegerEncoder.encode(buffer, 5, _value.length());
-            buffer.put(_value.getBytes());
+            buffer.put(_value.getBytes(StandardCharsets.ISO_8859_1));
         }
 
         BufferUtil.flipToFlush(buffer, 0);

@@ -11,20 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerParser;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@SuppressWarnings("PointlessArithmeticExpression")
 public class NBitIntegerTest
 {
+    private final NBitIntegerParser _parser = new NBitIntegerParser();
 
     @Test
     public void testOctetsNeeded()
@@ -82,14 +84,14 @@ public class NBitIntegerTest
             buf.put((byte)0x00);
         NBitIntegerEncoder.encode(buf, n, i);
         BufferUtil.flipToFlush(buf, p);
-        String r = StringUtil.toHexString(BufferUtil.toArray(buf));
+        String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
         assertEquals(expected, r);
 
         assertEquals(expected.length() / 2, (n < 8 ? 1 : 0) + NBitIntegerEncoder.octetsNeeded(n, i));
     }
 
     @Test
-    public void testDecode() throws Exception
+    public void testDecode()
     {
         testDecode(6, 0, "00");
         testDecode(6, 1, "01");
@@ -120,11 +122,11 @@ public class NBitIntegerTest
         testDecode(8, 255 + 0x00 + 0x80 * 0x80, "Ff808001");
     }
 
-    public void testDecode(int n, int expected, String encoded) throws Exception
+    public void testDecode(int n, int expected, String encoded)
     {
-        ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
-        buf.position(n == 8 ? 0 : 1);
-        assertEquals(expected, NBitIntegerParser.decode(buf, n));
+        ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        _parser.setPrefix(n);
+        assertEquals(expected, _parser.decodeInt(buf));
     }
 
     @Test
@@ -137,18 +139,18 @@ public class NBitIntegerTest
         NBitIntegerEncoder.encode(buf, 5, 10);
         BufferUtil.flipToFlush(buf, p);
 
-        String r = StringUtil.toHexString(BufferUtil.toArray(buf));
+        String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
 
         assertEquals("77Ea", r);
     }
 
     @Test
-    public void testDecodeExampleD11() throws Exception
+    public void testDecodeExampleD11()
     {
-        ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString("77EaFF"));
-        buf.position(2);
-
-        assertEquals(10, NBitIntegerParser.decode(buf, 5));
+        ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("77EaFF"));
+        buf.position(1);
+        _parser.setPrefix(5);
+        assertEquals(10, _parser.decodeInt(buf));
     }
 
     @Test
@@ -161,18 +163,18 @@ public class NBitIntegerTest
         NBitIntegerEncoder.encode(buf, 5, 1337);
         BufferUtil.flipToFlush(buf, p);
 
-        String r = StringUtil.toHexString(BufferUtil.toArray(buf));
+        String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
 
         assertEquals("881f9a0a", r);
     }
 
     @Test
-    public void testDecodeExampleD12() throws Exception
+    public void testDecodeExampleD12()
     {
-        ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString("881f9a0aff"));
-        buf.position(2);
-
-        assertEquals(1337, NBitIntegerParser.decode(buf, 5));
+        ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("881f9a0aff"));
+        buf.position(1);
+        _parser.setPrefix(5);
+        assertEquals(1337, _parser.decodeInt(buf));
     }
 
     @Test
@@ -185,17 +187,17 @@ public class NBitIntegerTest
         NBitIntegerEncoder.encode(buf, 8, 42);
         BufferUtil.flipToFlush(buf, p);
 
-        String r = StringUtil.toHexString(BufferUtil.toArray(buf));
+        String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
 
         assertEquals("88Ff2a", r);
     }
 
     @Test
-    public void testDecodeExampleD13() throws Exception
+    public void testDecodeExampleD13()
     {
-        ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString("882aFf"));
+        ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("882aFf"));
         buf.position(1);
-
-        assertEquals(42, NBitIntegerParser.decode(buf, 8));
+        _parser.setPrefix(8);
+        assertEquals(42, _parser.decodeInt(buf));
     }
 }

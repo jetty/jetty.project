@@ -15,11 +15,13 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.CharsetStringBuilder;
+
 public class NBitStringParser
 {
     private final NBitIntegerParser _integerParser;
     private final HuffmanDecoder _huffmanBuilder;
-    private final StringBuilder _stringBuilder;
+    private final CharsetStringBuilder.Iso8859StringBuilder _builder;
     private boolean _huffman;
     private int _count;
     private int _length;
@@ -38,7 +40,7 @@ public class NBitStringParser
     {
         _integerParser = new NBitIntegerParser();
         _huffmanBuilder = new HuffmanDecoder();
-        _stringBuilder = new StringBuilder();
+        _builder = new CharsetStringBuilder.Iso8859StringBuilder();
     }
 
     public void setPrefix(int prefix)
@@ -70,7 +72,7 @@ public class NBitStringParser
                     continue;
 
                 case VALUE:
-                    String value = _huffman ? _huffmanBuilder.decode(buffer) : asciiStringDecode(buffer);
+                    String value = _huffman ? _huffmanBuilder.decode(buffer) : stringDecode(buffer);
                     if (value != null)
                         reset();
                     return value;
@@ -81,15 +83,16 @@ public class NBitStringParser
         }
     }
 
-    private String asciiStringDecode(ByteBuffer buffer)
+    private String stringDecode(ByteBuffer buffer)
     {
         for (; _count < _length; _count++)
         {
             if (!buffer.hasRemaining())
                 return null;
-            _stringBuilder.append((char)(0x7F & buffer.get()));
+            _builder.append(buffer.get());
         }
-        return _stringBuilder.toString();
+
+        return _builder.build();
     }
 
     public void reset()
@@ -97,7 +100,7 @@ public class NBitStringParser
         _state = State.PARSING;
         _integerParser.reset();
         _huffmanBuilder.reset();
-        _stringBuilder.setLength(0);
+        _builder.reset();
         _prefix = 0;
         _count = 0;
         _length = 0;

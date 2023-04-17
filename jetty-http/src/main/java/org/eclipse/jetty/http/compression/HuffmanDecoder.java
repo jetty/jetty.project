@@ -15,7 +15,7 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 
 import static org.eclipse.jetty.http.compression.Huffman.rowbits;
 import static org.eclipse.jetty.http.compression.Huffman.rowsym;
@@ -34,7 +34,7 @@ public class HuffmanDecoder
         return decoded;
     }
 
-    private final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
+    private final CharsetStringBuilder.Iso8859StringBuilder _builder = new CharsetStringBuilder.Iso8859StringBuilder();
     private int _length = 0;
     private int _count = 0;
     private int _node = 0;
@@ -71,7 +71,9 @@ public class HuffmanDecoder
                     }
 
                     // terminal node
-                    _utf8.append((byte)(0xFF & rowsym[_node]));
+                    int i = 0xFF & rowsym[_node];
+                    i = Huffman.getReplacementCharacter(i);
+                    _builder.append((byte)i);
                     _bits -= rowbits[_node];
                     _node = 0;
                 }
@@ -104,7 +106,9 @@ public class HuffmanDecoder
                 break;
             }
 
-            _utf8.append((byte)(0xFF & rowsym[_node]));
+            int i = 0xFF & rowsym[_node];
+            i = Huffman.getReplacementCharacter(i);
+            _builder.append((byte)i);
             _bits -= rowbits[_node];
             _node = 0;
         }
@@ -115,14 +119,14 @@ public class HuffmanDecoder
             throw new EncodingException("bad_termination");
         }
 
-        String value = _utf8.toString();
+        String value = _builder.build();
         reset();
         return value;
     }
 
     public void reset()
     {
-        _utf8.reset();
+        _builder.reset();
         _count = 0;
         _current = 0;
         _node = 0;

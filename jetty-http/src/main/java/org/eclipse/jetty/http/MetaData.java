@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
@@ -98,6 +99,28 @@ public class MetaData implements Iterable<HttpField>
         if (_fields == null)
             return Collections.emptyIterator();
         return _fields.iterator();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(_httpVersion, _contentLength, _fields, _trailerSupplier);
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (!(obj instanceof MetaData))
+            return false;
+
+        MetaData other = (MetaData)obj;
+        if (!Objects.equals(_httpVersion, other._httpVersion))
+            return false;
+        if (!Objects.equals(_contentLength, other._contentLength))
+            return false;
+        if (!Objects.equals(_fields, other._fields))
+            return false;
+        return _trailerSupplier == null && other._trailerSupplier == null;
     }
 
     @Override

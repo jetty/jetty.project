@@ -73,8 +73,8 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
         else
         {
             buffer.put((byte)0x80);
-            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLC(name));
-            HuffmanEncoder.encodeLC(buffer, name);
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLowercase(name));
+            HuffmanEncoder.encodeLowercase(buffer, name);
         }
 
         HpackEncoder.encodeValue(buffer, huffman, value);
