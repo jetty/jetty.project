@@ -217,6 +217,7 @@ public class ConnectFutureTest
             {
                 try
                 {
+                    super.onWebSocketConnect(session);
                     exitOnConnect.await();
                 }
                 catch (InterruptedException e)
@@ -354,6 +355,7 @@ public class ConnectFutureTest
             {
                 try
                 {
+                    super.onWebSocketConnect(session);
                     exitOnConnect.await();
                 }
                 catch (InterruptedException e)

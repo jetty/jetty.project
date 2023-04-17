@@ -22,6 +22,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -45,7 +46,6 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     private final MethodHandle wholeTextHandle;
     private final MethodHandle wholeBinaryHandle;
     private MessageSink messageSink;
-    private long maxMessageSize = 2 * 1024 * 1024;
 
     public OutgoingMessageCapture()
     {
@@ -55,7 +55,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
             MethodHandle text = lookup.findVirtual(this.getClass(), "onWholeText", MethodType.methodType(Void.TYPE, String.class));
             this.wholeTextHandle = text.bindTo(this);
 
-            MethodHandle binary = lookup.findVirtual(this.getClass(), "onWholeBinary", MethodType.methodType(Void.TYPE, ByteBuffer.class));
+            MethodHandle binary = lookup.findVirtual(this.getClass(), "onWholeBinary", MethodType.methodType(Void.TYPE, ByteBuffer.class, Callback.class));
             this.wholeBinaryHandle = binary.bindTo(this);
         }
         catch (NoSuchMethodException | IllegalAccessException e)
@@ -140,16 +140,10 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     }
 
     @SuppressWarnings("unused")
-    public void onWholeBinary(ByteBuffer buf)
+    public void onWholeBinary(ByteBuffer buf, Callback callback)
     {
-        ByteBuffer copy = null;
-        if (buf != null)
-        {
-            copy = ByteBuffer.allocate(buf.remaining());
-            copy.put(buf);
-            copy.flip();
-        }
-        this.binaryMessages.offer(copy);
+        this.binaryMessages.offer(BufferUtil.copy(buf));
+        callback.succeeded();
     }
 
     private String dataHint(ByteBuffer payload)

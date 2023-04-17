@@ -344,19 +344,14 @@ public class WebSocketProxyTest
         public BlockingQueue<ByteBuffer> pongMessages = new BlockingArrayQueue<>();
 
         @OnWebSocketFrame
-        public void onWebSocketFrame(Frame frame)
+        public void onWebSocketFrame(Frame frame, Callback callback)
         {
             switch (frame.getOpCode())
             {
-                case OpCode.PING:
-                    pingMessages.add(BufferUtil.copy(frame.getPayload()));
-                    break;
-                case OpCode.PONG:
-                    pongMessages.add(BufferUtil.copy(frame.getPayload()));
-                    break;
-                default:
-                    break;
+                case OpCode.PING -> pingMessages.add(BufferUtil.copy(frame.getPayload()));
+                case OpCode.PONG -> pongMessages.add(BufferUtil.copy(frame.getPayload()));
             }
+            callback.succeed();
         }
     }
 

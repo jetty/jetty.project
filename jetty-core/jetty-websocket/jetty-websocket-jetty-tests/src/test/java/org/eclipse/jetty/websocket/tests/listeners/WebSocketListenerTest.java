@@ -136,7 +136,7 @@ public class WebSocketListenerTest
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
         BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
-        Session.Listener clientEndpoint = new Session.Listener()
+        Session.Listener clientEndpoint = new Session.Listener.AutoDemanding()
         {
             @Override
             public void onWebSocketConnect(Session session)

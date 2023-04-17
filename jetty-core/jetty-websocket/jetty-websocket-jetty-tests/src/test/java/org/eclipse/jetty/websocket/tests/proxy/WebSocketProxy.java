@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.websocket.tests.proxy;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -24,7 +25,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.exceptions.WebSocketException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
@@ -88,23 +88,19 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketConnect({})", getClass().getSimpleName(), session);
 
-            Future<Session> connect = null;
             try
             {
                 this.session = session;
                 ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
                 upgradeRequest.setSubProtocols(session.getUpgradeRequest().getSubProtocols());
                 upgradeRequest.setExtensions(session.getUpgradeRequest().getExtensions());
-                connect = client.connect(proxyToServer, serverUri, upgradeRequest);
-
-                //This is blocking as we really want the client to be connected before receiving any messages.
-                connect.get();
+                client.connect(proxyToServer, serverUri, upgradeRequest)
+                    // Only demand for frames after the connect() is successful.
+                    .thenAccept(ignored -> session.demand());
             }
-            catch (Exception e)
+            catch (IOException x)
             {
-                if (connect != null)
-                    connect.cancel(true);
-                throw new WebSocketException(e);
+                throw new UncheckedIOException(x);
             }
         }
 
@@ -114,8 +110,15 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPartialBinary({}, {})", getClass().getSimpleName(), BufferUtil.toDetailString(payload), fin);
 
-            Session session1 = proxyToServer.getSession();
-            session1.sendPartialBinary(payload, fin, callback);
+            Callback.Completable.with(c -> proxyToServer.getSession().sendPartialBinary(payload, fin, c))
+                .thenRun(callback::succeed)
+                .thenRun(session::demand)
+                .exceptionally(x ->
+                {
+                    callback.fail(x);
+                    fail(x);
+                    return null;
+                });
         }
 
         @Override
@@ -124,7 +127,7 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPartialText({}, {})", getClass().getSimpleName(), StringUtil.truncate(payload, 100), fin);
 
-            proxyToServer.getSession().sendPartialText(payload, fin, Callback.NOOP);
+            proxyToServer.getSession().sendPartialText(payload, fin, Callback.from(session::demand, this::fail));
         }
 
         @Override
@@ -133,15 +136,7 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPing({})", getClass().getSimpleName(), BufferUtil.toDetailString(payload));
 
-            try
-            {
-                Session session1 = proxyToServer.getSession();
-                session1.sendPing(payload, Callback.NOOP);
-            }
-            catch (Exception e)
-            {
-                throw new WebSocketException(e);
-            }
+            proxyToServer.getSession().sendPing(payload, Callback.from(session::demand, this::fail));
         }
 
         @Override
@@ -150,15 +145,7 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPong({})", getClass().getSimpleName(), BufferUtil.toDetailString(payload));
 
-            try
-            {
-                Session session1 = proxyToServer.getSession();
-                session1.sendPong(payload, Callback.NOOP);
-            }
-            catch (Exception e)
-            {
-                throw new WebSocketException(e);
-            }
+            proxyToServer.getSession().sendPong(payload, Callback.from(session::demand, this::fail));
         }
 
         @Override
@@ -177,9 +164,9 @@ public class WebSocketProxy
                 LOG.debug("{} onWebSocketClose({} {})", getClass().getSimpleName(), statusCode, reason);
 
             // Session may be null if connection to the server failed.
-            Session session = proxyToServer.getSession();
-            if (session != null)
-                session.close(statusCode, reason, Callback.NOOP);
+            Session proxyToServerSession = proxyToServer.getSession();
+            if (proxyToServerSession != null)
+                proxyToServerSession.close(statusCode, reason, Callback.NOOP);
             closeLatch.countDown();
         }
     }
@@ -209,6 +196,7 @@ public class WebSocketProxy
                 LOG.debug("{} onWebSocketConnect({})", getClass().getSimpleName(), session);
 
             this.session = session;
+            session.demand();
         }
 
         @Override
@@ -217,8 +205,15 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPartialBinary({}, {})", getClass().getSimpleName(), BufferUtil.toDetailString(payload), fin);
 
-            Session session1 = clientToProxy.getSession();
-            session1.sendPartialBinary(payload, fin, callback);
+            Callback.Completable.with(c -> clientToProxy.getSession().sendPartialBinary(payload, fin, c))
+                .thenRun(callback::succeed)
+                .thenRun(session::demand)
+                .exceptionally(x ->
+                {
+                    callback.fail(x);
+                    fail(x);
+                    return null;
+                });
         }
 
         @Override
@@ -227,7 +222,7 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPartialText({}, {})", getClass().getSimpleName(), StringUtil.truncate(payload, 100), fin);
 
-            clientToProxy.getSession().sendPartialText(payload, fin, Callback.NOOP);
+            clientToProxy.getSession().sendPartialText(payload, fin, Callback.from(session::demand, this::fail));
         }
 
         @Override
@@ -236,15 +231,7 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPing({})", getClass().getSimpleName(), BufferUtil.toDetailString(payload));
 
-            try
-            {
-                Session session1 = clientToProxy.getSession();
-                session1.sendPing(payload, Callback.NOOP);
-            }
-            catch (Exception e)
-            {
-                throw new WebSocketException(e);
-            }
+            clientToProxy.getSession().sendPing(payload, Callback.from(session::demand, this::fail));
         }
 
         @Override
@@ -253,15 +240,7 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketPong({})", getClass().getSimpleName(), BufferUtil.toDetailString(payload));
 
-            try
-            {
-                Session session1 = clientToProxy.getSession();
-                session1.sendPong(payload, Callback.NOOP);
-            }
-            catch (Exception e)
-            {
-                throw new WebSocketException(e);
-            }
+            clientToProxy.getSession().sendPong(payload, Callback.from(session::demand, this::fail));
         }
 
         @Override
@@ -279,8 +258,8 @@ public class WebSocketProxy
             if (LOG.isDebugEnabled())
                 LOG.debug("{} onWebSocketClose({} {})", getClass().getSimpleName(), statusCode, reason);
 
-            Session session1 = clientToProxy.getSession();
-            session1.close(statusCode, reason, Callback.NOOP);
+            Session clientToProxySession = clientToProxy.getSession();
+            clientToProxySession.close(statusCode, reason, Callback.NOOP);
             closeLatch.countDown();
         }
     }

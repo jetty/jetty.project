@@ -140,16 +140,21 @@ public class FrameAnnotationTest
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public LinkedBlockingQueue<String> frameEvents = new LinkedBlockingQueue<>();
 
-        @OnWebSocketClose
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-            closeLatch.countDown();
-        }
-
         @OnWebSocketConnect
         public void onWebSocketConnect(Session session)
         {
             this.session = session;
+        }
+
+        @OnWebSocketFrame
+        public void onWebSocketFrame(Frame frame, Callback callback)
+        {
+            frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
+                OpCode.name(frame.getOpCode()),
+                frame.isFin(),
+                BufferUtil.toUTF8String(frame.getPayload()),
+                frame.getPayloadLength()));
+            callback.succeed();
         }
 
         @OnWebSocketError
@@ -158,14 +163,10 @@ public class FrameAnnotationTest
             cause.printStackTrace(System.err);
         }
 
-        @OnWebSocketFrame
-        public void onWebSocketFrame(Frame frame)
+        @OnWebSocketClose
+        public void onWebSocketClose(int statusCode, String reason)
         {
-            frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
-                OpCode.name(frame.getOpCode()),
-                frame.isFin(),
-                BufferUtil.toUTF8String(frame.getPayload()),
-                frame.getPayloadLength()));
+            closeLatch.countDown();
         }
     }
 }

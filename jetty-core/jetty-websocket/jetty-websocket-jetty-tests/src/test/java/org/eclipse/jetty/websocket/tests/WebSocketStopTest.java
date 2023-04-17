@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
@@ -114,8 +114,10 @@ public class WebSocketStopTest
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
         assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
 
-        IOException error = assertThrows(IOException.class,
-            () -> session.sendText("this should fail before ExtensionStack", Callback.NOOP));
+        ExecutionException error = assertThrows(ExecutionException.class, () ->
+            Callback.Completable.with(c -> session.sendText("this should fail before ExtensionStack", c))
+                .get(5, TimeUnit.SECONDS)
+        );
         assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
     }
 }

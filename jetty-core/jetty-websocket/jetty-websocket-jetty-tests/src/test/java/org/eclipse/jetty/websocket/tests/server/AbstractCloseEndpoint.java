@@ -26,7 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public abstract class AbstractCloseEndpoint extends Session.Listener.Abstract
+public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAutoDemanding
 {
     public final Logger log;
     public CountDownLatch connectLatch = new CountDownLatch(1);
@@ -43,8 +43,16 @@ public abstract class AbstractCloseEndpoint extends Session.Listener.Abstract
     @Override
     public void onWebSocketConnect(Session sess)
     {
+        super.onWebSocketConnect(sess);
         log.debug("onWebSocketConnect({})", sess);
         connectLatch.countDown();
+    }
+
+    @Override
+    public void onWebSocketError(Throwable cause)
+    {
+        log.debug("onWebSocketError({})", cause.getClass().getSimpleName());
+        errors.offer(cause);
     }
 
     @Override
@@ -54,13 +62,6 @@ public abstract class AbstractCloseEndpoint extends Session.Listener.Abstract
         this.closeStatusCode = statusCode;
         this.closeReason = reason;
         closeLatch.countDown();
-    }
-
-    @Override
-    public void onWebSocketError(Throwable cause)
-    {
-        log.debug("onWebSocketError({})", cause.getClass().getSimpleName());
-        errors.offer(cause);
     }
 
     public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher) throws InterruptedException

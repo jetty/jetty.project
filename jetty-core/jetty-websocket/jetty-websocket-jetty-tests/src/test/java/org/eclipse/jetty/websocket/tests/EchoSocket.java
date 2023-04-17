@@ -31,10 +31,9 @@ public class EchoSocket extends EventSocket
     }
 
     @Override
-    public void onMessage(byte[] buf, int offset, int len) throws IOException
+    public void onMessage(ByteBuffer message, Callback callback) throws IOException
     {
-        super.onMessage(buf, offset, len);
-        ByteBuffer buffer = ByteBuffer.wrap(buf, offset, len);
-        session.sendBinary(buffer, Callback.NOOP);
+        super.onMessage(message, Callback.NOOP);
+        session.sendBinary(message, callback);
     }
 }

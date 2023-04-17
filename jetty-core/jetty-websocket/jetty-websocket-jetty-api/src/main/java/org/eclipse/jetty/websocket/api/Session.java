@@ -192,7 +192,6 @@ public interface Session extends Configurable, Closeable
          */
         default void onWebSocketFrame(Frame frame, Callback callback)
         {
-            callback.succeed();
         }
 
         /**
@@ -224,7 +223,6 @@ public interface Session extends Configurable, Closeable
          */
         default void onWebSocketPartialBinary(ByteBuffer payload, boolean last, Callback callback)
         {
-            callback.succeed();
         }
 
         /**
@@ -251,7 +249,6 @@ public interface Session extends Configurable, Closeable
          */
         default void onWebSocketBinary(ByteBuffer payload, Callback callback)
         {
-            callback.succeed();
         }
 
         /**
@@ -294,7 +291,7 @@ public interface Session extends Configurable, Closeable
          *
          * @see WebSocket#autoDemand()
          */
-        interface AutoDemanding
+        interface AutoDemanding extends Session.Listener
         {
         }
 
@@ -318,6 +315,10 @@ public interface Session extends Configurable, Closeable
                 Session session = this.session;
                 return session != null && session.isOpen();
             }
+        }
+
+        abstract class AbstractAutoDemanding extends Abstract implements AutoDemanding
+        {
         }
     }
 }

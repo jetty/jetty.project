@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class CloseTrackingEndpoint extends Session.Listener.Abstract
+public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemanding
 {
     private static final Logger LOG = LoggerFactory.getLogger(CloseTrackingEndpoint.class);
 
@@ -92,6 +92,7 @@ public class CloseTrackingEndpoint extends Session.Listener.Abstract
     @Override
     public void onWebSocketConnect(Session session)
     {
+        super.onWebSocketConnect(session);
         LOG.debug("onWebSocketConnect({})", session);
         connectLatch.countDown();
     }

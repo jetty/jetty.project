@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -130,15 +129,15 @@ public class BadNetworkTest
         wsocket.assertReceivedCloseEvent(5000, is(StatusCode.NO_CLOSE), containsString(""));
     }
 
-    public static class ServerEndpoint implements Session.Listener
+    public static class ServerEndpoint implements Session.Listener.AutoDemanding
     {
         private static final Logger LOG = LoggerFactory.getLogger(ClientCloseTest.ServerEndpoint.class);
         private Session session;
 
         @Override
-        public void onWebSocketBinary(ByteBuffer payload, Callback callback)
+        public void onWebSocketConnect(Session session)
         {
-            callback.succeed();
+            this.session = session;
         }
 
         @Override
@@ -156,23 +155,10 @@ public class BadNetworkTest
         }
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-        }
-
-        @Override
-        public void onWebSocketConnect(Session session)
-        {
-            this.session = session;
-        }
-
-        @Override
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("ServerEndpoint error", cause);
-            }
         }
     }
 }

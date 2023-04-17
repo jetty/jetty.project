@@ -223,15 +223,26 @@ public class PartialListenerTest
         public LinkedBlockingQueue<String> partialEvents = new LinkedBlockingQueue<>();
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-            closeLatch.countDown();
-        }
-
-        @Override
         public void onWebSocketConnect(Session session)
         {
             this.session = session;
+            session.demand();
+        }
+
+        @Override
+        public void onWebSocketPartialText(String payload, boolean fin)
+        {
+            partialEvents.offer(String.format("TEXT[payload=%s, fin=%b]", TextUtils.maxStringLength(30, payload), fin));
+            session.demand();
+        }
+
+        @Override
+        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
+        {
+            // our testcases always send bytes limited in the US-ASCII range.
+            partialEvents.offer(String.format("BINARY[payload=<<<%s>>>, fin=%b]", BufferUtil.toUTF8String(payload), fin));
+            callback.succeed();
+            session.demand();
         }
 
         @Override
@@ -241,17 +252,9 @@ public class PartialListenerTest
         }
 
         @Override
-        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
+        public void onWebSocketClose(int statusCode, String reason)
         {
-            // our testcases always send bytes limited in the US-ASCII range.
-            partialEvents.offer(String.format("BINARY[payload=<<<%s>>>, fin=%b]", BufferUtil.toUTF8String(payload), fin));
-            callback.succeed();
-        }
-
-        @Override
-        public void onWebSocketPartialText(String payload, boolean fin)
-        {
-            partialEvents.offer(String.format("TEXT[payload=%s, fin=%b]", TextUtils.maxStringLength(30, payload), fin));
+            closeLatch.countDown();
         }
     }
 }

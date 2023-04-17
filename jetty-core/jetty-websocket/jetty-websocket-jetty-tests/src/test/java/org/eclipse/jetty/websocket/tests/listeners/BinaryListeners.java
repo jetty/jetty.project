@@ -34,8 +34,6 @@ public class BinaryListeners
             OffsetByteArrayWholeListener.class,
             OffsetByteBufferPartialListener.class,
             AnnotatedByteBufferWholeListener.class,
-            AnnotatedByteArrayWholeListener.class,
-            AnnotatedOffsetByteArrayWholeListener.class,
             AnnotatedInputStreamWholeListener.class,
             AnnotatedReverseArgumentPartialListener.class
         ).map(Arguments::of);
@@ -44,18 +42,40 @@ public class BinaryListeners
     public static class OffsetByteArrayWholeListener extends Session.Listener.Abstract
     {
         @Override
+        public void onWebSocketConnect(Session session)
+        {
+            super.onWebSocketConnect(session);
+            session.demand();
+        }
+
+        @Override
         public void onWebSocketBinary(ByteBuffer payload, Callback callback)
         {
-            getSession().sendPartialBinary(payload, true, callback);
+            getSession().sendPartialBinary(payload, true, Callback.from(() ->
+            {
+                callback.succeed();
+                getSession().demand();
+            }, callback::fail));
         }
     }
 
     public static class OffsetByteBufferPartialListener extends Session.Listener.Abstract
     {
         @Override
+        public void onWebSocketConnect(Session session)
+        {
+            super.onWebSocketConnect(session);
+            session.demand();
+        }
+
+        @Override
         public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
-            getSession().sendPartialBinary(payload, fin, callback);
+            getSession().sendPartialBinary(payload, fin, Callback.from(() ->
+            {
+                callback.succeed();
+                getSession().demand();
+            }, callback::fail));
         }
     }
 
@@ -63,29 +83,9 @@ public class BinaryListeners
     public static class AnnotatedByteBufferWholeListener extends AbstractAnnotatedListener
     {
         @OnWebSocketMessage
-        public void onMessage(ByteBuffer message)
+        public void onMessage(ByteBuffer message, Callback callback)
         {
-            sendBinary(message, true);
-        }
-    }
-
-    @WebSocket
-    public static class AnnotatedByteArrayWholeListener extends AbstractAnnotatedListener
-    {
-        @OnWebSocketMessage
-        public void onMessage(byte[] message)
-        {
-            sendBinary(BufferUtil.toBuffer(message), true);
-        }
-    }
-
-    @WebSocket
-    public static class AnnotatedOffsetByteArrayWholeListener extends AbstractAnnotatedListener
-    {
-        @OnWebSocketMessage
-        public void onMessage(byte[] message, int offset, int length)
-        {
-            sendBinary(BufferUtil.toBuffer(message, offset, length), true);
+            _session.sendPartialBinary(message, true, callback);
         }
     }
 
@@ -103,9 +103,9 @@ public class BinaryListeners
     public static class AnnotatedReverseArgumentPartialListener extends AbstractAnnotatedListener
     {
         @OnWebSocketMessage
-        public void onMessage(Session session, ByteBuffer message)
+        public void onMessage(Session session, ByteBuffer message, Callback callback)
         {
-            sendBinary(message, true);
+            _session.sendPartialBinary(message, true, callback);
         }
     }
 

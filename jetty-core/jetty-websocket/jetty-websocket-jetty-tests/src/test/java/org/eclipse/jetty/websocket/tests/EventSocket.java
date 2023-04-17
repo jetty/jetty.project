@@ -19,6 +19,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -64,12 +66,12 @@ public class EventSocket
     }
 
     @OnWebSocketMessage
-    public void onMessage(byte[] buf, int offset, int len) throws IOException
+    public void onMessage(ByteBuffer message, Callback callback) throws IOException
     {
-        ByteBuffer message = ByteBuffer.wrap(buf, offset, len);
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onMessage(): {}", this, message);
-        binaryMessages.offer(message);
+        binaryMessages.offer(BufferUtil.copy(message));
+        callback.succeed();
     }
 
     @OnWebSocketClose

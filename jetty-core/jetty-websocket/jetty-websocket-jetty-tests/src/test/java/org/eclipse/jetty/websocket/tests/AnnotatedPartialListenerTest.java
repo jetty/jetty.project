@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AnnotatedPartialListenerTest
 {
-    public static class PartialEchoSocket implements Session.Listener
+    public static class PartialEchoSocket implements Session.Listener.AutoDemanding
     {
         private Session session;
 
@@ -97,12 +97,13 @@ public class AnnotatedPartialListenerTest
         }
 
         @OnWebSocketMessage
-        public void onMessage(ByteBuffer buffer, boolean last)
+        public void onMessage(ByteBuffer buffer, boolean last, Callback callback)
         {
             MessageSegment messageSegment = new MessageSegment();
             messageSegment.buffer = BufferUtil.copy(buffer);
             messageSegment.last = last;
             messages.add(messageSegment);
+            callback.succeed();
         }
     }
 
@@ -110,12 +111,12 @@ public class AnnotatedPartialListenerTest
     public static class InvalidDoubleBinaryListener
     {
         @OnWebSocketMessage
-        public void onMessage(ByteBuffer bytes, boolean last)
+        public void onMessage(ByteBuffer bytes, boolean last, Callback callback)
         {
         }
 
         @OnWebSocketMessage
-        public void onMessage(ByteBuffer bytes)
+        public void onMessage(ByteBuffer bytes, Callback callback)
         {
         }
     }
@@ -201,12 +202,10 @@ public class AnnotatedPartialListenerTest
         PartialByteBufferListener endpoint = new PartialByteBufferListener();
         try (Session session = client.connect(endpoint, serverUri).get(5, TimeUnit.SECONDS))
         {
-            ByteBuffer buffer2 = BufferUtil.toBuffer("hell");
-            session.sendPartialBinary(buffer2, false, Callback.NOOP);
-            ByteBuffer buffer1 = BufferUtil.toBuffer("o w");
-            session.sendPartialBinary(buffer1, false, Callback.NOOP);
-            ByteBuffer buffer = BufferUtil.toBuffer("orld");
-            session.sendPartialBinary(buffer, true, Callback.NOOP);
+            Callback.Completable.with(c -> session.sendPartialBinary(BufferUtil.toBuffer("hell"), false, c))
+                .compose(c -> session.sendPartialBinary(BufferUtil.toBuffer("o w"), false, c))
+                .compose(c -> session.sendPartialBinary(BufferUtil.toBuffer("orld"), true, c))
+                .get();
         }
 
         PartialByteBufferListener.MessageSegment segment;

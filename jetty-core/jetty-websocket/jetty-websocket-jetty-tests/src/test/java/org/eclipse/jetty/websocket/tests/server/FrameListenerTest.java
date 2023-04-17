@@ -135,21 +135,10 @@ public class FrameListenerTest
         public LinkedBlockingQueue<String> frameEvents = new LinkedBlockingQueue<>();
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-            closeLatch.countDown();
-        }
-
-        @Override
         public void onWebSocketConnect(Session session)
         {
             this.session = session;
-        }
-
-        @Override
-        public void onWebSocketError(Throwable cause)
-        {
-            cause.printStackTrace(System.err);
+            session.demand();
         }
 
         @Override
@@ -161,6 +150,19 @@ public class FrameListenerTest
                 BufferUtil.toUTF8String(frame.getPayload()),
                 frame.getPayloadLength()));
             callback.succeed();
+            session.demand();
+        }
+
+        @Override
+        public void onWebSocketError(Throwable cause)
+        {
+            cause.printStackTrace(System.err);
+        }
+
+        @Override
+        public void onWebSocketClose(int statusCode, String reason)
+        {
+            closeLatch.countDown();
         }
     }
 }

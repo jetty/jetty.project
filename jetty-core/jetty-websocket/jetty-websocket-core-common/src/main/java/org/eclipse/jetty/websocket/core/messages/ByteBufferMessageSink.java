@@ -60,9 +60,10 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             if (frame.isFin() && out == null)
             {
                 if (frame.hasPayload())
-                    methodHandle.invoke(frame.getPayload(), callback);
+                    methodHandle.invoke(frame.getPayload());
                 else
-                    methodHandle.invoke(BufferUtil.EMPTY_BUFFER, callback);
+                    methodHandle.invoke(BufferUtil.EMPTY_BUFFER);
+                callback.succeeded();
                 return;
             }
 
@@ -85,7 +86,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 out.writeTo(byteBuffer);
                 try
                 {
-                    methodHandle.invoke(byteBuffer, callback);
+                    methodHandle.invoke(byteBuffer);
                 }
                 finally
                 {

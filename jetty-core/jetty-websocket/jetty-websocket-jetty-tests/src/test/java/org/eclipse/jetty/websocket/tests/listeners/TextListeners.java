@@ -40,18 +40,38 @@ public class TextListeners
     public static class StringWholeListener extends Session.Listener.Abstract
     {
         @Override
+        public void onWebSocketConnect(Session session)
+        {
+            super.onWebSocketConnect(session);
+            session.demand();
+        }
+
+        @Override
         public void onWebSocketText(String message)
         {
-            getSession().sendPartialText(message, true, Callback.NOOP);
+            getSession().sendPartialText(message, true, Callback.from(getSession()::demand, x ->
+            {
+                throw new RuntimeException(x);
+            }));
         }
     }
 
     public static class StringPartialListener extends Session.Listener.Abstract
     {
         @Override
+        public void onWebSocketConnect(Session session)
+        {
+            super.onWebSocketConnect(session);
+            session.demand();
+        }
+
+        @Override
         public void onWebSocketPartialText(String message, boolean fin)
         {
-            getSession().sendPartialText(message, fin, Callback.NOOP);
+            getSession().sendPartialText(message, fin, Callback.from(getSession()::demand, x ->
+            {
+                throw new RuntimeException(x);
+            }));
         }
     }
 

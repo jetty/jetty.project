@@ -111,7 +111,7 @@ public class SingleOnMessageTest
         serverSocket.session.sendBinary(BufferUtil.toBuffer("WebSocket_Data1"), Callback.NOOP);
         serverSocket.session.close(StatusCode.NORMAL, "test complete", Callback.NOOP);
 
-        // The client receives the messages and has discarded the binary message.
+        // The client receives the messages and has discarded the text message.
         assertThat(handler.messages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("WebSocket_Data0")));
         assertThat(handler.messages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("WebSocket_Data1")));
         assertTrue(handler.closeLatch.await(5, TimeUnit.SECONDS));
@@ -137,9 +137,10 @@ public class SingleOnMessageTest
         final BlockingArrayQueue<ByteBuffer> messages = new BlockingArrayQueue<>();
 
         @OnWebSocketMessage
-        public void onMessage(byte[] array, int offset, int length)
+        public void onMessage(ByteBuffer payload, Callback callback)
         {
-            messages.add(BufferUtil.toBuffer(array, offset, length));
+            messages.add(BufferUtil.copy(payload));
+            callback.succeed();
         }
     }
 

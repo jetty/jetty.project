@@ -83,10 +83,6 @@ public interface Callback
             return completable;
         }
 
-        private Completable()
-        {
-        }
-
         @Override
         public void succeed()
         {

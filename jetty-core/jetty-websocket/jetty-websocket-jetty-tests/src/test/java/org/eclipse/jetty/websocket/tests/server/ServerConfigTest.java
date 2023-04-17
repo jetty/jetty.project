@@ -80,7 +80,7 @@ public class ServerConfigTest
 
     public static Stream<Arguments> data()
     {
-        return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
+        return Stream.of("servletConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
     @WebSocket

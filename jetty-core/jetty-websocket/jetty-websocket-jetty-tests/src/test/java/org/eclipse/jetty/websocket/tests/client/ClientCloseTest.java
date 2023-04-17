@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -414,16 +413,16 @@ public class ClientCloseTest
         }
     }
 
-    public static class ServerEndpoint implements Session.Listener
+    public static class ServerEndpoint implements Session.Listener.AutoDemanding
     {
         private static final Logger LOG = LoggerFactory.getLogger(ServerEndpoint.class);
         private Session session;
         CountDownLatch block = new CountDownLatch(1);
 
         @Override
-        public void onWebSocketBinary(ByteBuffer payload, Callback callback)
+        public void onWebSocketConnect(Session session)
         {
-            callback.succeed();
+            this.session = session;
         }
 
         @Override
@@ -459,17 +458,6 @@ public class ClientCloseTest
         }
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-        }
-
-        @Override
-        public void onWebSocketConnect(Session session)
-        {
-            this.session = session;
-        }
-
-        @Override
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
@@ -491,9 +479,9 @@ public class ClientCloseTest
                         session.sendText("Hello", Callback.NOOP);
                         session.sendText("World", Callback.NOOP);
                     }
-                    catch (Throwable ignore)
+                    catch (Throwable x)
                     {
-                        LOG.debug("OOPS", ignore);
+                        LOG.debug("OOPS", x);
                     }
                 }
                 else if (reason.equals("abort"))
@@ -504,9 +492,9 @@ public class ClientCloseTest
                         LOG.info("Server aborting session abruptly");
                         session.disconnect();
                     }
-                    catch (Throwable ignore)
+                    catch (Throwable x)
                     {
-                        LOG.trace("IGNORED", ignore);
+                        LOG.trace("IGNORED", x);
                     }
                 }
                 else if (reason.startsWith("sleep|"))
@@ -518,9 +506,9 @@ public class ClientCloseTest
                         LOG.info("Server Sleeping for {} ms", timeMs);
                         TimeUnit.MILLISECONDS.sleep(timeMs);
                     }
-                    catch (InterruptedException ignore)
+                    catch (InterruptedException x)
                     {
-                        LOG.trace("IGNORED", ignore);
+                        LOG.trace("IGNORED", x);
                     }
                 }
             }
