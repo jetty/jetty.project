@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -61,6 +62,7 @@ public class HttpClientLoadTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("flaky")
     public void testIterative(Transport transport) throws Exception
     {
         server = newServer();

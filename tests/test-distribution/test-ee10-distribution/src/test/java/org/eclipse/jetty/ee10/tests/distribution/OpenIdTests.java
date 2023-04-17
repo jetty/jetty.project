@@ -46,7 +46,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,ee10-webapp,ee10-deploy,ee10-openid"
+            "--add-to-start=http,ee10-webapp,ee10-deploy,openid"
         };
 
         String clientId = "clientId123";
