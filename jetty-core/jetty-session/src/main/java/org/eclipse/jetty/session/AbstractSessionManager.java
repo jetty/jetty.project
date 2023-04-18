@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Syntax;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -640,6 +642,94 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public int getSessionsCreated()
     {
         return (int)_sessionsCreatedStats.getCurrent();
+    }
+
+    @Override
+    public String encodeURL(Request request, String url, boolean cookiesInUse)
+    {
+        HttpURI uri = null;
+        if (isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
+        {
+            uri = HttpURI.from(url);
+            String path = uri.getPath();
+            path = (path == null ? "" : path);
+            int port = uri.getPort();
+            if (port < 0)
+                port = HttpScheme.getDefaultPort(uri.getScheme());
+
+            // Is it the same server?
+            if (!Request.getServerName(request).equalsIgnoreCase(uri.getHost()))
+                return url;
+            if (Request.getServerPort(request) != port)
+                return url;
+            if (request.getContext() != null && !path.startsWith(request.getContext().getContextPath()))
+                return url;
+        }
+
+        String sessionURLPrefix = getSessionIdPathParameterNamePrefix();
+        if (sessionURLPrefix == null)
+            return url;
+
+        if (url == null)
+            return null;
+
+        // should not encode if cookies in evidence
+        if ((isUsingCookies() && cookiesInUse) || !isUsingURLs())
+        {
+            int prefix = url.indexOf(sessionURLPrefix);
+            if (prefix != -1)
+            {
+                int suffix = url.indexOf("?", prefix);
+                if (suffix < 0)
+                    suffix = url.indexOf("#", prefix);
+
+                if (suffix <= prefix)
+                    return url.substring(0, prefix);
+                return url.substring(0, prefix) + url.substring(suffix);
+            }
+            return url;
+        }
+
+        // get session;
+        Session session = request.getSession(false);
+
+        // no session
+        if (session == null || !session.isValid())
+            return url;
+
+        String id = session.getExtendedId();
+
+        if (uri == null)
+            uri = HttpURI.from(url);
+
+        // Already encoded
+        int prefix = url.indexOf(sessionURLPrefix);
+        if (prefix != -1)
+        {
+            int suffix = url.indexOf("?", prefix);
+            if (suffix < 0)
+                suffix = url.indexOf("#", prefix);
+
+            if (suffix <= prefix)
+                return url.substring(0, prefix + sessionURLPrefix.length()) + id;
+            return url.substring(0, prefix + sessionURLPrefix.length()) + id +
+                url.substring(suffix);
+        }
+
+        // edit the session
+        int suffix = url.indexOf('?');
+        if (suffix < 0)
+            suffix = url.indexOf('#');
+        if (suffix < 0)
+        {
+            return url +
+                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
+                sessionURLPrefix + id;
+        }
+
+        return url.substring(0, suffix) +
+            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
+            sessionURLPrefix + id + url.substring(suffix);
     }
 
     @Override

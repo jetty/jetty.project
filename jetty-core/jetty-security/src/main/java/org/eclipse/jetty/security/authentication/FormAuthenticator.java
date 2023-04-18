@@ -16,6 +16,7 @@ package org.eclipse.jetty.security.authentication;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -236,10 +237,13 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
 
-    protected String encodeURL(String url)
+    protected String encodeURL(String url, Request request)
     {
-        // TODO
-        return url;
+        Session session = request.getSession(false);
+        if (session == null)
+            return url;
+
+        return session.encodeURL(request, url, request.getHeaders().contains(HttpHeader.COOKIE));
     }
 
     @Override
@@ -276,7 +280,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 if (originalURI == null)
                     originalURI = "/";
                 FormAuthentication formAuth = new FormAuthentication(getAuthMethod(), user);
-                Response.sendRedirect(request, response, callback, encodeURL(originalURI), true);
+                Response.sendRedirect(request, response, callback, encodeURL(originalURI, request), true);
                 return formAuth;
             }
 
@@ -284,7 +288,7 @@ public class FormAuthenticator extends LoginAuthenticator
             if (_formErrorPage == null)
                 Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             else
-                Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage)), true);
+                Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);
 
             return Authentication.SEND_FAILURE;
         }
@@ -346,7 +350,7 @@ public class FormAuthenticator extends LoginAuthenticator
         // send the challenge
         if (LOG.isDebugEnabled())
             LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-        Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage)), true);
+        Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request), true);
         return Authentication.CHALLENGE;
     }
 

@@ -360,6 +360,12 @@ public class ManagedSession implements Session
     }
 
     @Override
+    public String encodeURL(Request request, String url, boolean cookiesInUse)
+    {
+        return _manager.encodeURL(request, url, cookiesInUse);
+    }
+
+    @Override
     public String getExtendedId()
     {
         return _extendedId;

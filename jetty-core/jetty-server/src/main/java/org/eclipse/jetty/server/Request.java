@@ -466,7 +466,6 @@ public interface Request extends Attributes, Content.Source
      */
     static String toRedirectURI(Request request, String location)
     {
-        // TODO write some tests for this
         if (!URIUtil.hasScheme(location) && !request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
         {
             StringBuilder url = new StringBuilder(128);
