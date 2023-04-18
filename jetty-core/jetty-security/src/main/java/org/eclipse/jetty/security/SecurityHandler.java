@@ -455,7 +455,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             if (authentication instanceof Authentication.ResponseSent)
                 return true;
 
-            if (isNotAuthorized(constraint, authentication))
+            if (mustValidate && isNotAuthorized(constraint, authentication))
             {
                 Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
                 return true;

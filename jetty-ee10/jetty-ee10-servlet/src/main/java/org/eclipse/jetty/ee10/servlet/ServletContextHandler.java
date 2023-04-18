@@ -1359,11 +1359,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public ServletHandler getServletHandler()
     {
         if (_servletHandler == null && !isStarted())
-        {
-            _servletHandler = getDescendant(ServletHandler.class);
-            if (_servletHandler == null)
-                _servletHandler = newServletHandler();
-        }
+            _servletHandler = newServletHandler();
         return _servletHandler;
     }
 

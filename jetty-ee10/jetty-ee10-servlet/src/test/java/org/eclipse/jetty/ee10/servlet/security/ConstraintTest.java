@@ -70,6 +70,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -316,6 +317,10 @@ public class ConstraintTest
 
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-3
+     *
+     * <pre>
+     * &#064;ServletSecurity(@HttpConstraint(EmptyRoleSemantic.DENY))
+     * </pre>
      */
     @Test
     public void testSecurityElementExample133()
@@ -331,6 +336,8 @@ public class ConstraintTest
 
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-4
+     *
+     * &#064;ServletSecurity(&#064;HttpConstraint(rolesAllowed = "R1"))
      */
     @Test
     public void testSecurityElementExample134()
@@ -349,6 +356,12 @@ public class ConstraintTest
 
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-5
+     * <pre>
+     * &#064;ServletSecurity((httpMethodConstraints = {
+     * &#064;HttpMethodConstraint(value = "GET", rolesAllowed = "R1"),
+     * &#064;HttpMethodConstraint(value = "POST", rolesAllowed = "R1",
+     * transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
+     * </pre>
      */
     @Test
     public void testSecurityElementExample135() throws Exception
@@ -372,6 +385,9 @@ public class ConstraintTest
 
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-6
+     * <pre>
+     * &#064;ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), httpMethodConstraints = @HttpMethodConstraint("GET"))
+     * </pre>
      */
     @Test
     public void testSecurityElementExample136()
@@ -389,11 +405,16 @@ public class ConstraintTest
         assertEquals("GET", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
         assertFalse(mappings.get(1).getConstraint().isSecure());
-        assertThat(mappings.get(1).getConstraint().getAuthentication(), is(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE));
+        assertThat(mappings.get(1).getConstraint().getAuthentication(), is(Constraint.Authentication.REQUIRE_NONE));
     }
 
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-7
+     * <pre>
+     * &#064;ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"),
+     * httpMethodConstraints = @HttpMethodConstraint(value="TRACE",
+     * emptyRoleSemantic = EmptyRoleSemantic.DENY))
+     * </pre>
      */
     @Test
     public void testSecurityElementExample137()
@@ -1087,22 +1108,26 @@ public class ConstraintTest
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
         _server.start();
 
-        String response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
-            "Host: test\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Content-Length: 10\r\n" +
-            "\r\n" +
-            "0123456789\r\n");
+        String response = _connector.getResponse("""
+            POST /ctx/auth/info HTTP/1.1\r
+            Host: test\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            0123456789\r
+            """);
         assertThat(response, containsString(" 303 See Other"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, not(containsString("Connection: close")));
 
-        response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
-            "Host: test\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Content-Length: 10\r\n" +
-            "\r\n" +
-            "012345\r\n");
+        response = _connector.getResponse("""
+            POST /ctx/auth/info HTTP/1.1\r
+            Host: test\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            012345\r
+            """);
         assertThat(response, containsString(" 303 See Other"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("Connection: close"));
@@ -1126,6 +1151,7 @@ public class ConstraintTest
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         int jsession = response.indexOf(";jsessionid=");
+        assertThat(jsession, greaterThan(0));
         String session = response.substring(jsession + 12, response.indexOf("\r\n", jsession));
 
         response = _connector.getResponse("GET /ctx/testLoginPage;jsessionid=" + session + ";other HTTP/1.0\r\n" +
@@ -1774,6 +1800,7 @@ public class ConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
         Logger.getAnonymousLogger().info("Uncovered method for /specific/method is expected");
         _server.start();
+        _security.dumpStdErr();
 
         assertThat(_security.getPathsWithUncoveredHttpMethods(), contains("/specific/method"));
 

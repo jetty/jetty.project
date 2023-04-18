@@ -68,13 +68,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private final List<ConstraintMapping> _constraintMappings = new CopyOnWriteArrayList<>();
     private final List<ConstraintMapping> _durableConstraintMappings = new CopyOnWriteArrayList<>();
     private final Set<String> _roles = new CopyOnWriteArraySet<>();
-    private final PathMappings<Map<String, Constraint>> _constraintRoles = new PathMappings<>();
+    private final PathMappings<Map<String, Constraint>> _constraintsByPathAndMethod = new PathMappings<>();
     private boolean _denyUncoveredMethods = false;
 
     @Override
     protected Constraint getConstraint(String pathInContext, Request request)
     {
-        MatchedResource<Map<String, Constraint>> resource = _constraintRoles.getMatched(pathInContext);
+        MatchedResource<Map<String, Constraint>> resource = _constraintsByPathAndMethod.getMatched(pathInContext);
         if (resource == null)
             return null;
 
@@ -335,9 +335,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         setRoles(roles);
 
         if (isStarted())
-        {
-            _constraintMappings.stream().forEach(m -> processConstraintMapping(m));
-        }
+            _constraintMappings.forEach(this::processConstraintMapping);
     }
 
     /**
@@ -386,7 +384,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected void doStart() throws Exception
     {
-        _constraintRoles.reset();
+        _constraintsByPathAndMethod.reset();
         _constraintMappings.forEach(this::processConstraintMapping);
 
         //Servlet Spec 3.1 pg 147 sec 13.8.4.2 log paths for which there are uncovered http methods
@@ -399,7 +397,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     protected void doStop() throws Exception
     {
         super.doStop();
-        _constraintRoles.reset();
+        _constraintsByPathAndMethod.reset();
         _constraintMappings.clear();
         _constraintMappings.addAll(_durableConstraintMappings);
     }
@@ -435,11 +433,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, Constraint> mappings = _constraintRoles.get(PathSpec.from(mapping.getPathSpec()));
+        Map<String, Constraint> mappings = _constraintsByPathAndMethod.get(PathSpec.from(mapping.getPathSpec()));
         if (mappings == null)
         {
             mappings = new HashMap<>();
-            _constraintRoles.put(mapping.getPathSpec(), mappings);
+            _constraintsByPathAndMethod.put(mapping.getPathSpec(), mappings);
         }
         Constraint allMethodsConstraint = mappings.get(ALL_METHODS);
         if (allMethodsConstraint != null && allMethodsConstraint.isForbidden())
@@ -463,13 +461,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         // add in info from the constraint
         constraint = combineServletConstraints(constraint, mapping.getConstraint());
 
-        if (constraint.isForbidden())
+        if (constraint.isForbidden() && httpMethod.equals(ALL_METHODS))
         {
-            if (httpMethod.equals(ALL_METHODS))
-            {
-                mappings.clear();
-                mappings.put(ALL_METHODS, constraint);
-            }
+            mappings.clear();
+            mappings.put(ALL_METHODS, constraint);
         }
         else
         {
@@ -546,7 +541,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * information and log any methods that are not protected and the
      * urls at which they are not protected
      *
-     * @return list of paths for which there are uncovered methods
+     * @return Set of paths for which there are uncovered methods
      */
     public Set<String> getPathsWithUncoveredHttpMethods()
     {
@@ -556,7 +551,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         Set<String> uncoveredPaths = new HashSet<>();
 
-        for (MappedResource<Map<String, Constraint>> resource : _constraintRoles)
+        for (MappedResource<Map<String, Constraint>> resource : _constraintsByPathAndMethod)
         {
             String path = resource.getPathSpec().getDeclaration();
             Map<String, Constraint> methodMappings = resource.getResource();
@@ -567,7 +562,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             if (methodMappings.get(ALL_METHODS) != null)
                 continue; //can't be any uncovered methods for this url path
 
-            boolean hasOmissions = omissionsExist(path, methodMappings);
+            boolean hasOmissions = omissionsExist(methodMappings);
 
             for (String method : methodMappings.keySet())
             {
@@ -596,21 +591,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * Check if any http method omissions exist in the list of method
      * to auth info mappings.
      *
-     * @param path the path
      * @param methodMappings the method mappings
      * @return true if omission exist
      */
-    protected boolean omissionsExist(String path, Map<String, Constraint> methodMappings)
+    protected boolean omissionsExist(Map<String, Constraint> methodMappings)
     {
         if (methodMappings == null)
             return false;
-        boolean hasOmissions = false;
         for (String m : methodMappings.keySet())
         {
             if (m.endsWith(OMISSION_SUFFIX))
-                hasOmissions = true;
+                return true;
         }
-        return hasOmissions;
+        return false;
     }
 
     /**

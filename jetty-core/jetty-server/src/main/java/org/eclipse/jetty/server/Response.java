@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
@@ -202,8 +203,9 @@ public interface Response extends Content.Sink
     }
 
     /**
-     * <p>Sends a {@code 302} HTTP redirect status code to the given location,
-     * without consuming the available request content.</p>
+     * <p>Sends a HTTP redirect status code to the given location,
+     * without consuming the available request content. The {@link HttpStatus#SEE_OTHER_303}
+     * code is used, unless the request is HTTP/1.0, in which case {@link HttpStatus#MOVED_TEMPORARILY_302} is used.</p>
      *
      * @param request the HTTP request
      * @param response the HTTP response
@@ -213,12 +215,16 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
     {
-        sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, false);
+        int code = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            ? HttpStatus.MOVED_TEMPORARILY_302
+            : HttpStatus.SEE_OTHER_303;
+        sendRedirect(request, response, callback, code, location, false);
     }
 
     /**
-     * <p>Sends a {@code 302} HTTP redirect status code to the given location,
-     * without consuming the available request content.</p>
+     * <p>Sends HTTP redirect status code to the given location,
+     * without consuming the available request content. The {@link HttpStatus#SEE_OTHER_303}
+     * code is used, unless the request is HTTP/1.0, in which case {@link HttpStatus#MOVED_TEMPORARILY_302} is used.</p>
      *
      * @param request the HTTP request
      * @param response the HTTP response
@@ -229,7 +235,10 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location, boolean consumeAvailable)
     {
-        sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, consumeAvailable);
+        int code = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            ? HttpStatus.MOVED_TEMPORARILY_302
+            : HttpStatus.SEE_OTHER_303;
+        sendRedirect(request, response, callback, code, location, consumeAvailable);
     }
 
     /**
