@@ -217,6 +217,22 @@ public interface Response extends Content.Sink
     }
 
     /**
+     * <p>Sends a {@code 302} HTTP redirect status code to the given location,
+     * without consuming the available request content.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param location the redirect location
+     * @param consumeAvailable whether to consumer the available request content
+     * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
+     */
+    static void sendRedirect(Request request, Response response, Callback callback, String location, boolean consumeAvailable)
+    {
+        sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, consumeAvailable);
+    }
+
+    /**
      * <p>Sends a {@code 302} HTTP redirect status code to the given location.</p>
      *
      * @param request the HTTP request

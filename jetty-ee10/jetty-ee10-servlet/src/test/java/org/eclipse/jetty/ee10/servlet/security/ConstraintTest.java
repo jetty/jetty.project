@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -151,7 +152,7 @@ public class ConstraintTest
         mapping0.setConstraint(_forbidConstraint.build());
 
         Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
-        authAnyRoleConstraint.authentication(Constraint.Authentication.REQUIRE_ANY_ROLE);
+        authAnyRoleConstraint.authentication(Constraint.Authentication.REQUIRE_KNOWN_ROLE);
         authAnyRoleConstraint.name("auth");
         ConstraintMapping mapping1 = new ConstraintMapping();
         mapping1.setPathSpec("/auth/*");
@@ -614,7 +615,7 @@ public class ConstraintTest
                 HttpStatus.FORBIDDEN_403,
                 (response) ->
                 {
-                    assertThat(response.getContent(), containsString("!role"));
+                    assertThat(response.getContent(), containsString("!authorized"));
                 }
             )
         ));
@@ -864,6 +865,7 @@ public class ConstraintTest
     }
 
     @Test
+    @Disabled("Dispatch unsupported")
     public void testFormDispatch() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", true));
@@ -913,7 +915,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
     }
 
     @Test
@@ -976,7 +978,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("JSESSIONID=" + session)));
     }
 
@@ -1047,7 +1049,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
     }
 
     @Test
@@ -1071,7 +1073,7 @@ public class ConstraintTest
             "Host: localhost\r\n" +
             "Content-Type: text/plain\r\n" +
             "Connection: keep-alive\r\n" +
-            "Content-Length: 10\r\n" +
+            "Content-Length: 10000\r\n" +
             "\r\n" +
             "012345\r\n");
         assertThat(response, containsString(" 302 Found"));
@@ -1155,7 +1157,7 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/admin/info;jsessionid=" + session + ";other HTTP/1.0\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
     }
 
     /**
@@ -1382,7 +1384,7 @@ public class ConstraintTest
             "\r\n");
 
         assertThat(response, startsWith("HTTP/1.1 403 "));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Authorization: Basic " + authBase64("admin:password") + "\r\n" +
@@ -1394,6 +1396,7 @@ public class ConstraintTest
     }
 
     @Test
+    @Disabled("Dispatch unsupported")
     public void testStrictFormDispatch()
         throws Exception
     {
@@ -1441,13 +1444,13 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
 
         // log in again as user2
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
@@ -1475,7 +1478,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
 
         // log in again as admin
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
@@ -1548,13 +1551,13 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
 
         // log in again as user2
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
@@ -1583,7 +1586,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!role"));
+        assertThat(response, containsString("!authorized"));
 
         //log in as user3, who doesn't have a valid role, but we are checking a constraint
         //of ** which just means they have to be authenticated

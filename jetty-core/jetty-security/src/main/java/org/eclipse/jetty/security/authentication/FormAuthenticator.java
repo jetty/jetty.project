@@ -276,7 +276,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 if (originalURI == null)
                     originalURI = "/";
                 FormAuthentication formAuth = new FormAuthentication(getAuthMethod(), user);
-                Response.sendRedirect(request, response, callback, encodeURL(originalURI));
+                Response.sendRedirect(request, response, callback, encodeURL(originalURI), true);
                 return formAuth;
             }
 
@@ -284,7 +284,7 @@ public class FormAuthenticator extends LoginAuthenticator
             if (_formErrorPage == null)
                 Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             else
-                Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage)));
+                Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage)), true);
 
             return Authentication.SEND_FAILURE;
         }
@@ -346,7 +346,7 @@ public class FormAuthenticator extends LoginAuthenticator
         // send the challenge
         if (LOG.isDebugEnabled())
             LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-        Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage)));
+        Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage)), true);
         return Authentication.CHALLENGE;
     }
 
