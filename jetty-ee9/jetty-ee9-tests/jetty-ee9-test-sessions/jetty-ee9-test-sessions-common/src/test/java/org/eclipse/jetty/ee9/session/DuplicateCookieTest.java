@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -416,7 +417,7 @@ public class DuplicateCookieTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that all valid sessions have their request counts decremented correctly after the request, back to 0
-            assertEquals(0, s1234.getRequests());
+            Awaitility.await().atMost(30, TimeUnit.SECONDS).until(() -> s1234.getRequests() == 0);
         }
         finally
         {
