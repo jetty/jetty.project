@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -201,9 +202,9 @@ public class FormAuthenticator extends LoginAuthenticator
             {
                 session.removeAttribute(__J_URI);
 
-                Fields fields = (Fields)session.removeAttribute(__J_POST);
-                if (fields != null)
-                    request.setAttribute(FormFields.class.getName(), fields);
+                Object post = session.removeAttribute(__J_POST);
+                if (post instanceof CompletableFuture<?> futureFields)
+                    FormFields.set(request, (CompletableFuture<Fields>)futureFields);
 
                 String method = (String)session.removeAttribute(__J_METHOD);
                 if (method != null && request.getMethod().equals(method))
@@ -333,7 +334,9 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     try
                     {
-                        session.setAttribute(__J_POST, FormFields.from(request).get());
+                        CompletableFuture<Fields> futureFields = FormFields.from(request);
+                        futureFields.get();
+                        session.setAttribute(__J_POST, futureFields);
                     }
                     catch (ExecutionException e)
                     {

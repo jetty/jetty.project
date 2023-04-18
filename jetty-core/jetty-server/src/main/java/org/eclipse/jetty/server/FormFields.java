@@ -75,6 +75,19 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         return from(request, charset, maxFields, maxLength);
     }
 
+    public static void set(Request request, CompletableFuture<Fields> fields)
+    {
+        request.setAttribute(FormFields.class.getName(), fields);
+    }
+
+    public static CompletableFuture<Fields> get(Request request)
+    {
+        Object attr = request.getAttribute(FormFields.class.getName());
+        if (attr instanceof FormFields futureFormFields)
+            return futureFormFields;
+        return EMPTY;
+    }
+
     public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
     {
         Object attr = request.getAttribute(FormFields.class.getName());

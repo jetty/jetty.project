@@ -882,6 +882,19 @@ public class ServletApiRequest implements HttpServletRequest
                                 throw new RuntimeIOException(msg, e);
                             }
                         }
+                        else
+                        {
+                            try
+                            {
+                                _contentParameters = FormFields.get(getServletContextRequest()).get();
+                            }
+                            catch (IllegalStateException | IllegalArgumentException | ExecutionException |
+                                   InterruptedException e)
+                            {
+                                LOG.warn(e.toString());
+                                throw new BadMessageException("Unable to parse form content", e);
+                            }
+                        }
                     }
 
                     if (_contentParameters == null || _contentParameters.isEmpty())
