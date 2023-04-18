@@ -23,8 +23,7 @@ jetty-12.0.0.beta0 - 23 February 2023
    modules
  + 9166 Jetty 12: review/remove ByteBufferPool
  + 9173 Configuring SameSite on a per-cookie basis in Jetty 12
- + 9181 Jetty 9 java.lang.NullPointerException
-   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
  + 9182 Jetty 12 - Public version of JakartaWebSocketServerContainer
  + 9183 ConnectHandler may close the connection instead of sending 200 OK
  + 9210 Jetty 12 - Review Pool and Pool.Entry
@@ -37,7 +36,7 @@ jetty-12.0.0.beta0 - 23 February 2023
  + 9301 JSTL fails in JPMS
  + 9322 404 handler not working in jetty-12
  + 9326 Jetty 12 - Rename DecryptedEndPoint to SslEndPoint
- + 9334 Better support for Cookie RFC 2965 compliance
+ + 9334 Better support for Cookie RFC 2965 compliance (CVE-2023-26049)
  + 9336 Review LifeCycle of Parts in Jetty 12
  + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
    hard-coded message
