@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -137,6 +138,8 @@ public interface Constraint
         {
             _authentication = authentication;
             _forbidden = false;
+            if (Objects.requireNonNull(authentication) == Authentication.REQUIRE_ANY_ROLE && _roles != null)
+                _roles.clear();
             return this;
         }
 
@@ -149,6 +152,7 @@ public interface Constraint
         {
             if (roles != null && roles.length > 0)
             {
+                _authentication = Authentication.REQUIRE_SPECIFIC_ROLE;
                 if (_roles == null)
                     _roles = new HashSet<>();
                 else if (!(_roles instanceof HashSet<String>))

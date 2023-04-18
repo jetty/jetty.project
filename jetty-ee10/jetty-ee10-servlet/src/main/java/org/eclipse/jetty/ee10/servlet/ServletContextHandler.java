@@ -91,7 +91,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
@@ -304,9 +306,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        // TODO almost certainly this is wrong
-        super.dump(out, indent);
         dumpObjects(out, indent,
+            new ClassLoaderDump(getClassLoader()),
+            Dumpable.named("context " + this, getContext()),
+            Dumpable.named("handler attributes " + this, getContext().getPersistentAttributes()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
@@ -1356,7 +1359,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public ServletHandler getServletHandler()
     {
         if (_servletHandler == null && !isStarted())
-            _servletHandler = newServletHandler();
+        {
+            _servletHandler = getDescendant(ServletHandler.class);
+            if (_servletHandler == null)
+                _servletHandler = newServletHandler();
+        }
         return _servletHandler;
     }
 
