@@ -25,10 +25,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.compression.Huffman;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
@@ -468,7 +468,7 @@ public class HpackEncoder
             for (int i = 0; i < value.length(); i++)
             {
                 char c = value.charAt(i);
-                c = Huffman.getReplacementCharacter(c);
+                c = HttpTokens.sanitizeFieldVchar(c);
                 buffer.put((byte)c);
             }
         }

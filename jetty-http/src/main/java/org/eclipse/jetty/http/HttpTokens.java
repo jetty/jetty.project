@@ -231,5 +231,60 @@ public class HttpTokens
             }
         }
     }
+
+    /**
+     * This is used when decoding to not decode illegal characters based on RFC9110.
+     * CR, LF, or NUL are replaced with ' ', all other control and multibyte characters
+     * are replaced with '?'. If this is given a legal character the same value will be returned.
+     *
+     * @param c the character to test.
+     * @return the original character or the replacement character ' ' or '?'.
+     */
+    public static char sanitizeFieldVchar(char c)
+    {
+        switch (c)
+        {
+            // A recipient of CR, LF, or NUL within a field value MUST either reject the message
+            // or replace each of those characters with SP before further processing
+            case '\r':
+            case '\n':
+            case 0x00:
+                return ' ';
+
+            default:
+                if (c >= 256 || c < ' ')
+                    return '?';
+        }
+
+        return c;
+    }
+
+    /**
+     * This is used when decoding to not decode illegal characters based on RFC9110.
+     * CR, LF, or NUL are replaced with ' ', all other control and multibyte characters
+     * are replaced with '?'. If this is given a legal character the same value will be returned.
+     *
+     * @param i the character to test.
+     * @return the original character or the replacement character ' ' or '?'.
+     */
+    public static int sanitizeFieldVchar(int i)
+    {
+        if (i > Character.MAX_VALUE)
+            return '?';
+        return sanitizeFieldVchar((char)i);
+    }
+
+    /**
+     * Checks whether this is an invalid VCHAR based on RFC9110.
+     * If this not a valid ISO-8859-1 character or a control character
+     * we say that it is illegal.
+     *
+     * @param c the character to test.
+     * @return true if this is invalid VCHAR.
+     */
+    public static boolean isIllegalFieldVchar(char c)
+    {
+        return (c >= 256 || c < ' ');
+    }
 }
 

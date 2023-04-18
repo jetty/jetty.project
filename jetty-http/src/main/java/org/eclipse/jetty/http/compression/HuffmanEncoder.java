@@ -15,6 +15,8 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpTokens;
+
 import static org.eclipse.jetty.http.compression.Huffman.CODES;
 import static org.eclipse.jetty.http.compression.Huffman.LCCODES;
 
@@ -67,7 +69,7 @@ public class HuffmanEncoder
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(i);
-            if (Huffman.isIllegalCharacter(c))
+            if (HttpTokens.isIllegalFieldVchar(c))
                 return -1;
             needed += table[c][1];
         }
@@ -88,7 +90,7 @@ public class HuffmanEncoder
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(i);
-            if (Huffman.isIllegalCharacter(c))
+            if (HttpTokens.isIllegalFieldVchar(c))
                  throw new IllegalArgumentException();
             int code = table[c][0];
             int bits = table[c][1];

@@ -15,6 +15,7 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 
 import static org.eclipse.jetty.http.compression.Huffman.rowbits;
@@ -72,7 +73,7 @@ public class HuffmanDecoder
 
                     // terminal node
                     int i = 0xFF & rowsym[_node];
-                    i = Huffman.getReplacementCharacter(i);
+                    i = HttpTokens.sanitizeFieldVchar(i);
                     _builder.append((byte)i);
                     _bits -= rowbits[_node];
                     _node = 0;
@@ -107,7 +108,7 @@ public class HuffmanDecoder
             }
 
             int i = 0xFF & rowsym[_node];
-            i = Huffman.getReplacementCharacter(i);
+            i = HttpTokens.sanitizeFieldVchar(i);
             _builder.append((byte)i);
             _bits -= rowbits[_node];
             _node = 0;
