@@ -21,20 +21,14 @@ import org.eclipse.jetty.util.CharsetStringBuilder;
 import static org.eclipse.jetty.http.compression.Huffman.rowbits;
 import static org.eclipse.jetty.http.compression.Huffman.rowsym;
 
+/**
+ * <p>Used to decoded Huffman encoded strings.</p>
+ *
+ * <p>Characters which are illegal field-vchar values are replaced with
+ * either ' ' or '?' as described in RFC9110</p>
+ */
 public class HuffmanDecoder
 {
-    public static String decode(ByteBuffer buffer, int length) throws EncodingException
-    {
-        HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
-        huffmanDecoder.setLength(length);
-        String decoded = huffmanDecoder.decode(buffer);
-        if (decoded == null)
-            throw new EncodingException("invalid string encoding");
-
-        huffmanDecoder.reset();
-        return decoded;
-    }
-
     private final CharsetStringBuilder.Iso8859StringBuilder _builder = new CharsetStringBuilder.Iso8859StringBuilder();
     private int _length = 0;
     private int _count = 0;
@@ -42,6 +36,9 @@ public class HuffmanDecoder
     private int _current = 0;
     private int _bits = 0;
 
+    /**
+     * @param length in bytes of the huffman data.
+     */
     public void setLength(int length)
     {
         if (_count != 0)
@@ -49,6 +46,11 @@ public class HuffmanDecoder
         _length = length;
     }
 
+    /**
+     * @param buffer the buffer containing the Huffman encoded bytes.
+     * @return the decoded String.
+     * @throws EncodingException if the huffman encoding is invalid.
+     */
     public String decode(ByteBuffer buffer) throws EncodingException
     {
         for (; _count < _length; _count++)

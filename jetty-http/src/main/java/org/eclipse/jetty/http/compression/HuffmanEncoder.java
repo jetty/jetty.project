@@ -20,17 +20,31 @@ import org.eclipse.jetty.http.HttpTokens;
 import static org.eclipse.jetty.http.compression.Huffman.CODES;
 import static org.eclipse.jetty.http.compression.Huffman.LCCODES;
 
+/**
+ * <p>Used to encode strings Huffman encoding.</p>
+ *
+ * <p>Characters are encoded with ISO-8859-1, if any multi-byte characters or
+ * control characters are present the encoder will throw {@link EncodingException}.</p>
+ */
 public class HuffmanEncoder
 {
     private HuffmanEncoder()
     {
     }
 
+    /**
+     * @param s the string to encode.
+     * @return the number of octets needed to encode the string, or -1 if it cannot be encoded.
+     */
     public static int octetsNeeded(String s)
     {
         return octetsNeeded(CODES, s);
     }
 
+    /**
+     * @param b the byte array to encode.
+     * @return the number of octets needed to encode the bytes, or -1 if it cannot be encoded.
+     */
     public static int octetsNeeded(byte[] b)
     {
         int needed = 0;
@@ -42,21 +56,37 @@ public class HuffmanEncoder
         return (needed + 7) / 8;
     }
 
+    /**
+     * @param buffer the buffer to encode into.
+     * @param s the string to encode.
+     */
     public static void encode(ByteBuffer buffer, String s)
     {
         encode(CODES, buffer, s);
     }
 
+    /**
+     * @param buffer the buffer to encode into.
+     * @param b the byte array to encode.
+     */
     public static void encode(ByteBuffer buffer, byte[] b)
     {
         encode(CODES, buffer, b);
     }
 
+    /**
+     * @param s the string to encode in lowercase.
+     * @return the number of octets needed to encode the string, or -1 if it cannot be encoded.
+     */
     public static int octetsNeededLowercase(String s)
     {
         return octetsNeeded(LCCODES, s);
     }
 
+    /**
+     * @param buffer the buffer to encode into in lowercase.
+     * @param s the string to encode.
+     */
     public static void encodeLowercase(ByteBuffer buffer, String s)
     {
         encode(LCCODES, buffer, s);

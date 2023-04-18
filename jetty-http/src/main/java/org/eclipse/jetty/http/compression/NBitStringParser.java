@@ -17,6 +17,16 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.CharsetStringBuilder;
 
+/**
+ * <p>Used to decode string literals as described in RFC7541.</p>
+ *
+ * <p>The string literal representation consists of a single bit to indicate whether huffman encoding is used,
+ * followed by the string byte length encoded with the n-bit integer representation also from RFC7541, and
+ * the bytes of the string are directly after this.</p>
+ *
+ * <p>Characters which are illegal field-vchar values are replaced with
+ * either ' ' or '?' as described in RFC9110</p>
+ */
 public class NBitStringParser
 {
     private final NBitIntegerParser _integerParser;
@@ -43,6 +53,11 @@ public class NBitStringParser
         _builder = new CharsetStringBuilder.Iso8859StringBuilder();
     }
 
+    /**
+     * Set the prefix length in of the string representation in bits.
+     * A prefix of 6 means the string representation starts after the first 2 bits.
+     * @param prefix the number of bits in the string prefix.
+     */
     public void setPrefix(int prefix)
     {
         if (_state != State.PARSING)
@@ -50,6 +65,15 @@ public class NBitStringParser
         _prefix = prefix;
     }
 
+    /**
+     * Decode a string from the buffer. If the buffer does not contain the complete string representation
+     * then a value of null is returned to indicate that more data is needed to complete parsing.
+     * This should be only after the prefix has been set with {@link #setPrefix(int)}.
+     * @param buffer the buffer containing the encoded string.
+     * @return the decoded string or null to indicate that more data is needed.
+     * @throws ArithmeticException if the string length value overflows a int.
+     * @throws EncodingException if the string encoding is invalid.
+     */
     public String decode(ByteBuffer buffer) throws EncodingException
     {
         while (true)

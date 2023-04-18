@@ -41,6 +41,7 @@ public class HpackDecoder
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
     private final HuffmanDecoder _huffmanDecoder;
+    private final NBitIntegerParser _integerParser;
     private int _localMaxDynamicTableSize;
 
     /**
@@ -53,6 +54,7 @@ public class HpackDecoder
         _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
         _huffmanDecoder = new HuffmanDecoder();
+        _integerParser = new NBitIntegerParser();
     }
 
     public HpackContext getHpackContext()
@@ -277,13 +279,24 @@ public class HpackDecoder
     {
         try
         {
-            return NBitIntegerParser.decode(buffer, prefix);
+            if (prefix != 8)
+                buffer.position(buffer.position() - 1);
+
+            _integerParser.setPrefix(prefix);
+            int decodedInt = _integerParser.decodeInt(buffer);
+            if (decodedInt < 0)
+                throw new EncodingException("invalid integer encoding");
+            return decodedInt;
         }
         catch (EncodingException e)
         {
             HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
             compressionException.initCause(e);
             throw compressionException;
+        }
+        finally
+        {
+            _integerParser.reset();
         }
     }
 

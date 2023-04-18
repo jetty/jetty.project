@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.util.BufferUtil;
@@ -34,6 +35,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HuffmanTest
 {
+    public static String decode(ByteBuffer buffer, int length) throws EncodingException
+    {
+        HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
+        huffmanDecoder.setLength(length);
+        String decoded = huffmanDecoder.decode(buffer);
+        if (decoded == null)
+            throw new EncodingException("invalid string encoding");
+
+        huffmanDecoder.reset();
+        return decoded;
+    }
+
     public static Stream<Arguments> data()
     {
         return Stream.of(
@@ -94,7 +107,7 @@ public class HuffmanTest
     public void testDecode8859Only(String hexString, char expected) throws Exception
     {
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(hexString));
-        String decoded = HuffmanDecoder.decode(buffer, buffer.remaining());
+        String decoded = decode(buffer, buffer.remaining());
         assertThat(decoded, equalTo("" + expected));
     }
 
@@ -146,6 +159,6 @@ public class HuffmanTest
 
     private String decode(ByteBuffer buffer) throws Exception
     {
-        return HuffmanDecoder.decode(buffer, buffer.remaining());
+        return decode(buffer, buffer.remaining());
     }
 }
