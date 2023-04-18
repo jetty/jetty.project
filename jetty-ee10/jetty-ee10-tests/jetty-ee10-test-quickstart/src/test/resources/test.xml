@@ -33,7 +33,6 @@ detected.
         <Set name="alwaysSaveUri">true</Set>
       </New>
     </Set>
-    <Set name="checkWelcomeFiles">true</Set>
   </Get>
 
   <Set name="parentLoaderPriority">true</Set>

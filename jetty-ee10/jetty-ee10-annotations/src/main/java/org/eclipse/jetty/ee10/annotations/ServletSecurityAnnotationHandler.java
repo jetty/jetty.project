@@ -31,15 +31,15 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Inspect a class to see if it has an <code>&#064;ServletSecurity</code> annotation on it,
  * setting up the <code>&lt;security-constraint&gt;s</code>.
- * </p><p>
- * A servlet can be defined in:
+ * </p>
+ * <p>A servlet can be defined in:</p>
  * <ul>
  * <li>web.xml</li>
  * <li>web-fragment.xml</li>
  * <li>@WebServlet annotation discovered</li>
  * <li>ServletContext.createServlet</li>
  * </ul>
- * </p><p>
+ * <p>
  * The ServletSecurity annotation for a servlet should only be processed
  * iff metadata-complete == false.</p>
  */
