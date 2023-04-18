@@ -38,6 +38,7 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -417,7 +418,7 @@ public class DuplicateCookieTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that all valid sessions have their request counts decremented correctly after the request, back to 0
-            Awaitility.await().atMost(30, TimeUnit.SECONDS).until(() -> s1234.getRequests() == 0);
+            Awaitility.await().atMost(30, TimeUnit.SECONDS).until(s1234::getRequests, Matchers.is(0L));
         }
         finally
         {
