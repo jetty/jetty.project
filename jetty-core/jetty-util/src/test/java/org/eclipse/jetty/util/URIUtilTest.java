@@ -34,6 +34,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -891,6 +892,20 @@ public class URIUtilTest
         // check decode to original
         String decoded = URIUtil.decodePath(encoded);
         assertEquals(path, decoded);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        127.0.0.1       , false
+        ::1             , false
+        [::1]           , false
+        localhost       , true
+        localhost.local , true
+        sub.example.com , true
+        """)
+    public void testIsHostName(String token, boolean expected)
+    {
+        assertEquals(expected, URIUtil.isHostName(token));
     }
 
     @ParameterizedTest

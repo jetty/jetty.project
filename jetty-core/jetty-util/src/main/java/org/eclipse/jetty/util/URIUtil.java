@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -1313,6 +1314,21 @@ public final class URIUtil
             }
         }
         return false;
+    }
+
+    /**
+     * Test if the token is a valid hostname and not an IP-Literal.
+     *
+     * @param token the token to check
+     * @return true if token is a Host name, not an IP-Literal
+     */
+    public static boolean isHostName(String token)
+    {
+        Pattern patIPv4 = Pattern.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
+        if (patIPv4.matcher(token).matches())
+            return false;
+        else
+            return isValidHostRegisteredName(token);
     }
 
     /**
