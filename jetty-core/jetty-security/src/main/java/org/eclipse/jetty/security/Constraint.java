@@ -166,10 +166,10 @@ public interface Constraint
     }
 
     Constraint NONE = from(false, Authentication.NONE);
-    Constraint FORBIDDEN = from( false, Authentication.FORBIDDEN);
-    Constraint SECURE = from( true, null);
-    Constraint AUTHENTICATED = from( false, Authentication.ANY_ROLE);
-    Constraint AUTHENTICATED_KNOWN_ROLE = from( false, Authentication.KNOWN_ROLE);
+    Constraint FORBIDDEN = from(false, Authentication.FORBIDDEN);
+    Constraint SECURE = from(true, null);
+    Constraint AUTHENTICATED = from(false, Authentication.ANY_ROLE);
+    Constraint AUTHENTICATED_KNOWN_ROLE = from(false, Authentication.KNOWN_ROLE);
 
     /**
      * <p>Combine two Constraints by:</p>

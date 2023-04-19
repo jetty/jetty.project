@@ -786,8 +786,8 @@ public class ConstraintTest
         md.update((byte)':');
         md.update(nc.getBytes(ISO_8859_1));
         md.update((byte)':');
-        String CNONCE = "1234567890";
-        md.update(CNONCE.getBytes(ISO_8859_1));
+        String cnonce = "1234567890";
+        md.update(cnonce.getBytes(ISO_8859_1));
         md.update((byte)':');
         md.update("auth".getBytes(ISO_8859_1));
         md.update((byte)':');
