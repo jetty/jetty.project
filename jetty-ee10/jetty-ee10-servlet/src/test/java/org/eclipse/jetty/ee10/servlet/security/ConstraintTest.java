@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
@@ -90,6 +91,7 @@ public class ConstraintTest
     private LocalConnector _connector;
     private ConstraintSecurityHandler _security;
     private HttpConfiguration _config;
+    private ServletContextHandler _servletContextHandler;
     private Constraint.Builder _forbidConstraint;
     private Constraint.Builder _relaxConstraint;
     private Constraint.Builder _noAuthConstraint;
@@ -102,12 +104,12 @@ public class ConstraintTest
         _config = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
 
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
-        contextHandler.setContextPath("/ctx");
-        _server.setHandler(contextHandler);
+        _servletContextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
+        _servletContextHandler.setContextPath("/ctx");
+        _server.setHandler(_servletContextHandler);
 
-        SessionHandler sessionHandler = contextHandler.getSessionHandler();
-        contextHandler.setHandler(sessionHandler);
+        SessionHandler sessionHandler = _servletContextHandler.getSessionHandler();
+        _servletContextHandler.setHandler(sessionHandler);
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
         loginService.putUser("user0", new Password("password"), new String[]{});
@@ -117,15 +119,15 @@ public class ConstraintTest
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
         _server.addBean(loginService);
 
-        _security = (ConstraintSecurityHandler)contextHandler.getSecurityHandler();
+        _security = (ConstraintSecurityHandler)_servletContextHandler.getSecurityHandler();
         _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
         sessionHandler.setHandler(_security);
 
-        ServletHandler servletHandler = contextHandler.getServletHandler();
+        ServletHandler servletHandler = _servletContextHandler.getServletHandler();
         _security.setHandler(servletHandler);
 
         TestServlet testServlet = new TestServlet();
-        servletHandler.addServletWithMapping(new ServletHolder(testServlet), "/");
+        servletHandler.addServletWithMapping(new ServletHolder("test", testServlet), "/");
     }
 
     @AfterEach
@@ -1199,7 +1201,8 @@ public class ConstraintTest
         // loginlogin - perform successful login then try another that should fail, next request should be logged in
         // loginlogout - perform successful login then logout, next request should not be logged in
         // loginlogoutlogin - perform successful login then logout then login successfully again, next request should be logged in
-        // TODO _security.setHandler(new ProgrammaticLoginRequestHandler());
+
+        _servletContextHandler.getServletHandler().getServlet("test").setServlet(new ProgrammaticLoginServlet());
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
         _server.start();
 
@@ -1710,39 +1713,19 @@ public class ConstraintTest
     }
 
     @Test
-    public void testRoleRef() throws Exception
+    public void testRoleLink() throws Exception
     {
-        // TODO RoleCheckHandler check = new RoleCheckHandler();
-        //      _security.setHandler(check);
         _security.setAuthenticator(new BasicAuthenticator());
-
+        ServletHolder holder = _servletContextHandler.getServletHandler().getServlet("test");
+        holder.setUserRoleLink("untranslated", "user");
         _server.start();
 
-        String rawResponse;
-        rawResponse = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n\r\n", 100000, TimeUnit.MILLISECONDS);
+        String rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
+            "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
+            "\r\n", 100000, TimeUnit.MILLISECONDS);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-
-        rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-            "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
-            "\r\n", 100000, TimeUnit.MILLISECONDS);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-
-        _server.stop();
-
-        // TODO RoleRefHandler roleref = new RoleRefHandler();
-        // roleref.setHandler(_security.getHandler());
-        // _security.setHandler(roleref);
-        // roleref.setHandler(check);
-
-        _server.start();
-
-        rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-            "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
-            "\r\n", 100000, TimeUnit.MILLISECONDS);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("Is in untranslated role"));
     }
 
     @Test
@@ -1905,7 +1888,7 @@ public class ConstraintTest
         return Base64.getEncoder().encodeToString(raw);
     }
 
-    private class TestServlet extends HttpServlet
+    private static class TestServlet extends HttpServlet
     {
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -1919,20 +1902,19 @@ public class ConstraintTest
                 response.getWriter().println("user=" + user);
                 if (request.getParameter("test_parameter") != null)
                     response.getWriter().println(request.getParameter("test_parameter"));
+                if (request.isUserInRole("untranslated"))
+                    response.getWriter().println("Is in untranslated role");
             }
             else
                 response.sendError(500);
         }
     }
 
-    /**
-    private class ProgrammaticLoginRequestHandler extends AbstractHandler
+    private static class ProgrammaticLoginServlet extends HttpServlet
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            baseRequest.setHandled(true);
-
             String action = request.getParameter("action");
             if (StringUtil.isBlank(action))
             {
@@ -2001,70 +1983,6 @@ public class ConstraintTest
                 response.sendError(500);
         }
     }
-
-    private class RoleRefHandler extends HandlerWrapper
-    {
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            UserIdentity.Scope old = ((Request)request).getUserIdentityScope();
-
-            UserIdentity.Scope scope = new UserIdentity.Scope()
-            {
-                @Override
-                public ContextHandler getContextHandler()
-                {
-                    return null;
-                }
-
-                @Override
-                public String getContextPath()
-                {
-                    return "/";
-                }
-
-                @Override
-                public String getName()
-                {
-                    return "someServlet";
-                }
-
-                @Override
-                public Map<String, String> getRoleRefMap()
-                {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("untranslated", "user");
-                    return map;
-                }
-            };
-
-            ((Request)request).setUserIdentityScope(scope);
-
-            try
-            {
-                super.handle(target, baseRequest, request, response);
-            }
-            finally
-            {
-                ((Request)request).setUserIdentityScope(old);
-            }
-        }
-    }
-
-    private class RoleCheckHandler extends AbstractHandler
-    {
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            ((Request)request).setHandled(true);
-            if (request.getAuthType() == null || "user".equals(request.getRemoteUser()) || request.isUserInRole("untranslated"))
-                response.setStatus(200);
-            else
-                response.sendError(500);
-        }
-    }
-     */
 
     public static class Scenario
     {
