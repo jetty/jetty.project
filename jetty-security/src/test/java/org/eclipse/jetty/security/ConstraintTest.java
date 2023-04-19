@@ -2093,6 +2093,7 @@ public class ConstraintTest
             _acceptableUsers = Arrays.asList(users);
             _acceptableRoles = Arrays.asList(roles);
         }
+        
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
