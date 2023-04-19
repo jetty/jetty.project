@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>11.0.15-SNAPSHOT</version>
+    <version>11.0.16-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-maven-plugin</artifactId>
@@ -93,6 +93,11 @@
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+            <configuration>
+              <extraArtifacts>
+                <extraArtifact>org.eclipse.jetty:jetty-home:${project.version}:zip</extraArtifact>
+              </extraArtifacts>
+            </configuration>
           </execution>
         </executions>
         <configuration>
