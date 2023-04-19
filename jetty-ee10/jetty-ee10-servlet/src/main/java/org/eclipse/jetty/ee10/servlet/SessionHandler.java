@@ -385,8 +385,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     @Override
     public ManagedSession getManagedSession(Request request)
     {
-        ServletApiRequest apiRequest = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletApiRequest);
-        return apiRequest == null ? null : apiRequest.getServletContextRequest().getManagedSession();
+        return Request.as(request, ServletContextRequest.class).getManagedSession();
     }
 
     /**
