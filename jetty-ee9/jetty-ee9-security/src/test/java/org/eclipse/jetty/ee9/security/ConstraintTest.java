@@ -238,27 +238,27 @@ public class ConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
 
         //an auth-constraint with role *
-        Constraint authAnyRoleConstraint = new Constraint();
+        ServletConstraint authAnyRoleConstraint = new ServletConstraint();
         authAnyRoleConstraint.setAuthenticate(true);
         authAnyRoleConstraint.setName("anyAuth");
-        authAnyRoleConstraint.setRoles(new String[]{Constraint.ANY_ROLE});
+        authAnyRoleConstraint.setRoles(new String[]{ServletConstraint.ANY_ROLE});
         ConstraintMapping starMapping = new ConstraintMapping();
         starMapping.setPathSpec("/test/*");
         starMapping.setConstraint(authAnyRoleConstraint);
 
         //an auth-constraint with role **
-        Constraint authAnyAuthConstraint = new Constraint();
+        ServletConstraint authAnyAuthConstraint = new ServletConstraint();
         authAnyAuthConstraint.setAuthenticate(true);
         authAnyAuthConstraint.setName("** constraint");
         authAnyAuthConstraint.setRoles(new String[]{
-            Constraint.ANY_AUTH, "user"
+            ServletConstraint.ANY_AUTH, "user"
         });
         ConstraintMapping starStarMapping = new ConstraintMapping();
         starStarMapping.setPathSpec("/test/*");
         starStarMapping.setConstraint(authAnyAuthConstraint);
 
         //a relax constraint, ie no auth-constraint
-        Constraint relaxConstraint = new Constraint();
+        ServletConstraint relaxConstraint = new ServletConstraint();
         relaxConstraint.setAuthenticate(false);
         relaxConstraint.setName("relax");
         ConstraintMapping relaxMapping = new ConstraintMapping();
@@ -266,7 +266,7 @@ public class ConstraintTest
         relaxMapping.setConstraint(relaxConstraint);
 
         //a forbidden constraint
-        Constraint forbidConstraint = new Constraint();
+        ServletConstraint forbidConstraint = new ServletConstraint();
         forbidConstraint.setAuthenticate(true);
         forbidConstraint.setName("forbid");
         ConstraintMapping forbidMapping = new ConstraintMapping();
@@ -274,7 +274,7 @@ public class ConstraintTest
         forbidMapping.setConstraint(forbidConstraint);
 
         //an auth-constraint with roles A, B
-        Constraint rolesConstraint = new Constraint();
+        ServletConstraint rolesConstraint = new ServletConstraint();
         rolesConstraint.setAuthenticate(true);
         rolesConstraint.setName("admin");
         rolesConstraint.setRoles(new String[]{"A", "B"});
@@ -283,7 +283,7 @@ public class ConstraintTest
         rolesABMapping.setConstraint(rolesConstraint);
 
         //an auth-constraint with roles C, C
-        Constraint roles2Constraint = new Constraint();
+        ServletConstraint roles2Constraint = new ServletConstraint();
         roles2Constraint.setAuthenticate(true);
         roles2Constraint.setName("admin");
         roles2Constraint.setRoles(new String[]{"C", "D"});
@@ -2086,14 +2086,15 @@ public class ConstraintTest
 
     private class RequestHandler extends AbstractHandler
     {
-        private List<String> _acceptableUsers;
-        private List<String> _acceptableRoles;
+        private final List<String> _acceptableUsers;
+        private final List<String> _acceptableRoles;
 
         public RequestHandler(String[] users, String[] roles)
         {
             _acceptableUsers = Arrays.asList(users);
             _acceptableRoles = Arrays.asList(roles);
         }
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {

@@ -438,6 +438,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         // Yes the servlet spec requires data constraints (secure) to be AND'd not OR'd !!!
         return Constraint.from(
+            constraintA.getName() + "|" + constraintB.getName(),
             constraintA.isSecure() && constraintB.isSecure(),
             authentication,
             roles);

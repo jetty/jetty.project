@@ -117,6 +117,7 @@ public class ConstraintTest
         loginService.putUser("user2", new Password("password"), new String[]{"user"});
         loginService.putUser("admin", new Password("password"), new String[]{"user", "administrator"});
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
+        loginService.putUser("user4", new Password("password"), new String[]{"A", "B", "C", "D"});
         _server.addBean(loginService);
 
         _security = (ConstraintSecurityHandler)_servletContextHandler.getSecurityHandler();
@@ -215,6 +216,168 @@ public class ConstraintTest
         mapping7.setConstraint(anyUserAuthConstraint.build());
 
         return Arrays.asList(mapping0, mapping1, mapping2, mapping2o, mapping3, mapping4, mapping5, mapping5o, mapping6, mapping7);
+    }
+
+    @Test
+    public void testCombiningConstraints() throws Exception
+    {
+        String getString = "GET /ctx/test/info HTTP/1.0";
+        String requestString = getString + "\r\n\r\n";
+        String forbiddenString = "HTTP/1.1 403 Forbidden";
+
+        _security.setAuthenticator(new BasicAuthenticator());
+
+        //an auth-constraint with role *
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authentication(Constraint.Authentication.KNOWN_ROLE);
+        authAnyRoleConstraint.name("anyAuth");
+        ConstraintMapping starMapping = new ConstraintMapping();
+        starMapping.setPathSpec("/test/*");
+        starMapping.setConstraint(authAnyRoleConstraint.build());
+
+        //an auth-constraint with role **
+        Constraint.Builder authAnyAuthConstraint = new Constraint.Builder();
+        authAnyAuthConstraint.authentication(Constraint.Authentication.ANY_ROLE);
+        authAnyAuthConstraint.name("** constraint");
+        ConstraintMapping starStarMapping = new ConstraintMapping();
+        starStarMapping.setPathSpec("/test/*");
+        starStarMapping.setConstraint(authAnyAuthConstraint.build());
+
+        //a relax constraint, ie no auth-constraint
+        Constraint.Builder relaxConstraint = new Constraint.Builder();
+        relaxConstraint.authentication(Constraint.Authentication.NONE);
+        relaxConstraint.name("relax");
+        ConstraintMapping relaxMapping = new ConstraintMapping();
+        relaxMapping.setPathSpec("/test/*");
+        relaxMapping.setConstraint(relaxConstraint.build());
+
+        //a forbidden constraint
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authentication(Constraint.Authentication.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping forbidMapping = new ConstraintMapping();
+        forbidMapping.setPathSpec("/test/*");
+        forbidMapping.setConstraint(forbidConstraint.build());
+
+        //an auth-constraint with roles A, B
+        Constraint.Builder rolesConstraint = new Constraint.Builder();
+        rolesConstraint.name("admin");
+        rolesConstraint.roles("A", "B");
+        ConstraintMapping rolesABMapping = new ConstraintMapping();
+        rolesABMapping.setPathSpec("/test/*");
+        rolesABMapping.setConstraint(rolesConstraint.build());
+
+        //an auth-constraint with roles C, C
+        Constraint.Builder roles2Constraint = new Constraint.Builder();
+        roles2Constraint.name("admin");
+        roles2Constraint.roles("C", "D");
+        ConstraintMapping rolesCDMapping = new ConstraintMapping();
+        rolesCDMapping.setPathSpec("/test/*");
+        rolesCDMapping.setConstraint(roles2Constraint.build());
+
+        //test combining forbidden with relax
+        List<ConstraintMapping> combinableConstraints = Arrays.asList(forbidMapping, relaxMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        String response;
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith(forbiddenString));
+
+        //test combining forbidden with *
+        _server.stop();
+        combinableConstraints = Arrays.asList(forbidMapping, starMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith(forbiddenString));
+
+        //test combining forbidden with **
+        _server.stop();
+        combinableConstraints = Arrays.asList(forbidMapping, starStarMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith(forbiddenString));
+
+        //test combining forbidden with roles
+        _server.stop();
+        combinableConstraints = Arrays.asList(forbidMapping, rolesABMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith(forbiddenString));
+
+        //test combining * with relax
+        _server.stop();
+        combinableConstraints = Arrays.asList(starMapping, relaxMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        //test combining * with **
+        _server.stop();
+        combinableConstraints = Arrays.asList(starMapping, starStarMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        response = _connector.getResponse(getString + "\r\n" +
+            "Authorization: Basic " + authBase64("user4:password") + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        //test combining * with roles
+        _server.stop();
+        combinableConstraints = Arrays.asList(starMapping, rolesABMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        response = _connector.getResponse(getString + "\r\n" +
+            "Authorization: Basic " + authBase64("user4:password") + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        //test combining ** with relax
+        _server.stop();
+        combinableConstraints = Arrays.asList(starStarMapping, relaxMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        //test combining ** with roles
+        _server.stop();
+        combinableConstraints = Arrays.asList(starStarMapping, rolesABMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        response = _connector.getResponse(getString + "\r\n" +
+            "Authorization: Basic " + authBase64("user4:password") + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        //test combining roles with roles
+        _server.stop();
+        combinableConstraints = Arrays.asList(rolesCDMapping, rolesABMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        response = _connector.getResponse(getString + "\r\n" +
+            "Authorization: Basic " + authBase64("user4:password") + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        //test combining relax with roles
+        _server.stop();
+        combinableConstraints = Arrays.asList(rolesABMapping, relaxMapping);
+        _security.setConstraintMappings(combinableConstraints);
+        _server.start();
+        response = _connector.getResponse(requestString);
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
     /**
@@ -1894,10 +2057,24 @@ public class ConstraintTest
 
     private static class TestServlet extends HttpServlet
     {
+        private final List<String> _acceptableUsers;
+        private final List<String> _acceptableRoles;
+
+        public TestServlet()
+        {
+            this(new String[]{"user", "user4"}, new String[]{"user", "foo"});
+        }
+
+        public TestServlet(String[] users, String[] roles)
+        {
+            _acceptableUsers = Arrays.asList(users);
+            _acceptableRoles = Arrays.asList(roles);
+        }
+
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            if (request.getAuthType() == null || "user".equals(request.getRemoteUser()) || request.isUserInRole("user") || request.isUserInRole("foo"))
+            if (request.getAuthType() == null || isAcceptableUser(request) || isInAcceptableRole(request))
             {
                 response.setStatus(200);
                 response.setContentType("text/plain; charset=UTF-8");
@@ -1911,6 +2088,34 @@ public class ConstraintTest
             }
             else
                 response.sendError(500);
+        }
+
+        private boolean isAcceptableUser(HttpServletRequest request)
+        {
+            String user = request.getRemoteUser();
+            if (_acceptableUsers == null)
+            {
+                return true;
+            }
+
+            if (user == null)
+                return false;
+
+            return _acceptableUsers.contains(user);
+        }
+
+        private boolean isInAcceptableRole(HttpServletRequest request)
+        {
+            if (_acceptableRoles == null)
+                return true;
+
+            for (String role : _acceptableRoles)
+            {
+                if (request.isUserInRole(role))
+                    return true;
+            }
+
+            return false;
         }
     }
 

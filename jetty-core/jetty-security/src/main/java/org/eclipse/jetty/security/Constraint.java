@@ -161,6 +161,8 @@ public interface Constraint
 
         public Constraint build()
         {
+            if (_authentication == null && _roles == null)
+                throw new IllegalStateException("No Authentication or roles");
             return from(_name, _secure, _authentication, _roles);
         }
     }
