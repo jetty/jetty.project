@@ -1312,8 +1312,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     case ConstraintSecurityHandler.ANY_KNOWN_ROLE -> // "*"
                     {
-                        Constraint.Authentication current = scBase.getAuthentication();
-                        if (current == null || current == Constraint.Authentication.NONE)
+                        if (scBase.getAuthentication() == null)
                         {
                             scBase.authentication(Constraint.Authentication.KNOWN_ROLE);
                             roles = null;

@@ -33,6 +33,13 @@ public interface Constraint
         KNOWN_ROLE,
         SPECIFIC_ROLE;
 
+        /**
+         * <p>Combine Authentication Constraints, with the strictest constraint
+         * always given precedence. Note that this is not servlet specification compliant</p>
+         * @param a A constraint
+         * @param b A constraint
+         * @return The combination of the two constraints.
+         */
         public static Authentication combine(Authentication a, Authentication b)
         {
             if (a == null)

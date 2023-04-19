@@ -159,22 +159,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return constraint.build();
     }
 
-    public static List<ConstraintMapping> getConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
-    {
-        if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
-            return Collections.emptyList();
-
-        List<ConstraintMapping> mappings = new ArrayList<>();
-        for (ConstraintMapping mapping : constraintMappings)
-        {
-            if (pathSpec.equals(mapping.getPathSpec()))
-            {
-                mappings.add(mapping);
-            }
-        }
-        return mappings;
-    }
-
     /**
      * Take out of the constraint mappings those that match the
      * given path.
@@ -402,25 +386,60 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         _constraintMappings.addAll(_durableConstraintMappings);
     }
 
+    /**
+     * <p>Combine constrains as per the servlet specification.
+     * This is NOT equivalent to {@link Constraint#combine(Constraint, Constraint)}, which implements
+     * a more secure combination.</p>
+     * @param constraintA A constraint
+     * @param constraintB B constraint
+     * @return The combination as per the servlet specification.
+     */
     protected Constraint combineServletConstraints(Constraint constraintA, Constraint constraintB)
     {
-        // This method is almost identical to Constraint.combine, except that secure constraints
-        // are anded rather than or'd to meet the crazy servlet spec requirements.
+        // This method is not identical to Constraint.combine.
+        // Instead, it implements the bizarre section 13.8.1 of Servlet 6.0 specification
 
         if (constraintA == null)
             return constraintB == null ? Constraint.NONE : constraintB;
         if (constraintB == null)
             return constraintA;
 
-        Set<String> roles = constraintA.getRoles();
-        if (roles == null)
-            roles = constraintB.getRoles();
-        else if (constraintB.getRoles() != null || constraintB.getRoles() != null)
-            roles = Stream.concat(roles.stream(), constraintB.getRoles().stream()).collect(Collectors.toSet());
+        // Don't blame me for the following code. Blame Servlet specification
+        Constraint.Authentication authentication = constraintA.getAuthentication();
+        Set<String> roles = null;
+        authentication = switch (constraintB.getAuthentication())
+        {
+            // Forbidden takes precedence
+            case FORBIDDEN -> Constraint.Authentication.FORBIDDEN;
 
+            // A constraint with no authorization takes precedence over any roles constraints, but not FORBIDDEN
+            case NONE -> authentication == Constraint.Authentication.FORBIDDEN
+                ? Constraint.Authentication.FORBIDDEN
+                : Constraint.Authentication.NONE;
+
+            // The "**" role, which is any role (known or otherwise), has precedence over everything but FORBIDDEN and NONE
+            case ANY_ROLE -> (authentication == Constraint.Authentication.FORBIDDEN || authentication == Constraint.Authentication.NONE)
+                ? authentication
+                : Constraint.Authentication.ANY_ROLE;
+
+            // The "*" role, which is any known role, only has precedence over SPECIFIC roles
+            case KNOWN_ROLE -> (authentication == Constraint.Authentication.KNOWN_ROLE || authentication == Constraint.Authentication.SPECIFIC_ROLE)
+                ? Constraint.Authentication.KNOWN_ROLE
+                : authentication;
+
+            // Specific roles only combine with other specific roles, otherwise one of the above cases apply
+            case SPECIFIC_ROLE ->
+            {
+                if (authentication == Constraint.Authentication.SPECIFIC_ROLE)
+                    roles = Stream.concat(constraintA.getRoles().stream(), constraintB.getRoles().stream()).collect(Collectors.toSet());
+                yield authentication;
+            }
+        };
+
+        // Yes the servlet spec requires data constraints (secure) to be AND'd not OR'd !!!
         return Constraint.from(
             constraintA.isSecure() && constraintB.isSecure(),
-            Constraint.Authentication.combine(constraintA.getAuthentication(), constraintB.getAuthentication()),
+            authentication,
             roles);
     }
 
@@ -610,7 +629,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * split out the individual method names.
      *
      * @param omission the method
-     * @return the list of strings
+     * @return the set of strings
      */
     protected Set<String> getOmittedMethods(String omission)
     {
@@ -618,12 +637,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return Collections.emptySet();
 
         String[] strings = omission.split("\\.");
-        Set<String> methods = new HashSet<>();
-        for (int i = 0; i < strings.length - 1; i++)
-        {
-            methods.add(strings[i]);
-        }
-        return methods;
+        return new HashSet<>(Arrays.asList(strings).subList(0, strings.length - 1));
     }
 
     /**
@@ -642,6 +656,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         ServletContextHandler contextHandler = ServletContextHandler.getCurrentServletContextHandler();
         Server server = getServer();
 
-        return (contextHandler == null && server == null) || (contextHandler != null && !contextHandler.isRunning()) || (contextHandler == null && server != null && !server.isRunning());
+        return contextHandler == null && server == null || contextHandler != null && !contextHandler.isRunning() || contextHandler == null && !server.isRunning();
     }
 }
