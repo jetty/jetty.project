@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
@@ -205,8 +206,10 @@ public interface Response extends Content.Sink
     /**
      * <p>Sends a HTTP redirect status code to the given location,
      * without consuming the available request content. The {@link HttpStatus#SEE_OTHER_303}
-     * code is used, unless the request is HTTP/1.0, in which case {@link HttpStatus#MOVED_TEMPORARILY_302} is used.</p>
-     *
+     * code is used, unless the request is HTTP/1.0, in which case {@link HttpStatus#MOVED_TEMPORARILY_302} is used,
+     * unless the request is not a {@code GET} and the protocol is {@code HTTP/1.1} or later, in which case a
+     * {@link HttpStatus#SEE_OTHER_303} is used to make the client consistently redirect with a {@code GET}.
+     * </p>
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
@@ -215,7 +218,7 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
     {
-        int code = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+        int code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
             ? HttpStatus.MOVED_TEMPORARILY_302
             : HttpStatus.SEE_OTHER_303;
         sendRedirect(request, response, callback, code, location, false);
@@ -224,8 +227,10 @@ public interface Response extends Content.Sink
     /**
      * <p>Sends HTTP redirect status code to the given location,
      * without consuming the available request content. The {@link HttpStatus#SEE_OTHER_303}
-     * code is used, unless the request is HTTP/1.0, in which case {@link HttpStatus#MOVED_TEMPORARILY_302} is used.</p>
-     *
+     * code is used, unless the request is HTTP/1.0, in which case {@link HttpStatus#MOVED_TEMPORARILY_302} is used,
+     * unless the request is not a {@code GET} and the protocol is {@code HTTP/1.1} or later, in which case a
+     * {@link HttpStatus#SEE_OTHER_303} is used to make the client consistently redirect with a {@code GET}.
+     * </p>
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
@@ -235,7 +240,7 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location, boolean consumeAvailable)
     {
-        int code = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+        int code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
             ? HttpStatus.MOVED_TEMPORARILY_302
             : HttpStatus.SEE_OTHER_303;
         sendRedirect(request, response, callback, code, location, consumeAvailable);

@@ -48,7 +48,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testRedirectCode() throws Exception
+    public void testRedirectGET() throws Exception
     {
         server.setHandler(new Handler.Abstract()
         {
@@ -77,12 +77,12 @@ public class ResponseTest
                 \r
                 """;
         response = HttpTester.parseResponse(connector.getResponse(request));
-        assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
     }
 
     @Test
-    public void testRelativeRedirectCode() throws Exception
+    public void testRelativeRedirectGET() throws Exception
     {
         server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
             .getHttpConfiguration().setRelativeRedirectAllowed(true);
@@ -108,6 +108,76 @@ public class ResponseTest
 
         request = """
                 GET /path HTTP/1.1\r
+                Host: hostname\r
+                Connection: close\r
+                \r
+                """;
+        response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
+    }
+
+    @Test
+    public void testRedirectPOST() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                Response.sendRedirect(request, response, callback, "/somewhere/else");
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                POST /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
+
+        request = """
+                POST /path HTTP/1.1\r
+                Host: hostname\r
+                Connection: close\r
+                \r
+                """;
+        response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
+    }
+
+    @Test
+    public void testRelativeRedirectPOST() throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setRelativeRedirectAllowed(true);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                Response.sendRedirect(request, response, callback, "/somewhere/else");
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                POST /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
+
+        request = """
+                POST /path HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
                 \r

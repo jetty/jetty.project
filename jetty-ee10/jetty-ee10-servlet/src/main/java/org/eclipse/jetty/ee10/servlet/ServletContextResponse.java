@@ -328,7 +328,7 @@ public class ServletContextResponse extends ContextResponse
         }
 
         // recreate session cookies
-        HttpSession session = _request.getHttpServletRequest().getSession(false);
+        HttpSession session = _request.getServletApiRequest().getSession(false);
         if (session != null && session.isNew())
         {
             SessionHandler sh = _servletChannel.getContextHandler().getSessionHandler();

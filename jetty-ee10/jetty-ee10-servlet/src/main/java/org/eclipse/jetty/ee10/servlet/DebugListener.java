@@ -296,7 +296,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 log(">  ctx=%s", cname);
             else
             {
-                String rname = findRequestName(request.getHttpServletRequest());
+                String rname = findRequestName(request.getServletApiRequest());
 
                 if (_renameThread)
                 {
@@ -316,7 +316,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 log("<  ctx=%s", cname);
             else
             {
-                String rname = findRequestName(request.getHttpServletRequest());
+                String rname = findRequestName(request.getServletApiRequest());
 
                 log("<  ctx=%s r=%s", cname, rname);
                 if (_renameThread)
