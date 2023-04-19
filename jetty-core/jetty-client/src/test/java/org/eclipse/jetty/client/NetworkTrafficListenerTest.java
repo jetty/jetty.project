@@ -385,7 +385,7 @@ public class NetworkTrafficListenerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .body(new FormRequestContent(fields))
             .send();
-        assertEquals(HttpStatus.FOUND_302, response.getStatus());
+        assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
 
         assertTrue(clientOutgoingLatch.await(1, TimeUnit.SECONDS));
         assertTrue(serverIncomingLatch.await(1, TimeUnit.SECONDS));
