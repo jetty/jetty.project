@@ -104,6 +104,11 @@ This is configurable using the following properties:
     # number of tests executed in parallel
     -Djunit.jupiter.execution.parallel.config.fixed.parallelism=2
 ```
+If a test cannot be runned in parallel because accessing/modifying some static fields or for any other reasons, the test should be marked with the annotation
+```java
+@Isolated("Access static field of Configurations")
+```
+
 
 Professional Services
 ---------------------
