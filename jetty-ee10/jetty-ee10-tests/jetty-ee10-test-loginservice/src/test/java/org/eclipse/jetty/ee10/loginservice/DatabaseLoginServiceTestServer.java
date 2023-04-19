@@ -222,7 +222,6 @@ public class DatabaseLoginServiceTestServer
 
         Constraint constraint = new Constraint.Builder()
             .name("auth")
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("user", "admin")
             .build();
 

@@ -94,8 +94,7 @@ public class SpecExampleConstraintTest
         </security-constraint>
         */
 
-        Constraint constraint0 = new Constraint.Builder()
-            .forbidden(true)
+        Constraint constraint0 = new Constraint.Builder().authentication(Constraint.Authentication.FORBIDDEN)
             .name("precluded methods")
             .build();
         ConstraintMapping mapping0 = new ConstraintMapping();
@@ -127,7 +126,6 @@ public class SpecExampleConstraintTest
         </security-constraint>
         */
         Constraint constraint1 = new Constraint.Builder()
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .name("wholesale")
             .roles("SALESCLEARK")
             .build();
@@ -157,7 +155,6 @@ public class SpecExampleConstraintTest
         </security-constraint>
          */
         Constraint constraint2 = new Constraint.Builder()
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .name("wholesale 2")
             .roles("CONTRACTOR")
             .secure(true)
@@ -187,7 +184,6 @@ public class SpecExampleConstraintTest
          */
         Constraint constraint4 = new Constraint.Builder()
             .name("retail")
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("CONTRACTOR", "HOMEOWNER")
             .build();
         ConstraintMapping mapping7 = new ConstraintMapping();

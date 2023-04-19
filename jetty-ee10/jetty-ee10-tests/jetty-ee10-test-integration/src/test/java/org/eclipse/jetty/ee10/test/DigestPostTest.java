@@ -136,7 +136,6 @@ public class DigestPostTest
             Constraint constraint = new Constraint.Builder()
                 .name("SecureTest")
                 .roles("test")
-                .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
                 .build();
             ConstraintMapping mapping = new ConstraintMapping();
             mapping.setConstraint(constraint);

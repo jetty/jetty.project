@@ -407,12 +407,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     {
         Session session = getSession.apply(false);
         if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
-            return Constraint.Authentication.REQUIRE_ANY_ROLE;
+            return Constraint.Authentication.ANY_ROLE;
 
         if (isJSecurityCheck(pathInContext))
-            return Constraint.Authentication.REQUIRE_ANY_ROLE;
+            return Constraint.Authentication.ANY_ROLE;
         if (isErrorPage(pathInContext))
-            return Constraint.Authentication.REQUIRE_NONE;
+            return Constraint.Authentication.NONE;
         return existing;
     }
 

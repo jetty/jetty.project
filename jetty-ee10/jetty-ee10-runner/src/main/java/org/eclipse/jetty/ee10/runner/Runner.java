@@ -367,7 +367,6 @@ public class Runner
                                     final HashLoginService loginService = new HashLoginService("StatsRealm", statsResource);
                                     Constraint constraint = new Constraint.Builder()
                                         .name("Admin Only")
-                                        .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
                                         .roles("admin")
                                         .build();
 

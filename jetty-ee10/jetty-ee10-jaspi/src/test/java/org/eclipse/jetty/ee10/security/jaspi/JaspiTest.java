@@ -140,7 +140,6 @@ public class JaspiTest
 
         Constraint constraint = new Constraint.Builder()
             .name("All")
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("users")
             .build();
         ConstraintMapping mapping = new ConstraintMapping();

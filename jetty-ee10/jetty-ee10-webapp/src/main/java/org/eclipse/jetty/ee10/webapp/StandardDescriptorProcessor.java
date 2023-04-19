@@ -1292,6 +1292,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         Constraint.Builder scBase = new Constraint.Builder();
 
+        //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive across fragments
+
         //TODO: need to remember origin of the constraints
         XmlParser.Node auths = node.get("auth-constraint");
 
@@ -1308,15 +1310,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
                 switch (role)
                 {
-                    case ConstraintSecurityHandler.ANY_KNOWN_ROLE ->
+                    case ConstraintSecurityHandler.ANY_KNOWN_ROLE -> // "*"
                     {
-                        if (scBase.getAuthentication() == Constraint.Authentication.REQUIRE_NONE)
-                            scBase.authentication(Constraint.Authentication.REQUIRE_KNOWN_ROLE);
-                        roles = null;
+                        Constraint.Authentication current = scBase.getAuthentication();
+                        if (current == null || current == Constraint.Authentication.NONE)
+                        {
+                            scBase.authentication(Constraint.Authentication.KNOWN_ROLE);
+                            roles = null;
+                        }
                     }
-                    case ConstraintSecurityHandler.ANY_ROLE ->
+                    case ConstraintSecurityHandler.ANY_ROLE -> // "**"
                     {
-                        scBase.authentication(Constraint.Authentication.REQUIRE_ANY_ROLE);
+                        scBase.authentication(Constraint.Authentication.ANY_ROLE);
                         roles = null;
                     }
                     default ->
@@ -1330,12 +1335,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (roles != null)
             {
                 if (roles.isEmpty())
-                    scBase.forbidden(true);
+                    scBase.authentication(Constraint.Authentication.FORBIDDEN);
                 else
-                {
-                    scBase.authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE);
                     scBase.roles(roles.toArray(new String[0]));
-                }
             }
         }
 

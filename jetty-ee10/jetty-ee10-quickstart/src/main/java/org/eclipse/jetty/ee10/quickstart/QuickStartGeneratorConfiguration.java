@@ -358,7 +358,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     out.closeTag();
                 }
 
-                if (m.getConstraint().getAuthentication() != org.eclipse.jetty.security.Constraint.Authentication.REQUIRE_NONE)
+                if (m.getConstraint().getAuthentication() != org.eclipse.jetty.security.Constraint.Authentication.NONE)
                 {
                     Set<String> roles = m.getConstraint().getRoles();
                     if (roles != null && roles.size() > 0)

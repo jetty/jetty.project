@@ -16,7 +16,6 @@ package org.eclipse.jetty.security;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,24 +27,26 @@ public interface Constraint
 {
     enum Authentication
     {
-        REQUIRE_NONE,
-        REQUIRE_ANY_ROLE,
-        REQUIRE_KNOWN_ROLE,
-        REQUIRE_SPECIFIC_ROLE;
+        FORBIDDEN,
+        NONE,
+        ANY_ROLE,
+        KNOWN_ROLE,
+        SPECIFIC_ROLE;
 
         public static Authentication combine(Authentication a, Authentication b)
         {
             if (a == null)
-                return b == null ? REQUIRE_NONE : b;
+                return b == null ? NONE : b;
             if (b == null)
                 return a;
 
             return switch (b)
             {
-                case REQUIRE_NONE -> a;
-                case REQUIRE_ANY_ROLE -> a == REQUIRE_NONE ? REQUIRE_ANY_ROLE : a;
-                case REQUIRE_KNOWN_ROLE -> a == REQUIRE_SPECIFIC_ROLE ? REQUIRE_SPECIFIC_ROLE : REQUIRE_KNOWN_ROLE;
-                case REQUIRE_SPECIFIC_ROLE -> REQUIRE_SPECIFIC_ROLE;
+                case FORBIDDEN -> b;
+                case NONE -> a;
+                case ANY_ROLE -> a == NONE ? ANY_ROLE : a;
+                case KNOWN_ROLE -> a == SPECIFIC_ROLE ? SPECIFIC_ROLE : KNOWN_ROLE;
+                case SPECIFIC_ROLE -> SPECIFIC_ROLE;
             };
         }
     }
@@ -57,9 +58,11 @@ public interface Constraint
 
     /**
      * @return true if the {@code Constraint} forbids all access.
-     * TODO this should just be another Authentication mode.
      */
-    boolean isForbidden();
+    default boolean isForbidden()
+    {
+        return getAuthentication() == Authentication.FORBIDDEN;
+    }
 
     /**
      * @return {@code True} if the transport must be secure.
@@ -84,7 +87,6 @@ public interface Constraint
     class Builder
     {
         private String _name;
-        private boolean _forbidden;
         private boolean _secure;
         private Authentication _authentication;
         private Set<String> _roles;
@@ -94,7 +96,6 @@ public interface Constraint
 
         public Builder(Constraint constraint)
         {
-            _forbidden = constraint.isForbidden();
             _secure = constraint.isSecure();
             _authentication = constraint.getAuthentication();
             _roles = constraint.getRoles();
@@ -111,18 +112,6 @@ public interface Constraint
             return _name;
         }
 
-        public Builder forbidden(boolean forbidden)
-        {
-            _forbidden = forbidden;
-            _authentication = Authentication.REQUIRE_NONE;
-            return this;
-        }
-
-        public boolean isForbidden()
-        {
-            return _forbidden;
-        }
-
         public Builder secure(boolean secure)
         {
             _secure = secure;
@@ -137,9 +126,6 @@ public interface Constraint
         public Builder authentication(Authentication authentication)
         {
             _authentication = authentication;
-            _forbidden = false;
-            if (Objects.requireNonNull(authentication) == Authentication.REQUIRE_ANY_ROLE && _roles != null)
-                _roles.clear();
             return this;
         }
 
@@ -152,7 +138,6 @@ public interface Constraint
         {
             if (roles != null && roles.length > 0)
             {
-                _authentication = Authentication.REQUIRE_SPECIFIC_ROLE;
                 if (_roles == null)
                     _roles = new HashSet<>();
                 else if (!(_roles instanceof HashSet<String>))
@@ -169,23 +154,22 @@ public interface Constraint
 
         public Constraint build()
         {
-            return from(_name, _forbidden, _secure, _authentication, _roles);
+            return from(_name, _secure, _authentication, _roles);
         }
     }
 
-    Constraint NONE = from(false, false, Authentication.REQUIRE_NONE);
-    Constraint FORBIDDEN = from(true, false, null);
-    Constraint CONFIDENTIAL = from(false, true, null);
-    Constraint AUTHENTICATED = from(false, false, Authentication.REQUIRE_ANY_ROLE);
-    Constraint AUTHENTICATED_KNOWN_ROLE = from(false, false, Authentication.REQUIRE_KNOWN_ROLE);
+    Constraint NONE = from(false, Authentication.NONE);
+    Constraint FORBIDDEN = from( false, Authentication.FORBIDDEN);
+    Constraint SECURE = from( true, null);
+    Constraint AUTHENTICATED = from( false, Authentication.ANY_ROLE);
+    Constraint AUTHENTICATED_KNOWN_ROLE = from( false, Authentication.KNOWN_ROLE);
 
     /**
      * <p>Combine two Constraints by:</p>
      * <ul>
      *     <li>{@code Null} values are ignored.</li>
      *     <li>Union of role sets.</li>
-     *     <li>Combine {@link Constraint.Authentication} with {@link Constraint.Authentication#combine(Constraint, Constraint)}</li>
-     *     <li>Forbidden is OR'd</li>
+     *     <li>Combine {@link Constraint.Authentication}s with {@link Constraint.Authentication#combine(Authentication, Authentication)}</li>
      *     <li>Secure is OR'd</li>
      * </ul>
      * <p>Note that this combination is not equivalent to the combination done by the EE servlet specification.</p>
@@ -207,7 +191,6 @@ public interface Constraint
             roles = Stream.concat(roles.stream(), b.getRoles().stream()).collect(Collectors.toSet());
 
         return from(
-            a.isForbidden() || b.isForbidden(),
             a.isSecure() || b.isSecure(),
             Authentication.combine(a.getAuthentication(), b.getAuthentication()),
             roles);
@@ -215,22 +198,22 @@ public interface Constraint
 
     static Constraint from(String... roles)
     {
-        return from(false, false, Authentication.REQUIRE_SPECIFIC_ROLE, roles);
+        return from(false, Authentication.SPECIFIC_ROLE, roles);
     }
 
-    static Constraint from(boolean forbidden, boolean secure, Authentication authentication, String... roles)
+    static Constraint from(boolean secure, Authentication authentication, String... roles)
     {
-        return from(forbidden, secure, authentication, (roles == null || roles.length == 0)
+        return from(secure, authentication, (roles == null || roles.length == 0)
             ? Collections.emptySet()
             : new HashSet<>(Arrays.stream(roles).toList()));
     }
 
-    static Constraint from(boolean forbidden, boolean secure, Authentication authentication, Set<String> roles)
+    static Constraint from(boolean secure, Authentication authentication, Set<String> roles)
     {
-        return from(null, forbidden, secure, authentication, roles);
+        return from(null, secure, authentication, roles);
     }
 
-    static Constraint from(String name, boolean forbidden, boolean secure, Authentication authentication, Set<String> roles)
+    static Constraint from(String name, boolean secure, Authentication authentication, Set<String> roles)
     {
         Set<String> roleSet = roles == null
             ? Collections.emptySet()
@@ -245,12 +228,6 @@ public interface Constraint
             }
 
             @Override
-            public boolean isForbidden()
-            {
-                return forbidden;
-            }
-
-            @Override
             public boolean isSecure()
             {
                 return secure;
@@ -259,7 +236,9 @@ public interface Constraint
             @Override
             public Authentication getAuthentication()
             {
-                return authentication == null ? Authentication.REQUIRE_NONE : authentication;
+                if (authentication == null)
+                    return roleSet.isEmpty() ? Authentication.NONE : Authentication.SPECIFIC_ROLE;
+                return authentication;
             }
 
             @Override
@@ -277,10 +256,9 @@ public interface Constraint
             @Override
             public String toString()
             {
-                return "Constraint@%x{%s,f=%b,c=%b,%s,%s}".formatted(
+                return "Constraint@%x{%s,c=%b,%s,%s}".formatted(
                     hashCode(),
                     name,
-                    forbidden,
                     secure,
                     authentication,
                     roleSet);

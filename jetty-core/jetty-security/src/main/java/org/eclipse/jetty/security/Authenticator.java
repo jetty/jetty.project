@@ -84,7 +84,7 @@ public interface Authenticator
      */
     default Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
     {
-        return existing == null ? Constraint.Authentication.REQUIRE_NONE : existing;
+        return existing == null ? Constraint.Authentication.NONE : existing;
     }
 
     /**

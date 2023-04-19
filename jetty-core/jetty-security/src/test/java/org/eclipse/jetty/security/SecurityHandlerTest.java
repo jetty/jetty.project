@@ -119,7 +119,7 @@ public class SecurityHandlerTest
     @Test
     public void testUserData() throws Exception
     {
-        _securityHandler.put("/confidential/*", Constraint.CONFIDENTIAL);
+        _securityHandler.put("/confidential/*", Constraint.SECURE);
 
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
@@ -141,7 +141,7 @@ public class SecurityHandlerTest
     public void testCombinedForbiddenConfidential() throws Exception
     {
         _securityHandler.put("/*", Constraint.NONE);
-        _securityHandler.put("/confidential/*", Constraint.CONFIDENTIAL);
+        _securityHandler.put("/confidential/*", Constraint.SECURE);
         _securityHandler.put("*.hidden", Constraint.FORBIDDEN);
 
         String response;

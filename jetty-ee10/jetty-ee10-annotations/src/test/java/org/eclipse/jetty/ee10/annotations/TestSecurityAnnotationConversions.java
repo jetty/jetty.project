@@ -99,7 +99,7 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
         Constraint expectedConstraint = new Constraint.Builder()
-            .forbidden(true)
+            .authentication(Constraint.Authentication.FORBIDDEN)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
@@ -156,7 +156,6 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes:compareResults
         //1 ConstraintMapping per ServletMapping
         Constraint expectedConstraint = new Constraint.Builder()
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("tom", "dick", "harry")
             .secure(true)
             .build();
@@ -187,7 +186,6 @@ public class TestSecurityAnnotationConversions
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
         Constraint expectedConstraint1 = new Constraint.Builder()
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("tom", "dick", "harry")
             .secure(true)
             .build();
@@ -238,7 +236,6 @@ public class TestSecurityAnnotationConversions
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
         Constraint expectedConstraint1 = new Constraint.Builder()
-            .authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE)
             .roles("tom", "dick", "harry")
             .secure(true).build();
 

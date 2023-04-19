@@ -136,19 +136,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             {
                 //Equivalent to <auth-constraint> with no roles
                 constraint.name(name + "-Deny");
-                constraint.forbidden(true);
+                constraint.authentication(Constraint.Authentication.FORBIDDEN);
             }
             else
             {
                 //Equivalent to no <auth-constraint>
                 constraint.name(name + "-Permit");
-                constraint.authentication(Constraint.Authentication.REQUIRE_NONE);
+                constraint.authentication(Constraint.Authentication.NONE);
             }
         }
         else
         {
             //Equivalent to <auth-constraint> with list of <security-role-name>s
-            constraint.authentication(Constraint.Authentication.REQUIRE_SPECIFIC_ROLE);
+            constraint.authentication(Constraint.Authentication.SPECIFIC_ROLE);
             constraint.roles(rolesAllowed);
             constraint.name(name + "-RolesAllowed");
         }
@@ -419,7 +419,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             roles = Stream.concat(roles.stream(), constraintB.getRoles().stream()).collect(Collectors.toSet());
 
         return Constraint.from(
-            constraintA.isForbidden() || constraintB.isForbidden(),
             constraintA.isSecure() && constraintB.isSecure(),
             Constraint.Authentication.combine(constraintA.getAuthentication(), constraintB.getAuthentication()),
             roles);
