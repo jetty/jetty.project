@@ -345,10 +345,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authentication);
-                    synchronized (session)
-                    {
-                        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-                    }
+                    logout(request);
                 }
                 else
                 {
