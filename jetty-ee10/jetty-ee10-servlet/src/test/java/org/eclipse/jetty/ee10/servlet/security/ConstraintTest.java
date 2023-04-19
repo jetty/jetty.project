@@ -338,8 +338,9 @@ public class ConstraintTest
 
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-4
-     *
+     * <pre>
      * &#064;ServletSecurity(&#064;HttpConstraint(rolesAllowed = "R1"))
+     * </pre>
      */
     @Test
     public void testSecurityElementExample134()
@@ -366,9 +367,9 @@ public class ConstraintTest
      * </pre>
      */
     @Test
-    public void testSecurityElementExample135() throws Exception
+    public void testSecurityElementExample135()
     {
-        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<>();
         methodElements.add(new HttpMethodConstraintElement("GET", new HttpConstraintElement(TransportGuarantee.NONE, "R1")));
         methodElements.add(new HttpMethodConstraintElement("POST", new HttpConstraintElement(TransportGuarantee.CONFIDENTIAL, "R1")));
         ServletSecurityElement element = new ServletSecurityElement(methodElements);
@@ -421,7 +422,7 @@ public class ConstraintTest
     @Test
     public void testSecurityElementExample137()
     {
-        List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
+        List<HttpMethodConstraintElement> methodElements = new ArrayList<>();
         methodElements.add(new HttpMethodConstraintElement("TRACE", new HttpConstraintElement(EmptyRoleSemantic.DENY)));
         ServletSecurityElement element = new ServletSecurityElement(new HttpConstraintElement(TransportGuarantee.NONE, "R1"), methodElements);
         List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
@@ -537,11 +538,12 @@ public class ConstraintTest
 
         scenarios.add(Arguments.of(
             new Scenario(
-                "POST /ctx/auth/info HTTP/1.1\r\n" +
-                    "Host: test\r\n" +
-                    "Content-Length: 10\r\n" +
-                    "\r\n" +
-                    "0123456789",
+                """
+                    POST /ctx/auth/info HTTP/1.1\r
+                    Host: test\r
+                    Content-Length: 10\r
+                    \r
+                    0123456789""",
                 HttpStatus.UNAUTHORIZED_401,
                 (response) ->
                 {
@@ -554,11 +556,12 @@ public class ConstraintTest
 
         scenarios.add(Arguments.of(
             new Scenario(
-                "POST /ctx/auth/info HTTP/1.1\r\n" +
-                    "Host: test\r\n" +
-                    "Content-Length: 10\r\n" +
-                    "\r\n" +
-                    "012345",
+                """
+                    POST /ctx/auth/info HTTP/1.1\r
+                    Host: test\r
+                    Content-Length: 10\r
+                    \r
+                    012345""",
                 HttpStatus.UNAUTHORIZED_401,
                 (response) ->
                 {
@@ -635,11 +638,7 @@ public class ConstraintTest
                 "GET /ctx/admin/info HTTP/1.0\r\n" +
                     "Authorization: Basic " + authBase64("user:password") + "\r\n" +
                     "\r\n",
-                HttpStatus.FORBIDDEN_403,
-                (response) ->
-                {
-                    assertThat(response.getContent(), containsString("!authorized"));
-                }
+                HttpStatus.FORBIDDEN_403, response -> assertThat(response.getContent(), containsString("!authorized"))
             )
         ));
 
@@ -758,8 +757,6 @@ public class ConstraintTest
         }
     }
 
-    private static String CNONCE = "1234567890";
-
     private String digest(String nonce, String username, String password, String uri, String nc) throws Exception
     {
         MessageDigest md = MessageDigest.getInstance("MD5");
@@ -791,6 +788,7 @@ public class ConstraintTest
         md.update((byte)':');
         md.update(nc.getBytes(ISO_8859_1));
         md.update((byte)':');
+        String CNONCE = "1234567890";
         md.update(CNONCE.getBytes(ISO_8859_1));
         md.update((byte)':');
         md.update("auth".getBytes(ISO_8859_1));
@@ -1019,11 +1017,13 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponse("POST /ctx/auth/info HTTP/1.0\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: 27\r\n" +
-            "\r\n" +
-            "test_parameter=test_value\r\n");
+        response = _connector.getResponse("""
+            POST /ctx/auth/info HTTP/1.0\r
+            Content-Type: application/x-www-form-urlencoded\r
+            Content-Length: 27\r
+            \r
+            test_parameter=test_value\r
+            """);
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
@@ -1081,24 +1081,28 @@ public class ConstraintTest
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
         _server.start();
 
-        String response = _connector.getResponse("POST /ctx/auth/info HTTP/1.0\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Connection: keep-alive\r\n" +
-            "Content-Length: 10\r\n" +
-            "\r\n" +
-            "0123456789\r\n");
+        String response = _connector.getResponse("""
+            POST /ctx/auth/info HTTP/1.0\r
+            Content-Type: text/plain\r
+            Connection: keep-alive\r
+            Content-Length: 10\r
+            \r
+            0123456789\r
+            """);
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, not(containsString("Connection: close")));
         assertThat(response, containsString("Connection: keep-alive"));
 
-        response = _connector.getResponse("POST /ctx/auth/info HTTP/1.0\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Connection: keep-alive\r\n" +
-            "Content-Length: 10000\r\n" +
-            "\r\n" +
-            "012345\r\n");
+        response = _connector.getResponse("""
+            POST /ctx/auth/info HTTP/1.0\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Connection: keep-alive\r
+            Content-Length: 10000\r
+            \r
+            012345\r
+            """);
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, not(containsString("Connection: keep-alive")));
@@ -1736,8 +1740,10 @@ public class ConstraintTest
 
         String response;
 
-        response = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n" +
-            "\r\n");
+        response = _connector.getResponse("""
+            GET /ctx/noauth/info HTTP/1.0\r
+            \r
+            """);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("user=null"));
 
@@ -1891,7 +1897,7 @@ public class ConstraintTest
     private static class TestServlet extends HttpServlet
     {
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             if (request.getAuthType() == null || "user".equals(request.getRemoteUser()) || request.isUserInRole("user") || request.isUserInRole("foo"))
             {
@@ -1921,7 +1927,6 @@ public class ConstraintTest
                 response.setStatus(200);
                 response.setContentType("text/plain; charset=UTF-8");
                 response.getWriter().println("user=" + request.getRemoteUser());
-                return;
             }
             else if ("loginauth".equals(action))
             {
@@ -1930,17 +1935,14 @@ public class ConstraintTest
                 response.getWriter().println("remoteUser=" + request.getRemoteUser());
                 response.getWriter().println("authType=" + request.getAuthType());
                 response.getWriter().println("auth=" + request.authenticate(response));
-                return;
             }
             else if ("login".equals(action))
             {
                 request.login("admin", "password");
-                return;
             }
             else if ("loginfail".equals(action))
             {
                 request.login("admin", "fail");
-                return;
             }
             else if ("loginfaillogin".equals(action))
             {
@@ -1952,7 +1954,6 @@ public class ConstraintTest
                 {
                     request.login("admin", "password");
                 }
-                return;
             }
             else if ("loginlogin".equals(action))
             {
@@ -1972,7 +1973,7 @@ public class ConstraintTest
             }
             else if ("constraintlogin".equals(action))
             {
-                String user = request.getRemoteUser();
+                String ignored = request.getRemoteUser();
                 request.login("admin", "password");
             }
             else if ("logout".equals(action))
@@ -1980,7 +1981,9 @@ public class ConstraintTest
                 request.logout();
             }
             else
+            {
                 response.sendError(500);
+            }
         }
     }
 
