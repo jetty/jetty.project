@@ -13,22 +13,57 @@
 
 package org.eclipse.jetty.client;
 
-import org.junit.jupiter.api.Disabled;
+public class HttpClientAuthenticationTest
+{
+    // TODO replace this with the code below, but with client updated
+}
+
+/*
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO
-@Disabled
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 {
-    @Test
-    public void testNeedToUpdateThisTest()
-    {
-        fail("This test needs to be updated to use Core version of Basic Auth (when available)");
-    }
-
-    /** TODO
     private String realm = "TestRealm";
 
     public void startBasic(Scenario scenario, Handler handler) throws Exception
@@ -53,22 +88,15 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         server = new Server();
         File realmFile = MavenTestingUtils.getTestResourceFile("realm.properties");
-        LoginService loginService = new HashLoginService(realm, realmFile.getAbsolutePath());
+        LoginService loginService = new HashLoginService(realm, ResourceFactory.root().newResource(realmFile.toPath()));
         server.addBean(loginService);
 
-        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+        Constraint constraint = new Constraint.Builder().authorization(Constraint.Authorization.ANY_USER).build();
+        securityHandler.put("/secure", constraint);
 
-        Constraint constraint = new Constraint();
-        constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"**"}); //allow any authenticated user
-        ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/secure");
-        mapping.setConstraint(constraint);
-
-        securityHandler.addConstraintMapping(mapping);
         securityHandler.setAuthenticator(authenticator);
         securityHandler.setLoginService(loginService);
-
         securityHandler.setHandler(handler);
         start(scenario, securityHandler);
     }
@@ -817,5 +845,5 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         }
     }
-     */
 }
+*/

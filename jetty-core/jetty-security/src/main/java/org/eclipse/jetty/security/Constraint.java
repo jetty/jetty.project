@@ -156,13 +156,13 @@ public interface Constraint
             return _secure;
         }
 
-        public Builder authentication(Authorization authorization)
+        public Builder authorization(Authorization authorization)
         {
             _authorization = authorization;
             return this;
         }
 
-        public Authorization getAuthentication()
+        public Authorization getAuthorization()
         {
             return _authorization;
         }

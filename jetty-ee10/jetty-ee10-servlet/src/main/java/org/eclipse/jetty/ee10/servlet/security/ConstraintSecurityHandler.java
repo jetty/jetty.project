@@ -136,19 +136,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             {
                 //Equivalent to <auth-constraint> with no roles
                 constraint.name(name + "-Deny");
-                constraint.authentication(Constraint.Authorization.FORBIDDEN);
+                constraint.authorization(Constraint.Authorization.FORBIDDEN);
             }
             else
             {
                 //Equivalent to no <auth-constraint>
                 constraint.name(name + "-Permit");
-                constraint.authentication(Constraint.Authorization.ALLOWED);
+                constraint.authorization(Constraint.Authorization.ALLOWED);
             }
         }
         else
         {
             //Equivalent to <auth-constraint> with list of <security-role-name>s
-            constraint.authentication(Constraint.Authorization.SPECIFIC_ROLE);
+            constraint.authorization(Constraint.Authorization.SPECIFIC_ROLE);
             constraint.roles(rolesAllowed);
             constraint.name(name + "-RolesAllowed");
         }

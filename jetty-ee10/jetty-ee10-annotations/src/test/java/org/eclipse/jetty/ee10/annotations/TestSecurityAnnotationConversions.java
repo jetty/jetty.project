@@ -99,7 +99,7 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
         Constraint expectedConstraint = new Constraint.Builder()
-            .authentication(Constraint.Authorization.FORBIDDEN)
+            .authorization(Constraint.Authorization.FORBIDDEN)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];

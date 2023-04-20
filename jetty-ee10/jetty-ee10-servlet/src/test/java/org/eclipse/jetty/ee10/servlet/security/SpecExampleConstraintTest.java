@@ -94,7 +94,7 @@ public class SpecExampleConstraintTest
         </security-constraint>
         */
 
-        Constraint constraint0 = new Constraint.Builder().authentication(Constraint.Authorization.FORBIDDEN)
+        Constraint constraint0 = new Constraint.Builder().authorization(Constraint.Authorization.FORBIDDEN)
             .name("precluded methods")
             .build();
         ConstraintMapping mapping0 = new ConstraintMapping();
