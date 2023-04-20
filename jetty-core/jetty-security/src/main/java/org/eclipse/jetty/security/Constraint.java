@@ -161,8 +161,6 @@ public interface Constraint
 
         public Constraint build()
         {
-            if (_authentication == null && _roles == null)
-                throw new IllegalStateException("No Authentication or roles");
             return from(_name, _secure, _authentication, _roles);
         }
     }
@@ -224,9 +222,13 @@ public interface Constraint
 
     static Constraint from(String name, boolean secure, Authentication authentication, Set<String> roles)
     {
-        Set<String> roleSet = roles == null
+        Set<String> roleSet = roles == null || roles.isEmpty()
             ? Collections.emptySet()
             : Collections.unmodifiableSet(roles);
+
+        Authentication auth = authentication == null
+            ? (roleSet.isEmpty() ? Authentication.NONE : Authentication.SPECIFIC_ROLE)
+            : authentication;
 
         return new Constraint()
         {
@@ -245,9 +247,7 @@ public interface Constraint
             @Override
             public Authentication getAuthentication()
             {
-                if (authentication == null)
-                    return roleSet.isEmpty() ? Authentication.NONE : Authentication.SPECIFIC_ROLE;
-                return authentication;
+                return auth;
             }
 
             @Override
