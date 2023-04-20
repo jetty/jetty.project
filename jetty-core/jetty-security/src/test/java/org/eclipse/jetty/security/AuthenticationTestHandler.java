@@ -21,7 +21,6 @@ import java.util.function.Function;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
-import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -94,7 +93,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         AuthenticationState authenticationState = AuthenticationState.getAuthentication(request);
         if (authenticationState instanceof AuthenticationState.Succeeded succeeded)
             out.append(succeeded.getUserIdentity().getUserPrincipal()).append(" is OK");
-        else if (authenticationState instanceof DeferredAuthenticationState)
+        else if (authenticationState instanceof AuthenticationState.Deferred)
             out.append("Deferred");
         else if (authenticationState == null)
             out.append("Unauthenticated");

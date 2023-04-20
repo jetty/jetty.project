@@ -70,7 +70,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
@@ -441,7 +440,7 @@ public class ServletApiRequest implements HttpServletRequest
         AuthenticationState authenticationState = getUndeferredAuthentication();
 
         //if the authentication did not succeed
-        if (authenticationState instanceof DeferredAuthenticationState)
+        if (authenticationState instanceof AuthenticationState.Deferred)
             response.sendError(HttpStatus.UNAUTHORIZED_401);
 
         //if the authentication is incomplete, return false
