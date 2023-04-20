@@ -25,22 +25,37 @@ import java.util.stream.Stream;
  */
 public interface Constraint
 {
-    enum Authentication
+    enum Authorization
     {
+        /**
+         * Access not allowed. Equivalent to Servlet AuthConstraint with no roles.
+         */
         FORBIDDEN,
+        /**
+         * Access allowed. Equivalent to Servlet AuthConstraint without any Authorization.
+         */
         NONE,
-        ANY_ROLE,
+        /**
+         * Access allowed for any authenticated user. Equivalent to Servlet role "**".
+         */
+        ANY_USER,
+        /**
+         * Access allowed for authenticated user with any known role. Equivalent to Servlet role "*".
+         */
         KNOWN_ROLE,
+        /**
+         * Access allowed for authenticated user with specific role(s).
+         */
         SPECIFIC_ROLE;
 
         /**
-         * <p>Combine Authentication Constraints, with the strictest constraint
+         * <p>Combine Authorization Constraints, with the strictest constraint
          * always given precedence. Note that this is not servlet specification compliant</p>
          * @param a A constraint
          * @param b A constraint
          * @return The combination of the two constraints.
          */
-        public static Authentication combine(Authentication a, Authentication b)
+        public static Authorization combine(Authorization a, Authorization b)
         {
             if (a == null)
                 return b == null ? NONE : b;
@@ -51,7 +66,7 @@ public interface Constraint
             {
                 case FORBIDDEN -> b;
                 case NONE -> a;
-                case ANY_ROLE -> a == NONE ? ANY_ROLE : a;
+                case ANY_USER -> a == NONE ? ANY_USER : a;
                 case KNOWN_ROLE -> a == SPECIFIC_ROLE ? SPECIFIC_ROLE : KNOWN_ROLE;
                 case SPECIFIC_ROLE -> SPECIFIC_ROLE;
             };
@@ -68,7 +83,7 @@ public interface Constraint
      */
     default boolean isForbidden()
     {
-        return getAuthentication() == Authentication.FORBIDDEN;
+        return getAuthorization() == Authorization.FORBIDDEN;
     }
 
     /**
@@ -77,9 +92,9 @@ public interface Constraint
     boolean isSecure();
 
     /**
-     * @return The {@link Authentication} criteria applied by this {@code Constraint}.
+     * @return The {@link Authorization} criteria applied by this {@code Constraint}.
      */
-    Authentication getAuthentication();
+    Authorization getAuthorization();
 
     /**
      * @return The set of roles applied by this {@code Constraint} or the empty set.
@@ -91,11 +106,14 @@ public interface Constraint
         return new Builder(this);
     }
 
+    /**
+     * Builder for Constraint.
+     */
     class Builder
     {
         private String _name;
         private boolean _secure;
-        private Authentication _authentication;
+        private Authorization _authorization;
         private Set<String> _roles;
 
         public Builder()
@@ -104,7 +122,7 @@ public interface Constraint
         public Builder(Constraint constraint)
         {
             _secure = constraint.isSecure();
-            _authentication = constraint.getAuthentication();
+            _authorization = constraint.getAuthorization();
             _roles = constraint.getRoles();
         }
 
@@ -130,15 +148,15 @@ public interface Constraint
             return _secure;
         }
 
-        public Builder authentication(Authentication authentication)
+        public Builder authentication(Authorization authorization)
         {
-            _authentication = authentication;
+            _authorization = authorization;
             return this;
         }
 
-        public Authentication getAuthentication()
+        public Authorization getAuthentication()
         {
-            return _authentication;
+            return _authorization;
         }
 
         public Builder roles(String... roles)
@@ -161,22 +179,41 @@ public interface Constraint
 
         public Constraint build()
         {
-            return from(_name, _secure, _authentication, _roles);
+            return from(_name, _secure, _authorization, _roles);
         }
     }
 
-    Constraint NONE = from(false, Authentication.NONE);
-    Constraint FORBIDDEN = from(false, Authentication.FORBIDDEN);
-    Constraint SECURE = from(true, null);
-    Constraint AUTHENTICATED = from(false, Authentication.ANY_ROLE);
-    Constraint AUTHENTICATED_KNOWN_ROLE = from(false, Authentication.KNOWN_ROLE);
+    /**
+     * A static Constraint with {@link Authorization#NONE} and not secure.
+     */
+    Constraint NONE = from(false, Authorization.NONE);
+
+    /**
+     * A static Constraint with {@link Authorization#FORBIDDEN} and not secure.
+     */
+    Constraint FORBIDDEN = from(false, Authorization.FORBIDDEN);
+
+    /**
+     * A static Constraint with {@link Authorization#ANY_USER} and not secure.
+     */
+    Constraint ANY_USER = from(false, Authorization.ANY_USER);
+
+    /**
+     * A static Constraint with {@link Authorization#KNOWN_ROLE} and not secure.
+     */
+    Constraint KNOWN_ROLE = from(false, Authorization.KNOWN_ROLE);
+
+    /**
+     * A static Constraint with {@link Authorization#NONE} that is secure.
+     */
+    Constraint SECURE = from(true, Authorization.NONE);
 
     /**
      * <p>Combine two Constraints by:</p>
      * <ul>
      *     <li>{@code Null} values are ignored.</li>
      *     <li>Union of role sets.</li>
-     *     <li>Combine {@link Constraint.Authentication}s with {@link Constraint.Authentication#combine(Authentication, Authentication)}</li>
+     *     <li>Combine {@link Authorization}s with {@link Authorization#combine(Authorization, Authorization)}</li>
      *     <li>Secure is OR'd</li>
      * </ul>
      * <p>Note that this combination is not equivalent to the combination done by the EE servlet specification.</p>
@@ -199,36 +236,36 @@ public interface Constraint
 
         return from(
             a.isSecure() || b.isSecure(),
-            Authentication.combine(a.getAuthentication(), b.getAuthentication()),
+            Authorization.combine(a.getAuthorization(), b.getAuthorization()),
             roles);
     }
 
     static Constraint from(String... roles)
     {
-        return from(false, Authentication.SPECIFIC_ROLE, roles);
+        return from(false, Authorization.SPECIFIC_ROLE, roles);
     }
 
-    static Constraint from(boolean secure, Authentication authentication, String... roles)
+    static Constraint from(boolean secure, Authorization authorization, String... roles)
     {
-        return from(secure, authentication, (roles == null || roles.length == 0)
+        return from(secure, authorization, (roles == null || roles.length == 0)
             ? Collections.emptySet()
             : new HashSet<>(Arrays.stream(roles).toList()));
     }
 
-    static Constraint from(boolean secure, Authentication authentication, Set<String> roles)
+    static Constraint from(boolean secure, Authorization authorization, Set<String> roles)
     {
-        return from(null, secure, authentication, roles);
+        return from(null, secure, authorization, roles);
     }
 
-    static Constraint from(String name, boolean secure, Authentication authentication, Set<String> roles)
+    static Constraint from(String name, boolean secure, Authorization authorization, Set<String> roles)
     {
         Set<String> roleSet = roles == null || roles.isEmpty()
             ? Collections.emptySet()
             : Collections.unmodifiableSet(roles);
 
-        Authentication auth = authentication == null
-            ? (roleSet.isEmpty() ? Authentication.NONE : Authentication.SPECIFIC_ROLE)
-            : authentication;
+        Authorization auth = authorization == null
+            ? (roleSet.isEmpty() ? Authorization.NONE : Authorization.SPECIFIC_ROLE)
+            : authorization;
 
         return new Constraint()
         {
@@ -245,7 +282,7 @@ public interface Constraint
             }
 
             @Override
-            public Authentication getAuthentication()
+            public Authorization getAuthorization()
             {
                 return auth;
             }
@@ -269,7 +306,7 @@ public interface Constraint
                     hashCode(),
                     name,
                     secure,
-                    authentication,
+                    authorization,
                     roleSet);
             }
         };

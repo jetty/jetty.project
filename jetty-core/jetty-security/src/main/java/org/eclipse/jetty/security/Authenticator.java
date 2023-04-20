@@ -72,7 +72,7 @@ public interface Authenticator
     }
 
     /**
-     * Get an {@link Constraint.Authentication} applicable to the path for
+     * Get an {@link Constraint.Authorization} applicable to the path for
      * this authenticator.  This is typically used to vary protection on special URIs known to a
      * specific {@link Authenticator} (e.g. /j_security_check for
      * the {@link org.eclipse.jetty.security.authentication.FormAuthenticator}.
@@ -80,11 +80,11 @@ public interface Authenticator
      * @param pathInContext The pathInContext to potentially constrain.
      * @param existing The existing authentication constraint for the pathInContext determined independently of {@link Authenticator}
      * @param getSession Function to get or create a {@link Session}.
-     * @return The {@link Constraint.Authentication} to apply.
+     * @return The {@link Constraint.Authorization} to apply.
      */
-    default Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
+    default Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
     {
-        return existing == null ? Constraint.Authentication.NONE : existing;
+        return existing == null ? Constraint.Authorization.NONE : existing;
     }
 
     /**

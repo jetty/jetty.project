@@ -99,7 +99,7 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
         Constraint expectedConstraint = new Constraint.Builder()
-            .authentication(Constraint.Authentication.FORBIDDEN)
+            .authentication(Constraint.Authorization.FORBIDDEN)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
@@ -286,7 +286,7 @@ public class TestSecurityAnnotationConversions
                     {
                         matched = true;
 
-                        assertEquals(em.getConstraint().getAuthentication(), am.getConstraint().getAuthentication());
+                        assertEquals(em.getConstraint().getAuthorization(), am.getConstraint().getAuthorization());
                         assertEquals(em.getConstraint().isSecure(), am.getConstraint().isSecure());
                         if (em.getMethodOmissions() == null)
                         {

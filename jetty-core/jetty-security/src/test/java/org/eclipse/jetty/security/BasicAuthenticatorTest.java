@@ -95,8 +95,8 @@ public class BasicAuthenticatorTest
         _sessionHandler.setHandler(_securityHandler);
 
         _securityHandler.put("/admin/*", Constraint.from("admin"));
-        _securityHandler.put("/any/*", Constraint.AUTHENTICATED);
-        _securityHandler.put("/known/*", Constraint.AUTHENTICATED_KNOWN_ROLE);
+        _securityHandler.put("/any/*", Constraint.ANY_USER);
+        _securityHandler.put("/known/*", Constraint.KNOWN_ROLE);
         _securityHandler.setAuthenticator(new BasicAuthenticator());
 
         _securityHandler.setHandler(new AuthenticationTestHandler());

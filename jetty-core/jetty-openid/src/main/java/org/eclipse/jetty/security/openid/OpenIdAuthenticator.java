@@ -403,16 +403,16 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
+    public Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
     {
         Session session = getSession.apply(false);
         if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
-            return Constraint.Authentication.ANY_ROLE;
+            return Constraint.Authorization.ANY_USER;
 
         if (isJSecurityCheck(pathInContext))
-            return Constraint.Authentication.ANY_ROLE;
+            return Constraint.Authorization.ANY_USER;
         if (isErrorPage(pathInContext))
-            return Constraint.Authentication.NONE;
+            return Constraint.Authorization.NONE;
         return existing;
     }
 

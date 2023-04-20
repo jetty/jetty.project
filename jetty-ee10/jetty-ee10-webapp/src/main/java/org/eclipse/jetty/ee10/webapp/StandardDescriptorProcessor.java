@@ -1314,13 +1314,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     {
                         if (scBase.getAuthentication() == null)
                         {
-                            scBase.authentication(Constraint.Authentication.KNOWN_ROLE);
+                            scBase.authentication(Constraint.Authorization.KNOWN_ROLE);
                             roles = null;
                         }
                     }
                     case ConstraintSecurityHandler.ANY_ROLE -> // "**"
                     {
-                        scBase.authentication(Constraint.Authentication.ANY_ROLE);
+                        scBase.authentication(Constraint.Authorization.ANY_USER);
                         roles = null;
                     }
                     default ->
@@ -1334,7 +1334,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (roles != null)
             {
                 if (roles.isEmpty())
-                    scBase.authentication(Constraint.Authentication.FORBIDDEN);
+                    scBase.authentication(Constraint.Authorization.FORBIDDEN);
                 else
                     scBase.roles(roles.toArray(new String[0]));
             }

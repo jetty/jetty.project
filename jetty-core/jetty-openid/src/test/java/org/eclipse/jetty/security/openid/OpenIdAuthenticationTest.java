@@ -109,8 +109,8 @@ public class OpenIdAuthenticationTest
         contexts.addHandler(new ErrorPage("/error"));
 
         // Configure security constraints.
-        securityHandler.put("/login", Constraint.AUTHENTICATED);
-        securityHandler.put("/profile", Constraint.AUTHENTICATED);
+        securityHandler.put("/login", Constraint.ANY_USER);
+        securityHandler.put("/profile", Constraint.ANY_USER);
         securityHandler.put("/admin", Constraint.from("admin"));
 
         // Configure Jetty to use the local OIDC provider we have previously configured.

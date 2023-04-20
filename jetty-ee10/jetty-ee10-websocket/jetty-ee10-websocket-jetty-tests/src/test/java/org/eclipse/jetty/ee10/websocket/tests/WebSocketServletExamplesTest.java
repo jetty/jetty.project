@@ -85,7 +85,7 @@ public class WebSocketServletExamplesTest
 
         Constraint constraint = new Constraint.Builder()
             .name("auth")
-            .authentication(Constraint.Authentication.ANY_ROLE)
+            .authentication(Constraint.Authorization.ANY_USER)
             .build();
 
         ConstraintMapping mapping = new ConstraintMapping();

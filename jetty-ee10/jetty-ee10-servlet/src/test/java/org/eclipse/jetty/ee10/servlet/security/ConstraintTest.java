@@ -149,14 +149,14 @@ public class ConstraintTest
     private List<ConstraintMapping> getConstraintMappings()
     {
         _forbidConstraint = new Constraint.Builder();
-        _forbidConstraint.authentication(Constraint.Authentication.FORBIDDEN);
+        _forbidConstraint.authentication(Constraint.Authorization.FORBIDDEN);
         _forbidConstraint.name("forbid");
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/forbid/*");
         mapping0.setConstraint(_forbidConstraint.build());
 
         Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
-        authAnyRoleConstraint.authentication(Constraint.Authentication.KNOWN_ROLE);
+        authAnyRoleConstraint.authentication(Constraint.Authorization.KNOWN_ROLE);
         authAnyRoleConstraint.name("auth");
         ConstraintMapping mapping1 = new ConstraintMapping();
         mapping1.setPathSpec("/auth/*");
@@ -175,7 +175,7 @@ public class ConstraintTest
         mapping2o.setMethodOmissions(new String[]{"GET"});
 
         _relaxConstraint = new Constraint.Builder();
-        _relaxConstraint.authentication(Constraint.Authentication.NONE);
+        _relaxConstraint.authentication(Constraint.Authorization.NONE);
         _relaxConstraint.name("relax");
         ConstraintMapping mapping3 = new ConstraintMapping();
         mapping3.setPathSpec("/admin/relax/*");
@@ -189,7 +189,7 @@ public class ConstraintTest
         mapping4.setConstraint(loginPageConstraint.build());
 
         _noAuthConstraint = new Constraint.Builder();
-        _noAuthConstraint.authentication(Constraint.Authentication.NONE);
+        _noAuthConstraint.authentication(Constraint.Authorization.NONE);
         _noAuthConstraint.name("allow forbidden");
         ConstraintMapping mapping5 = new ConstraintMapping();
         mapping5.setPathSpec("/forbid/post");
@@ -201,7 +201,7 @@ public class ConstraintTest
         mapping5o.setMethodOmissions(new String[]{"POST"});
 
         Constraint.Builder confidentialDataConstraint = new Constraint.Builder();
-        confidentialDataConstraint.authentication(Constraint.Authentication.NONE);
+        confidentialDataConstraint.authentication(Constraint.Authorization.NONE);
         confidentialDataConstraint.name("data constraint");
         confidentialDataConstraint.secure(true);
         ConstraintMapping mapping6 = new ConstraintMapping();
@@ -209,7 +209,7 @@ public class ConstraintTest
         mapping6.setConstraint(confidentialDataConstraint.build());
 
         Constraint.Builder anyUserAuthConstraint = new Constraint.Builder();
-        anyUserAuthConstraint.authentication(Constraint.Authentication.ANY_ROLE);
+        anyUserAuthConstraint.authentication(Constraint.Authorization.ANY_USER);
         anyUserAuthConstraint.name("** constraint");
         ConstraintMapping mapping7 = new ConstraintMapping();
         mapping7.setPathSpec("/starstar/*");
@@ -229,7 +229,7 @@ public class ConstraintTest
 
         //an auth-constraint with role *
         Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
-        authAnyRoleConstraint.authentication(Constraint.Authentication.KNOWN_ROLE);
+        authAnyRoleConstraint.authentication(Constraint.Authorization.KNOWN_ROLE);
         authAnyRoleConstraint.name("anyAuth");
         ConstraintMapping starMapping = new ConstraintMapping();
         starMapping.setPathSpec("/test/*");
@@ -237,7 +237,7 @@ public class ConstraintTest
 
         //an auth-constraint with role **
         Constraint.Builder authAnyAuthConstraint = new Constraint.Builder();
-        authAnyAuthConstraint.authentication(Constraint.Authentication.ANY_ROLE);
+        authAnyAuthConstraint.authentication(Constraint.Authorization.ANY_USER);
         authAnyAuthConstraint.name("** constraint");
         ConstraintMapping starStarMapping = new ConstraintMapping();
         starStarMapping.setPathSpec("/test/*");
@@ -245,7 +245,7 @@ public class ConstraintTest
 
         //a relax constraint, ie no auth-constraint
         Constraint.Builder relaxConstraint = new Constraint.Builder();
-        relaxConstraint.authentication(Constraint.Authentication.NONE);
+        relaxConstraint.authentication(Constraint.Authorization.NONE);
         relaxConstraint.name("relax");
         ConstraintMapping relaxMapping = new ConstraintMapping();
         relaxMapping.setPathSpec("/test/*");
@@ -253,7 +253,7 @@ public class ConstraintTest
 
         //a forbidden constraint
         Constraint.Builder forbidConstraint = new Constraint.Builder();
-        forbidConstraint.authentication(Constraint.Authentication.FORBIDDEN);
+        forbidConstraint.authentication(Constraint.Authorization.FORBIDDEN);
         forbidConstraint.name("forbid");
         ConstraintMapping forbidMapping = new ConstraintMapping();
         forbidMapping.setPathSpec("/test/*");
@@ -411,7 +411,7 @@ public class ConstraintTest
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/xxxx/*");
         Constraint.Builder constraint = new Constraint.Builder();
-        constraint.authentication(Constraint.Authentication.NONE);
+        constraint.authentication(Constraint.Authorization.NONE);
         constraint.name("transient");
         mapping.setConstraint(constraint.build());
         
@@ -512,7 +512,7 @@ public class ConstraintTest
         assertFalse(mappings.isEmpty());
         assertEquals(1, mappings.size());
         ConstraintMapping mapping = mappings.get(0);
-        assertNotSame(mapping.getConstraint().getAuthentication(), Constraint.Authentication.NONE);
+        assertNotSame(mapping.getConstraint().getAuthorization(), Constraint.Authorization.NONE);
         assertNotNull(mapping.getConstraint().getRoles());
         assertEquals("R1", mapping.getConstraint().getRoles().stream().findFirst().orElse(null));
         assertFalse(mapping.getConstraint().isSecure());
@@ -564,12 +564,12 @@ public class ConstraintTest
         assertEquals(2, mappings.size());
         assertNotNull(mappings.get(0).getMethodOmissions());
         assertEquals("GET", mappings.get(0).getMethodOmissions()[0]);
-        assertNotSame(mappings.get(0).getConstraint().getAuthentication(), Constraint.Authentication.NONE);
+        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.NONE);
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("GET", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
         assertFalse(mappings.get(1).getConstraint().isSecure());
-        assertThat(mappings.get(1).getConstraint().getAuthentication(), is(Constraint.Authentication.NONE));
+        assertThat(mappings.get(1).getConstraint().getAuthorization(), is(Constraint.Authorization.NONE));
     }
 
     /**
@@ -591,7 +591,7 @@ public class ConstraintTest
         assertEquals(2, mappings.size());
         assertNotNull(mappings.get(0).getMethodOmissions());
         assertEquals("TRACE", mappings.get(0).getMethodOmissions()[0]);
-        assertNotSame(mappings.get(0).getConstraint().getAuthentication(), Constraint.Authentication.NONE);
+        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.NONE);
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("TRACE", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
@@ -604,7 +604,7 @@ public class ConstraintTest
     {
         //Test no methods named
         Constraint.Builder constraint1 = new Constraint.Builder();
-        constraint1.authentication(Constraint.Authentication.ANY_ROLE);
+        constraint1.authentication(Constraint.Authorization.ANY_USER);
         constraint1.name("** constraint");
         ConstraintMapping mapping1 = new ConstraintMapping();
         mapping1.setPathSpec("/starstar/*");
@@ -619,7 +619,7 @@ public class ConstraintTest
 
         //Test only an explicitly named method, no omissions to cover other methods
         Constraint.Builder constraint2 = new Constraint.Builder();
-        constraint2.authentication(Constraint.Authentication.SPECIFIC_ROLE);
+        constraint2.authentication(Constraint.Authorization.SPECIFIC_ROLE);
         constraint2.name("user constraint");
         constraint2.roles("user");
         ConstraintMapping mapping2 = new ConstraintMapping();
@@ -635,7 +635,7 @@ public class ConstraintTest
 
         //Test an explicitly named method with an http-method-omission to cover all other methods
         Constraint.Builder constraint2a = new Constraint.Builder();
-        constraint2a.authentication(Constraint.Authentication.FORBIDDEN);
+        constraint2a.authentication(Constraint.Authorization.FORBIDDEN);
         constraint2a.name("forbid constraint");
         ConstraintMapping mapping2a = new ConstraintMapping();
         mapping2a.setPathSpec("/user/*");
@@ -649,7 +649,7 @@ public class ConstraintTest
 
         //Test an http-method-omission only
         Constraint.Builder constraint3 = new Constraint.Builder();
-        constraint3.authentication(Constraint.Authentication.FORBIDDEN);
+        constraint3.authentication(Constraint.Authorization.FORBIDDEN);
         constraint3.name("omit constraint");
         ConstraintMapping mapping3 = new ConstraintMapping();
         mapping3.setPathSpec("/omit/*");
@@ -865,7 +865,7 @@ public class ConstraintTest
         List<ConstraintMapping> list = new ArrayList<>(getConstraintMappings());
 
         Constraint.Builder constraint6 = new Constraint.Builder();
-        constraint6.authentication(Constraint.Authentication.SPECIFIC_ROLE);
+        constraint6.authentication(Constraint.Authorization.SPECIFIC_ROLE);
         constraint6.name("omit HEAD and GET");
         constraint6.roles("user");
         ConstraintMapping mapping6 = new ConstraintMapping();
@@ -877,7 +877,7 @@ public class ConstraintTest
         list.add(mapping6);
 
         Constraint.Builder constraint7 = new Constraint.Builder();
-        constraint7.authentication(Constraint.Authentication.SPECIFIC_ROLE);
+        constraint7.authentication(Constraint.Authorization.SPECIFIC_ROLE);
         constraint7.name("non-omitted GET");
         constraint7.roles("administrator");
         ConstraintMapping mapping7 = new ConstraintMapping();
@@ -887,7 +887,7 @@ public class ConstraintTest
         list.add(mapping7);
 
         Constraint.Builder constraint8 = new Constraint.Builder();
-        constraint8.authentication(Constraint.Authentication.SPECIFIC_ROLE);
+        constraint8.authentication(Constraint.Authorization.SPECIFIC_ROLE);
         constraint8.name("non specific");
         constraint8.roles("foo");
         ConstraintMapping mapping8 = new ConstraintMapping();

@@ -444,9 +444,9 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
 
         // Determine Constraint.Authentication
-        Constraint.Authentication constraintAuthentication = constraint.getAuthentication();
-        constraintAuthentication = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthentication, request::getSession);
-        boolean mustValidate = constraintAuthentication != Constraint.Authentication.NONE;
+        Constraint.Authorization constraintAuthorization = constraint.getAuthorization();
+        constraintAuthorization = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthorization, request::getSession);
+        boolean mustValidate = constraintAuthorization != Constraint.Authorization.NONE;
 
         try
         {
@@ -539,10 +539,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
     {
         UserIdentity userIdentity = authentication instanceof Authentication.User user ? user.getUserIdentity() : null;
 
-        return switch (constraint.getAuthentication())
+        return switch (constraint.getAuthorization())
         {
             case FORBIDDEN, NONE -> false;
-            case ANY_ROLE -> userIdentity == null || userIdentity.getUserPrincipal() == null;
+            case ANY_USER -> userIdentity == null || userIdentity.getUserPrincipal() == null;
             case KNOWN_ROLE ->
             {
                 if (userIdentity != null && userIdentity.getUserPrincipal() != null)

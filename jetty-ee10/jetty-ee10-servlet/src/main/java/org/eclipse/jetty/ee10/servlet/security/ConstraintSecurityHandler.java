@@ -136,19 +136,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             {
                 //Equivalent to <auth-constraint> with no roles
                 constraint.name(name + "-Deny");
-                constraint.authentication(Constraint.Authentication.FORBIDDEN);
+                constraint.authentication(Constraint.Authorization.FORBIDDEN);
             }
             else
             {
                 //Equivalent to no <auth-constraint>
                 constraint.name(name + "-Permit");
-                constraint.authentication(Constraint.Authentication.NONE);
+                constraint.authentication(Constraint.Authorization.NONE);
             }
         }
         else
         {
             //Equivalent to <auth-constraint> with list of <security-role-name>s
-            constraint.authentication(Constraint.Authentication.SPECIFIC_ROLE);
+            constraint.authentication(Constraint.Authorization.SPECIFIC_ROLE);
             constraint.roles(rolesAllowed);
             constraint.name(name + "-RolesAllowed");
         }
@@ -405,34 +405,34 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return constraintA;
 
         // Don't blame me for the following code. Blame Servlet specification
-        Constraint.Authentication authentication = constraintA.getAuthentication();
+        Constraint.Authorization authorization = constraintA.getAuthorization();
         Set<String> roles = null;
-        authentication = switch (constraintB.getAuthentication())
+        authorization = switch (constraintB.getAuthorization())
         {
             // Forbidden takes precedence
-            case FORBIDDEN -> Constraint.Authentication.FORBIDDEN;
+            case FORBIDDEN -> Constraint.Authorization.FORBIDDEN;
 
             // A constraint with no authorization takes precedence over any roles constraints, but not FORBIDDEN
-            case NONE -> authentication == Constraint.Authentication.FORBIDDEN
-                ? Constraint.Authentication.FORBIDDEN
-                : Constraint.Authentication.NONE;
+            case NONE -> authorization == Constraint.Authorization.FORBIDDEN
+                ? Constraint.Authorization.FORBIDDEN
+                : Constraint.Authorization.NONE;
 
             // The "**" role, which is any role (known or otherwise), has precedence over everything but FORBIDDEN and NONE
-            case ANY_ROLE -> (authentication == Constraint.Authentication.FORBIDDEN || authentication == Constraint.Authentication.NONE)
-                ? authentication
-                : Constraint.Authentication.ANY_ROLE;
+            case ANY_USER -> (authorization == Constraint.Authorization.FORBIDDEN || authorization == Constraint.Authorization.NONE)
+                ? authorization
+                : Constraint.Authorization.ANY_USER;
 
             // The "*" role, which is any known role, only has precedence over SPECIFIC roles
-            case KNOWN_ROLE -> (authentication == Constraint.Authentication.KNOWN_ROLE || authentication == Constraint.Authentication.SPECIFIC_ROLE)
-                ? Constraint.Authentication.KNOWN_ROLE
-                : authentication;
+            case KNOWN_ROLE -> (authorization == Constraint.Authorization.KNOWN_ROLE || authorization == Constraint.Authorization.SPECIFIC_ROLE)
+                ? Constraint.Authorization.KNOWN_ROLE
+                : authorization;
 
             // Specific roles only combine with other specific roles, otherwise one of the above cases apply
             case SPECIFIC_ROLE ->
             {
-                if (authentication == Constraint.Authentication.SPECIFIC_ROLE)
+                if (authorization == Constraint.Authorization.SPECIFIC_ROLE)
                     roles = Stream.concat(constraintA.getRoles().stream(), constraintB.getRoles().stream()).collect(Collectors.toSet());
-                yield authentication;
+                yield authorization;
             }
         };
 
@@ -440,7 +440,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return Constraint.from(
             constraintA.getName() + "|" + constraintB.getName(),
             constraintA.isSecure() && constraintB.isSecure(),
-            authentication,
+            authorization,
             roles);
     }
 

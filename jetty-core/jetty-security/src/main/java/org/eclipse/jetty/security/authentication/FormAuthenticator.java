@@ -248,12 +248,12 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Constraint.Authentication getConstraintAuthentication(String pathInContext, Constraint.Authentication existing, Function<Boolean, Session> getSession)
+    public Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
     {
         if (isJSecurityCheck(pathInContext))
-            return Constraint.Authentication.ANY_ROLE;
+            return Constraint.Authorization.ANY_USER;
         if (isLoginOrErrorPage(pathInContext))
-            return Constraint.Authentication.NONE;
+            return Constraint.Authorization.NONE;
         return existing;
     }
 

@@ -54,6 +54,7 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -358,7 +359,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     out.closeTag();
                 }
 
-                if (m.getConstraint().getAuthentication() != org.eclipse.jetty.security.Constraint.Authentication.NONE)
+                if (m.getConstraint().getAuthorization() != Constraint.Authorization.NONE)
                 {
                     Set<String> roles = m.getConstraint().getRoles();
                     if (roles != null && roles.size() > 0)
