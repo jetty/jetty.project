@@ -359,7 +359,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     out.closeTag();
                 }
 
-                if (m.getConstraint().getAuthorization() != Constraint.Authorization.NONE)
+                if (m.getConstraint().getAuthorization() != Constraint.Authorization.ALLOWED)
                 {
                     Set<String> roles = m.getConstraint().getRoles();
                     if (roles != null && roles.size() > 0)

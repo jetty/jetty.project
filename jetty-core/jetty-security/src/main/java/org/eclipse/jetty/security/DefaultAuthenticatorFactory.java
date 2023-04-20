@@ -18,12 +18,12 @@ import java.util.Collection;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.ConfigurableSpnegoAuthenticator;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.security.authentication.SslClientCertAuthenticator;
+import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * <li>{@link ConfigurableSpnegoAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link LoginAuthenticator} are
- * wrapped with a {@link DeferredAuthentication}
+ * wrapped with a {@link DeferredAuthenticationState}
  * instance, which is used if authentication is not mandatory.
  *
  * The Authentications from the {@link FormAuthenticator} are always wrapped in a

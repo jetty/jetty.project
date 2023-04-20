@@ -68,9 +68,9 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
@@ -129,24 +129,24 @@ public class ServletApiRequest implements HttpServletRequest
         return _contentParameters;
     }
 
-    public Authentication getAuthentication()
+    public AuthenticationState getAuthentication()
     {
-        return Authentication.getAuthentication(getServletContextRequest());
+        return AuthenticationState.getAuthentication(getServletContextRequest());
     }
 
-    private Authentication getUndeferredAuthentication()
+    private AuthenticationState getUndeferredAuthentication()
     {
-        Authentication authentication = getAuthentication();
-        if (authentication instanceof DeferredAuthentication deferredAuthentication)
+        AuthenticationState authenticationState = getAuthentication();
+        if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
-            Authentication undeferred = deferredAuthentication.authenticate(getServletContextRequest());
-            if (undeferred != null && undeferred != authentication)
+            AuthenticationState undeferred = deferred.authenticate(getServletContextRequest());
+            if (undeferred != null && undeferred != authenticationState)
             {
-                authentication = undeferred;
-                Authentication.setAuthentication(getServletContextRequest(), authentication);
+                authenticationState = undeferred;
+                AuthenticationState.setAuthentication(getServletContextRequest(), authenticationState);
             }
         }
-        return authentication;
+        return authenticationState;
     }
 
     @Override
@@ -225,9 +225,9 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getAuthType()
     {
-        Authentication authentication = getUndeferredAuthentication();
-        if (authentication instanceof Authentication.User userAuthentication)
-            return userAuthentication.getAuthMethod();
+        AuthenticationState authenticationState = getUndeferredAuthentication();
+        if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
+            return succeededAuthentication.getAuthMethod();
         return null;
     }
 
@@ -327,21 +327,21 @@ public class ServletApiRequest implements HttpServletRequest
     {
         //obtain any substituted role name from the destination servlet
         String linkedRole = _request._mappedServlet.getServletHolder().getUserRoleLink(role);
-        Authentication authentication = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthentication();
 
-        if (authentication instanceof Authentication.User userAuthentication)
-            return userAuthentication.isUserInRole(linkedRole);
+        if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
+            return succeededAuthentication.isUserInRole(linkedRole);
         return false;
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        Authentication authentication = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthentication();
 
-        if (authentication instanceof Authentication.User userAuthentication)
+        if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
         {
-            UserIdentity user = userAuthentication.getUserIdentity();
+            UserIdentity user = succeededAuthentication.getUserIdentity();
             return user.getUserPrincipal();
         }
 
@@ -380,7 +380,7 @@ public class ServletApiRequest implements HttpServletRequest
         Session session = _request.getSession(create);
         if (session == null)
             return null;
-        if (session.isNew() && getAuthentication() instanceof Authentication.User)
+        if (session.isNew() && getAuthentication() instanceof AuthenticationState.Succeeded)
             session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
         return session.getApi();
     }
@@ -438,14 +438,14 @@ public class ServletApiRequest implements HttpServletRequest
             return true;
 
         //do the authentication
-        Authentication authentication = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthentication();
 
         //if the authentication did not succeed
-        if (authentication instanceof DeferredAuthentication)
+        if (authenticationState instanceof DeferredAuthenticationState)
             response.sendError(HttpStatus.UNAUTHORIZED_401);
 
         //if the authentication is incomplete, return false
-        if (!(authentication instanceof Authentication.ResponseSent))
+        if (!(authenticationState instanceof AuthenticationState.ResponseSent))
             return false;
 
         //TODO: this should only be returned IFF the authenticator has NOT set the response,
@@ -459,11 +459,11 @@ public class ServletApiRequest implements HttpServletRequest
     {
         try
         {
-            Authentication.User userAuthentication = Authentication.login(
+            AuthenticationState.Succeeded succeededAuthentication = AuthenticationState.login(
                 username, password, getServletContextRequest(), getServletContextRequest().getResponse());
 
-            if (userAuthentication == null)
-                throw new Authentication.Failed("Authentication failed for username '" + username + "'");
+            if (succeededAuthentication == null)
+                throw new AuthenticationState.Failed("Authentication failed for username '" + username + "'");
         }
         catch (Throwable t)
         {
@@ -474,7 +474,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public void logout() throws ServletException
     {
-        if (!Authentication.logout(getServletContextRequest(), getServletContextRequest().getResponse()))
+        if (!AuthenticationState.logout(getServletContextRequest(), getServletContextRequest().getResponse()))
             throw new ServletException("logout failed");
     }
 

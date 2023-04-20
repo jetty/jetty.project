@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
@@ -57,6 +56,8 @@ import org.slf4j.LoggerFactory;
  * Authentication.Configuration. At startup, any context init parameters
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
+ *
+ * TODO rename to ConstraintHandler
  */
 public abstract class SecurityHandler extends Handler.Wrapper implements AuthConfiguration
 {
@@ -73,7 +74,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession = true;
-    DeferredAuthentication _deferredAuthentication;
+    AuthenticationState.Deferred _deferred;
 
     static
     {
@@ -124,6 +125,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
     /**
      * Set the loginService.
+     *
+     * TODO describe the magic if this is not called!
      *
      * @param loginService the loginService to set
      */
@@ -253,6 +256,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         return _parameters.put(key, value);
     }
 
+    /**
+     * TODO javadoc
+     * @return
+     * @throws Exception
+     */
     protected LoginService findLoginService() throws Exception
     {
         java.util.Collection<LoginService> list = getServer().getBeans(LoginService.class);
@@ -369,8 +377,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
         if (_authenticator instanceof LoginAuthenticator loginAuthenticator)
         {
-            _deferredAuthentication = new DeferredAuthentication(loginAuthenticator);
-            addBean(_deferredAuthentication);
+            _deferred = AuthenticationState.defer(loginAuthenticator);
+            addBean(_deferred);
         }
         super.doStart();
     }
@@ -391,10 +399,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             _loginService = null;
         }
 
-        if (_deferredAuthentication != null)
+        if (_deferred != null)
         {
-            removeBean(_deferredAuthentication);
-            _deferredAuthentication = null;
+            removeBean(_deferred);
+            _deferred = null;
         }
         super.doStop();
     }
@@ -446,37 +454,37 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         // Determine Constraint.Authentication
         Constraint.Authorization constraintAuthorization = constraint.getAuthorization();
         constraintAuthorization = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthorization, request::getSession);
-        boolean mustValidate = constraintAuthorization != Constraint.Authorization.NONE;
+        boolean mustValidate = constraintAuthorization != Constraint.Authorization.ALLOWED;
 
         try
         {
-            Authentication authentication = mustValidate ? _authenticator.validateRequest(request, response, callback) : null;
+            AuthenticationState authenticationState = mustValidate ? _authenticator.validateRequest(request, response, callback) : null;
 
-            if (authentication instanceof Authentication.ResponseSent)
+            if (authenticationState instanceof AuthenticationState.ResponseSent)
                 return true;
 
-            if (mustValidate && isNotAuthorized(constraint, authentication))
+            if (mustValidate && isNotAuthorized(constraint, authenticationState))
             {
                 Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
                 return true;
             }
 
-            if (authentication == null)
-                authentication = _deferredAuthentication;
+            if (authenticationState == null)
+                authenticationState = _deferred;
 
-            Authentication.setAuthentication(request, authentication);
-            IdentityService.Association association = authentication instanceof Authentication.User user
+            AuthenticationState.setAuthentication(request, authenticationState);
+            IdentityService.Association association = authenticationState instanceof AuthenticationState.Succeeded user
                 ? _identityService.associate(user.getUserIdentity())
                 : null;
 
             try
             {
                 //process the request by other handlers
-                return next.handle(_authenticator.prepareRequest(request, authentication), response, callback);
+                return next.handle(_authenticator.prepareRequest(request, authenticationState), response, callback);
             }
             finally
             {
-                if (association == null && authentication instanceof DeferredAuthentication deferred)
+                if (association == null && authenticationState instanceof AuthenticationState.Deferred deferred)
                     association = deferred.getAssociation();
                 if (association != null)
                     association.close();
@@ -498,19 +506,20 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         return null;
     }
 
-    public void logout(Authentication.User user)
+    // TODO why is this public on the securityHandler ?
+    public void logout(AuthenticationState.Succeeded succeeded)
     {
-        LOG.debug("logout {}", user);
-        if (user == null)
+        LOG.debug("logout {}", succeeded);
+        if (succeeded == null)
             return;
 
         LoginService loginService = getLoginService();
         if (loginService != null)
-            loginService.logout(user.getUserIdentity());
+            loginService.logout(succeeded.getUserIdentity());
 
         IdentityService identityService = getIdentityService();
         if (identityService != null)
-            identityService.logout(user.getUserIdentity());
+            identityService.onLogout(succeeded.getUserIdentity());
     }
 
     protected abstract Constraint getConstraint(String pathInContext, Request request);
@@ -535,13 +544,13 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
     }
 
-    protected boolean isNotAuthorized(Constraint constraint, Authentication authentication)
+    protected boolean isNotAuthorized(Constraint constraint, AuthenticationState authenticationState)
     {
-        UserIdentity userIdentity = authentication instanceof Authentication.User user ? user.getUserIdentity() : null;
+        UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
 
         return switch (constraint.getAuthorization())
         {
-            case FORBIDDEN, NONE -> false;
+            case FORBIDDEN, ALLOWED -> false;
             case ANY_USER -> userIdentity == null || userIdentity.getUserPrincipal() == null;
             case KNOWN_ROLE ->
             {
@@ -626,12 +635,17 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
     };
 
-    public static class Mapped extends SecurityHandler
+    // TODO consider method mapping version
+
+    /**
+     * TODO javadoc
+     */
+    public static class PathMapped extends SecurityHandler
     {
         private final PathMappings<Constraint> _mappings = new PathMappings<>();
         private final Set<String> _knownRoles = new HashSet<>();
 
-        public Mapped()
+        public PathMapped()
         {
         }
 

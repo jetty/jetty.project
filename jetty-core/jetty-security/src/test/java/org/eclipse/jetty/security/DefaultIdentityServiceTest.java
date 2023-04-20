@@ -28,7 +28,7 @@ public class DefaultIdentityServiceTest
     public void testDefaultIdentityService() throws Exception
     {
         Server server = new Server();
-        SecurityHandler securityHandler = new SecurityHandler.Mapped();
+        SecurityHandler securityHandler = new SecurityHandler.PathMapped();
         TestAuthenticator authenticator = new TestAuthenticator();
         securityHandler.setAuthenticator(authenticator);
 
@@ -69,7 +69,7 @@ public class DefaultIdentityServiceTest
         }
 
         @Override
-        public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+        public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
         {
             return null;
         }

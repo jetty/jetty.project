@@ -42,7 +42,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1335,8 +1335,8 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         public void service(ServletRequest request, ServletResponse res) throws ServletException, IOException
         {
             ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-            Authentication authentication = Authentication.getAuthentication(servletContextRequest);
-            UserIdentity userIdentity = (authentication instanceof Authentication.User user) ? user.getUserIdentity() : _identityService.getSystemUserIdentity();
+            AuthenticationState authenticationState = AuthenticationState.getAuthentication(servletContextRequest);
+            UserIdentity userIdentity = (authenticationState instanceof AuthenticationState.Succeeded user) ? user.getUserIdentity() : _identityService.getSystemUserIdentity();
             try (IdentityService.Association ignored = _identityService.associate(userIdentity, _runAsToken))
             {
                 getWrapped().service(request, res);

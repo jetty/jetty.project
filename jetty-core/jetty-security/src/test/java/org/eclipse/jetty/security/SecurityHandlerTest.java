@@ -36,7 +36,7 @@ public class SecurityHandlerTest
     private Server _server;
     private LocalConnector _connector;
     private LocalConnector _connectorS;
-    private SecurityHandler.Mapped _securityHandler;
+    private SecurityHandler.PathMapped _securityHandler;
 
     @BeforeEach
     public void configureServer() throws Exception
@@ -76,7 +76,7 @@ public class SecurityHandlerTest
 
         ContextHandler contextHandler = new ContextHandler("/ctx");
         _server.setHandler(contextHandler);
-        _securityHandler = new SecurityHandler.Mapped();
+        _securityHandler = new SecurityHandler.PathMapped();
         contextHandler.setHandler(_securityHandler);
         _securityHandler.setHandler(new AuthenticationTestHandler());
         _server.start();

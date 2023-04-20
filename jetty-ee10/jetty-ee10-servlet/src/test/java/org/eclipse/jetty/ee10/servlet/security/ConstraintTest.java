@@ -175,7 +175,7 @@ public class ConstraintTest
         mapping2o.setMethodOmissions(new String[]{"GET"});
 
         _relaxConstraint = new Constraint.Builder();
-        _relaxConstraint.authentication(Constraint.Authorization.NONE);
+        _relaxConstraint.authentication(Constraint.Authorization.ALLOWED);
         _relaxConstraint.name("relax");
         ConstraintMapping mapping3 = new ConstraintMapping();
         mapping3.setPathSpec("/admin/relax/*");
@@ -189,7 +189,7 @@ public class ConstraintTest
         mapping4.setConstraint(loginPageConstraint.build());
 
         _noAuthConstraint = new Constraint.Builder();
-        _noAuthConstraint.authentication(Constraint.Authorization.NONE);
+        _noAuthConstraint.authentication(Constraint.Authorization.ALLOWED);
         _noAuthConstraint.name("allow forbidden");
         ConstraintMapping mapping5 = new ConstraintMapping();
         mapping5.setPathSpec("/forbid/post");
@@ -201,7 +201,7 @@ public class ConstraintTest
         mapping5o.setMethodOmissions(new String[]{"POST"});
 
         Constraint.Builder confidentialDataConstraint = new Constraint.Builder();
-        confidentialDataConstraint.authentication(Constraint.Authorization.NONE);
+        confidentialDataConstraint.authentication(Constraint.Authorization.ALLOWED);
         confidentialDataConstraint.name("data constraint");
         confidentialDataConstraint.secure(true);
         ConstraintMapping mapping6 = new ConstraintMapping();
@@ -245,7 +245,7 @@ public class ConstraintTest
 
         //a relax constraint, ie no auth-constraint
         Constraint.Builder relaxConstraint = new Constraint.Builder();
-        relaxConstraint.authentication(Constraint.Authorization.NONE);
+        relaxConstraint.authentication(Constraint.Authorization.ALLOWED);
         relaxConstraint.name("relax");
         ConstraintMapping relaxMapping = new ConstraintMapping();
         relaxMapping.setPathSpec("/test/*");
@@ -411,7 +411,7 @@ public class ConstraintTest
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/xxxx/*");
         Constraint.Builder constraint = new Constraint.Builder();
-        constraint.authentication(Constraint.Authorization.NONE);
+        constraint.authentication(Constraint.Authorization.ALLOWED);
         constraint.name("transient");
         mapping.setConstraint(constraint.build());
         
@@ -512,7 +512,7 @@ public class ConstraintTest
         assertFalse(mappings.isEmpty());
         assertEquals(1, mappings.size());
         ConstraintMapping mapping = mappings.get(0);
-        assertNotSame(mapping.getConstraint().getAuthorization(), Constraint.Authorization.NONE);
+        assertNotSame(mapping.getConstraint().getAuthorization(), Constraint.Authorization.ALLOWED);
         assertNotNull(mapping.getConstraint().getRoles());
         assertEquals("R1", mapping.getConstraint().getRoles().stream().findFirst().orElse(null));
         assertFalse(mapping.getConstraint().isSecure());
@@ -564,12 +564,12 @@ public class ConstraintTest
         assertEquals(2, mappings.size());
         assertNotNull(mappings.get(0).getMethodOmissions());
         assertEquals("GET", mappings.get(0).getMethodOmissions()[0]);
-        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.NONE);
+        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.ALLOWED);
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("GET", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
         assertFalse(mappings.get(1).getConstraint().isSecure());
-        assertThat(mappings.get(1).getConstraint().getAuthorization(), is(Constraint.Authorization.NONE));
+        assertThat(mappings.get(1).getConstraint().getAuthorization(), is(Constraint.Authorization.ALLOWED));
     }
 
     /**
@@ -591,7 +591,7 @@ public class ConstraintTest
         assertEquals(2, mappings.size());
         assertNotNull(mappings.get(0).getMethodOmissions());
         assertEquals("TRACE", mappings.get(0).getMethodOmissions()[0]);
-        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.NONE);
+        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.ALLOWED);
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("TRACE", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());

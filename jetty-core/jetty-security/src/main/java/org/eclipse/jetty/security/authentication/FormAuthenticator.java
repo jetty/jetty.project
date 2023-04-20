@@ -21,12 +21,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.Authentication.User;
+import org.eclipse.jetty.security.AuthenticationState;
+import org.eclipse.jetty.security.AuthenticationState.Succeeded;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
@@ -166,7 +166,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (user != null)
         {
             Session session = request.getSession(true);
-            Authentication cached = new SessionAuthentication(getAuthMethod(), user, password);
+            AuthenticationState cached = new SessionAuthentication(getAuthMethod(), user, password);
             session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);
         }
         return user;
@@ -185,14 +185,14 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Request prepareRequest(Request request, Authentication authentication)
+    public Request prepareRequest(Request request, AuthenticationState authenticationState)
     {
         // if this is a request resulting from a redirect after auth is complete
         // (ie its from a redirect to the original request uri) then due to
         // browser handling of 302 redirects, the method may not be the same as
         // that of the original request. Replace the method and original post
         // params (if it was a post).
-        if (authentication instanceof Authentication.User)
+        if (authenticationState instanceof Succeeded)
         {
             Session session = request.getSession(false);
 
@@ -253,12 +253,12 @@ public class FormAuthenticator extends LoginAuthenticator
         if (isJSecurityCheck(pathInContext))
             return Constraint.Authorization.ANY_USER;
         if (isLoginOrErrorPage(pathInContext))
-            return Constraint.Authorization.NONE;
+            return Constraint.Authorization.ALLOWED;
         return existing;
     }
 
     @Override
-    public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
     {
         String pathInContext = Request.getPathInContext(request);
         boolean jSecurityCheck = isJSecurityCheck(pathInContext);
@@ -280,7 +280,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 String originalURI = savedURI != null ? savedURI.asString() : Request.getContextPath(request);
                 if (originalURI == null)
                     originalURI = "/";
-                FormAuthentication formAuth = new FormAuthentication(getAuthMethod(), user);
+                FormAuthenticationState formAuth = new FormAuthenticationState(getAuthMethod(), user);
                 Response.sendRedirect(request, response, callback, encodeURL(originalURI, request), true);
                 return formAuth;
             }
@@ -291,25 +291,25 @@ public class FormAuthenticator extends LoginAuthenticator
             else
                 Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);
 
-            return Authentication.SEND_FAILURE;
+            return AuthenticationState.SEND_FAILURE;
         }
 
         // Look for cached authentication
         Session session = request.getSession(false);
-        Authentication authentication = session == null ? null : (Authentication)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
+        AuthenticationState authenticationState = session == null ? null : (AuthenticationState)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
         if (LOG.isDebugEnabled())
-            LOG.debug("auth {}", authentication);
+            LOG.debug("auth {}", authenticationState);
         // Has authentication been revoked?
-        if (authentication instanceof User user && _loginService != null && !_loginService.validate(user.getUserIdentity()))
+        if (authenticationState instanceof Succeeded succeeded && _loginService != null && !_loginService.validate(succeeded.getUserIdentity()))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("auth revoked {}", authentication);
+                LOG.debug("auth revoked {}", authenticationState);
             session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
-            authentication = null;
+            authenticationState = null;
         }
 
-        if (authentication != null)
-            return authentication;
+        if (authenticationState != null)
+            return authenticationState;
 
         // if we can't send challenge
         if (response.isCommitted())
@@ -354,7 +354,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (LOG.isDebugEnabled())
             LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
         Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request), true);
-        return Authentication.CHALLENGE;
+        return AuthenticationState.CHALLENGE;
     }
 
     public boolean isJSecurityCheck(String uri)
@@ -380,9 +380,9 @@ public class FormAuthenticator extends LoginAuthenticator
      * Subsequent requests from the same user are authenticated by the presence
      * of a {@link SessionAuthentication} instance in their session.
      */
-    public static class FormAuthentication extends UserAuthentication implements Authentication.ResponseSent
+    public static class FormAuthenticationState extends SucceededAuthenticationState implements AuthenticationState.ResponseSent
     {
-        public FormAuthentication(String method, UserIdentity userIdentity)
+        public FormAuthenticationState(String method, UserIdentity userIdentity)
         {
             super(method, userIdentity);
         }

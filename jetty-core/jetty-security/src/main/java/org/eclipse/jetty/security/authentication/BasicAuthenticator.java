@@ -19,10 +19,10 @@ import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -49,7 +49,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
         String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
 
@@ -74,7 +74,7 @@ public class BasicAuthenticator extends LoginAuthenticator
 
                         UserIdentity user = login(username, password, req, res);
                         if (user != null)
-                            return new UserAuthentication(getAuthMethod(), user);
+                            return new SucceededAuthenticationState(getAuthMethod(), user);
                     }
                 }
             }
@@ -89,7 +89,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             value += ", charset=\"" + charset.name() + "\"";
         res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), value);
         Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
-        return Authentication.CHALLENGE;
+        return AuthenticationState.CHALLENGE;
     }
 
     public static String authorization(String user, String password)

@@ -52,7 +52,7 @@ public class DefaultIdentityService implements IdentityService
     }
 
     @Override
-    public void logout(UserIdentity user)
+    public void onLogout(UserIdentity user)
     {
         runAsRole.set(null);
     }

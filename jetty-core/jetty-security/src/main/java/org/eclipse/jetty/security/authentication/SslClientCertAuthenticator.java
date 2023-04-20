@@ -19,10 +19,10 @@ import java.util.Base64;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -55,13 +55,13 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
         SslSessionData sslSessionData = (SslSessionData)req.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
         if (sslSessionData == null)
         {
             Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
-            return Authentication.SEND_FAILURE;
+            return AuthenticationState.SEND_FAILURE;
         }
         
         X509Certificate[] certs = sslSessionData.peerCertificates();
@@ -90,28 +90,28 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
                     UserIdentity user = login(username, "", req, res);
                     if (user != null)
                     {
-                        return new UserAuthentication(getAuthMethod(), user);
+                        return new SucceededAuthenticationState(getAuthMethod(), user);
                     }
                     // try with null password
                     user = login(username, null, req, res);
                     if (user != null)
                     {
-                        return new UserAuthentication(getAuthMethod(), user);
+                        return new SucceededAuthenticationState(getAuthMethod(), user);
                     }
                     // try with certs sig against login service as previous behaviour
                     final char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
                     user = login(username, credential, req, res);
                     if (user != null)
                     {
-                        return new UserAuthentication(getAuthMethod(), user);
+                        return new SucceededAuthenticationState(getAuthMethod(), user);
                     }
                 }
             }
 
-            if (!DeferredAuthentication.isDeferred(res))
+            if (!AuthenticationState.Deferred.isDeferred(res))
             {
                 Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
-                return Authentication.SEND_FAILURE;
+                return AuthenticationState.SEND_FAILURE;
             }
 
             return null;

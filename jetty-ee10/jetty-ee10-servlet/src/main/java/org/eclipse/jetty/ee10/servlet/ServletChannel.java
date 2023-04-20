@@ -38,7 +38,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -818,9 +818,9 @@ public class ServletChannel
 
         if (getServer().getRequestLog() != null)
         {
-            Authentication authentication = apiRequest.getAuthentication();
-            if (authentication instanceof Authentication.User userAuthentication)
-                _servletContextRequest.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
+            AuthenticationState authenticationState = apiRequest.getAuthentication();
+            if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
+                _servletContextRequest.setAttribute(CustomRequestLog.USER_NAME, succeededAuthentication.getUserIdentity().getUserPrincipal().getName());
 
             String realPath = apiRequest.getServletContext().getRealPath(Request.getPathInContext(_servletContextRequest));
             _servletContextRequest.setAttribute(CustomRequestLog.REAL_PATH, realPath);

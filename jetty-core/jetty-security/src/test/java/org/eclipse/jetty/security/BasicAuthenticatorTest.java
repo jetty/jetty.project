@@ -44,7 +44,7 @@ public class BasicAuthenticatorTest
     private LocalConnector _connector;
     private LocalConnector _connectorS;
     private SessionHandler _sessionHandler;
-    private SecurityHandler.Mapped _securityHandler;
+    private SecurityHandler.PathMapped _securityHandler;
 
     @BeforeEach
     public void configureServer() throws Exception
@@ -91,7 +91,7 @@ public class BasicAuthenticatorTest
         _server.setHandler(contextHandler);
         contextHandler.setHandler(_sessionHandler);
 
-        _securityHandler = new SecurityHandler.Mapped();
+        _securityHandler = new SecurityHandler.PathMapped();
         _sessionHandler.setHandler(_securityHandler);
 
         _securityHandler.put("/admin/*", Constraint.from("admin"));

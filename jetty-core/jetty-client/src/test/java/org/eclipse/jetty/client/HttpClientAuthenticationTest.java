@@ -27,7 +27,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         fail("This test needs to be updated to use Core version of Basic Auth (when available)");
     }
-    /*
+
+    /** TODO
     private String realm = "TestRealm";
 
     public void startBasic(Scenario scenario, Handler handler) throws Exception

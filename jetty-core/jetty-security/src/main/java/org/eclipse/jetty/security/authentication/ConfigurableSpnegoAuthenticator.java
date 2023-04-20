@@ -20,13 +20,13 @@ import java.time.Instant;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.SpnegoUserIdentity;
 import org.eclipse.jetty.security.SpnegoUserPrincipal;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -108,7 +108,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
         String header = req.getHeaders().get(HttpHeader.AUTHORIZATION);
         String spnegoToken = getSpnegoToken(header);
@@ -120,7 +120,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
             SpnegoUserIdentity identity = (SpnegoUserIdentity)login(null, spnegoToken, req, res);
             if (identity.isEstablished())
             {
-                if (!DeferredAuthentication.isDeferred(res))
+                if (!AuthenticationState.Deferred.isDeferred(res))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Sending final token");
@@ -137,17 +137,17 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
                         httpSession = req.getSession(true);
                     httpSession.setAttribute(UserIdentityHolder.ATTRIBUTE, new UserIdentityHolder(identity));
                 }
-                return new UserAuthentication(getAuthMethod(), identity);
+                return new SucceededAuthenticationState(getAuthMethod(), identity);
             }
             else
             {
-                if (DeferredAuthentication.isDeferred(res))
+                if (AuthenticationState.Deferred.isDeferred(res))
                     return null;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Sending intermediate challenge");
                 SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
                 sendChallenge(req, res, callback, principal.getEncodedToken());
-                return Authentication.CHALLENGE;
+                return AuthenticationState.CHALLENGE;
             }
         }
         // No token from the client; check if the client has logged in
@@ -167,19 +167,19 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
                         // Allow non-GET requests even if they're expired, so that
                         // the client does not need to send the request content again.
                         if (!expired || !HttpMethod.GET.is(req.getMethod()))
-                            return new UserAuthentication(getAuthMethod(), identity);
+                            return new SucceededAuthenticationState(getAuthMethod(), identity);
                     }
                 }
             }
         }
 
-        if (DeferredAuthentication.isDeferred(res))
+        if (AuthenticationState.Deferred.isDeferred(res))
             return null;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Sending initial challenge");
         sendChallenge(req, res, callback, null);
-        return Authentication.CHALLENGE;
+        return AuthenticationState.CHALLENGE;
     }
 
     private void sendChallenge(Request req, Response res, Callback callback, String token) throws ServerAuthException

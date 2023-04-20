@@ -32,7 +32,7 @@ public class OpenIdReamNameTest
 
     public static SecurityHandler configureOpenIdContext(String realmName)
     {
-        SecurityHandler.Mapped securityHandler = new SecurityHandler.Mapped();
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         assertThat(securityHandler.getKnownAuthenticatorFactories().size(), greaterThanOrEqualTo(2));
         securityHandler.setAuthMethod(Authenticator.OPENID_AUTH);
         securityHandler.setRealmName(realmName);

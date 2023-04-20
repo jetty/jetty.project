@@ -45,7 +45,7 @@ public interface IdentityService
      */
     Association associate(UserIdentity user, RunAsToken runAsToken);
 
-    void logout(UserIdentity user);
+    void onLogout(UserIdentity user);
 
     /**
      * Create a new UserIdentity for use with this identity service.

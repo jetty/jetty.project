@@ -26,11 +26,11 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -97,7 +97,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
         String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
 
@@ -161,14 +161,14 @@ public class DigestAuthenticator extends LoginAuthenticator
                 UserIdentity user = login(digest.username, digest, req, res);
                 if (user != null)
                 {
-                    return new UserAuthentication(getAuthMethod(), user);
+                    return new SucceededAuthenticationState(getAuthMethod(), user);
                 }
             }
             else if (n == 0)
                 stale = true;
         }
 
-        if (!DeferredAuthentication.isDeferred(res))
+        if (!AuthenticationState.Deferred.isDeferred(res))
         {
             String domain = req.getContext().getContextPath();
             if (domain == null)
@@ -181,7 +181,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     ", stale=" + stale);
             Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
 
-            return Authentication.CHALLENGE;
+            return AuthenticationState.CHALLENGE;
         }
 
         return null;

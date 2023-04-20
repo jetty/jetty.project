@@ -32,12 +32,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.EmptyLoginService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.WrappedAuthConfiguration;
@@ -154,7 +154,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
     {
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, callback);
         request.setAttribute("org.eclipse.jetty.ee10.security.jaspi.info", info);
@@ -162,7 +162,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         return validateRequest(info);
     }
 
-    public Authentication validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
+    public AuthenticationState validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
     {
         try
         {
@@ -177,9 +177,9 @@ public class JaspiAuthenticator extends LoginAuthenticator
             AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
 
             if (authStatus == AuthStatus.SEND_CONTINUE)
-                return Authentication.CHALLENGE;
+                return AuthenticationState.CHALLENGE;
             if (authStatus == AuthStatus.SEND_FAILURE)
-                return Authentication.SEND_FAILURE;
+                return AuthenticationState.SEND_FAILURE;
 
             if (authStatus == AuthStatus.SUCCESS)
             {
@@ -222,21 +222,21 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 }
 
                 HttpSession session = ((HttpServletRequest)messageInfo.getRequestMessage()).getSession(false);
-                Authentication cached = (session == null ? null : (SessionAuthentication)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE));
+                AuthenticationState cached = (session == null ? null : (SessionAuthentication)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE));
                 if (cached != null)
                     return cached;
 
-                return new UserAuthentication(getAuthMethod(), userIdentity);
+                return new SucceededAuthenticationState(getAuthMethod(), userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {
                 // we are processing a message in a secureResponse dialog.
-                return Authentication.SEND_SUCCESS;
+                return AuthenticationState.SEND_SUCCESS;
             }
             if (authStatus == AuthStatus.FAILURE)
             {
                 Response.writeError(messageInfo.getBaseRequest(), messageInfo.getBaseResponse(), messageInfo.getCallback(), HttpServletResponse.SC_FORBIDDEN);
-                return Authentication.SEND_FAILURE;
+                return AuthenticationState.SEND_FAILURE;
             }
             // should not happen
             throw new IllegalStateException("No AuthStatus returned");
@@ -248,16 +248,16 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     // TODO
-    public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
+    public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, AuthenticationState.Succeeded validatedSucceeded) throws ServerAuthException
     {
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getServletApiRequest().getAttribute("org.eclipse.jetty.ee10.security.jaspi.info");
         if (info == null)
             throw new NullPointerException("MessageInfo from request missing: " + request);
-        return secureResponse(info, validatedUser);
+        return secureResponse(info, validatedSucceeded);
     }
 
-    public boolean secureResponse(JaspiMessageInfo messageInfo, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(JaspiMessageInfo messageInfo, AuthenticationState validatedUser) throws ServerAuthException
     {
         try
         {

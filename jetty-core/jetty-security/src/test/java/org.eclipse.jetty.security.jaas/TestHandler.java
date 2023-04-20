@@ -21,8 +21,8 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.AuthenticationState;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -47,7 +47,7 @@ public class TestHandler extends Handler.Abstract
             try
             {
                 // TODO this is wrong
-                Authentication.authenticate(request, response, callback);
+                AuthenticationState.authenticate(request, response, callback);
             }
             catch (Throwable e)
             {
@@ -72,8 +72,8 @@ public class TestHandler extends Handler.Abstract
     {
         if (_hasRoles != null)
         {
-            Authentication authentication = Authentication.getAuthentication(request);
-            if (authentication instanceof UserAuthentication userAuthentication)
+            AuthenticationState authenticationState = AuthenticationState.getAuthentication(request);
+            if (authenticationState instanceof SucceededAuthenticationState userAuthentication)
             {
                 for (String role : _hasRoles)
                 {
@@ -88,8 +88,8 @@ public class TestHandler extends Handler.Abstract
     {
         if (_hasntRoles != null)
         {
-            Authentication authentication = Authentication.getAuthentication(request);
-            if (authentication instanceof UserAuthentication userAuthentication)
+            AuthenticationState authenticationState = AuthenticationState.getAuthentication(request);
+            if (authenticationState instanceof SucceededAuthenticationState userAuthentication)
             {
                 for (String role : _hasntRoles)
                 {

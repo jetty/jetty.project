@@ -51,6 +51,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implements LoginService
 {
+    // TODO Rename to SPNEGOLoginService
+    // TODO find test classes and check this is tested
+
     private static final Logger LOG = LoggerFactory.getLogger(ConfigurableSpnegoLoginService.class);
 
     private final GSSManager _gssManager = GSSManager.getInstance();

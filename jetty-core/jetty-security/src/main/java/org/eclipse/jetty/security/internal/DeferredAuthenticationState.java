@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.security.internal;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -19,46 +19,48 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFields.Mutable;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeferredAuthentication implements Authentication
+public class DeferredAuthenticationState implements AuthenticationState.Deferred
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DeferredAuthentication.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeferredAuthenticationState.class);
     protected final LoginAuthenticator _authenticator;
     private IdentityService.Association _association;
 
-    public DeferredAuthentication(LoginAuthenticator authenticator)
+    public DeferredAuthenticationState(LoginAuthenticator authenticator)
     {
         if (authenticator == null)
             throw new NullPointerException("No Authenticator");
         this._authenticator = authenticator;
     }
 
-    public Authentication.User authenticate(Request request)
+    @Override
+    public Succeeded authenticate(Request request)
     {
         try
         {
-            Authentication authentication = _authenticator.validateRequest(request, __deferredResponse, null);
-            if (authentication instanceof Authentication.User user)
+            AuthenticationState authenticationState = _authenticator.validateRequest(request, __deferredResponse, null);
+            if (authenticationState instanceof Succeeded succeeded)
             {
                 LoginService loginService = _authenticator.getLoginService();
                 IdentityService identityService = loginService.getIdentityService();
 
                 if (identityService != null)
-                    _association = identityService.associate(user.getUserIdentity());
+                    _association = identityService.associate(succeeded.getUserIdentity());
 
-                return user;
+                return succeeded;
             }
         }
         catch (ServerAuthException e)
@@ -69,17 +71,18 @@ public class DeferredAuthentication implements Authentication
         return null;
     }
 
-    public Authentication authenticate(Request request, Response response, Callback callback)
+    @Override
+    public AuthenticationState authenticate(Request request, Response response, Callback callback)
     {
         try
         {
             LoginService loginService = _authenticator.getLoginService();
             IdentityService identityService = loginService.getIdentityService();
 
-            Authentication authentication = _authenticator.validateRequest(request, response, callback);
-            if (authentication instanceof Authentication.User && identityService != null)
-                _association = identityService.associate(((Authentication.User)authentication).getUserIdentity());
-            return authentication;
+            AuthenticationState authenticationState = _authenticator.validateRequest(request, response, callback);
+            if (authenticationState instanceof Succeeded && identityService != null)
+                _association = identityService.associate(((Succeeded)authenticationState).getUserIdentity());
+            return authenticationState;
         }
         catch (ServerAuthException e)
         {
@@ -88,7 +91,8 @@ public class DeferredAuthentication implements Authentication
         return null;
     }
 
-    public Authentication.User login(String username, Object password, Request request, Response response)
+    @Override
+    public Succeeded login(String username, Object password, Request request, Response response)
     {
         if (username == null)
             return null;
@@ -97,7 +101,7 @@ public class DeferredAuthentication implements Authentication
         if (identity != null)
         {
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
-            UserAuthentication authentication = new UserAuthentication("API", identity);
+            SucceededAuthenticationState authentication = new SucceededAuthenticationState("API", identity);
             if (identityService != null)
                 _association = identityService.associate(identity);
             return authentication;
@@ -105,6 +109,7 @@ public class DeferredAuthentication implements Authentication
         return null;
     }
 
+    @Override
     public void logout(Request request, Response response)
     {
         SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
@@ -115,21 +120,13 @@ public class DeferredAuthentication implements Authentication
         }
     }
 
+    @Override
     public IdentityService.Association getAssociation()
     {
         return _association;
     }
 
-    /**
-     * @param response the response
-     * @return true if this response is from a deferred call to {@link #authenticate(Request)}
-     */
-    public static boolean isDeferred(Response response)
-    {
-        return response == __deferredResponse;
-    }
-
-    private static final Response __deferredResponse = new Response()
+    static final Response __deferredResponse = new Deferred.DeferredResponse()
     {
         @Override
         public Request getRequest()

@@ -142,7 +142,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             {
                 //Equivalent to no <auth-constraint>
                 constraint.name(name + "-Permit");
-                constraint.authentication(Constraint.Authorization.NONE);
+                constraint.authentication(Constraint.Authorization.ALLOWED);
             }
         }
         else
@@ -413,12 +413,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             case FORBIDDEN -> Constraint.Authorization.FORBIDDEN;
 
             // A constraint with no authorization takes precedence over any roles constraints, but not FORBIDDEN
-            case NONE -> authorization == Constraint.Authorization.FORBIDDEN
+            case ALLOWED -> authorization == Constraint.Authorization.FORBIDDEN
                 ? Constraint.Authorization.FORBIDDEN
-                : Constraint.Authorization.NONE;
+                : Constraint.Authorization.ALLOWED;
 
             // The "**" role, which is any role (known or otherwise), has precedence over everything but FORBIDDEN and NONE
-            case ANY_USER -> (authorization == Constraint.Authorization.FORBIDDEN || authorization == Constraint.Authorization.NONE)
+            case ANY_USER -> (authorization == Constraint.Authorization.FORBIDDEN || authorization == Constraint.Authorization.ALLOWED)
                 ? authorization
                 : Constraint.Authorization.ANY_USER;
 

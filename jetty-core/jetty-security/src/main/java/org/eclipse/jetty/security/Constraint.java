@@ -22,11 +22,18 @@ import java.util.stream.Stream;
 
 /**
  * A Security Constraint.
+ * TODO write this up better
+ *  Authorization
+ *  optional list of roles
+ *  secure or not
+ *
  */
 public interface Constraint
 {
     enum Authorization
     {
+        // TODO add examples.
+
         /**
          * Access not allowed. Equivalent to Servlet AuthConstraint with no roles.
          */
@@ -34,9 +41,9 @@ public interface Constraint
         /**
          * Access allowed. Equivalent to Servlet AuthConstraint without any Authorization.
          */
-        NONE,
+        ALLOWED,
         /**
-         * Access allowed for any authenticated user. Equivalent to Servlet role "**".
+         * Access allowed for any authenticated user regardless of role. Equivalent to Servlet role "**".
          */
         ANY_USER,
         /**
@@ -49,6 +56,7 @@ public interface Constraint
         SPECIFIC_ROLE;
 
         /**
+         * TODO describe combination
          * <p>Combine Authorization Constraints, with the strictest constraint
          * always given precedence. Note that this is not servlet specification compliant</p>
          * @param a A constraint
@@ -58,15 +66,15 @@ public interface Constraint
         public static Authorization combine(Authorization a, Authorization b)
         {
             if (a == null)
-                return b == null ? NONE : b;
+                return b == null ? ALLOWED : b;
             if (b == null)
                 return a;
 
             return switch (b)
             {
                 case FORBIDDEN -> b;
-                case NONE -> a;
-                case ANY_USER -> a == NONE ? ANY_USER : a;
+                case ALLOWED -> a;
+                case ANY_USER -> a == ALLOWED ? ANY_USER : a;
                 case KNOWN_ROLE -> a == SPECIFIC_ROLE ? SPECIFIC_ROLE : KNOWN_ROLE;
                 case SPECIFIC_ROLE -> SPECIFIC_ROLE;
             };
@@ -184,9 +192,9 @@ public interface Constraint
     }
 
     /**
-     * A static Constraint with {@link Authorization#NONE} and not secure.
+     * A static Constraint with {@link Authorization#ALLOWED} and not secure.
      */
-    Constraint NONE = from(false, Authorization.NONE);
+    Constraint NONE = from(false, Authorization.ALLOWED);
 
     /**
      * A static Constraint with {@link Authorization#FORBIDDEN} and not secure.
@@ -204,9 +212,9 @@ public interface Constraint
     Constraint KNOWN_ROLE = from(false, Authorization.KNOWN_ROLE);
 
     /**
-     * A static Constraint with {@link Authorization#NONE} that is secure.
+     * A static Constraint with {@link Authorization#ALLOWED} that is secure.
      */
-    Constraint SECURE = from(true, Authorization.NONE);
+    Constraint SECURE = from(true, Authorization.ALLOWED);
 
     /**
      * <p>Combine two Constraints by:</p>
@@ -220,19 +228,25 @@ public interface Constraint
      * @param a Constraint to combine
      * @param b Constraint to combine
      * @return the combined constraint.
+     * @see Authorization#combine(Authorization, Authorization)
      */
     static Constraint combine(Constraint a, Constraint b)
     {
+        // TODO add tests
+
         if (a == null)
             return b == null ? NONE : b;
         if (b == null)
             return a;
 
-        Set<String> roles = a.getRoles();
-        if (roles == null)
-            roles = b.getRoles();
-        else if (b.getRoles() != null || b.getRoles() != null)
-            roles = Stream.concat(roles.stream(), b.getRoles().stream()).collect(Collectors.toSet());
+        // TODO optimize nicely for nulls and empty
+        Set<String> aRoles = a.getRoles();
+        if (aRoles == null)
+            aRoles = Collections.emptySet();
+        Set<String> bRoles = b.getRoles();
+        if (bRoles == null)
+            bRoles = Collections.emptySet();
+        Set<String> roles = Stream.concat(aRoles.stream(), bRoles.stream()).collect(Collectors.toSet());
 
         return from(
             a.isSecure() || b.isSecure(),
@@ -264,7 +278,7 @@ public interface Constraint
             : Collections.unmodifiableSet(roles);
 
         Authorization auth = authorization == null
-            ? (roleSet.isEmpty() ? Authorization.NONE : Authorization.SPECIFIC_ROLE)
+            ? (roleSet.isEmpty() ? Authorization.ALLOWED : Authorization.SPECIFIC_ROLE)
             : authorization;
 
         return new Constraint()

@@ -16,7 +16,7 @@ package org.eclipse.jetty.security;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.eclipse.jetty.security.Authentication.User;
+import org.eclipse.jetty.security.AuthenticationState.Succeeded;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.Callback;
  * <p>
  * An Authenticator is responsible for checking requests and sending
  * response challenges in order to authenticate a request.
- * Various types of {@link Authentication} are returned in order to
+ * Various types of {@link AuthenticationState} are returned in order to
  * signal the next step in authentication.
  *
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
@@ -64,9 +64,9 @@ public interface Authenticator
      * that was challenged.
      *
      * @param request the request to prepare for handling
-     * @param authentication The authentication for the request
+     * @param authenticationState The authentication for the request
      */
-    default Request prepareRequest(Request request, Authentication authentication)
+    default Request prepareRequest(Request request, AuthenticationState authenticationState)
     {
         return request;
     }
@@ -84,7 +84,7 @@ public interface Authenticator
      */
     default Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
     {
-        return existing == null ? Constraint.Authorization.NONE : existing;
+        return existing == null ? Constraint.Authorization.ALLOWED : existing;
     }
 
     /**
@@ -93,12 +93,12 @@ public interface Authenticator
      * @param request The request
      * @param response The response
      * @param callback the callback to use for writing a response
-     * @return An Authentication.  If Authentication is successful, this will be a {@link User}. If a response has
+     * @return An Authentication.  If Authentication is successful, this will be a {@link Succeeded}. If a response has
      * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
-     * implement {@link Authentication.ResponseSent}.
+     * implement {@link AuthenticationState.ResponseSent}.
      * @throws ServerAuthException if unable to validate request
      */
-    Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException;
+    AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException;
 
     /**
      * Authenticator Configuration
@@ -205,7 +205,7 @@ public interface Authenticator
         }
 
         @Override
-        public Authentication validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+        public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
         {
             return null;
         }

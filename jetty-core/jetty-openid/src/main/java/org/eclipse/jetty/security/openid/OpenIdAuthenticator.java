@@ -29,14 +29,13 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.FormFields;
@@ -237,7 +236,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (user != null)
         {
             Session session = request.getSession(true);
-            Authentication cached = new SessionAuthentication(getAuthMethod(), user, credentials);
+            AuthenticationState cached = new SessionAuthentication(getAuthMethod(), user, credentials);
             synchronized (session)
             {
                 session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);
@@ -347,14 +346,14 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Request prepareRequest(Request request, Authentication authentication)
+    public Request prepareRequest(Request request, AuthenticationState authenticationState)
     {
         // if this is a request resulting from a redirect after auth is complete
         // (ie its from a redirect to the original request uri) then due to
         // browser handling of 302 redirects, the method may not be the same as
         // that of the original request. Replace the method and original post
         // params (if it was a post).
-        if (authentication instanceof Authentication.User)
+        if (authenticationState instanceof AuthenticationState.Succeeded)
         {
             Session session = request.getSession(false);
             if (session == null)
@@ -412,12 +411,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (isJSecurityCheck(pathInContext))
             return Constraint.Authorization.ANY_USER;
         if (isErrorPage(pathInContext))
-            return Constraint.Authorization.NONE;
+            return Constraint.Authorization.ALLOWED;
         return existing;
     }
 
     @Override
-    public Authentication validateRequest(Request request, Response response, Callback cb) throws ServerAuthException
+    public AuthenticationState validateRequest(Request request, Response response, Callback cb) throws ServerAuthException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("validateRequest({},{})", request, response);
@@ -441,7 +440,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             if (session == null)
             {
                 sendError(request, response, cb, "session could not be created");
-                return Authentication.SEND_FAILURE;
+                return AuthenticationState.SEND_FAILURE;
             }
 
             // TODO: No session API to work this out?
@@ -461,14 +460,14 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 if (authCode == null)
                 {
                     sendError(request, response, cb, "auth failed: no code parameter");
-                    return Authentication.SEND_FAILURE;
+                    return AuthenticationState.SEND_FAILURE;
                 }
 
                 String state = parameters.getValue("state");
                 if (state == null)
                 {
                     sendError(request, response, cb, "auth failed: no state parameter");
-                    return Authentication.SEND_FAILURE;
+                    return AuthenticationState.SEND_FAILURE;
                 }
 
                 // Verify anti-forgery state token.
@@ -480,7 +479,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 if (uriRedirectInfo == null)
                 {
                     sendError(request, response, cb, "auth failed: invalid state parameter");
-                    return Authentication.SEND_FAILURE;
+                    return AuthenticationState.SEND_FAILURE;
                 }
 
                 // Attempt to login with the provided authCode.
@@ -489,10 +488,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 if (user == null)
                 {
                     sendError(request, response, cb, null);
-                    return Authentication.SEND_FAILURE;
+                    return AuthenticationState.SEND_FAILURE;
                 }
 
-                OpenIdAuthentication openIdAuth = new OpenIdAuthentication(getAuthMethod(), user);
+                OpenIdAuthenticationState openIdAuth = new OpenIdAuthenticationState(getAuthMethod(), user);
                 if (LOG.isDebugEnabled())
                     LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
 
@@ -514,15 +513,15 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             }
 
             // Look for cached authentication in the Session.
-            Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
-            if (authentication != null)
+            AuthenticationState authenticationState = (AuthenticationState)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
+            if (authenticationState != null)
             {
                 // Has authentication been revoked?
-                if (authentication instanceof Authentication.User && _loginService != null &&
-                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                if (authenticationState instanceof AuthenticationState.Succeeded && _loginService != null &&
+                    !_loginService.validate(((AuthenticationState.Succeeded)authenticationState).getUserIdentity()))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("auth revoked {}", authentication);
+                        LOG.debug("auth revoked {}", authenticationState);
                     logoutWithoutRedirect(request, response);
                 }
                 else
@@ -534,7 +533,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                         {
                             // Check if the request is for the same url as the original and restore params if it was a post.
                             if (LOG.isDebugEnabled())
-                                LOG.debug("auth retry {}->{}", authentication, jUri);
+                                LOG.debug("auth retry {}->{}", authenticationState, jUri);
 
                             if (jUri.equals(request.getHttpURI()))
                             {
@@ -543,7 +542,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                                 if (jPost != null)
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("auth rePOST {}->{}", authentication, jUri);
+                                        LOG.debug("auth rePOST {}->{}", authenticationState, jUri);
                                     // TODO:
                                     // baseRequest.setContentParameters(jPost);
                                 }
@@ -555,13 +554,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("auth {}", authentication);
-                    return authentication;
+                        LOG.debug("auth {}", authenticationState);
+                    return authenticationState;
                 }
             }
 
             // If we can't send challenge.
-            if (DeferredAuthentication.isDeferred(response))
+            if (AuthenticationState.Deferred.isDeferred(response))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("auth deferred {}", session.getId());
@@ -604,7 +603,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                 ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
             Response.sendRedirect(request, response, cb, redirectCode, challengeUri, true);
-            return Authentication.CHALLENGE;
+            return AuthenticationState.CHALLENGE;
         }
         catch (IOException e)
         {
@@ -794,9 +793,9 @@ public class OpenIdAuthenticator extends LoginAuthenticator
      * Subsequent requests from the same user are authenticated by the presents
      * of a {@link SessionAuthentication} instance in their session.
      */
-    public static class OpenIdAuthentication extends UserAuthentication implements Authentication.ResponseSent
+    public static class OpenIdAuthenticationState extends SucceededAuthenticationState implements AuthenticationState.ResponseSent
     {
-        public OpenIdAuthentication(String method, UserIdentity userIdentity)
+        public OpenIdAuthenticationState(String method, UserIdentity userIdentity)
         {
             super(method, userIdentity);
         }

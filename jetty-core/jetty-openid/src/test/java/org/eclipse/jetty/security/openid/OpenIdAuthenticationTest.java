@@ -27,7 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.AbstractLoginService;
-import org.eclipse.jetty.security.Authentication;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.LoginService;
@@ -89,7 +89,7 @@ public class OpenIdAuthenticationTest
         server.addBean(openIdConfiguration);
 
         // Configure SecurityHandler.
-        SecurityHandler.Mapped securityHandler = new SecurityHandler.Mapped();
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         assertThat(securityHandler.getKnownAuthenticatorFactories().size(), greaterThanOrEqualTo(2));
         securityHandler.setLoginService(loginService);
         securityHandler.setAuthMethod(Authenticator.OPENID_AUTH);
@@ -391,7 +391,7 @@ public class OpenIdAuthenticationTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            Authentication.logout(request, response);
+            AuthenticationState.logout(request, response);
             callback.succeeded();
             return true;
         }
@@ -438,7 +438,7 @@ public class OpenIdAuthenticationTest
 
             try (PrintStream output = new PrintStream(Content.Sink.asOutputStream(response)))
             {
-                Principal userPrincipal = Authentication.getUserPrincipal(request);
+                Principal userPrincipal = AuthenticationState.getUserPrincipal(request);
                 if (userPrincipal != null)
                 {
                     Map<String, Object> userInfo = (Map<String, Object>)request.getSession(false).getAttribute(OpenIdAuthenticator.CLAIMS);

@@ -24,8 +24,6 @@ import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Jakarta Authentication (JASPI) Authenticator Factory.
@@ -44,7 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticatorFactory.class);
     public static final String MESSAGE_LAYER = "HttpServlet";
 
     private Subject _serviceSubject;

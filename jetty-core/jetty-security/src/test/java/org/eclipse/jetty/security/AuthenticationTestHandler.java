@@ -20,8 +20,8 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
+import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -49,25 +49,25 @@ public class AuthenticationTestHandler extends Handler.Abstract
                 {
                     case "authenticate" ->
                     {
-                        Authentication.User user = Authentication.authenticate(request);
-                        out.append(user == null ? "-" : user.getUserIdentity().getUserPrincipal());
+                        AuthenticationState.Succeeded succeeded = AuthenticationState.authenticate(request);
+                        out.append(succeeded == null ? "-" : succeeded.getUserIdentity().getUserPrincipal());
                     }
 
                     case "challenge" ->
                     {
-                        Authentication.User user = Authentication.authenticate(request, response, callback);
-                        if (user == null)
+                        AuthenticationState.Succeeded succeeded = AuthenticationState.authenticate(request, response, callback);
+                        if (succeeded == null)
                             return true;
-                        out.append(user.getUserIdentity().getUserPrincipal());
+                        out.append(succeeded.getUserIdentity().getUserPrincipal());
                     }
 
                     case "login" ->
                     {
-                        Authentication.User user = Authentication.login(usernames.pop(), passwords.pop(), request, response);
-                        out.append(user == null ? "-" : user.getUserIdentity().getUserPrincipal());
+                        AuthenticationState.Succeeded succeeded = AuthenticationState.login(usernames.pop(), passwords.pop(), request, response);
+                        out.append(succeeded == null ? "-" : succeeded.getUserIdentity().getUserPrincipal());
                     }
 
-                    case "logout" -> out.append(Authentication.logout(request, response));
+                    case "logout" -> out.append(AuthenticationState.logout(request, response));
 
                     case "thread" -> out.append(TestIdentityService.USER_IDENTITY.get());
 
@@ -91,15 +91,15 @@ public class AuthenticationTestHandler extends Handler.Abstract
             }
         }
 
-        Authentication authentication = Authentication.getAuthentication(request);
-        if (authentication instanceof Authentication.User user)
-            out.append(user.getUserIdentity().getUserPrincipal()).append(" is OK");
-        else if (authentication instanceof DeferredAuthentication)
+        AuthenticationState authenticationState = AuthenticationState.getAuthentication(request);
+        if (authenticationState instanceof AuthenticationState.Succeeded succeeded)
+            out.append(succeeded.getUserIdentity().getUserPrincipal()).append(" is OK");
+        else if (authenticationState instanceof DeferredAuthenticationState)
             out.append("Deferred");
-        else if (authentication == null)
+        else if (authenticationState == null)
             out.append("Unauthenticated");
         else
-            out.append(authentication).append(" is not OK");
+            out.append(authenticationState).append(" is not OK");
 
         response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
         Content.Sink.write(response, true, out.toString(), callback);
@@ -118,7 +118,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         }
 
         @Override
-        public void logout(UserIdentity user)
+        public void onLogout(UserIdentity user)
         {
             USER_IDENTITY.set(null);
         }

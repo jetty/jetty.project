@@ -622,7 +622,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
         IdentityService identityService = getIdentityService();
         if (identityService != null)
-            identityService.logout(user.getUserIdentity());
+            identityService.onLogout(user.getUserIdentity());
     }
 
     protected abstract RoleInfo prepareConstraintInfo(String pathInContext, Request request);
