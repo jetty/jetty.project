@@ -58,12 +58,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -79,20 +76,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class MultiPartServletTest
 {
-    private static final Logger LOG = Log.getLogger(MultiPartServletTest.class);
-
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
     private Path tmpDir;
+    private ServletContextHandler contextHandler;
 
     private static final int MAX_FILE_SIZE = 512 * 1024;
     private static final int MAX_REQUEST_SIZE = 1024 * 1024 * 8;
     private static final int LARGE_MESSAGE_SIZE = 1024 * 1024;
 
-    public static Stream<Arguments> data()
+    public static Stream<Arguments> complianceModes()
     {
-        return Arrays.asList(MultiPartFormDataCompliance.values()).stream().map(Arguments::of);
+        return Stream.of(
+            Arguments.of(MultiPartFormDataCompliance.RFC7578),
+            Arguments.of(MultiPartFormDataCompliance.LEGACY)
+        );
     }
 
     public static class RequestParameterServlet extends HttpServlet
@@ -149,7 +148,6 @@ public class MultiPartServletTest
     public void start() throws Exception
     {
         tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
-        Files.deleteIfExists(tmpDir);
         assertNotNull(tmpDir);
 
         server = new Server();
@@ -163,7 +161,7 @@ public class MultiPartServletTest
         MultipartConfigElement defaultConfig = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
             -1, -1, 1);
 
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         ServletHolder servletHolder = contextHandler.addServlet(MultiPartServlet.class, "/");
         servletHolder.getRegistration().setMultipartConfig(config);
@@ -198,7 +196,7 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("complianceModes")
     public void testLargePart(MultiPartFormDataCompliance compliance) throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
@@ -220,7 +218,7 @@ public class MultiPartServletTest
         // Write large amount of content to the part.
         byte[] byteArray = new byte[1024 * 1024];
         Arrays.fill(byteArray, (byte)1);
-        for (int i = 0; i < 128 * 2; i++)
+        for (int i = 0; i < 1024 * 2; i++)
         {
             content.getOutputStream().write(byteArray);
         }
@@ -234,13 +232,49 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("complianceModes")
     public void testManyParts(MultiPartFormDataCompliance compliance) throws Exception
     {
+        int maxParts = 1000;
+        contextHandler.setMaxFormKeys(maxParts);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
             .setMultiPartFormDataCompliance(compliance);
 
-        byte[] byteArray = new byte[1024];
+        byte[] byteArray = new byte[10];
+        Arrays.fill(byteArray, (byte)1);
+
+        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        for (int i = 0; i < maxParts; i++)
+        {
+            BytesContentProvider content = new BytesContentProvider(byteArray);
+            multiPart.addFieldPart("part" + i, content, null);
+        }
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send(listener);
+
+        Response response = listener.get(30, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("success"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void testTooManyParts(MultiPartFormDataCompliance compliance) throws Exception
+    {
+        int maxParts = 1000;
+        contextHandler.setMaxFormKeys(maxParts);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setMultiPartFormDataCompliance(compliance);
+
+        byte[] byteArray = new byte[5];
         Arrays.fill(byteArray, (byte)1);
 
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
@@ -267,7 +301,7 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("complianceModes")
     public void testMaxRequestSize(MultiPartFormDataCompliance compliance) throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
@@ -311,24 +345,21 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("complianceModes")
     public void testTempFilesDeletedOnError(MultiPartFormDataCompliance compliance) throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
             .setMultiPartFormDataCompliance(compliance);
 
         byte[] byteArray = new byte[LARGE_MESSAGE_SIZE];
-        for (int i = 0; i < byteArray.length; i++)
-        {
-            byteArray[i] = 1;
-        }
+        Arrays.fill(byteArray, (byte)1);
         BytesContentProvider contentProvider = new BytesContentProvider(byteArray);
 
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
         multiPart.addFieldPart("largePart", contentProvider, null);
         multiPart.close();
 
-        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(HttpScheme.HTTP.asString())
@@ -346,9 +377,13 @@ public class MultiPartServletTest
         assertThat(fileList.length, is(0));
     }
 
-    @Test
-    public void testMultiPartGzip() throws Exception
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void testMultiPartGzip(MultiPartFormDataCompliance compliance) throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setMultiPartFormDataCompliance(compliance);
+
         String contentString = "the quick brown fox jumps over the lazy dog, " +
             "the quick brown fox jumps over the lazy dog";
         StringContentProvider content = new StringContentProvider(contentString);
