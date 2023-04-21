@@ -41,14 +41,15 @@ import static org.hamcrest.Matchers.is;
 public class OneServletContextWithSessionTest extends AbstractEmbeddedTest
 {
     private static final String TEXT_CONTENT = "Do the right thing. It will gratify some people and astonish the rest. - Mark Twain";
-    public WorkDir workDir;
     private Server server;
+
+    public WorkDir workDir;
+    private Path baseDir;
 
     @BeforeEach
     public void startServer() throws Exception
     {
-        Path baseDir = workDir.getEmptyPathDir();
-
+        baseDir = workDir.getEmptyPathDir();
         Path textFile = baseDir.resolve("simple.txt");
         try (BufferedWriter writer = Files.newBufferedWriter(textFile, UTF_8))
         {

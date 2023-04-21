@@ -33,17 +33,20 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class KeystoreGeneratorTest
 {
     private Server _server;
@@ -57,9 +60,10 @@ public class KeystoreGeneratorTest
     @BeforeEach
     public void before(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         // Generate a test keystore.
         String password = "myKeystorePassword";
-        Path outputFile = workDir.getEmptyPathDir().resolve("keystore-test.p12");
+        Path outputFile = tmpPath.resolve("keystore-test.p12");
         File myPassword = KeystoreGenerator.generateTestKeystore(outputFile.toString(), password);
         assertTrue(myPassword.exists());
 

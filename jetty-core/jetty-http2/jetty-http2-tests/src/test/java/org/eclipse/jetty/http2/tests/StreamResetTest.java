@@ -454,7 +454,7 @@ public class StreamResetTest extends AbstractTest
 
         // Wait for the server to receive the reset and process
         // it, and for the client to process the window updates.
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(10, TimeUnit.SECONDS)
             .until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
     }
 

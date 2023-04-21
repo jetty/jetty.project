@@ -33,10 +33,12 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.toolchain.xhtml.CatalogXHTML;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.w3c.dom.Document;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
@@ -50,13 +52,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ResourceListingTest
 {
     @Test
     public void testBasicResourceXHtmlListingRoot(WorkDir workDir) throws IOException
     {
         Path root = workDir.getEmptyPathDir();
-
         FS.touch(root.resolve("entry1.txt"));
         FS.touch(root.resolve("entry2.dat"));
         Files.createDirectory(root.resolve("dirFoo"));
@@ -86,7 +88,6 @@ public class ResourceListingTest
     public void testBasicResourceXHtmlListingDeep(WorkDir workDir) throws IOException
     {
         Path root = workDir.getEmptyPathDir();
-
         FS.touch(root.resolve("entry1.txt"));
         FS.touch(root.resolve("entry2.dat"));
         Files.createDirectory(root.resolve("dirFoo"));
@@ -116,7 +117,6 @@ public class ResourceListingTest
     public void testResourceCollectionXHtmlListingContext(WorkDir workDir) throws IOException
     {
         Path root = workDir.getEmptyPathDir();
-
         Path docrootA = root.resolve("docrootA");
         Files.createDirectory(docrootA);
         FS.touch(docrootA.resolve("entry1.txt"));
@@ -180,7 +180,6 @@ public class ResourceListingTest
     public void testListingFilenamesOnly(WorkDir workDir) throws Exception
     {
         Path docRoot = workDir.getEmptyPathDir();
-
         /* create some content in the docroot */
         FS.ensureDirExists(docRoot);
         Path one = docRoot.resolve("one");
@@ -209,9 +208,8 @@ public class ResourceListingTest
     @Test
     public void testListingProperUrlEncoding(WorkDir workDir) throws Exception
     {
-        Path docRoot = workDir.getEmptyPathDir();
         /* create some content in the docroot */
-
+        Path docRoot = workDir.getEmptyPathDir();
         Path wackyDir = docRoot.resolve("dir;"); // this should not be double-encoded.
         FS.ensureDirExists(wackyDir);
 
@@ -255,7 +253,6 @@ public class ResourceListingTest
     public void testListingWithQuestionMarks(WorkDir workDir) throws Exception
     {
         Path docRoot = workDir.getEmptyPathDir();
-
         /* create some content in the docroot */
         FS.ensureDirExists(docRoot.resolve("one"));
         FS.ensureDirExists(docRoot.resolve("two"));
@@ -279,7 +276,6 @@ public class ResourceListingTest
     public void testListingEncoding(WorkDir workDir) throws Exception
     {
         Path docRoot = workDir.getEmptyPathDir();
-
         /* create some content in the docroot */
         Path one = docRoot.resolve("one");
         FS.ensureDirExists(one);

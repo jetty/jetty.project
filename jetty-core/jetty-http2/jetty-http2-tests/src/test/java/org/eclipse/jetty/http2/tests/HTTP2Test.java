@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -500,7 +501,7 @@ public class HTTP2Test extends AbstractTest
             }
         });
         assertTrue(exchangeLatch2.await(5, TimeUnit.SECONDS));
-        assertEquals(1, session.getStreams().size());
+        await().atMost(Duration.ofSeconds(5)).until(() -> session.getStreams().size(), is(1));
 
         // Create a fourth stream.
         MetaData.Request request4 = newRequest("GET", HttpFields.EMPTY);

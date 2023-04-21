@@ -40,14 +40,13 @@ import static org.hamcrest.Matchers.is;
 public class OneServletContextTest extends AbstractEmbeddedTest
 {
     private static final String TEXT_CONTENT = "The secret of getting ahead is getting started. - Mark Twain";
-    public WorkDir workDir;
+    public Path baseDir;
     private Server server;
 
     @BeforeEach
-    public void startServer() throws Exception
+    public void startServer(WorkDir workDir) throws Exception
     {
-        Path baseDir = workDir.getEmptyPathDir();
-
+        baseDir = workDir.getEmptyPathDir();
         Path textFile = baseDir.resolve("simple.txt");
         try (BufferedWriter writer = Files.newBufferedWriter(textFile, UTF_8))
         {

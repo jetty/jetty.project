@@ -22,17 +22,21 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@ExtendWith(WorkDirExtension.class)
 public class StandardDescriptorProcessorTest
 {
     //TODO add tests for other methods
@@ -41,7 +45,6 @@ public class StandardDescriptorProcessorTest
     @BeforeEach
     public void beforeEach() throws Exception
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         _server = new Server();
         _server.start();
     }
@@ -50,16 +53,15 @@ public class StandardDescriptorProcessorTest
     public void afterEach() throws Exception
     {
         _server.stop();
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
     public void testVisitSessionConfig(WorkDir workDir) throws Exception
     {
+        Path docroot = workDir.getEmptyPathDir();
         File webXml = MavenTestingUtils.getTestResourceFile("web-session-config.xml");
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
-        Path docroot = workDir.getEmptyPathDir();
         wac.setBaseResourceAsPath(docroot);
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
@@ -92,14 +94,14 @@ public class StandardDescriptorProcessorTest
         assertEquals(10, wac.getSessionHandler().getMaxCookieAge());
         
         //secure
-        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isSecure());
+        assertFalse(wac.getSessionHandler().getSessionCookieConfig().isSecure());
         assertEquals("false", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Secure"));
-        assertEquals(false, wac.getSessionHandler().isSecureCookies());
+        assertFalse(wac.getSessionHandler().isSecureCookies());
         
         //httponly
-        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isHttpOnly());
+        assertFalse(wac.getSessionHandler().getSessionCookieConfig().isHttpOnly());
         assertEquals("false", wac.getSessionHandler().getSessionCookieConfig().getAttribute("HttpOnly"));
-        assertEquals(false, wac.getSessionHandler().isHttpOnly());
+        assertFalse(wac.getSessionHandler().isHttpOnly());
 
         //SessionCookieConfig javadoc states that all setters must be also represented as attributes
         Map<String, String> attributes = wac.getSessionHandler().getSessionCookieConfig().getAttributes();

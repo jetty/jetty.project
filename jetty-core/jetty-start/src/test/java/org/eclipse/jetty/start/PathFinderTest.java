@@ -31,14 +31,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class PathFinderTest
 {
-    public WorkDir testdir;
-
     @Test
-    public void testFindInis() throws IOException
+    public void testFindInis(WorkDir workDir) throws IOException
     {
+        Path basePath = workDir.getPath();
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         Path homePath = homeDir.toPath().toAbsolutePath();
-        Path basePath = testdir.getEmptyPathDir();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher("glob:**/*.ini");
@@ -60,11 +58,11 @@ public class PathFinderTest
     }
 
     @Test
-    public void testFindMods() throws IOException
+    public void testFindMods(WorkDir workDir) throws IOException
     {
+        Path basePath = workDir.getEmptyPathDir();
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         Path homePath = homeDir.toPath().toAbsolutePath();
-        Path basePath = testdir.getEmptyPathDir();
 
         List<String> expected = new ArrayList<>();
         File modulesDir = new File(homeDir, "modules");

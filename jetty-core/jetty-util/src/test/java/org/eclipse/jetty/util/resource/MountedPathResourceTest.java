@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class MountedPathResourceTest
 {
-    public WorkDir workDir;
 
     @BeforeEach
     public void beforeEach()
@@ -61,7 +60,7 @@ public class MountedPathResourceTest
     }
 
     @Test
-    public void testJarFile()
+    public void testJarFile(WorkDir workDir)
         throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
@@ -78,7 +77,7 @@ public class MountedPathResourceTest
             assertTrue(Resources.isReadableFile(file));
             assertThat(file.getFileName(), is("numbers"));
 
-            Path extract = workDir.getPathFile("extract");
+            Path extract = workDir.getEmptyPathDir().resolve("extract");
             FS.ensureEmpty(extract);
 
             r.copyTo(extract);
@@ -94,7 +93,7 @@ public class MountedPathResourceTest
             entries = r.list().stream().map(Resource::getFileName).toList();
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
-            Path extract2 = workDir.getPathFile("extract2");
+            Path extract2 = workDir.getEmptyPathDir().resolve("extract2");
             FS.ensureEmpty(extract2);
 
             r.copyTo(extract2);

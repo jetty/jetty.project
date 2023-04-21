@@ -94,8 +94,6 @@ public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncMiddleManServletTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
-
-    public WorkDir workDir;
     private HttpClient client;
     private Server proxy;
     private ServerConnector proxyConnector;
@@ -984,11 +982,9 @@ public class AsyncMiddleManServletTest
     }
 
     @Test
-    public void testAfterContentTransformerOverflowingToDisk() throws Exception
+    public void testAfterContentTransformerOverflowingToDisk(WorkDir workDir) throws Exception
     {
-        // Make sure the temporary directory we use exists and it's empty.
         Path targetTestsDir = workDir.getEmptyPathDir();
-
         String key0 = "id";
         long value0 = 1;
         String key1 = "channel";
@@ -1107,10 +1103,9 @@ public class AsyncMiddleManServletTest
 
     @Test
     @Disabled("idle timeouts do not work yet")
-    public void testAfterContentTransformerClosingFilesOnClientRequestException() throws Exception
+    public void testAfterContentTransformerClosingFilesOnClientRequestException(WorkDir workDir) throws Exception
     {
         Path targetTestsDir = workDir.getEmptyPathDir();
-
         startServer(new HttpServlet()
         {
             @Override
@@ -1172,10 +1167,9 @@ public class AsyncMiddleManServletTest
     }
 
     @Test
-    public void testAfterContentTransformerClosingFilesOnServerResponseException() throws Exception
+    public void testAfterContentTransformerClosingFilesOnServerResponseException(WorkDir workDir) throws Exception
     {
         Path targetTestsDir = workDir.getEmptyPathDir();
-
         CountDownLatch serviceLatch = new CountDownLatch(1);
         startServer(new HttpServlet()
         {

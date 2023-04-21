@@ -35,21 +35,20 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@ExtendWith(WorkDirExtension.class)
 // FIXME
 @Disabled
+@ExtendWith(WorkDirExtension.class)
 public class FastFileServerTest extends AbstractEmbeddedTest
 {
     private static final String TEXT_CONTENT = "I am an old man and I have known a great " +
         "many troubles, but most of them never happened. - Mark Twain";
-    public WorkDir workDir;
+
     private Server server;
 
     @BeforeEach
-    public void startServer() throws Exception
+    public void startServer(WorkDir workDir) throws Exception
     {
         Path baseDir = workDir.getEmptyPathDir();
-
         Path textFile = baseDir.resolve("simple.txt");
         try (BufferedWriter writer = Files.newBufferedWriter(textFile, UTF_8))
         {

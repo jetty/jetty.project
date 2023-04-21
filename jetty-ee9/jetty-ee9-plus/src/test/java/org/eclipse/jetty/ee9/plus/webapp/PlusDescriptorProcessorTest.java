@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.IntrospectionUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -51,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * PlusDescriptorProcessorTest
  */
+@Isolated("jndi entries")
 public class PlusDescriptorProcessorTest
 {
     protected static final Class<?>[] STRING_ARG = new Class[]{String.class};

@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class URIUtilTest
 {
+
     public WorkDir workDir;
 
     public static Stream<Arguments> encodePathSource()
@@ -674,9 +675,10 @@ public class URIUtilTest
     }
 
     @Test
-    public void testCorrectBadFileURIActualFile(WorkDir workDir) throws Exception
+    public void testCorrectBadFileURIActualFile() throws Exception
     {
-        Path testfile = workDir.getEmptyPathDir().resolve("testCorrectBadFileURIActualFile.txt");
+        Path testDir = workDir.getEmptyPathDir();
+        Path testfile = testDir.resolve("testCorrectBadFileURIActualFile.txt");
         FS.touch(testfile);
 
         URI expectedUri = testfile.toUri(); // correct URI with `://`
@@ -796,7 +798,7 @@ public class URIUtilTest
     @MethodSource("resourceUriLastSegmentSource")
     public void testFileUriGetUriLastPathSegment(String basePath, String expectedName) throws IOException
     {
-        Path root = workDir.getPath();
+        Path root = workDir.getEmptyPathDir();
         Path base = root.resolve(basePath);
         if (basePath.endsWith("/"))
         {

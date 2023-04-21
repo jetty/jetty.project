@@ -28,6 +28,8 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <!-- we need this as some tests assert Logging content which is done in a static way -->
+          <reuseForks>false</reuseForks>
           <argLine>
             @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.logging=java.management
           </argLine>

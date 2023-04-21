@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -39,7 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DefaultServletRangesTest
 {
     public static final String DATA = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ!@#$%^&*()_+/.,[]";
-    public WorkDir testdir;
+
+    public WorkDir workDir;
+    public Path testdir;
 
     private Server server;
     private LocalConnector connector;
@@ -47,6 +50,7 @@ public class DefaultServletRangesTest
     @BeforeEach
     public void init() throws Exception
     {
+        testdir = workDir.getEmptyPathDir();
         server = new Server();
 
         connector = new LocalConnector(server);
@@ -59,8 +63,7 @@ public class DefaultServletRangesTest
         server.setHandler(context);
         server.addConnector(connector);
 
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
+        File resBase = testdir.resolve("docroot").toFile();
         FS.ensureDirExists(resBase);
         File data = new File(resBase, "data.txt");
         createFile(data, DATA);

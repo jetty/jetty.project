@@ -11,6 +11,7 @@
   <name>EE9 :: Websocket :: Jakarta Common</name>
 
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.jakarta.common</bundle-symbolic-name>
   </properties>
 

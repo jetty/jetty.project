@@ -73,7 +73,7 @@ public class TestJettyJspServlet
         _server.setHandler(context);
         context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         ServletHolder jspHolder = context.addServlet(JettyJspServlet.class, "/*");
-        jspHolder.setInitParameter("scratchdir", workdir.getPath().toString());
+        jspHolder.setInitParameter("scratchdir", workdir.getEmptyPathDir().toString());
         context.setBaseResourceAsPath(baseDir);
         context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         ServletHolder dfltHolder = new ServletHolder();

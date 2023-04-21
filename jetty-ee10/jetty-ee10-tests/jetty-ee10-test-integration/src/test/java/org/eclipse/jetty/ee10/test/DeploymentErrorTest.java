@@ -81,12 +81,12 @@ public class DeploymentErrorTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-         
+
         ResourceFactory resourceFactory = ResourceFactory.of(server);
 
         // Empty contexts collections
         contexts = new ContextHandlerCollection();
-        
+
         //Environment
         Environment ee10 = Environment.ensure("ee10");
         ee10.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee10.webapp.WebAppContext");
@@ -108,7 +108,7 @@ public class DeploymentErrorTest
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
         ContextProvider appProvider = new ContextProvider();
         appProvider.setEnvironmentName("ee10");
-        
+
         appProvider.setScanInterval(1);
         appProvider.setMonitoredDirResource(resourceFactory.newResource(docroots));
         deploymentManager.addAppProvider(appProvider);
@@ -120,11 +120,11 @@ public class DeploymentErrorTest
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-            .add("org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration",
-                "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
-                TrackedConfiguration.class.getName()
-            );
+                .add("org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration",
+                        "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration",
+                        "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
+                        TrackedConfiguration.class.getName()
+                );
 
         server.start();
         return docroots;

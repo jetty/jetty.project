@@ -74,7 +74,6 @@ public class XmlConfiguredJetty
 
     public XmlConfiguredJetty(Path testDir) throws IOException
     {
-        FS.ensureEmpty(testDir);
         _jettyBase = testDir.resolve("base");
         FS.ensureDirExists(_jettyBase);
 
@@ -261,7 +260,7 @@ public class XmlConfiguredJetty
         }
 
         this._server = server;
-        this._server.setStopTimeout(10);
+        this._server.setStopTimeout(10000);
         this._contexts = (ContextHandlerCollection)ids.get("Contexts");
     }
 

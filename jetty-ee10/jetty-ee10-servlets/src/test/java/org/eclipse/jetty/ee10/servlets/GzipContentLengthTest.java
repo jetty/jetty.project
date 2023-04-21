@@ -163,7 +163,7 @@ public class GzipContentLengthTest extends AbstractGzipTest
         LocalConnector localConnector = new LocalConnector(server);
         server.addConnector(localConnector);
 
-        Path contextDir = workDir.resolve("context");
+        Path contextDir = workDir.getEmptyPathDir().resolve("context");
         FS.ensureDirExists(contextDir);
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();

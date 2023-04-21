@@ -32,8 +32,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@ExtendWith(WorkDirExtension.class)
 @Disabled // TODO
+@ExtendWith(WorkDirExtension.class)
 public class FileBufferedResponseHandlerTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileBufferedResponseHandlerTest.class);
