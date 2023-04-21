@@ -443,7 +443,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     x.printStackTrace();
                 }
             })
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onSuccess(Response response)
@@ -456,7 +456,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .onRequestQueued(request -> latch.countDown())
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onSuccess(Response response)
@@ -584,7 +584,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 requestTime.set(NanoTime.now());
                 latch.countDown();
             })
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onSuccess(Response response)
@@ -636,7 +636,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .body(body)
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -665,7 +665,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
                 connectionPool.getActiveConnections().iterator().next().close();
             })
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -730,7 +730,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener()
                 {
                     @Override
                     public boolean onHeader(Response response, HttpField field)
@@ -1404,7 +1404,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)

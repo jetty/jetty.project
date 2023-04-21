@@ -48,7 +48,7 @@ public class UnknownParseTest
     public void testInvalidFrameSize()
     {
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        Parser parser = new Parser(bufferPool, new Parser.Listener() {}, 4096, 8192);
         parser.init(listener -> new Parser.Listener.Wrapper(listener)
         {
             @Override
@@ -73,7 +73,7 @@ public class UnknownParseTest
     private void testParse(Function<ByteBuffer, ByteBuffer> fn)
     {
         AtomicBoolean failure = new AtomicBoolean();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)

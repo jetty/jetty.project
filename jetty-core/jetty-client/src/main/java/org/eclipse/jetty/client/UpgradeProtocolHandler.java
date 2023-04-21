@@ -61,7 +61,7 @@ public class UpgradeProtocolHandler implements ProtocolHandler
     @Override
     public Response.Listener getResponseListener()
     {
-        return new Response.Listener.Adapter()
+        return new Response.Listener()
         {
             @Override
             public void onComplete(Result result)

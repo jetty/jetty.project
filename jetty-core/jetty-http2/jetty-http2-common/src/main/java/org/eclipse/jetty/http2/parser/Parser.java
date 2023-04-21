@@ -249,85 +249,48 @@ public class Parser
 
     public interface Listener
     {
-        public void onData(DataFrame frame);
-
-        public void onHeaders(HeadersFrame frame);
-
-        public void onPriority(PriorityFrame frame);
-
-        public void onReset(ResetFrame frame);
-
-        public void onSettings(SettingsFrame frame);
-
-        public void onPushPromise(PushPromiseFrame frame);
-
-        public void onPing(PingFrame frame);
-
-        public void onGoAway(GoAwayFrame frame);
-
-        public void onWindowUpdate(WindowUpdateFrame frame);
-
-        public void onStreamFailure(int streamId, int error, String reason);
-
-        public void onConnectionFailure(int error, String reason);
-
-        public static class Adapter implements Listener
+        public default void onData(DataFrame frame)
         {
-            @Override
-            public void onData(DataFrame frame)
-            {
-            }
+        }
 
-            @Override
-            public void onHeaders(HeadersFrame frame)
-            {
-            }
+        public default void onHeaders(HeadersFrame frame)
+        {
+        }
 
-            @Override
-            public void onPriority(PriorityFrame frame)
-            {
-            }
+        public default void onPriority(PriorityFrame frame)
+        {
+        }
 
-            @Override
-            public void onReset(ResetFrame frame)
-            {
-            }
+        public default void onReset(ResetFrame frame)
+        {
+        }
 
-            @Override
-            public void onSettings(SettingsFrame frame)
-            {
-            }
+        public default void onSettings(SettingsFrame frame)
+        {
+        }
 
-            @Override
-            public void onPushPromise(PushPromiseFrame frame)
-            {
-            }
+        public default void onPushPromise(PushPromiseFrame frame)
+        {
+        }
 
-            @Override
-            public void onPing(PingFrame frame)
-            {
-            }
+        public default void onPing(PingFrame frame)
+        {
+        }
 
-            @Override
-            public void onGoAway(GoAwayFrame frame)
-            {
-            }
+        public default void onGoAway(GoAwayFrame frame)
+        {
+        }
 
-            @Override
-            public void onWindowUpdate(WindowUpdateFrame frame)
-            {
-            }
+        public default void onWindowUpdate(WindowUpdateFrame frame)
+        {
+        }
 
-            @Override
-            public void onStreamFailure(int streamId, int error, String reason)
-            {
-            }
+        public default void onStreamFailure(int streamId, int error, String reason)
+        {
+        }
 
-            @Override
-            public void onConnectionFailure(int error, String reason)
-            {
-                LOG.warn("Connection failure: {}/{}", error, reason);
-            }
+        public default void onConnectionFailure(int error, String reason)
+        {
         }
 
         public static class Wrapper implements Listener

@@ -52,7 +52,7 @@ public class HeadersGenerateParseTest
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onHeaders(HeadersFrame frame)
@@ -105,7 +105,7 @@ public class HeadersGenerateParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onHeaders(HeadersFrame frame)

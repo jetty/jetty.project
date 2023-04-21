@@ -49,7 +49,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
             Object lock = this;
             synchronized (lock)
             {
-                request.send(new Response.Listener.Adapter()
+                request.send(new Response.Listener()
                 {
                     @Override
                     public void onFailure(Response response, Throwable failure)
@@ -84,7 +84,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
             Object lock = this;
             synchronized (lock)
             {
-                request.send(new Response.Listener.Adapter()
+                request.send(new Response.Listener()
                 {
                     @Override
                     public void onComplete(Result result)

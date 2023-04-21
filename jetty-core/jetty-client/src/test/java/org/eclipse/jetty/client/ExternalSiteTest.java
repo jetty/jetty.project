@@ -109,7 +109,7 @@ public class ExternalSiteTest
             final CountDownLatch latch = new CountDownLatch(3);
             client.newRequest(host, port)
                 .onResponseFailure((response, failure) -> latch.countDown())
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener()
                 {
                     @Override
                     public void onFailure(Response response, Throwable failure)

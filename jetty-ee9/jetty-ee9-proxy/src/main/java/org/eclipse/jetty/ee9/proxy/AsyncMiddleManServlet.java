@@ -406,7 +406,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
     }
 
-    protected class ProxyResponseListener extends Response.Listener.Adapter implements Callback
+    protected class ProxyResponseListener implements Callback, Response.Listener
     {
         private final Callback complete = new CountingCallback(this, 2);
         private final List<ByteBuffer> buffers = new ArrayList<>();

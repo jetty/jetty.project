@@ -156,7 +156,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
             final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(2));
-            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener()
             {
                 @Override
                 public void onHeaders(HeadersFrame frame)
@@ -252,7 +252,7 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
-            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
