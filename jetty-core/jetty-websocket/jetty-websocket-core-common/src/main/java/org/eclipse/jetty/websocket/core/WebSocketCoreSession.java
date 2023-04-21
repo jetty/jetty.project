@@ -55,7 +55,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private final WebSocketSessionState sessionState = new WebSocketSessionState();
     private final FrameHandler handler;
     private final Negotiated negotiated;
-    private final boolean autoDemanding;
     private final Flusher flusher = new Flusher(this);
     private final ExtensionStack extensionStack;
 
@@ -80,7 +79,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         this.handler = handler;
         this.behavior = behavior;
         this.negotiated = negotiated;
-        this.autoDemanding = handler.isAutoDemanding();
         extensionStack = negotiated.getExtensions();
         extensionStack.initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
     }
@@ -111,12 +109,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         {
             Thread.currentThread().setContextClassLoader(oldClassLoader);
         }
-    }
-
-    @Override
-    public boolean isAutoDemanding()
-    {
-        return autoDemanding;
     }
 
     public ExtensionStack getExtensionStack()
@@ -413,11 +405,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void demand(long n)
     {
         getExtensionStack().demand(n);
-    }
-
-    public void autoDemand()
-    {
-        getExtensionStack().demand(1);
     }
 
     @Override

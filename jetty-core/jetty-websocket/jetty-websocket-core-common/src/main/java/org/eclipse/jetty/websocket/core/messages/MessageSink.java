@@ -14,19 +14,28 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 
 /**
- * Sink consumer for messages (used for multiple frames with continuations,
- * and also to allow for streaming APIs)
+ * <p>A consumer of WebSocket data frames (either BINARY or TEXT).</p>
+ * <p>{@link FrameHandler} delegates the processing of data frames
+ * to {@link MessageSink}, including the processing of the demand
+ * for the next frames.</p>
  */
 public interface MessageSink
 {
     /**
-     * Consume the frame payload to the message.
+     * <p>Consumes the WebSocket frame, possibly asynchronously
+     * when this method has returned.</p>
+     * <p>The callback argument must be completed when the frame
+     * payload is consumed.</p>
+     * <p>The demand for more frames must be explicitly invoked
+     * via {@link CoreSession#demand(long)}.</p>
      *
-     * @param frame the frame, its payload (and fin state) to append
-     * @param callback the callback for how the frame was consumed
+     * @param frame the frame to consume
+     * @param callback the callback to complete when the frame is consumed
      */
     void accept(Frame frame, Callback callback);
 }

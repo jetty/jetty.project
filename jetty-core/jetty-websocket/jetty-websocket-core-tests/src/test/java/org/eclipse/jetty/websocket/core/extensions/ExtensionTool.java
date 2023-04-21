@@ -82,7 +82,7 @@ public class ExtensionTool
             byte[] net;
 
             // Simulate initial demand from onOpen().
-            coreSession.autoDemand();
+            coreSession.demand(1);
 
             for (int i = 0; i < parts; i++)
             {
@@ -102,8 +102,7 @@ public class ExtensionTool
                         public void succeeded()
                         {
                             super.succeeded();
-                            if (coreSession.isAutoDemanding())
-                                coreSession.autoDemand();
+                            coreSession.demand(1);
                         }
                     };
                     ext.onFrame(frame, callback);

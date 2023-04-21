@@ -367,12 +367,6 @@ class WebSocketProxy
         }
 
         @Override
-        public boolean isAutoDemanding()
-        {
-            return false;
-        }
-
-        @Override
         public String toString()
         {
             return "Client2Proxy:" + getState();
@@ -734,12 +728,6 @@ class WebSocketProxy
                 callback.failed(failure);
             else
                 proxy2ServerSession.sendFrame(frame, sendCallback, false);
-        }
-
-        @Override
-        public boolean isAutoDemanding()
-        {
-            return false;
         }
 
         @Override

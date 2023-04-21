@@ -90,12 +90,6 @@ public class DemandTest
         {
             callback.succeeded();
         }
-
-        @Override
-        public boolean isAutoDemanding()
-        {
-            return false;
-        }
     }
 
     @Test

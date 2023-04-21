@@ -104,6 +104,18 @@ public class LocalEndpointMetadataTest
         assertThat(e.getMessage(), containsString("must not be static"));
     }
 
+    @Test
+    public void testAnnotatedBadAutoDemandWithInputStream()
+    {
+        assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadAutoDemandWithInputStream.class));
+    }
+
+    @Test
+    public void testAnnotatedBadAutoDemandWithReader()
+    {
+        assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadAutoDemandWithReader.class));
+    }
+
     /**
      * Test Case for socket for binary stream messages
      */

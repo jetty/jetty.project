@@ -36,11 +36,11 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.common.internal.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
@@ -342,7 +342,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
-                    // TODO: assert that autoDemand==true;
+                    if (!metadata.isAutoDemanding())
+                        throw new InvalidWebSocketException("InputStream methods require auto-demanding WebSocket endpoints");
 
                     // InputStream Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
@@ -353,7 +354,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, readerCallingArgs);
                 if (methodHandle != null)
                 {
-                    // TODO: assert that autoDemand==true;
+                    if (!metadata.isAutoDemanding())
+                        throw new InvalidWebSocketException("Reader methods require auto-demanding WebSocket endpoints");
 
                     // Reader Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);

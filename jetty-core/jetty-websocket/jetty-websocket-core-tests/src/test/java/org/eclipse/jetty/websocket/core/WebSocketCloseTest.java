@@ -582,11 +582,5 @@ public class WebSocketCloseTest extends WebSocketTester
             state = coreSession.toString();
             callback.succeeded();
         }
-
-        @Override
-        public boolean isAutoDemanding()
-        {
-            return false;
-        }
     }
 }

@@ -322,12 +322,6 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    @Override
-    public boolean isAutoDemanding()
-    {
-        return false;
-    }
-
     public Set<MessageHandler> getMessageHandlers()
     {
         return messageHandlerMap.values().stream()

@@ -34,7 +34,7 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         {
             if (frame.hasPayload() || frame.isFin())
             {
-                invoke(methodHandle, frame.getPayload(), frame.isFin(), callback);
+                invoke(getMethodHandle(), frame.getPayload(), frame.isFin(), callback);
                 autoDemand();
             }
             else

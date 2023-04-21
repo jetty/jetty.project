@@ -404,12 +404,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         acceptMessage(frame, callback);
     }
 
-    @Override
-    public boolean isAutoDemanding()
-    {
-        return false;
-    }
-
     public void suspend()
     {
         try (AutoLock ignored = lock.lock())

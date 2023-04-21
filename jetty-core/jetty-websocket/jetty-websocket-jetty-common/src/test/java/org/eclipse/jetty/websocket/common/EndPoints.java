@@ -340,6 +340,24 @@ public class EndPoints
         }
     }
 
+    @WebSocket(autoDemand = false)
+    public static class BadAutoDemandWithInputStream
+    {
+        @OnWebSocketMessage
+        public void onMessage(InputStream stream)
+        {
+        }
+    }
+
+    @WebSocket(autoDemand = false)
+    public static class BadAutoDemandWithReader
+    {
+        @OnWebSocketMessage
+        public void onMessage(Reader reader)
+        {
+        }
+    }
+
     @WebSocket
     public static class FrameSocket
     {

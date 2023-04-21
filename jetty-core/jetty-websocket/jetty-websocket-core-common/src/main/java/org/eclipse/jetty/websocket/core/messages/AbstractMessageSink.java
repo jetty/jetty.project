@@ -21,7 +21,7 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 public abstract class AbstractMessageSink implements MessageSink
 {
     private final CoreSession session;
-    protected final MethodHandle methodHandle;
+    private final MethodHandle methodHandle;
     private final boolean autoDemand;
 
     public AbstractMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)

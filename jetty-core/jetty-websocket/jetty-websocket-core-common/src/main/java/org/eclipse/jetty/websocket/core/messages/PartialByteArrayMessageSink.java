@@ -35,7 +35,7 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
             if (frame.hasPayload() || frame.isFin())
             {
                 byte[] buffer = BufferUtil.toArray(frame.getPayload());
-                methodHandle.invoke(buffer, frame.isFin());
+                getMethodHandle().invoke(buffer, frame.isFin());
                 callback.succeeded();
                 autoDemand();
             }

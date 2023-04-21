@@ -54,7 +54,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             if (frame.isFin() && accumulator == null)
             {
                 byte[] buf = BufferUtil.toArray(payload);
-                methodHandle.invoke(buf, 0, buf.length);
+                getMethodHandle().invoke(buf, 0, buf.length);
                 callback.succeeded();
                 autoDemand();
                 return;
@@ -76,7 +76,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 // Do not complete twice the callback if the invocation fails.
                 callback = Callback.NOOP;
                 byte[] buf = accumulator.takeByteArray();
-                methodHandle.invoke(buf, 0, buf.length);
+                getMethodHandle().invoke(buf, 0, buf.length);
                 autoDemand();
             }
             else

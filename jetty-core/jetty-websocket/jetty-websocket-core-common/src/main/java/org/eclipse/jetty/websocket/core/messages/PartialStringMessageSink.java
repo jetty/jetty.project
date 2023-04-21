@@ -43,12 +43,12 @@ public class PartialStringMessageSink extends AbstractMessageSink
             if (frame.isFin())
             {
                 String complete = accumulator.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8"));
-                methodHandle.invoke(complete, true);
+                getMethodHandle().invoke(complete, true);
             }
             else
             {
                 String partial = accumulator.takePartialString(() -> new BadPayloadException("Invalid UTF-8"));
-                methodHandle.invoke(partial, false);
+                getMethodHandle().invoke(partial, false);
             }
 
             callback.succeeded();
