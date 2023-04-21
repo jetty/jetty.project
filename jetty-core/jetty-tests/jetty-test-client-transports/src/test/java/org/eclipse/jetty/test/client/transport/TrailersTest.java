@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -36,6 +37,7 @@ public class TrailersTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    @Tag("flaky") // https://github.com/eclipse/jetty.project/issues/9662
     public void testTrailers(Transport transport) throws Exception
     {
         String trailerName = "Some-Trailer";
