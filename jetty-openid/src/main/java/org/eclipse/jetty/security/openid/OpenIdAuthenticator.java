@@ -345,10 +345,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authentication);
-                    synchronized (session)
-                    {
-                        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-                    }
+                    logout(request);
                 }
                 else
                 {
@@ -380,10 +377,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             }
                         }
                     }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth {}", authentication);
+                    return authentication;
                 }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("auth {}", authentication);
-                return authentication;
             }
 
             // If we can't send challenge.
