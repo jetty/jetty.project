@@ -19,15 +19,13 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.messages.AbstractMessageSink;
 
-public class PartialByteBufferMessageSink extends AbstractMessageSink
+public class PartialByteBufferMessageSink extends org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink
 {
-    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
+    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
 
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, boolean.class, Callback.class);
         if (methodHandle.type() != onMessageType)
@@ -35,18 +33,8 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
     }
 
     @Override
-    public void accept(Frame frame, org.eclipse.jetty.util.Callback callback)
+    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, boolean fin, org.eclipse.jetty.util.Callback callback) throws Throwable
     {
-        try
-        {
-            if (frame.hasPayload() || frame.isFin())
-                methodHandle.invoke(frame.getPayload(), frame.isFin(), Callback.from(callback::succeeded, callback::failed));
-            else
-                callback.succeeded();
-        }
-        catch (Throwable x)
-        {
-            callback.failed(x);
-        }
+        methodHandle.invoke(byteBuffer, fin, Callback.from(callback::succeeded, callback::failed));
     }
 }

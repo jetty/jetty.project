@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.util.Objects;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -24,12 +23,11 @@ import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 
 public class PartialStringMessageSink extends AbstractMessageSink
 {
-    private Utf8StringBuilder out;
+    private Utf8StringBuilder accumulator;
 
-    public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle)
+    public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
-        Objects.requireNonNull(methodHandle, "MethodHandle");
+        super(session, methodHandle, autoDemand);
     }
 
     @Override
@@ -37,26 +35,34 @@ public class PartialStringMessageSink extends AbstractMessageSink
     {
         try
         {
-            if (out == null)
-                out = new Utf8StringBuilder(session.getInputBufferSize());
+            if (accumulator == null)
+                accumulator = new Utf8StringBuilder(getCoreSession().getInputBufferSize());
 
-            out.append(frame.getPayload());
+            accumulator.append(frame.getPayload());
+
             if (frame.isFin())
             {
-                String complete = out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8"));
+                String complete = accumulator.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8"));
                 methodHandle.invoke(complete, true);
-                out = null;
             }
             else
             {
-                String partial = out.takePartialString(() -> new BadPayloadException("Invalid UTF-8"));
+                String partial = accumulator.takePartialString(() -> new BadPayloadException("Invalid UTF-8"));
                 methodHandle.invoke(partial, false);
             }
+
             callback.succeeded();
+
+            autoDemand();
         }
         catch (Throwable t)
         {
             callback.failed(t);
+        }
+        finally
+        {
+            if (frame.isFin())
+                accumulator = null;
         }
     }
 }

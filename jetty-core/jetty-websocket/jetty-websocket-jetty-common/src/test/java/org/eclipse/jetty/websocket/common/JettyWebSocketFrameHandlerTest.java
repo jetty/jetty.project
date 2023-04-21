@@ -253,7 +253,7 @@ public class JettyWebSocketFrameHandlerTest
         socket.events.assertEvents(
             "onWebSocketConnect\\([^\\)]*\\)",
             "onWebSocketText\\(\"Hello World\"\\)",
-            "onWebSocketBinary\\(\\[12\\], 0, 12\\)",
+            "onWebSocketBinary\\(\\[12\\]\\)",
             "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
         );
     }

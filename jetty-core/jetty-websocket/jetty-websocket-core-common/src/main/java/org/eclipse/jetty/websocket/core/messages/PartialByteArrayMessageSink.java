@@ -22,11 +22,9 @@ import org.eclipse.jetty.websocket.core.Frame;
 
 public class PartialByteArrayMessageSink extends AbstractMessageSink
 {
-    private static byte[] EMPTY_BUFFER = new byte[0];
-
-    public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
+    public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
     }
 
     @Override
@@ -36,10 +34,16 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
         {
             if (frame.hasPayload() || frame.isFin())
             {
-                byte[] buffer = frame.hasPayload() ? BufferUtil.toArray(frame.getPayload()) : EMPTY_BUFFER;
+                byte[] buffer = BufferUtil.toArray(frame.getPayload());
                 methodHandle.invoke(buffer, frame.isFin());
+                callback.succeeded();
+                autoDemand();
             }
-            callback.succeeded();
+            else
+            {
+                callback.succeeded();
+                getCoreSession().demand(1);
+            }
         }
         catch (Throwable t)
         {

@@ -56,6 +56,8 @@ public class TestFrameHandler implements SynchronousFrameHandler
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen {}", coreSession);
         this.coreSession = coreSession;
+        if (isAutoDemanding())
+            coreSession.demand(1);
         open.countDown();
     }
 
@@ -65,6 +67,8 @@ public class TestFrameHandler implements SynchronousFrameHandler
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
         receivedFrames.offer(Frame.copy(frame));
+        if (isAutoDemanding())
+            coreSession.demand(1);
     }
 
     @Override

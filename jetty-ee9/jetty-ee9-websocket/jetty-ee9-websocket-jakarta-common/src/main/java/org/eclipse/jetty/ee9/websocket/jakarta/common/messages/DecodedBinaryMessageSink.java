@@ -45,7 +45,7 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
         MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
             .findVirtual(DecodedBinaryMessageSink.class, "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
             .bindTo(this);
-        return new ByteBufferMessageSink(coreSession, methodHandle);
+        return new ByteBufferMessageSink(coreSession, methodHandle, true);
     }
 
     public void onWholeMessage(ByteBuffer wholeMessage)

@@ -397,8 +397,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         {
             // Open connection and handler
             handle(() -> handler.onOpen(this, openCallback));
-            if (isAutoDemanding())
-                autoDemand();
         }
         catch (Throwable t)
         {
@@ -414,8 +412,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public void demand(long n)
     {
-        if (isAutoDemanding())
-            throw new IllegalStateException("FrameHandler is not demanding: " + this);
         getExtensionStack().demand(n);
     }
 
@@ -653,8 +649,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
                     handle(() -> handler.onFrame(frame, callback));
-                    if (isAutoDemanding())
-                        autoDemand();
                     return;
                 }
 
@@ -775,7 +769,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public String toString()
     {
-        return String.format("WSCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
+        return String.format("WebSocketCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
             hashCode(),
             behavior,
             sessionState,

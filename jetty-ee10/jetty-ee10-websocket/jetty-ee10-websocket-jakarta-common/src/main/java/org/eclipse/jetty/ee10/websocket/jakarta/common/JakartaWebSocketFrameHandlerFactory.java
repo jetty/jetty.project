@@ -197,8 +197,8 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             else
             {
                 MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
-                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
-                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHandle());
+                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, boolean.class));
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHandle(), true);
             }
         }
         catch (NoSuchMethodException e)

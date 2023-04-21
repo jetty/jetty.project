@@ -88,7 +88,7 @@ public class ExplicitDemandTest
     }
 
     @Test
-    public void testSuspendWhenProcessingFrame() throws Exception
+    public void testNoDemandWhenProcessingFrame() throws Exception
     {
         URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();

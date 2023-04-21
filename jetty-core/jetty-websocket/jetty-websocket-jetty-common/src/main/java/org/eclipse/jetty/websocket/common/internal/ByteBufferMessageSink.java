@@ -17,23 +17,15 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.messages.AbstractMessageSink;
 
-public class ByteBufferMessageSink extends AbstractMessageSink
+public class ByteBufferMessageSink extends org.eclipse.jetty.websocket.core.messages.ByteBufferMessageSink
 {
-    private ByteBufferCallbackAccumulator accumulator;
-
-    public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
+    public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand, false);
 
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, Callback.class);
         if (methodHandle.type() != onMessageType)
@@ -41,60 +33,8 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     }
 
     @Override
-    public void accept(Frame frame, org.eclipse.jetty.util.Callback callback)
+    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, org.eclipse.jetty.util.Callback callback) throws Throwable
     {
-        try
-        {
-            long size = (accumulator == null ? 0 : accumulator.getLength()) + frame.getPayloadLength();
-            long maxSize = session.getMaxBinaryMessageSize();
-            if (maxSize > 0 && size > maxSize)
-                throw new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize));
-
-            ByteBuffer payload = frame.getPayload();
-            if (frame.isFin() && accumulator == null)
-            {
-                methodHandle.invoke(payload, Callback.from(callback::succeeded, callback::failed));
-                return;
-            }
-
-            if (accumulator == null)
-                accumulator = new ByteBufferCallbackAccumulator();
-            accumulator.addEntry(payload, callback);
-
-            if (frame.isFin())
-            {
-                ByteBufferPool bufferPool = session.getByteBufferPool();
-                RetainableByteBuffer buffer = bufferPool.acquire(accumulator.getLength(), payload.isDirect());
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                accumulator.writeTo(byteBuffer);
-                methodHandle.invoke(byteBuffer, new ReleaseCallback(buffer));
-            }
-        }
-        catch (Throwable x)
-        {
-            if (accumulator != null)
-                accumulator.fail(x);
-            callback.failed(x);
-        }
-        finally
-        {
-            if (frame.isFin())
-                accumulator = null;
-        }
-    }
-
-    private record ReleaseCallback(RetainableByteBuffer buffer) implements Callback
-    {
-        @Override
-        public void succeed()
-        {
-            buffer.release();
-        }
-
-        @Override
-        public void fail(Throwable x)
-        {
-            buffer.release();
-        }
+        methodHandle.invoke(byteBuffer, Callback.from(callback::succeeded, callback::failed));
     }
 }

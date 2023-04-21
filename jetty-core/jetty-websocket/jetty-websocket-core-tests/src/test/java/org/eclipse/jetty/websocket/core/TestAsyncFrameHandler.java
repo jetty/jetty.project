@@ -51,6 +51,8 @@ public class TestAsyncFrameHandler implements FrameHandler
             LOG.debug("[{}] onOpen {}", name, coreSession);
         this.coreSession = coreSession;
         callback.succeeded();
+        if (isAutoDemanding())
+            coreSession.demand(1);
         openLatch.countDown();
     }
 
@@ -61,6 +63,8 @@ public class TestAsyncFrameHandler implements FrameHandler
             LOG.debug("[{}] onFrame {}", name, frame);
         receivedFrames.offer(Frame.copy(frame));
         callback.succeeded();
+        if (isAutoDemanding())
+            coreSession.demand(1);
     }
 
     @Override

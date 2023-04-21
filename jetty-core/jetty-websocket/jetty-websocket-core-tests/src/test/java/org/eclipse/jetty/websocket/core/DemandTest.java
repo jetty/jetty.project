@@ -83,7 +83,6 @@ public class DemandTest
         public void onError(Throwable cause, Callback callback)
         {
             callback.succeeded();
-            _coreSession.demand(1);
         }
 
         @Override

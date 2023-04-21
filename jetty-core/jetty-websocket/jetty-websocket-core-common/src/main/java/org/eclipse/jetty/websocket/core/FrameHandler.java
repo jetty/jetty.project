@@ -104,6 +104,7 @@ public interface FrameHandler extends IncomingFrames
     void onClosed(CloseStatus closeStatus, Callback callback);
 
     /**
+     * // TODO: rework javadocs
      * <p>Whether this {@link FrameHandler} automatically demands for more WebSocket frames after
      * returning from {@link #onOpen(CoreSession, Callback)} and {@link #onFrame(Frame, Callback)}.</p>
      * <p>If the demand is not automatic, then {@link CoreSession#demand(long)} must be explicitly
@@ -114,6 +115,7 @@ public interface FrameHandler extends IncomingFrames
      * {@link CoreSession#demand(long)} when it is willing to receive new Frames.
      * @see CoreSession#isAutoDemanding()
      */
+    // TODO: remove this method, should be private to each implementation.
     default boolean isAutoDemanding()
     {
         return true;

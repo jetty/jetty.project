@@ -27,9 +27,9 @@ public class StringMessageSink extends AbstractMessageSink
     private Utf8StringBuilder out;
     private int size;
 
-    public StringMessageSink(CoreSession session, MethodHandle methodHandle)
+    public StringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
         this.size = 0;
     }
 
@@ -39,20 +39,26 @@ public class StringMessageSink extends AbstractMessageSink
         try
         {
             size += frame.getPayloadLength();
-            long maxTextMessageSize = session.getMaxTextMessageSize();
-            if (maxTextMessageSize > 0 && size > maxTextMessageSize)
-            {
-                throw new MessageTooLargeException(String.format("Text message too large: (actual) %,d > (configured max text message size) %,d",
-                    size, maxTextMessageSize));
-            }
+            long maxSize = getCoreSession().getMaxTextMessageSize();
+            if (maxSize > 0 && size > maxSize)
+                throw new MessageTooLargeException(String.format("Text message too large: %,d > %,d", size, maxSize));
 
             if (out == null)
-                out = new Utf8StringBuilder(session.getInputBufferSize());
+                out = new Utf8StringBuilder(getCoreSession().getInputBufferSize());
 
             out.append(frame.getPayload());
+
             if (frame.isFin())
-                methodHandle.invoke(out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
-            callback.succeeded();
+            {
+                getMethodHandle().invoke(out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
+                callback.succeeded();
+                autoDemand();
+            }
+            else
+            {
+                callback.succeeded();
+                getCoreSession().demand(1);
+            }
         }
         catch (Throwable t)
         {
@@ -62,7 +68,6 @@ public class StringMessageSink extends AbstractMessageSink
         {
             if (frame.isFin())
             {
-                // reset
                 size = 0;
                 out = null;
             }

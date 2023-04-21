@@ -46,13 +46,12 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = BufferUtil.toBuffer("Hello World", UTF_8);
         sink.accept(new Frame(OpCode.BINARY).setPayload(data), finCallback);
 
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         finCallback.get(1, TimeUnit.SECONDS);
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", byteStream.toString(UTF_8), is("Hello World"));
@@ -64,14 +63,12 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback fin1Callback = new FutureCallback();
         ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
         sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(true), fin1Callback);
 
-        // wait for demand (can't sent next message until a new frame is demanded)
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         fin1Callback.get(1, TimeUnit.SECONDS);
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", byteStream.toString(UTF_8), is("Hello World"));
@@ -81,7 +78,6 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         ByteBuffer data2 = BufferUtil.toBuffer("Greetings Earthling", UTF_8);
         sink.accept(new Frame(OpCode.BINARY).setPayload(data2).setFin(true), fin2Callback);
 
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         fin2Callback.get(1, TimeUnit.SECONDS);
         byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", byteStream.toString(UTF_8), is("Greetings Earthling"));
@@ -93,18 +89,15 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
         FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.BINARY).setPayload("Hello").setFin(false), callback1);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", byteStream.toString(UTF_8), is("Hello, World"));
@@ -118,7 +111,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
@@ -126,13 +119,9 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.BINARY).setPayload("Greetings").setFin(false), callback1);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload("Earthling").setFin(false), callback3);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(new byte[0]).setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", byteStream.toString(UTF_8), is("Greetings, Earthling"));

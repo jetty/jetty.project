@@ -94,27 +94,29 @@ import org.eclipse.jetty.websocket.core.Frame;
  */
 public abstract class DispatchedMessageSink extends AbstractMessageSink
 {
+    private final Executor executor;
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
-    private final Executor executor;
 
-    public DispatchedMessageSink(CoreSession session, MethodHandle methodHandle)
+    public DispatchedMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        // TODO: assert that autoDemand==true;
+
+        super(session, methodHandle, autoDemand);
         executor = session.getWebSocketComponents().getExecutor();
     }
 
-    public abstract MessageSink newSink(Frame frame);
+    public abstract MessageSink newMessageSink();
 
     public void accept(Frame frame, final Callback callback)
     {
         if (typeSink == null)
         {
-            typeSink = newSink(frame);
+            typeSink = newMessageSink();
             dispatchComplete = new CompletableFuture<>();
 
-            // Dispatch to end user function (will likely start with blocking for data/accept).
-            // If the MessageSink can be closed do this after invoking and before completing the CompletableFuture.
+            // Call the endpoint method in a different
+            // thread, since it will use blocking APIs.
             executor.execute(() ->
             {
                 try
@@ -122,14 +124,12 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
                     methodHandle.invoke(typeSink);
                     if (typeSink instanceof Closeable closeable)
                         IO.close(closeable);
-
                     dispatchComplete.complete(null);
                 }
                 catch (Throwable throwable)
                 {
                     if (typeSink instanceof Closeable closeable)
                         IO.close(closeable);
-
                     dispatchComplete.completeExceptionally(throwable);
                 }
             });
@@ -138,13 +138,19 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
         Callback frameCallback = callback;
         if (frame.isFin())
         {
-            // This is the final frame we should wait for the frame callback and the dispatched thread.
+            // Wait for both the frame callback and the dispatched thread.
             Callback.Completable frameComplete = Callback.Completable.from(callback);
             frameCallback = frameComplete;
             CompletableFuture.allOf(dispatchComplete, frameComplete).whenComplete((result, failure) ->
             {
                 typeSink = null;
                 dispatchComplete = null;
+
+                // The nested MessageSink manages the demand until the last
+                // frame, while this MessageSink manages the demand when both
+                // the last frame and the dispatched thread are completed.
+                if (failure == null)
+                    autoDemand();
             });
         }
 

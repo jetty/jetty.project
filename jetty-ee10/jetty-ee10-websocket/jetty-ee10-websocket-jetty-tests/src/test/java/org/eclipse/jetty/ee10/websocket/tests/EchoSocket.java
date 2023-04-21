@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-@SuppressWarnings("unused")
 @WebSocket
 public class EchoSocket extends EventSocket
 {
@@ -31,10 +30,9 @@ public class EchoSocket extends EventSocket
     }
 
     @Override
-    public void onMessage(byte[] buf, int offset, int len) throws IOException
+    public void onMessage(ByteBuffer message, Callback callback)
     {
-        super.onMessage(buf, offset, len);
-        ByteBuffer buffer = ByteBuffer.wrap(buf, offset, len);
-        session.sendBinary(buffer, Callback.NOOP);
+        super.onMessage(message, Callback.NOOP);
+        session.sendBinary(message, callback);
     }
 }

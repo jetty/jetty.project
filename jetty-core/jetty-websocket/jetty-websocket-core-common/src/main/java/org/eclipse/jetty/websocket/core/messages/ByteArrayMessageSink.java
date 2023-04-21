@@ -27,12 +27,11 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private static final byte[] EMPTY_BUFFER = new byte[0];
-    private ByteBufferCallbackAccumulator out;
+    private ByteBufferCallbackAccumulator accumulator;
 
-    public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
+    public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
 
         // This uses the offset length byte array signature not supported by jakarta websocket.
         // The jakarta layer instead uses decoders for whole byte array messages instead of this message sink.
@@ -46,57 +45,56 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         try
         {
-            long size = (out == null ? 0 : out.getLength()) + frame.getPayloadLength();
-            long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
-            if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
-            {
-                throw new MessageTooLargeException(
-                    String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize));
-            }
+            long size = (accumulator == null ? 0 : accumulator.getLength()) + frame.getPayloadLength();
+            long maxSize = getCoreSession().getMaxBinaryMessageSize();
+            if (maxSize > 0 && size > maxSize)
+                throw new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize));
 
-            // If we are fin and no OutputStream has been created we don't need to aggregate.
-            if (frame.isFin() && out == null)
+            ByteBuffer payload = frame.getPayload();
+            if (frame.isFin() && accumulator == null)
             {
-                if (frame.hasPayload())
-                {
-                    byte[] buf = BufferUtil.toArray(frame.getPayload());
-                    methodHandle.invoke(buf, 0, buf.length);
-                }
-                else
-                {
-                    methodHandle.invoke(EMPTY_BUFFER, 0, 0);
-                }
+                byte[] buf = BufferUtil.toArray(payload);
+                methodHandle.invoke(buf, 0, buf.length);
                 callback.succeeded();
+                autoDemand();
                 return;
             }
 
-            // Aggregate the frame payload.
-            if (frame.hasPayload())
+            if (!frame.isFin() && !frame.hasPayload())
             {
-                ByteBuffer payload = frame.getPayload();
-                if (out == null)
-                    out = new ByteBufferCallbackAccumulator();
-                out.addEntry(payload, callback);
+                callback.succeeded();
+                getCoreSession().demand(1);
+                return;
             }
 
-            // If the methodHandle throws we don't want to fail callback twice.
-            callback = Callback.NOOP;
+            if (accumulator == null)
+                accumulator = new ByteBufferCallbackAccumulator();
+            accumulator.addEntry(payload, callback);
+
             if (frame.isFin())
             {
-                byte[] buf = out.takeByteArray();
+                // Do not complete twice the callback if the invocation fails.
+                callback = Callback.NOOP;
+                byte[] buf = accumulator.takeByteArray();
                 methodHandle.invoke(buf, 0, buf.length);
+                autoDemand();
             }
+            else
+            {
+                getCoreSession().demand(1);
+            }
+
         }
         catch (Throwable t)
         {
-            if (out != null)
-                out.fail(t);
+            if (accumulator != null)
+                accumulator.fail(t);
             callback.failed(t);
         }
         finally
         {
             if (frame.isFin())
-                out = null;
+                accumulator = null;
         }
     }
 }

@@ -249,7 +249,8 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         @Override
         public ByteBufferPool getByteBufferPool()
         {
-            return null;
+            WebSocketComponents components = getWebSocketComponents();
+            return components != null ? components.getByteBufferPool() : null;
         }
 
         @Override

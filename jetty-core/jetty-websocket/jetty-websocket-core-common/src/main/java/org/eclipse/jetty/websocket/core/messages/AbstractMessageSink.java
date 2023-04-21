@@ -20,12 +20,35 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 
 public abstract class AbstractMessageSink implements MessageSink
 {
-    protected final CoreSession session;
+    private final CoreSession session;
     protected final MethodHandle methodHandle;
+    private final boolean autoDemand;
 
-    public AbstractMessageSink(CoreSession session, MethodHandle methodHandle)
+    public AbstractMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
         this.session = Objects.requireNonNull(session, "CoreSession");
         this.methodHandle = Objects.requireNonNull(methodHandle, "MethodHandle");
+        this.autoDemand = autoDemand;
+    }
+
+    public CoreSession getCoreSession()
+    {
+        return session;
+    }
+
+    public MethodHandle getMethodHandle()
+    {
+        return methodHandle;
+    }
+
+    public boolean isAutoDemand()
+    {
+        return autoDemand;
+    }
+
+    protected void autoDemand()
+    {
+        if (isAutoDemand())
+            getCoreSession().demand(1);
     }
 }
