@@ -30,7 +30,7 @@ import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
+import org.eclipse.jetty.security.SPNEGOLoginService;
 import org.eclipse.jetty.security.SpnegoUserIdentity;
 import org.eclipse.jetty.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.security.UserIdentity;
@@ -45,7 +45,7 @@ import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.newG
  * {@link #getAuthenticationDuration() duration} using the HTTP session; this avoids
  * that the client is asked to authenticate for every request.</p>
  *
- * @see ConfigurableSpnegoLoginService
+ * @see SPNEGOLoginService
  */
 public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 {

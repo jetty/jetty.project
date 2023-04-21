@@ -17,10 +17,10 @@ import java.util.Collection;
 
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.security.authentication.ConfigurableSpnegoAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.security.authentication.SPNEGOAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.security.authentication.SslClientCertAuthenticator;
 import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * <li>{@link DigestAuthenticator}</li>
  * <li>{@link FormAuthenticator}</li>
  * <li>{@link SslClientCertAuthenticator}</li>
- * <li>{@link ConfigurableSpnegoAuthenticator}</li>
+ * <li>{@link SPNEGOAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link LoginAuthenticator} are
  * wrapped with a {@link DeferredAuthenticationState}
@@ -65,9 +65,9 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         else if (Authenticator.FORM_AUTH.equalsIgnoreCase(auth))
             authenticator = new FormAuthenticator();
         else if (Authenticator.SPNEGO_AUTH.equalsIgnoreCase(auth))
-            authenticator = new ConfigurableSpnegoAuthenticator();
+            authenticator = new SPNEGOAuthenticator();
         else if (Authenticator.NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
-            authenticator = new ConfigurableSpnegoAuthenticator(Authenticator.NEGOTIATE_AUTH);
+            authenticator = new SPNEGOAuthenticator(Authenticator.NEGOTIATE_AUTH);
         if (Authenticator.CERT_AUTH.equalsIgnoreCase(auth))
         {
             Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);

@@ -22,7 +22,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
+import org.eclipse.jetty.security.SPNEGOLoginService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.SpnegoUserIdentity;
 import org.eclipse.jetty.security.SpnegoUserPrincipal;
@@ -41,16 +41,16 @@ import org.slf4j.LoggerFactory;
  * {@link #getAuthenticationDuration() duration} using the HTTP session; this avoids
  * that the client is asked to authenticate for every request.</p>
  *
- * @see ConfigurableSpnegoLoginService
+ * @see SPNEGOLoginService
  */
-public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
+public class SPNEGOAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigurableSpnegoAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SPNEGOAuthenticator.class);
 
     private final String _authMethod;
     private Duration _authenticationDuration = Duration.ofNanos(-1);
 
-    public ConfigurableSpnegoAuthenticator()
+    public SPNEGOAuthenticator()
     {
         this(Authenticator.SPNEGO_AUTH);
     }
@@ -60,7 +60,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
      *
      * @param authMethod the auth method
      */
-    public ConfigurableSpnegoAuthenticator(String authMethod)
+    public SPNEGOAuthenticator(String authMethod)
     {
         _authMethod = authMethod;
     }
@@ -182,7 +182,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         return AuthenticationState.CHALLENGE;
     }
 
-    private void sendChallenge(Request req, Response res, Callback callback, String token) throws ServerAuthException
+    private void sendChallenge(Request req, Response res, Callback callback, String token)
     {
         setSpnegoToken(res, token);
         Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);

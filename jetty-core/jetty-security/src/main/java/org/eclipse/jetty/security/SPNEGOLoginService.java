@@ -49,12 +49,11 @@ import org.slf4j.LoggerFactory;
  * verify client tokens and (perhaps after a few round-trips) a {@code GSSContext} is
  * established.</p>
  */
-public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implements LoginService
+public class SPNEGOLoginService extends ContainerLifeCycle implements LoginService
 {
-    // TODO Rename to SPNEGOLoginService
     // TODO find test classes and check this is tested
 
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigurableSpnegoLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SPNEGOLoginService.class);
 
     private final GSSManager _gssManager = GSSManager.getInstance();
     private final String _realm;
@@ -65,7 +64,7 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
     private String _hostName;
     private SpnegoContext _context;
 
-    public ConfigurableSpnegoLoginService(String realm, AuthorizationService authorizationService)
+    public SPNEGOLoginService(String realm, AuthorizationService authorizationService)
     {
         _realm = realm;
         _authorizationService = authorizationService;
