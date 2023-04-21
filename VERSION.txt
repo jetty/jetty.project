@@ -1,4 +1,5 @@
 jetty-10.0.16-SNAPSHOT
+ + Jan is now using Intellij! 
 
 jetty-10.0.15 - 11 April 2023
  + 6184 JEP-411 will deprecate/remove the SecurityManager from the JVM
