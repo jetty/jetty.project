@@ -21,15 +21,15 @@
 <!--    </plugins>-->
   </input>
   <executionControl>
-    <runAlways>
-      <goalsLists>
-        <goalsList artifactId="maven-invoker-plugin">
-          <goals>
-            <goal>install</goal>
-          </goals>
-        </goalsList>
-      </goalsLists>
-    </runAlways>
+<!--    <runAlways>-->
+<!--      <goalsLists>-->
+<!--        <goalsList artifactId="maven-invoker-plugin">-->
+<!--          <goals>-->
+<!--            <goal>install</goal>-->
+<!--          </goals>-->
+<!--        </goalsList>-->
+<!--      </goalsLists>-->
+<!--    </runAlways>-->
     <reconcile>
       <plugins>
         <plugin artifactId="maven-surefire-plugin" goal="test">
