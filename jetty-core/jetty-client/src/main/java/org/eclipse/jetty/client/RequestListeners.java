@@ -38,6 +38,7 @@ public class RequestListeners implements Dumpable
 
     public boolean addListener(Request.Listener listener)
     {
+        // Use logical OR to avoid short-circuit.
         return addQueuedListener(listener) |
                addBeginListener(listener) |
                addHeadersListener(listener) |
@@ -70,18 +71,23 @@ public class RequestListeners implements Dumpable
 
     public boolean removeQueuedListener(Request.QueuedListener listener)
     {
-        if (queuedListener == null)
+        if (listener == null)
             return false;
         if (queuedListener == listener)
         {
             queuedListener = null;
             return true;
         }
-        Request.QueuedListener remaining = ((QueuedListenerLink)queuedListener).remove(listener);
-        if (remaining == null)
-            return false;
-        queuedListener = remaining;
-        return true;
+        if (queuedListener instanceof QueuedListenerLink link)
+        {
+            Request.QueuedListener remaining = link.remove(listener);
+            if (remaining != null)
+            {
+                queuedListener = remaining;
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static void notifyQueued(Request.QueuedListener listener, Request request)
@@ -102,28 +108,29 @@ public class RequestListeners implements Dumpable
         if (listener == null)
             return false;
         Request.BeginListener existing = beginListener;
-        beginListener = existing == null ? listener : request ->
-        {
-            notifyBegin(existing, request);
-            notifyBegin(listener, request);
-        };
+        beginListener = existing == null ? listener : new BeginListenerLink(existing, listener);
         return true;
     }
 
     public boolean removeBeginListener(Request.BeginListener listener)
     {
-        if (beginListener == null)
+        if (listener == null)
             return false;
         if (beginListener == listener)
         {
             beginListener = null;
             return true;
         }
-        Request.BeginListener removed = ((BeginListenerLink)beginListener).remove(listener);
-        if (removed == null)
-            return false;
-        beginListener = removed;
-        return true;
+        if (beginListener instanceof BeginListenerLink link)
+        {
+            Request.BeginListener remaining = link.remove(listener);
+            if (remaining != null)
+            {
+                beginListener = remaining;
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static void notifyBegin(Request.BeginListener listener, Request request)
@@ -144,28 +151,29 @@ public class RequestListeners implements Dumpable
         if (listener == null)
             return false;
         Request.HeadersListener existing = headersListener;
-        headersListener = existing == null ? listener : request ->
-        {
-            notifyHeaders(existing, request);
-            notifyHeaders(listener, request);
-        };
+        headersListener = existing == null ? listener : new HeadersListenerLink(existing, listener);
         return true;
     }
 
     public boolean removeHeadersListener(Request.HeadersListener listener)
     {
-        if (headersListener == null)
+        if (listener == null)
             return false;
         if (headersListener == listener)
         {
             headersListener = null;
             return true;
         }
-        Request.HeadersListener removed = ((HeadersListenerLink)headersListener).remove(listener);
-        if (removed == null)
-            return false;
-        headersListener = removed;
-        return true;
+        if (headersListener instanceof HeadersListenerLink link)
+        {
+            Request.HeadersListener remaining = link.remove(listener);
+            if (remaining != null)
+            {
+                headersListener = remaining;
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static void notifyHeaders(Request.HeadersListener listener, Request request)
@@ -186,28 +194,29 @@ public class RequestListeners implements Dumpable
         if (listener == null)
             return false;
         Request.CommitListener existing = commitListener;
-        commitListener = existing == null ? listener : request ->
-        {
-            notifyCommit(existing, request);
-            notifyCommit(listener, request);
-        };
+        commitListener = existing == null ? listener : new CommitListenerLink(existing, listener);
         return true;
     }
 
     public boolean removeCommitListener(Request.CommitListener listener)
     {
-        if (commitListener == null)
+        if (listener == null)
             return false;
         if (commitListener == listener)
         {
             commitListener = null;
             return true;
         }
-        Request.CommitListener removed = ((CommitListenerLink)commitListener).remove(listener);
-        if (removed == null)
-            return false;
-        commitListener = removed;
-        return true;
+        if (commitListener instanceof CommitListenerLink link)
+        {
+            Request.CommitListener remaining = link.remove(listener);
+            if (remaining != null)
+            {
+                commitListener = remaining;
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static void notifyCommit(Request.CommitListener listener, Request request)
@@ -228,28 +237,29 @@ public class RequestListeners implements Dumpable
         if (listener == null)
             return false;
         Request.ContentListener existing = contentListener;
-        contentListener = existing == null ? listener : (request, byteBuffer) ->
-        {
-            notifyContent(existing, request, byteBuffer);
-            notifyContent(listener, request, byteBuffer);
-        };
+        contentListener = existing == null ? listener : new ContentListenerLink(existing, listener);
         return true;
     }
 
     public boolean removeContentListener(Request.ContentListener listener)
     {
-        if (contentListener == null)
+        if (listener == null)
             return false;
         if (contentListener == listener)
         {
             contentListener = null;
             return true;
         }
-        Request.ContentListener removed = ((ContentListenerLink)contentListener).remove(listener);
-        if (removed == null)
-            return false;
-        contentListener = removed;
-        return true;
+        if (contentListener instanceof ContentListenerLink link)
+        {
+            Request.ContentListener remaining = link.remove(listener);
+            if (remaining != null)
+            {
+                contentListener = remaining;
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static void notifyContent(Request.ContentListener listener, Request request, ByteBuffer byteBuffer)
@@ -275,28 +285,29 @@ public class RequestListeners implements Dumpable
         if (listener == null)
             return false;
         Request.SuccessListener existing = successListener;
-        successListener = existing == null ? listener : request ->
-        {
-            notifySuccess(existing, request);
-            notifySuccess(listener, request);
-        };
+        successListener = existing == null ? listener : new SuccessListenerLink(existing, listener);
         return true;
     }
 
     public boolean removeSuccessListener(Request.SuccessListener listener)
     {
-        if (successListener == null)
+        if (listener == null)
             return false;
         if (successListener == listener)
         {
             successListener = null;
             return true;
         }
-        Request.SuccessListener removed = ((SuccessListenerLink)successListener).remove(listener);
-        if (removed == null)
-            return false;
-        successListener = removed;
-        return true;
+        if (successListener instanceof SuccessListenerLink link)
+        {
+            Request.SuccessListener remaining = link.remove(listener);
+            if (remaining != null)
+            {
+                successListener = remaining;
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static void notifySuccess(Request.SuccessListener listener, Request request)
@@ -317,28 +328,29 @@ public class RequestListeners implements Dumpable
         if (listener == null)
             return false;
         Request.FailureListener existing = failureListener;
-        failureListener = existing == null ? listener : (request, failure) ->
-        {
-            notifyFailure(existing, request, failure);
-            notifyFailure(listener, request, failure);
-        };
+        failureListener = existing == null ? listener : new FailureListenerLink(existing, listener);
         return true;
     }
 
     public boolean removeFailureListener(Request.FailureListener listener)
     {
-        if (failureListener == null)
+        if (listener == null)
             return false;
         if (failureListener == listener)
         {
             failureListener = null;
             return true;
         }
-        Request.FailureListener removed = ((FailureListenerLink)failureListener).remove(listener);
-        if (removed == null)
-            return false;
-        failureListener = removed;
-        return true;
+        if (failureListener instanceof FailureListenerLink link)
+        {
+            Request.FailureListener remaining = link.remove(listener);
+            if (remaining != null)
+            {
+                failureListener = remaining;
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static void notifyFailure(Request.FailureListener listener, Request request, Throwable failure)
