@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.BiFunction;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -35,25 +36,52 @@ public class RequestListeners implements Dumpable
     private Request.SuccessListener successListener;
     private Request.FailureListener failureListener;
 
-    public void addListener(Request.Listener listener)
+    public boolean addListener(Request.Listener listener)
     {
-        addQueuedListener(listener);
-        addBeginListener(listener);
-        addHeadersListener(listener);
-        addCommitListener(listener);
-        addContentListener(listener);
-        addSuccessListener(listener);
-        addFailureListener(listener);
+        return addQueuedListener(listener) |
+               addBeginListener(listener) |
+               addHeadersListener(listener) |
+               addCommitListener(listener) |
+               addContentListener(listener) |
+               addSuccessListener(listener) |
+               addFailureListener(listener);
     }
 
-    public void addQueuedListener(Request.QueuedListener listener)
+    public boolean removeListener(Request.Listener listener)
     {
+        // Use logical OR to avoid short-circuit.
+        return removeQueuedListener(listener) |
+               removeBeginListener(listener) |
+               removeHeadersListener(listener) |
+               removeCommitListener(listener) |
+               removeContentListener(listener) |
+               removeSuccessListener(listener) |
+               removeFailureListener(listener);
+    }
+
+    public boolean addQueuedListener(Request.QueuedListener listener)
+    {
+        if (listener == null)
+            return false;
         Request.QueuedListener existing = queuedListener;
-        queuedListener = existing == null ? listener : request ->
+        queuedListener = existing == null ? listener : new QueuedListenerLink(existing, listener);
+        return true;
+    }
+
+    public boolean removeQueuedListener(Request.QueuedListener listener)
+    {
+        if (queuedListener == null)
+            return false;
+        if (queuedListener == listener)
         {
-            notifyQueued(existing, request);
-            notifyQueued(listener, request);
-        };
+            queuedListener = null;
+            return true;
+        }
+        Request.QueuedListener remaining = ((QueuedListenerLink)queuedListener).remove(listener);
+        if (remaining == null)
+            return false;
+        queuedListener = remaining;
+        return true;
     }
 
     protected static void notifyQueued(Request.QueuedListener listener, Request request)
@@ -69,14 +97,33 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    public void addBeginListener(Request.BeginListener listener)
+    public boolean addBeginListener(Request.BeginListener listener)
     {
+        if (listener == null)
+            return false;
         Request.BeginListener existing = beginListener;
         beginListener = existing == null ? listener : request ->
         {
             notifyBegin(existing, request);
             notifyBegin(listener, request);
         };
+        return true;
+    }
+
+    public boolean removeBeginListener(Request.BeginListener listener)
+    {
+        if (beginListener == null)
+            return false;
+        if (beginListener == listener)
+        {
+            beginListener = null;
+            return true;
+        }
+        Request.BeginListener removed = ((BeginListenerLink)beginListener).remove(listener);
+        if (removed == null)
+            return false;
+        beginListener = removed;
+        return true;
     }
 
     protected static void notifyBegin(Request.BeginListener listener, Request request)
@@ -92,14 +139,33 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    public void addHeadersListener(Request.HeadersListener listener)
+    public boolean addHeadersListener(Request.HeadersListener listener)
     {
+        if (listener == null)
+            return false;
         Request.HeadersListener existing = headersListener;
         headersListener = existing == null ? listener : request ->
         {
             notifyHeaders(existing, request);
             notifyHeaders(listener, request);
         };
+        return true;
+    }
+
+    public boolean removeHeadersListener(Request.HeadersListener listener)
+    {
+        if (headersListener == null)
+            return false;
+        if (headersListener == listener)
+        {
+            headersListener = null;
+            return true;
+        }
+        Request.HeadersListener removed = ((HeadersListenerLink)headersListener).remove(listener);
+        if (removed == null)
+            return false;
+        headersListener = removed;
+        return true;
     }
 
     protected static void notifyHeaders(Request.HeadersListener listener, Request request)
@@ -115,14 +181,33 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    public void addCommitListener(Request.CommitListener listener)
+    public boolean addCommitListener(Request.CommitListener listener)
     {
+        if (listener == null)
+            return false;
         Request.CommitListener existing = commitListener;
         commitListener = existing == null ? listener : request ->
         {
             notifyCommit(existing, request);
             notifyCommit(listener, request);
         };
+        return true;
+    }
+
+    public boolean removeCommitListener(Request.CommitListener listener)
+    {
+        if (commitListener == null)
+            return false;
+        if (commitListener == listener)
+        {
+            commitListener = null;
+            return true;
+        }
+        Request.CommitListener removed = ((CommitListenerLink)commitListener).remove(listener);
+        if (removed == null)
+            return false;
+        commitListener = removed;
+        return true;
     }
 
     protected static void notifyCommit(Request.CommitListener listener, Request request)
@@ -138,14 +223,33 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    public void addContentListener(Request.ContentListener listener)
+    public boolean addContentListener(Request.ContentListener listener)
     {
+        if (listener == null)
+            return false;
         Request.ContentListener existing = contentListener;
         contentListener = existing == null ? listener : (request, byteBuffer) ->
         {
             notifyContent(existing, request, byteBuffer);
             notifyContent(listener, request, byteBuffer);
         };
+        return true;
+    }
+
+    public boolean removeContentListener(Request.ContentListener listener)
+    {
+        if (contentListener == null)
+            return false;
+        if (contentListener == listener)
+        {
+            contentListener = null;
+            return true;
+        }
+        Request.ContentListener removed = ((ContentListenerLink)contentListener).remove(listener);
+        if (removed == null)
+            return false;
+        contentListener = removed;
+        return true;
     }
 
     protected static void notifyContent(Request.ContentListener listener, Request request, ByteBuffer byteBuffer)
@@ -166,14 +270,33 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    public void addSuccessListener(Request.SuccessListener listener)
+    public boolean addSuccessListener(Request.SuccessListener listener)
     {
+        if (listener == null)
+            return false;
         Request.SuccessListener existing = successListener;
         successListener = existing == null ? listener : request ->
         {
             notifySuccess(existing, request);
             notifySuccess(listener, request);
         };
+        return true;
+    }
+
+    public boolean removeSuccessListener(Request.SuccessListener listener)
+    {
+        if (successListener == null)
+            return false;
+        if (successListener == listener)
+        {
+            successListener = null;
+            return true;
+        }
+        Request.SuccessListener removed = ((SuccessListenerLink)successListener).remove(listener);
+        if (removed == null)
+            return false;
+        successListener = removed;
+        return true;
     }
 
     protected static void notifySuccess(Request.SuccessListener listener, Request request)
@@ -189,14 +312,33 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    public void addFailureListener(Request.FailureListener listener)
+    public boolean addFailureListener(Request.FailureListener listener)
     {
+        if (listener == null)
+            return false;
         Request.FailureListener existing = failureListener;
         failureListener = existing == null ? listener : (request, failure) ->
         {
             notifyFailure(existing, request, failure);
             notifyFailure(listener, request, failure);
         };
+        return true;
+    }
+
+    public boolean removeFailureListener(Request.FailureListener listener)
+    {
+        if (failureListener == null)
+            return false;
+        if (failureListener == listener)
+        {
+            failureListener = null;
+            return true;
+        }
+        Request.FailureListener removed = ((FailureListenerLink)failureListener).remove(listener);
+        if (removed == null)
+            return false;
+        failureListener = removed;
+        return true;
     }
 
     protected static void notifyFailure(Request.FailureListener listener, Request request, Throwable failure)
@@ -278,6 +420,167 @@ public class RequestListeners implements Dumpable
         public String toString()
         {
             return name + " = " + listener;
+        }
+    }
+
+    private static class Link<T, L extends Link<T, L>>
+    {
+        private final Class<L> type;
+        private final BiFunction<T, T, L> ctor;
+        protected final T prev;
+        protected final T next;
+
+        protected Link(Class<L> type, BiFunction<T, T, L> ctor, T prev, T next)
+        {
+            this.type = type;
+            this.ctor = ctor;
+            this.prev = prev;
+            this.next = next;
+        }
+
+        @SuppressWarnings("unchecked")
+        protected T remove(T listener)
+        {
+            // The add methods build a fold-left structure:
+            // f = Link3(Link2(Link1(listener1, listener2), listener3), listener4)
+            // f.remove(listener1) yields: fa = Link3a(Link2a(listener2, listener3), listener4)
+            // f.remove(listener4) yields: fa = Link2(Link1(listener1, listener2), listener3)
+
+            // First check next, to optimize the case where listeners
+            // are removed in reverse order (we would not allocate).
+            // If there is a match on next, return the other component.
+            if (next == listener)
+                return prev;
+
+            // If it is a link, delegate the removal to it.
+            if (type.isInstance(prev))
+            {
+                T remaining = type.cast(prev).remove(listener);
+                // The prev link was modified by the removal,
+                // rebuild this link with the modification.
+                if (remaining != null)
+                    return (T)ctor.apply(remaining, next);
+                // Not found.
+                return null;
+            }
+
+            // If there is a match on prev, return the other component.
+            if (prev == listener)
+                return next;
+
+            // Not found.
+            return null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x(%s,%s)".formatted(getClass().getSimpleName(), hashCode(), prev, next);
+        }
+    }
+
+    private static class QueuedListenerLink extends Link<Request.QueuedListener, QueuedListenerLink> implements Request.QueuedListener
+    {
+        private QueuedListenerLink(Request.QueuedListener prev, Request.QueuedListener next)
+        {
+            super(QueuedListenerLink.class, QueuedListenerLink::new, prev, next);
+        }
+
+        @Override
+        public void onQueued(Request request)
+        {
+            notifyQueued(prev, request);
+            notifyQueued(next, request);
+        }
+    }
+
+    private static class BeginListenerLink extends Link<Request.BeginListener, BeginListenerLink> implements Request.BeginListener
+    {
+        private BeginListenerLink(Request.BeginListener prev, Request.BeginListener next)
+        {
+            super(BeginListenerLink.class, BeginListenerLink::new, prev, next);
+        }
+
+        @Override
+        public void onBegin(Request request)
+        {
+            notifyBegin(prev, request);
+            notifyBegin(next, request);
+        }
+    }
+
+    private static class HeadersListenerLink extends Link<Request.HeadersListener, HeadersListenerLink> implements Request.HeadersListener
+    {
+        private HeadersListenerLink(Request.HeadersListener prev, Request.HeadersListener next)
+        {
+            super(HeadersListenerLink.class, HeadersListenerLink::new, prev, next);
+        }
+
+        @Override
+        public void onHeaders(Request request)
+        {
+            notifyHeaders(prev, request);
+            notifyHeaders(next, request);
+        }
+    }
+
+    private static class CommitListenerLink extends Link<Request.CommitListener, CommitListenerLink> implements Request.CommitListener
+    {
+        private CommitListenerLink(Request.CommitListener prev, Request.CommitListener next)
+        {
+            super(CommitListenerLink.class, CommitListenerLink::new, prev, next);
+        }
+
+        @Override
+        public void onCommit(Request request)
+        {
+            notifyCommit(prev, request);
+            notifyCommit(next, request);
+        }
+    }
+
+    private static class ContentListenerLink extends Link<Request.ContentListener, ContentListenerLink> implements Request.ContentListener
+    {
+        private ContentListenerLink(Request.ContentListener prev, Request.ContentListener next)
+        {
+            super(ContentListenerLink.class, ContentListenerLink::new, prev, next);
+        }
+
+        @Override
+        public void onContent(Request request, ByteBuffer content)
+        {
+            notifyContent(prev, request, content);
+            notifyContent(next, request, content);
+        }
+    }
+
+    private static class SuccessListenerLink extends Link<Request.SuccessListener, SuccessListenerLink> implements Request.SuccessListener
+    {
+        private SuccessListenerLink(Request.SuccessListener prev, Request.SuccessListener next)
+        {
+            super(SuccessListenerLink.class, SuccessListenerLink::new, prev, next);
+        }
+
+        @Override
+        public void onSuccess(Request request)
+        {
+            notifySuccess(prev, request);
+            notifySuccess(next, request);
+        }
+    }
+
+    private static class FailureListenerLink extends Link<Request.FailureListener, FailureListenerLink> implements Request.FailureListener
+    {
+        private FailureListenerLink(Request.FailureListener prev, Request.FailureListener next)
+        {
+            super(FailureListenerLink.class, FailureListenerLink::new, prev, next);
+        }
+
+        @Override
+        public void onFailure(Request request, Throwable failure)
+        {
+            notifyFailure(prev, request, failure);
+            notifyFailure(next, request, failure);
         }
     }
 }
