@@ -16,13 +16,13 @@ package org.eclipse.jetty.security;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-public class SpnegoUserIdentity implements UserIdentity
+public class SPNEGOUserIdentity implements UserIdentity
 {
     private final Subject _subject;
     private final Principal _principal;
     private final UserIdentity _roleDelegate;
 
-    public SpnegoUserIdentity(Subject subject, Principal principal, UserIdentity roleDelegate)
+    public SPNEGOUserIdentity(Subject subject, Principal principal, UserIdentity roleDelegate)
     {
         _subject = subject;
         _principal = principal;

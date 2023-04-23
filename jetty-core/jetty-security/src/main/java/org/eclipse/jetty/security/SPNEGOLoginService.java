@@ -16,10 +16,10 @@ package org.eclipse.jetty.security;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.nio.file.Path;
-import java.security.PrivilegedAction;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
@@ -29,6 +29,7 @@ import javax.security.auth.login.LoginContext;
 import org.eclipse.jetty.security.authentication.AuthorizationService;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * for example {@code HTTP/wonder.com}, using a {@code keyTab} file as the service principal
  * credentials.</p>
  * <p>Upon receiving an HTTP request, the server tries to authenticate the client
- * calling {@link #login(String, Object, Function<Boolean, Session>)} where the GSS APIs are used to
+ * calling {@link #login(String, Object, Function)} where the GSS APIs are used to
  * verify client tokens and (perhaps after a few round-trips) a {@code GSSContext} is
  * established.</p>
  */
@@ -62,7 +63,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     private String _serviceName;
     private Path _keyTabPath;
     private String _hostName;
-    private SpnegoContext _context;
+    private SPNEGOContext _context;
 
     public SPNEGOLoginService(String realm, AuthorizationService authorizationService)
     {
@@ -137,14 +138,14 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
             _hostName = InetAddress.getLocalHost().getCanonicalHostName();
         if (LOG.isDebugEnabled())
             LOG.debug("Retrieving credentials for service {}/{}", getServiceName(), getHostName());
-        LoginContext loginContext = new LoginContext("", null, null, new SpnegoConfiguration());
+        LoginContext loginContext = new LoginContext("", null, null, new SPNEGOConfiguration());
         loginContext.login();
         Subject subject = loginContext.getSubject();
-        _context = Subject.doAs(subject, newSpnegoContext(subject));
+        _context = SecurityUtils.doAs(subject, newSpnegoContext(subject));
         super.doStart();
     }
 
-    private PrivilegedAction<SpnegoContext> newSpnegoContext(Subject subject)
+    private Callable<SPNEGOContext> newSpnegoContext(Subject subject)
     {
         return () ->
         {
@@ -155,7 +156,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
                 Oid spnegoOid = new Oid("1.3.6.1.5.5.2");
                 Oid[] mechanisms = new Oid[]{kerberosOid, spnegoOid};
                 GSSCredential serviceCredential = _gssManager.createCredential(serviceName, GSSCredential.DEFAULT_LIFETIME, mechanisms, GSSCredential.ACCEPT_ONLY);
-                SpnegoContext context = new SpnegoContext();
+                SPNEGOContext context = new SPNEGOContext();
                 context._subject = subject;
                 context._serviceCredential = serviceCredential;
                 return context;
@@ -179,22 +180,22 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
             gssContext = holder == null ? null : holder.gssContext;
         }
         if (gssContext == null)
-            gssContext = Subject.doAs(subject, newGSSContext());
+            gssContext = SecurityUtils.doAs(subject, newGSSContext());
 
         byte[] input = Base64.getDecoder().decode((String)credentials);
-        byte[] output = Subject.doAs(_context._subject, acceptGSSContext(gssContext, input));
+        byte[] output = SecurityUtils.doAs(_context._subject, acceptGSSContext(gssContext, input));
         String token = Base64.getEncoder().encodeToString(output);
 
         String userName = toUserName(gssContext);
         // Save the token in the principal so it can be sent in the response.
-        SpnegoUserPrincipal principal = new SpnegoUserPrincipal(userName, token);
+        SPNEGOUserPrincipal principal = new SPNEGOUserPrincipal(userName, token);
         if (gssContext.isEstablished())
         {
             if (httpSession != null)
                 httpSession.removeAttribute(GSSContextHolder.ATTRIBUTE);
 
             UserIdentity roles = _authorizationService.getUserIdentity(userName, getSession);
-            return new SpnegoUserIdentity(subject, principal, roles);
+            return new SPNEGOUserIdentity(subject, principal, roles);
         }
         else
         {
@@ -205,11 +206,11 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
             httpSession.setAttribute(GSSContextHolder.ATTRIBUTE, holder);
 
             // Return an unestablished UserIdentity.
-            return new SpnegoUserIdentity(subject, principal, null);
+            return new SPNEGOUserIdentity(subject, principal, null);
         }
     }
 
-    private PrivilegedAction<GSSContext> newGSSContext()
+    private Callable<GSSContext> newGSSContext()
     {
         return () ->
         {
@@ -224,7 +225,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         };
     }
 
-    private PrivilegedAction<byte[]> acceptGSSContext(GSSContext gssContext, byte[] token)
+    private Callable<byte[]> acceptGSSContext(GSSContext gssContext, byte[] token)
     {
         return () ->
         {
@@ -278,7 +279,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     {
     }
 
-    private class SpnegoConfiguration extends Configuration
+    private class SPNEGOConfiguration extends Configuration
     {
         @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name)
@@ -304,7 +305,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         }
     }
 
-    private static class SpnegoContext
+    private static class SPNEGOContext
     {
         private Subject _subject;
         private GSSCredential _serviceCredential;

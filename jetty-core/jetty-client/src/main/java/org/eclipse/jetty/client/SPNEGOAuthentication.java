@@ -16,11 +16,11 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -32,6 +32,7 @@ import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
@@ -205,7 +206,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
 
         String b64Input = headerInfo.getBase64();
         byte[] input = b64Input == null ? new byte[0] : Base64.getDecoder().decode(b64Input);
-        byte[] output = Subject.doAs(spnegoContext.subject, initGSSContext(spnegoContext, request.getHost(), input));
+        byte[] output = SecurityUtils.doAs(spnegoContext.subject, initGSSContext(spnegoContext, request.getHost(), input));
         String b64Output = output == null ? null : new String(Base64.getEncoder().encode(output));
 
         // The result cannot be used for subsequent requests,
@@ -239,7 +240,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
         }
     }
 
-    private PrivilegedAction<byte[]> initGSSContext(SPNEGOContext spnegoContext, String host, byte[] bytes)
+    private Callable<byte[]> initGSSContext(SPNEGOContext spnegoContext, String host, byte[] bytes)
     {
         return () ->
         {

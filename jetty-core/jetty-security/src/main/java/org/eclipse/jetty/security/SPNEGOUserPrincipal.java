@@ -14,24 +14,16 @@
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-import java.util.Base64;
 
-public class SpnegoUserPrincipal implements Principal
+public class SPNEGOUserPrincipal implements Principal
 {
     private final String _name;
-    private byte[] _token;
-    private String _encodedToken;
+    private final String _encodedToken;
 
-    public SpnegoUserPrincipal(String name, String encodedToken)
+    public SPNEGOUserPrincipal(String name, String encodedToken)
     {
         _name = name;
         _encodedToken = encodedToken;
-    }
-
-    public SpnegoUserPrincipal(String name, byte[] token)
-    {
-        _name = name;
-        _token = token;
     }
 
     @Override
@@ -40,17 +32,8 @@ public class SpnegoUserPrincipal implements Principal
         return _name;
     }
 
-    public byte[] getToken()
-    {
-        if (_token == null)
-            _token = Base64.getDecoder().decode(_encodedToken);
-        return _token;
-    }
-
     public String getEncodedToken()
     {
-        if (_encodedToken == null)
-            _encodedToken = new String(Base64.getEncoder().encode(_token));
         return _encodedToken;
     }
 }
