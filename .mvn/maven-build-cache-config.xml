@@ -32,6 +32,12 @@
 <!--    </runAlways>-->
     <reconcile>
       <plugins>
+        <!-- workaround for https://issues.apache.org/jira/browse/MBUILDCACHE-56 -->
+        <plugin artifactId="maven-enforcer-plugin" goal="enforce">
+          <nologs>
+            <nolog propertyName="commandLineRules"/>
+          </nologs>
+        </plugin>
         <plugin artifactId="maven-surefire-plugin" goal="test">
           <reconciles>
             <reconcile propertyName="skip" skipValue="true"/>
