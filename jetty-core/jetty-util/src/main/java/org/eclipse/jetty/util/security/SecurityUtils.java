@@ -54,7 +54,7 @@ public class SecurityUtils
                 MethodHandle converter = lookup.findStatic(SecurityUtils.class, "callableToPrivilegedAction", convertSignature);
                 return MethodHandles.filterArguments(doAs, 1, converter);
             }
-            catch (Throwable xx)
+            catch (Throwable t)
             {
                 return null;
             }
