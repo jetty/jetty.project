@@ -849,7 +849,6 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         @Override
         public void fail(Throwable failure)
         {
-            failure.printStackTrace();
         }
     }
 }
