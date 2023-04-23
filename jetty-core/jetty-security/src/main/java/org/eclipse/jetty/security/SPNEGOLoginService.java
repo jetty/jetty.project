@@ -52,8 +52,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SPNEGOLoginService extends ContainerLifeCycle implements LoginService
 {
-    // TODO find test classes and check this is tested
-
     private static final Logger LOG = LoggerFactory.getLogger(SPNEGOLoginService.class);
 
     private final GSSManager _gssManager = GSSManager.getInstance();
