@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -74,7 +75,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 startHttpClient(false);
                 String uri = "http://localhost:" + port + "/test";
                 openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));

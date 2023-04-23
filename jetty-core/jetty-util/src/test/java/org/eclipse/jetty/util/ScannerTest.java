@@ -51,7 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ScannerTest
 {
     public WorkDir workDir;
-    private Path _directory;
+
+    public Path _directory;
     private Scanner _scanner;
     private final BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();

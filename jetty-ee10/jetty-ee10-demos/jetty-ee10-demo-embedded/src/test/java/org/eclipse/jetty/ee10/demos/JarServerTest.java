@@ -52,7 +52,6 @@ public class JarServerTest extends AbstractEmbeddedTest
     public void stopServer() throws Exception
     {
         server.stop();
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test

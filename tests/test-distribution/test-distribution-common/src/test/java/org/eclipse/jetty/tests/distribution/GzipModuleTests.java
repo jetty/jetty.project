@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -68,7 +69,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/index.html");
@@ -112,7 +113,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.webp");
@@ -158,7 +159,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.icon");

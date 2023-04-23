@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -131,7 +132,8 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("validLoggingModules")
-    public void testLoggingConfiguration(String env, String loggingModules, List<String> expectedClasspathEntries, List<String> expectedEnabledModules) throws Exception
+    public void testLoggingConfiguration(String env, String loggingModules, List<String> expectedClasspathEntries,
+                                         List<String> expectedEnabledModules) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -156,8 +158,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
                 assertTrue(listConfigRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, listConfigRun.getExitValue());
 
-                List<String> rawConfigLogs = new ArrayList<>();
-                rawConfigLogs.addAll(listConfigRun.getLogs());
+                List<String> rawConfigLogs = new ArrayList<>(listConfigRun.getLogs());
 
                 for (String expectedEnabledModule : expectedEnabledModules)
                 {
@@ -176,7 +177,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run requestRun = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(requestRun.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(requestRun.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");

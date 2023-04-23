@@ -55,7 +55,6 @@ public class DefaultHandlerTest
         server.setScheme(HttpScheme.HTTP.asString());
         server.addXmlConfiguration("DefaultHandler.xml");
         server.addXmlConfiguration("NIOHttp.xml");
-
         server.load();
         server.start();
     }
@@ -69,6 +68,7 @@ public class DefaultHandlerTest
     @AfterAll
     public static void tearDownServer() throws Exception
     {
+        server.getServer().setStopTimeout(20000);
         server.stop();
     }
 

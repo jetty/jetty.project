@@ -76,7 +76,7 @@ public class StatsTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
 

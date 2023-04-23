@@ -161,7 +161,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.close();
     }
 
-    private abstract static class AsyncRestRequest extends Response.Listener.Adapter
+    private abstract static class AsyncRestRequest implements Response.Listener
     {
         private final Utf8StringBuilder _content = new Utf8StringBuilder();
 

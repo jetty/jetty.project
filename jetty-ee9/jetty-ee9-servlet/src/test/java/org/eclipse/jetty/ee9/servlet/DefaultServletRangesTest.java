@@ -39,30 +39,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DefaultServletRangesTest
 {
     public static final String DATA = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ!@#$%^&*()_+/.,[]";
-    public WorkDir testdir;
 
     private Server server;
     private LocalConnector connector;
-    private ServletContextHandler context;
 
     @BeforeEach
-    public void init() throws Exception
+    public void init(WorkDir workDir) throws Exception
     {
         server = new Server();
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
-        context = new ServletContextHandler();
+        ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
 
         server.setHandler(context);
         server.addConnector(connector);
 
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
+        File resBase = workDir.getEmptyPathDir().toFile();
+        FS.ensureDirExists(resBase.toPath());
         File data = new File(resBase, "data.txt");
         createFile(data, DATA);
         String resBasePath = resBase.getAbsolutePath();

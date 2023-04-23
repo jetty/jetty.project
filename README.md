@@ -96,6 +96,20 @@ all            | `jetty-home/target/jetty-home-<ver>.tar.gz`                    
 Note: The build tests do a lot of stress testing, and on some machines it is necessary to set the 
 file descriptor limit to greater than 2048 for the tests to all pass successfully (check your `ulimit -n` value).
 
+Note: The tests are running in parallel using [Junit5 parallel execution](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution).
+This is configurable using the following properties:
+```
+    # to enable/disable the parallel execution
+    -Djunit.jupiter.execution.parallel.enabled=true/false
+    # number of tests executed in parallel
+    -Djunit.jupiter.execution.parallel.config.fixed.parallelism=2
+```
+If a test cannot be runned in parallel because accessing/modifying some static fields or for any other reasons, the test should be marked with the annotation
+```java
+@Isolated("Access static field of Configurations")
+```
+
+
 Professional Services
 ---------------------
 

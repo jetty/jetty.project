@@ -44,8 +44,6 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(WorkDirExtension.class)
 public class MultiReleaseJarFileTest
 {
-    public WorkDir workDir;
-
     private void createExampleJar(Path outputJar) throws IOException
     {
         Map<String, String> env = new HashMap<>();
@@ -93,9 +91,9 @@ public class MultiReleaseJarFileTest
     }
 
     @Test
-    public void testStreamAllFiles() throws Exception
+    public void testStreamAllFiles(WorkDir workDir) throws Exception
     {
-        Path exampleJar = workDir.getEmptyPathDir().resolve("multirelease.jar");
+        Path exampleJar = workDir.getPath().resolve("multirelease.jar");
         createExampleJar(exampleJar);
 
         try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(exampleJar))
@@ -128,7 +126,7 @@ public class MultiReleaseJarFileTest
     }
 
     @Test
-    public void testClassLoaderWithMultiReleaseBehaviors() throws Exception
+    public void testClassLoaderWithMultiReleaseBehaviors(WorkDir workDir) throws Exception
     {
         Path exampleJar = workDir.getEmptyPathDir().resolve("multirelease.jar");
         createExampleJar(exampleJar);
@@ -153,7 +151,7 @@ public class MultiReleaseJarFileTest
     }
 
     @Test
-    public void testStreamAllFilesForEachEntries() throws IOException
+    public void testStreamAllFilesForEachEntries(WorkDir workDir) throws IOException
     {
         List<String> entries = new ArrayList<>();
 

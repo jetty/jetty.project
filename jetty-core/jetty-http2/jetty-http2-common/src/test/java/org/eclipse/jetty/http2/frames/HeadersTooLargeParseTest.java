@@ -67,7 +67,7 @@ public class HeadersTooLargeParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)

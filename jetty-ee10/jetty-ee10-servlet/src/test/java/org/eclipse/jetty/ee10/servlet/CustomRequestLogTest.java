@@ -36,20 +36,24 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.security.Credential;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@ExtendWith(WorkDirExtension.class)
 public class CustomRequestLogTest
 {
     private final BlockingQueue<String> _logs = new BlockingArrayQueue<>();
-    public WorkDir workDir;
+
     private Server _server;
     private LocalConnector _connector;
     private Path _baseDir;
@@ -64,7 +68,6 @@ public class CustomRequestLogTest
         RequestLog requestLog = new CustomRequestLog(writer, formatString);
         _server.setRequestLog(requestLog);
 
-        _baseDir = workDir.getEmptyPathDir();
         Files.createDirectory(_baseDir.resolve("servlet"));
         Files.createFile(_baseDir.resolve("servlet/info"));
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -104,6 +107,12 @@ public class CustomRequestLogTest
         LifeCycle.stop(_server);
     }
 
+    @BeforeEach
+    public void setup(WorkDir workDir)
+    {
+        _baseDir = workDir.getEmptyPathDir();
+    }
+
     @Test
     public void testLogFilename() throws Exception
     {
@@ -111,7 +120,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /context/servlet/info HTTP/1.0\n\n");
         String log = _logs.poll(5, TimeUnit.SECONDS);
-        String expected = workDir.getPath().resolve("servlet/info").toString();
+        String expected = _baseDir.resolve("servlet/info").toString();
         assertThat(log, is("Filename: " + expected));
     }
 

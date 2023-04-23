@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
@@ -47,20 +48,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * ReloadedSessionMissingClassTest
  */
 //TODO
-@ExtendWith(WorkDirExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
+@ExtendWith(WorkDirExtension.class)
 public class ReloadedSessionMissingClassTest
 {
-    public WorkDir testdir;
-
     @Test
-    public void testSessionReloadWithMissingClass() throws Exception
+    public void testSessionReloadWithMissingClass(WorkDir workDir) throws Exception
     {
+        Path unpackedWarDir = workDir.getEmptyPathDir();
         String contextPath = "/foo";
 
-        File unpackedWarDir = testdir.getEmptyPathDir().toFile();
-
-        File webInfDir = new File(unpackedWarDir, "WEB-INF");
+        File webInfDir = new File(unpackedWarDir.toFile(), "WEB-INF");
         webInfDir.mkdir();
 
         File webXml = new File(webInfDir, "web.xml");
@@ -95,7 +93,7 @@ public class ReloadedSessionMissingClassTest
 
         SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC, cacheFactory, storeFactory);
 
-        WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.getCanonicalPath(), contextPath);
+        WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.toFile().getCanonicalPath(), contextPath);
         webApp.getSessionHandler().getSessionCache().setRemoveUnloadableSessions(true);
         webApp.setClassLoader(loaderWithFoo);
         webApp.addServlet("Bar", "/bar");

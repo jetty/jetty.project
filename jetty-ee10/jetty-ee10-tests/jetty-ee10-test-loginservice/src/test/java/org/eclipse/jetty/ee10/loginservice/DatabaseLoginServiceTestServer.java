@@ -84,8 +84,6 @@ public class DatabaseLoginServiceTestServer
         MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
         MARIA_DB = (MariaDBContainer)MARIA_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG));
         MARIA_DB.start();
-        String containerIpAddress =  MARIA_DB.getContainerIpAddress();
-        int mariadbPort = MARIA_DB.getMappedPort(3306);
         MARIA_DB_URL = MARIA_DB.getJdbcUrl();
         MARIA_DB_FULL_URL = MARIA_DB_URL + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
         MARIA_DB_DRIVER_CLASS = MARIA_DB.getDriverClassName();

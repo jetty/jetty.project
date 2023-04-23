@@ -34,11 +34,13 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class MultiPartFormDataHandlerTest
 {
     private Server server;
@@ -246,8 +249,9 @@ public class MultiPartFormDataHandlerTest
     }
 
     @Test
-    public void testAsyncMultiPartResponse(@TempDir Path tempDir) throws Exception
+    public void testAsyncMultiPartResponse(WorkDir workDir) throws Exception
     {
+        Path tempDir = workDir.getEmptyPathDir();
         start(new Handler.Abstract.NonBlocking()
         {
             @Override

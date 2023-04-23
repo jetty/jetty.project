@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
  * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
  */
-public abstract class BufferingResponseListener extends Listener.Adapter
+public abstract class BufferingResponseListener implements Listener
 {
     private final int maxLength;
     private ByteBuffer buffer;
@@ -63,8 +63,6 @@ public abstract class BufferingResponseListener extends Listener.Adapter
     @Override
     public void onHeaders(Response response)
     {
-        super.onHeaders(response);
-
         Request request = response.getRequest();
         HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH);

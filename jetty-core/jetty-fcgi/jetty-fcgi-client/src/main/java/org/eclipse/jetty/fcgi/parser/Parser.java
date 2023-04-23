@@ -145,13 +145,18 @@ public abstract class Parser
 
     public interface Listener
     {
-        public void onHeader(int request, HttpField field);
+        public default void onHeader(int request, HttpField field)
+        {
+        }
 
         /**
          * @param request the request id
          * @return true to signal to the parser to stop parsing, false to continue parsing
          */
-        public boolean onHeaders(int request);
+        public default boolean onHeaders(int request)
+        {
+            return false;
+        }
 
         /**
          * @param request the request id
@@ -160,40 +165,17 @@ public abstract class Parser
          * @return true to signal to the parser to stop parsing, false to continue parsing
          * @see Parser#parse(java.nio.ByteBuffer)
          */
-        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
-
-        public void onEnd(int request);
-
-        public void onFailure(int request, Throwable failure);
-
-        public static class Adapter implements Listener
+        public default boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
-            @Override
-            public void onHeader(int request, HttpField field)
-            {
-            }
+            return false;
+        }
 
-            @Override
-            public boolean onHeaders(int request)
-            {
-                return false;
-            }
+        public default void onEnd(int request)
+        {
+        }
 
-            @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
-            {
-                return false;
-            }
-
-            @Override
-            public void onEnd(int request)
-            {
-            }
-
-            @Override
-            public void onFailure(int request, Throwable failure)
-            {
-            }
+        public default void onFailure(int request, Throwable failure)
+        {
         }
     }
 

@@ -551,7 +551,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 OutputStream output = socket.getOutputStream();
                 InputStream input = socket.getInputStream();
 
-                ServerParser parser = new ServerParser(bufferPool, new ServerParser.Listener.Adapter()
+                ServerParser parser = new ServerParser(bufferPool, new ServerParser.Listener()
                 {
                     @Override
                     public void onPreface()

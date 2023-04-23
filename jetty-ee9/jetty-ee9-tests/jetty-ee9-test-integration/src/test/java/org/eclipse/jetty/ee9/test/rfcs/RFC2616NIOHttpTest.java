@@ -17,15 +17,23 @@ import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Perform the RFC2616 tests against a server running with the Jetty NIO Connector and listening on standard HTTP.
  */
+@ExtendWith(WorkDirExtension.class)
 public class RFC2616NIOHttpTest extends RFC2616BaseTest
 {
+
+    private static XmlBasedJettyServer xmlBasedJettyServer;
+
     @BeforeAll
-    public static void setupServer() throws Exception
+    public static void setupServer(WorkDir workDir) throws Exception
     {
         XmlBasedJettyServer server = new XmlBasedJettyServer();
         server.setScheme(HttpScheme.HTTP.asString());
@@ -33,12 +41,24 @@ public class RFC2616NIOHttpTest extends RFC2616BaseTest
         server.addXmlConfiguration("RFC2616_Redirects.xml");
         server.addXmlConfiguration("RFC2616_Filters.xml");
         server.addXmlConfiguration("NIOHttp.xml");
-        setUpServer(server, RFC2616NIOHttpTest.class);
+        xmlBasedJettyServer = setUpServer(server, RFC2616NIOHttpsTest.class, workDir.getEmptyPathDir());
     }
 
     @Override
     public HttpSocket getHttpClientSocket()
     {
         return new HttpSocketImpl();
+    }
+
+    @AfterAll
+    public static void tearDownServer() throws Exception
+    {
+        xmlBasedJettyServer.stop();
+    }
+
+    @Override
+    public XmlBasedJettyServer getServer()
+    {
+        return xmlBasedJettyServer;
     }
 }

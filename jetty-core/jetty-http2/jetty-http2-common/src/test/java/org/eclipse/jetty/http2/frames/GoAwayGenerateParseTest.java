@@ -40,7 +40,7 @@ public class GoAwayGenerateParseTest
         GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator(bufferPool));
 
         final List<GoAwayFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onGoAway(GoAwayFrame frame)
@@ -82,7 +82,7 @@ public class GoAwayGenerateParseTest
         GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator(bufferPool));
 
         final List<GoAwayFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onGoAway(GoAwayFrame frame)

@@ -24,14 +24,18 @@ import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith({WorkDirExtension.class})
 public class AbstractJettyHomeTest
 {
     protected HttpClient client;
 
-    public static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 20);
+    public static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 30);
 
     public static String toEnvironment(String module, String environment)
     {
@@ -63,11 +67,11 @@ public class AbstractJettyHomeTest
         client.start();
     }
 
-    public static Path newTestJettyBaseDirectory() throws IOException
+    public WorkDir workDir;
+
+    public Path newTestJettyBaseDirectory() throws IOException
     {
-        Path bases = MavenTestingUtils.getTargetTestingPath("bases");
-        FS.ensureDirExists(bases);
-        return Files.createTempDirectory(bases, "jetty_base_");
+        return workDir.getEmptyPathDir();
     }
 
     @AfterEach

@@ -98,12 +98,10 @@ public class TestAnnotationParser
         }
     }
 
-    public WorkDir testdir;
-
     @Test
-    public void testSampleAnnotation() throws Exception
+    public void testSampleAnnotation(WorkDir workDir) throws Exception
     {
-        Path root = testdir.getEmptyPathDir();
+        Path root = workDir.getEmptyPathDir();
         copyClass(ClassA.class, root);
 
         AnnotationParser parser = new AnnotationParser();
@@ -148,9 +146,9 @@ public class TestAnnotationParser
     }
 
     @Test
-    public void testMultiAnnotation() throws Exception
+    public void testMultiAnnotation(WorkDir workDir) throws Exception
     {
-        Path root = testdir.getEmptyPathDir();
+        Path root = workDir.getEmptyPathDir();
         copyClass(ClassB.class, root);
         AnnotationParser parser = new AnnotationParser();
 
@@ -253,14 +251,15 @@ public class TestAnnotationParser
     }
 
     @Test
-    public void testBasedirExclusion() throws Exception
+    public void testBasedirExclusion(WorkDir workDir) throws Exception
     {
+        Path testdir = workDir.getEmptyPathDir();
         // Build up basedir, which itself has a path segment that violates java package and classnaming.
         // The basedir should have no effect on annotation scanning.
         // Intentionally using a base directory name that starts with a "."
         // This mimics what you see in jenkins, hudson, hadoop, solr, camel, and selenium for their 
         // installed and/or managed webapps
-        Path basedir = testdir.getPathFile(".base/workspace/classes");
+        Path basedir = testdir.resolve(".base/workspace/classes");
         FS.ensureEmpty(basedir);
 
         // Copy in class that is known to have annotations.
@@ -287,8 +286,8 @@ public class TestAnnotationParser
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource testJar = resourceFactory.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar").toPath());
-            Resource testJar2 = resourceFactory.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest_copy.jar").toPath());
+            Resource testJar = resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest.jar"));
+            Resource testJar2 = resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest_copy.jar"));
             AnnotationParser parser = new AnnotationParser();
             DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
             Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);

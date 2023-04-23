@@ -37,11 +37,8 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -65,7 +62,7 @@ public abstract class RFC2616BaseTest
      * STRICT RFC TESTS
      */
     private static final boolean STRICT = false;
-    private static XmlBasedJettyServer server;
+
     private HttpTesting http;
 
     class TestFile
@@ -119,29 +116,22 @@ public abstract class RFC2616BaseTest
         }
     }
 
-    public static void setUpServer(XmlBasedJettyServer testableserver, Class<?> testclazz) throws Exception
+    public static XmlBasedJettyServer setUpServer(XmlBasedJettyServer testableserver, Class<?> testclazz, Path tmpPath) throws Exception
     {
-        Path testWorkDir = MavenTestingUtils.getTargetTestingPath(testclazz.getName());
-        FS.ensureDirExists(testWorkDir);
-
-        System.setProperty("java.io.tmpdir", testWorkDir.toString());
-
-        server = testableserver;
+        XmlBasedJettyServer server = testableserver;
         server.load();
+        server.getServer().setTempDirectory(tmpPath.toFile());
         server.start();
+        return server;
     }
 
     @BeforeEach
     public void setUp() throws Exception
     {
-        http = new HttpTesting(getHttpClientSocket(), server.getServerPort());
+        http = new HttpTesting(getHttpClientSocket(), getServer().getServerPort());
     }
 
-    @AfterAll
-    public static void tearDownServer() throws Exception
-    {
-        server.stop();
-    }
+    public abstract XmlBasedJettyServer getServer();
 
     public abstract HttpSocket getHttpClientSocket() throws Exception;
 
@@ -1095,7 +1085,7 @@ public abstract class RFC2616BaseTest
 
         specId = "10.3 Redirection HTTP/1.0 - basic";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(server.getScheme() + "://myhost:1234/tests/", response.get("Location"), specId);
+        assertEquals(getServer().getScheme() + "://myhost:1234/tests/", response.get("Location"), specId);
     }
 
     /**
@@ -1124,12 +1114,12 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = responses.get(0);
         String specId = "10.3 Redirection HTTP/1.1 - basic (response 1)";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/", response.get("Location"), specId);
+        assertEquals(getServer().getScheme() + "://localhost:" + getServer().getServerPort() + "/tests/", response.get("Location"), specId);
         
         response = responses.get(1);
         specId = "10.3 Redirection HTTP/1.1 - basic (response 2)";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/", response.get("Location"), specId);
+        assertEquals(getServer().getScheme() + "://localhost:" + getServer().getServerPort() + "/tests/", response.get("Location"), specId);
         assertEquals("close", response.get("Connection"), specId);
     }
 
@@ -1153,7 +1143,7 @@ public abstract class RFC2616BaseTest
 
         String specId = "10.3 Redirection HTTP/1.0 w/content";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/R1.txt", response.get("Location"), specId);
+        assertEquals(getServer().getScheme() + "://localhost:" + getServer().getServerPort() + "/tests/R1.txt", response.get("Location"), specId);
     }
 
     /**
@@ -1176,7 +1166,7 @@ public abstract class RFC2616BaseTest
        
         String specId = "10.3 Redirection HTTP/1.1 w/content";
         assertThat(specId + " [status]", response.getStatus(), is(HttpStatus.FOUND_302));
-        assertThat(specId + " [location]", response.get("Location"), is(server.getScheme() + "://localhost:" + server.getServerPort() + "/tests/R2.txt"));
+        assertThat(specId + " [location]", response.get("Location"), is(getServer().getScheme() + "://localhost:" + getServer().getServerPort() + "/tests/R2.txt"));
         assertThat(specId + " [connection]", response.get("Connection"), is("close"));
     }
 

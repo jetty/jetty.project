@@ -41,14 +41,12 @@ public class ModulesTest
 {
     private static final String TEST_SOURCE = "<test>";
 
-    public WorkDir testdir;
-
     @Test
-    public void testLoadAllModules() throws IOException
+    public void testLoadAllModules(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -140,11 +138,11 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolveServerHttp() throws IOException
+    public void testResolveServerHttp(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -203,11 +201,11 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolveNotRequiredModuleNotFound() throws IOException
+    public void testResolveNotRequiredModuleNotFound(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=cannot-find-me"};
 
         // Configuration
@@ -252,11 +250,11 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolveNotRequiredModuleFound() throws IOException
+    public void testResolveNotRequiredModuleFound(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=dive"};
 
         // Configuration
@@ -303,11 +301,11 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolveNotRequiredModuleFoundDynamic() throws IOException
+    public void testResolveNotRequiredModuleFoundDynamic(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=dynamic"};
 
         // Configuration

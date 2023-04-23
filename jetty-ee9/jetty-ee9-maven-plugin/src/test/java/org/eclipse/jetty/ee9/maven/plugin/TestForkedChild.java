@@ -22,6 +22,7 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +32,14 @@ import java.util.Random;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,11 +49,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Test the JettyForkedChild class, which
  * is the main that is executed by jetty:run/start in mode FORKED.
  */
+@ExtendWith(WorkDirExtension.class)
 public class TestForkedChild
 {
     File testDir;
     File baseDir;
-    File tmpDir;
+    Path tmpDir;
     File tokenFile;
     File webappPropsFile;
     int stopPort;
@@ -80,7 +85,7 @@ public class TestForkedChild
 
                 MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
-                webapp.setTempDirectory(tmpDir);
+                webapp.setTempDirectory(tmpDir.toFile());
                 webapp.setBaseResourceAsPath(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[0]));
@@ -95,14 +100,14 @@ public class TestForkedChild
     }
     
     @BeforeEach
-    public void setUp()
+    public void setUp(WorkDir workDir)
     {
+        tmpDir = workDir.getEmptyPathDir();
         baseDir = MavenTestingUtils.getTargetFile("test-classes/root");
         assertTrue(baseDir.exists());
         testDir = MavenTestingUtils.getTargetTestingDir("forkedChild");
         FS.ensureEmpty(testDir);
-        tmpDir = new File(testDir, "tmp");
-        webappPropsFile = new File(testDir, "webapp.props");
+        webappPropsFile = new File(tmpDir.toFile(), "webapp.props");
 
         String stopPortString = System.getProperty("stop.port");
         assertNotNull(stopPortString, "stop.port System property");
@@ -113,7 +118,7 @@ public class TestForkedChild
 
         Random random = new Random();
         token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
-        tokenFile = testDir.toPath().resolve(token + ".txt").toFile();
+        tokenFile = tmpDir.resolve(token + ".txt").toFile();
     }
     
     @AfterEach

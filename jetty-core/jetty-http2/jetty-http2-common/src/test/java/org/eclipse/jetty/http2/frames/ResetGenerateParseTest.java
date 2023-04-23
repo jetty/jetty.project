@@ -37,7 +37,7 @@ public class ResetGenerateParseTest
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator(bufferPool));
 
         final List<ResetFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onReset(ResetFrame frame)
@@ -78,7 +78,7 @@ public class ResetGenerateParseTest
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator(bufferPool));
 
         final List<ResetFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onReset(ResetFrame frame)

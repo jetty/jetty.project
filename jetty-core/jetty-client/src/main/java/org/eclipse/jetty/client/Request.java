@@ -625,13 +625,6 @@ public interface Request
         public default void onFailure(Request request, Throwable failure)
         {
         }
-
-        /**
-         * An empty implementation of {@link Listener}
-         */
-        public static class Adapter implements Listener
-        {
-        }
     }
 
     /**

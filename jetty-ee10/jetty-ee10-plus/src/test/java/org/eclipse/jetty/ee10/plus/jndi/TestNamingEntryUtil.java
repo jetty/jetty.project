@@ -21,6 +21,7 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Isolated("jndi entries")
 public class TestNamingEntryUtil
 {
     public class MyNamingEntry extends NamingEntry

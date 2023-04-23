@@ -304,12 +304,5 @@ public interface Response
         public default void onComplete(Result result)
         {
         }
-
-        /**
-         * An empty implementation of {@link Listener}
-         */
-        class Adapter implements Listener
-        {
-        }
     }
 }

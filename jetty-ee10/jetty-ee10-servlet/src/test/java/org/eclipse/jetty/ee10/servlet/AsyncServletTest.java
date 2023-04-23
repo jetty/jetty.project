@@ -757,7 +757,7 @@ public class AsyncServletTest
             socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             socket.getOutputStream().flush();
             String response = IO.toString(socket.getInputStream());
-            assertTrue(_latch.await(1, TimeUnit.SECONDS));
+            assertTrue(_latch.await(5, TimeUnit.SECONDS));
             return response;
         }
         catch (Exception e)

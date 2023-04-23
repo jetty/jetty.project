@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -133,7 +132,7 @@ public class MainTest
         }
 
         // Test a System Property that comes from JVM
-        List<String> warnings = output.stream().filter((line) -> line.startsWith("WARN")).collect(Collectors.toList());
+        List<String> warnings = output.stream().filter((line) -> line.startsWith("WARN")).toList();
         // warnings.forEach(System.out::println);
         Iterator<String> warningIter = warnings.iterator();
 

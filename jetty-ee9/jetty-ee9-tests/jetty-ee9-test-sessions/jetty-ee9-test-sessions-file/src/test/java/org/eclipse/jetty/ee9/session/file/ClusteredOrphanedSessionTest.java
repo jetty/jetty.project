@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.session.file;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 import org.eclipse.jetty.ee9.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.FileSessionDataStoreFactory;
@@ -34,13 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-    public WorkDir workDir;
     public Path _storeDir;
 
     @BeforeEach
-    public void before() throws Exception
+    public void before(WorkDir workDir) throws Exception
     {
-        _storeDir = Objects.requireNonNull(workDir.getEmptyPathDir());
+        _storeDir = workDir.getEmptyPathDir();
         assertTrue(Files.exists(_storeDir), "Path must exist: " + _storeDir);
         assertTrue(Files.isDirectory(_storeDir), "Path must be a directory: " + _storeDir);
     }

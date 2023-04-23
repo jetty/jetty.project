@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.ee10.session.infinispan;
 
-import java.io.File;
 import java.lang.annotation.ElementType;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
@@ -23,7 +21,6 @@ import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.Cache;
@@ -47,7 +44,7 @@ public class InfinispanTestSupport
     public Cache _cache;
 
     public ConfigurationBuilder _builder;
-    private File _tmpdir;
+    private Path _tmpdir;
     private boolean _useFileStore;
     private boolean _serializeSessionData;
     private String _name;
@@ -76,7 +73,7 @@ public class InfinispanTestSupport
     public InfinispanTestSupport(String cacheName)
     {
         if (cacheName == null)
-            cacheName = DEFAULT_CACHE_NAME + System.currentTimeMillis();
+            cacheName = DEFAULT_CACHE_NAME + System.nanoTime();
 
         _name = cacheName;
         _builder = new ConfigurationBuilder();
@@ -100,6 +97,7 @@ public class InfinispanTestSupport
     public void setup(Path root) throws Exception
     {
         Path indexesDir = root.resolve("indexes");
+        this._tmpdir = root.resolve("tmp");
         FS.ensureDirExists(indexesDir);
 
         SearchMapping mapping = new SearchMapping();
@@ -109,11 +107,13 @@ public class InfinispanTestSupport
         properties.put("hibernate.search.default.indexBase", indexesDir.toString());
         properties.put("hibernate.cache.infinispan.entity.eviction.strategy", "NONE");
 
+        if (_manager.cacheExists(_name))
+        {
+            _manager.administration().removeCache(_name);
+        }
+
         if (_useFileStore)
         {
-            Path tmpDir = Files.createTempDirectory("infinispan");
-            _tmpdir = tmpDir.toFile();
-
             ConfigurationChildBuilder b = _builder
                 .indexing()
                 .addIndexedEntity(SessionData.class)
@@ -123,14 +123,13 @@ public class InfinispanTestSupport
                 .persistence()
                 .addSingleFileStore()
                 .segmented(false)
-                .location(_tmpdir.getAbsolutePath());
+                .location(_tmpdir.toFile().getAbsolutePath());
             if (_serializeSessionData)
             {
                 b = b.memory().storage(StorageType.HEAP)
                     .encoding()
                     .mediaType("application/x-protostream");
             }
-                
             _manager.defineConfiguration(_name, b.build());
         }
         else
@@ -155,13 +154,6 @@ public class InfinispanTestSupport
     {
         _cache.clear();
         _manager.administration().removeCache(_name);
-        if (_useFileStore)
-        {
-            if (_tmpdir != null)
-            {
-                IO.delete(_tmpdir);
-            }
-        }
     }
 
     @SuppressWarnings("unchecked")

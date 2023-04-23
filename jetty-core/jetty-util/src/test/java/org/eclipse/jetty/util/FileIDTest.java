@@ -82,7 +82,7 @@ public class FileIDTest
     @MethodSource("basenameCases")
     public void testGetBasename(String input, String expected) throws IOException
     {
-        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path outputJar = workDir.getPath().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
 
@@ -181,7 +181,7 @@ public class FileIDTest
     @MethodSource("hasNamedPathSegmentCasesTrue")
     public void testHasNamedPathSegmentsTrueZipFs(String input, String dirname) throws IOException
     {
-        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path outputJar = workDir.getPath().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
 
@@ -211,7 +211,7 @@ public class FileIDTest
     @MethodSource("hasNamedPathSegmentFalseZipFsCases")
     public void testHasNamedPathSegmentFalseZipFs(String input, String dirname) throws IOException
     {
-        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path outputJar = workDir.getPath().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
 
@@ -422,7 +422,7 @@ public class FileIDTest
     })
     public void testIsMetaInfVersions(String input) throws IOException
     {
-        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path outputJar = workDir.getPath().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
 
@@ -514,7 +514,7 @@ public class FileIDTest
     })
     public void testNotMetaInfVersions(String input) throws IOException
     {
-        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path outputJar = workDir.getPath().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
 

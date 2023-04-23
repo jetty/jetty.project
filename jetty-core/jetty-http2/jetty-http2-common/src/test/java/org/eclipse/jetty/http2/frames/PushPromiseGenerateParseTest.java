@@ -45,7 +45,7 @@ public class PushPromiseGenerateParseTest
         PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onPushPromise(PushPromiseFrame frame)
@@ -98,7 +98,7 @@ public class PushPromiseGenerateParseTest
         PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onPushPromise(PushPromiseFrame frame)

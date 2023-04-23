@@ -23,11 +23,13 @@ import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestAnnotationDecorator
 {
-    public WorkDir workDir;
 
     public class TestWebDescriptor extends WebDescriptor
     {
@@ -81,17 +83,14 @@ public class TestAnnotationDecorator
     }
 
     @Test
-    public void testAnnotationDecorator() throws Exception
+    public void testAnnotationDecorator(WorkDir workDir) throws Exception
     {
         Path docroot = workDir.getEmptyPathDir();
         Path dummyDescriptor = docroot.resolve("dummy.xml");
         Files.createFile(dummyDescriptor);
         Resource dummyResource = ResourceFactory.root().newResource(dummyDescriptor);
 
-        assertThrows(NullPointerException.class, () ->
-        {
-            new AnnotationDecorator(null);
-        });
+        assertThrows(NullPointerException.class, () -> new AnnotationDecorator(null));
 
         WebAppContext context = new WebAppContext();
         AnnotationDecorator decorator = new AnnotationDecorator(context);

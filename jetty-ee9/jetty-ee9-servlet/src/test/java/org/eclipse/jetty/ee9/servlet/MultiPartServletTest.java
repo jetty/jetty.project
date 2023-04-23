@@ -286,7 +286,7 @@ public class MultiPartServletTest
         String responseContent = null;
         try
         {
-            Response response = listener.get(30, TimeUnit.SECONDS);
+            Response response = listener.get(60, TimeUnit.SECONDS);
             assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
             responseContent = IO.toString(listener.getInputStream());
         }

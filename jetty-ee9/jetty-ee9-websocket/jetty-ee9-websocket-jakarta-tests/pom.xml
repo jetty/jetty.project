@@ -11,6 +11,7 @@
   <name>EE9 :: Websocket :: Jakarta Tests</name>
 
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.jakarta.tests</bundle-symbolic-name>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>

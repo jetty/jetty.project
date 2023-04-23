@@ -26,6 +26,6 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        startServer(workDir, CloseableDoSFilter.class);
+        startServer(workDir.getEmptyPathDir(), CloseableDoSFilter.class);
     }
 }

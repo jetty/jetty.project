@@ -11,6 +11,7 @@
   <name>EE10 :: Jetty Maven Plugin</name>
   <description>Jetty EE10 maven plugins</description>
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>

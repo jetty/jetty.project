@@ -76,7 +76,7 @@ public class ClientGeneratorTest
         }
 
         AtomicInteger params = new AtomicInteger(1);
-        ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
+        ServerParser parser = new ServerParser(new ServerParser.Listener()
         {
             @Override
             public void onHeader(int request, HttpField field)
@@ -164,7 +164,7 @@ public class ClientGeneratorTest
         generator.generateRequestContent(accumulator, id, content, true);
 
         AtomicInteger totalLength = new AtomicInteger();
-        ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
+        ServerParser parser = new ServerParser(new ServerParser.Listener()
         {
             @Override
             public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
