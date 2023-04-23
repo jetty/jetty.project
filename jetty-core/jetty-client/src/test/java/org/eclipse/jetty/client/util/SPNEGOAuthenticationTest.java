@@ -124,13 +124,13 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     private void startSPNEGO(Scenario scenario, Handler handler) throws Exception
     {
         server = new Server();
-        HashLoginService authorizationService = new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
-        SPNEGOLoginService loginService = new SPNEGOLoginService(realm, AuthorizationService.from(authorizationService, ""));
-        loginService.setKeyTabPath(serviceKeyTabPath);
-        loginService.setServiceName(serviceName);
-        loginService.setHostName(serviceHost);
+        HashLoginService hashLoginService = new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
+        SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, AuthorizationService.from(hashLoginService, ""));
+        spnegoLoginService.setKeyTabPath(serviceKeyTabPath);
+        spnegoLoginService.setServiceName(serviceName);
+        spnegoLoginService.setHostName(serviceHost);
         // Start the authorizationService along with the loginService.
-        loginService.addBean(authorizationService);
+        spnegoLoginService.addBean(hashLoginService);
 
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         Constraint constraint = new Constraint.Builder().authorization(Constraint.Authorization.ANY_USER).build();
@@ -138,7 +138,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 
         authenticator = new SPNEGOAuthenticator();
         securityHandler.setAuthenticator(authenticator);
-        securityHandler.setLoginService(loginService);
+        securityHandler.setLoginService(spnegoLoginService);
         securityHandler.setHandler(handler);
 
         SessionHandler sessionHandler = new SessionHandler();
