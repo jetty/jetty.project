@@ -227,7 +227,12 @@ public class ServletApiResponse implements HttpServletResponse
                     }
                 }
             }
-            default -> _response.getState().sendError(sc, msg);
+            default ->
+            {
+                if (isCommitted())
+                    throw new IllegalStateException("Committed");
+                _response.getState().sendError(sc, msg);
+            }
         }
     }
 
