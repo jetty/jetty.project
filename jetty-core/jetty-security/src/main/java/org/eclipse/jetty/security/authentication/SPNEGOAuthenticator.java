@@ -22,8 +22,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.RoleDelegateUserIdentity;
 import org.eclipse.jetty.security.SPNEGOLoginService;
-import org.eclipse.jetty.security.SPNEGOUserIdentity;
 import org.eclipse.jetty.security.SPNEGOUserPrincipal;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.SucceededAuthenticationState;
@@ -99,7 +99,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, Request request, Response response)
     {
-        SPNEGOUserIdentity user = (SPNEGOUserIdentity)_loginService.login(username, password, request::getSession);
+        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService.login(username, password, request::getSession);
         if (user != null && user.isEstablished())
         {
             renewSession(request, response);
@@ -117,7 +117,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
         // We have a token from the client, so run the login.
         if (header != null && spnegoToken != null)
         {
-            SPNEGOUserIdentity identity = (SPNEGOUserIdentity)login(null, spnegoToken, req, res);
+            RoleDelegateUserIdentity identity = (RoleDelegateUserIdentity)login(null, spnegoToken, req, res);
             if (identity.isEstablished())
             {
                 if (!AuthenticationState.Deferred.isDeferred(res))

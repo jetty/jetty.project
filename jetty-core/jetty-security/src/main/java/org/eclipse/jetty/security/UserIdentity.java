@@ -44,35 +44,4 @@ public interface UserIdentity
      * @return True if the user can act in that role.
      */
     boolean isUserInRole(String role);
-
-    interface UnauthenticatedUserIdentity extends UserIdentity
-    {
-    }
-
-    UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
-    {
-        @Override
-        public Subject getSubject()
-        {
-            return null;
-        }
-
-        @Override
-        public Principal getUserPrincipal()
-        {
-            return null;
-        }
-
-        @Override
-        public boolean isUserInRole(String role)
-        {
-            return false;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "UNAUTHENTICATED";
-        }
-    };
 }

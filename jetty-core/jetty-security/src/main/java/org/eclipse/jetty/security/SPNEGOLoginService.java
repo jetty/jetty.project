@@ -55,23 +55,18 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
 
     private final GSSManager _gssManager = GSSManager.getInstance();
     private final String _realm;
-    private final AuthorizationService _authorizationService;
+    private final LoginService _loginService;
     private IdentityService _identityService = new DefaultIdentityService();
     private String _serviceName;
     private Path _keyTabPath;
     private String _hostName;
     private SPNEGOContext _context;
 
-    public SPNEGOLoginService(String realm, LoginService loginService, Object loginCredentials)
-    {
-        this(realm, new AuthorizationServiceFromLoginService(loginService, loginCredentials));
-    }
-
-    public SPNEGOLoginService(String realm, AuthorizationService authorizationService)
+    public SPNEGOLoginService(String realm, LoginService loginService)
     {
         _realm = realm;
-        _authorizationService = authorizationService;
-        addBean(_authorizationService);
+        _loginService = loginService;
+        addBean(_loginService);
     }
 
     /**
@@ -197,8 +192,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
             if (httpSession != null)
                 httpSession.removeAttribute(GSSContextHolder.ATTRIBUTE);
 
-            UserIdentity roles = _authorizationService.getUserIdentity(userName, getSession);
-            return new SPNEGOUserIdentity(subject, principal, roles);
+            return _loginService.getUserIdentity(subject, principal, false);
         }
         else
         {
@@ -209,7 +203,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
             httpSession.setAttribute(GSSContextHolder.ATTRIBUTE, holder);
 
             // Return an unestablished UserIdentity.
-            return new SPNEGOUserIdentity(subject, principal, null);
+            return new RoleDelegateUserIdentity(subject, principal, null);
         }
     }
 
@@ -348,25 +342,6 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         static AuthorizationService from(LoginService loginService, Object credentials)
         {
             return (name, getSession) -> loginService.login(name, credentials, getSession);
-        }
-    }
-    
-    private static class AuthorizationServiceFromLoginService extends ContainerLifeCycle implements AuthorizationService
-    {
-        private final LoginService _loginService;
-        private final Object _credentials;
-
-        private AuthorizationServiceFromLoginService(LoginService loginService, Object credentials)
-        {
-            _loginService = loginService;
-            _credentials = credentials;
-            addBean(_loginService);
-        }
-
-        @Override
-        public UserIdentity getUserIdentity(String name, Function<Boolean, Session> getSession)
-        {
-            return _loginService.login(name, _credentials, getSession);
         }
     }
 }

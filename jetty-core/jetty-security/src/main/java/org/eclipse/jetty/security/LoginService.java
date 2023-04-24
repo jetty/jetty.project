@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.security;
 
+import java.security.Principal;
 import java.util.function.Function;
+import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.Session;
 
@@ -26,7 +28,6 @@ import org.eclipse.jetty.server.Session;
  */
 public interface LoginService
 {
-
     /**
      * @return Get the name of the login service (aka Realm name)
      */
@@ -41,6 +42,26 @@ public interface LoginService
      * @return A UserIdentity if the credentials matched, otherwise null
      */
     UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession);
+
+    /**
+     * Get or create a {@link UserIdentity} that is not authenticated by the {@link LoginService}.
+     * Typically, this method is used when a user is separately authenticated, but the roles
+     * of this service are needed for authorization.
+     *
+     * @param subject The subject
+     * @param userPrincipal the userPrincipal
+     * @param create If true, the {@link #getIdentityService()} may be used to create a new {@link UserIdentity}.
+     * @return A {@link UserIdentity} or null.
+     */
+    default UserIdentity getUserIdentity(Subject subject, Principal userPrincipal, boolean create)
+    {
+        UserIdentity userIdentity = login(userPrincipal.getName(), "", b -> null);
+        if (userIdentity != null)
+            return new RoleDelegateUserIdentity(subject, userPrincipal, userIdentity);
+        if (create && getIdentityService() != null)
+            return getIdentityService().newUserIdentity(subject, userPrincipal, new String[0]);
+        return null;
+    }
 
     /**
      * Validate a user identity.

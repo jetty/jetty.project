@@ -97,19 +97,11 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         subject.getPrivateCredentials().add(credentials);
         subject.setReadOnly();
 
-        IdentityService identityService = getIdentityService();
         if (loginService != null)
-        {
-            UserIdentity userIdentity = loginService.login(openIdCredentials.getUserId(), "", getSession);
-            if (userIdentity == null)
-            {
-                if (isAuthenticateNewUsers())
-                    return identityService.newUserIdentity(subject, userPrincipal, new String[0]);
-                return null;
-            }
-            return new OpenIdUserIdentity(subject, userPrincipal, userIdentity);
-        }
-
+           return loginService.getUserIdentity(
+               subject,
+                userPrincipal,
+                isAuthenticateNewUsers());
         return identityService.newUserIdentity(subject, userPrincipal, new String[0]);
     }
 

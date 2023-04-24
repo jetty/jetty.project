@@ -20,8 +20,6 @@ import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * AbstractLoginService
@@ -31,8 +29,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractLoginService extends ContainerLifeCycle implements LoginService
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractLoginService.class);
-
     protected IdentityService _identityService = new DefaultIdentityService();
     protected String _name;
     protected boolean _fullValidate = false;

@@ -124,7 +124,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     {
         server = new Server();
         HashLoginService hashLoginService = new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
-        SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, hashLoginService, "");
+        SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, hashLoginService);
         spnegoLoginService.setKeyTabPath(serviceKeyTabPath);
         spnegoLoginService.setServiceName(serviceName);
         spnegoLoginService.setHostName(serviceHost);

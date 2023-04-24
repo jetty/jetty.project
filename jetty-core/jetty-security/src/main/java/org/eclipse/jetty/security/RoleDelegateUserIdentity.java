@@ -11,41 +11,44 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.security;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.security.UserIdentity;
-
-public class OpenIdUserIdentity implements UserIdentity
+public class RoleDelegateUserIdentity implements UserIdentity
 {
-    private final Subject subject;
-    private final Principal userPrincipal;
-    private final UserIdentity userIdentity;
+    private final Subject _subject;
+    private final Principal _principal;
+    private final UserIdentity _roleDelegate;
 
-    public OpenIdUserIdentity(Subject subject, Principal userPrincipal, UserIdentity userIdentity)
+    public RoleDelegateUserIdentity(Subject subject, Principal principal, UserIdentity roleDelegate)
     {
-        this.subject = subject;
-        this.userPrincipal = userPrincipal;
-        this.userIdentity = userIdentity;
+        _subject = subject;
+        _principal = principal;
+        _roleDelegate = roleDelegate;
     }
 
     @Override
     public Subject getSubject()
     {
-        return subject;
+        return _subject;
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        return userPrincipal;
+        return _principal;
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
-        return userIdentity != null && userIdentity.isUserInRole(role);
+        return _roleDelegate != null && _roleDelegate.isUserInRole(role);
+    }
+
+    public boolean isEstablished()
+    {
+        return _roleDelegate != null;
     }
 }
