@@ -38,7 +38,7 @@ public class RequestListeners implements Dumpable
 
     public boolean addListener(Request.Listener listener)
     {
-        // Use logical OR to avoid short-circuit.
+        // Use binary OR to avoid short-circuit.
         return addQueuedListener(listener) |
                addBeginListener(listener) |
                addHeadersListener(listener) |
@@ -50,7 +50,7 @@ public class RequestListeners implements Dumpable
 
     public boolean removeListener(Request.Listener listener)
     {
-        // Use logical OR to avoid short-circuit.
+        // Use binary OR to avoid short-circuit.
         return removeQueuedListener(listener) |
                removeBeginListener(listener) |
                removeHeadersListener(listener) |

@@ -361,6 +361,7 @@ public class ResponseListeners
 
     public boolean addListener(Response.Listener listener)
     {
+        // Use binary OR to avoid short-circuit.
         return addBeginListener(listener) |
                addHeaderListener(listener) |
                addHeadersListener(listener) |
@@ -372,6 +373,7 @@ public class ResponseListeners
 
     public boolean addResponseListeners(ResponseListeners listeners)
     {
+        // Use binary OR to avoid short-circuit.
         return addBeginListener(listeners.beginListener) |
                addHeaderListener(listeners.headerListener) |
                addHeadersListener(listeners.headersListener) |
