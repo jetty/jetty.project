@@ -2,7 +2,7 @@
        xsi:schemaLocation="http://maven.apache.org/BUILD-CACHE-CONFIG/1.0.0 https://maven.apache.org/xsd/build-cache-config-1.0.0.xsd">
   <configuration>
     <enabled>true</enabled>
-    <remote enabled="true" saveToRemote="false"> <!-- id="remote-cache" -->
+    <remote enabled="false" saveToRemote="false"> <!-- id="remote-cache" -->
       <url>http://nginx-cache-service.jenkins.svc.cluster.local:80</url>
     </remote>
     <multiModule>
@@ -28,15 +28,15 @@
 <!--    </plugins>-->
   </input>
   <executionControl>
-<!--    <runAlways>-->
-<!--      <goalsLists>-->
-<!--        <goalsList artifactId="maven-invoker-plugin">-->
-<!--          <goals>-->
-<!--            <goal>install</goal>-->
-<!--          </goals>-->
-<!--        </goalsList>-->
-<!--      </goalsLists>-->
-<!--    </runAlways>-->
+    <runAlways>
+      <goalsLists>
+        <goalsList artifactId="maven-install-plugin" groupId="org.apache.maven.plugins">
+          <goals>
+            <goal>install</goal>
+          </goals>
+        </goalsList>
+      </goalsLists>
+    </runAlways>
     <reconcile>
       <plugins>
         <!-- workaround for https://issues.apache.org/jira/browse/MBUILDCACHE-56 -->
