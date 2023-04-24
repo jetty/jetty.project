@@ -67,6 +67,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
@@ -130,7 +131,7 @@ public class ServletApiRequest implements HttpServletRequest
 
     public AuthenticationState getAuthentication()
     {
-        return AuthenticationState.getAuthentication(getServletContextRequest());
+        return AuthenticationState.getAuthenticationState(getServletContextRequest());
     }
 
     private AuthenticationState getUndeferredAuthentication()
@@ -142,7 +143,7 @@ public class ServletApiRequest implements HttpServletRequest
             if (undeferred != null && undeferred != authenticationState)
             {
                 authenticationState = undeferred;
-                AuthenticationState.setAuthentication(getServletContextRequest(), authenticationState);
+                AuthenticationState.setAuthenticationState(getServletContextRequest(), authenticationState);
             }
         }
         return authenticationState;
@@ -462,7 +463,7 @@ public class ServletApiRequest implements HttpServletRequest
                 username, password, getServletContextRequest(), getServletContextRequest().getResponse());
 
             if (succeededAuthentication == null)
-                throw new AuthenticationState.Failed("Authentication failed for username '" + username + "'");
+                throw new QuietException.Exception("Authentication failed for username '" + username + "'");
         }
         catch (Throwable t)
         {

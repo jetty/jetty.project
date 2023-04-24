@@ -1335,7 +1335,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         public void service(ServletRequest request, ServletResponse res) throws ServletException, IOException
         {
             ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-            AuthenticationState authenticationState = AuthenticationState.getAuthentication(servletContextRequest);
+            AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(servletContextRequest);
             UserIdentity userIdentity = (authenticationState instanceof AuthenticationState.Succeeded user) ? user.getUserIdentity() : _identityService.getSystemUserIdentity();
             try (IdentityService.Association ignored = _identityService.associate(userIdentity, _runAsToken))
             {

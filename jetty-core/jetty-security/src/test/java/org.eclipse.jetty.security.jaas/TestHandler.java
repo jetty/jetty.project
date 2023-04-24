@@ -72,7 +72,7 @@ public class TestHandler extends Handler.Abstract
     {
         if (_hasRoles != null)
         {
-            AuthenticationState authenticationState = AuthenticationState.getAuthentication(request);
+            AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(request);
             if (authenticationState instanceof SucceededAuthenticationState userAuthentication)
             {
                 for (String role : _hasRoles)
@@ -88,7 +88,7 @@ public class TestHandler extends Handler.Abstract
     {
         if (_hasntRoles != null)
         {
-            AuthenticationState authenticationState = AuthenticationState.getAuthentication(request);
+            AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(request);
             if (authenticationState instanceof SucceededAuthenticationState userAuthentication)
             {
                 for (String role : _hasntRoles)

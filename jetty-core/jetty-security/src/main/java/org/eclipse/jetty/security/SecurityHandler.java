@@ -472,7 +472,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             if (authenticationState == null)
                 authenticationState = _deferred;
 
-            AuthenticationState.setAuthentication(request, authenticationState);
+            AuthenticationState.setAuthenticationState(request, authenticationState);
             IdentityService.Association association = authenticationState instanceof AuthenticationState.Succeeded user
                 ? _identityService.associate(user.getUserIdentity())
                 : null;

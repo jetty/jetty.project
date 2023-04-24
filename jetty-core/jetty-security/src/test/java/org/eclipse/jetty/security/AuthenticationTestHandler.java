@@ -90,7 +90,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
             }
         }
 
-        AuthenticationState authenticationState = AuthenticationState.getAuthentication(request);
+        AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(request);
         if (authenticationState instanceof AuthenticationState.Succeeded succeeded)
             out.append(succeeded.getUserIdentity().getUserPrincipal()).append(" is OK");
         else if (authenticationState instanceof AuthenticationState.Deferred)

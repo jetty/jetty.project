@@ -52,15 +52,19 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         try
         {
             AuthenticationState authenticationState = _authenticator.validateRequest(request, __deferredResponse, null);
-            if (authenticationState instanceof Succeeded succeeded)
+            if (authenticationState != null)
             {
-                LoginService loginService = _authenticator.getLoginService();
-                IdentityService identityService = loginService.getIdentityService();
+                AuthenticationState.setAuthenticationState(request, authenticationState);
+                if (authenticationState instanceof Succeeded succeeded)
+                {
+                    LoginService loginService = _authenticator.getLoginService();
+                    IdentityService identityService = loginService.getIdentityService();
 
-                if (identityService != null)
-                    _association = identityService.associate(succeeded.getUserIdentity());
+                    if (identityService != null)
+                        _association = identityService.associate(succeeded.getUserIdentity());
 
-                return succeeded;
+                    return succeeded;
+                }
             }
         }
         catch (ServerAuthException e)
@@ -80,8 +84,12 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
             IdentityService identityService = loginService.getIdentityService();
 
             AuthenticationState authenticationState = _authenticator.validateRequest(request, response, callback);
-            if (authenticationState instanceof Succeeded && identityService != null)
-                _association = identityService.associate(((Succeeded)authenticationState).getUserIdentity());
+            if (authenticationState != null)
+            {
+                AuthenticationState.setAuthenticationState(request, authenticationState);
+                if (authenticationState instanceof Succeeded && identityService != null)
+                    _association = identityService.associate(((Succeeded)authenticationState).getUserIdentity());
+            }
             return authenticationState;
         }
         catch (ServerAuthException e)
