@@ -2,9 +2,16 @@
        xsi:schemaLocation="http://maven.apache.org/BUILD-CACHE-CONFIG/1.0.0 https://maven.apache.org/xsd/build-cache-config-1.0.0.xsd">
   <configuration>
     <enabled>true</enabled>
-    <remote enabled="true" saveToRemote="true"> <!-- id="remote-cache" -->
+    <remote enabled="true" saveToRemote="false"> <!-- id="remote-cache" -->
       <url>http://nginx-cache-service.jenkins.svc.cluster.local:80</url>
     </remote>
+    <multiModule>
+      <discovery>
+        <scanProfiles>
+          <scanProfile>ci</scanProfile>
+        </scanProfiles>
+      </discovery>
+    </multiModule>
   </configuration>
   <input>
     <global>
