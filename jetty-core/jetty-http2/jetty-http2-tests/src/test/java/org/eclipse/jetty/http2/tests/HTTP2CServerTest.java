@@ -52,7 +52,6 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -94,9 +93,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         }
     }
 
-    // TODO: this test fails on IO.toString(), for some reason the second request does not close the connection.
     @Test
-    @Disabled
     public void testHTTP11Simple() throws Exception
     {
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
