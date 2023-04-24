@@ -201,16 +201,6 @@ public class ManagedSession implements Session
         }
     }
 
-    public void commit()
-    {
-        _manager.commit(this);
-    }
-
-    public void complete()
-    {
-        _manager.complete(this);
-    }
-
     void release()
     {
         try (AutoLock ignored = _lock.lock())
