@@ -279,6 +279,7 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-closed/"));
 
         assertThat(response, not(containsString("This shouldn't be seen")));
+        assertThat(response, not(containsString("BadHeader")));
     }
 
     @Test
@@ -711,10 +712,12 @@ public class ErrorPageTest
         {
             response.sendError(599);
             // The below should result in no operation, as response should be closed.
+
             try
             {
                 response.setStatus(200); // this status code should not be seen
                 response.getWriter().append("This shouldn't be seen");
+                response.addIntHeader("BadHeader", 1234);
             }
             catch (Throwable ignore)
             {
