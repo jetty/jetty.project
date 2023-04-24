@@ -95,7 +95,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 public abstract class DispatchedMessageSink extends AbstractMessageSink
 {
     private final Executor executor;
-    private CompletableFuture<Void> dispatchComplete;
+    private volatile CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
 
     public DispatchedMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
@@ -155,5 +155,10 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
         }
 
         typeSink.accept(frame, frameCallback);
+    }
+
+    public boolean isDispatched()
+    {
+        return dispatchComplete != null;
     }
 }

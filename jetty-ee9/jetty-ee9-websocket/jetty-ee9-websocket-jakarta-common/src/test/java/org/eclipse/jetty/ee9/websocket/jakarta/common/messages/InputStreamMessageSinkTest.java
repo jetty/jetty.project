@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -73,6 +74,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", byteStream.toString(UTF_8), is("Hello World"));
         assertThat("FinCallback.done", fin1Callback.isDone(), is(true));
+
+        await().atMost(1, TimeUnit.SECONDS).until(() -> !sink.isDispatched());
 
         FutureCallback fin2Callback = new FutureCallback();
         ByteBuffer data2 = BufferUtil.toBuffer("Greetings Earthling", UTF_8);
