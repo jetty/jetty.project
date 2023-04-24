@@ -22,7 +22,7 @@ import org.eclipse.jetty.websocket.core.messages.MessageSink;
 public class JettyWebSocketFrameHandlerMetadata extends Configuration.ConfigurationCustomizer
 {
     private boolean autoDemanding;
-    private MethodHandle connectHandle;
+    private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
     private MethodHandle frameHandle;
@@ -93,15 +93,15 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
         return frameHandle;
     }
 
-    public void setConnectHandle(MethodHandle connectHandle, Object origin)
+    public void setOpenHandle(MethodHandle openHandle, Object origin)
     {
-        assertNotSet(this.connectHandle, "CONNECT Handler", origin);
-        this.connectHandle = connectHandle;
+        assertNotSet(this.openHandle, "OPEN Handler", origin);
+        this.openHandle = openHandle;
     }
 
-    public MethodHandle getConnectHandle()
+    public MethodHandle getOpenHandle()
     {
-        return connectHandle;
+        return openHandle;
     }
 
     public void setPingHandle(MethodHandle ping, Object origin)

@@ -139,7 +139,7 @@ public class WebSocketListenerTest
         Session.Listener clientEndpoint = new Session.Listener.AutoDemanding()
         {
             @Override
-            public void onWebSocketConnect(Session session)
+            public void onWebSocketOpen(Session session)
             {
                 openLatch.countDown();
             }

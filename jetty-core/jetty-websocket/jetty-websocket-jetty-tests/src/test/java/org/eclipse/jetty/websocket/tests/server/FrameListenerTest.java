@@ -135,7 +135,7 @@ public class FrameListenerTest
         public LinkedBlockingQueue<String> frameEvents = new LinkedBlockingQueue<>();
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             this.session = session;
             session.demand();

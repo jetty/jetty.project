@@ -38,8 +38,8 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -297,7 +297,7 @@ public class PermessageDeflateBufferTest
         public CountDownLatch openLatch = new CountDownLatch(1);
         public CountDownLatch closeLatch = new CountDownLatch(1);
 
-        @OnWebSocketConnect
+        @OnWebSocketOpen
         public void onOpen(Session session)
         {
             this.session = session;

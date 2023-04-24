@@ -24,7 +24,7 @@ public class AdapterEchoSocket extends Session.Listener.Abstract
     @Override
     public void onWebSocketText(String message)
     {
-        if (isConnected())
+        if (isOpen())
         {
             System.out.printf("Echoing back message [%s]%n", message);
             // echo the message back

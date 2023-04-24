@@ -17,8 +17,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @WebSocket
@@ -26,8 +26,8 @@ public class AbstractAnnotatedListener
 {
     protected Session _session;
 
-    @OnWebSocketConnect
-    public void onWebSocketConnect(Session session)
+    @OnWebSocketOpen
+    public void onWebSocketOpen(Session session)
     {
         _session = session;
     }

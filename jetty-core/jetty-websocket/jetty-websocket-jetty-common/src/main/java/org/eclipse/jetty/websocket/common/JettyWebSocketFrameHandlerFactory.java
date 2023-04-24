@@ -31,10 +31,10 @@ import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
@@ -164,11 +164,11 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 
         MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
 
-        Method connectMethod = findMethod(endpointClass, "onWebSocketConnect", Session.class);
-        if (connectMethod != null)
+        Method openMethod = findMethod(endpointClass, "onWebSocketOpen", Session.class);
+        if (openMethod != null)
         {
-            MethodHandle connectHandle = toMethodHandle(lookup, connectMethod);
-            metadata.setConnectHandle(connectHandle, connectMethod);
+            MethodHandle connectHandle = toMethodHandle(lookup, openMethod);
+            metadata.setOpenHandle(connectHandle, openMethod);
         }
 
         Method frameMethod = findMethod(endpointClass, "onWebSocketFrame", Frame.class, Callback.class);
@@ -267,14 +267,14 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;
 
-        // OnWebSocketConnect [0..1]
-        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketConnect.class);
+        // OnWebSocketOpen [0..1]
+        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketOpen.class);
         if (onmethod != null)
         {
-            assertSignatureValid(endpointClass, onmethod, OnWebSocketConnect.class);
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketOpen.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION);
-            metadata.setConnectHandle(methodHandle, onmethod);
+            metadata.setOpenHandle(methodHandle, onmethod);
         }
 
         // OnWebSocketClose [0..1]

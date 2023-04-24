@@ -35,29 +35,33 @@ A WebSocket endpoint is the entity that receives WebSocket events.
 
 The WebSocket events are the following:
 
-* The _connect_ event.
+* The _open_ event.
 This event is emitted when the WebSocket communication has been successfully established.
-Applications interested in the connect event receive the WebSocket _session_ so that they can use it to send data to the remote peer.
+Applications interested in the open event receive the WebSocket _session_ so that they can use it to send data to the remote peer.
 * The _close_ event.
 This event is emitted when the WebSocket communication has been closed.
 Applications interested in the close event receive a WebSocket status code and an optional close reason message.
 * The _error_ event.
 This event is emitted when the WebSocket communication encounters a fatal error, such as an I/O error (for example, the network connection has been broken), or a protocol error (for example, the remote peer sends an invalid WebSocket frame).
 Applications interested in the error event receive a `Throwable` that represent the error.
-* The _message_ event.
-The message event is emitted when a WebSocket message is received.
-Only one thread at a time will be delivering a message event to the `onMessage` method; the next message event will not be delivered until the previous call to the `onMessage` method has exited.
-Endpoints will always be notified of message events in the same order they were received over the network.
+* The _frame_ events.
+The frame events are emitted when a WebSocket frame is received, either a control frame such as PING, PONG or CLOSE, or a data frame such as BINARY or TEXT.
+One or more data frames of the same type define a _message_.
+* The _message_ events.
+The message event are emitted when a WebSocket message is received.
 The message event can be of two types:
-** Textual message event.
+** TEXT.
 Applications interested in this type of messages receive a `String` representing the UTF-8 bytes received.
-** Binary message event.
-Applications interested in this type of messages receive a `byte[]` representing the raw bytes received.
+** BINARY.
+Applications interested in this type of messages receive a `ByteBuffer` representing the raw bytes received.
+
+Only one thread at a time will be delivering frame or message events to the corresponding methods; the next frame or message event will not be delivered until the previous call to the corresponding method has exited, and if there is demand for it.
+Endpoints will always be notified of message events in the same order they were received over the network.
 
 [[pg-websocket-endpoints-listener]]
 ===== Listener Endpoints
 
-A WebSocket endpoint may implement the `org.eclipse.jetty.ee9.websocket.api.WebSocketListener` interface to receive WebSocket events:
+A WebSocket endpoint may implement the `org.eclipse.jetty.websocket.api.Session.Listener` interface to receive WebSocket events:
 
 [source,java,indent=0]
 ----
@@ -84,7 +88,7 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 [[pg-websocket-endpoints-annotated]]
 ===== Annotated Endpoints
 
-A WebSocket endpoint may annotate methods with `org.eclipse.jetty.ee9.websocket.api.annotations.*` annotations to receive WebSocket events.
+A WebSocket endpoint may annotate methods with `org.eclipse.jetty.websocket.api.annotations.*` annotations to receive WebSocket events.
 Each annotated method may take an optional `Session` argument as its first parameter:
 
 [source,java,indent=0]
@@ -92,7 +96,7 @@ Each annotated method may take an optional `Session` argument as its first param
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=annotatedEndpoint]
 ----
 <1> Use the `@WebSocket` annotation at the class level to make it a WebSocket endpoint.
-<2> Use the `@OnWebSocketConnect` annotation for the _connect_ event.
+<2> Use the `@OnWebSocketOpen` annotation for the _open_ event.
 As this is the first event notified to the endpoint, you can configure the `Session` object.
 <3> Use the `@OnWebSocketClose` annotation for the _close_ event.
 The method may take an optional `Session` as first parameter.
@@ -103,20 +107,12 @@ The method may take an optional `Session` as first parameter.
 
 [NOTE]
 ====
-For binary messages, you may declare the annotated method with either or these two signatures:
+For binary messages, you may declare the annotated method with this signature:
 
 [source,java]
 ----
 @OnWebSocketMessage
-public void methodName(byte[] bytes, int offset, int length) { ... }
-----
-
-or
-
-[source,java]
-----
-@OnWebSocketMessage
-public void methodName(ByteBuffer buffer) { ... }
+public void methodName(ByteBuffer buffer, Callback callback) { ... }
 ----
 ====
 
@@ -144,8 +140,8 @@ A WebSocket session is the entity that offers an API to send data to the remote 
 [[pg-websocket-session-configure]]
 ===== Configuring the Session
 
-You may configure the WebSocket session behavior using the `org.eclipse.jetty.ee9.websocket.api.Session` APIs.
-You want to do this as soon as you have access to the `Session` object, typically from the xref:pg-websocket-endpoints[_connect_ event] handler:
+You may configure the WebSocket session behavior using the `org.eclipse.jetty.websocket.api.Session` APIs.
+You want to do this as soon as you have access to the `Session` object, typically from the xref:pg-websocket-endpoints[_open_ event] handler:
 
 [source,java,indent=0]
 ----
@@ -186,7 +182,7 @@ To send data to the remote peer, you can use the non-blocking APIs offered by `S
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sendNonBlocking]
 ----
-<1> Non-blocking APIs require a `WriteCallback` parameter.
+<1> Non-blocking APIs require a `Callback` parameter.
 <2> Note how the second send must be performed from inside the callback.
 <3> Sequential sends may throw `WritePendingException`.
 
@@ -231,26 +227,26 @@ Fortunately, Jetty provides the `IteratingCallback` utility class (described in 
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=streamSendNonBlocking]
 ----
-<1> Implementing `WriteCallback` allows to pass `this` to `sendPartialBytes(...)`.
-<2> The `process()` method is called iteratively when each `sendPartialBytes(...)` is completed.
-<3> Send the message chunks.
+<1> Implementing `Callback` allows to pass `this` to `sendPartialBinary(...)`.
+<2> The `process()` method is called iteratively when each `sendPartialBinary(...)` is completed.
+<3> Sends the message chunks.
 
 [[pg-websocket-session-ping]]
 ===== Sending Ping/Pong
 
-The WebSocket protocol defines two special frame, named `Ping` and `Pong` that may be interesting to applications for these use cases:
+The WebSocket protocol defines two special frame, named `PING` and `PONG` that may be interesting to applications for these use cases:
 
 * Calculate the round-trip time with the remote peer.
 * Keep the connection from being closed due to idle timeout -- a heartbeat-like mechanism.
 
-To handle `Ping`/`Pong` events, you may implement interface `org.eclipse.jetty.ee9.websocket.api.WebSocketPingPongListener`.
+To handle `PING`/`PONG` events, you may implement methods `Session.Listener.onWebSocketPing(ByteBuffer)` and/or `Session.Listener.onWebSocketPong(ByteBuffer)`.
 
 [NOTE]
 ====
-`Ping`/`Pong` events are not supported when using annotations.
+`PING`/`PONG` events are also supported when using annotations via the `OnWebSocketFrame` annotation.
 ====
 
-`Ping` frames may contain opaque application bytes, and the WebSocket implementation replies to them with a `Pong` frame containing the same bytes:
+`PING` frames may contain opaque application bytes, and the WebSocket implementation replies to them with a `PONG` frame containing the same bytes:
 
 [source,java,indent=0]
 ----

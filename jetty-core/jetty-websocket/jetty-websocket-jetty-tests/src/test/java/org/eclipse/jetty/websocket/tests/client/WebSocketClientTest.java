@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.ConnectMessageEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.ParamsEndpoint;
-import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
+import org.eclipse.jetty.websocket.tests.util.FutureCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -267,7 +267,7 @@ public class WebSocketClientTest
             Collection<Session> sessions = client.getOpenSessions();
             assertThat("client.sessions.size", sessions.size(), is(1));
 
-            FutureWriteCallback callback = new FutureWriteCallback();
+            FutureCallback callback = new FutureCallback();
 
             cliSock.getSession().sendText("Hello World!", callback);
             callback.get(5, TimeUnit.SECONDS);
@@ -298,7 +298,7 @@ public class WebSocketClientTest
 
             // wait for message from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Message", received, containsString("Greeting from onConnect"));
+            assertThat("Message", received, containsString("Greeting from onOpen"));
         }
     }
 

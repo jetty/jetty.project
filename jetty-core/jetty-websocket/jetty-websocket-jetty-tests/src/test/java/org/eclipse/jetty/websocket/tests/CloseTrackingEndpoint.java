@@ -90,10 +90,10 @@ public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemandin
     }
 
     @Override
-    public void onWebSocketConnect(Session session)
+    public void onWebSocketOpen(Session session)
     {
-        super.onWebSocketConnect(session);
-        LOG.debug("onWebSocketConnect({})", session);
+        super.onWebSocketOpen(session);
+        LOG.debug("onWebSocketOpen({})", session);
         connectLatch.countDown();
     }
 

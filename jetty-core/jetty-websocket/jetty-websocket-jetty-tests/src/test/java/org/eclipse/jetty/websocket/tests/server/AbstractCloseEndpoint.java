@@ -41,10 +41,10 @@ public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAut
     }
 
     @Override
-    public void onWebSocketConnect(Session sess)
+    public void onWebSocketOpen(Session sess)
     {
-        super.onWebSocketConnect(sess);
-        log.debug("onWebSocketConnect({})", sess);
+        super.onWebSocketOpen(sess);
+        log.debug("onWebSocketOpen({})", sess);
         connectLatch.countDown();
     }
 

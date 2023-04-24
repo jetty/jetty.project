@@ -22,10 +22,10 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.util.TextUtils;
@@ -57,9 +57,9 @@ public class EndPoints
         }
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
-            events.add("onWebSocketConnect(%s)", session);
+            events.add("onWebSocketOpen(%s)", session);
         }
 
         @Override
@@ -86,9 +86,9 @@ public class EndPoints
         }
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
-            events.add("onWebSocketConnect(%s)", session);
+            events.add("onWebSocketOpen(%s)", session);
         }
 
         @Override
@@ -116,9 +116,9 @@ public class EndPoints
         }
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
-            events.add("onWebSocketConnect(%s)", session);
+            events.add("onWebSocketOpen(%s)", session);
         }
 
         @Override
@@ -152,9 +152,9 @@ public class EndPoints
         }
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
-            events.add("onWebSocketConnect(%s)", session);
+            events.add("onWebSocketOpen(%s)", session);
         }
 
         @Override
@@ -212,10 +212,10 @@ public class EndPoints
             events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
         }
 
-        @OnWebSocketConnect
-        public void onConnect(Session sess)
+        @OnWebSocketOpen
+        public void onOpen(Session sess)
         {
-            events.add("onConnect(%s)", sess);
+            events.add("onOpen(%s)", sess);
         }
     }
 
@@ -230,10 +230,10 @@ public class EndPoints
             events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
         }
 
-        @OnWebSocketConnect
-        public void onConnect(Session sess)
+        @OnWebSocketOpen
+        public void onOpen(Session sess)
         {
-            events.add("onConnect(%s)", sess);
+            events.add("onOpen(%s)", sess);
         }
 
         @OnWebSocketError
@@ -260,10 +260,10 @@ public class EndPoints
             events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
         }
 
-        @OnWebSocketConnect
-        public void onConnect(Session sess)
+        @OnWebSocketOpen
+        public void onOpen(Session sess)
         {
-            events.add("onConnect(%s)", sess);
+            events.add("onOpen(%s)", sess);
         }
 
         @OnWebSocketMessage
@@ -391,8 +391,8 @@ public class EndPoints
     {
         private Session session;
 
-        @OnWebSocketConnect
-        public void onConnect(Session session)
+        @OnWebSocketOpen
+        public void onOpen(Session session)
         {
             this.session = session;
         }
@@ -456,8 +456,8 @@ public class EndPoints
      */
     public static class NotASocket
     {
-        @OnWebSocketConnect
-        public void onConnect(Session session)
+        @OnWebSocketOpen
+        public void onOpen(Session session)
         {
             /* do nothing */
         }

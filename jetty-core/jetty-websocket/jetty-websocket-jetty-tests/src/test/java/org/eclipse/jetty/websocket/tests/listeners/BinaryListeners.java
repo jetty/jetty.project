@@ -42,9 +42,9 @@ public class BinaryListeners
     public static class OffsetByteArrayWholeListener extends Session.Listener.Abstract
     {
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
-            super.onWebSocketConnect(session);
+            super.onWebSocketOpen(session);
             session.demand();
         }
 
@@ -62,9 +62,9 @@ public class BinaryListeners
     public static class OffsetByteBufferPartialListener extends Session.Listener.Abstract
     {
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
-            super.onWebSocketConnect(session);
+            super.onWebSocketOpen(session);
             session.demand();
         }
 

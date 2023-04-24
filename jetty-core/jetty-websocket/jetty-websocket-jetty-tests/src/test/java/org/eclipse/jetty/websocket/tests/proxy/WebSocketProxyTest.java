@@ -359,9 +359,9 @@ public class WebSocketProxyTest
     public static class OnOpenThrowingSocket extends EventSocket
     {
         @Override
-        public void onConnect(Session session)
+        public void onOpen(Session session)
         {
-            super.onConnect(session);
+            super.onOpen(session);
             throw new IllegalStateException("simulated onOpen error");
         }
     }

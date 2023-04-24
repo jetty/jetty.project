@@ -213,11 +213,11 @@ public class ConnectFutureTest
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
         {
             @Override
-            public void onWebSocketConnect(Session session)
+            public void onWebSocketOpen(Session session)
             {
                 try
                 {
-                    super.onWebSocketConnect(session);
+                    super.onWebSocketOpen(session);
                     exitOnConnect.await();
                 }
                 catch (InterruptedException e)
@@ -351,11 +351,11 @@ public class ConnectFutureTest
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
         {
             @Override
-            public void onWebSocketConnect(Session session)
+            public void onWebSocketOpen(Session session)
             {
                 try
                 {
-                    super.onWebSocketConnect(session);
+                    super.onWebSocketOpen(session);
                     exitOnConnect.await();
                 }
                 catch (InterruptedException e)

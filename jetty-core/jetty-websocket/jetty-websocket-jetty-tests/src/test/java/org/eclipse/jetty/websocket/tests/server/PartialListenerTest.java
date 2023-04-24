@@ -223,7 +223,7 @@ public class PartialListenerTest
         public LinkedBlockingQueue<String> partialEvents = new LinkedBlockingQueue<>();
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             this.session = session;
             session.demand();

@@ -23,9 +23,9 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 public class FastCloseEndpoint extends AbstractCloseEndpoint
 {
     @Override
-    public void onWebSocketConnect(Session sess)
+    public void onWebSocketOpen(Session sess)
     {
-        log.debug("onWebSocketConnect({})", sess);
+        log.debug("onWebSocketOpen({})", sess);
         sess.close(StatusCode.NORMAL, "FastCloseServer", Callback.NOOP);
     }
 }

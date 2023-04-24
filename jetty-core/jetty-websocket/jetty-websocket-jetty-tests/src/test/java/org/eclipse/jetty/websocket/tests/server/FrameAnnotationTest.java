@@ -28,9 +28,9 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -140,8 +140,8 @@ public class FrameAnnotationTest
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public LinkedBlockingQueue<String> frameEvents = new LinkedBlockingQueue<>();
 
-        @OnWebSocketConnect
-        public void onWebSocketConnect(Session session)
+        @OnWebSocketOpen
+        public void onWebSocketOpen(Session session)
         {
             this.session = session;
         }

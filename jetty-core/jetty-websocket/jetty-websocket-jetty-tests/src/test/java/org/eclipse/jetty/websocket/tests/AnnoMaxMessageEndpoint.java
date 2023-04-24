@@ -17,15 +17,15 @@ import java.io.IOException;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @WebSocket
 public class AnnoMaxMessageEndpoint
 {
-    @OnWebSocketConnect
-    public void onConnect(Session session)
+    @OnWebSocketOpen
+    public void onOpen(Session session)
     {
         session.setMaxTextMessageSize(100 * 1024);
     }

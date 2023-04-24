@@ -41,9 +41,9 @@ public class ExplicitDemandTest
     public static class SuspendSocket extends EventSocket
     {
         @Override
-        public void onConnect(Session session)
+        public void onOpen(Session session)
         {
-            super.onConnect(session);
+            super.onOpen(session);
             session.demand();
         }
 

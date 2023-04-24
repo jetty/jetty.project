@@ -14,8 +14,8 @@
 package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
@@ -24,8 +24,8 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket
 public class AnnotatedEchoSocket
 {
-    @OnWebSocketConnect
-    public void onConnect(Session session)
+    @OnWebSocketOpen
+    public void onOpen(Session session)
     {
         session.setMaxTextMessageSize(64 * 1024);
     }

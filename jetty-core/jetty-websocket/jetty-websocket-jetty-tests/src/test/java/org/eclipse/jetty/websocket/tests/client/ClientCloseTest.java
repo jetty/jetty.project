@@ -420,7 +420,7 @@ public class ClientCloseTest
         CountDownLatch block = new CountDownLatch(1);
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             this.session = session;
         }

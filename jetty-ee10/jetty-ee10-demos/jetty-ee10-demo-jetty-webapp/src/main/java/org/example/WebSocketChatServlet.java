@@ -28,8 +28,8 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("serial")
@@ -71,7 +71,7 @@ public class WebSocketChatServlet extends JettyWebSocketServlet implements Jetty
     {
         volatile Session session;
 
-        @OnWebSocketConnect
+        @OnWebSocketOpen
         public void onOpen(Session session)
         {
             this.session = session;

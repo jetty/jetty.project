@@ -52,7 +52,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final WebSocketContainer container;
     private final Object endpointInstance;
     private final JettyWebSocketFrameHandlerMetadata metadata;
-    private MethodHandle connectHandle;
+    private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
     private MethodHandle textHandle;
@@ -76,7 +76,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.endpointInstance = endpointInstance;
         this.metadata = metadata;
 
-        this.connectHandle = InvokerUtils.bindTo(metadata.getConnectHandle(), endpointInstance);
+        this.openHandle = InvokerUtils.bindTo(metadata.getOpenHandle(), endpointInstance);
         this.closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
         this.errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
         this.textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
@@ -124,7 +124,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 throw new IllegalStateException("Session is not open");
 
             frameHandle = InvokerUtils.bindTo(frameHandle, session);
-            connectHandle = InvokerUtils.bindTo(connectHandle, session);
+            openHandle = InvokerUtils.bindTo(openHandle, session);
             closeHandle = InvokerUtils.bindTo(closeHandle, session);
             errorHandle = InvokerUtils.bindTo(errorHandle, session);
             textHandle = InvokerUtils.bindTo(textHandle, session);
@@ -138,8 +138,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (binaryHandle != null)
                 binarySink = createMessageSink(binarySinkClass, session, binaryHandle, metadata.isAutoDemanding());
 
-            if (connectHandle != null)
-                connectHandle.invoke();
+            if (openHandle != null)
+                openHandle.invoke();
 
             if (session.isOpen())
                 container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));

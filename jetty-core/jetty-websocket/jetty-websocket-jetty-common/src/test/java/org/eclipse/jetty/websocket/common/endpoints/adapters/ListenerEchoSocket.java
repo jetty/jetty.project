@@ -39,7 +39,7 @@ public class ListenerEchoSocket implements Session.Listener
     }
 
     @Override
-    public void onWebSocketConnect(Session session)
+    public void onWebSocketOpen(Session session)
     {
         this.outbound = session;
     }

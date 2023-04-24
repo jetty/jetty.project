@@ -164,7 +164,7 @@ public class ServerCloseTest
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
             serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SERVER_ERROR), containsString("Intentional FastFail"));
 
-            // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketConnect")
+            // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketOpen")
             assertThat("socket.onErrors", serverEndpoint.errors.size(), greaterThanOrEqualTo(1));
             Throwable cause = serverEndpoint.errors.poll(5, SECONDS);
             assertThat("Error type", cause, instanceOf(RuntimeException.class));

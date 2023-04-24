@@ -20,7 +20,15 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
- * Session represents an active link of communications with a Remote WebSocket Endpoint.
+ * <p>{@link Session} represents an active link of
+ * communication with a remote WebSocket endpoint.</p>
+ * <p>{@link Session} APIs can be used to configure
+ * the various parameters that control the behavior
+ * of the WebSocket communication, such as
+ * {@link #setMaxTextMessageSize(long)}, and to send
+ * WebSocket frames or messages to the other peer.</p>
+ * <p>The passive link of communication that receives
+ * WebSocket events is {@link Listener}.</p>
  */
 public interface Session extends Configurable, Closeable
 {
@@ -170,16 +178,23 @@ public interface Session extends Configurable, Closeable
      */
     boolean isSecure();
 
+    /**
+     * <p>The passive link of communication with a remote WebSocket endpoint.</p>
+     * <p>Applications provide WebSocket endpoints that implement this interface
+     * to receive WebSocket events from the remote peer, and can use
+     * {@link Session} for configuration and to send WebSocket frames or messages
+     * to the other peer.</p>
+     */
     interface Listener
     {
         /**
-         * <p>A WebSocket {@link Session} has connected successfully and is ready to be used.</p>
+         * <p>A WebSocket {@link Session} has opened successfully and is ready to be used.</p>
          * <p>Applications can store the given {@link Session} as a field so it can be used
          * to send messages back to the other peer.</p>
          *
          * @param session the WebSocket session
          */
-        default void onWebSocketConnect(Session session)
+        default void onWebSocketOpen(Session session)
         {
         }
 
@@ -300,7 +315,7 @@ public interface Session extends Configurable, Closeable
             private volatile Session session;
 
             @Override
-            public void onWebSocketConnect(Session session)
+            public void onWebSocketOpen(Session session)
             {
                 this.session = session;
             }
@@ -310,7 +325,7 @@ public interface Session extends Configurable, Closeable
                 return session;
             }
 
-            public boolean isConnected()
+            public boolean isOpen()
             {
                 Session session = this.session;
                 return session != null && session.isOpen();

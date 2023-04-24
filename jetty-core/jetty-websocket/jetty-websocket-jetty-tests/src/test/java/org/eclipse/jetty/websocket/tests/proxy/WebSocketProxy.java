@@ -83,10 +83,10 @@ public class WebSocketProxy
         }
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketConnect({})", getClass().getSimpleName(), session);
+                LOG.debug("{} onWebSocketOpen({})", getClass().getSimpleName(), session);
 
             try
             {
@@ -190,10 +190,10 @@ public class WebSocketProxy
         }
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketConnect({})", getClass().getSimpleName(), session);
+                LOG.debug("{} onWebSocketOpen({})", getClass().getSimpleName(), session);
 
             this.session = session;
             session.demand();

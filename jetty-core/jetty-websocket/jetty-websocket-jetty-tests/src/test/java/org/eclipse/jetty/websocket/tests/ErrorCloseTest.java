@@ -96,9 +96,9 @@ public class ErrorCloseTest
         public List<String> methodsToThrow = new ArrayList<>();
 
         @Override
-        public void onConnect(Session session)
+        public void onOpen(Session session)
         {
-            super.onConnect(session);
+            super.onOpen(session);
             if (methodsToThrow.contains("onOpen"))
                 throw new RuntimeException("throwing from onOpen");
         }

@@ -30,9 +30,9 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
@@ -127,7 +127,7 @@ public class JettyWebSocketCdiTest
 
         private Session session;
 
-        @OnWebSocketConnect
+        @OnWebSocketOpen
         public void onOpen(Session session)
         {
             logger.info("onOpen() session:" + session);

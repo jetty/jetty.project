@@ -33,7 +33,7 @@ public @interface WebSocket
 {
     /**
      * <p>Returns whether demand for WebSocket frames is automatically performed
-     * upon successful return from methods annotated with {@link OnWebSocketConnect},
+     * upon successful return from methods annotated with {@link OnWebSocketOpen},
      * {@link OnWebSocketFrame} and {@link OnWebSocketMessage}.</p>
      * <p>If the demand is not automatic, then {@link Session#demand()} must be
      * explicitly invoked to receive more WebSocket frames (both control and

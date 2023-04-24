@@ -37,8 +37,8 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Configurable;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -85,7 +85,7 @@ public class JettyClientClassLoaderTest
     {
         LinkedBlockingQueue<String> textMessages = new LinkedBlockingQueue<>();
 
-        @OnWebSocketConnect
+        @OnWebSocketOpen
         public void onOpen(Session session) throws Exception
         {
             session.sendText("ContextClassLoader: " + Thread.currentThread().getContextClassLoader(), Callback.NOOP);

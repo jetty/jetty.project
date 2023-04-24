@@ -135,7 +135,7 @@ public class BadNetworkTest
         private Session session;
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             this.session = session;
         }

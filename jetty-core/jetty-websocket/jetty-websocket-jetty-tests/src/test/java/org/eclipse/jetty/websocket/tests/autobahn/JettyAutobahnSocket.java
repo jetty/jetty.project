@@ -22,9 +22,9 @@ import org.eclipse.jetty.websocket.tests.EchoSocket;
 public class JettyAutobahnSocket extends EchoSocket
 {
     @Override
-    public void onConnect(Session session)
+    public void onOpen(Session session)
     {
-        super.onConnect(session);
+        super.onOpen(session);
         session.setMaxTextMessageSize(Long.MAX_VALUE);
         session.setMaxBinaryMessageSize(Long.MAX_VALUE);
         session.setMaxFrameSize(WebSocketConstants.DEFAULT_MAX_FRAME_SIZE * 2);

@@ -55,9 +55,9 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
     }
 
     @Override
-    public void onWebSocketConnect(Session sess)
+    public void onWebSocketOpen(Session sess)
     {
-        log.debug("onWebSocketConnect({})", sess);
+        log.debug("onWebSocketOpen({})", sess);
         this.session = sess;
     }
 }

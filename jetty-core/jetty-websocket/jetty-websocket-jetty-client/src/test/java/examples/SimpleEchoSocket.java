@@ -20,8 +20,8 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
@@ -49,10 +49,10 @@ public class SimpleEchoSocket
         this.closeLatch.countDown(); // trigger latch
     }
 
-    @OnWebSocketConnect
-    public void onConnect(Session session)
+    @OnWebSocketOpen
+    public void onOpen(Session session)
     {
-        System.out.printf("Got connect: %s%n", session);
+        System.out.printf("Open: %s%n", session);
         session.setMaxTextMessageSize(64 * 1024);
         try
         {

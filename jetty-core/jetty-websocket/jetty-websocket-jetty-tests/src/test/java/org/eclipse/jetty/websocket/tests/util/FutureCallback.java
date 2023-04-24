@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.tests.util;
 
 import java.util.concurrent.Future;
 
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +22,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Allows events to a {@link Callback} to drive a {@link Future} for the user.
  */
-public class FutureWriteCallback extends FutureCallback implements Callback
+public class FutureCallback extends org.eclipse.jetty.util.FutureCallback implements Callback
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FutureWriteCallback.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FutureCallback.class);
 
     @Override
     public void fail(Throwable cause)

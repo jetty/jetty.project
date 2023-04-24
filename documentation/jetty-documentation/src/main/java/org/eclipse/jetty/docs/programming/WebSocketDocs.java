@@ -25,9 +25,9 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
@@ -40,9 +40,9 @@ public class WebSocketDocs
         private Session session;
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
-            // The WebSocket connection is established.
+            // The WebSocket endpoint has been opened.
 
             // Store the session to be able to send data to the remote peer.
             this.session = session;
@@ -57,7 +57,7 @@ public class WebSocketDocs
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            // The WebSocket connection is closed.
+            // The WebSocket endpoint has been closed.
 
             // You may dispose resources.
             disposeResources();
@@ -66,7 +66,7 @@ public class WebSocketDocs
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            // The WebSocket connection failed.
+            // The WebSocket endpoint failed.
 
             // You may log the error.
             cause.printStackTrace();
@@ -134,10 +134,10 @@ public class WebSocketDocs
     {
         private Session session;
 
-        @OnWebSocketConnect // <2>
-        public void onConnect(Session session)
+        @OnWebSocketOpen // <2>
+        public void onOpen(Session session)
         {
-            // The WebSocket connection is established.
+            // The WebSocket endpoint has been opened.
 
             // Store the session to be able to send data to the remote peer.
             this.session = session;
@@ -152,7 +152,7 @@ public class WebSocketDocs
         @OnWebSocketClose // <3>
         public void onClose(int statusCode, String reason)
         {
-            // The WebSocket connection is closed.
+            // The WebSocket endpoint has been closed.
 
             // You may dispose resources.
             disposeResources();
@@ -161,7 +161,7 @@ public class WebSocketDocs
         @OnWebSocketError // <4>
         public void onError(Throwable cause)
         {
-            // The WebSocket connection failed.
+            // The WebSocket endpoint failed.
 
             // You may log the error.
             cause.printStackTrace();
@@ -223,7 +223,7 @@ public class WebSocketDocs
     public class ConfigureEndpoint implements Session.Listener
     {
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             // Configure the max length of incoming messages.
             session.setMaxTextMessageSize(16 * 1024);
@@ -350,7 +350,7 @@ public class WebSocketDocs
     public class RoundTripListenerEndpoint implements Session.Listener // <1>
     {
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             // Send to the remote peer the local nanoTime.
             ByteBuffer buffer = ByteBuffer.allocate(8).putLong(NanoTime.now()).flip();

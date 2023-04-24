@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
+import org.eclipse.jetty.websocket.tests.util.FutureCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -158,7 +158,7 @@ public class MaxOutgoingFramesTest
         }
 
         // Sending any more frames will result in WritePendingException.
-        FutureWriteCallback callback = new FutureWriteCallback();
+        FutureCallback callback = new FutureCallback();
         socket.session.sendText("fail", callback);
         ExecutionException executionException = assertThrows(ExecutionException.class, () -> callback.get(5, TimeUnit.SECONDS));
         assertThat(executionException.getCause(), instanceOf(WritePendingException.class));
