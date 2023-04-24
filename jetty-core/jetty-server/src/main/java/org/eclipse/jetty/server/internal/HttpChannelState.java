@@ -564,28 +564,14 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignored = _lock.lock())
             {
                 stream = _stream;
-
-                if (failure == null)
-                {
-                    _handling = null;
-                    _handled = true;
-                    failure = ExceptionUtil.combine(_failure, failure);
-                    completeStream = _callbackCompleted && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
-                }
+                _handling = null;
+                _handled = true;
+                completeStream = _callbackCompleted && _writeState == WriteState.LAST_WRITE_COMPLETED;
             }
 
-            if (failure != null)
-            {
+            if (failure != null && !completeStream)
                 request._callback.failed(failure);
 
-                try (AutoLock ignored = _lock.lock())
-                {
-                    _handling = null;
-                    _handled = true;
-                    failure = ExceptionUtil.combine(_failure, failure);
-                    completeStream = _callbackCompleted && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
-                }
-            }
             if (completeStream)
                 completeStream(stream, failure);
         }
@@ -1182,6 +1168,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             _status = 0;
             _trailers = null;
+            _contentBytesWritten = 0;
             _request.getHttpChannel().resetResponse();
         }
 
@@ -1336,8 +1323,9 @@ public class HttpChannelState implements HttpChannel, Components
                 if (writeErrorResponse)
                 {
                     // Cannot log or recycle just yet, since we need to generate the error response.
-                    _request._response._status = HttpStatus.INTERNAL_SERVER_ERROR_500;
                     httpChannelState._responseHeaders.reset();
+                    _request._response.reset();
+                    _request._response._status = HttpStatus.INTERNAL_SERVER_ERROR_500;
                     httpChannelState._writeState = WriteState.NOT_LAST;
                 }
             }

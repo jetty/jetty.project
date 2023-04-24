@@ -970,9 +970,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            failedCallback(release(), x);
-            if (_shutdownOut)
-                getEndPoint().shutdownOutput();
+            Callback callback = Callback.from(release(), () ->
+            {
+                if (_shutdownOut)
+                    getEndPoint().shutdownOutput();
+            });
+
+            failedCallback(callback, x);
         }
 
         @Override
