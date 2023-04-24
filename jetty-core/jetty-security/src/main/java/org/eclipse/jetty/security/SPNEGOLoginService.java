@@ -26,7 +26,6 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 
-import org.eclipse.jetty.security.authentication.AuthorizationService;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.security.SecurityUtils;
@@ -63,10 +62,16 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     private String _hostName;
     private SPNEGOContext _context;
 
+    public SPNEGOLoginService(String realm, LoginService loginService, Object loginCredentials)
+    {
+        this(realm, new AuthorizationServiceFromLoginService(loginService, loginCredentials));
+    }
+
     public SPNEGOLoginService(String realm, AuthorizationService authorizationService)
     {
         _realm = realm;
         _authorizationService = authorizationService;
+        addBean(_authorizationService);
     }
 
     /**
@@ -318,6 +323,50 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         private GSSContextHolder(GSSContext gssContext)
         {
             this.gssContext = gssContext;
+        }
+    }
+
+    /**
+     * <p>A service to query for user roles.</p>
+     */
+    @FunctionalInterface
+    public interface AuthorizationService
+    {
+        /**
+         * @param name the user name
+         * @param getSession Function to get or create a {@link Session}
+         * @return a {@link UserIdentity} to query for roles of the given user
+         */
+        UserIdentity getUserIdentity(String name, Function<Boolean, Session> getSession);
+
+        /**
+         * <p>Wraps a {@link LoginService} as an AuthorizationService</p>
+         *
+         * @param loginService the {@link LoginService} to wrap
+         * @return an AuthorizationService that delegates the query for roles to the given {@link LoginService}
+         */
+        static AuthorizationService from(LoginService loginService, Object credentials)
+        {
+            return (name, getSession) -> loginService.login(name, credentials, getSession);
+        }
+    }
+    
+    private static class AuthorizationServiceFromLoginService extends ContainerLifeCycle implements AuthorizationService
+    {
+        private final LoginService _loginService;
+        private final Object _credentials;
+
+        private AuthorizationServiceFromLoginService(LoginService loginService, Object credentials)
+        {
+            _loginService = loginService;
+            _credentials = credentials;
+            addBean(_loginService);
+        }
+
+        @Override
+        public UserIdentity getUserIdentity(String name, Function<Boolean, Session> getSession)
+        {
+            return _loginService.login(name, _credentials, getSession);
         }
     }
 }

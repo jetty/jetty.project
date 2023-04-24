@@ -58,7 +58,6 @@ public class SPNEGOAuthenticatorTest
         securityHandler.setHandler(new AuthenticationTestHandler());
 
         LoginService loginService = new AuthenticationTestHandler.CustomLoginService(new AuthenticationTestHandler.TestIdentityService());
-        // TODO securityHandler.setLoginService(new SPNEGOLoginService("test", AuthorizationService.from(loginService, "credentials")));
         securityHandler.setLoginService(loginService);
         _server.start();
     }

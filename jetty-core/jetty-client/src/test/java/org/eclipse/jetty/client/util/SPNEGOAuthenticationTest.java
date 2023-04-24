@@ -38,7 +38,6 @@ import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.SPNEGOLoginService;
 import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.security.authentication.AuthorizationService;
 import org.eclipse.jetty.security.authentication.SPNEGOAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -125,12 +124,10 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     {
         server = new Server();
         HashLoginService hashLoginService = new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
-        SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, AuthorizationService.from(hashLoginService, ""));
+        SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, hashLoginService, "");
         spnegoLoginService.setKeyTabPath(serviceKeyTabPath);
         spnegoLoginService.setServiceName(serviceName);
         spnegoLoginService.setHostName(serviceHost);
-        // Start the authorizationService along with the loginService.
-        spnegoLoginService.addBean(hashLoginService);
 
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         Constraint constraint = new Constraint.Builder().authorization(Constraint.Authorization.ANY_USER).build();
