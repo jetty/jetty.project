@@ -154,10 +154,10 @@ Refer to the link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/
 [[og-jaas-loginmodules]]
 ==== Provided LoginModules
 
-* link:{javadoc-url}/org.eclipse.jetty.security.jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.security.jaas.spi.JDBCLoginModule`]
-* link:{javadoc-url}/org.eclipse.jetty.security.jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.security.jaas.spi.PropertyFileLoginModule`]
-* link:{javadoc-url}/org.eclipse.jetty.security.jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.security.jaas.spi.DataSourceLoginModule`]
-* link:{javadoc-url}/org.eclipse.jetty.security.jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.security.jaas.ldap.LdapLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/security/jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.security.jaas.spi.JDBCLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/security/jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.security.jaas.spi.PropertyFileLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/security/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.security.jaas.spi.DataSourceLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/security/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.security.jaas.ldap.LdapLoginModule`]
 
 [NOTE]
 ====

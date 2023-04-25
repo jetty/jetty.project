@@ -191,7 +191,7 @@ public class TestSecurityAnnotationConversions
             .build();
 
         //a Constraint for the PermitAll on the doGet method
-        Constraint expectedConstraint2 = Constraint.NONE;
+        Constraint expectedConstraint2 = Constraint.ALLOWED;
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();

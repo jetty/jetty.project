@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.security;
 
+import java.util.List;
+
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -28,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
@@ -140,7 +145,7 @@ public class SecurityHandlerTest
     @Test
     public void testCombinedForbiddenConfidential() throws Exception
     {
-        _securityHandler.put("/*", Constraint.NONE);
+        _securityHandler.put("/*", Constraint.ALLOWED);
         _securityHandler.put("/confidential/*", Constraint.SECURE);
         _securityHandler.put("*.hidden", Constraint.FORBIDDEN);
 
@@ -166,5 +171,40 @@ public class SecurityHandlerTest
         response = _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("OK")));
+    }
+
+    @Test
+    public void testPathMatchesPrecedence()
+    {
+        PathMappings<Constraint> p = new PathMappings<>();
+        p.put("/foo/*", Constraint.from("foo", false, null, null));
+        p.put("*.txt", Constraint.from("txt", false, null, null));
+        p.put("/foo/bar/bob/*", Constraint.from("foobarbob", false, null, null));
+        p.put("*.thing.txt", Constraint.from("thingtxt", false, null, null));
+        p.put("/", Constraint.from("default", false, null, null));
+        p.put("/*", Constraint.from("everything", false, null, null));
+        p.put("", Constraint.from("root", false, null, null));
+        p.put("/foo/bar/bob/some.thing.txt", Constraint.from("exact", false, null, null));
+        p.put("/foo/bar/*", Constraint.from("foobar", false, null, null));
+
+        List<MappedResource<Constraint>> matches = p.getMatches("/foo/bar/bob/some.thing.txt");
+        matches.sort(new SecurityHandler.PathMapped());
+
+        List<String> names = matches.stream()
+            .map(MappedResource::getResource)
+            .map(Constraint::getName)
+            .toList();
+
+        assertThat(names, contains(
+            "default",
+            "everything",
+            "foo",
+            "foobar",
+            "foobarbob",
+            "txt",
+            "thingtxt",
+            "exact"
+        ));
+
     }
 }

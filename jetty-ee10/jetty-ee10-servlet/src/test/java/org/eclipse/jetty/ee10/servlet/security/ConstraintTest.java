@@ -494,7 +494,8 @@ public class ConstraintTest
         assertFalse(mappings.isEmpty());
         assertEquals(1, mappings.size());
         ConstraintMapping mapping = mappings.get(0);
-        assertTrue(mapping.getConstraint().isForbidden());
+        Constraint constraint = mapping.getConstraint();
+        assertTrue(constraint.getAuthorization() == Constraint.Authorization.FORBIDDEN);
     }
 
     /**
@@ -596,7 +597,8 @@ public class ConstraintTest
         assertEquals("TRACE", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
         assertFalse(mappings.get(1).getConstraint().isSecure());
-        assertTrue(mappings.get(1).getConstraint().isForbidden());
+        Constraint constraint = mappings.get(1).getConstraint();
+        assertTrue(constraint.getAuthorization() == Constraint.Authorization.FORBIDDEN);
     }
 
     @Test

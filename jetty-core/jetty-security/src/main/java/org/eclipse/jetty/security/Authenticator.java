@@ -31,8 +31,6 @@ import org.eclipse.jetty.util.Callback;
  * response challenges in order to authenticate a request.
  * Various types of {@link AuthenticationState} are returned in order to
  * signal the next step in authentication.
- *
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public interface Authenticator
 {
@@ -191,7 +189,7 @@ public interface Authenticator
         Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration);
     }
 
-    class Null implements Authenticator
+    class NoOp implements Authenticator
     {
         @Override
         public void setConfiguration(AuthConfiguration configuration)

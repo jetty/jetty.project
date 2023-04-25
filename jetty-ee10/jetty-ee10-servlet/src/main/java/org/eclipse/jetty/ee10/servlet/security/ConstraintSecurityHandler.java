@@ -400,7 +400,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         // Instead, it implements the bizarre section 13.8.1 of Servlet 6.0 specification
 
         if (constraintA == null)
-            return constraintB == null ? Constraint.NONE : constraintB;
+            return constraintB == null ? Constraint.ALLOWED : constraintB;
         if (constraintB == null)
             return constraintA;
 
@@ -459,7 +459,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             _constraintsByPathAndMethod.put(mapping.getPathSpec(), mappings);
         }
         Constraint allMethodsConstraint = mappings.get(ALL_METHODS);
-        if (allMethodsConstraint != null && allMethodsConstraint.isForbidden())
+        if (allMethodsConstraint != null && allMethodsConstraint.getAuthorization() == Constraint.Authorization.FORBIDDEN)
             return;
 
         if (mapping.getMethodOmissions() != null && mapping.getMethodOmissions().length > 0)
@@ -474,13 +474,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Constraint constraint = mappings.get(httpMethod);
         if (constraint == null)
             constraint = allMethodsConstraint;
-        if (constraint != null && constraint.isForbidden())
+        if (constraint != null && constraint.getAuthorization() == Constraint.Authorization.FORBIDDEN)
             return;
 
         // add in info from the constraint
         constraint = combineServletConstraints(constraint, mapping.getConstraint());
 
-        if (constraint.isForbidden() && httpMethod.equals(ALL_METHODS))
+        if (constraint.getAuthorization() == Constraint.Authorization.FORBIDDEN && httpMethod.equals(ALL_METHODS))
         {
             mappings.clear();
             mappings.put(ALL_METHODS, constraint);

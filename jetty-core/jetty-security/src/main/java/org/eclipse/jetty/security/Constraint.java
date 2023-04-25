@@ -17,23 +17,36 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A Security Constraint.
- * TODO write this up better
- *  Authorization
- *  optional list of roles
- *  secure or not
- *
+ * A Security constraint that is applied to a request, which can optionally contain:
+ * <ul>
+ *     <li>A name</li>
+ *     <li>Authorization to specify if authentication is needed and what roles are applicable</li>
+ *     <li>A list of role names used for {@link Authorization#KNOWN_ROLE}</li>
+ *     <li>If the request must be secure or not.</li>
+ * </ul>
+ * <p>
+ * If a constraint does not contain one of these elements, it is interpreted as "don't care". For example
+ * if {@link #isSecure()} returns null, this signifies that the transport may either be secure or insecure.
+ * Such "don't care" values are important when combining constraints.
+ * <p>
+ * The core constraint is not the same as the servlet specification {@code AuthConstraint}, but it is
+ * sufficiently capable to represent servlet constraints.
+ * </p>
  */
 public interface Constraint
 {
+    Logger LOG = LoggerFactory.getLogger(Constraint.class);
+
+    /**
+     * The Authorization applied to any authentication of the request/
+     */
     enum Authorization
     {
-        // TODO add examples.
-
         /**
          * Access not allowed. Equivalent to Servlet AuthConstraint with no roles.
          */
@@ -44,41 +57,22 @@ public interface Constraint
         ALLOWED,
         /**
          * Access allowed for any authenticated user regardless of role. Equivalent to Servlet role "**".
+         * For example, a web application that defines only an "admin" can use this {@code Authorization} to
+         * allow any authenticated user known to the configured {@link LoginService}, even if their roles are
+         * not know to the web application.
          */
         ANY_USER,
         /**
          * Access allowed for authenticated user with any known role. Equivalent to Servlet role "*".
+         * For example, a web application that defines roles "admin" and "user" might be deployed to a server
+         * with a configured {@link LoginService} that also has users with "operator" role. This constraint would
+         * not allow an "operator" user, as that role is not known to the web application.
          */
         KNOWN_ROLE,
         /**
-         * Access allowed for authenticated user with specific role(s).
+         * Access allowed only for authenticated user with specific role(s).
          */
         SPECIFIC_ROLE;
-
-        /**
-         * TODO describe combination
-         * <p>Combine Authorization Constraints, with the strictest constraint
-         * always given precedence. Note that this is not servlet specification compliant</p>
-         * @param a A constraint
-         * @param b A constraint
-         * @return The combination of the two constraints.
-         */
-        public static Authorization combine(Authorization a, Authorization b)
-        {
-            if (a == null)
-                return b == null ? ALLOWED : b;
-            if (b == null)
-                return a;
-
-            return switch (b)
-            {
-                case FORBIDDEN -> b;
-                case ALLOWED -> a;
-                case ANY_USER -> a == ALLOWED ? ANY_USER : a;
-                case KNOWN_ROLE -> a == SPECIFIC_ROLE ? SPECIFIC_ROLE : KNOWN_ROLE;
-                case SPECIFIC_ROLE -> SPECIFIC_ROLE;
-            };
-        }
     }
 
     /**
@@ -87,20 +81,14 @@ public interface Constraint
     String getName();
 
     /**
-     * @return true if the {@code Constraint} forbids all access.
+     * @return {@code True} if the transport must be secure, {@link Boolean#FALSE} if the
+     * transport does not need to be secure; {@code NULL} if the transport can be either.
      */
-    default boolean isForbidden()
-    {
-        return getAuthorization() == Authorization.FORBIDDEN;
-    }
+    Boolean isSecure();
 
     /**
-     * @return {@code True} if the transport must be secure.
-     */
-    boolean isSecure();
-
-    /**
-     * @return The {@link Authorization} criteria applied by this {@code Constraint}.
+     * @return The {@link Authorization} criteria applied by this {@code Constraint}
+     * or null if this constraint does not have any authorization requirements.
      */
     Authorization getAuthorization();
 
@@ -194,74 +182,81 @@ public interface Constraint
     /**
      * A static Constraint with {@link Authorization#ALLOWED} and not secure.
      */
-    Constraint NONE = from(false, Authorization.ALLOWED);
+    Constraint ALLOWED = from("ALLOWED", Authorization.ALLOWED);
 
     /**
      * A static Constraint with {@link Authorization#FORBIDDEN} and not secure.
      */
-    Constraint FORBIDDEN = from(false, Authorization.FORBIDDEN);
+    Constraint FORBIDDEN = from("FORBIDDEN", Authorization.FORBIDDEN);
 
     /**
      * A static Constraint with {@link Authorization#ANY_USER} and not secure.
      */
-    Constraint ANY_USER = from(false, Authorization.ANY_USER);
+    Constraint ANY_USER = from("ANY_USER", Authorization.ANY_USER);
 
     /**
      * A static Constraint with {@link Authorization#KNOWN_ROLE} and not secure.
      */
-    Constraint KNOWN_ROLE = from(false, Authorization.KNOWN_ROLE);
+    Constraint KNOWN_ROLE = from("KNOWN_ROLE", Authorization.KNOWN_ROLE);
 
     /**
-     * A static Constraint with {@link Authorization#ALLOWED} that is secure.
+     * A static Constraint that is secure.
      */
-    Constraint SECURE = from(true, Authorization.ALLOWED);
+    Constraint SECURE = from("SECURE", true);
+
+    /**
+     * A static Constraint that is insecure.
+     */
+    Constraint INSECURE = from("INSECURE", false);
 
     /**
      * <p>Combine two Constraints by:</p>
      * <ul>
-     *     <li>{@code Null} values are ignored.</li>
-     *     <li>Union of role sets.</li>
-     *     <li>Combine {@link Authorization}s with {@link Authorization#combine(Authorization, Authorization)}</li>
-     *     <li>Secure is OR'd</li>
+     *     <li>if both constraints are {@code Null}, then {@link Constraint#ALLOWED} is returned.</li>
+     *     <li>if either constraint is {@code Null} the other is returned.</li>
+     *     <li>if the {@code mostSpecific} constraints {@link Authorization} is not null, it is used in the
+     *     combined constraint, otherwise the {@code leastSpecific}'s is used.</li>
+     *     <li>if the {@code mostSpecific} constraints {@link Authorization} is not null, it's
+     *     {@link Constraint#getRoles()} are used in the combined constraint, otherwise
+     *     the {@code leastSpecific}'s are used.</li>
+     *     <li>if the {@code mostSpecific} constraint's {@link #isSecure()} is not null, then that is used
+     *     in the combined constraint, otherwise the {@code leastSpecific}'s is used.</li>
      * </ul>
      * <p>Note that this combination is not equivalent to the combination done by the EE servlet specification.</p>
-     * @param a Constraint to combine
-     * @param b Constraint to combine
+     * @param leastSpecific Constraint to combine
+     * @param mostSpecific Constraint to combine
      * @return the combined constraint.
-     * @see Authorization#combine(Authorization, Authorization)
      */
-    static Constraint combine(Constraint a, Constraint b)
+    static Constraint combine(Constraint leastSpecific, Constraint mostSpecific)
     {
-        // TODO add tests
+        if (leastSpecific == null)
+            return mostSpecific == null ? ALLOWED : mostSpecific;
+        if (mostSpecific == null)
+            return leastSpecific;
 
-        if (a == null)
-            return b == null ? NONE : b;
-        if (b == null)
-            return a;
-
-        // TODO optimize nicely for nulls and empty
-        Set<String> aRoles = a.getRoles();
-        if (aRoles == null)
-            aRoles = Collections.emptySet();
-        Set<String> bRoles = b.getRoles();
-        if (bRoles == null)
-            bRoles = Collections.emptySet();
-        Set<String> roles = Stream.concat(aRoles.stream(), bRoles.stream()).collect(Collectors.toSet());
+        String name = LOG.isDebugEnabled()
+            ? leastSpecific.getName() + ">" + mostSpecific : null;
 
         return from(
-            a.isSecure() || b.isSecure(),
-            Authorization.combine(a.getAuthorization(), b.getAuthorization()),
-            roles);
+            name,
+            mostSpecific.isSecure() == null ? leastSpecific.isSecure() : mostSpecific.isSecure(),
+            mostSpecific.getAuthorization() == null ? leastSpecific.getAuthorization() : mostSpecific.getAuthorization(),
+            mostSpecific.getAuthorization() == null ? leastSpecific.getRoles() : mostSpecific.getRoles());
     }
 
     static Constraint from(String... roles)
     {
-        return from(false, Authorization.SPECIFIC_ROLE, roles);
+        return from(null, Authorization.SPECIFIC_ROLE, roles);
     }
 
-    static Constraint from(boolean secure, Authorization authorization, String... roles)
+    static Constraint from(String name, boolean secure)
     {
-        return from(secure, authorization, (roles == null || roles.length == 0)
+        return from(name, secure, null, null);
+    }
+
+    static Constraint from(String name, Authorization authorization, String... roles)
+    {
+        return from(name, null, authorization, (roles == null || roles.length == 0)
             ? Collections.emptySet()
             : new HashSet<>(Arrays.stream(roles).toList()));
     }
@@ -271,14 +266,14 @@ public interface Constraint
         return from(null, secure, authorization, roles);
     }
 
-    static Constraint from(String name, boolean secure, Authorization authorization, Set<String> roles)
+    static Constraint from(String name, Boolean secure, Authorization authorization, Set<String> roles)
     {
         Set<String> roleSet = roles == null || roles.isEmpty()
             ? Collections.emptySet()
             : Collections.unmodifiableSet(roles);
 
         Authorization auth = authorization == null
-            ? (roleSet.isEmpty() ? Authorization.ALLOWED : Authorization.SPECIFIC_ROLE)
+            ? (roleSet.isEmpty() ? null : Authorization.SPECIFIC_ROLE)
             : authorization;
 
         return new Constraint()
@@ -290,7 +285,7 @@ public interface Constraint
             }
 
             @Override
-            public boolean isSecure()
+            public Boolean isSecure()
             {
                 return secure;
             }

@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.PathSpecGroup;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Context;
@@ -365,7 +367,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
 
         if (_authenticator == null)
-            setAuthenticator(new Authenticator.Null());
+            setAuthenticator(new Authenticator.NoOp());
 
         if (_authenticator != null)
             _authenticator.setConfiguration(this);
@@ -436,16 +438,16 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         String pathInContext = Request.getPathInContext(request);
         Constraint constraint = getConstraint(pathInContext, request);
         if (constraint == null)
-            constraint = Constraint.NONE;
+            constraint = Constraint.ALLOWED;
 
-        if (constraint.isForbidden())
+        if (constraint.getAuthorization() == Constraint.Authorization.FORBIDDEN)
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return true;
         }
 
         // Check data constraints
-        if (constraint.isSecure() && !request.isSecure())
+        if (Boolean.TRUE.equals(constraint.isSecure()) && !request.isSecure())
         {
             redirectToSecure(request, response, callback);
             return true;
@@ -612,35 +614,14 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
     };
 
-    /**
-     * Nobody user. The Nobody UserPrincipal is used to indicate a partial state
-     * of authentication. A request with a Nobody UserPrincipal will be allowed
-     * past all authentication constraints - but will not be considered an
-     * authenticated request. It can be used by Authenticators such as
-     * FormAuthenticator to allow access to logon and error pages within an
-     * authenticated URI tree.
-     */
-    public static final Principal __NOBODY = new Principal()
-    {
-        @Override
-        public String getName()
-        {
-            return "Nobody";
-        }
-
-        @Override
-        public String toString()
-        {
-            return getName();
-        }
-    };
-
     // TODO consider method mapping version
 
     /**
-     * TODO javadoc
+     * A concrete implementation of {@link SecurityHandler} that uses a {@link PathMappings} to
+     * match request to a list of {@link Constraint}s, which are applied in the order of
+     * least significant to most significant.
      */
-    public static class PathMapped extends SecurityHandler
+    public static class PathMapped extends SecurityHandler implements Comparator<MappedResource<Constraint>>
     {
         private final PathMappings<Constraint> _mappings = new PathMappings<>();
         private final Set<String> _knownRoles = new HashSet<>();
@@ -691,11 +672,65 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             if (matches.size() == 1)
                 return matches.get(0).getResource();
 
+            // apply from least specific to most specific
+            matches.sort(this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("getConstraint {} -> {}", pathInContext, matches);
             Constraint constraint = null;
             for (MappedResource<Constraint> c : matches)
                 constraint = Constraint.combine(constraint, c.getResource());
 
             return constraint;
+        }
+
+        /**
+         * {@link Comparator} method to sort constraints from least specific to most specific. Using
+         * the {@link #pathSpecGroupPrecedence(PathSpecGroup)} to rank different groups and
+         * {@link PathSpec#getSpecLength()} to rank within a group.  This method may be overridden
+         * to provide different precedence between constraints.
+         * @param c1 the first object to be compared.
+         * @param c2 the second object to be compared.
+         * @return -1, 0 or 1
+         */
+        @Override
+        public int compare(MappedResource<Constraint> c1, MappedResource<Constraint> c2)
+        {
+            PathSpecGroup g1 = c1.getPathSpec().getGroup();
+            PathSpecGroup g2 = c2.getPathSpec().getGroup();
+            int l1 = c1.getPathSpec().getSpecLength();
+            int l2 = c2.getPathSpec().getSpecLength();
+
+            if (g1.equals(g2))
+                return Integer.compare(l1, l2);
+
+            return Integer.compare(pathSpecGroupPrecedence(g1), pathSpecGroupPrecedence(g2));
+        }
+
+        /**
+         * Get the relative precedence of a {@link PathSpecGroup} used by {@link #compare(MappedResource, MappedResource)}
+         * to sort {@link Constraint}s.  The precedence from most significant to least is:
+         * <ul>
+         *     <li>{@link PathSpecGroup#EXACT}</li>
+         *     <li>{@link PathSpecGroup#ROOT}</li>
+         *     <li>{@link PathSpecGroup#SUFFIX_GLOB}</li>
+         *     <li>{@link PathSpecGroup#MIDDLE_GLOB}</li>
+         *     <li>{@link PathSpecGroup#PREFIX_GLOB}</li>
+         *     <li>{@link PathSpecGroup#DEFAULT}</li>*
+         * </ul>
+         * @param group The group to rank.
+         * @return An integer representing relative precedence between {@link PathSpecGroup}s.
+         */
+        protected int pathSpecGroupPrecedence(PathSpecGroup group)
+        {
+            return switch (group)
+            {
+                case EXACT -> 5;
+                case ROOT -> 4;
+                case SUFFIX_GLOB -> 3;
+                case MIDDLE_GLOB -> 2;
+                case PREFIX_GLOB -> 1;
+                case DEFAULT -> 0;
+            };
         }
 
         @Override
