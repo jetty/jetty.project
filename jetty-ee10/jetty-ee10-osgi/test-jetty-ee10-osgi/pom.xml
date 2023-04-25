@@ -505,7 +505,7 @@
           <configuration>
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
-              <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+              <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>

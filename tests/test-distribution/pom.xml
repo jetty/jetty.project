@@ -103,7 +103,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <systemPropertyVariables>
-              <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+              <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <jettyVersion>${project.version}</jettyVersion>
               <hazelcast.version>${hazelcast.version}</hazelcast.version>
               <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>

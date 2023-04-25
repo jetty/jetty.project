@@ -79,7 +79,7 @@
           <attributes>
             <project-basedir>${project.basedir}</project-basedir>
             <project-version>${project.version}</project-version>
-            <maven-local-repo>${settings.localRepository}</maven-local-repo>
+            <maven-local-repo>${session.repositorySession.localRepository.basedir.absolutePath}</maven-local-repo>
             <version>${project.version}</version>
             <prog-guide>../programming-guide/index.html</prog-guide>
             <op-guide>../operations-guide/index.html</op-guide>
