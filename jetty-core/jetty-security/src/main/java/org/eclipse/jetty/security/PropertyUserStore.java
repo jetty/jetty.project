@@ -52,7 +52,7 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
 
     protected Resource _configResource;
     protected Scanner _scanner;
-    protected int _refreshInterval = 0;
+    protected int _reloadInterval = 0;
     protected boolean _firstLoad = true; // true if first load, false from that point on
     protected List<UserListener> _listeners;
 
@@ -91,24 +91,24 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
      * Is hot reload enabled on this user store
      *
      * @return true if hot reload was enabled before startup
-     * @deprecated use {@link #getRefreshInterval()}
+     * @deprecated use {@link #getReloadInterval()}
      */
     @Deprecated
     public boolean isHotReload()
     {
-        return getRefreshInterval() > 0;
+        return getReloadInterval() > 0;
     }
 
     /**
      * Enable Hot Reload of the Property File
      *
      * @param enable true to enable to a 1 second scan, false to disable
-     * @deprecated use {@link #setRefreshInterval(int)}
+     * @deprecated use {@link #setReloadInterval(int)}
      */
     @Deprecated
     public void setHotReload(boolean enable)
     {
-        setRefreshInterval(enable ? 1 : 0);
+        setReloadInterval(enable ? 1 : 0);
     }
 
     /**
@@ -116,21 +116,21 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
      *
      * @param scanSeconds the period in seconds to scan for property file changes, or 0 for no scanning
      */
-    public void setRefreshInterval(int scanSeconds)
+    public void setReloadInterval(int scanSeconds)
     {
         if (isRunning())
         {
             throw new IllegalStateException("Cannot set scan period while user store is running");
         }
-        this._refreshInterval = scanSeconds;
+        this._reloadInterval = scanSeconds;
     }
 
     /**
      * @return the period in seconds to scan for property file changes, or 0 for no scanning
      */
-    public int getRefreshInterval()
+    public int getReloadInterval()
     {
-        return _refreshInterval;
+        return _reloadInterval;
     }
 
     @Override
@@ -221,11 +221,11 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
     protected void doStart() throws Exception
     {
         Resource config = getConfig();
-        if (getRefreshInterval() > 0 && (config != null))
+        if (getReloadInterval() > 0 && (config != null))
         {
             _scanner = new Scanner(null, false);
             _scanner.addFile(config.getPath());
-            _scanner.setScanInterval(_refreshInterval);
+            _scanner.setScanInterval(_reloadInterval);
             _scanner.setReportExistingFilesOnStartup(false);
             _scanner.addListener(this);
             addBean(_scanner);

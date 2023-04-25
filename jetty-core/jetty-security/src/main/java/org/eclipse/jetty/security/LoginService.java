@@ -17,6 +17,7 @@ import java.security.Principal;
 import java.util.function.Function;
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 
 /**
@@ -38,10 +39,11 @@ public interface LoginService
      *
      * @param username The username.
      * @param credentials The users credentials.
+     * @param request The request or null
      * @param getSession function to retrieve or create a session.
      * @return A UserIdentity if the credentials matched, otherwise null
      */
-    UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession);
+    UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession);
 
     /**
      * Get or create a {@link UserIdentity} that is not authenticated by the {@link LoginService}.
@@ -55,7 +57,7 @@ public interface LoginService
      */
     default UserIdentity getUserIdentity(Subject subject, Principal userPrincipal, boolean create)
     {
-        UserIdentity userIdentity = login(userPrincipal.getName(), "", b -> null);
+        UserIdentity userIdentity = login(userPrincipal.getName(), "", null, b -> null);
         if (userIdentity != null)
             return new RoleDelegateUserIdentity(subject, userPrincipal, userIdentity);
         if (create && getIdentityService() != null)
@@ -66,7 +68,7 @@ public interface LoginService
     /**
      * Validate a user identity.
      * Validate that a UserIdentity previously created by a call
-     * to {@link #login(String, Object, Function<Boolean, Session>)} is still valid.
+     * to {@link #login(String, Object, Request, Function)} is still valid.
      *
      * @param user The user to validate
      * @return true if authentication has not been revoked for the user.

@@ -695,7 +695,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
 
     public class ServletSessionApi implements HttpSession, Session.API
     {
-        public static Function<Boolean, Session> newGetSession(ServletRequest servletRequest)
+        public static Function<Boolean, Session> getOrCreateSession(ServletRequest servletRequest)
         {
             return createSession ->
             {

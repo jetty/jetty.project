@@ -18,6 +18,7 @@ import java.security.Principal;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.security.IdentityService.RunAsToken;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
 import org.eclipse.jetty.server.Request;
@@ -286,7 +287,7 @@ public interface AuthenticationState
         /**
          * Authenticate the request using any credentials already associated with the request.
          * No challenge can be sent.  If the login is successful, then the
-         * {@link IdentityService#associate(UserIdentity)} method is used and the returned
+         * {@link IdentityService#associate(UserIdentity, RunAsToken)} method is used and the returned
          * {@link org.eclipse.jetty.security.IdentityService.Association} is made available via
          * {@link #getAssociation()}.
          * @see #getAssociation()
@@ -298,7 +299,7 @@ public interface AuthenticationState
         /**
          * Authenticate the request using any credentials already associated with the request or
          * challenging if necessary.  If the login is successful, then the
-         * {@link IdentityService#associate(UserIdentity)} method is used and the returned
+         * {@link IdentityService#associate(UserIdentity, RunAsToken)} method is used and the returned
          * {@link org.eclipse.jetty.security.IdentityService.Association} is made available via
          * {@link #getAssociation()}.
          * @see #getAssociation()

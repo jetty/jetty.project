@@ -526,7 +526,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     Authentication.User userAuth = (Authentication.User)authentication;
                     baseRequest.setAuthentication(authentication);
                     if (_identityService != null)
-                        identityAssociation = _identityService.associate(userAuth.getUserIdentity());
+                    {
+                        UserIdentity user = userAuth.getUserIdentity();
+                        identityAssociation = _identityService.associate(user, null);
+                    }
 
                     if (isAuthMandatory)
                     {
@@ -578,7 +581,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 {
                     baseRequest.setAuthentication(authentication);
                     if (_identityService != null)
-                        identityAssociation = _identityService.associate(null);
+                        identityAssociation = _identityService.associate(null, null);
                     handler.handle(pathInContext, baseRequest, request, response);
                     if (authenticator != null)
                         authenticator.secureResponse(request, response, isAuthMandatory, null);

@@ -58,57 +58,6 @@ public class IO
 
     public static final int bufferSize = 64 * 1024;
 
-    static class Job implements Runnable
-    {
-        InputStream in;
-        OutputStream out;
-        Reader read;
-        Writer write;
-
-        Job(InputStream in, OutputStream out)
-        {
-            this.in = in;
-            this.out = out;
-            this.read = null;
-            this.write = null;
-        }
-
-        Job(Reader read, Writer write)
-        {
-            this.in = null;
-            this.out = null;
-            this.read = read;
-            this.write = write;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                if (in != null)
-                    copy(in, out, -1);
-                else
-                    copy(read, write, -1);
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-                try
-                {
-                    if (out != null)
-                        out.close();
-                    if (write != null)
-                        write.close();
-                }
-                catch (IOException e2)
-                {
-                    LOG.trace("IGNORED", e2);
-                }
-            }
-        }
-    }
-
     /**
      * Copy Stream in to Stream out until EOF or exception.
      *
@@ -149,7 +98,7 @@ public class IO
         throws IOException
     {
         byte[] buffer = new byte[bufferSize];
-        int len = bufferSize;
+        int len;
 
         if (byteCount >= 0)
         {
@@ -191,7 +140,7 @@ public class IO
         throws IOException
     {
         char[] buffer = new char[bufferSize];
-        int len = bufferSize;
+        int len;
 
         if (byteCount >= 0)
         {
@@ -209,9 +158,8 @@ public class IO
                 out.write(buffer, 0, len);
             }
         }
-        else if (out instanceof PrintWriter)
+        else if (out instanceof PrintWriter pout)
         {
-            PrintWriter pout = (PrintWriter)out;
             while (!pout.checkError())
             {
                 len = in.read(buffer, 0, bufferSize);
@@ -260,12 +208,12 @@ public class IO
         File[] files = from.listFiles();
         if (files != null)
         {
-            for (int i = 0; i < files.length; i++)
+            for (File file : files)
             {
-                String name = files[i].getName();
+                String name = file.getName();
                 if (".".equals(name) || "..".equals(name))
                     continue;
-                copy(files[i], new File(to, name));
+                copy(file, new File(to, name));
             }
         }
     }
@@ -459,9 +407,9 @@ public class IO
             if (closeable != null)
                 closeable.close();
         }
-        catch (IOException ignore)
+        catch (IOException x)
         {
-            LOG.trace("IGNORED", ignore);
+            LOG.trace("IGNORED", x);
         }
     }
 
@@ -477,9 +425,9 @@ public class IO
             if (closeable != null)
                 closeable.close();
         }
-        catch (Exception ignore)
+        catch (Exception x)
         {
-            LOG.trace("IGNORED", ignore);
+            LOG.trace("IGNORED", x);
         }
     }
 

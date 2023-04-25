@@ -110,7 +110,7 @@ public interface Session extends Attributes
      */
     boolean isNew() throws IllegalStateException;
 
-    String encodeURL(Request request, String url, boolean cookiesInUse);
+    String encodeURI(Request request, String uri, boolean cookiesInUse);
 
     /**
      * Listener interface that if implemented by a value of an attribute of an enclosing {@link Context} at start, will be

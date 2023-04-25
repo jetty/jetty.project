@@ -17,30 +17,16 @@ import java.io.Closeable;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-
 /**
  * Associates UserIdentities from with threads and UserIdentity.Contexts.
  */
 public interface IdentityService
 {
     /**
-     * Associate a user identity with the current thread.
-     * This is called with as a thread enters the
-     * {@link Handler#handle(Request, org.eclipse.jetty.server.Response, org.eclipse.jetty.util.Callback)}
-     * method and then again with a null argument as that call exits.
-     *
-     * @param user The current user or null for no user to associate.
-     * @return A {@link Closeable} that, when closed, will disassociate the user and restore any prior associations.
-     */
-    Association associate(UserIdentity user);
-
-    /**
      * Associate a runas Token with the current user and thread.
      *
      * @param user The UserIdentity
-     * @param runAsToken The runAsToken to associate, obtained from {@link #newRunAsToken(String)}.
+     * @param runAsToken The runAsToken to associate, obtained from {@link #newRunAsToken(String)}, or null.
      * @return A {@link Closeable} that, when closed, will disassociate the token and restore any prior associations.
      */
     Association associate(UserIdentity user, RunAsToken runAsToken);

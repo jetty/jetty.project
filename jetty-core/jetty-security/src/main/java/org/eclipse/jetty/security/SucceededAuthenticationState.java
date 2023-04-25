@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.security;
 
-/**
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
- */
 public class SucceededAuthenticationState extends AuthenticationState.AbstractSucceeded
 {
     public SucceededAuthenticationState(String method, UserIdentity userIdentity)

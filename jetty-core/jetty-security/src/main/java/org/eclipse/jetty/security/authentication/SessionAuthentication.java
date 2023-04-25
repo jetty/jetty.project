@@ -88,7 +88,7 @@ public class SessionAuthentication extends AuthenticationState.AbstractSucceeded
             return;
         }
 
-        _userIdentity = loginService.login(_name, _credentials, null);
+        _userIdentity = loginService.login(_name, _credentials, null, null);
         LOG.debug("Deserialized and relogged in {}", this);
     }
 

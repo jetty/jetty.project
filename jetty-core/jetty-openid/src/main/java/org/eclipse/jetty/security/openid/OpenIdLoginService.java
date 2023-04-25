@@ -20,6 +20,7 @@ import javax.security.auth.Subject;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
@@ -75,7 +76,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     @Override
-    public UserIdentity login(String identifier, Object credentials, Function<Boolean, Session> getSession)
+    public UserIdentity login(String identifier, Object credentials, Request request, Function<Boolean, Session> getSession)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("login({}, {}, {})", identifier, credentials, getSession);

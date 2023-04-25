@@ -78,6 +78,8 @@ public class Fields implements Iterable<Fields.Field>
         {
             if (getSize() != that.getSize())
                 return false;
+            if (!fields.getClass().equals(that.fields.getClass()))
+                return false;
             for (Map.Entry<String, Field> entry : fields.entrySet())
             {
                 String name = entry.getKey();

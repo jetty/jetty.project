@@ -13,22 +13,31 @@
 
 package org.eclipse.jetty.security.jaas;
 
-/* TODO
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.DefaultIdentityService;
-import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collections;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import javax.security.auth.Subject;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,7 +46,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-*/
 
 /**
  * JAASLoginServiceTest
@@ -48,7 +56,7 @@ public class JAASLoginServiceTest
     {
 
     }
-/* TODO
+
     public class TestRole implements Principal, SomeRole
     {
         String _name;
@@ -86,22 +94,24 @@ public class JAASLoginServiceTest
             return _name;
         }
     }
-    
-    public static class TestServlet extends HttpServlet
+
+    public static class TestHandler extends Handler.Abstract
     {
         @Override
-        protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            resp.setStatus(200);
-            resp.setContentType("text/plain");
-            resp.getWriter().println("All OK");
-            resp.getWriter().println("requestURI=" + req.getRequestURI());
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+            Content.Sink.write(response, true, """
+                All OK
+                httpURI=%s
+                """.formatted(request.getHttpURI()), callback);
+            return true;
         }
     }
 
     private Server _server;
     private LocalConnector _connector;
-    private ServletContextHandler _context;
+    private ContextHandler _context;
     
     @BeforeEach
     public void setUp() throws Exception
@@ -110,19 +120,14 @@ public class JAASLoginServiceTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        _context = new ServletContextHandler();
-        _context.setContextPath("/ctx");
-        _context.addServlet(new TestServlet(), "/");
+        _context = new ContextHandler("/ctx");
         _server.setHandler(_context);
-        ConstraintSecurityHandler security = new ConstraintSecurityHandler();
+        SecurityHandler.PathMapped security = new SecurityHandler.PathMapped();
         security.setAuthenticator(new BasicAuthenticator());
-        Constraint constraint = new Constraint("All", "users");
-        constraint.setAuthenticate(true);
-        ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/jaspi/*");
-        mapping.setConstraint(constraint);
-        security.addConstraintMapping(mapping);
-        _context.setSecurityHandler(security);
+        Constraint constraint = Constraint.ANY_USER;
+        security.put("/jaspi/*", constraint);
+        _context.setHandler(security);
+        security.setHandler(new TestHandler());
     }
     
     @AfterEach
@@ -141,7 +146,7 @@ public class JAASLoginServiceTest
             {
                 return new AppConfigurationEntry[] {
                     new AppConfigurationEntry(TestLoginModule.class.getCanonicalName(), 
-                        LoginModuleControlFlag.REQUIRED, 
+                        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
                         Collections.emptyMap())
                 };
             }
@@ -149,7 +154,7 @@ public class JAASLoginServiceTest
 
         //Test with the DefaultCallbackHandler
         JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.security.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(config);
         _server.addBean(ls, true);
@@ -234,5 +239,4 @@ public class JAASLoginServiceTest
         subject4.getPrincipals().add(new AnotherTestRole("z"));
         assertEquals(0, ls.getGroups(subject4).length);
     }
- */
 }

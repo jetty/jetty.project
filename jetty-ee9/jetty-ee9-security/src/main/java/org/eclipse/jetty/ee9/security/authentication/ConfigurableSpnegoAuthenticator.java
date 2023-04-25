@@ -37,7 +37,7 @@ import org.eclipse.jetty.security.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.newGetSession;
+import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.getOrCreateSession;
 
 /**
  * <p>A LoginAuthenticator that uses SPNEGO and the GSS API to authenticate requests.</p>
@@ -103,12 +103,13 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, ServletRequest servletRequest)
     {
-        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService.login(username, password, newGetSession(servletRequest));
+        Request baseRequest = Request.getBaseRequest(servletRequest);
+        if (baseRequest == null)
+            return null;
+        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService
+            .login(username, password, baseRequest.getCoreRequest(), getOrCreateSession(servletRequest));
         if (user != null && user.isEstablished())
-        {
-            Request request = Request.getBaseRequest(servletRequest);
-            renewSession(request, request == null ? null : request.getResponse());
-        }
+            renewSession(baseRequest, baseRequest.getResponse());
         return user;
     }
 

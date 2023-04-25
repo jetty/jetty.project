@@ -77,17 +77,17 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         _store = mgr.getPropertyUserStore(filename);
         if (_store == null)
         {
-            int refreshInterval = 0;
-            String tmp = (String)options.get("refreshInterval");
+            int reloadInterval = 0;
+            String tmp = (String)options.get("reloadInterval");
             if (tmp != null)
             {
                 try
                 {
-                    refreshInterval = Integer.parseInt(tmp);
+                    reloadInterval = Integer.parseInt(tmp);
                 }
                 catch (NumberFormatException e)
                 {
-                    LOG.warn("'refreshInterval' is not an integer");
+                    LOG.warn("'reloadInterval' is not an integer");
                 }
             }
             else
@@ -95,15 +95,15 @@ public class PropertyFileLoginModule extends AbstractLoginModule
                 tmp = (String)options.get("hotReload");
                 if (tmp != null)
                 {
-                    LOG.warn("Use 'refreshInterval' boolean property instead of 'hotReload'");
-                    refreshInterval = Boolean.parseBoolean(tmp) ? 1 : 0;
+                    LOG.warn("Use 'reloadInterval' boolean property instead of 'hotReload'");
+                    reloadInterval = Boolean.parseBoolean(tmp) ? 1 : 0;
                 }
             }
             PropertyUserStore newStore = new PropertyUserStore();
             ResourceFactory resourceFactory = ResourceFactory.of(newStore);
             Resource config = resourceFactory.newResource(filename);
             newStore.setConfig(config);
-            newStore.setRefreshInterval(refreshInterval);
+            newStore.setReloadInterval(reloadInterval);
             _store = mgr.addPropertyUserStore(filename, newStore);
             try
             {

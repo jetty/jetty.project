@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -81,7 +82,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
+    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
     {
         if (username == null)
             return null;

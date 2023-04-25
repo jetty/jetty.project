@@ -26,6 +26,7 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.security.SecurityUtils;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * for example {@code HTTP/wonder.com}, using a {@code keyTab} file as the service principal
  * credentials.</p>
  * <p>Upon receiving an HTTP request, the server tries to authenticate the client
- * calling {@link #login(String, Object, Function)} where the GSS APIs are used to
+ * calling {@link LoginService#login(String, Object, Request, Function)} where the GSS APIs are used to
  * verify client tokens and (perhaps after a few round-trips) a {@code GSSContext} is
  * established.</p>
  */
@@ -167,7 +168,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials,  Function<Boolean, Session> getSession)
+    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
     {
         Subject subject = _context._subject;
         Session httpSession = getSession.apply(false);
@@ -341,7 +342,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
          */
         static AuthorizationService from(LoginService loginService, Object credentials)
         {
-            return (name, getSession) -> loginService.login(name, credentials, getSession);
+            return (name, getSession) -> loginService.login(name, credentials, null, getSession);
         }
     }
 }

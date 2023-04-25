@@ -218,10 +218,7 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
     {
-        int code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-            ? HttpStatus.MOVED_TEMPORARILY_302
-            : HttpStatus.SEE_OTHER_303;
-        sendRedirect(request, response, callback, code, location, false);
+        sendRedirect(request, response, callback, location, false);
     }
 
     /**

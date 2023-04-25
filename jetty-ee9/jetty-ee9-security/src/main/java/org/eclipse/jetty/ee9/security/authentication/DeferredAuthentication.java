@@ -62,7 +62,10 @@ public class DeferredAuthentication implements Authentication.Deferred
                 IdentityService identityService = loginService.getIdentityService();
 
                 if (identityService != null)
-                    _association = identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                {
+                    UserIdentity user = ((User)authentication).getUserIdentity();
+                    _association = identityService.associate(user, null);
+                }
 
                 return authentication;
             }
@@ -85,7 +88,10 @@ public class DeferredAuthentication implements Authentication.Deferred
 
             Authentication authentication = _authenticator.validateRequest(request, response, true);
             if (authentication instanceof Authentication.User && identityService != null)
-                _association = identityService.associate(((Authentication.User)authentication).getUserIdentity());
+            {
+                UserIdentity user = ((User)authentication).getUserIdentity();
+                _association = identityService.associate(user, null);
+            }
             return authentication;
         }
         catch (ServerAuthException e)
@@ -107,7 +113,7 @@ public class DeferredAuthentication implements Authentication.Deferred
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
             UserAuthentication authentication = new UserAuthentication("API", identity);
             if (identityService != null)
-                _association = identityService.associate(identity);
+                _association = identityService.associate(identity, null);
             return authentication;
         }
         return null;

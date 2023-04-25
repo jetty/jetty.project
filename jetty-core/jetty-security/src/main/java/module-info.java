@@ -23,7 +23,7 @@ module org.eclipse.jetty.security
 
     exports org.eclipse.jetty.security;
     exports org.eclipse.jetty.security.authentication;
-    exports org.eclipse.jetty.security.internal;
+    exports org.eclipse.jetty.security.jaas;
 
     uses org.eclipse.jetty.security.Authenticator.Factory;
 }

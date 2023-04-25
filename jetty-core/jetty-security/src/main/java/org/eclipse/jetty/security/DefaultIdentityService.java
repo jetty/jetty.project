@@ -20,21 +20,20 @@ import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 import org.eclipse.jetty.security.internal.RoleRunAsToken;
 
 /**
- *
+ * The default {@link IdentityService}, which creates and uses {@link DefaultUserIdentity}s.
+ * The {@link #associate(UserIdentity, RunAsToken)} method ignores the
+ * {@code user}, but will associate the {@link RunAsToken} with the current thread
+ * until {@link Association#close()} is called.
  */
 public class DefaultIdentityService implements IdentityService
 {
     private static final ThreadLocal<String> runAsRole = new ThreadLocal<>();
+    private static final Association NOOP = () -> {};
+    private static final Association CLEAR_RUN_AS = () -> runAsRole.set(null);
 
     public static boolean isRoleAssociated(String role)
     {
         return role != null && role.equals(runAsRole.get());
-    }
-
-    @Override
-    public Association associate(UserIdentity user)
-    {
-        return NOOP;
     }
 
     @Override
@@ -74,7 +73,4 @@ public class DefaultIdentityService implements IdentityService
     {
         return new DefaultUserIdentity(subject, userPrincipal, roles);
     }
-
-    private static final Association NOOP = () -> {};
-    private static final Association CLEAR_RUN_AS = () -> runAsRole.set(null);
 }

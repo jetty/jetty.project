@@ -60,13 +60,12 @@ public class ServletCallbackHandler implements CallbackHandler
             {
                 _groupPrincipals.set((GroupPrincipalCallback)callback);
             }
-            else if (callback instanceof PasswordValidationCallback)
+            else if (callback instanceof PasswordValidationCallback passwordValidationCallback)
             {
-                PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback)callback;
                 @SuppressWarnings("unused")
                 Subject subject = passwordValidationCallback.getSubject();
 
-                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null);
+                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null, null);
 
                 if (user != null)
                 {
@@ -75,15 +74,14 @@ public class ServletCallbackHandler implements CallbackHandler
                     passwordValidationCallback.getSubject().getPrivateCredentials().add(user);
                 }
             }
-            else if (callback instanceof CredentialValidationCallback)
+            else if (callback instanceof CredentialValidationCallback credentialValidationCallback)
             {
-                CredentialValidationCallback credentialValidationCallback = (CredentialValidationCallback)callback;
                 Subject subject = credentialValidationCallback.getSubject();
                 LoginCallback loginCallback = new LoginCallbackImpl(subject,
                     credentialValidationCallback.getUsername(),
                     credentialValidationCallback.getCredential());
 
-                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null);
+                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null, null);
 
                 if (user != null)
                 {

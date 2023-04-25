@@ -61,7 +61,10 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
                     IdentityService identityService = loginService.getIdentityService();
 
                     if (identityService != null)
-                        _association = identityService.associate(succeeded.getUserIdentity());
+                    {
+                        UserIdentity user = succeeded.getUserIdentity();
+                        _association = identityService.associate(user, null);
+                    }
 
                     return succeeded;
                 }
@@ -88,7 +91,10 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
             {
                 AuthenticationState.setAuthenticationState(request, authenticationState);
                 if (authenticationState instanceof Succeeded && identityService != null)
-                    _association = identityService.associate(((Succeeded)authenticationState).getUserIdentity());
+                {
+                    UserIdentity user = ((Succeeded)authenticationState).getUserIdentity();
+                    _association = identityService.associate(user, null);
+                }
             }
             return authenticationState;
         }
@@ -111,7 +117,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
             SucceededAuthenticationState authentication = new SucceededAuthenticationState("API", identity);
             if (identityService != null)
-                _association = identityService.associate(identity);
+                _association = identityService.associate(identity, null);
             return authentication;
         }
         return null;

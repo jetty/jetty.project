@@ -14,7 +14,7 @@
 package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 import jakarta.servlet.ServletException;
@@ -33,7 +33,6 @@ import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -51,7 +50,6 @@ public class DataConstraintsTest
     private Server _server;
     private LocalConnector _connector;
     private LocalConnector _connectorS;
-    private SessionHandler _session;
     private ConstraintSecurityHandler _security;
 
     @BeforeEach
@@ -89,14 +87,14 @@ public class DataConstraintsTest
         _server.setConnectors(new Connector[]{_connector, _connectorS});
 
         ContextHandler contextHandler = new ContextHandler();
-        _session = new SessionHandler();
+        SessionHandler session = new SessionHandler();
 
         contextHandler.setContextPath("/ctx");
         _server.setHandler(contextHandler);
-        contextHandler.setHandler(_session);
+        contextHandler.setHandler(session);
 
         _security = new ConstraintSecurityHandler();
-        _session.setHandler(_security);
+        session.setHandler(_security);
 
         _security.setHandler(new AbstractHandler()
         {
@@ -130,10 +128,7 @@ public class DataConstraintsTest
         mapping0.setPathSpec("/integral/*");
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
 
         _server.start();
 
@@ -161,10 +156,7 @@ public class DataConstraintsTest
         mapping0.setPathSpec("/confid/*");
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
 
         _server.start();
 
@@ -191,10 +183,7 @@ public class DataConstraintsTest
         mapping0.setPathSpec("/confid/*");
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
 
         _server.start();
 
@@ -218,10 +207,7 @@ public class DataConstraintsTest
         mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
 
         _server.start();
 
@@ -252,10 +238,7 @@ public class DataConstraintsTest
         mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
 
         _server.start();
 
@@ -287,10 +270,7 @@ public class DataConstraintsTest
         mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
         DefaultIdentityService identityService = new DefaultIdentityService();
         _security.setLoginService(new CustomLoginService(identityService));
         _security.setIdentityService(identityService);
@@ -332,10 +312,7 @@ public class DataConstraintsTest
         mapping0.setPathSpec("/restricted/*");
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
         _server.start();
 
         String response;
@@ -365,10 +342,7 @@ public class DataConstraintsTest
         mapping0.setMethod("GET");
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
         _server.start();
 
         String response;
@@ -398,10 +372,7 @@ public class DataConstraintsTest
         mapping0.setMethod("GET");
         mapping0.setConstraint(constraint0);
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-            {
-                mapping0
-            }));
+        _security.setConstraintMappings(List.of(mapping0));
         DefaultIdentityService identityService = new DefaultIdentityService();
         _security.setLoginService(new CustomLoginService(identityService));
         _security.setIdentityService(identityService);
@@ -423,13 +394,13 @@ public class DataConstraintsTest
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
     }
 
-    private class CustomLoginService implements LoginService
+    private static class CustomLoginService implements LoginService
     {
-        private IdentityService identityService;
+        private final IdentityService _identityService;
 
         public CustomLoginService(IdentityService identityService)
         {
-            this.identityService = identityService;
+            this._identityService = identityService;
         }
 
         @Override
@@ -439,10 +410,10 @@ public class DataConstraintsTest
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
+        public UserIdentity login(String username, Object credentials, org.eclipse.jetty.server.Request request, Function<Boolean, Session> getSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
-                return new DefaultUserIdentity(null, null, new String[]{"admin"});
+                return UserIdentity.from(null, null, "admin");
             return null;
         }
 
@@ -455,7 +426,7 @@ public class DataConstraintsTest
         @Override
         public IdentityService getIdentityService()
         {
-            return identityService;
+            return _identityService;
         }
 
         @Override

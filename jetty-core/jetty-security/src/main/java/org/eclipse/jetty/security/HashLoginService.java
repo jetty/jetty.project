@@ -36,7 +36,7 @@ public class HashLoginService extends AbstractLoginService
     private static final Logger LOG = LoggerFactory.getLogger(HashLoginService.class);
 
     private Resource _config;
-    private int refreshInterval; // default is not to reload
+    private int reloadInterval; // default is not to reload
     private UserStore _userStore;
     private boolean _userStoreAutoCreate = false;
 
@@ -77,42 +77,42 @@ public class HashLoginService extends AbstractLoginService
      * Is hot reload enabled on this user store
      *
      * @return true if hot reload was enabled before startup
-     * @deprecated use {@link #getRefreshInterval()}
+     * @deprecated use {@link #getReloadInterval()}
      */
     @Deprecated
     public boolean isHotReload()
     {
-        return refreshInterval > 0;
+        return reloadInterval > 0;
     }
 
     /**
      * Enable Hot Reload of the Property File
      *
      * @param enable true to enable 1s refresh interval, false to disable
-     * @deprecated use {@link #setRefreshInterval(int)}
+     * @deprecated use {@link #setReloadInterval(int)}
      */
     @Deprecated
     public void setHotReload(boolean enable)
     {
-        setRefreshInterval(enable ? 1 : 0);
+        setReloadInterval(enable ? 1 : 0);
     }
 
     /**
      * @return the scan interval in seconds for reloading the property file.
      */
-    public int getRefreshInterval()
+    public int getReloadInterval()
     {
-        return refreshInterval;
+        return reloadInterval;
     }
 
     /**
-     * @param refreshIntervalSeconds Set the scan interval in seconds for reloading the property file.
+     * @param reloadIntervalSeconds Set the scan interval in seconds for reloading the property file.
      */
-    public void setRefreshInterval(int refreshIntervalSeconds)
+    public void setReloadInterval(int reloadIntervalSeconds)
     {
         if (isRunning())
             throw new IllegalStateException("Cannot set while user store is running");
-        this.refreshInterval = refreshIntervalSeconds;
+        this.reloadInterval = reloadIntervalSeconds;
     }
 
     /**
@@ -146,9 +146,9 @@ public class HashLoginService extends AbstractLoginService
         if (_userStore == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: {} refresh: {}s", _config, refreshInterval);
+                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: {} refresh: {}s", _config, reloadInterval);
             PropertyUserStore propertyUserStore = new PropertyUserStore();
-            propertyUserStore.setRefreshInterval(refreshInterval);
+            propertyUserStore.setReloadInterval(reloadInterval);
             propertyUserStore.setConfig(_config);
             setUserStore(propertyUserStore);
             _userStoreAutoCreate = true;

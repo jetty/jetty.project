@@ -59,7 +59,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             if (space > 0)
             {
                 String method = credentials.substring(0, space);
-                if ("basic".equalsIgnoreCase(method))
+                if ("Basic".equalsIgnoreCase(method))
                 {
                     credentials = credentials.substring(space + 1);
                     Charset charset = getCharset();
@@ -83,7 +83,7 @@ public class BasicAuthenticator extends LoginAuthenticator
         if (res.isCommitted())
             return null;
 
-        String value = "basic realm=\"" + _loginService.getName() + "\"";
+        String value = "Basic realm=\"" + _loginService.getName() + "\"";
         Charset charset = getCharset();
         if (charset != null)
             value += ", charset=\"" + charset.name() + "\"";
@@ -94,6 +94,6 @@ public class BasicAuthenticator extends LoginAuthenticator
 
     public static String authorization(String user, String password)
     {
-        return "basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
+        return "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
     }
 }

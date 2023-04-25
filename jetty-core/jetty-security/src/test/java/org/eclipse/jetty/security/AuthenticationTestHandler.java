@@ -110,7 +110,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         public static final ThreadLocal<String> USER_IDENTITY = new ThreadLocal<>();
 
         @Override
-        public Association associate(UserIdentity user)
+        public Association associate(UserIdentity user, RunAsToken runAsToken)
         {
             USER_IDENTITY.set(user == null ? null : user.getUserPrincipal().getName());
             return () -> USER_IDENTITY.set(null);
@@ -139,7 +139,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
+        public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
                 return new DefaultUserIdentity(null, new UserPrincipal("admin", null), new String[]{"admin"});

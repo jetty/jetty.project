@@ -244,7 +244,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (session == null)
             return url;
 
-        return session.encodeURL(request, url, request.getHeaders().contains(HttpHeader.COOKIE));
+        return session.encodeURI(request, url, request.getHeaders().contains(HttpHeader.COOKIE));
     }
 
     @Override

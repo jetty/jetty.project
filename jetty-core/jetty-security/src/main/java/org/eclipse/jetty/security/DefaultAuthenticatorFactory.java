@@ -50,8 +50,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class DefaultAuthenticatorFactory implements Authenticator.Factory
 {
-    LoginService _loginService;
-
     @Override
     public Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration)
     {
@@ -77,21 +75,5 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         }
 
         return authenticator;
-    }
-
-    /**
-     * @return the loginService
-     */
-    public LoginService getLoginService()
-    {
-        return _loginService;
-    }
-
-    /**
-     * @param loginService the loginService to set
-     */
-    public void setLoginService(LoginService loginService)
-    {
-        _loginService = loginService;
     }
 }

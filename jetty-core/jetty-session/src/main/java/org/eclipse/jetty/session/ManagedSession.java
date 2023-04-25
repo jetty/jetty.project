@@ -350,9 +350,9 @@ public class ManagedSession implements Session
     }
 
     @Override
-    public String encodeURL(Request request, String url, boolean cookiesInUse)
+    public String encodeURI(Request request, String uri, boolean cookiesInUse)
     {
-        return _manager.encodeURL(request, url, cookiesInUse);
+        return _manager.encodeURL(request, uri, cookiesInUse);
     }
 
     @Override

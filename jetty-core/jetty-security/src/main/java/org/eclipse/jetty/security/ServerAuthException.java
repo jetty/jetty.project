@@ -16,7 +16,7 @@ package org.eclipse.jetty.security;
 import java.security.GeneralSecurityException;
 
 /**
- * @version $Rev: 4466 $ $Date: 2009-02-10 23:42:54 +0100 (Tue, 10 Feb 2009) $
+ * A server specific Authentication or Authorization exception.
  */
 public class ServerAuthException extends GeneralSecurityException
 {

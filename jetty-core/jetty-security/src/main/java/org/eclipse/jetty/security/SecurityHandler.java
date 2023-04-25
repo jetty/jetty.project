@@ -58,8 +58,6 @@ import org.slf4j.LoggerFactory;
  * Authentication.Configuration. At startup, any context init parameters
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
- *
- * TODO rename to ConstraintHandler
  */
 public abstract class SecurityHandler extends Handler.Wrapper implements AuthConfiguration
 {
@@ -127,8 +125,9 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
     /**
      * Set the loginService.
-     *
-     * TODO describe the magic if this is not called!
+     * If a {@link LoginService} is not set, or is set to null,
+     * then during {@link #doStart()}
+     * the {@link #findLoginService()} method is used to locate one.
      *
      * @param loginService the loginService to set
      */
@@ -259,11 +258,18 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
     }
 
     /**
-     * TODO javadoc
-     * @return
-     * @throws Exception
+     * Find an appropriate {@link LoginService} from the
+     * list returned by {@link org.eclipse.jetty.util.component.Container#getBeans(Class)}
+     * called on the result of {@link #getServer()}.  A service is selected by:
+     * <ul>
+     *     <li>if {@link #setRealmName(String)} has been called, the first service
+     *     with a matching name is used</li>
+     *     <li>if the list is size 1, that service is used</li>
+     *     <li>otherwise no service is selected.</li>
+     * </ul>
+     * @return An appropriate {@link LoginService} or null
      */
-    protected LoginService findLoginService() throws Exception
+    protected LoginService findLoginService()
     {
         java.util.Collection<LoginService> list = getServer().getBeans(LoginService.class);
         LoginService service = null;
@@ -475,9 +481,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
                 authenticationState = _deferred;
 
             AuthenticationState.setAuthenticationState(request, authenticationState);
-            IdentityService.Association association = authenticationState instanceof AuthenticationState.Succeeded user
-                ? _identityService.associate(user.getUserIdentity())
-                : null;
+            IdentityService.Association association =
+                (authenticationState instanceof AuthenticationState.Succeeded user)
+                ? _identityService.associate(user.getUserIdentity(), null) : null;
+
 
             try
             {
@@ -504,7 +511,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         ContextHandler contextHandler = ContextHandler.getCurrentContextHandler();
         if (contextHandler != null)
             return contextHandler.getDescendant(SecurityHandler.class);
-        // TODO what about without context?
         return null;
     }
 
@@ -598,21 +604,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
             return SecurityHandler.this;
         }
     }
-
-    public static final Principal __NO_USER = new Principal()
-    {
-        @Override
-        public String getName()
-        {
-            return null;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "No User";
-        }
-    };
 
     // TODO consider method mapping version
 

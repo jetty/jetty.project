@@ -37,6 +37,7 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.jaas.callback.DefaultCallbackHandler;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
@@ -45,9 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JAASLoginService
- *
- *
  * Implementation of jetty's LoginService that works with JAAS for
  * authorization and authentication.
  */
@@ -182,11 +180,11 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Function<Boolean, Session> getSession)
+    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
     {
         try
         {
-            CallbackHandler callbackHandler = null;
+            CallbackHandler callbackHandler;
             if (_callbackHandlerClass == null)
                 callbackHandler = new DefaultCallbackHandler();
             else
@@ -195,10 +193,9 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
                 callbackHandler = (CallbackHandler)clazz.getDeclaredConstructor().newInstance();
             }
             
-            if (callbackHandler instanceof DefaultCallbackHandler)
+            if (callbackHandler instanceof DefaultCallbackHandler dch)
             {
-                DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
-                // TODO dch.setRequest(request);
+                dch.setRequest(request);
                 dch.setCredential(credentials);
                 dch.setUserName(username);
             }
@@ -225,6 +222,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
         }
         catch (Exception e)
         {
+            e.printStackTrace(); // TODO remove
             if (LOG.isDebugEnabled())
                 LOG.debug("Login error", e);
         }
@@ -280,7 +278,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
                 groups.add(principal.getName());
         }
 
-        return groups.toArray(new String[groups.size()]);
+        return groups.toArray(new String[0]);
     }
     
     /**

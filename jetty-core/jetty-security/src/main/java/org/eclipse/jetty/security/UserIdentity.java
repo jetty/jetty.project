@@ -16,6 +16,8 @@ package org.eclipse.jetty.security;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.security.internal.DefaultUserIdentity;
+
 /**
  * User object that encapsulates user identity and operations such as run-as-role actions,
  * checking isUserInRole and getUserPrincipal.
@@ -44,4 +46,9 @@ public interface UserIdentity
      * @return True if the user can act in that role.
      */
     boolean isUserInRole(String role);
+
+    static UserIdentity from(Subject subject, Principal userPrincipal, String... roles)
+    {
+        return new DefaultUserIdentity(subject, userPrincipal, roles);
+    }
 }

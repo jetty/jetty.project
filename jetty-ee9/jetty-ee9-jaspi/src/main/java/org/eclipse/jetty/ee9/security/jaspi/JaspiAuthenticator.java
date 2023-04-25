@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
@@ -139,7 +140,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, ServletRequest request)
     {
-        UserIdentity user = _loginService.login(username, password, SessionHandler.ServletSessionApi.newGetSession(request));
+        Request baseRequest = Request.getBaseRequest(request);
+        if (baseRequest == null)
+            return null;
+        UserIdentity user = _loginService.login(username, password, baseRequest.getCoreRequest(), SessionHandler.ServletSessionApi.getOrCreateSession(request));
         if (user != null)
         {
             renewSession((HttpServletRequest)request, null);

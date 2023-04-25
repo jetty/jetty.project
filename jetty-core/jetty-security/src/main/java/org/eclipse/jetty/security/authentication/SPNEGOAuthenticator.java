@@ -99,7 +99,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, Request request, Response response)
     {
-        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService.login(username, password, request::getSession);
+        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService.login(username, password, request, request::getSession);
         if (user != null && user.isEstablished())
         {
             renewSession(request, response);

@@ -254,7 +254,7 @@ public class PropertyUserStoreTest
                 super.loadUsers();
             }
         };
-        store.setRefreshInterval(1);
+        store.setReloadInterval(1);
         store.setConfig(ResourceFactory.root().newResource(usersFile));
         store.registerUserListener(userCount);
 

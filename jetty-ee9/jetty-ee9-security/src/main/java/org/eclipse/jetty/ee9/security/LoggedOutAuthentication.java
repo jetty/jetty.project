@@ -46,7 +46,7 @@ public class LoggedOutAuthentication implements Authentication.NonAuthenticated
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
             UserAuthentication authentication = new UserAuthentication("API", identity);
             if (identityService != null)
-                identityService.associate(identity);
+                identityService.associate(identity, null);
             return authentication;
         }
         return null;

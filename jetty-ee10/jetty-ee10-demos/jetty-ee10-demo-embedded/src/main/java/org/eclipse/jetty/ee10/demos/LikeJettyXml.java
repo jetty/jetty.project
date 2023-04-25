@@ -217,7 +217,7 @@ public class LikeJettyXml
         if (!Resources.isReadableFile(realmResource))
             throw new FileNotFoundException("Unable to find config: " + realmFile);
         login.setConfig(realmResource);
-        login.setRefreshInterval(0);
+        login.setReloadInterval(0);
         server.addBean(login);
 
         return server;

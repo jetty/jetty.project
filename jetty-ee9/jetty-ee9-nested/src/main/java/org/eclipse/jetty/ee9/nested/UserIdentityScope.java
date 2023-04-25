@@ -19,7 +19,7 @@ import java.util.Map;
  * User object that encapsulates user identity and operations such as run-as-role actions,
  * checking isUserInRole and getUserPrincipal.
  * <p>
- * Implementations of UserIdentity should be immutable so that they may be
+ * Implementations of UserIdentityScope should be immutable so that they may be
  * cached by Authenticators and LoginServices.
  */
 public interface UserIdentityScope

@@ -139,7 +139,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, Request request, Response response)
     {
-        UserIdentity user = _loginService.login(username, password, request::getSession);
+        UserIdentity user = _loginService.login(username, password, request, request::getSession);
         if (user != null)
         {
             renewSession(request, response);
