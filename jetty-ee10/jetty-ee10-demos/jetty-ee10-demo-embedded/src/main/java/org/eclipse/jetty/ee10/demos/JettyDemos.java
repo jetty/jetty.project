@@ -176,6 +176,13 @@ public class JettyDemos
         return result;
     }
 
+    /**
+     *
+     * @param groupId Maven groupId
+     * @param artifactId Maven artifactId
+     * @param version can be <code>null</code> and default current project version will be used
+     * @param packaging Maven packaging (war, jar)
+     */
     public record MavenCoordinate(String groupId, String artifactId, String version, String packaging){}
 
     public static void main(String... arg)
