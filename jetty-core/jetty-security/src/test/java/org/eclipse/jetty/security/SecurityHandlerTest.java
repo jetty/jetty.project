@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.security.Constraint.Transport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -177,15 +178,15 @@ public class SecurityHandlerTest
     public void testPathMatchesPrecedence()
     {
         PathMappings<Constraint> p = new PathMappings<>();
-        p.put("/foo/*", Constraint.from("foo", false, null, null));
-        p.put("*.txt", Constraint.from("txt", false, null, null));
-        p.put("/foo/bar/bob/*", Constraint.from("foobarbob", false, null, null));
-        p.put("*.thing.txt", Constraint.from("thingtxt", false, null, null));
-        p.put("/", Constraint.from("default", false, null, null));
-        p.put("/*", Constraint.from("everything", false, null, null));
-        p.put("", Constraint.from("root", false, null, null));
-        p.put("/foo/bar/bob/some.thing.txt", Constraint.from("exact", false, null, null));
-        p.put("/foo/bar/*", Constraint.from("foobar", false, null, null));
+        p.put("/foo/*", Constraint.from("foo", Transport.ANY, null, null));
+        p.put("*.txt", Constraint.from("txt", Transport.ANY, null, null));
+        p.put("/foo/bar/bob/*", Constraint.from("foobarbob", Transport.ANY, null, null));
+        p.put("*.thing.txt", Constraint.from("thingtxt", Transport.ANY, null, null));
+        p.put("/", Constraint.from("default", Transport.ANY, null, null));
+        p.put("/*", Constraint.from("everything", Transport.ANY, null, null));
+        p.put("", Constraint.from("root", Transport.ANY, null, null));
+        p.put("/foo/bar/bob/some.thing.txt", Constraint.from("exact", Transport.ANY, null, null));
+        p.put("/foo/bar/*", Constraint.from("foobar", Transport.ANY, null, null));
 
         List<MappedResource<Constraint>> matches = p.getMatches("/foo/bar/bob/some.thing.txt");
         matches.sort(new SecurityHandler.PathMapped());

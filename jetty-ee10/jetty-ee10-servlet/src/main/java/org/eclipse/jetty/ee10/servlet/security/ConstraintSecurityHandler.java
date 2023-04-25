@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.Constraint.Transport;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -154,7 +155,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
 
         //Equivalent to //<user-data-constraint><transport-guarantee>CONFIDENTIAL</transport-guarantee></user-data-constraint>
-        constraint.secure(transport.equals((TransportGuarantee.CONFIDENTIAL)));
+        constraint.transport(TransportGuarantee.CONFIDENTIAL.equals(transport) ? Transport.SECURE : Transport.ANY);
 
         return constraint.build();
     }
@@ -440,10 +441,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             }
         };
 
-        // Yes the servlet spec requires data constraints (secure) to be AND'd not OR'd !!!
+        Transport transportA = constraintA.getTransport();
+        Transport transportB = constraintB.getTransport();
+        Transport transport = Transport.SECURE.equals(transportA) && Transport.SECURE.equals(transportB)
+            ? Transport.SECURE : Transport.ANY;
+
         return Constraint.from(
             constraintA.getName() + "|" + constraintB.getName(),
-            Boolean.TRUE.equals(constraintA.isSecure()) && Boolean.TRUE.equals(constraintB.isSecure()),
+            transport,
             authorization,
             roles);
     }

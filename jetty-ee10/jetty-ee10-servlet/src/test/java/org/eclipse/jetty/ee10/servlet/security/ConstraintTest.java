@@ -204,7 +204,7 @@ public class ConstraintTest
         Constraint.Builder confidentialDataConstraint = new Constraint.Builder();
         confidentialDataConstraint.authorization(Constraint.Authorization.ALLOWED);
         confidentialDataConstraint.name("data constraint");
-        confidentialDataConstraint.secure(true);
+        confidentialDataConstraint.transport(Constraint.Transport.SECURE);
         ConstraintMapping mapping6 = new ConstraintMapping();
         mapping6.setPathSpec("/data/*");
         mapping6.setConstraint(confidentialDataConstraint.build());
@@ -476,7 +476,7 @@ public class ConstraintTest
         assertFalse(mappings.isEmpty());
         assertEquals(1, mappings.size());
         ConstraintMapping mapping = mappings.get(0);
-        assertTrue(mapping.getConstraint().isSecure());
+        assertThat(mapping.getConstraint().getTransport(), is(Constraint.Transport.SECURE));
     }
 
     /**
@@ -517,7 +517,7 @@ public class ConstraintTest
         assertNotSame(mapping.getConstraint().getAuthorization(), Constraint.Authorization.ALLOWED);
         assertNotNull(mapping.getConstraint().getRoles());
         assertEquals("R1", mapping.getConstraint().getRoles().stream().findFirst().orElse(null));
-        assertFalse(mapping.getConstraint().isSecure());
+        assertThat(mapping.getConstraint().getTransport(), not(is(Constraint.Transport.SECURE)));
     }
 
     /**
@@ -542,10 +542,10 @@ public class ConstraintTest
         assertEquals("GET", mappings.get(0).getMethod());
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertNull(mappings.get(0).getMethodOmissions());
-        assertFalse(mappings.get(0).getConstraint().isSecure());
+        assertThat(mappings.get(0).getConstraint().getTransport(), not(is(Constraint.Transport.SECURE)));
         assertEquals("POST", mappings.get(1).getMethod());
         assertEquals("R1", mappings.get(1).getConstraint().getRoles().stream().findFirst().orElse(null));
-        assertTrue(mappings.get(1).getConstraint().isSecure());
+        assertThat(mappings.get(1).getConstraint().getTransport(), is(Constraint.Transport.SECURE));
         assertNull(mappings.get(1).getMethodOmissions());
     }
 
@@ -570,7 +570,7 @@ public class ConstraintTest
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("GET", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
-        assertFalse(mappings.get(1).getConstraint().isSecure());
+        assertThat(mappings.get(1).getConstraint().getTransport(), not(is(Constraint.Transport.SECURE)));
         assertThat(mappings.get(1).getConstraint().getAuthorization(), is(Constraint.Authorization.ALLOWED));
     }
 
@@ -597,7 +597,7 @@ public class ConstraintTest
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("TRACE", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
-        assertFalse(mappings.get(1).getConstraint().isSecure());
+        assertThat(mappings.get(1).getConstraint().getTransport(), not(is(Constraint.Transport.SECURE)));
         Constraint constraint = mappings.get(1).getConstraint();
         assertSame(constraint.getAuthorization(), Constraint.Authorization.FORBIDDEN);
     }

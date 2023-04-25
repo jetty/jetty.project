@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.Constraint.Transport;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -157,7 +158,7 @@ public class TestSecurityAnnotationConversions
         //1 ConstraintMapping per ServletMapping
         Constraint expectedConstraint = new Constraint.Builder()
             .roles("tom", "dick", "harry")
-            .secure(true)
+            .transport(Transport.SECURE)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
@@ -187,7 +188,7 @@ public class TestSecurityAnnotationConversions
         //and mappings for each of the pathSpecs
         Constraint expectedConstraint1 = new Constraint.Builder()
             .roles("tom", "dick", "harry")
-            .secure(true)
+            .transport(Transport.SECURE)
             .build();
 
         //a Constraint for the PermitAll on the doGet method
@@ -237,13 +238,13 @@ public class TestSecurityAnnotationConversions
         //and mappings for each of the pathSpecs
         Constraint expectedConstraint1 = new Constraint.Builder()
             .roles("tom", "dick", "harry")
-            .secure(true).build();
+            .transport(Transport.SECURE).build();
 
         //a Constraint for the Permit on the GET method with a userdata
         //constraint of DC_CONFIDENTIAL
         Constraint expectedConstraint2 = new Constraint.Builder()
             .authorization(Constraint.Authorization.ALLOWED)
-            .secure(true)
+            .transport(Transport.SECURE)
             .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
@@ -288,7 +289,7 @@ public class TestSecurityAnnotationConversions
                         matched = true;
 
                         assertEquals(em.getConstraint().getAuthorization(), am.getConstraint().getAuthorization());
-                        assertEquals(em.getConstraint().isSecure(), am.getConstraint().isSecure());
+                        assertEquals(em.getConstraint().getTransport(), am.getConstraint().getTransport());
                         if (em.getMethodOmissions() == null)
                         {
                             assertNull(am.getMethodOmissions());

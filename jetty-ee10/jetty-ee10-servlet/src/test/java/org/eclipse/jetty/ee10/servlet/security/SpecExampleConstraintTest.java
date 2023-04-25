@@ -50,9 +50,7 @@ public class SpecExampleConstraintTest
     private static final String TEST_REALM = "TestRealm";
     private Server _server;
     private LocalConnector _connector;
-    private ServletContextHandler _context;
     private ConstraintSecurityHandler _security;
-    private SessionHandler _sessions;
 
     @BeforeEach
     public void setupServer()
@@ -61,8 +59,8 @@ public class SpecExampleConstraintTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        _context = new ServletContextHandler();
-        _context.setContextPath("/ctx");
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/ctx");
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
@@ -72,13 +70,13 @@ public class SpecExampleConstraintTest
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
         _server.addBean(loginService);
         
-        _context.addServlet(TestServlet.class, "/");
+        context.addServlet(TestServlet.class, "/");
         _security = new ConstraintSecurityHandler();
-        _context.setSecurityHandler(_security);
-        _sessions = new SessionHandler();
-        _context.setSessionHandler(_sessions);
+        context.setSecurityHandler(_security);
+        SessionHandler sessions = new SessionHandler();
+        context.setSessionHandler(sessions);
 
-        _server.setHandler(_context);
+        _server.setHandler(context);
         
         /*
         <security-constraint>
@@ -157,7 +155,7 @@ public class SpecExampleConstraintTest
         Constraint constraint2 = new Constraint.Builder()
             .name("wholesale 2")
             .roles("CONTRACTOR")
-            .secure(true)
+            .transport(Constraint.Transport.SECURE)
             .build();
         ConstraintMapping mapping5 = new ConstraintMapping();
         mapping5.setPathSpec("/acme/wholesale/*");
@@ -195,7 +193,7 @@ public class SpecExampleConstraintTest
         mapping8.setMethod("POST");
         mapping8.setConstraint(constraint4);
 
-        Set<String> knownRoles = new HashSet<String>();
+        Set<String> knownRoles = new HashSet<>();
         knownRoles.add("CONTRACTOR");
         knownRoles.add("HOMEOWNER");
         knownRoles.add("SALESCLERK");

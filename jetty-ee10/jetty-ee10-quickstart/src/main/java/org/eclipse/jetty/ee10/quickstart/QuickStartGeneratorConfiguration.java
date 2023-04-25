@@ -55,6 +55,7 @@ import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.Constraint.Transport;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -376,9 +377,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                         out.tag("auth-constraint");
                 }
 
-                if (Boolean.TRUE.equals(m.getConstraint().isSecure()))
+                if (Transport.SECURE.equals(m.getConstraint().getTransport()))
                     out.openTag("user-data-constraint").tag("transport-guarantee", "CONFIDENTIAL").closeTag();
-                else
+                else if (Transport.ANY.equals(m.getConstraint().getTransport()))
                     out.openTag("user-data-constraint").tag("transport-guarantee", "NONE").closeTag();
 
                 out.closeTag();
@@ -709,11 +710,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         String ot = n + ".servlet.";
 
-        ServletHolder s = (ServletHolder)holder;
-        if (s.getForcedPath() != null && s.getClassName() == null)
-            out.tag("jsp-file", s.getForcedPath());
+        if (holder.getForcedPath() != null && holder.getClassName() == null)
+            out.tag("jsp-file", holder.getForcedPath());
         else
-            out.tag("servlet-class", origin(md, ot + "servlet-class"), s.getClassName());
+            out.tag("servlet-class", origin(md, ot + "servlet-class"), holder.getClassName());
 
         for (String p : holder.getInitParameters().keySet())
         {
@@ -725,20 +725,20 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 .closeTag();
         }
 
-        if (s.getInitOrder() >= 0)
-            out.tag("load-on-startup", Integer.toString(s.getInitOrder()));
+        if (((ServletHolder)holder).getInitOrder() >= 0)
+            out.tag("load-on-startup", Integer.toString(((ServletHolder)holder).getInitOrder()));
 
-        if (!s.isEnabled())
+        if (!((ServletHolder)holder).isEnabled())
             out.tag("enabled", origin(md, ot + "enabled"), "false");
 
         out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
-        if (s.getRunAsRole() != null)
+        if (((ServletHolder)holder).getRunAsRole() != null)
             out.openTag("run-as", origin(md, ot + "run-as"))
-                .tag("role-name", s.getRunAsRole())
+                .tag("role-name", ((ServletHolder)holder).getRunAsRole())
                 .closeTag();
 
-        Map<String, String> roles = s.getRoleLinks();
+        Map<String, String> roles = ((ServletHolder)holder).getRoleLinks();
         if (roles != null)
         {
             for (Map.Entry<String, String> e : roles.entrySet())
@@ -751,10 +751,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //multipart-config
-        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)s.getRegistration()).getMultipartConfig();
+        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)((ServletHolder)holder).getRegistration()).getMultipartConfig();
         if (multipartConfig != null)
         {
-            out.openTag("multipart-config", origin(md, s.getName() + ".servlet.multipart-config"));
+            out.openTag("multipart-config", origin(md, ((ServletHolder)holder).getName() + ".servlet.multipart-config"));
             if (multipartConfig.getLocation() != null)
                 out.tag("location", multipartConfig.getLocation());
             out.tag("max-file-size", Long.toString(multipartConfig.getMaxFileSize()));

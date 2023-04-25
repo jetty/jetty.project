@@ -27,11 +27,11 @@ import org.slf4j.LoggerFactory;
  *     <li>A name</li>
  *     <li>Authorization to specify if authentication is needed and what roles are applicable</li>
  *     <li>A list of role names used for {@link Authorization#KNOWN_ROLE}</li>
- *     <li>If the request must be secure or not.</li>
+ *     <li>An indication if the Transport must be secure or not.</li>
  * </ul>
  * <p>
  * If a constraint does not contain one of these elements, it is interpreted as "don't care". For example
- * if {@link #isSecure()} returns null, this signifies that the transport may either be secure or insecure.
+ * if {@link #getTransport()} ()} returns null, this signifies that the transport may either be secure or insecure.
  * Such "don't care" values are important when combining constraints.
  * <p>
  * The core constraint is not the same as the servlet specification {@code AuthConstraint}, but it is
@@ -74,6 +74,12 @@ public interface Constraint
          */
         SPECIFIC_ROLE;
     }
+    
+    enum Transport
+    {
+        SECURE,
+        ANY
+    }
 
     /**
      * @return The name for the {@code Constraint} or "unnamed@hashcode" if not named
@@ -81,11 +87,10 @@ public interface Constraint
     String getName();
 
     /**
-     * @return {@code True} if the transport must be secure, {@link Boolean#FALSE} if the
-     * transport does not need to be secure; {@code NULL} if the transport can be either.
+     * @return The required {@link Transport} or null if the transport can be either.
      */
-    Boolean isSecure();
-
+    Transport getTransport();
+    
     /**
      * @return The {@link Authorization} criteria applied by this {@code Constraint}
      * or null if this constraint does not have any authorization requirements.
@@ -108,16 +113,16 @@ public interface Constraint
     class Builder
     {
         private String _name;
-        private boolean _secure;
         private Authorization _authorization;
         private Set<String> _roles;
+        private Transport _transport;
 
         public Builder()
         {}
 
         public Builder(Constraint constraint)
         {
-            _secure = constraint.isSecure();
+            _transport = constraint.getTransport();
             _authorization = constraint.getAuthorization();
             _roles = constraint.getRoles();
         }
@@ -133,15 +138,15 @@ public interface Constraint
             return _name;
         }
 
-        public Builder secure(boolean secure)
+        public Builder transport(Transport transport)
         {
-            _secure = secure;
+            _transport = transport;
             return this;
         }
 
-        public boolean isSecure()
+        public Transport getTransport()
         {
-            return _secure;
+            return _transport;
         }
 
         public Builder authorization(Authorization authorization)
@@ -175,7 +180,7 @@ public interface Constraint
 
         public Constraint build()
         {
-            return from(_name, _secure, _authorization, _roles);
+            return from(_name, _transport, _authorization, _roles);
         }
     }
 
@@ -202,12 +207,12 @@ public interface Constraint
     /**
      * A static Constraint that is secure.
      */
-    Constraint SECURE = from("SECURE", true);
+    Constraint SECURE = from("SECURE", Transport.SECURE);
 
     /**
      * A static Constraint that is insecure.
      */
-    Constraint INSECURE = from("INSECURE", false);
+    Constraint INSECURE = from("INSECURE", Transport.ANY);
 
     /**
      * A static Constraint with {@link Authorization#ALLOWED} and not secure.
@@ -224,7 +229,7 @@ public interface Constraint
      *     <li>if the {@code mostSpecific} constraints {@link Authorization} is not null, it's
      *     {@link Constraint#getRoles()} are used in the combined constraint, otherwise
      *     the {@code leastSpecific}'s are used.</li>
-     *     <li>if the {@code mostSpecific} constraint's {@link #isSecure()} is not null, then that is used
+     *     <li>if the {@code mostSpecific} constraint's {@link #getTransport()} ()} is not null, then that is used
      *     in the combined constraint, otherwise the {@code leastSpecific}'s is used.</li>
      * </ul>
      * <p>Note that this combination is not equivalent to the combination done by the EE servlet specification.</p>
@@ -244,7 +249,7 @@ public interface Constraint
 
         return from(
             name,
-            mostSpecific.isSecure() == null ? leastSpecific.isSecure() : mostSpecific.isSecure(),
+            mostSpecific.getTransport() == null ? leastSpecific.getTransport() : mostSpecific.getTransport(),
             mostSpecific.getAuthorization() == null ? leastSpecific.getAuthorization() : mostSpecific.getAuthorization(),
             mostSpecific.getAuthorization() == null ? leastSpecific.getRoles() : mostSpecific.getRoles());
     }
@@ -254,9 +259,9 @@ public interface Constraint
         return from(null, Authorization.SPECIFIC_ROLE, roles);
     }
 
-    static Constraint from(String name, boolean secure)
+    static Constraint from(String name, Transport transport)
     {
-        return from(name, secure, null, null);
+        return from(name, transport, null, null);
     }
 
     static Constraint from(String name, Authorization authorization, String... roles)
@@ -266,12 +271,12 @@ public interface Constraint
             : new HashSet<>(Arrays.stream(roles).toList()));
     }
 
-    static Constraint from(boolean secure, Authorization authorization, Set<String> roles)
+    static Constraint from(Transport transport, Authorization authorization, Set<String> roles)
     {
-        return from(null, secure, authorization, roles);
+        return from(null, transport, authorization, roles);
     }
 
-    static Constraint from(String name, Boolean secure, Authorization authorization, Set<String> roles)
+    static Constraint from(String name, Transport transport, Authorization authorization, Set<String> roles)
     {
         Set<String> roleSet = roles == null || roles.isEmpty()
             ? Collections.emptySet()
@@ -290,9 +295,9 @@ public interface Constraint
             }
 
             @Override
-            public Boolean isSecure()
+            public Transport getTransport()
             {
-                return secure;
+                return transport;
             }
 
             @Override
@@ -319,7 +324,7 @@ public interface Constraint
                 return "Constraint@%x{%s,c=%b,%s,%s}".formatted(
                     hashCode(),
                     name,
-                    secure,
+                    transport,
                     authorization,
                     roleSet);
             }

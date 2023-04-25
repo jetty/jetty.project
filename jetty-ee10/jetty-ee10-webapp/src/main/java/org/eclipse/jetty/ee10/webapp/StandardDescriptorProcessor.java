@@ -1345,15 +1345,15 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             data = data.get("transport-guarantee");
             String guarantee = data.toString(false, true).toUpperCase(Locale.ENGLISH);
-            scBase.secure(
+            scBase.transport(
                 switch (guarantee)
                 {
-                    case "INTEGRAL", "CONFIDENTIAL" -> true;
-                    case "NONE" -> false;
+                    case "INTEGRAL", "CONFIDENTIAL" -> Constraint.Transport.SECURE;
+                    case "NONE" -> Constraint.Transport.ANY;
                     default ->
                     {
                         LOG.warn("Unknown user-data-constraint: {}", guarantee);
-                        yield true;
+                        yield null;
                     }
                 });
         }

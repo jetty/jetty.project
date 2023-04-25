@@ -453,7 +453,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         }
 
         // Check data constraints
-        if (Boolean.TRUE.equals(constraint.isSecure()) && !request.isSecure())
+        if (Constraint.Transport.SECURE.equals(constraint.getTransport()) && !request.isSecure())
         {
             redirectToSecure(request, response, callback);
             return true;
