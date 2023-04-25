@@ -191,7 +191,7 @@ public class TestSecurityAnnotationConversions
             .build();
 
         //a Constraint for the PermitAll on the doGet method
-        Constraint expectedConstraint2 = Constraint.ALLOWED;
+        Constraint expectedConstraint2 = Constraint.ALLOWED_INSECURE;
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
@@ -242,6 +242,7 @@ public class TestSecurityAnnotationConversions
         //a Constraint for the Permit on the GET method with a userdata
         //constraint of DC_CONFIDENTIAL
         Constraint expectedConstraint2 = new Constraint.Builder()
+            .authorization(Constraint.Authorization.ALLOWED)
             .secure(true)
             .build();
 

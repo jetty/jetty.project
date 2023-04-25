@@ -91,7 +91,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             if (DeferredAuthentication.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
 
-            String value = "basic realm=\"" + _loginService.getName() + "\"";
+            String value = "Basic realm=\"" + _loginService.getName() + "\"";
             Charset charset = getCharset();
             if (charset != null)
                 value += ", charset=\"" + charset.name() + "\"";

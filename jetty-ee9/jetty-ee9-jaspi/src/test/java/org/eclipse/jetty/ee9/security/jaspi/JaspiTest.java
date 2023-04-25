@@ -180,7 +180,7 @@ public class JaspiTest
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, Matchers.containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
     }
 
     @Test
@@ -189,7 +189,7 @@ public class JaspiTest
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
                 Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, Matchers.containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
     }
 
     @Test

@@ -400,46 +400,50 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         // Instead, it implements the bizarre section 13.8.1 of Servlet 6.0 specification
 
         if (constraintA == null)
-            return constraintB == null ? Constraint.ALLOWED : constraintB;
+            return constraintB == null ? Constraint.ALLOWED_INSECURE : constraintB;
         if (constraintB == null)
             return constraintA;
 
         // Don't blame me for the following code. Blame Servlet specification
-        Constraint.Authorization authorization = constraintA.getAuthorization();
+        Constraint.Authorization authorizationA = constraintA.getAuthorization();
+        if (authorizationA == null)
+            authorizationA = Constraint.Authorization.ALLOWED;
+
         Set<String> roles = null;
-        authorization = switch (constraintB.getAuthorization())
+        Constraint.Authorization authorizationB = constraintB.getAuthorization();
+        Constraint.Authorization authorization = authorizationB == null ? authorizationA : switch (authorizationB)
         {
             // Forbidden takes precedence
             case FORBIDDEN -> Constraint.Authorization.FORBIDDEN;
 
             // A constraint with no authorization takes precedence over any roles constraints, but not FORBIDDEN
-            case ALLOWED -> authorization == Constraint.Authorization.FORBIDDEN
+            case ALLOWED -> authorizationA == Constraint.Authorization.FORBIDDEN
                 ? Constraint.Authorization.FORBIDDEN
                 : Constraint.Authorization.ALLOWED;
 
             // The "**" role, which is any role (known or otherwise), has precedence over everything but FORBIDDEN and NONE
-            case ANY_USER -> (authorization == Constraint.Authorization.FORBIDDEN || authorization == Constraint.Authorization.ALLOWED)
-                ? authorization
+            case ANY_USER -> (authorizationA == Constraint.Authorization.FORBIDDEN || authorizationA == Constraint.Authorization.ALLOWED)
+                ? authorizationA
                 : Constraint.Authorization.ANY_USER;
 
             // The "*" role, which is any known role, only has precedence over SPECIFIC roles
-            case KNOWN_ROLE -> (authorization == Constraint.Authorization.KNOWN_ROLE || authorization == Constraint.Authorization.SPECIFIC_ROLE)
+            case KNOWN_ROLE -> (authorizationA == Constraint.Authorization.KNOWN_ROLE || authorizationA == Constraint.Authorization.SPECIFIC_ROLE)
                 ? Constraint.Authorization.KNOWN_ROLE
-                : authorization;
+                : authorizationA;
 
             // Specific roles only combine with other specific roles, otherwise one of the above cases apply
             case SPECIFIC_ROLE ->
             {
-                if (authorization == Constraint.Authorization.SPECIFIC_ROLE)
+                if (authorizationA == Constraint.Authorization.SPECIFIC_ROLE)
                     roles = Stream.concat(constraintA.getRoles().stream(), constraintB.getRoles().stream()).collect(Collectors.toSet());
-                yield authorization;
+                yield authorizationA;
             }
         };
 
         // Yes the servlet spec requires data constraints (secure) to be AND'd not OR'd !!!
         return Constraint.from(
             constraintA.getName() + "|" + constraintB.getName(),
-            constraintA.isSecure() && constraintB.isSecure(),
+            Boolean.TRUE.equals(constraintA.isSecure()) && Boolean.TRUE.equals(constraintB.isSecure()),
             authorization,
             roles);
     }

@@ -82,7 +82,7 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
             {
                 return AuthStatus.SUCCESS;
             }
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + realmName + '"');
+            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"" + realmName + '"');
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }

@@ -210,6 +210,11 @@ public interface Constraint
     Constraint INSECURE = from("INSECURE", false);
 
     /**
+     * A static Constraint with {@link Authorization#ALLOWED} and not secure.
+     */
+    Constraint ALLOWED_INSECURE = combine(ALLOWED, INSECURE);
+
+    /**
      * <p>Combine two Constraints by:</p>
      * <ul>
      *     <li>if both constraints are {@code Null}, then {@link Constraint#ALLOWED} is returned.</li>

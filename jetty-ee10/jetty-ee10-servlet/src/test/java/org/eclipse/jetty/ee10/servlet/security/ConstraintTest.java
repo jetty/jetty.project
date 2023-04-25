@@ -82,6 +82,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConstraintTest
@@ -495,7 +496,7 @@ public class ConstraintTest
         assertEquals(1, mappings.size());
         ConstraintMapping mapping = mappings.get(0);
         Constraint constraint = mapping.getConstraint();
-        assertTrue(constraint.getAuthorization() == Constraint.Authorization.FORBIDDEN);
+        assertSame(constraint.getAuthorization(), Constraint.Authorization.FORBIDDEN);
     }
 
     /**
@@ -598,7 +599,7 @@ public class ConstraintTest
         assertNull(mappings.get(1).getMethodOmissions());
         assertFalse(mappings.get(1).getConstraint().isSecure());
         Constraint constraint = mappings.get(1).getConstraint();
-        assertTrue(constraint.getAuthorization() == Constraint.Authorization.FORBIDDEN);
+        assertSame(constraint.getAuthorization(), Constraint.Authorization.FORBIDDEN);
     }
 
     @Test
@@ -694,7 +695,7 @@ public class ConstraintTest
                 (response) ->
                 {
                     String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
-                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.toString(), authHeader, containsString("Basic realm=\"TestRealm\""));
                 }
             )
         ));
@@ -711,7 +712,7 @@ public class ConstraintTest
                 (response) ->
                 {
                     String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
-                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.toString(), authHeader, containsString("Basic realm=\"TestRealm\""));
                     assertThat(response.get(HttpHeader.CONNECTION), nullValue());
                 }
             )
@@ -729,7 +730,7 @@ public class ConstraintTest
                 (response) ->
                 {
                     String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
-                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.toString(), authHeader, containsString("Basic realm=\"TestRealm\""));
                     assertThat(response.get(HttpHeader.CONNECTION), is("close"));
                 }
             )
@@ -744,7 +745,7 @@ public class ConstraintTest
                 (response) ->
                 {
                     String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
-                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.toString(), authHeader, containsString("Basic realm=\"TestRealm\""));
                 }
             )
         ));
@@ -777,7 +778,7 @@ public class ConstraintTest
                 (response) ->
                 {
                     String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
-                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.toString(), authHeader, containsString("Basic realm=\"TestRealm\""));
                 }
             )
         ));
@@ -791,7 +792,7 @@ public class ConstraintTest
                 (response) ->
                 {
                     String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
-                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.toString(), authHeader, containsString("Basic realm=\"TestRealm\""));
                 }
             )
         ));
@@ -920,12 +921,12 @@ public class ConstraintTest
         }
     }
 
-    private String digest(String nonce, String username, String password, String uri, String nc) throws Exception
+    private String digest(String nonce, String password, String nc) throws Exception
     {
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] ha1;
         // calc A1 digest
-        md.update(username.getBytes(ISO_8859_1));
+        md.update("user".getBytes(ISO_8859_1));
         md.update((byte)':');
         md.update("TestRealm".getBytes(ISO_8859_1));
         md.update((byte)':');
@@ -935,7 +936,7 @@ public class ConstraintTest
         md.reset();
         md.update("GET".getBytes(ISO_8859_1));
         md.update((byte)':');
-        md.update(uri.getBytes(ISO_8859_1));
+        md.update("/ctx/auth/info".getBytes(ISO_8859_1));
         byte[] ha2 = md.digest();
 
         // calc digest
@@ -987,7 +988,7 @@ public class ConstraintTest
         String nonce = matcher.group(1);
 
         //wrong password
-        String digest = digest(nonce, "user", "WRONG", "/ctx/auth/info", "1");
+        String digest = digest(nonce, "WRONG", "1");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
             "nc=1, " +
@@ -997,7 +998,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
 
         // right password
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "2");
+        digest = digest(nonce, "password", "2");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
             "nc=2, " +
@@ -1007,7 +1008,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
         // once only
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "2");
+        digest = digest(nonce, "password", "2");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
             "nc=2, " +
@@ -1017,7 +1018,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
 
         // increasing
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "4");
+        digest = digest(nonce, "password", "4");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
             "nc=4, " +
@@ -1027,7 +1028,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
         // out of order
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "3");
+        digest = digest(nonce, "password", "3");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
             "nc=3, " +
@@ -1037,7 +1038,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
         // stale
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "5");
+        digest = digest(nonce, "password", "5");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
             "nc=5, " +
@@ -1546,13 +1547,13 @@ public class ConstraintTest
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Basic " + authBase64("user:wrong") + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Basic " + authBase64("user3:password") + "\r\n" +
@@ -1567,13 +1568,13 @@ public class ConstraintTest
         // test admin
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Authorization: Basic " + authBase64("admin:wrong") + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Authorization: Basic " + authBase64("user:password") + "\r\n" +
@@ -2045,7 +2046,7 @@ public class ConstraintTest
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/admin/relax/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
