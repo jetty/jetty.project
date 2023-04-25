@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
  * listener), and/or require metadata to be held regarding their origin
  * (web.xml, annotation, programmatic api etc).
  *
+ * noise touch
+ *
  * @param <T> the type of holder
  */
 public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpable
