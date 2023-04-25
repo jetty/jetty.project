@@ -376,11 +376,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                         out.tag("auth-constraint");
                 }
 
-                if (m.getConstraint().isSecure())
+                if (Boolean.TRUE.equals(m.getConstraint().isSecure()))
                     out.openTag("user-data-constraint").tag("transport-guarantee", "CONFIDENTIAL").closeTag();
                 else
                     out.openTag("user-data-constraint").tag("transport-guarantee", "NONE").closeTag();
-
 
                 out.closeTag();
             }
