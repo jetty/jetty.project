@@ -164,9 +164,12 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <environmentVariables>
-            <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
           </environmentVariables>
+          <systemPropertyVariables>
+            <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
+            <jettyVersion>${project.version}</jettyVersion>
+          </systemPropertyVariables>
           <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>
       </plugin>
