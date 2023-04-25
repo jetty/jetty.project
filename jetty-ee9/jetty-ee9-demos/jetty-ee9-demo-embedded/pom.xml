@@ -128,6 +128,12 @@
     -->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
@@ -135,6 +141,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
@@ -147,6 +159,7 @@
         <configuration>
           <environmentVariables>
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+            <jettyVersion>${project.version}</jettyVersion>
           </environmentVariables>
           <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>
