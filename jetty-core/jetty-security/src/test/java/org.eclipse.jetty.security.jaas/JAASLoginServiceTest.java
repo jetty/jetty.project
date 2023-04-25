@@ -17,6 +17,9 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import javax.security.auth.Subject;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
@@ -34,10 +37,6 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import javax.security.auth.Subject;
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;

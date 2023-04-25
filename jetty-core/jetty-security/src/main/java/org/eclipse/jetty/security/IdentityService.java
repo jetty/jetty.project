@@ -31,6 +31,11 @@ public interface IdentityService
      */
     Association associate(UserIdentity user, RunAsToken runAsToken);
 
+    /**
+     * Called to notify that a user has been logged out.
+     * The service may, among other actions, close any {@link Association} for the calling thread.
+     * @param user The user that has logged out
+     */
     void onLogout(UserIdentity user);
 
     /**

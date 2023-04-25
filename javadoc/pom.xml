@@ -272,11 +272,6 @@
       <artifactId>jetty-security</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jaspi</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.memcached</groupId>
       <artifactId>jetty-memcached-sessions</artifactId>

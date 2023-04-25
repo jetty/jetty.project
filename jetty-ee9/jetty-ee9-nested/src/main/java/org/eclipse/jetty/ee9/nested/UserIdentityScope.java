@@ -62,5 +62,4 @@ public interface UserIdentityScope
         }
         return role;
     }
-
 }
