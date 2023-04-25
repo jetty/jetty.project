@@ -715,7 +715,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
          *     <li>{@link PathSpecGroup#SUFFIX_GLOB}</li>
          *     <li>{@link PathSpecGroup#MIDDLE_GLOB}</li>
          *     <li>{@link PathSpecGroup#PREFIX_GLOB}</li>
-         *     <li>{@link PathSpecGroup#DEFAULT}</li>*
+         *     <li>{@link PathSpecGroup#DEFAULT}</li>
          * </ul>
          * @param group The group to rank.
          * @return An integer representing relative precedence between {@link PathSpecGroup}s.
