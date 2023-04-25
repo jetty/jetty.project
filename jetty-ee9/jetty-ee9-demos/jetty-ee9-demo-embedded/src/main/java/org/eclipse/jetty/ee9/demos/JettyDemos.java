@@ -165,6 +165,7 @@ public class JettyDemos
         return result;
     }
 
+    @Deprecated
     public static Path find(String path) throws FileNotFoundException
     {
         String expandedPath = path.replaceAll("@VER@", VERSION);
