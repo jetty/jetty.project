@@ -401,7 +401,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         // Instead, it implements the bizarre section 13.8.1 of Servlet 6.0 specification
 
         if (constraintA == null)
-            return constraintB == null ? Constraint.ALLOWED_INSECURE : constraintB;
+            return constraintB == null ? Constraint.ALLOWED_ANY_TRANSPORT : constraintB;
         if (constraintB == null)
             return constraintA;
 

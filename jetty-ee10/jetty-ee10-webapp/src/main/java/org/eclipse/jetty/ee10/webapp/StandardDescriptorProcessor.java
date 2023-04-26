@@ -1290,7 +1290,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             return;
         }
 
-        Constraint.Builder scBase = new Constraint.Builder();
+        Constraint.Builder scBase = new Constraint.Builder(Constraint.ALLOWED_ANY_TRANSPORT);
 
         //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive across fragments
 

@@ -207,17 +207,17 @@ public interface Constraint
     /**
      * A static Constraint that is secure.
      */
-    Constraint SECURE = from("SECURE", Transport.SECURE);
+    Constraint SECURE_TRANSPORT = from("SECURE", Transport.SECURE);
 
     /**
      * A static Constraint that is insecure.
      */
-    Constraint INSECURE = from("INSECURE", Transport.ANY);
+    Constraint ANY_TRANSPORT = from("ANY", Transport.ANY);
 
     /**
      * A static Constraint with {@link Authorization#ALLOWED} and not secure.
      */
-    Constraint ALLOWED_INSECURE = combine(ALLOWED, INSECURE);
+    Constraint ALLOWED_ANY_TRANSPORT = combine("ALLOWED_ANY_TRANSPORT", ALLOWED, ANY_TRANSPORT);
 
     /**
      * <p>Combine two Constraints by:</p>
@@ -239,13 +239,16 @@ public interface Constraint
      */
     static Constraint combine(Constraint leastSpecific, Constraint mostSpecific)
     {
+        String name = LOG.isDebugEnabled() ? leastSpecific.getName() + ">" + mostSpecific : null;
+        return combine(name, leastSpecific, mostSpecific);
+    }
+
+    static Constraint combine(String name, Constraint leastSpecific, Constraint mostSpecific)
+    {
         if (leastSpecific == null)
             return mostSpecific == null ? ALLOWED : mostSpecific;
         if (mostSpecific == null)
             return leastSpecific;
-
-        String name = LOG.isDebugEnabled()
-            ? leastSpecific.getName() + ">" + mostSpecific : null;
 
         return from(
             name,
@@ -291,7 +294,7 @@ public interface Constraint
             @Override
             public String getName()
             {
-                return name;
+                return name == null ? "unnamed@%x".formatted(hashCode()) : name;
             }
 
             @Override
@@ -321,9 +324,9 @@ public interface Constraint
             @Override
             public String toString()
             {
-                return "Constraint@%x{%s,c=%b,%s,%s}".formatted(
+                return "Constraint@%x{%s,%s,%s,%s}".formatted(
                     hashCode(),
-                    name,
+                    getName(),
                     transport,
                     authorization,
                     roleSet);
