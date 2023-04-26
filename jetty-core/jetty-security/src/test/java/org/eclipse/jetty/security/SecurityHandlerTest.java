@@ -189,7 +189,7 @@ public class SecurityHandlerTest
         p.put("/foo/bar/*", Constraint.from("foobar", Transport.ANY, null, null));
 
         List<MappedResource<Constraint>> matches = p.getMatches("/foo/bar/bob/some.thing.txt");
-        matches.sort(new SecurityHandler.PathMapped());
+        matches.sort(new SecurityHandler.PathMapped()::compare);
 
         List<String> names = matches.stream()
             .map(MappedResource::getResource)

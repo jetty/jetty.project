@@ -407,7 +407,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         // Don't blame me for the following code. Blame Servlet specification
         Constraint.Authorization authorizationA = constraintA.getAuthorization();
-        if (authorizationA == null)
+        if (authorizationA == Constraint.Authorization.INHERIT)
             authorizationA = Constraint.Authorization.ALLOWED;
 
         Set<String> roles = null;
@@ -439,6 +439,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                     roles = Stream.concat(constraintA.getRoles().stream(), constraintB.getRoles().stream()).collect(Collectors.toSet());
                 yield authorizationA;
             }
+
+            case INHERIT -> authorizationA;
         };
 
         Transport transportA = constraintA.getTransport();

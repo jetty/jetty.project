@@ -358,12 +358,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 }
 
                 Constraint.Authorization authorization = m.getConstraint().getAuthorization();
-                if (authorization == null)
-                    authorization = Constraint.Authorization.ALLOWED;
 
                 switch (authorization)
                 {
-                    case ALLOWED ->
+                    case ALLOWED, INHERIT ->
                     {
                     }
                     case FORBIDDEN -> out.tag("auth-constraint");

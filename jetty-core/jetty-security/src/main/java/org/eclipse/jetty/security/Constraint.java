@@ -22,17 +22,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Security constraint that is applied to a request, which can optionally contain:
+ * A Security constraint that is applied to a request, which contain:
  * <ul>
  *     <li>A name</li>
  *     <li>Authorization to specify if authentication is needed and what roles are applicable</li>
- *     <li>A list of role names used for {@link Authorization#KNOWN_ROLE}</li>
- *     <li>An indication if the Transport must be secure or not.</li>
+ *     <li>An optional list of role names used for {@link Authorization#KNOWN_ROLE}</li>
+ *     <li>A Transport constraint, indicating if it must be secure or not.</li>
  * </ul>
- * <p>
- * If a constraint does not contain one of these elements, it is interpreted as "don't care". For example
- * if {@link #getTransport()} ()} returns null, this signifies that the transport may either be secure or insecure.
- * Such "don't care" values are important when combining constraints.
  * <p>
  * The core constraint is not the same as the servlet specification {@code AuthConstraint}, but it is
  * sufficiently capable to represent servlet constraints.
@@ -72,13 +68,33 @@ public interface Constraint
         /**
          * Access allowed only for authenticated user with specific role(s).
          */
-        SPECIFIC_ROLE;
+        SPECIFIC_ROLE,
+
+        /**
+         * Inherit the authorization from a less specific constraint when passed to {@link #combine(Constraint, Constraint)},
+         * otherwise act as {@link #ALLOWED}.
+         */
+        INHERIT;
     }
-    
+
+    /**
+     * The constraints requirement for the transport
+     */
     enum Transport
     {
+        /**
+         * The transport must be secure (e.g. TLS)
+         */
         SECURE,
-        ANY
+        /**
+         * The transport can be either secure or not secure.
+         */
+        ANY,
+        /**
+         * Inherit the transport constraint from a less specific constraint when passed to {@link #combine(Constraint, Constraint)},
+         * otherwise act as {@link #ANY}.
+         */
+        INHERIT
     }
 
     /**
@@ -185,54 +201,44 @@ public interface Constraint
     }
 
     /**
-     * A static Constraint with {@link Authorization#ALLOWED} and not secure.
+     * A static Constraint that has {@link Authorization#ALLOWED} and {@link Transport#INHERIT}.
      */
     Constraint ALLOWED = from("ALLOWED", Authorization.ALLOWED);
 
     /**
-     * A static Constraint with {@link Authorization#FORBIDDEN} and not secure.
+     * A static Constraint that has {@link Authorization#FORBIDDEN} and {@link Transport#INHERIT}.
      */
     Constraint FORBIDDEN = from("FORBIDDEN", Authorization.FORBIDDEN);
 
     /**
-     * A static Constraint with {@link Authorization#ANY_USER} and not secure.
+     * A static Constraint that has {@link Authorization#ANY_USER} and {@link Transport#INHERIT}.
      */
     Constraint ANY_USER = from("ANY_USER", Authorization.ANY_USER);
 
     /**
-     * A static Constraint with {@link Authorization#KNOWN_ROLE} and not secure.
+     * A static Constraint that has {@link Authorization#KNOWN_ROLE} and {@link Transport#INHERIT}.
      */
     Constraint KNOWN_ROLE = from("KNOWN_ROLE", Authorization.KNOWN_ROLE);
 
     /**
-     * A static Constraint that is secure.
+     * A static Constraint that has {@link Transport#SECURE} and {@link Authorization#INHERIT}
      */
     Constraint SECURE_TRANSPORT = from("SECURE", Transport.SECURE);
 
     /**
-     * A static Constraint that is insecure.
+     * A static Constraint that has {@link Transport#ANY} and {@link Authorization#INHERIT}
      */
     Constraint ANY_TRANSPORT = from("ANY", Transport.ANY);
 
     /**
-     * A static Constraint with {@link Authorization#ALLOWED} and not secure.
+     * A static Constraint that has {@link Authorization#ALLOWED} and {@link Transport#ANY}.
      */
     Constraint ALLOWED_ANY_TRANSPORT = combine("ALLOWED_ANY_TRANSPORT", ALLOWED, ANY_TRANSPORT);
 
     /**
-     * <p>Combine two Constraints by:</p>
-     * <ul>
-     *     <li>if both constraints are {@code Null}, then {@link Constraint#ALLOWED} is returned.</li>
-     *     <li>if either constraint is {@code Null} the other is returned.</li>
-     *     <li>if the {@code mostSpecific} constraints {@link Authorization} is not null, it is used in the
-     *     combined constraint, otherwise the {@code leastSpecific}'s is used.</li>
-     *     <li>if the {@code mostSpecific} constraints {@link Authorization} is not null, it's
-     *     {@link Constraint#getRoles()} are used in the combined constraint, otherwise
-     *     the {@code leastSpecific}'s are used.</li>
-     *     <li>if the {@code mostSpecific} constraint's {@link #getTransport()} ()} is not null, then that is used
-     *     in the combined constraint, otherwise the {@code leastSpecific}'s is used.</li>
-     * </ul>
-     * <p>Note that this combination is not equivalent to the combination done by the EE servlet specification.</p>
+     * Combine two Constraints by using {@link #combine(String, Constraint, Constraint)} with
+     * a generated name.
+     * @see #combine(String, Constraint, Constraint)
      * @param leastSpecific Constraint to combine
      * @param mostSpecific Constraint to combine
      * @return the combined constraint.
@@ -243,6 +249,40 @@ public interface Constraint
         return combine(name, leastSpecific, mostSpecific);
     }
 
+    /**
+     * <p>Combine two Constraints by:</p>
+     * <ul>
+     *     <li>if both constraints are {@code Null}, then {@link Constraint#ALLOWED} is returned.</li>
+     *     <li>if either constraint is {@code Null} the other is returned.</li>
+     *     <li>only if the {@code mostSpecific} constraint has {@link Authorization#INHERIT} is the
+     *         {@code leastSpecific} constraint's {@link Authorization} used,
+     *         otherwise the {@code mostSpecific}'s is used.</li>
+     *     <li>if the combined constraint has {@link Authorization#SPECIFIC_ROLE}, then the role set from
+     *     the constraint that specified the {@link Authorization#SPECIFIC_ROLE} is used.</li>
+     *     <li>only if the {@code mostSpecific} constraint has {@link Transport#INHERIT} is the
+     *         {@code leastSpecific} constraint's {@link Transport} used,
+     *         otherwise the {@code mostSpecific}'s is used.</li>
+     * </ul>
+     * <p>
+     * Typically the path of the constraint is used to determine which constraint is most specific.  For example
+     * if the following paths mapped to Constraints as:
+     * </p>
+     * <pre>
+     *     /*         -> Authorization.FORBIDDEN,roles=[],Transport.SECURE
+     *     /admin/*   -> Authorization.SPECIFIC_ROLE,roles=["admin"],Transport.INHERIT
+     * </pre>
+     * <p>
+     * The the {@code /admin/*} constraint would be consider most specific and a request to {@code /admin/file} would
+     * have {@link Authorization#SPECIFIC_ROLE} from the {@code /admin/*} constraint and
+     * {@link Transport#SECURE} inherited from the {@code /*} constraint.  For more examples see
+     * {@link SecurityHandler.PathMapped}.
+     * </p>
+     * <p>Note that this combination is not equivalent to the combination done by the EE servlet specification.</p>
+     * @param name The name to use for the combined constraint
+     * @param leastSpecific Constraint to combine
+     * @param mostSpecific Constraint to combine
+     * @return the combined constraint.
+     */
     static Constraint combine(String name, Constraint leastSpecific, Constraint mostSpecific)
     {
         if (leastSpecific == null)
@@ -252,9 +292,9 @@ public interface Constraint
 
         return from(
             name,
-            mostSpecific.getTransport() == null ? leastSpecific.getTransport() : mostSpecific.getTransport(),
-            mostSpecific.getAuthorization() == null ? leastSpecific.getAuthorization() : mostSpecific.getAuthorization(),
-            mostSpecific.getAuthorization() == null ? leastSpecific.getRoles() : mostSpecific.getRoles());
+            mostSpecific.getTransport() == Transport.INHERIT ? leastSpecific.getTransport() : mostSpecific.getTransport(),
+            mostSpecific.getAuthorization() == Authorization.INHERIT ? leastSpecific.getAuthorization() : mostSpecific.getAuthorization(),
+            mostSpecific.getAuthorization() == Authorization.INHERIT ? leastSpecific.getRoles() : mostSpecific.getRoles());
     }
 
     static Constraint from(String... roles)
@@ -269,7 +309,7 @@ public interface Constraint
 
     static Constraint from(String name, Authorization authorization, String... roles)
     {
-        return from(name, null, authorization, (roles == null || roles.length == 0)
+        return from(name, Transport.INHERIT, authorization, (roles == null || roles.length == 0)
             ? Collections.emptySet()
             : new HashSet<>(Arrays.stream(roles).toList()));
     }
@@ -286,7 +326,7 @@ public interface Constraint
             : Collections.unmodifiableSet(roles);
 
         Authorization auth = authorization == null
-            ? (roleSet.isEmpty() ? null : Authorization.SPECIFIC_ROLE)
+            ? (roleSet.isEmpty() ? Authorization.INHERIT : Authorization.SPECIFIC_ROLE)
             : authorization;
 
         return new Constraint()
@@ -300,7 +340,7 @@ public interface Constraint
             @Override
             public Transport getTransport()
             {
-                return transport;
+                return transport == null ? Transport.INHERIT : transport;
             }
 
             @Override

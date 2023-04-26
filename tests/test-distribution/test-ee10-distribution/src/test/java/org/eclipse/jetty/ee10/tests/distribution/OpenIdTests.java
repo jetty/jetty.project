@@ -23,7 +23,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -109,7 +108,6 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 content = response.getContentAsString();
                 assertThat(content, containsString("not authenticated"));
-
             }
         }
         finally
