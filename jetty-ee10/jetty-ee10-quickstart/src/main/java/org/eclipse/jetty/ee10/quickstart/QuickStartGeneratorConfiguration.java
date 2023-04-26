@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -133,9 +132,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      *
      * @param stream the stream to generate the quickstart-web.xml to
      * @throws IOException if unable to generate the quickstart-web.xml
-     * @throws FileNotFoundException if unable to find the file
      */
-    public void generateQuickStartWebXml(WebAppContext context, OutputStream stream) throws FileNotFoundException, IOException
+    public void generateQuickStartWebXml(WebAppContext context, OutputStream stream) throws IOException
     {
         if (context == null)
             throw new IllegalStateException("No webapp for quickstart generation");
@@ -328,9 +326,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             out.closeTag();
         }
 
-        if (security instanceof ConstraintAware)
+        if (security instanceof ConstraintAware ca)
         {
-            ConstraintAware ca = (ConstraintAware)security;
             for (String r : ca.getKnownRoles())
             {
                 out.openTag("security-role", origin(md, "security-role." + r))
@@ -360,21 +357,42 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     out.closeTag();
                 }
 
-                if (m.getConstraint().getAuthorization() != Constraint.Authorization.ALLOWED)
+                Constraint.Authorization authorization = m.getConstraint().getAuthorization();
+                if (authorization == null)
+                    authorization = Constraint.Authorization.ALLOWED;
+
+                switch (authorization)
                 {
-                    Set<String> roles = m.getConstraint().getRoles();
-                    if (roles != null && roles.size() > 0)
+                    case ALLOWED ->
+                    {
+                    }
+                    case FORBIDDEN -> out.tag("auth-constraint");
+                    case ANY_USER ->
                     {
                         out.openTag("auth-constraint");
-                        if (m.getConstraint().getRoles() != null)
-                            for (String r : m.getConstraint().getRoles())
-                            {
-                                out.tag("role-name", r);
-                            }
+                        out.tag("role-name", "**");
                         out.closeTag();
                     }
-                    else
-                        out.tag("auth-constraint");
+                    case KNOWN_ROLE ->
+                    {
+                        out.openTag("auth-constraint");
+                        out.tag("role-name", "*");
+                        out.closeTag();
+                    }
+                    case SPECIFIC_ROLE ->
+                    {
+                        Set<String> roles = m.getConstraint().getRoles();
+                        if (roles != null && roles.size() > 0)
+                        {
+                            out.openTag("auth-constraint");
+                            if (m.getConstraint().getRoles() != null)
+                                for (String r : m.getConstraint().getRoles())
+                                {
+                                    out.tag("role-name", r);
+                                }
+                            out.closeTag();
+                        }
+                    }
                 }
 
                 if (Transport.SECURE.equals(m.getConstraint().getTransport()))
@@ -680,11 +698,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         String ot = n + ".filter.";
 
-        if (holder instanceof FilterHolder)
-        {
-            out.tag("filter-class", origin(md, ot + "filter-class"), holder.getClassName());
-            out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
-        }
+        out.tag("filter-class", origin(md, ot + "filter-class"), holder.getClassName());
+        out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
         for (String p : holder.getInitParameters().keySet())
         {
@@ -725,20 +740,20 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 .closeTag();
         }
 
-        if (((ServletHolder)holder).getInitOrder() >= 0)
-            out.tag("load-on-startup", Integer.toString(((ServletHolder)holder).getInitOrder()));
+        if (holder.getInitOrder() >= 0)
+            out.tag("load-on-startup", Integer.toString(holder.getInitOrder()));
 
-        if (!((ServletHolder)holder).isEnabled())
+        if (!holder.isEnabled())
             out.tag("enabled", origin(md, ot + "enabled"), "false");
 
         out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
-        if (((ServletHolder)holder).getRunAsRole() != null)
+        if (holder.getRunAsRole() != null)
             out.openTag("run-as", origin(md, ot + "run-as"))
-                .tag("role-name", ((ServletHolder)holder).getRunAsRole())
+                .tag("role-name", holder.getRunAsRole())
                 .closeTag();
 
-        Map<String, String> roles = ((ServletHolder)holder).getRoleLinks();
+        Map<String, String> roles = holder.getRoleLinks();
         if (roles != null)
         {
             for (Map.Entry<String, String> e : roles.entrySet())
@@ -751,10 +766,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //multipart-config
-        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)((ServletHolder)holder).getRegistration()).getMultipartConfig();
+        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
         if (multipartConfig != null)
         {
-            out.openTag("multipart-config", origin(md, ((ServletHolder)holder).getName() + ".servlet.multipart-config"));
+            out.openTag("multipart-config", origin(md, holder.getName() + ".servlet.multipart-config"));
             if (multipartConfig.getLocation() != null)
                 out.tag("location", multipartConfig.getLocation());
             out.tag("max-file-size", Long.toString(multipartConfig.getMaxFileSize()));
@@ -784,7 +799,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             LOG.debug("origin of {} is {}", name, origin);
         if (origin == null)
             return Collections.emptyMap();
-        return Collections.singletonMap(_originAttribute, origin.toString() + ":" + (_count++));
+        return Collections.singletonMap(_originAttribute, origin + ":" + (_count++));
     }
 
     @Override
