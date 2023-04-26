@@ -2,9 +2,14 @@
        xsi:schemaLocation="http://maven.apache.org/BUILD-CACHE-CONFIG/1.0.0 https://maven.apache.org/xsd/build-cache-config-1.0.0.xsd">
   <configuration>
     <enabled>true</enabled>
-    <remote enabled="false" saveToRemote="false"> <!-- id="remote-cache" -->
-      <url>http://nginx-cache-service.jenkins.svc.cluster.local:80</url>
-    </remote>
+<!-- activated via cli -->
+<!--
+  -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true
+  -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server
+-->
+<!--    <remote enabled="true" saveToRemote="true" id="remote-build-cache-server">-->
+<!--      <url>dav:http://nginx-cache-service.jenkins.svc.cluster.local:80</url>-->
+<!--    </remote>-->
     <multiModule>
       <discovery>
         <scanProfiles>
@@ -17,20 +22,20 @@
     <global>
       <glob>{*.java,*.xml,*.properties,*.mod,*.adoc}</glob>
     </global>
-<!--    <plugins>-->
-<!--      <plugin artifactId="maven-surefire-plugin">-->
-<!--        <effectivePom>-->
-<!--          <excludeProperties>-->
-<!--            <excludeProperty>argLine</excludeProperty>-->
-<!--          </excludeProperties>-->
-<!--        </effectivePom>-->
-<!--      </plugin>-->
-<!--    </plugins>-->
+    <!--    <plugins>-->
+    <!--      <plugin artifactId="maven-surefire-plugin">-->
+    <!--        <effectivePom>-->
+    <!--          <excludeProperties>-->
+    <!--            <excludeProperty>argLine</excludeProperty>-->
+    <!--          </excludeProperties>-->
+    <!--        </effectivePom>-->
+    <!--      </plugin>-->
+    <!--    </plugins>-->
   </input>
   <executionControl>
     <runAlways>
       <goalsLists>
-        <goalsList artifactId="maven-install-plugin" groupId="org.apache.maven.plugins">
+        <goalsList artifactId="maven-install-plugin">
           <goals>
             <goal>install</goal>
           </goals>
