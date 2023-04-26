@@ -33,10 +33,31 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public interface Session extends Configurable, Closeable
 {
     /**
-     * <p>Explicitly demands for WebSocket frames.</p>
+     * <p>Explicitly demands for WebSocket events.</p>
      * <p>This method should be called only when the WebSocket endpoint is not
      * demanding automatically, as defined by {@link WebSocket#autoDemand()}
      * and {@link Listener.AutoDemanding}.</p>
+     * <p>In general, invoking this method results in a listener method or
+     * an annotated method to be called when the corresponding event is
+     * ready to be delivered.</p>
+     * <p>For WebSocket endpoints that wants to receive frame events
+     * (for example by overriding {@link Listener#onWebSocketFrame(Frame, Callback)}),
+     * invoking this method will result in a frame event being delivered to
+     * the listener/annotated method when a new frame is received.</p>
+     * <p>For WebSocket endpoints that want to receive whole <em>message</em>
+     * events (for example by overriding {@link Listener#onWebSocketText(String)}),
+     * invoking this method will result in a message event being delivered to
+     * the listener/annotated method when a new message is received.
+     * The implementation will automatically demand for more frames until a
+     * whole message is assembled and then deliver the whole message as event.</p>
+     * <p>Note that even when the WebSocket endpoint is interested in whole
+     * messages, calling this method is necessary not only to possibly receive
+     * the next whole message, but also to receive control frames (such as
+     * PING or CLOSE frames).
+     * Failing to call this method after receiving a whole message results
+     * in the CLOSE frame event to not be processed, and therefore for the
+     * endpoint to not notice when the other peer closed the WebSocket
+     * communication.</p>
      *
      * @throws IllegalStateException if the WebSocket endpoint is auto-demanding
      */

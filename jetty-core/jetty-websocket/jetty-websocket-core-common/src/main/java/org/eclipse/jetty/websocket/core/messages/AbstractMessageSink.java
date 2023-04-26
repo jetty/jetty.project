@@ -18,6 +18,12 @@ import java.util.Objects;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
 
+/**
+ * <p>Partial implementation of {@link MessageSink}.</p>
+ * <p>{@link MessageSink} implementations must manage the demand for WebSocket frames,
+ * and this class provides helper method to optionally deal with the demand automatically
+ * via {@link #isAutoDemand()} and {@link #autoDemand()}.</p>
+ */
 public abstract class AbstractMessageSink implements MessageSink
 {
     private final CoreSession session;

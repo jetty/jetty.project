@@ -22,11 +22,23 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
+/**
+ * <p>A {@link MessageSink} implementation that accumulates TEXT frames
+ * into a message that is then delivered to the application function
+ * passed to the constructor in the form of a {@link String}.</p>
+ */
 public class StringMessageSink extends AbstractMessageSink
 {
     private Utf8StringBuilder out;
     private int size;
 
+    /**
+     * Creates a new {@link StringMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new message has been assembled
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
     public StringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
         super(session, methodHandle, autoDemand);

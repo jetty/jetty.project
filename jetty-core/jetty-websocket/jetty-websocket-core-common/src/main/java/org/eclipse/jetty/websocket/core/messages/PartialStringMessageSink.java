@@ -21,10 +21,22 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 
+/**
+ * <p>A {@link MessageSink} implementation that delivers TEXT frames
+ * to the application function passed to the constructor in the form
+ * of a {@link String}.</p>
+ */
 public class PartialStringMessageSink extends AbstractMessageSink
 {
     private Utf8StringBuilder accumulator;
 
+    /**
+     * Creates a new {@link PartialStringMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
     public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
         super(session, methodHandle, autoDemand);

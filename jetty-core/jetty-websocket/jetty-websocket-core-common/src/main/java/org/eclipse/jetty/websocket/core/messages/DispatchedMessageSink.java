@@ -14,6 +14,8 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.io.Closeable;
+import java.io.InputStream;
+import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -24,73 +26,22 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
 /**
- * Centralized logic for Dispatched Message Handling.
- * <p>
- * A Dispatched MessageSink can consist of 1 or more {@link #accept(Frame, Callback)} calls.
- * <p>
- * The first {@link #accept(Frame, Callback)} in a message will trigger a dispatch to the
- * function specified in the constructor.
- * <p>
- * The completion of the dispatched function call is the sign that the next message is suitable
- * for processing from the network. (The connection fillAndParse should remain idle for the
- * NEXT message until such time as the dispatched function call has completed)
- * </p>
- * <p>
- * There are a few use cases we need to handle.
- * </p>
- * <p>
- * <em>1. Normal Processing</em>
- * </p>
- * <pre>
- *     Connection Thread | DispatchedMessageSink | Thread 2
- *     TEXT                accept()
- *                          - dispatch -           function.read(stream)
- *     CONT                accept()                stream.read()
- *     CONT                accept()                stream.read()
- *     CONT=fin            accept()                stream.read()
- *                           EOF                   stream.read EOF
- *     IDLE
- *                                                 exit method
- *     RESUME(NEXT MSG)
- * </pre>
- * <p>
- * <em>2. Early Exit (with no activity)</em>
- * </p>
- * <pre>
- *     Connection Thread | DispatchedMessageSink | Thread 2
- *     TEXT                accept()
- *                          - dispatch -           function.read(stream)
- *     CONT                accept()                exit method (normal return)
- *     IDLE
- *     TIMEOUT
- * </pre>
- * <p>
- * <em>3. Early Exit (due to exception)</em>
- * </p>
- * <pre>
- *     Connection Thread | DispatchedMessageSink | Thread 2
- *     TEXT                accept()
- *                          - dispatch -           function.read(stream)
- *     CONT                accept()                exit method (throwable)
- *     callback.fail()
- *     endpoint.onError()
- *     close(error)
- * </pre>
- * <p>
- * <em>4. Early Exit (with Custom Threading)</em>
- * </p>
- * <pre>
- *     Connection Thread | DispatchedMessageSink | Thread 2              | Thread 3
- *     TEXT                accept()
- *                          - dispatch -           function.read(stream)
- *                                                 thread.new(stream)      stream.read()
- *                                                 exit method
- *     CONT                accept()                                        stream.read()
- *     CONT                accept()                                        stream.read()
- *     CONT=fin            accept()                                        stream.read()
- *                           EOF                                           stream.read EOF
- *     RESUME(NEXT MSG)
- * </pre>
+ * <p>A partial implementation of {@link MessageSink} for methods that consume WebSocket
+ * messages using blocking stream APIs, typically via {@link InputStream} or {@link Reader}.</p>
+ * <p>The first call to {@link #accept(Frame, Callback)} triggers the application function
+ * specified in the constructor to be invoked in a different thread.</p>
+ * <p>Subsequent calls to {@link #accept(Frame, Callback)} feed a nested {@link MessageSink}
+ * that in turns feeds the {@link InputStream} or {@link Reader} stream.</p>
+ * <p>Implementations of this class must manage the demand for WebSocket frames, and
+ * therefore must always be auto-demanding.</p>
+ * <p>Upon return from the application function, the stream is closed.
+ * This means that the stream must be consumed synchronously within the invocation of the
+ * application function.</p>
+ * <p>The demand for the next WebSocket message is performed when both the application
+ * function has returned and the last frame has been consumed (signaled by completing the
+ * callback associated with the frame).</p>
+ * <p>Throwing from the application function results in the WebSocket connection to be
+ * closed.</p>
  */
 public abstract class DispatchedMessageSink extends AbstractMessageSink
 {

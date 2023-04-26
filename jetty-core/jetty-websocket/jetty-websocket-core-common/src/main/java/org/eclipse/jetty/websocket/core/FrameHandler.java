@@ -83,7 +83,8 @@ public interface FrameHandler extends IncomingFrames
      * {@link CoreSession#demand(long)}.</p>
      * <p>Both control and data frames are passed to this method.</p>
      * <p>CLOSE frames may be responded from this method, but if
-     * they are not responded, then the implementation will respond.
+     * they are not responded, then the implementation will respond
+     * when the callback is completed.</p>
      * <p>The callback argument must be completed to indicate
      * that the buffers associated with the frame can be recycled.</p>
      * <p>Additional WebSocket frames (of any type, including CLOSE

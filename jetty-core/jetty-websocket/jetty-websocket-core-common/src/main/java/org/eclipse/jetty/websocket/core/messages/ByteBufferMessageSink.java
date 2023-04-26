@@ -26,10 +26,22 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
+/**
+ * <p>A {@link MessageSink} implementation that accumulates BINARY frames
+ * into a message that is then delivered to the application function
+ * passed to the constructor in the form of a {@link ByteBuffer}.</p>
+ */
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
     private ByteBufferCallbackAccumulator accumulator;
 
+    /**
+     * Creates a new {@link ByteBufferMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new message has been assembled
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
     public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
         this(session, methodHandle, autoDemand, true);

@@ -20,8 +20,20 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
+/**
+ * <p>A {@link MessageSink} implementation that delivers BINARY frames
+ * to the application function passed to the constructor in the form
+ * of a {@link ByteBuffer}.</p>
+ */
 public class PartialByteBufferMessageSink extends AbstractMessageSink
 {
+    /**
+     * Creates a new {@link PartialByteBufferMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
     public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
         super(session, methodHandle, autoDemand);
