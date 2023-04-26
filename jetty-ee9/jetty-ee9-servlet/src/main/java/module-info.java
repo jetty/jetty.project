@@ -26,7 +26,6 @@ module org.eclipse.jetty.ee9.servlet
     requires static org.eclipse.jetty.jmx;
     requires static org.eclipse.jetty.util.ajax;
 
-
     exports org.eclipse.jetty.ee9.servlet;
     exports org.eclipse.jetty.ee9.servlet.listener;
 
