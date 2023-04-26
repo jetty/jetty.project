@@ -50,12 +50,18 @@
             <nolog propertyName="commandLineRules"/>
           </nologs>
         </plugin>
+        <plugin artifactId="maven-invoker-plugin" goal="integration-test">
+          <reconciles>
+            <reconcile propertyName="scriptVariables" skipValue="true"/>
+          </reconciles>
+        </plugin>
         <plugin artifactId="maven-surefire-plugin" goal="test">
           <reconciles>
             <reconcile propertyName="skip" skipValue="true"/>
             <reconcile propertyName="skipExec" skipValue="true"/>
             <reconcile propertyName="skipTests" skipValue="true"/>
             <reconcile propertyName="testFailureIgnore" skipValue="true"/>
+            <reconcile propertyName="argLine" skipValue="true"/>
           </reconciles>
         </plugin>
       </plugins>

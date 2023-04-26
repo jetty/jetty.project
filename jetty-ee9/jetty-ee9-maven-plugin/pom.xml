@@ -15,6 +15,7 @@
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
     <jacoco.skip>true</jacoco.skip>
+    <project.build.outputTimestamp>2023-03-15T16:06:58Z</project.build.outputTimestamp>
   </properties>
   <build>
     <plugins>
