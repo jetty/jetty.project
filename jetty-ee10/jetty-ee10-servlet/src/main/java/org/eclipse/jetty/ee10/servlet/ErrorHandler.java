@@ -89,7 +89,9 @@ public class ErrorHandler implements Request.Handler
         }
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
+        HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
+        ServletContextHandler contextHandler = servletContextRequest.getContext().getServletContextHandler();
         String cacheControl = getCacheControl();
         if (cacheControl != null)
             response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
@@ -97,7 +99,7 @@ public class ErrorHandler implements Request.Handler
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
-        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(servletContextRequest.getHttpServletRequest()) : null;
+        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(httpServletRequest) : null;
         ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
@@ -106,7 +108,8 @@ public class ErrorHandler implements Request.Handler
         {
             try
             {
-                errorDispatcher.error(servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse());
+                contextHandler.requestInitialized(servletContextRequest, httpServletRequest);
+                errorDispatcher.error(httpServletRequest, httpServletResponse);
                 callback.succeeded();
                 return true;
             }
@@ -119,12 +122,16 @@ public class ErrorHandler implements Request.Handler
                     return true;
                 }
             }
+            finally
+            {
+                contextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
+            }
         }
 
         String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
-        generateAcceptableResponse(servletContextRequest, servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse(), response.getStatus(), message);
+        generateAcceptableResponse(servletContextRequest, httpServletRequest, httpServletResponse, response.getStatus(), message);
         callback.succeeded();
         return true;
     }

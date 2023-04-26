@@ -510,7 +510,7 @@ public class ServletChannel
                                 // _state.completing();
                                 try (Blocker.Callback blocker = Blocker.callback())
                                 {
-                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
+                                    errorDispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
                                     blocker.block();
                                 }
                             }
@@ -667,6 +667,26 @@ public class ServletChannel
         {
             _combinedListener.onAfterDispatch(_servletContextRequest);
             _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+        }
+    }
+
+    private void errorDispatch(Dispatchable dispatchable) throws Exception
+    {
+        try
+        {
+            _servletContextRequest.getResponse().getHttpOutput().reopen();
+            getHttpOutput().reopen();
+            _combinedListener.onBeforeDispatch(_servletContextRequest);
+            dispatchable.dispatch();
+        }
+        catch (Throwable x)
+        {
+            _combinedListener.onDispatchFailure(_servletContextRequest, x);
+            throw x;
+        }
+        finally
+        {
+            _combinedListener.onAfterDispatch(_servletContextRequest);
         }
     }
 
