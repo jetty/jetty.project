@@ -37,6 +37,8 @@ public interface Session extends Configurable, Closeable
      * <p>This method should be called only when the WebSocket endpoint is not
      * demanding automatically, as defined by {@link WebSocket#autoDemand()}
      * and {@link Listener.AutoDemanding}.</p>
+     *
+     * @throws IllegalStateException if the WebSocket endpoint is auto-demanding
      */
     void demand();
 

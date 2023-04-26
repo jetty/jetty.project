@@ -72,6 +72,12 @@ public class MessageReader extends Reader implements MessageSink
     }
 
     @Override
+    public void fail(Throwable failure)
+    {
+        stream.fail(failure);
+    }
+
+    @Override
     public void close() throws IOException
     {
         stream.close();

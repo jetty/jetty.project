@@ -38,4 +38,13 @@ public interface MessageSink
      * @param callback the callback to complete when the frame is consumed
      */
     void accept(Frame frame, Callback callback);
+
+    /**
+     * <p>Fails this {@link MessageSink} with the given cause.</p>
+     *
+     * @param failure the cause of the failure
+     */
+    default void fail(Throwable failure)
+    {
+    }
 }

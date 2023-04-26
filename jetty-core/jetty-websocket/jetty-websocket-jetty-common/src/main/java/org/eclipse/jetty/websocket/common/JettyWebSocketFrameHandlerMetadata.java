@@ -21,7 +21,7 @@ import org.eclipse.jetty.websocket.core.messages.MessageSink;
 
 public class JettyWebSocketFrameHandlerMetadata extends Configuration.ConfigurationCustomizer
 {
-    private boolean autoDemanding;
+    private boolean autoDemand;
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
@@ -33,14 +33,14 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
     private MethodHandle pingHandle;
     private MethodHandle pongHandle;
 
-    public boolean isAutoDemanding()
+    public boolean isAutoDemand()
     {
-        return autoDemanding;
+        return autoDemand;
     }
 
-    public void setAutoDemanding(boolean autoDemanding)
+    public void setAutoDemand(boolean autoDemand)
     {
-        this.autoDemanding = autoDemanding;
+        this.autoDemand = autoDemand;
     }
 
     public void setBinaryHandle(Class<? extends MessageSink> sinkClass, MethodHandle binary, Object origin)

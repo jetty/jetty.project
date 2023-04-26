@@ -55,7 +55,10 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             long size = (accumulator == null ? 0 : accumulator.getLength()) + frame.getPayloadLength();
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
-                throw new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize));
+            {
+                callback.failed(new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize)));
+                return;
+            }
 
             if (frame.isFin() && accumulator == null)
             {

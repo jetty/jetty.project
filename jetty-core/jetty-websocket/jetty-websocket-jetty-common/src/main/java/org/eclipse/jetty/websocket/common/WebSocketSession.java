@@ -53,6 +53,8 @@ public class WebSocketSession implements Session, Dumpable
     @Override
     public void demand()
     {
+        if (frameHandler.isAutoDemand())
+            throw new IllegalStateException("auto-demanding endpoint cannot explicitly demand");
         coreSession.demand(1);
     }
 

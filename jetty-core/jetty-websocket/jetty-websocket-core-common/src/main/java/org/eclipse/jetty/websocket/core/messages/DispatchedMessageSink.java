@@ -128,8 +128,7 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
                 }
                 catch (Throwable throwable)
                 {
-                    if (typeSink instanceof Closeable closeable)
-                        IO.close(closeable);
+                    typeSink.fail(throwable);
                     dispatchComplete.completeExceptionally(throwable);
                 }
             });

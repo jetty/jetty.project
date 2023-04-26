@@ -41,7 +41,10 @@ public class StringMessageSink extends AbstractMessageSink
             size += frame.getPayloadLength();
             long maxSize = getCoreSession().getMaxTextMessageSize();
             if (maxSize > 0 && size > maxSize)
-                throw new MessageTooLargeException(String.format("Text message too large: %,d > %,d", size, maxSize));
+            {
+                callback.failed(new MessageTooLargeException(String.format("Text message too large: %,d > %,d", size, maxSize)));
+                return;
+            }
 
             if (out == null)
                 out = new Utf8StringBuilder(getCoreSession().getInputBufferSize());

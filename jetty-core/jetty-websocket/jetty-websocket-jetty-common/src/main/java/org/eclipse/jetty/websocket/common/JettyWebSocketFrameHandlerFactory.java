@@ -160,7 +160,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createListenerMetadata(Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
-        metadata.setAutoDemanding(Session.Listener.AutoDemanding.class.isAssignableFrom(endpointClass));
+        metadata.setAutoDemand(Session.Listener.AutoDemanding.class.isAssignableFrom(endpointClass));
 
         MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
 
@@ -262,7 +262,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createAnnotatedMetadata(WebSocket anno, Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
-        metadata.setAutoDemanding(anno.autoDemand());
+        metadata.setAutoDemand(anno.autoDemand());
 
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;
@@ -342,7 +342,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
-                    if (!metadata.isAutoDemanding())
+                    if (!metadata.isAutoDemand())
                         throw new InvalidWebSocketException("InputStream methods require auto-demanding WebSocket endpoints");
 
                     // InputStream Binary Message
@@ -354,7 +354,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, readerCallingArgs);
                 if (methodHandle != null)
                 {
-                    if (!metadata.isAutoDemanding())
+                    if (!metadata.isAutoDemand())
                         throw new InvalidWebSocketException("Reader methods require auto-demanding WebSocket endpoints");
 
                     // Reader Text Message

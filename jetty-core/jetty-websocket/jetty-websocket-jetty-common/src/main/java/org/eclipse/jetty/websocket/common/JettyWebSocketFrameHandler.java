@@ -133,10 +133,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
             if (textHandle != null)
-                textSink = createMessageSink(textSinkClass, session, textHandle, metadata.isAutoDemanding());
+                textSink = createMessageSink(textSinkClass, session, textHandle, isAutoDemand());
 
             if (binaryHandle != null)
-                binarySink = createMessageSink(binarySinkClass, session, binaryHandle, metadata.isAutoDemanding());
+                binarySink = createMessageSink(binarySinkClass, session, binaryHandle, isAutoDemand());
 
             if (openHandle != null)
                 openHandle.invoke();
@@ -152,8 +152,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         finally
         {
-            if (metadata.isAutoDemanding())
-                coreSession.demand(1);
+            autoDemand();
         }
     }
 
@@ -305,8 +304,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     payload = BufferUtil.copy(payload);
                 pingHandle.invoke(payload);
                 callback.succeeded();
-                if (metadata.isAutoDemanding())
-                    session.demand();
+                autoDemand();
             }
             catch (Throwable cause)
             {
@@ -322,8 +320,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 public void succeed()
                 {
                     callback.succeeded();
-                    if (metadata.isAutoDemanding())
-                        session.demand();
+                    autoDemand();
                 }
 
                 @Override
@@ -349,8 +346,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     payload = BufferUtil.copy(payload);
                 pongHandle.invoke(payload);
                 callback.succeeded();
-                if (metadata.isAutoDemanding())
-                    session.demand();
+                autoDemand();
             }
             catch (Throwable cause)
             {
@@ -359,8 +355,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
-            if (metadata.isAutoDemanding())
-                session.demand();
+            autoDemand();
         }
     }
 
@@ -389,8 +384,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
-            if (metadata.isAutoDemanding())
-                session.demand();
+            autoDemand();
             return;
         }
 
@@ -398,6 +392,17 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         activeMessageSink.accept(frame, callback);
         if (frame.isFin())
             activeMessageSink = null;
+    }
+
+    boolean isAutoDemand()
+    {
+        return metadata.isAutoDemand();
+    }
+
+    private void autoDemand()
+    {
+        if (isAutoDemand())
+            session.getCoreSession().demand(1);
     }
 
     public String toString()

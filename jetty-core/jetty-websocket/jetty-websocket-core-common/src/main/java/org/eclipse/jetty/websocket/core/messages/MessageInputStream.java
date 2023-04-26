@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -40,12 +41,14 @@ public class MessageInputStream extends InputStream implements MessageSink
     private static final Logger LOG = LoggerFactory.getLogger(MessageInputStream.class);
     private static final Entry EOF = new Entry(null, Callback.NOOP);
     private static final Entry CLOSED = new Entry(null, Callback.NOOP);
+    private static final Entry FAILED = new Entry(null, Callback.NOOP);
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final ArrayDeque<Entry> buffers = new ArrayDeque<>();
     private final CoreSession session;
-    private boolean closed = false;
     private Entry currentEntry;
+    private Throwable failure;
+    private boolean closed;
     private long timeoutMs = -1;
 
     public MessageInputStream(CoreSession session)
@@ -66,24 +69,29 @@ public class MessageInputStream extends InputStream implements MessageSink
             return;
         }
 
-        boolean succeed = false;
+        Runnable action = null;
         try (AutoLock.WithCondition l = lock.lock())
         {
-            if (closed)
+            if (failure != null)
             {
-                succeed = true;
+                Throwable cause = failure;
+                action = () -> callback.failed(cause);
+            }
+            else if (closed)
+            {
+                action = callback::succeeded;
             }
             else
             {
                 buffers.offer(new Entry(frame, callback));
                 if (frame.isFin())
                     buffers.offer(EOF);
-                l.signal();
             }
+            l.signal();
         }
 
-        if (succeed)
-            callback.succeeded();
+        if (action != null)
+            action.run();
     }
 
     @Override
@@ -115,6 +123,9 @@ public class MessageInputStream extends InputStream implements MessageSink
         if (LOG.isDebugEnabled())
             LOG.debug("currentEntry = {}", currentEntry);
 
+        if (currentEntry == FAILED)
+            throw IO.rethrow(getFailure());
+
         if (currentEntry == CLOSED)
             throw new IOException("Closed");
 
@@ -144,6 +155,27 @@ public class MessageInputStream extends InputStream implements MessageSink
     }
 
     @Override
+    public void fail(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("fail()", failure);
+
+        ArrayList<Entry> entries = new ArrayList<>();
+        try (AutoLock.WithCondition l = lock.lock())
+        {
+            if (this.failure != null)
+                return;
+            this.failure = failure;
+
+            drainInto(entries);
+            buffers.offer(FAILED);
+            l.signal();
+        }
+
+        entries.forEach(e -> e.callback.failed(failure));
+    }
+
+    @Override
     public void close()
     {
         if (LOG.isDebugEnabled())
@@ -156,21 +188,27 @@ public class MessageInputStream extends InputStream implements MessageSink
                 return;
             closed = true;
 
-            if (currentEntry != null)
-            {
-                entries.add(currentEntry);
-                currentEntry = null;
-            }
-
-            // Clear queue and fail all entries.
-            entries.addAll(buffers);
-            buffers.clear();
+            drainInto(entries);
             buffers.offer(CLOSED);
             l.signal();
         }
 
-        // Succeed all entries as we don't need them anymore (failing would close the connection).
         entries.forEach(e -> e.callback.succeeded());
+    }
+
+    private void drainInto(ArrayList<Entry> entries)
+    {
+        assert lock.isHeldByCurrentThread();
+
+        if (currentEntry != null)
+        {
+            entries.add(currentEntry);
+            currentEntry = null;
+        }
+
+        // Drain the queue.
+        entries.addAll(buffers);
+        buffers.clear();
     }
 
     public void setTimeout(long timeoutMs)
@@ -224,6 +262,14 @@ public class MessageInputStream extends InputStream implements MessageSink
         {
             close();
             throw new InterruptedIOException();
+        }
+    }
+
+    private Throwable getFailure()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return failure;
         }
     }
 
