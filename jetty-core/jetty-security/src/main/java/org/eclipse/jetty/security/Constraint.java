@@ -329,6 +329,9 @@ public interface Constraint
             ? (roleSet.isEmpty() ? Authorization.INHERIT : Authorization.SPECIFIC_ROLE)
             : authorization;
 
+        if (!roleSet.isEmpty() && auth != Authorization.SPECIFIC_ROLE)
+            throw new IllegalStateException("Constraint with roles must be SPECIFIC_ROLE, not " + auth);
+
         return new Constraint()
         {
             @Override

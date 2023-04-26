@@ -1336,7 +1336,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 if (roles.isEmpty())
                     scBase.authorization(Constraint.Authorization.FORBIDDEN);
                 else
+                {
+                    scBase.authorization(Constraint.Authorization.SPECIFIC_ROLE);
                     scBase.roles(roles.toArray(new String[0]));
+                }
             }
         }
 

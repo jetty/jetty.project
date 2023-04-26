@@ -445,6 +445,9 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
 
         String pathInContext = Request.getPathInContext(request);
         Constraint constraint = getConstraint(pathInContext, request);
+        if (LOG.isDebugEnabled())
+            LOG.debug("getConstraint({}) -> {}", pathInContext, constraint);
+
         if (constraint == null)
             constraint = Constraint.ALLOWED;
 
@@ -464,11 +467,18 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         // Determine Constraint.Authentication
         Authorization constraintAuthorization = constraint.getAuthorization();
         constraintAuthorization = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthorization, request::getSession);
+        if (constraintAuthorization == Authorization.INHERIT)
+            constraintAuthorization = Authorization.ALLOWED;
+        if (LOG.isDebugEnabled())
+            LOG.debug("constraintAuthorization {}", constraintAuthorization);
         boolean mustValidate = constraintAuthorization != Authorization.ALLOWED;
 
         try
         {
             AuthenticationState authenticationState = mustValidate ? _authenticator.validateRequest(request, response, callback) : null;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("AuthenticationState {}", authenticationState);
 
             if (authenticationState instanceof AuthenticationState.ResponseSent)
                 return true;
@@ -643,7 +653,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
      *     <li>{@code "/admin/super/index.html"} matches {@code "/*"}, {@code "/admin/*"} and {@code "/admin/super/*"}, resulting in a
      *         constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
      * </ul>
-     * </p>
      */
     public static class PathMapped extends SecurityHandler implements Comparator<PathSpec>
     {
