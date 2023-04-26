@@ -176,14 +176,15 @@ public class JakartaClientShutdownWithServerWebAppTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         // Collect the toString result of the ShutdownContainers from the dump.
-        List<String> results = Arrays.stream(server.getServer().dump().split("\n"))
+        String dump = server.getServer().dump();
+        List<String> results = Arrays.stream(dump.split("\n"))
             .filter(line -> line.contains("+> " + JakartaWebSocketShutdownContainer.class.getSimpleName())).toList();
 
         // We only have 3 Shutdown Containers and they all contain only 1 item to be shutdown.
-        assertThat(results.size(), is(3));
+        assertThat(dump, results.size(), is(3));
         for (String result : results)
         {
-            assertThat(result, containsString("size=1"));
+            assertThat(dump, result, containsString("size=1"));
         }
     }
 }
