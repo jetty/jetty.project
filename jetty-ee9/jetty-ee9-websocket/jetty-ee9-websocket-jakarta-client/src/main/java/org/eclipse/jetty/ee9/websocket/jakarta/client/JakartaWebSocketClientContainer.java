@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.websocket.jakarta.client;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -169,10 +168,12 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         return error;
     }
 
-    private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException
+    private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException, DeploymentException
     {
-        Objects.requireNonNull(configuredEndpoint, "WebSocket configured endpoint cannot be null");
-        Objects.requireNonNull(destURI, "Destination URI cannot be null");
+        if (configuredEndpoint == null)
+            throw new DeploymentException("WebSocket configured endpoint cannot be null");
+        if (destURI == null)
+            throw new DeploymentException("Destination URI cannot be null");
 
         JakartaClientUpgradeRequest upgradeRequest = new JakartaClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
@@ -202,8 +203,8 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         catch (ExecutionException e)
         {
             var cause = e.getCause();
-            if (cause instanceof RuntimeException)
-                throw (RuntimeException)cause;
+            if (cause instanceof DeploymentException)
+                throw (DeploymentException)cause;
             if (cause instanceof IOException)
                 throw (IOException)cause;
             throw new IOException(cause);
@@ -286,7 +287,6 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
         if (anno == null)
             throw new DeploymentException("Could not get ClientEndpoint annotation for " + endpoint.getClass().getName());
-
         return new AnnotatedClientEndpointConfig(anno, components);
     }
 
