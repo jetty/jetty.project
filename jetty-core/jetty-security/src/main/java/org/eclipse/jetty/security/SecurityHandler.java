@@ -526,22 +526,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
         return null;
     }
 
-    // TODO why is this public on the securityHandler ?
-    public void logout(AuthenticationState.Succeeded succeeded)
-    {
-        LOG.debug("logout {}", succeeded);
-        if (succeeded == null)
-            return;
-
-        LoginService loginService = getLoginService();
-        if (loginService != null)
-            loginService.logout(succeeded.getUserIdentity());
-
-        IdentityService identityService = getIdentityService();
-        if (identityService != null)
-            identityService.onLogout(succeeded.getUserIdentity());
-    }
-
     protected abstract Constraint getConstraint(String pathInContext, Request request);
 
     protected void redirectToSecure(Request request, Response response, Callback callback)

@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
@@ -126,12 +125,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
     @Override
     public void logout(Request request, Response response)
     {
-        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
-        if (security != null)
-        {
-            security.logout(null);
-            _authenticator.logout(request, response);
-        }
+        // Not yet authenticated, so nothing to do here.
     }
 
     @Override

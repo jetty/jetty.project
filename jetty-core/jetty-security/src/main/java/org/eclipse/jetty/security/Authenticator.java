@@ -56,10 +56,11 @@ public interface Authenticator
     String getAuthMethod();
 
     /**
-     * TODO: fix javadoc and rename method.
-     * Called after to validateRequest.
-     * This may be restore method or content from a previous request
-     * that was challenged.
+     * Called after {@link #validateRequest(Request, Response, Callback)} and
+     * before calling {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}
+     * of the nested handler.
+     * This may be used by an {@link Authenticator} to restore method or content from a previous
+     * request that was challenged.
      *
      * @param request the request to prepare for handling
      * @param authenticationState The authentication for the request

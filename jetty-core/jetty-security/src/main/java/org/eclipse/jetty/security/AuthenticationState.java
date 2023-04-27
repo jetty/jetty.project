@@ -386,7 +386,13 @@ public interface AuthenticationState
             SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
             if (security != null)
             {
-                security.logout(this);
+                LoginService loginService = security.getLoginService();
+                if (loginService != null)
+                    loginService.logout(((Succeeded)this).getUserIdentity());
+                IdentityService identityService = security.getIdentityService();
+                if (identityService != null)
+                    identityService.onLogout(((Succeeded)this).getUserIdentity());
+
                 Authenticator authenticator = security.getAuthenticator();
 
                 AuthenticationState authenticationState = null;

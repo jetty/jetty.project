@@ -127,7 +127,7 @@ import static org.hamcrest.Matchers.startsWith;
 
 public class JAASLdapLoginServiceTest
 {
-    /* TODO
+    /* TODO restore this test
     public static class TestConfiguration extends Configuration
     {
         private boolean forceBindingLogin;
