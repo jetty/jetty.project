@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -33,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * of Authenticator, the Authenticator stashes a SessionAuthentication
  * into an HttpSession to remember that the user is authenticated.
  */
-public class SessionAuthentication extends AuthenticationState.AbstractSucceeded
+public class SessionAuthentication extends LoginAuthenticator.UserAuthenticationSucceeded
     implements Serializable, Session.ValueListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionAuthentication.class);

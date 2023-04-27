@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.function.Function;
 
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
@@ -23,6 +26,7 @@ import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,5 +120,123 @@ public abstract class LoginAuthenticator implements Authenticator
             }
         }
         return session;
+    }
+
+    /**
+     * Base class for representing a successful authentication state.
+     */
+    public static class UserAuthenticationSucceeded implements AuthenticationState.Succeeded, Serializable
+    {
+        @Serial
+        private static final long serialVersionUID = -6290411814232723403L;
+        protected String _method;
+        protected transient UserIdentity _userIdentity;
+
+        public UserAuthenticationSucceeded(String method, UserIdentity userIdentity)
+        {
+            _method = method;
+            _userIdentity = userIdentity;
+        }
+
+        @Override
+        public String getAuthMethod()
+        {
+            return _method;
+        }
+
+        @Override
+        public UserIdentity getUserIdentity()
+        {
+            return _userIdentity;
+        }
+
+        @Override
+        public boolean isUserInRole(String role)
+        {
+            return _userIdentity.isUserInRole(role);
+        }
+
+        @Override
+        public void logout(Request request, Response response)
+        {
+            SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+            if (security != null)
+            {
+                LoginService loginService = security.getLoginService();
+                if (loginService != null)
+                    loginService.logout(((Succeeded)this).getUserIdentity());
+                IdentityService identityService = security.getIdentityService();
+                if (identityService != null)
+                    identityService.onLogout(((Succeeded)this).getUserIdentity());
+
+                Authenticator authenticator = security.getAuthenticator();
+
+                AuthenticationState authenticationState = null;
+                if (authenticator instanceof LoginAuthenticator loginAuthenticator)
+                {
+                    ((LoginAuthenticator)authenticator).logout(request, response);
+                    authenticationState = new LoginAuthenticator.LoggedOutAuthentication(loginAuthenticator);
+                }
+                AuthenticationState.setAuthenticationState(request, authenticationState);
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s,%s}".formatted(getClass().getSimpleName(), hashCode(), getAuthMethod(), getUserIdentity());
+        }
+    }
+
+    /**
+     * This Authentication represents a just completed authentication, that has sent a response, typically to
+     * redirect the client to the original request target..
+     */
+    public static class UserAuthenticationSent extends UserAuthenticationSucceeded implements AuthenticationState.ResponseSent
+    {
+        public UserAuthenticationSent(String method, UserIdentity userIdentity)
+        {
+            super(method, userIdentity);
+        }
+    }
+
+    public static class LoggedOutAuthentication implements AuthenticationState.Deferred
+    {
+        @Override
+        public Succeeded login(String username, Object password, Request request, Response response)
+        {
+            return _delegate.login(username, password, request, response);
+        }
+
+        @Override
+        public void logout(Request request, Response response)
+        {
+            _delegate.logout(request, response);
+        }
+
+        @Override
+        public IdentityService.Association getAssociation()
+        {
+            return _delegate.getAssociation();
+        }
+
+        private final Deferred _delegate;
+
+        public LoggedOutAuthentication(LoginAuthenticator authenticator)
+        {
+            _delegate = AuthenticationState.defer(authenticator);
+        }
+
+        @Override
+        public Succeeded authenticate(Request request)
+        {
+            return null;
+        }
+
+        @Override
+        public AuthenticationState authenticate(Request request, Response response, Callback callback)
+        {
+            return null;
+        }
     }
 }

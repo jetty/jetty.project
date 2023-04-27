@@ -103,6 +103,8 @@ public class OpenIdAuthenticationTest
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setHandler(sessionHandler);
         server.setHandler(contextHandler);
+        // TODO this is a VERY strange usage of ContextHandlerCollection, as normally
+        //      the Session and Security handlers would be inside a single context.
         contexts.addHandler(new LoginPage("/login"));
         contexts.addHandler(new LogoutPage("/logout"));
         contexts.addHandler(new HomePage("/"));

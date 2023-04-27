@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.AuthenticationState;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -73,7 +72,7 @@ public class TestHandler extends Handler.Abstract
         if (_hasRoles != null)
         {
             AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(request);
-            if (authenticationState instanceof SucceededAuthenticationState userAuthentication)
+            if (authenticationState instanceof AuthenticationState.Succeeded userAuthentication)
             {
                 for (String role : _hasRoles)
                 {
@@ -89,7 +88,7 @@ public class TestHandler extends Handler.Abstract
         if (_hasntRoles != null)
         {
             AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(request);
-            if (authenticationState instanceof SucceededAuthenticationState userAuthentication)
+            if (authenticationState instanceof AuthenticationState.Succeeded userAuthentication)
             {
                 for (String role : _hasntRoles)
                 {

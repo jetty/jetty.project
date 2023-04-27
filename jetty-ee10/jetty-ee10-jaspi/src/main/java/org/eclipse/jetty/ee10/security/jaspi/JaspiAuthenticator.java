@@ -37,7 +37,6 @@ import org.eclipse.jetty.security.EmptyLoginService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.WrappedAuthConfiguration;
@@ -226,7 +225,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 if (cached != null)
                     return cached;
 
-                return new SucceededAuthenticationState(getAuthMethod(), userIdentity);
+                return new UserAuthenticationSucceeded(getAuthMethod(), userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {

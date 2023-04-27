@@ -26,7 +26,6 @@ import org.eclipse.jetty.security.RoleDelegateUserIdentity;
 import org.eclipse.jetty.security.SPNEGOLoginService;
 import org.eclipse.jetty.security.SPNEGOUserPrincipal;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -137,7 +136,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
                         httpSession = req.getSession(true);
                     httpSession.setAttribute(UserIdentityHolder.ATTRIBUTE, new UserIdentityHolder(identity));
                 }
-                return new SucceededAuthenticationState(getAuthMethod(), identity);
+                return new UserAuthenticationSucceeded(getAuthMethod(), identity);
             }
             else
             {
@@ -167,7 +166,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
                         // Allow non-GET requests even if they're expired, so that
                         // the client does not need to send the request content again.
                         if (!expired || !HttpMethod.GET.is(req.getMethod()))
-                            return new SucceededAuthenticationState(getAuthMethod(), identity);
+                            return new UserAuthenticationSucceeded(getAuthMethod(), identity);
                     }
                 }
             }

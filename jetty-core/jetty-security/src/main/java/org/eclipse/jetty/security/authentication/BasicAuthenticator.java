@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -74,7 +73,7 @@ public class BasicAuthenticator extends LoginAuthenticator
 
                         UserIdentity user = login(username, password, req, res);
                         if (user != null)
-                            return new SucceededAuthenticationState(getAuthMethod(), user);
+                            return new UserAuthenticationSucceeded(getAuthMethod(), user);
                     }
                 }
             }

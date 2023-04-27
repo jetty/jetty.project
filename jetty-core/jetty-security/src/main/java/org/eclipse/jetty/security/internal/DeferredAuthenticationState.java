@@ -23,7 +23,6 @@ import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Request;
@@ -114,7 +113,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         if (identity != null)
         {
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
-            SucceededAuthenticationState authentication = new SucceededAuthenticationState("API", identity);
+            AuthenticationState.Succeeded authentication = new LoginAuthenticator.UserAuthenticationSucceeded("API", identity);
             if (identityService != null)
                 _association = identityService.associate(identity, null);
             return authentication;
@@ -125,7 +124,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
     @Override
     public void logout(Request request, Response response)
     {
-        // Not yet authenticated, so nothing to do here.
+        _authenticator.logout(request, response);
     }
 
     @Override

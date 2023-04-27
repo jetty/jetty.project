@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.Serializable;
 import java.security.Principal;
 
 import org.eclipse.jetty.http.HttpException;
@@ -344,105 +343,6 @@ public interface AuthenticationState
          */
         interface DeferredResponse extends Response
         {
-        }
-    }
-
-    /**
-     * Base class for representing a successful authentication state.
-     */
-    abstract class AbstractSucceeded implements Succeeded, Serializable
-    {
-        private static final long serialVersionUID = -6290411814232723403L;
-        protected String _method;
-        protected transient UserIdentity _userIdentity;
-
-        public AbstractSucceeded(String method, UserIdentity userIdentity)
-        {
-            _method = method;
-            _userIdentity = userIdentity;
-        }
-
-        @Override
-        public String getAuthMethod()
-        {
-            return _method;
-        }
-
-        @Override
-        public UserIdentity getUserIdentity()
-        {
-            return _userIdentity;
-        }
-
-        @Override
-        public boolean isUserInRole(String role)
-        {
-            return _userIdentity.isUserInRole(role);
-        }
-
-        @Override
-        public void logout(Request request, Response response)
-        {
-            SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
-            if (security != null)
-            {
-                LoginService loginService = security.getLoginService();
-                if (loginService != null)
-                    loginService.logout(((Succeeded)this).getUserIdentity());
-                IdentityService identityService = security.getIdentityService();
-                if (identityService != null)
-                    identityService.onLogout(((Succeeded)this).getUserIdentity());
-
-                Authenticator authenticator = security.getAuthenticator();
-
-                AuthenticationState authenticationState = null;
-                if (authenticator instanceof LoginAuthenticator loginAuthenticator)
-                {
-                    ((LoginAuthenticator)authenticator).logout(request, response);
-                    authenticationState = new LoggedOutAuthentication(loginAuthenticator);
-                }
-                AuthenticationState.setAuthenticationState(request, authenticationState);
-            }
-        }
-
-        private static class LoggedOutAuthentication implements Deferred
-        {
-            @Override
-            public Succeeded login(String username, Object password, Request request, Response response)
-            {
-                return _delegate.login(username, password, request, response);
-            }
-
-            @Override
-            public void logout(Request request, Response response)
-            {
-                _delegate.logout(request, response);
-            }
-
-            @Override
-            public IdentityService.Association getAssociation()
-            {
-                return _delegate.getAssociation();
-            }
-
-            private final Deferred _delegate;
-
-            public LoggedOutAuthentication(LoginAuthenticator authenticator)
-            {
-                _delegate = defer(authenticator);
-            }
-
-            @Override
-            public Succeeded authenticate(Request request)
-            {
-                return null;
-            }
-
-            @Override
-            public AuthenticationState authenticate(Request request, Response response, Callback callback)
-            {
-                return null;
-            }
         }
     }
 }

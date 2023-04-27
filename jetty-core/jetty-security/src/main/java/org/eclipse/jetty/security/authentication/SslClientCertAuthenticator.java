@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -90,20 +89,20 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
                     UserIdentity user = login(username, "", req, res);
                     if (user != null)
                     {
-                        return new SucceededAuthenticationState(getAuthMethod(), user);
+                        return new UserAuthenticationSucceeded(getAuthMethod(), user);
                     }
                     // try with null password
                     user = login(username, null, req, res);
                     if (user != null)
                     {
-                        return new SucceededAuthenticationState(getAuthMethod(), user);
+                        return new UserAuthenticationSucceeded(getAuthMethod(), user);
                     }
                     // try with certs sig against login service as previous behaviour
                     final char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
                     user = login(username, credential, req, res);
                     if (user != null)
                     {
-                        return new SucceededAuthenticationState(getAuthMethod(), user);
+                        return new UserAuthenticationSucceeded(getAuthMethod(), user);
                     }
                 }
             }

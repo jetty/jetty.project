@@ -26,7 +26,6 @@ import org.eclipse.jetty.security.AuthenticationState.Succeeded;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
@@ -280,7 +279,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 String originalURI = savedURI != null ? savedURI.asString() : Request.getContextPath(request);
                 if (originalURI == null)
                     originalURI = "/";
-                FormAuthenticationState formAuth = new FormAuthenticationState(getAuthMethod(), user);
+                UserAuthenticationSent formAuth = new UserAuthenticationSent(getAuthMethod(), user);
                 Response.sendRedirect(request, response, callback, encodeURL(originalURI, request), true);
                 return formAuth;
             }
@@ -373,24 +372,5 @@ public class FormAuthenticator extends LoginAuthenticator
     public boolean isLoginOrErrorPage(String pathInContext)
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
-    }
-
-    /**
-     * This Authentication represents a just completed Form authentication.
-     * Subsequent requests from the same user are authenticated by the presence
-     * of a {@link SessionAuthentication} instance in their session.
-     */
-    public static class FormAuthenticationState extends SucceededAuthenticationState implements AuthenticationState.ResponseSent
-    {
-        public FormAuthenticationState(String method, UserIdentity userIdentity)
-        {
-            super(method, userIdentity);
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Form" + super.toString();
-        }
     }
 }

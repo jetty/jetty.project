@@ -34,7 +34,6 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
@@ -491,7 +490,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     return AuthenticationState.SEND_FAILURE;
                 }
 
-                OpenIdAuthenticationState openIdAuth = new OpenIdAuthenticationState(getAuthMethod(), user);
+                LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getAuthMethod(), user);
                 if (LOG.isDebugEnabled())
                     LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
 
@@ -785,25 +784,6 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         public MultiMap<String> getFormParameters()
         {
             return _formParameters;
-        }
-    }
-
-    /**
-     * This Authentication represents a just completed OpenId Connect authentication.
-     * Subsequent requests from the same user are authenticated by the presents
-     * of a {@link SessionAuthentication} instance in their session.
-     */
-    public static class OpenIdAuthenticationState extends SucceededAuthenticationState implements AuthenticationState.ResponseSent
-    {
-        public OpenIdAuthenticationState(String method, UserIdentity userIdentity)
-        {
-            super(method, userIdentity);
-        }
-
-        @Override
-        public String toString()
-        {
-            return "OpenId" + super.toString();
         }
     }
 }

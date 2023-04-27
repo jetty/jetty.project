@@ -30,7 +30,6 @@ import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SucceededAuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -161,7 +160,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                 UserIdentity user = login(digest.username, digest, req, res);
                 if (user != null)
                 {
-                    return new SucceededAuthenticationState(getAuthMethod(), user);
+                    return new UserAuthenticationSucceeded(getAuthMethod(), user);
                 }
             }
             else if (n == 0)
