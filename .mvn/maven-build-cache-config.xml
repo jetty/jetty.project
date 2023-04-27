@@ -62,7 +62,7 @@
             <reconcile propertyName="skipExec" skipValue="true"/>
             <reconcile propertyName="skipTests" skipValue="true"/>
             <reconcile propertyName="testFailureIgnore" skipValue="true"/>
-            <reconcile propertyName="argLine" skipValue="true"/>
+<!--            <reconcile propertyName="argLine" skipValue="true"/>-->
           </reconciles>
         </plugin>
       </plugins>
