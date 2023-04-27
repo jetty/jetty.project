@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.HostPort;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,11 +52,6 @@ public class HostHeaderCustomizerTest
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(serverName, httpURI.getHost());
                 assertEquals(serverPort, httpURI.getPort());
-
-                // Test "connectionMetaData.serverAuthority"
-                HostPort serverAuthority = request.getConnectionMetaData().getServerAuthority();
-                assertEquals(serverName, serverAuthority.getHost());
-                assertEquals(serverPort, serverAuthority.getPort());
 
                 // Test Request.getServerName / Request.getServerPort
                 assertEquals(serverName, Request.getServerName(request));
@@ -122,11 +116,6 @@ public class HostHeaderCustomizerTest
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(serverName, httpURI.getHost());
                 assertEquals(connector.getLocalPort(), httpURI.getPort());
-
-                // Test "connectionMetaData.serverAuthority"
-                HostPort serverAuthority = request.getConnectionMetaData().getServerAuthority();
-                assertEquals(serverName, serverAuthority.getHost());
-                assertEquals(connector.getLocalPort(), serverAuthority.getPort());
 
                 // Test Request.getServerName / Request.getServerPort
                 assertEquals(serverName, Request.getServerName(request));

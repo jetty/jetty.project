@@ -19,7 +19,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.HostPort;
 
 /**
  * Adds a missing {@code Host} header (for example, HTTP 1.0 or 2.0 requests).
@@ -71,17 +70,6 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
         builder.add(request.getHeaders());
         HttpFields headers = builder.asImmutable();
 
-        ConnectionMetaData connectionMetadata = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
-        {
-            private HostPort _serverAuthority = new HostPort(host, port);
-
-            @Override
-            public HostPort getServerAuthority()
-            {
-                return _serverAuthority;
-            }
-        };
-
         return new Request.Wrapper(request)
         {
             @Override
@@ -94,12 +82,6 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
             public HttpFields getHeaders()
             {
                 return headers;
-            }
-
-            @Override
-            public ConnectionMetaData getConnectionMetaData()
-            {
-                return connectionMetadata;
             }
         };
     }
