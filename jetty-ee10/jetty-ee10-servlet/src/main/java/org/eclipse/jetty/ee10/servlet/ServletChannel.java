@@ -423,7 +423,7 @@ public class ServletChannel
                             ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
 
                             mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getHttpServletRequest(), _servletContextRequest.getHttpServletResponse());
-                        });
+                        }, true);
 
                         break;
                     }
@@ -465,7 +465,7 @@ public class ServletChannel
 
                             Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, decodedPathInContext);
                             dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
-                        });
+                        }, true);
                         break;
                     }
 
@@ -510,7 +510,9 @@ public class ServletChannel
                                 // _state.completing();
                                 try (Blocker.Callback blocker = Blocker.callback())
                                 {
-                                    errorDispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
+                                    // We do not notify ServletRequestListener on this dispatch because it might not
+                                    // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
+                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker), false);
                                     blocker.block();
                                 }
                             }
@@ -648,12 +650,13 @@ public class ServletChannel
         return false;
     }
 
-    private void dispatch(Dispatchable dispatchable) throws Exception
+    private void dispatch(Dispatchable dispatchable, boolean notifyRequestListener) throws Exception
     {
         try
         {
             _servletContextRequest.getResponse().getHttpOutput().reopen();
-            _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+            if (notifyRequestListener)
+                _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
             getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_servletContextRequest);
             dispatchable.dispatch();
@@ -666,27 +669,8 @@ public class ServletChannel
         finally
         {
             _combinedListener.onAfterDispatch(_servletContextRequest);
-            _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
-        }
-    }
-
-    private void errorDispatch(Dispatchable dispatchable) throws Exception
-    {
-        try
-        {
-            _servletContextRequest.getResponse().getHttpOutput().reopen();
-            getHttpOutput().reopen();
-            _combinedListener.onBeforeDispatch(_servletContextRequest);
-            dispatchable.dispatch();
-        }
-        catch (Throwable x)
-        {
-            _combinedListener.onDispatchFailure(_servletContextRequest, x);
-            throw x;
-        }
-        finally
-        {
-            _combinedListener.onAfterDispatch(_servletContextRequest);
+            if (notifyRequestListener)
+                _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
         }
     }
 
