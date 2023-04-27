@@ -598,6 +598,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         {
             // Ignore failures, as we might be OSHUT but receive a PING.
             callback.succeeded();
+            coreSession.demand(1);
         }), false);
     }
 
