@@ -119,7 +119,7 @@ public class CDITests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/demo/greetings");

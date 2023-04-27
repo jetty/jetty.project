@@ -232,7 +232,7 @@ public class HttpClientLoadTest extends AbstractTest
         }
 
         CountDownLatch requestLatch = new CountDownLatch(1);
-        request.send(new Response.Listener.Adapter()
+        request.send(new Response.Listener()
         {
             private final AtomicInteger contentLength = new AtomicInteger();
 

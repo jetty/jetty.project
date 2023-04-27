@@ -19,8 +19,10 @@ import java.nio.file.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -30,15 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 
  *
  */
+@ExtendWith(WorkDirExtension.class)
 public class TestQuickStartGenerator
 {
-    public WorkDir workDir;
-
     @Test
-    public void testGenerator() throws Exception
+    public void testGenerator(WorkDir workDir) throws Exception
     {
         Path tmpDir = workDir.getEmptyPathDir();
-
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/shouldbeoverridden");
         Path rootDir = MavenTestingUtils.getTargetPath("test-classes/root");

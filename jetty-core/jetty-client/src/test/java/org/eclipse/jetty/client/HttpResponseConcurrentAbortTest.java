@@ -151,7 +151,7 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
         }
     }
 
-    private class TestResponseListener extends Response.Listener.Adapter
+    private class TestResponseListener implements Response.Listener
     {
         @Override
         public void onFailure(Response response, Throwable failure)

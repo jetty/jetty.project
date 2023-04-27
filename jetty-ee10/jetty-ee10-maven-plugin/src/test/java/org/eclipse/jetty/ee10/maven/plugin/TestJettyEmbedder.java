@@ -34,10 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class TestJettyEmbedder
 {
-    public WorkDir workDir;
-
     @Test
-    public void testJettyEmbedderFromDefaults() throws Exception
+    public void testJettyEmbedderFromDefaults(WorkDir workDir) throws Exception
     {
         Path basePath = workDir.getEmptyPathDir();
         MavenWebAppContext webApp = new MavenWebAppContext();
@@ -74,11 +72,11 @@ public class TestJettyEmbedder
     }
 
     @Test
-    public void testJettyEmbedder()
+    public void testJettyEmbedder(WorkDir workDir)
         throws Exception
     {
+        Path basePath = workDir.getPath();
         MavenWebAppContext webApp = new MavenWebAppContext();
-        Path basePath = workDir.getEmptyPathDir();
         webApp.setBaseResourceAsPath(basePath);
         Server server = new Server();
         Map<String, String> jettyProperties = new HashMap<>();

@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // Sibling of ConnectionPoolTest, but using H2 to multiplex connections.
@@ -337,7 +338,7 @@ public class MultiplexedConnectionPoolTest
             assertThat(response.getStatus(), Matchers.is(200));
 
             // Check that the pool never grows above 1.
-            assertThat(poolRef.get().size(), is(1));
+            assertThat(poolRef.get().size(), lessThan(2));
 
             Thread.sleep(maxDuration * 2);
         }

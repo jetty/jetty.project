@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -38,7 +39,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -295,7 +295,7 @@ public class JettyHomeTester
         return "java";
     }
 
-    public static void unzip(Path archive, Path outputDir) throws IOException
+    public static synchronized void unzip(Path archive, Path outputDir) throws IOException
     {
         if (!Files.exists(outputDir))
             throw new FileNotFoundException("Directory does not exist: " + outputDir);
@@ -318,7 +318,7 @@ public class JettyHomeTester
                 // ensure proper unpack order (eg: directories before files)
                 List<Path> sorted = entriesStream
                     .sorted()
-                    .collect(Collectors.toList());
+                    .toList();
 
                 for (Path path : sorted)
                 {
@@ -337,6 +337,10 @@ public class JettyHomeTester
                     }
                 }
             }
+        }
+        catch (FileAlreadyExistsException e)
+        {
+            LOGGER.warn("ignore FileAlreadyExistsException: archiveURI {}, outputDir {}", archiveURI, outputDir);
         }
     }
 

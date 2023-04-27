@@ -42,15 +42,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(WorkDirExtension.class)
 public class MavenLocalRepoFileInitializerTest
 {
-    public WorkDir testdir;
+    public WorkDir workDir;
+    public Path testdir;
 
     private BaseHome baseHome;
 
     @BeforeEach
     public void setupBaseHome() throws IOException
     {
-        Path homeDir = testdir.getEmptyPathDir().resolve("home");
-        Path baseDir = testdir.getEmptyPathDir().resolve("base");
+        testdir = workDir.getEmptyPathDir();
+        Path homeDir = testdir.resolve("home");
+        Path baseDir = testdir.resolve("base");
 
         FS.ensureDirExists(homeDir);
         FS.ensureDirExists(baseDir);
@@ -192,7 +194,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
                    is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-http/9.4.31.v20200723/jetty-http-9.4.31.v20200723-tests.jar"));
 
-        Path destination = testdir.getEmptyPathDir().resolve("jetty-http-9.4.31.v20200723-tests.jar");
+        Path destination = testdir.resolve("jetty-http-9.4.31.v20200723-tests.jar");
         Files.deleteIfExists(destination);
         repo.download(coords.toCentralURI(), destination);
         assertThat(Files.exists(destination), is(true));
@@ -204,7 +206,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testDownloadSnapshotRepo()
         throws Exception
     {
-        Path snapshotLocalRepoDir = testdir.getPath().resolve("snapshot-repo");
+        Path snapshotLocalRepoDir = testdir.resolve("snapshot-repo");
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =
@@ -233,7 +235,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testDownloadSnapshotRepoWithExtractDeep()
         throws Exception
     {
-        Path snapshotLocalRepoDir = testdir.getPath().resolve("snapshot-repo");
+        Path snapshotLocalRepoDir = testdir.resolve("snapshot-repo");
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =
@@ -251,7 +253,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testDownloadSnapshotRepoWithExtractDefault()
         throws Exception
     {
-        Path snapshotLocalRepoDir = testdir.getPath().resolve("snapshot-repo");
+        Path snapshotLocalRepoDir = testdir.resolve("snapshot-repo");
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =

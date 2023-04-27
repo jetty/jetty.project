@@ -118,7 +118,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class RequestTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
-    public WorkDir workDir;
     private Server _server;
     private ContextHandler _context;
     private LocalConnector _connector;
@@ -245,14 +244,10 @@ public class RequestTest
     public void testParameterExtractionKeepOrderingIntact() throws Exception
     {
         AtomicReference<Map<String, String[]>> reference = new AtomicReference<>();
-        _handler._checker = new RequestTester()
+        _handler._checker = (request, response) ->
         {
-            @Override
-            public boolean check(HttpServletRequest request, HttpServletResponse response)
-            {
-                reference.set(request.getParameterMap());
-                return true;
-            }
+            reference.set(request.getParameterMap());
+            return true;
         };
 
         String request = "POST /?first=1&second=2&third=3&fourth=4 HTTP/1.1\r\n" +
@@ -272,14 +267,10 @@ public class RequestTest
     public void testParameterExtractionOrderingWithMerge() throws Exception
     {
         AtomicReference<Map<String, String[]>> reference = new AtomicReference<>();
-        _handler._checker = new RequestTester()
+        _handler._checker = (request, response) ->
         {
-            @Override
-            public boolean check(HttpServletRequest request, HttpServletResponse response)
-            {
-                reference.set(request.getParameterMap());
-                return true;
-            }
+            reference.set(request.getParameterMap());
+            return true;
         };
 
         String request = "POST /?a=1&b=2&c=3&a=4 HTTP/1.1\r\n" +
@@ -461,11 +452,10 @@ public class RequestTest
     }
 
     @Test
-    public void testMultiPart() throws Exception
+    public void testMultiPart(WorkDir workDir) throws Exception
     {
         Path testTmpDir = workDir.getEmptyPathDir();
-
-        // We should have two tmp files after parsing the multipart form.
+        // We should have two tmp files after parsing the multipart form. bb
         RequestTester tester = (request, response) ->
         {
             try (Stream<Path> s = Files.list(testTmpDir))
@@ -518,10 +508,10 @@ public class RequestTest
     }
 
     @Test
-    public void testBadMultiPart() throws Exception
+    public void testBadMultiPart(WorkDir workDir) throws Exception
     {
-        //a bad multipart where one of the fields has no name
         Path testTmpDir = workDir.getEmptyPathDir();
+        //a bad multipart where one of the fields has no name
 
         _server.stop();
         _context.setContextPath("/foo");

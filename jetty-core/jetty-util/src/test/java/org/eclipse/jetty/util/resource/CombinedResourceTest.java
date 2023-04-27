@@ -54,8 +54,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class CombinedResourceTest
 {
-    private final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
+
     public WorkDir workDir;
+
+    private final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
 
     @BeforeEach
     public void beforeEach()
@@ -145,6 +147,7 @@ public class CombinedResourceTest
     @Test
     public void testCopyTo() throws Exception
     {
+        Path destDir = workDir.getEmptyPathDir();
         Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
@@ -154,7 +157,6 @@ public class CombinedResourceTest
                 resourceFactory.newResource(two),
                 resourceFactory.newResource(three)
         );
-        Path destDir = workDir.getEmptyPathDir();
         rc.copyTo(destDir);
 
         Resource r = resourceFactory.newResource(destDir);

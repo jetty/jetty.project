@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session.hazelcast.client;
+package org.eclipse.jetty.ee10.session.hazelcast.client;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.session.hazelcast.HazelcastTestHelper;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.session.hazelcast.HazelcastTestHelper;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStore;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * HazelcastSessionDataStoreTest
  */
-public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
+public class HazelcastSessionDataStoreClientTest extends AbstractSessionDataStoreTest
 {
-    public HazelcastSessionDataStoreTest() throws Exception
+    public HazelcastSessionDataStoreClientTest() throws Exception
     {
         super();
     }
@@ -115,11 +115,11 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         // create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
-        context.getSessionHandler().getSessionManager().setSessionIdManager(idMgr);
+        context.getSessionHandler().setSessionIdManager(idMgr);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler().getSessionManager());
-        SessionContext sessionContext = new SessionContext(context.getSessionHandler().getSessionManager());
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext(context.getSessionHandler());
         store.initialize(sessionContext);
 
         // persist a session

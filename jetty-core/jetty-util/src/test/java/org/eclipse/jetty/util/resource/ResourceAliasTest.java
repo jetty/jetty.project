@@ -42,8 +42,6 @@ public class ResourceAliasTest
 
     private final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
 
-    public WorkDir workDir;
-
     @BeforeEach
     public void beforeEach()
     {
@@ -58,10 +56,9 @@ public class ResourceAliasTest
     }
 
     @Test
-    public void testAliasNavigation() throws IOException
+    public void testAliasNavigation(WorkDir workDir) throws IOException
     {
         Path docroot = workDir.getEmptyPathDir();
-
         Path dir = docroot.resolve("dir");
         Files.createDirectory(dir);
 
@@ -86,10 +83,9 @@ public class ResourceAliasTest
     }
 
     @Test
-    public void testPercentPaths() throws IOException
+    public void testPercentPaths(WorkDir workDir) throws IOException
     {
         Path baseDir = workDir.getEmptyPathDir();
-
         Path foo = baseDir.resolve("%foo");
         Files.createDirectories(foo);
 
@@ -123,10 +119,9 @@ public class ResourceAliasTest
     }
 
     @Test
-    public void testNullCharEndingFilename() throws Exception
+    public void testNullCharEndingFilename(WorkDir workDir) throws Exception
     {
         Path baseDir = workDir.getEmptyPathDir();
-
         Path file = baseDir.resolve("test.txt");
         FS.touch(file);
 

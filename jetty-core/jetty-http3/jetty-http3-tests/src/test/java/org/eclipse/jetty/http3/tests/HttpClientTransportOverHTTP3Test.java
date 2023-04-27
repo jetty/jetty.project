@@ -77,7 +77,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         });
 
         ContentResponse response = httpClient.newRequest("https://localhost:" + connector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS)
+            .timeout(10, TimeUnit.SECONDS)
             .send();
         assertEquals(content, response.getContentAsString());
     }
@@ -179,7 +179,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                 latch.countDown();
             });
 
-        assertTrue(beforeContentLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(beforeContentLatch.await(10, TimeUnit.SECONDS));
 
         // Verify that the response is not completed yet.
         assertFalse(latch.await(1, TimeUnit.SECONDS));

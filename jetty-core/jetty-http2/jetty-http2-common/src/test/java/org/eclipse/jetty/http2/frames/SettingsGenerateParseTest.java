@@ -72,7 +72,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onSettings(SettingsFrame frame)
@@ -107,7 +107,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -142,7 +142,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onSettings(SettingsFrame frame)
@@ -187,7 +187,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -227,7 +227,7 @@ public class SettingsGenerateParseTest
         int maxSettingsKeys = pairs / 2;
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        Parser parser = new Parser(bufferPool, new Parser.Listener() {}, 4096, 8192);
         parser.setMaxSettingsKeys(maxSettingsKeys);
         parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
         parser.init(listener -> new Parser.Listener.Wrapper(listener)
@@ -268,7 +268,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)

@@ -22,6 +22,14 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
 
+    <!-- execute top-level classes in parallel but methods in same thread -->
+    <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
+    <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
+    <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
+    <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>
+    <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <junit.jupiter.extensions.autodetection.enabled>false</junit.jupiter.extensions.autodetection.enabled>
+
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.13</ant.version>
@@ -86,7 +94,8 @@
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty-quiche-native.version>0.16.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jetty.test.version>6.0</jetty.test.version>
+<!--    <jetty.test.version>6.0</jetty.test.version>-->
+    <jetty.test.version>6.0-SNAPSHOT</jetty.test.version>
     <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
     <jmh.version>1.36</jmh.version>
     <jna.version>5.13.0</jna.version>
@@ -184,7 +193,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx4g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
+    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
@@ -210,6 +219,18 @@
     <url>https://github.com/eclipse/jetty.project</url>
   </scm>
 
+  <repositories>
+    <repository>
+      <id>jetty.snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
   <pluginRepositories>
     <pluginRepository>
       <id>jetty.snapshots</id>
@@ -755,15 +776,23 @@
             <!-- order can be different depending on os jvm so let's force it -->
             <runOrder>alphabetical</runOrder>
             <systemPropertyVariables>
-              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
               <jetty.unixdomain.dir>${jetty.unixdomain.dir}</jetty.unixdomain.dir>
-              <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
             <!-- The LC_ALL env variable must have some UTF variant otherwise creating and/or reading files with non-ascii names doesn't work -->
             <environmentVariables>
               <LC_ALL>en_US.UTF-8</LC_ALL>
             </environmentVariables>
+            <properties>
+              <configurationParameters>
+                junit.jupiter.execution.parallel.enabled=${junit.jupiter.execution.parallel.enabled}
+                junit.jupiter.execution.parallel.mode.default=${junit.jupiter.execution.parallel.mode.default}
+                junit.jupiter.execution.parallel.mode.classes.default=${junit.jupiter.execution.parallel.mode.classes.default}
+                junit.jupiter.execution.parallel.config.strategy=${junit.jupiter.execution.parallel.config.strategy}
+                junit.jupiter.execution.parallel.config.fixed.parallelism=${junit.jupiter.execution.parallel.config.fixed.parallelism}
+                junit.jupiter.extensions.autodetection.enabled=${junit.jupiter.extensions.autodetection.enabled}
+              </configurationParameters>
+            </properties>
           </configuration>
           <dependencies>
             <dependency>
@@ -2005,6 +2034,7 @@
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
         <maven.repo.uri></maven.repo.uri>
+        <home.start.timeout>120</home.start.timeout>
       </properties>
       <modules>
       <!-- FIXME: Do we want to keep this?

@@ -39,19 +39,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ExtendWith(WorkDirExtension.class)
 public class WebAppDefaultServletTest
 {
-    public WorkDir workDir;
     private Server server;
     private LocalConnector connector;
 
     @BeforeEach
-    public void prepareServer() throws Exception
+    public void prepareServer(WorkDir workDir) throws Exception
     {
+        Path directoryPath = workDir.getEmptyPathDir();
         server = new Server();
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         server.addConnector(connector);
 
-        Path directoryPath = workDir.getEmptyPathDir();
         Path welcomeResource = directoryPath.resolve("index.html");
         try (OutputStream output = Files.newOutputStream(welcomeResource))
         {

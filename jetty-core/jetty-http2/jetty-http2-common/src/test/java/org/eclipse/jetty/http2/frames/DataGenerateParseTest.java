@@ -88,7 +88,7 @@ public class DataGenerateParseTest
         DataGenerator generator = new DataGenerator(new HeaderGenerator(bufferPool));
 
         final List<DataFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onData(DataFrame frame)
@@ -128,7 +128,7 @@ public class DataGenerateParseTest
         DataGenerator generator = new DataGenerator(new HeaderGenerator(bufferPool));
 
         final List<DataFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onData(DataFrame frame)

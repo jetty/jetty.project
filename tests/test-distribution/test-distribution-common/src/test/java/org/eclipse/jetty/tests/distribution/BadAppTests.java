@@ -108,7 +108,7 @@ public class BadAppTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
@@ -148,7 +148,7 @@ public class BadAppTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 //ContentResponse response = client.GET("http://localhost:" + port + "/badapp/bad/x");
@@ -183,7 +183,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
@@ -194,7 +194,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();

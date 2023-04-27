@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.session;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -24,6 +25,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -82,7 +84,8 @@ public class AsyncTest
             
             //session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+                    .until(() -> !contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
         finally

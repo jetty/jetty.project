@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
+import java.nio.file.Path;
+
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,12 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class CloseableDoSFilterTest extends AbstractDoSFilterTest
 {
-    public WorkDir workDir;
-
     @BeforeEach
-    public void setUp() throws Exception
+    public void setUp(WorkDir workDir) throws Exception
     {
-        startServer(workDir, CloseableDoSFilter.class);
+        startServer(workDir.getEmptyPathDir(), CloseableDoSFilter.class);
     }
 
     @Override

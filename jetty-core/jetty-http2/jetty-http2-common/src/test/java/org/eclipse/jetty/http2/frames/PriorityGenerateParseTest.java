@@ -37,7 +37,7 @@ public class PriorityGenerateParseTest
         PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator(bufferPool));
 
         final List<PriorityFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onPriority(PriorityFrame frame)
@@ -82,7 +82,7 @@ public class PriorityGenerateParseTest
         PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator(bufferPool));
 
         final List<PriorityFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onPriority(PriorityFrame frame)

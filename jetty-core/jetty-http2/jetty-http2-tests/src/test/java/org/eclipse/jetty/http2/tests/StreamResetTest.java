@@ -81,7 +81,6 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -334,13 +333,7 @@ public class StreamResetTest extends AbstractTest
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
-    // TODO: This test writes after a failure and highlights some problem in the implementation
-    //  of the handling of errors. For example, the request._error field is set by the failure,
-    //  but checked during the succeed of the callback (so cannot turn a failure into a success)
-    //  and also highlights that the implementation should be more precise at severing the link
-    //  between channel and request, possibly where the request only has one field, the channel.
     @Test
-    @Disabled
     public void testAsyncWriteAfterStreamReceivingReset() throws Exception
     {
         CountDownLatch commitLatch = new CountDownLatch(1);
@@ -454,7 +447,7 @@ public class StreamResetTest extends AbstractTest
 
         // Wait for the server to receive the reset and process
         // it, and for the client to process the window updates.
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(10, TimeUnit.SECONDS)
             .until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
     }
 

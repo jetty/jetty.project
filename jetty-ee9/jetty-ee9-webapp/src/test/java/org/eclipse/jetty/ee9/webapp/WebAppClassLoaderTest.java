@@ -57,7 +57,6 @@ public class WebAppClassLoaderTest
     @BeforeEach
     public void init() throws Exception
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         _server = new Server();
 
         _testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
@@ -81,7 +80,6 @@ public class WebAppClassLoaderTest
     {
         IO.close(_loader);
         LifeCycle.stop(_server);
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     public void assertCanLoadClass(String clazz) throws ClassNotFoundException

@@ -60,7 +60,7 @@ public class ClientParserTest
         }
 
         AtomicInteger params = new AtomicInteger(1);
-        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
             public void onBegin(int request, int code, String reason)
@@ -115,7 +115,7 @@ public class ClientParserTest
         generator.generateResponseContent(accumulator, id, null, true, false);
 
         AtomicInteger verifier = new AtomicInteger();
-        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
             public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
@@ -165,7 +165,7 @@ public class ClientParserTest
         generator.generateResponseContent(accumulator, id, content, true, false);
 
         AtomicInteger verifier = new AtomicInteger();
-        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
             public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
@@ -217,7 +217,7 @@ public class ClientParserTest
 
         AtomicInteger totalLength = new AtomicInteger();
         AtomicBoolean verifier = new AtomicBoolean();
-        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
             public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)

@@ -178,7 +178,7 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
 
                 try (JettyHomeTester.Run run2 = distribution.start(argsStart))
                 {
-                    assertTrue(run2.awaitConsoleLogsFor("Started @", 60, TimeUnit.SECONDS));
+                    assertTrue(run2.awaitConsoleLogsFor("Started @", START_TIMEOUT, TimeUnit.SECONDS));
 
                     startHttpClient();
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=CREATE");
@@ -194,7 +194,7 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
 
                 try (JettyHomeTester.Run run2 = distribution.start(argsStart))
                 {
-                    assertTrue(run2.awaitConsoleLogsFor("Started @", 15, TimeUnit.SECONDS));
+                    assertTrue(run2.awaitConsoleLogsFor("Started @", START_TIMEOUT, TimeUnit.SECONDS));
 
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                     assertEquals(HttpStatus.OK_200, response.getStatus());

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -110,24 +109,18 @@ public class PropertyUserStoreTest
         }
     }
 
-    public WorkDir testdir;
+    public WorkDir workDir;
+    public Path testdir;
 
     @BeforeEach
     public void beforeEach()
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    @AfterEach
-    public void afterEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        testdir = workDir.getEmptyPathDir();
     }
 
     private Path initUsersText() throws Exception
     {
-        Path dir = testdir.getPath();
-        Path users = dir.resolve("users.txt");
+        Path users = testdir.resolve("users.txt");
         Files.deleteIfExists(users);
 
         writeUser(users);
@@ -137,10 +130,9 @@ public class PropertyUserStoreTest
     private URI initUsersPackedFileText()
         throws Exception
     {
-        Path dir = testdir.getPath();
-        Path users = dir.resolve("users.txt");
+        Path users = testdir.resolve("users.txt");
         writeUser(users);
-        Path usersJar = dir.resolve("users.jar");
+        Path usersJar = testdir.resolve("users.jar");
         String entryPath = "mountain_goat/pale_ale.txt";
         try (InputStream fileInputStream = Files.newInputStream(users))
         {
@@ -167,11 +159,6 @@ public class PropertyUserStoreTest
         return URIUtil.uriJarPrefix(usersJar.toUri(), "!/" + entryPath);
     }
 
-    private void writeUser(File usersFile) throws IOException
-    {
-        writeUser(usersFile.toPath());
-    }
-
     private void writeUser(Path usersFile) throws IOException
     {
         try (Writer writer = Files.newBufferedWriter(usersFile, UTF_8))
@@ -194,8 +181,6 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreLoad() throws Exception
     {
-        testdir.ensureEmpty();
-
         final UserCount userCount = new UserCount();
         final Path usersFile = initUsersText();
 
@@ -228,8 +213,6 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreLoadFromJarFile() throws Exception
     {
-        testdir.ensureEmpty();
-
         final UserCount userCount = new UserCount();
         final URI usersFile = initUsersPackedFileText();
 
@@ -257,8 +240,6 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreLoadUpdateUser() throws Exception
     {
-        testdir.ensureEmpty();
-
         final UserCount userCount = new UserCount();
         final Path usersFile = initUsersText();
         final AtomicInteger loadCount = new AtomicInteger(0);
@@ -288,10 +269,10 @@ public class PropertyUserStoreTest
         userCount.assertThatUsers(hasItem("skip"));
 
         if (OS.LINUX.isCurrentOs())
-            Files.createFile(testdir.getPath().toRealPath().resolve("unrelated.txt"),
+            Files.createFile(testdir.toRealPath().resolve("unrelated.txt"),
                 PosixFilePermissions.asFileAttribute(EnumSet.noneOf(PosixFilePermission.class)));
         else
-            Files.createFile(testdir.getPath().toRealPath().resolve("unrelated.txt"));
+            Files.createFile(testdir.toRealPath().resolve("unrelated.txt"));
 
         Scanner scanner = store.getBean(Scanner.class);
         CountDownLatch latch = new CountDownLatch(2);
@@ -307,8 +288,6 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreLoadRemoveUser() throws Exception
     {
-        testdir.ensureEmpty();
-
         final UserCount userCount = new UserCount();
         // initial user file (3) users
         final Path usersFile = initUsersText();

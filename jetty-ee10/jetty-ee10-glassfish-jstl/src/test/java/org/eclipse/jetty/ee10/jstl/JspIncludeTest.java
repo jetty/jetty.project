@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
@@ -32,14 +33,17 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+@ExtendWith(WorkDirExtension.class)
 public class JspIncludeTest
 {
     private static Server server;
@@ -48,6 +52,7 @@ public class JspIncludeTest
     @BeforeAll
     public static void startServer(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         // Setup Server
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -55,7 +60,7 @@ public class JspIncludeTest
         server.addConnector(connector);
         
         //Base dir for test
-        File testDir = workDir.getEmptyPathDir().toFile();
+        File testDir = tmpPath.toFile();
         File testLibDir = new File(testDir, "WEB-INF/lib");
         FS.ensureDirExists(testLibDir);
                 

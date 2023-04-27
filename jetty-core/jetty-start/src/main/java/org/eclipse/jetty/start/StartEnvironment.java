@@ -23,7 +23,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-public class Environment
+/**
+ * A start environment that contains the configurations that will be used to
+ * build a runtime {@code org.eclipse.jetty.util.component.Environment} via
+ * {@code --env} arguments passed to {@code org.eclipse.jetty.xml.XmlConfiguration#main(java.lang.String...)}
+ */
+public class StartEnvironment
 {
     private final BaseHome _baseHome;
     private final String _name;
@@ -57,7 +62,7 @@ public class Environment
 
     private final List<String> _libRefs = new ArrayList<>();
 
-    Environment(String name, BaseHome baseHome)
+    StartEnvironment(String name, BaseHome baseHome)
     {
         _name = name;
         _baseHome = baseHome;
@@ -79,8 +84,8 @@ public class Environment
 
     public void addUniquePropertyFile(String propertyFileRef, Path propertyFile) throws IOException
     {
-        if (!"core".equalsIgnoreCase(getName()))
-            throw new IllegalStateException("Property files not supported in non core environments");
+        if (!"Jetty".equalsIgnoreCase(getName()))
+            throw new IllegalStateException("Property files not supported in environment " + getName());
 
         if (!FS.canReadFile(propertyFile))
         {
@@ -136,7 +141,7 @@ public class Environment
     {
         out.println();
         out.printf("Properties: %s%n", _name);
-        out.printf("--------------%n", "-".repeat(_name.length()));
+        out.printf("------------%s%n", "-".repeat(_name.length()));
 
         List<String> sortedKeys = new ArrayList<>();
         for (Props.Prop prop : _properties)

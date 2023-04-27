@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * If the consumer is slower than the producer, then the producer will block
  * until the client consumes.
  */
-public class InputStreamResponseListener extends Listener.Adapter
+public class InputStreamResponseListener implements Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, x -> {});

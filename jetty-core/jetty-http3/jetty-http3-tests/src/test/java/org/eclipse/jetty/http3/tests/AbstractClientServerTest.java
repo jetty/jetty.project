@@ -103,7 +103,7 @@ public class AbstractClientServerTest
     protected Session.Client newSession(Session.Client.Listener listener) throws Exception
     {
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        return http3Client.connect(address, listener).get(5, TimeUnit.SECONDS);
+        return http3Client.connect(address, listener).get(30, TimeUnit.SECONDS);
     }
 
     protected MetaData.Request newRequest(String path)

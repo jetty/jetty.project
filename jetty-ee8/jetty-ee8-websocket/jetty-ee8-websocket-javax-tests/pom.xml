@@ -11,6 +11,7 @@
   <name>EE8 :: Websocket :: Javax Tests</name>
 
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jakarta-tests</ee9.module>
     <bundle-symbolic-name>${project.groupId}.javax.tests</bundle-symbolic-name>
     <maven.deploy.skip>true</maven.deploy.skip>

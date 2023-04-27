@@ -72,7 +72,6 @@ import static org.junit.jupiter.api.condition.OS.WINDOWS;
 @ExtendWith(WorkDirExtension.class)
 public class FileSystemResourceTest
 {
-    public WorkDir workDir;
 
     @BeforeEach
     public void beforeEach()
@@ -209,9 +208,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNewResourceWithSpace() throws Exception
+    public void testNewResourceWithSpace(WorkDir workDir) throws Exception
     {
-        Path dir = workDir.getPath().normalize().toRealPath();
+        Path dir = workDir.getEmptyPathDir().normalize().toRealPath();
 
         Path baseDir = dir.resolve("base with spaces");
         FS.ensureDirExists(baseDir);
@@ -232,10 +231,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolvePathClass()
+    public void testResolvePathClass(WorkDir workDir)
     {
         Path dir = workDir.getEmptyPathDir();
-
         Path subdir = dir.resolve("sub");
         FS.ensureDirExists(subdir);
 
@@ -248,7 +246,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolveRootPath() throws Exception
+    public void testResolveRootPath(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Path subdir = dir.resolve("sub");
@@ -274,10 +272,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAccessUniCodeFile() throws Exception
+    public void testAccessUniCodeFile(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-
         String readableRootDir = findAnyDirectoryOffRoot(dir.getFileSystem());
         assumeTrue(readableRootDir != null, "Readable Root Dir found");
 
@@ -352,7 +349,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testIsContainedIn() throws Exception
+    public void testIsContainedIn(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -365,7 +362,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testIsDirectory() throws Exception
+    public void testIsDirectory(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -384,10 +381,10 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testLastModified() throws Exception
+    public void testLastModified(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Path file = workDir.getPathFile("foo");
+        Path file = dir.resolve("foo");
         Files.createFile(file);
 
         Instant expected = Files.getLastModifiedTime(file).toInstant();
@@ -398,7 +395,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testLength() throws Exception
+    public void testLength(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -414,7 +411,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testDelete() throws Exception
+    public void testDelete(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -432,11 +429,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testName() throws Exception
+    public void testName(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         String expected = dir.toAbsolutePath().toString();
 
         Resource base = ResourceFactory.root().newResource(dir);
@@ -444,11 +439,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testFileName() throws Exception
+    public void testFileName(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         String expected = dir.getFileName().toString();
 
         Resource base = ResourceFactory.root().newResource(dir);
@@ -456,11 +449,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testInputStream() throws Exception
+    public void testInputStream(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path file = dir.resolve("foo");
         String content = "Foo is here";
         touchFile(file, content);
@@ -477,11 +468,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testReadableByteChannel() throws Exception
+    public void testReadableByteChannel(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path file = dir.resolve("foo");
         String content = "Foo is here";
 
@@ -504,11 +493,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testGetURI() throws Exception
+    public void testGetURI(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path file = dir.resolve("foo");
         Files.createFile(file);
 
@@ -520,11 +507,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testList() throws Exception
+    public void testList(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Files.createFile(dir.resolve("foo"));
         Files.createFile(dir.resolve("bar"));
         Files.createDirectories(dir.resolve("tick"));
@@ -545,10 +530,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testSymlink() throws Exception
+    public void testSymlink(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-
         Path foo = dir.resolve("foo");
         Path bar = dir.resolve("bar");
 
@@ -585,11 +569,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNonExistentSymlink() throws Exception
+    public void testNonExistentSymlink(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path foo = dir.resolve("foo"); // does not exist
         Path bar = dir.resolve("bar"); // to become a link to "foo"
 
@@ -616,10 +598,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testCaseInsensitiveAlias() throws Exception
+    public void testCaseInsensitiveAlias(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
         Path path = dir.resolve("file");
         Files.createFile(path);
 
@@ -653,11 +634,9 @@ public class FileSystemResourceTest
      */
     @Test
     @EnabledOnOs(WINDOWS)
-    public void testCase8dot3Alias() throws Exception
+    public void testCase8dot3Alias(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path path = dir.resolve("TextFile.Long.txt");
         Files.createFile(path);
 
@@ -690,11 +669,9 @@ public class FileSystemResourceTest
      */
     @Test
     @EnabledOnOs(WINDOWS)
-    public void testNTFSFileStreamAlias() throws Exception
+    public void testNTFSFileStreamAlias(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path path = dir.resolve("testfile");
         Files.createFile(path);
 
@@ -732,11 +709,9 @@ public class FileSystemResourceTest
      */
     @Test
     @EnabledOnOs(WINDOWS)
-    public void testNTFSFileDataStreamAlias() throws Exception
+    public void testNTFSFileDataStreamAlias(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path path = dir.resolve("testfile");
         Files.createFile(path);
 
@@ -776,11 +751,9 @@ public class FileSystemResourceTest
      */
     @Test
     @EnabledOnOs(WINDOWS)
-    public void testNTFSFileEncodedDataStreamAlias() throws Exception
+    public void testNTFSFileEncodedDataStreamAlias(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path path = dir.resolve("testfile");
         Files.createFile(path);
 
@@ -810,10 +783,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testSemicolon() throws Exception
+    public void testSemicolon(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-
         try
         {
             // attempt to create file
@@ -831,11 +803,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testSingleQuote() throws Exception
+    public void testSingleQuote(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         try
         {
             // attempt to create file
@@ -857,11 +827,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testSingleBackTick() throws Exception
+    public void testSingleBackTick(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         try
         {
             // attempt to create file
@@ -883,11 +851,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testBrackets() throws Exception
+    public void testBrackets(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         try
         {
             // attempt to create file
@@ -909,11 +875,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testBraces() throws Exception
+    public void testBraces(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         try
         {
             // attempt to create file
@@ -936,11 +900,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testCaret() throws Exception
+    public void testCaret(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         try
         {
             // attempt to create file
@@ -962,11 +924,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testPipe() throws Exception
+    public void testPipe(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         try
         {
             // attempt to create file
@@ -993,7 +953,7 @@ public class FileSystemResourceTest
      * @throws Exception failed test
      */
     @Test
-    public void testExistNormal() throws Exception
+    public void testExistNormal(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1001,13 +961,13 @@ public class FileSystemResourceTest
         Path path = dir.resolve("a.jsp");
         Files.createFile(path);
 
-        URI ref = workDir.getPath().toUri().resolve("a.jsp");
+        URI ref = dir.toUri().resolve("a.jsp");
         Resource fileres = ResourceFactory.root().newResource(ref);
         assertThat("Resource: " + fileres, fileres.exists(), is(true));
     }
 
     @Test
-    public void testSingleQuoteInFileName() throws Exception
+    public void testSingleQuoteInFileName(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1062,18 +1022,16 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testExistBadURINull() throws Exception
+    public void testExistBadURINull(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path path = dir.resolve("a.jsp");
         Files.createFile(path);
 
         try
         {
             // request with null at end
-            URI uri = workDir.getPath().toUri().resolve("a.jsp%00");
+            URI uri = dir.toUri().resolve("a.jsp%00");
             assertThat("Null URI", uri, notNullValue());
 
             Resource r = ResourceFactory.root().newResource(uri);
@@ -1088,18 +1046,16 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testExistBadURINullX() throws Exception
+    public void testExistBadURINullX(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path path = dir.resolve("a.jsp");
         Files.createFile(path);
 
         try
         {
             // request with null and x at end
-            URI uri = workDir.getPath().toUri().resolve("a.jsp%00x");
+            URI uri = dir.toUri().resolve("a.jsp%00x");
             assertThat("NullX URI", uri, notNullValue());
 
             Resource r = ResourceFactory.root().newResource(uri);
@@ -1114,11 +1070,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolveWindowsSlash() throws Exception
+    public void testResolveWindowsSlash(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path basePath = dir.resolve("base");
         FS.ensureDirExists(basePath);
         Path dirPath = basePath.resolve("aa");
@@ -1156,11 +1110,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolveWindowsExtensionLess() throws Exception
+    public void testResolveWindowsExtensionLess(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path basePath = dir.resolve("base");
         FS.ensureDirExists(basePath);
         Path dirPath = basePath.resolve("aa");
@@ -1197,11 +1149,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolveInitialSlash() throws Exception
+    public void testResolveInitialSlash(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path basePath = dir.resolve("base");
         FS.ensureDirExists(basePath);
         Path filePath = basePath.resolve("foo.txt");
@@ -1227,11 +1177,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolveInitialDoubleSlash() throws Exception
+    public void testResolveInitialDoubleSlash(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path basePath = dir.resolve("base");
         FS.ensureDirExists(basePath);
         Path filePath = basePath.resolve("foo.txt");
@@ -1257,11 +1205,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolveDoubleSlash() throws Exception
+    public void testResolveDoubleSlash(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path basePath = dir.resolve("base");
         FS.ensureDirExists(basePath);
         Path dirPath = basePath.resolve("aa");
@@ -1289,11 +1235,9 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testEncoding() throws Exception
+    public void testEncoding(WorkDir workDir) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
         Path specials = dir.resolve("a file with,spe#ials");
         Files.createFile(specials);
 
@@ -1306,11 +1250,10 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testUtf8Dir() throws Exception
+    public void testUtf8Dir(WorkDir workDir) throws Exception
     {
-        Path dir = workDir.getEmptyPathDir();
         Path utf8Dir;
-
+        Path dir = workDir.getEmptyPathDir();
         try
         {
             utf8Dir = dir.resolve("bãm");

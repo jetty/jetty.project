@@ -256,8 +256,6 @@ public class ResourceTest
         return cases.stream();
     }
 
-    public WorkDir workDir;
-
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResourceExists(Scenario data)
@@ -342,6 +340,7 @@ public class ResourceTest
     public void testResourceExtraSlashStripping(WorkDir workDir) throws IOException
     {
         Path docRoot = workDir.getEmptyPathDir();
+
         Files.createDirectories(docRoot.resolve("d/e/f"));
 
         Resource ra = resourceFactory.newResource(docRoot);
@@ -368,7 +367,7 @@ public class ResourceTest
     @Test
     public void testClimbAboveBase(WorkDir workDir)
     {
-        Path testdir = workDir.getEmptyPathDir().resolve("foo/bar");
+        Path testdir = workDir.getEmptyPathDir();
         FS.ensureDirExists(testdir);
         Resource resource = resourceFactory.newResource(testdir);
         assertThrows(IllegalArgumentException.class, () -> resource.resolve(".."));

@@ -309,7 +309,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         }
     }
 
-    private class AfterAuthenticationListener extends Response.Listener.Adapter
+    private class AfterAuthenticationListener implements Response.Listener
     {
         private final Authentication.Result authenticationResult;
 

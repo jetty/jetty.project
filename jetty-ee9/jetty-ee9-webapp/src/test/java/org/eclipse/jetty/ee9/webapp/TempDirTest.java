@@ -19,14 +19,11 @@ import java.nio.file.Path;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,44 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class TempDirTest
 {
-    public WorkDir workDir;
-    private Server server;
-    private WebAppContext webapp;
-
-    private Path jettyBase;
-
-    @BeforeEach
-    public void before()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-        jettyBase = workDir.getEmptyPathDir().resolve("base");
-        FS.ensureEmpty(jettyBase);
-        System.setProperty("jetty.base", jettyBase.toString());
-    }
-
-    public void setupServer()
-    {
-        server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        server.addConnector(connector);
-
-        File testWebAppDir = MavenTestingUtils.getTargetPath("test-classes/webapp").toFile();
-        webapp = new WebAppContext();
-        webapp.setContextPath("/");
-        webapp.setWar(testWebAppDir.getAbsolutePath());
-        server.setHandler(webapp);
-    }
-
-    @AfterEach
-    public void stopServer() throws Exception
-    {
-        if (server != null)
-            server.stop();
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    @AfterEach
-    public void tearDown()
+    public static void tearDown()
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
@@ -89,10 +49,11 @@ public class TempDirTest
      */
     @ParameterizedTest
     @ValueSource(strings = {"File", "String", "Path"})
-    public void attributeWithValidDirectory(String type) throws Exception
+    public void attributeWithValidDirectory(String type, WorkDir workDir) throws Exception
     {
+        Path jettyBase = workDir.getEmptyPathDir();
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = workDir.getPath().resolve("temp");
+        Path tmpDir = jettyBase.resolve("temp");
         FS.ensureDirExists(tmpDir);
         switch (type)
         {
@@ -114,12 +75,13 @@ public class TempDirTest
      */
     @ParameterizedTest
     @ValueSource(strings = {"File", "String", "Path"})
-    public void attributeWithNonExistentDirectory(String type) throws Exception
+    public void attributeWithNonExistentDirectory(String type, WorkDir workDir) throws Exception
     {
+        Path jettyBase = workDir.getEmptyPathDir();
         Server server = new Server();
         WebAppContext webAppContext = new WebAppContext();
         server.setHandler(webAppContext);
-        Path tmpDir = workDir.getPath().resolve("foo_did_not_exist");
+        Path tmpDir = jettyBase.resolve("foo_did_not_exist");
         assertFalse(Files.exists(tmpDir));
 
         switch (type)
@@ -141,12 +103,13 @@ public class TempDirTest
      * Test Server.setTempDirectory as valid directory
      */
     @Test
-    public void serverTempDirAttributeWithValidDirectory() throws Exception
+    public void serverTempDirAttributeWithValidDirectory(WorkDir workDir) throws Exception
     {
+        Path jettyBase = workDir.getEmptyPathDir();
         WebAppContext webAppContext = new WebAppContext();
         Server server = new Server();
         webAppContext.setServer(server);
-        Path tmpDir = workDir.getPath().resolve("temp_test");
+        Path tmpDir = jettyBase.resolve("temp_test");
         FS.ensureDirExists(tmpDir);
         server.setTempDirectory(tmpDir.toFile());
 
@@ -163,15 +126,17 @@ public class TempDirTest
      * so webappContent#tempDirectory is created under <code>java.io.tmpdir</code>
      */
     @Test
-    public void jettyBaseWorkExists() throws Exception
+    public void jettyBaseWorkExists(WorkDir workDirExt) throws Exception
     {
+        Path jettyBase = workDirExt.getEmptyPathDir();
         Path workDir = jettyBase.resolve("work");
         FS.ensureDirExists(workDir);
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         Server server = new Server();
+        server.setTempDirectory(workDir.toFile());
         WebAppContext webAppContext = new WebAppContext();
         server.setHandler(webAppContext);
         webInfConfiguration.resolveTempDirectory(webAppContext);
-        assertThat(webAppContext.getTempDirectory().getParent(), is(workDir.toString()));
+        assertThat(webAppContext.getTempDirectory().getParentFile().toPath(), PathMatchers.isSame(workDir));
     }
 }

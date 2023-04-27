@@ -88,7 +88,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletTest
 {
-    public WorkDir workDir;
 
     public Path docRoot;
 
@@ -100,7 +99,7 @@ public class DefaultServletTest
     private ServletContextHandler context;
 
     @BeforeEach
-    public void init() throws Exception
+    public void init(WorkDir workDir) throws Exception
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         docRoot = workDir.getEmptyPathDir().resolve("docroot");
@@ -571,7 +570,7 @@ public class DefaultServletTest
     @ParameterizedTest
     @MethodSource("contextBreakoutScenarios")
     @Disabled // TODO
-    public void testListingContextBreakout(Scenario scenario) throws Exception
+    public void testListingContextBreakout(Scenario scenario, WorkDir workDir) throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
@@ -693,7 +692,7 @@ public class DefaultServletTest
     }
 
     @Test
-    public void testWelcomeMultipleBasesBase() throws Exception
+    public void testWelcomeMultipleBasesBase(WorkDir workDir) throws Exception
     {
         Path dir = docRoot.resolve("dir");
         FS.ensureDirExists(dir);
@@ -811,9 +810,9 @@ public class DefaultServletTest
     }
 
     @Test
-    public void testIncludedWelcomeDifferentBase() throws Exception
+    public void testIncludedWelcomeDifferentBase(WorkDir workDir) throws Exception
     {
-        Path altRoot = workDir.getPath().resolve("altroot");
+        Path altRoot = workDir.getEmptyPathDir().resolve("altroot");
         FS.ensureDirExists(altRoot);
         Path altIndex = altRoot.resolve("index.html");
 
