@@ -15,7 +15,6 @@ package org.eclipse.jetty.security.openid;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.WrappedAuthConfiguration;
 
 /**
  * <p>This class is used to wrap the {@link Authenticator.AuthConfiguration} given to the {@link OpenIdAuthenticator}.</p>
@@ -23,7 +22,7 @@ import org.eclipse.jetty.security.WrappedAuthConfiguration;
  * {@link OpenIdLoginService}. This allows you to configure an {@link OpenIdAuthenticator} using a {@code null}
  * LoginService or any alternative LoginService implementation which will be wrapped by the OpenIdLoginService</p>
  */
-public class OpenIdAuthConfiguration extends WrappedAuthConfiguration
+public class OpenIdAuthConfiguration extends Authenticator.AuthConfiguration.Wrapper
 {
     private final OpenIdLoginService _openIdLoginService;
 

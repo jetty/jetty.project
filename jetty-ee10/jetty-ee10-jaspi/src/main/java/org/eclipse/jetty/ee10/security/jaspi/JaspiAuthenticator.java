@@ -39,7 +39,6 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.UserPrincipal;
-import org.eclipse.jetty.security.WrappedAuthConfiguration;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Request;
@@ -277,7 +276,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         }
     }   
 
-    private static class JaspiAuthConfiguration extends WrappedAuthConfiguration
+    private static class JaspiAuthConfiguration extends AuthConfiguration.Wrapper
     {
         private final LoginService loginService = new EmptyLoginService();
 

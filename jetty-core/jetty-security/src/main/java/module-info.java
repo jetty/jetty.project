@@ -13,8 +13,6 @@
 
 module org.eclipse.jetty.security
 {
-    // TODO think about a better package break down
-
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.util;
     requires transitive org.slf4j;
