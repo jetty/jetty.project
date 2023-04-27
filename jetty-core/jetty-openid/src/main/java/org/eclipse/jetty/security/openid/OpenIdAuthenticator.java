@@ -123,7 +123,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public void setConfiguration(AuthConfiguration authConfig)
+    public void setConfiguration(Configuration authConfig)
     {
         if (_openIdConfiguration == null)
         {
@@ -145,7 +145,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (logout != null)
             setLogoutRedirectPath(logout);
 
-        super.setConfiguration(new OpenIdAuthConfiguration(_openIdConfiguration, authConfig));
+        super.setConfiguration(new OpenIdAuthenticatorConfiguration(_openIdConfiguration, authConfig));
     }
 
     @Override

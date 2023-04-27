@@ -57,6 +57,8 @@ public abstract class LoginAuthenticator implements Authenticator
     public UserIdentity login(String username, Object password, Request request, Response response)
     {
         UserIdentity user = _loginService.login(username, password, request, request::getSession);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}.login {}", this, user);
         if (user != null)
         {
             renewSession(request, response);
@@ -68,13 +70,16 @@ public abstract class LoginAuthenticator implements Authenticator
     public void logout(Request request, Response response)
     {
         Session session = request.getSession(false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}.logout {}", this, session);
+
         if (session == null)
             return;
         session.removeAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE);
     }
 
     @Override
-    public void setConfiguration(AuthConfiguration configuration)
+    public void setConfiguration(Configuration configuration)
     {
         _loginService = configuration.getLoginService();
         if (_loginService == null)
@@ -94,7 +99,7 @@ public abstract class LoginAuthenticator implements Authenticator
      * Change the session id.
      * The session is changed to a new instance with a new ID if and only if:<ul>
      * <li>A session exists.
-     * <li>The {@link Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()} returns true.
+     * <li>The {@link Configuration#isSessionRenewedOnAuthentication()} returns true.
      * <li>The session ID has been given to unauthenticated responses
      * </ul>
      *

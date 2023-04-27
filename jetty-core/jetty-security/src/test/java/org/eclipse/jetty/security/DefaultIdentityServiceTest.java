@@ -57,7 +57,7 @@ public class DefaultIdentityServiceTest
         }
 
         @Override
-        public void setConfiguration(AuthConfiguration configuration)
+        public void setConfiguration(Configuration configuration)
         {
             _identityService = configuration.getIdentityService();
         }

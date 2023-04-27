@@ -86,13 +86,13 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public void setConfiguration(AuthConfiguration configuration)
+    public void setConfiguration(Configuration configuration)
     {
         LoginService loginService = configuration.getLoginService();
         if (loginService == null)
         {
             // Add an empty login service so we can use JASPI without tying into Jetty auth mechanisms.
-            configuration = new JaspiAuthConfiguration(configuration);
+            configuration = new JaspiAuthenticatorConfiguration(configuration);
             loginService = configuration.getLoginService();
         }
 
@@ -276,11 +276,11 @@ public class JaspiAuthenticator extends LoginAuthenticator
         }
     }   
 
-    private static class JaspiAuthConfiguration extends AuthConfiguration.Wrapper
+    private static class JaspiAuthenticatorConfiguration extends Configuration.Wrapper
     {
         private final LoginService loginService = new EmptyLoginService();
 
-        public JaspiAuthConfiguration(AuthConfiguration configuration)
+        public JaspiAuthenticatorConfiguration(Configuration configuration)
         {
             super(configuration);
         }

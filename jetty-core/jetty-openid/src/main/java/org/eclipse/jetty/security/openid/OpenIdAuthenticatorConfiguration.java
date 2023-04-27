@@ -17,20 +17,20 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 
 /**
- * <p>This class is used to wrap the {@link Authenticator.AuthConfiguration} given to the {@link OpenIdAuthenticator}.</p>
+ * <p>This class is used to wrap the {@link Authenticator.Configuration} given to the {@link OpenIdAuthenticator}.</p>
  * <p>When {@link #getLoginService()} method is called, this implementation will always return an instance of
  * {@link OpenIdLoginService}. This allows you to configure an {@link OpenIdAuthenticator} using a {@code null}
  * LoginService or any alternative LoginService implementation which will be wrapped by the OpenIdLoginService</p>
  */
-public class OpenIdAuthConfiguration extends Authenticator.AuthConfiguration.Wrapper
+public class OpenIdAuthenticatorConfiguration extends Authenticator.Configuration.Wrapper
 {
     private final OpenIdLoginService _openIdLoginService;
 
-    public OpenIdAuthConfiguration(OpenIdConfiguration openIdConfiguration, Authenticator.AuthConfiguration authConfiguration)
+    public OpenIdAuthenticatorConfiguration(OpenIdConfiguration openIdConfiguration, Authenticator.Configuration authenticatorConfiguration)
     {
-        super(authConfiguration);
+        super(authenticatorConfiguration);
 
-        LoginService loginService = authConfiguration.getLoginService();
+        LoginService loginService = authenticatorConfiguration.getLoginService();
         if (loginService instanceof OpenIdLoginService)
         {
             _openIdLoginService = (OpenIdLoginService)loginService;
@@ -39,7 +39,7 @@ public class OpenIdAuthConfiguration extends Authenticator.AuthConfiguration.Wra
         {
             _openIdLoginService = new OpenIdLoginService(openIdConfiguration, loginService);
             if (loginService == null)
-                _openIdLoginService.setIdentityService(authConfiguration.getIdentityService());
+                _openIdLoginService.setIdentityService(authenticatorConfiguration.getIdentityService());
         }
     }
 

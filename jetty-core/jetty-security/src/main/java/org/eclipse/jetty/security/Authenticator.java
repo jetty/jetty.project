@@ -48,7 +48,7 @@ public interface Authenticator
      *
      * @param configuration the configuration
      */
-    void setConfiguration(AuthConfiguration configuration);
+    void setConfiguration(Configuration configuration);
 
     /**
      * @return The name of the authentication method
@@ -102,7 +102,7 @@ public interface Authenticator
     /**
      * Authenticator Configuration
      */
-    interface AuthConfiguration
+    interface Configuration
     {
         String getAuthMethod();
 
@@ -129,11 +129,11 @@ public interface Authenticator
 
         boolean isSessionRenewedOnAuthentication();
 
-        class Wrapper implements AuthConfiguration
+        class Wrapper implements Configuration
         {
-            private final AuthConfiguration _configuration;
+            private final Configuration _configuration;
 
-            public Wrapper(AuthConfiguration configuration)
+            public Wrapper(Configuration configuration)
             {
                 _configuration = configuration;
             }
@@ -187,13 +187,13 @@ public interface Authenticator
      */
     interface Factory
     {
-        Authenticator getAuthenticator(Server server, Context context, AuthConfiguration configuration);
+        Authenticator getAuthenticator(Server server, Context context, Configuration configuration);
     }
 
     class NoOp implements Authenticator
     {
         @Override
-        public void setConfiguration(AuthConfiguration configuration)
+        public void setConfiguration(Configuration configuration)
         {
         }
 

@@ -23,7 +23,7 @@ import org.eclipse.jetty.server.Server;
 public class OpenIdAuthenticatorFactory implements Authenticator.Factory
 {
     @Override
-    public Authenticator getAuthenticator(Server server, Context context, Authenticator.AuthConfiguration configuration)
+    public Authenticator getAuthenticator(Server server, Context context, Authenticator.Configuration configuration)
     {
         LoginService loginService = configuration.getLoginService();
         String auth = configuration.getAuthMethod();

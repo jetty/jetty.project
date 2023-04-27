@@ -57,7 +57,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     private Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<>();
 
     @Override
-    public void setConfiguration(AuthConfiguration configuration)
+    public void setConfiguration(Configuration configuration)
     {
         super.setConfiguration(configuration);
 

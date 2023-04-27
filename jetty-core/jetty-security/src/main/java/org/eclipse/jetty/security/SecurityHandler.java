@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpecGroup;
-import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.security.Authenticator.Configuration;
 import org.eclipse.jetty.security.Constraint.Authorization;
 import org.eclipse.jetty.security.Constraint.Transport;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
  */
-public abstract class SecurityHandler extends Handler.Wrapper implements AuthConfiguration
+public abstract class SecurityHandler extends Handler.Wrapper implements Configuration
 {
     public static String SESSION_AUTHENTICATED_ATTRIBUTE = "org.eclipse.jetty.security.sessionAuthenticated";
 
@@ -245,7 +245,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
     }
 
     /**
-     * Set an authentication parameter for retrieval via {@link AuthConfiguration#getParameter(String)}
+     * Set an authentication parameter for retrieval via {@link Configuration#getParameter(String)}
      *
      * @param key the key
      * @param value the init value
@@ -429,7 +429,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements AuthCon
      * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
      *
      * @param renew true to renew the authentication on session
-     * @see AuthConfiguration#isSessionRenewedOnAuthentication()
+     * @see Configuration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
     {

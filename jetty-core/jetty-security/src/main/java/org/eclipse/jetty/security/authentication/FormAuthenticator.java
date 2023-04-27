@@ -104,7 +104,7 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public void setConfiguration(AuthConfiguration configuration)
+    public void setConfiguration(Configuration configuration)
     {
         super.setConfiguration(configuration);
         String login = configuration.getParameter(FormAuthenticator.__FORM_LOGIN_PAGE);

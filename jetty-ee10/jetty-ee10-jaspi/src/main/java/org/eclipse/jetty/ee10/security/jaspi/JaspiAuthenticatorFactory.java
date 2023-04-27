@@ -80,7 +80,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     @Override
-    public Authenticator getAuthenticator(Server server, Context context, Authenticator.AuthConfiguration configuration)
+    public Authenticator getAuthenticator(Server server, Context context, Authenticator.Configuration configuration)
     {
         AuthConfigFactory factory = AuthConfigFactory.getFactory();
         if (factory == null)
