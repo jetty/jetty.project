@@ -34,11 +34,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -240,6 +243,43 @@ public class ServletRequestListenerTest
         assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /", "errorHandler");
     }
 
+    @Test
+    public void testSecurityHandlerRejectedRequest() throws Exception
+    {
+        start(contextHandler ->
+        {
+            ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+            securityHandler.addRole("admin");
+            ConstraintMapping constraintMapping = new ConstraintMapping();
+            constraintMapping.setPathSpec("/authed");
+            Constraint constraint = new Constraint("admin", "admin");
+            constraint.setAuthenticate(true);
+            constraintMapping.setConstraint(constraint);
+            securityHandler.addConstraintMapping(constraintMapping);
+            contextHandler.setSecurityHandler(securityHandler);
+            contextHandler.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+                {
+                    String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
+                    _events.add(req.getDispatcherType() + " " + pathInContext);
+                    resp.setStatus(200);
+                    resp.getWriter().print("from servlet");
+                }
+            }, "/");
+        });
+
+        ContentResponse response = _httpClient.GET("http://localhost:" + _connector.getLocalPort());
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), equalTo("from servlet"));
+        assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /");
+
+        response = _httpClient.GET("http://localhost:" + _connector.getLocalPort() + "/authed");
+        assertThat(response.getStatus(), equalTo(HttpStatus.FORBIDDEN_403));
+        assertEventsEmpty();
+    }
+
     public class TestRequestListener implements ServletRequestListener
     {
         @Override
@@ -271,8 +311,15 @@ public class ServletRequestListenerTest
         }
     }
 
+    private void assertEventsEmpty()
+    {
+        assertThat(_events.size(), equalTo(0));
+        _events.clear();
+    }
+
     private void assertEvents(String... events)
     {
         assertThat(_events, equalTo(Arrays.asList(events)));
+        _events.clear();
     }
 }
