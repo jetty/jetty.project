@@ -410,7 +410,7 @@ public class DataConstraintsTest
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, org.eclipse.jetty.server.Request request, Function<Boolean, Session> getSession)
+        public UserIdentity login(String username, Object credentials, org.eclipse.jetty.server.Request request, Function<Boolean, Session> getOrCreateSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
                 return UserIdentity.from(null, null, "admin");

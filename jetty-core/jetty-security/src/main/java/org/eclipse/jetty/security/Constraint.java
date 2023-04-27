@@ -18,9 +18,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * A Security constraint that is applied to a request, which contain:
  * <ul>
@@ -36,8 +33,6 @@ import org.slf4j.LoggerFactory;
  */
 public interface Constraint
 {
-    Logger LOG = LoggerFactory.getLogger(Constraint.class);
-
     /**
      * The Authorization applied to any authentication of the request/
      */
@@ -69,7 +64,6 @@ public interface Constraint
          * Access allowed only for authenticated user with specific role(s).
          */
         SPECIFIC_ROLE,
-
         /**
          * Inherit the authorization from a less specific constraint when passed to {@link #combine(Constraint, Constraint)},
          * otherwise act as {@link #ALLOWED}.
@@ -117,11 +111,6 @@ public interface Constraint
      * @return The set of roles applied by this {@code Constraint} or the empty set.
      */
     Set<String> getRoles();
-
-    default Builder builder()
-    {
-        return new Builder(this);
-    }
 
     /**
      * Builder for Constraint.
@@ -245,8 +234,7 @@ public interface Constraint
      */
     static Constraint combine(Constraint leastSpecific, Constraint mostSpecific)
     {
-        String name = LOG.isDebugEnabled() ? leastSpecific.getName() + ">" + mostSpecific : null;
-        return combine(name, leastSpecific, mostSpecific);
+        return combine(null, leastSpecific, mostSpecific);
     }
 
     /**
@@ -356,12 +344,6 @@ public interface Constraint
             public Set<String> getRoles()
             {
                 return roleSet;
-            }
-
-            @Override
-            public Builder builder()
-            {
-                return null;
             }
 
             @Override

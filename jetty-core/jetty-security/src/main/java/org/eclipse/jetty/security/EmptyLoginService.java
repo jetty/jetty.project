@@ -30,7 +30,7 @@ public class EmptyLoginService implements LoginService
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
+    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         return null;
     }

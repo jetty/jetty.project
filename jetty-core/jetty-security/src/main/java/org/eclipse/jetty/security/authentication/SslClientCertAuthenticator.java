@@ -48,7 +48,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getAuthMethod()
+    public String getName()
     {
         return Authenticator.CERT_AUTH;
     }
@@ -89,20 +89,20 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
                     UserIdentity user = login(username, "", req, res);
                     if (user != null)
                     {
-                        return new UserAuthenticationSucceeded(getAuthMethod(), user);
+                        return new UserAuthenticationSucceeded(getName(), user);
                     }
                     // try with null password
                     user = login(username, null, req, res);
                     if (user != null)
                     {
-                        return new UserAuthenticationSucceeded(getAuthMethod(), user);
+                        return new UserAuthenticationSucceeded(getName(), user);
                     }
                     // try with certs sig against login service as previous behaviour
                     final char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
                     user = login(username, credential, req, res);
                     if (user != null)
                     {
-                        return new UserAuthenticationSucceeded(getAuthMethod(), user);
+                        return new UserAuthenticationSucceeded(getName(), user);
                     }
                 }
             }

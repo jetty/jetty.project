@@ -42,7 +42,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getAuthMethod()
+    public String getName()
     {
         return Authenticator.BASIC_AUTH;
     }
@@ -73,7 +73,7 @@ public class BasicAuthenticator extends LoginAuthenticator
 
                         UserIdentity user = login(username, password, req, res);
                         if (user != null)
-                            return new UserAuthenticationSucceeded(getAuthMethod(), user);
+                            return new UserAuthenticationSucceeded(getName(), user);
                     }
                 }
             }

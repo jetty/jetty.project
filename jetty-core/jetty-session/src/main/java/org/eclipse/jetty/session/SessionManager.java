@@ -117,7 +117,7 @@ public interface SessionManager extends LifeCycle, SessionConfig
 
     int getSessionsCreated();
 
-    String encodeURL(Request request, String url, boolean cookiesInUse);
+    String encodeURI(Request request, String uri, boolean cookiesInUse);
 
     default void onSessionIdChanged(Session session, String oldId)
     {

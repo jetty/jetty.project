@@ -92,7 +92,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     
     /**
      * Called when a session is first accessed by request processing.
-     *
      * Updates the last access time for the session and generates a fresh cookie if necessary.
      *
      * @param session the session object
@@ -645,49 +644,49 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     @Override
-    public String encodeURL(Request request, String url, boolean cookiesInUse)
+    public String encodeURI(Request request, String uri, boolean cookiesInUse)
     {
-        HttpURI uri = null;
-        if (isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
+        HttpURI httpURI = null;
+        if (isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(uri))
         {
-            uri = HttpURI.from(url);
-            String path = uri.getPath();
+            httpURI = HttpURI.from(uri);
+            String path = httpURI.getPath();
             path = (path == null ? "" : path);
-            int port = uri.getPort();
+            int port = httpURI.getPort();
             if (port < 0)
-                port = HttpScheme.getDefaultPort(uri.getScheme());
+                port = HttpScheme.getDefaultPort(httpURI.getScheme());
 
             // Is it the same server?
-            if (!Request.getServerName(request).equalsIgnoreCase(uri.getHost()))
-                return url;
+            if (!Request.getServerName(request).equalsIgnoreCase(httpURI.getHost()))
+                return uri;
             if (Request.getServerPort(request) != port)
-                return url;
+                return uri;
             if (request.getContext() != null && !path.startsWith(request.getContext().getContextPath()))
-                return url;
+                return uri;
         }
 
         String sessionURLPrefix = getSessionIdPathParameterNamePrefix();
         if (sessionURLPrefix == null)
-            return url;
+            return uri;
 
-        if (url == null)
+        if (uri == null)
             return null;
 
         // should not encode if cookies in evidence
         if ((isUsingCookies() && cookiesInUse) || !isUsingURLs())
         {
-            int prefix = url.indexOf(sessionURLPrefix);
+            int prefix = uri.indexOf(sessionURLPrefix);
             if (prefix != -1)
             {
-                int suffix = url.indexOf("?", prefix);
+                int suffix = uri.indexOf("?", prefix);
                 if (suffix < 0)
-                    suffix = url.indexOf("#", prefix);
+                    suffix = uri.indexOf("#", prefix);
 
                 if (suffix <= prefix)
-                    return url.substring(0, prefix);
-                return url.substring(0, prefix) + url.substring(suffix);
+                    return uri.substring(0, prefix);
+                return uri.substring(0, prefix) + uri.substring(suffix);
             }
-            return url;
+            return uri;
         }
 
         // get session;
@@ -695,41 +694,41 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
         // no session
         if (session == null || !session.isValid())
-            return url;
+            return uri;
 
         String id = session.getExtendedId();
 
-        if (uri == null)
-            uri = HttpURI.from(url);
+        if (httpURI == null)
+            httpURI = HttpURI.from(uri);
 
         // Already encoded
-        int prefix = url.indexOf(sessionURLPrefix);
+        int prefix = uri.indexOf(sessionURLPrefix);
         if (prefix != -1)
         {
-            int suffix = url.indexOf("?", prefix);
+            int suffix = uri.indexOf("?", prefix);
             if (suffix < 0)
-                suffix = url.indexOf("#", prefix);
+                suffix = uri.indexOf("#", prefix);
 
             if (suffix <= prefix)
-                return url.substring(0, prefix + sessionURLPrefix.length()) + id;
-            return url.substring(0, prefix + sessionURLPrefix.length()) + id +
-                url.substring(suffix);
+                return uri.substring(0, prefix + sessionURLPrefix.length()) + id;
+            return uri.substring(0, prefix + sessionURLPrefix.length()) + id +
+                uri.substring(suffix);
         }
 
         // edit the session
-        int suffix = url.indexOf('?');
+        int suffix = uri.indexOf('?');
         if (suffix < 0)
-            suffix = url.indexOf('#');
+            suffix = uri.indexOf('#');
         if (suffix < 0)
         {
-            return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
+            return uri +
+                ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path, insert the root path
                 sessionURLPrefix + id;
         }
 
-        return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
-            sessionURLPrefix + id + url.substring(suffix);
+        return uri.substring(0, suffix) +
+            ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path so insert the root path
+            sessionURLPrefix + id + uri.substring(suffix);
     }
 
     @Override
@@ -1091,12 +1090,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * when either the session has not been accessed for a
      * configurable amount of time, or the session itself
      * has passed its expiry.
-     *
+     * <p>
      * If it has passed its expiry, then we will mark it for
      * scavenging by next run of the HouseKeeper; if it has
      * been idle longer than the configured eviction period,
      * we evict from the cache.
-     *
+     * <p>
      * If none of the above are true, then the System timer
      * is inconsistent and the caller of this method will
      * need to reset the timer.
@@ -1110,7 +1109,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         if (session == null)
             return;
 
-        try (AutoLock lock = session.lock())
+        try (AutoLock ignored = session.lock())
         {
             if (session.isExpiredAt(now))
             {
@@ -1284,10 +1283,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     
     /**
      * Prepare sessions for session manager shutdown
-     *
-     * @throws Exception if unable to shutdown sesssions
      */
-    private void shutdownSessions() throws Exception
+    private void shutdownSessions()
     {
         _sessionCache.shutdown();
     }

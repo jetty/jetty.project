@@ -65,7 +65,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getAuthMethod()
+    public String getName()
     {
         return _authMethod;
     }
@@ -136,7 +136,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
                         httpSession = req.getSession(true);
                     httpSession.setAttribute(UserIdentityHolder.ATTRIBUTE, new UserIdentityHolder(identity));
                 }
-                return new UserAuthenticationSucceeded(getAuthMethod(), identity);
+                return new UserAuthenticationSucceeded(getName(), identity);
             }
             else
             {
@@ -166,7 +166,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
                         // Allow non-GET requests even if they're expired, so that
                         // the client does not need to send the request content again.
                         if (!expired || !HttpMethod.GET.is(req.getMethod()))
-                            return new UserAuthenticationSucceeded(getAuthMethod(), identity);
+                            return new UserAuthenticationSucceeded(getName(), identity);
                     }
                 }
             }

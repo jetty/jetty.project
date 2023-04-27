@@ -129,7 +129,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getAuthMethod()
+    public String getName()
     {
         return "JASPI";
     }
@@ -144,7 +144,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             HttpSession session = ((HttpServletRequest)request).getSession(true);
             if (session != null)
             {
-                SessionAuthentication sessionAuth = new SessionAuthentication(getAuthMethod(), user, password);
+                SessionAuthentication sessionAuth = new SessionAuthentication(getName(), user, password);
                 session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, sessionAuth);
             }
         }
@@ -224,7 +224,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 if (cached != null)
                     return cached;
 
-                return new UserAuthenticationSucceeded(getAuthMethod(), userIdentity);
+                return new UserAuthenticationSucceeded(getName(), userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {
@@ -245,7 +245,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         }
     }
 
-    // TODO
+    // TODO This is not longer supported by core security
     public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, AuthenticationState.Succeeded validatedSucceeded) throws ServerAuthException
     {
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
@@ -265,8 +265,8 @@ public class JaspiAuthenticator extends LoginAuthenticator
 
             String authContextId = authConfig.getAuthContextID(messageInfo);
             ServerAuthContext authContext = authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
-            // TODO
-            // authContext.cleanSubject(messageInfo,validatedUser.getUserIdentity().getSubject());
+            if (validatedUser instanceof AuthenticationState.Succeeded userAuthenticated)
+                authContext.cleanSubject(messageInfo, userAuthenticated.getUserIdentity().getSubject());
             AuthStatus status = authContext.secureResponse(messageInfo, _serviceSubject);
             return (AuthStatus.SEND_SUCCESS.equals(status));
         }

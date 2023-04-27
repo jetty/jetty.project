@@ -101,7 +101,7 @@ public class ServletApiResponse implements HttpServletResponse
         SessionManager sessionManager = _response.getServletContextRequest().getServletChannel().getContextHandler().getSessionHandler();
         if (sessionManager == null)
             return url;
-        return sessionManager.encodeURL(_response.getServletContextRequest(), url, getResponse().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
+        return sessionManager.encodeURI(_response.getServletContextRequest(), url, getResponse().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
     }
 
     @Override

@@ -82,7 +82,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
+    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         if (username == null)
             return null;

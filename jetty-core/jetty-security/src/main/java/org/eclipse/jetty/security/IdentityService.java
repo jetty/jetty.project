@@ -59,12 +59,19 @@ public interface IdentityService
 
     UserIdentity getSystemUserIdentity();
 
+    /**
+     * An associate between an identity and the current thread that can be terminated by closing.
+     * @see #associate(UserIdentity, RunAsToken)
+     */
     interface Association extends AutoCloseable
     {
         @Override
         void close();
     }
 
+    /**
+     * An opaque token created by {@link #newRunAsToken(String)} and used by {@link #associate(UserIdentity, RunAsToken)}
+     */
     interface RunAsToken
     {
     }

@@ -139,7 +139,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
+        public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
                 return new DefaultUserIdentity(null, new UserPrincipal("admin", null), new String[]{"admin"});

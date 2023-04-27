@@ -76,7 +76,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession = true;
-    AuthenticationState.Deferred _deferred;
+    private AuthenticationState.Deferred _deferred;
 
     static
     {
@@ -159,7 +159,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         updateBean(_authenticator, authenticator);
         _authenticator = authenticator;
         if (_authenticator != null)
-            _authMethod = _authenticator.getAuthMethod();
+            _authMethod = _authenticator.getName();
     }
 
     /**
@@ -228,7 +228,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         if (isRunning())
             throw new IllegalStateException("running");
         _authMethod = authMethod;
-        if (_authenticator != null && !_authenticator.getAuthMethod().equals(_authMethod))
+        if (_authenticator != null && !_authenticator.getName().equals(_authMethod))
             _authenticator = null;
     }
 

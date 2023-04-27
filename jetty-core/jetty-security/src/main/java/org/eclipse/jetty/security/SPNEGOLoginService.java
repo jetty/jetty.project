@@ -168,10 +168,10 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession)
+    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         Subject subject = _context._subject;
-        Session httpSession = getSession.apply(false);
+        Session httpSession = getOrCreateSession.apply(false);
         GSSContext gssContext = null;
         if (httpSession != null)
         {
@@ -199,7 +199,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         {
             // The GSS context is not established yet, save it into the HTTP session.
             if (httpSession == null)
-                httpSession = getSession.apply(true);
+                httpSession = getOrCreateSession.apply(true);
             GSSContextHolder holder = new GSSContextHolder(gssContext);
             httpSession.setAttribute(GSSContextHolder.ATTRIBUTE, holder);
 
@@ -318,31 +318,6 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         private GSSContextHolder(GSSContext gssContext)
         {
             this.gssContext = gssContext;
-        }
-    }
-
-    /**
-     * <p>A service to query for user roles.</p>
-     */
-    @FunctionalInterface
-    public interface AuthorizationService
-    {
-        /**
-         * @param name the user name
-         * @param getSession Function to get or create a {@link Session}
-         * @return a {@link UserIdentity} to query for roles of the given user
-         */
-        UserIdentity getUserIdentity(String name, Function<Boolean, Session> getSession);
-
-        /**
-         * <p>Wraps a {@link LoginService} as an AuthorizationService</p>
-         *
-         * @param loginService the {@link LoginService} to wrap
-         * @return an AuthorizationService that delegates the query for roles to the given {@link LoginService}
-         */
-        static AuthorizationService from(LoginService loginService, Object credentials)
-        {
-            return (name, getSession) -> loginService.login(name, credentials, null, getSession);
         }
     }
 }

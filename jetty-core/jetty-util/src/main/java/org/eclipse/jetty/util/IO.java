@@ -400,24 +400,6 @@ public class IO
      *
      * @param closeable the closeable to close
      */
-    public static void close(Closeable closeable)
-    {
-        try
-        {
-            if (closeable != null)
-                closeable.close();
-        }
-        catch (IOException x)
-        {
-            LOG.trace("IGNORED", x);
-        }
-    }
-
-    /**
-     * Closes an arbitrary closable, and logs exceptions at ignore level
-     *
-     * @param closeable the closeable to close
-     */
     public static void close(AutoCloseable closeable)
     {
         try

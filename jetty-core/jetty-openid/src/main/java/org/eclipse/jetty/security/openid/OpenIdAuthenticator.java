@@ -149,7 +149,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getAuthMethod()
+    public String getName()
     {
         return Authenticator.OPENID_AUTH;
     }
@@ -235,7 +235,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (user != null)
         {
             Session session = request.getSession(true);
-            AuthenticationState cached = new SessionAuthentication(getAuthMethod(), user, credentials);
+            AuthenticationState cached = new SessionAuthentication(getName(), user, credentials);
             synchronized (session)
             {
                 session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);
@@ -490,7 +490,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     return AuthenticationState.SEND_FAILURE;
                 }
 
-                LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getAuthMethod(), user);
+                LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getName(), user);
                 if (LOG.isDebugEnabled())
                     LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
 

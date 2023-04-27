@@ -51,9 +51,9 @@ public interface Authenticator
     void setConfiguration(Configuration configuration);
 
     /**
-     * @return The name of the authentication method
+     * @return The name of the authentication mechanism
      */
-    String getAuthMethod();
+    String getName();
 
     /**
      * Called after {@link #validateRequest(Request, Response, Callback)} and
@@ -198,7 +198,7 @@ public interface Authenticator
         }
 
         @Override
-        public String getAuthMethod()
+        public String getName()
         {
             return null;
         }

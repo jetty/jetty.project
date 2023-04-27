@@ -40,10 +40,10 @@ public interface LoginService
      * @param username The username.
      * @param credentials The users credentials.
      * @param request The request or null
-     * @param getSession function to retrieve or create a session.
+     * @param getOrCreateSession function to retrieve or create a session.
      * @return A UserIdentity if the credentials matched, otherwise null
      */
-    UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getSession);
+    UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession);
 
     /**
      * Get or create a {@link UserIdentity} that is not authenticated by the {@link LoginService}.

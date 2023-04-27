@@ -76,10 +76,10 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     @Override
-    public UserIdentity login(String identifier, Object credentials, Request request, Function<Boolean, Session> getSession)
+    public UserIdentity login(String identifier, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("login({}, {}, {})", identifier, credentials, getSession);
+            LOG.debug("login({}, {}, {})", identifier, credentials, getOrCreateSession);
 
         OpenIdCredentials openIdCredentials = (OpenIdCredentials)credentials;
         try
