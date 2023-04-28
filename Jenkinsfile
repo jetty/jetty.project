@@ -16,44 +16,44 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk19", "clean install -Dspotbugs.skip=true -Djacoco.skip=true -Dtest=JakartaClientShutdownWithServerWebAppTest", "maven3")
+              mavenBuild( "jdk19", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk19", name: "Static Analysis jdk19", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle()]
             }
           }
         }
 
-//        stage("Build / Test - JDK17") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            timeout( time: 180, unit: 'MINUTES' ) {
-//              checkout scm
-//              mavenBuild( "jdk17", "clean install javadoc:javadoc -Perrorprone", "maven3")
-//              // Collect up the jacoco execution results (only on main build)
-//              jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-//                     exclusionPattern: '' +
-//                             // build tools
-//                             '**/org/eclipse/jetty/ant/**' +
-//                             ',*/org/eclipse/jetty/maven/its/**' +
-//                             ',**/org/eclipse/jetty/its/**' +
-//                             // example code / documentation
-//                             ',**/org/eclipse/jetty/embedded/**' +
-//                             ',**/org/eclipse/jetty/asyncrest/**' +
-//                             ',**/org/eclipse/jetty/demo/**' +
-//                             // special environments / late integrations
-//                             ',**/org/eclipse/jetty/gcloud/**' +
-//                             ',**/org/eclipse/jetty/infinispan/**' +
-//                             ',**/org/eclipse/jetty/osgi/**' +
-//                             ',**/org/eclipse/jetty/http/spi/**' +
-//                             // test classes
-//                             ',**/org/eclipse/jetty/tests/**' +
-//                             ',**/org/eclipse/jetty/test/**',
-//                     execPattern: '**/target/jacoco.exec',
-//                     classPattern: '**/target/classes',
-//                     sourcePattern: '**/src/main/java'
-//              recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs()]
-//            }
-//          }
-//        }
+        stage("Build / Test - JDK17") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk17", "clean install javadoc:javadoc -Perrorprone", "maven3")
+              // Collect up the jacoco execution results (only on main build)
+              jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                     exclusionPattern: '' +
+                             // build tools
+                             '**/org/eclipse/jetty/ant/**' +
+                             ',*/org/eclipse/jetty/maven/its/**' +
+                             ',**/org/eclipse/jetty/its/**' +
+                             // example code / documentation
+                             ',**/org/eclipse/jetty/embedded/**' +
+                             ',**/org/eclipse/jetty/asyncrest/**' +
+                             ',**/org/eclipse/jetty/demo/**' +
+                             // special environments / late integrations
+                             ',**/org/eclipse/jetty/gcloud/**' +
+                             ',**/org/eclipse/jetty/infinispan/**' +
+                             ',**/org/eclipse/jetty/osgi/**' +
+                             ',**/org/eclipse/jetty/http/spi/**' +
+                             // test classes
+                             ',**/org/eclipse/jetty/tests/**' +
+                             ',**/org/eclipse/jetty/test/**',
+                     execPattern: '**/target/jacoco.exec',
+                     classPattern: '**/target/classes',
+                     sourcePattern: '**/src/main/java'
+              recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs()]
+            }
+          }
+        }
       }
     }
   }
