@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,11 +58,13 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -80,8 +84,7 @@ public class HttpChannelTest
     @AfterEach
     public void afterEach() throws Exception
     {
-        if (_server != null)
-            _server.stop();
+        LifeCycle.stop(_server);
     }
 
     @Test
@@ -574,32 +577,37 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                request.addHttpStreamWrapper(HttpStreamCaptureFailure::asWrapper);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
-                response.write(true, BufferUtil.toBuffer("12345"), callback);
+                try (StacklessLogging ignore = new StacklessLogging(Response.class))
+                {
+                    response.write(true, BufferUtil.toBuffer("12345"), callback);
+                }
                 return true;
             }
         };
         _server.setHandler(handler);
+
+        LocalConnector localConnector = new LocalConnector(_server);
+        _server.addConnector(localConnector);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannelState(connectionMetaData);
-        MockHttpStream stream = new MockHttpStream(channel);
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable onRequest = channel.onRequest(request);
-        try (StacklessLogging ignored = new StacklessLogging(Response.class))
-        {
-            onRequest.run();
-        }
+        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
+        assertEquals(500, response.getStatus());
+        assertThat(response.getContent(), containsString("5 &lt; 10"));
 
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("5 < 10"));
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), is(500));
-        assertThat(stream.getResponseContentAsString(), containsString("5 &lt; 10"));
+        HttpStreamCaptureFailure capture = HttpStreamCaptureFailure.captureRef.get();
+        assertTrue(capture.failLatch.await(5, TimeUnit.SECONDS));
+        Throwable failure = capture.failRef.get();
+        assertThat(failure, notNullValue());
+        assertThat(failure.getMessage(), containsString("5 < 10"));
     }
 
     @Test
@@ -680,27 +688,40 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                request.addHttpStreamWrapper(HttpStreamCaptureFailure::asWrapper);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, BufferUtil.toBuffer("1234"), Callback.from(() -> response.write(true, BufferUtil.toBuffer("567890"), callback)));
+                try (StacklessLogging ignore = new StacklessLogging(Response.class))
+                {
+                    response.write(false, BufferUtil.toBuffer("1234"),
+                        Callback.from(() ->
+                            response.write(true, BufferUtil.toBuffer("567890"),
+                                callback)));
+                }
                 return true;
             }
         };
         _server.setHandler(handler);
+
+        LocalConnector localConnector = new LocalConnector(_server);
+        _server.addConnector(localConnector);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannelState(connectionMetaData);
-        MockHttpStream stream = new MockHttpStream(channel);
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
+        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
+        assertEquals(200, response.getStatus()); // first write was committed
 
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("10 > 5"));
-        assertThat(stream.getResponse(), notNullValue());
+        HttpStreamCaptureFailure capture = HttpStreamCaptureFailure.captureRef.get();
+        assertTrue(capture.failLatch.await(5, TimeUnit.SECONDS));
+        Throwable failure = capture.failRef.get();
+        assertThat(failure, notNullValue());
+        assertThat(failure, instanceOf(IOException.class)); // the stream detected the error
+        assertThat(failure.getMessage(), containsString("10 > 5"));
     }
 
     @Test
@@ -1454,6 +1475,33 @@ public class HttpChannelTest
         else
         {
             assertThat(stream.getResponse(), nullValue());
+        }
+    }
+
+    private static class HttpStreamCaptureFailure extends HttpStream.Wrapper
+    {
+        public static AtomicReference<HttpStreamCaptureFailure> captureRef = new AtomicReference<>();
+        public AtomicReference<Throwable> failRef = new AtomicReference<>();
+        public CountDownLatch failLatch = new CountDownLatch(1);
+
+        private HttpStreamCaptureFailure(HttpStream httpStream)
+        {
+            super(httpStream);
+        }
+
+        public static HttpStream asWrapper(HttpStream httpStream)
+        {
+            HttpStreamCaptureFailure capture = new HttpStreamCaptureFailure(httpStream);
+            captureRef.set(capture);
+            return capture;
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            super.failed(x);
+            failRef.set(x);
+            failLatch.countDown();
         }
     }
 }

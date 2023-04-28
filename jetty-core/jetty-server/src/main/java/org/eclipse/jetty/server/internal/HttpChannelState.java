@@ -517,7 +517,7 @@ public class HttpChannelState implements HttpChannel, Components
                 LOG.debug("invoking handler in {}", HttpChannelState.this);
             Server server = _connectionMetaData.getConnector().getServer();
 
-            Throwable failure = null;
+            Throwable thrownFailure = null;
             try
             {
                 if (!HttpMethod.PRI.is(request.getMethod()) &&
@@ -555,24 +555,34 @@ public class HttpChannelState implements HttpChannel, Components
             }
             catch (Throwable t)
             {
-                failure = t;
+                thrownFailure = t;
             }
 
             HttpStream stream;
-            boolean completeStream = false;
+            Throwable failure;
+            boolean completeStream;
+            boolean callbackCompleted;
+
+            // coordinate
+            // 1. callback completed
+            // 2. write state == last write completed
+            // 3. handling
+            // 4. failure
 
             try (AutoLock ignored = _lock.lock())
             {
                 stream = _stream;
                 _handling = null;
                 _handled = true;
-                completeStream = _callbackCompleted && _writeState == WriteState.LAST_WRITE_COMPLETED;
+                failure = ExceptionUtil.combine(thrownFailure, _failure);
+                callbackCompleted = _callbackCompleted;
+                completeStream = callbackCompleted && _writeState == WriteState.LAST_WRITE_COMPLETED;
             }
 
-            if (failure != null && !completeStream)
-                request._callback.failed(failure);
+            if (thrownFailure != null && !callbackCompleted)
+                request._callback.failed(thrownFailure);
 
-            if (completeStream)
+            if (completeStream || failure != null)
                 completeStream(stream, failure);
         }
 
