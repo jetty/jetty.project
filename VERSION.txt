@@ -1,18 +1,33 @@
-jetty-10.0.15-SNAPSHOT
+jetty-10.0.16-SNAPSHOT
+
+jetty-10.0.15 - 11 April 2023
+ + 6184 JEP-411 will deprecate/remove the SecurityManager from the JVM
+ + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
+ + 9237 Decouple QTP `idleTimeout` from pool shrink rate
+ + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
+ + 9400 Jetty logs warning with stacktrace when annotation parser encounters
+   module-info.class file inside elasticsearch-x-content jar
+ + 9464 Respect expiry time of ID token
+ + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
+ + 9497 Maven plugin effective web xml: add support for jar projects
+ + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9517 Jetty 10.0.14 uses wrong pathSpec for request
+ + 9556 Password Util does not ask for password
+ + Jetty-10 null
 
 jetty-10.0.14 - 22 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
  + 9059 IteratingCallback not serializing close() and failed()
  + 9119 Wrong value of javax.servlet.forward.context_path attribute
- + 9181 Jetty 9 java.lang.NullPointerException
-   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
  + 9183 ConnectHandler may close the connection instead of sending 200 OK
  + 9285 ContextHandler sends redirect on BaseResponse instead of Wrapped
    Response object from Handler chain
+ + 9344 Cleanup Multipart Handling (CVE-2023-26048)
+ + 9339 Cleanup CookieCutter Parsing (CVE-2023-26049)
  + 9334 Better support for Cookie RFC 2965 compliance
  + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
    hard-coded message
- + jetty-12 null
 
 jetty-10.0.13 - 07 December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
