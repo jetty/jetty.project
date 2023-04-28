@@ -414,13 +414,23 @@ public class IO
     }
 
     /**
+     * Closes an arbitrary closable, and logs exceptions at ignore level
+     *
+     * @param closeable the closeable to close
+     */
+    public static void close(Closeable closeable)
+    {
+        close((AutoCloseable)closeable);
+    }
+
+    /**
      * closes an input stream, and logs exceptions
      *
      * @param is the input stream to close
      */
     public static void close(InputStream is)
     {
-        close((Closeable)is);
+        close((AutoCloseable)is);
     }
 
     /**
@@ -430,7 +440,7 @@ public class IO
      */
     public static void close(OutputStream os)
     {
-        close((Closeable)os);
+        close((AutoCloseable)os);
     }
 
     /**
@@ -440,7 +450,7 @@ public class IO
      */
     public static void close(Reader reader)
     {
-        close((Closeable)reader);
+        close((AutoCloseable)reader);
     }
 
     /**
@@ -450,7 +460,7 @@ public class IO
      */
     public static void close(Writer writer)
     {
-        close((Closeable)writer);
+        close((AutoCloseable)writer);
     }
 
     public static byte[] readBytes(InputStream in)
