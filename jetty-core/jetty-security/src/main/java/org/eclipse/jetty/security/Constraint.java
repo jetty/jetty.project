@@ -309,41 +309,43 @@ public interface Constraint
 
     static Constraint from(String name, Transport transport, Authorization authorization, Set<String> roles)
     {
-        Set<String> roleSet = roles == null || roles.isEmpty()
-            ? Collections.emptySet()
-            : Collections.unmodifiableSet(roles);
-
-        Authorization auth = authorization == null
-            ? (roleSet.isEmpty() ? Authorization.INHERIT : Authorization.SPECIFIC_ROLE)
-            : authorization;
-
-        if (!roleSet.isEmpty() && auth != Authorization.SPECIFIC_ROLE)
-            throw new IllegalStateException("Constraint with roles must be SPECIFIC_ROLE, not " + auth);
-
         return new Constraint()
         {
+            private final String _name = name == null ? "unnamed@%x".formatted(hashCode()) : name;
+            private final Transport _transport = transport == null ? Transport.INHERIT : transport;
+            private final Set<String> _roles = roles == null || roles.isEmpty()
+                ? Collections.emptySet()
+                : Collections.unmodifiableSet(roles);
+            private final Authorization _authorization = authorization == null
+                ? (_roles.isEmpty() ? Authorization.INHERIT : Authorization.SPECIFIC_ROLE)
+                : authorization;
+            {
+                if (!_roles.isEmpty() && _authorization != Authorization.SPECIFIC_ROLE)
+                    throw new IllegalStateException("Constraint with roles must be SPECIFIC_ROLE, not " + _authorization);
+            }
+
             @Override
             public String getName()
             {
-                return name == null ? "unnamed@%x".formatted(hashCode()) : name;
+                return _name;
             }
 
             @Override
             public Transport getTransport()
             {
-                return transport == null ? Transport.INHERIT : transport;
+                return _transport;
             }
 
             @Override
             public Authorization getAuthorization()
             {
-                return auth;
+                return _authorization;
             }
 
             @Override
             public Set<String> getRoles()
             {
-                return roleSet;
+                return _roles;
             }
 
             @Override
@@ -352,9 +354,9 @@ public interface Constraint
                 return "Constraint@%x{%s,%s,%s,%s}".formatted(
                     hashCode(),
                     getName(),
-                    transport,
-                    authorization,
-                    roleSet);
+                    getTransport(),
+                    getAuthorization(),
+                    getRoles());
             }
         };
     }

@@ -329,6 +329,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
             try
             {
+                // MD5 required by the specification
                 MessageDigest md = MessageDigest.getInstance("MD5");
                 byte[] ha1;
                 if (credentials instanceof Credential.MD5)
