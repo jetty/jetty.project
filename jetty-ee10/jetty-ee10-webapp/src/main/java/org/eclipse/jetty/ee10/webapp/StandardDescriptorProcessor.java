@@ -1434,7 +1434,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case NotSet:
                 {
                     //not already set, so set it now
-                    context.getSecurityHandler().setAuthMethod(method.toString(false, true));
+                    context.getSecurityHandler().setAuthenticatorName(method.toString(false, true));
                     context.getMetaData().setOrigin("auth-method", descriptor);
                     break;
                 }
@@ -1445,7 +1445,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //if it was already set by a web xml descriptor and we're parsing another web xml descriptor, then override it
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        context.getSecurityHandler().setAuthMethod(method.toString(false, true));
+                        context.getSecurityHandler().setAuthenticatorName(method.toString(false, true));
                         context.getMetaData().setOrigin("auth-method", descriptor);
                     }
                     break;
@@ -1453,7 +1453,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //it was already set by another fragment, if we're parsing a fragment, the values must match
-                    if (!context.getSecurityHandler().getAuthMethod().equals(method.toString(false, true)))
+                    if (!context.getSecurityHandler().getAuthenticatorName().equals(method.toString(false, true)))
                         throw new IllegalStateException("Conflicting auth-method value in " + descriptor.getURI());
                     break;
                 }
@@ -1497,7 +1497,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     unknownOrigin(originRealmName);
             }
 
-            if (Authenticator.FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthMethod()))
+            if (Authenticator.FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthenticatorName()))
             {
                 XmlParser.Node formConfig = node.get("form-login-config");
                 if (formConfig != null)

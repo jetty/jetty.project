@@ -71,7 +71,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     private Authenticator _authenticator;
     private Authenticator.Factory _authenticatorFactory;
     private String _realmName;
-    private String _authMethod;
+    private String _authenticatorName;
     private final Map<String, String> _parameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
@@ -159,7 +159,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         updateBean(_authenticator, authenticator);
         _authenticator = authenticator;
         if (_authenticator != null)
-            _authMethod = _authenticator.getName();
+            _authenticatorName = _authenticator.getName();
     }
 
     /**
@@ -211,24 +211,24 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     }
 
     /**
-     * @return the authMethod
+     * @return the name of the Authenticator
      */
     @Override
-    public String getAuthMethod()
+    public String getAuthenticatorName()
     {
-        return _authMethod;
+        return _authenticatorName;
     }
 
     /**
-     * @param authMethod the authMethod to set
+     * @param authenticatorName the name of the Authenticator to use
      * @throws IllegalStateException if the SecurityHandler is running
      */
-    public void setAuthMethod(String authMethod)
+    public void setAuthenticatorName(String authenticatorName)
     {
         if (isRunning())
             throw new IllegalStateException("running");
-        _authMethod = authMethod;
-        if (_authenticator != null && !_authenticator.getName().equals(_authMethod))
+        _authenticatorName = authenticatorName;
+        if (_authenticator != null && !_authenticator.getName().equals(_authenticatorName))
             _authenticator = null;
     }
 

@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public class JaspiMessageInfo implements MessageInfo
 {
-    public static final String AUTH_METHOD_KEY = "jakarta.servlet.http.authType";
+    public static final String AUTHENTICATOR_NAME_KEY = "jakarta.servlet.http.authType";
     private final Callback _callback;
     private Request _request;
     private Response _response;
@@ -100,15 +100,15 @@ public class JaspiMessageInfo implements MessageInfo
         _response = ServletContextResponse.getServletContextResponse((ServletResponse)response);
     }
 
-    public String getAuthMethod()
+    public String getAuthenticatorName()
     {
-        return _map.getAuthMethod();
+        return _map.getAuthenticatorName();
     }
 
     //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
     private static class MIMap implements Map
     {
-        private String authMethod;
+        private String authenticatorName;
         private Map delegate;
 
         private MIMap()
@@ -130,15 +130,15 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public boolean containsKey(Object key)
         {
-            if (AUTH_METHOD_KEY.equals(key))
-                return authMethod != null;
+            if (AUTHENTICATOR_NAME_KEY.equals(key))
+                return authenticatorName != null;
             return delegate != null && delegate.containsKey(key);
         }
 
         @Override
         public boolean containsValue(Object value)
         {
-            if (authMethod == value || (authMethod != null && authMethod.equals(value)))
+            if (authenticatorName == value || (authenticatorName != null && authenticatorName.equals(value)))
                 return true;
             return delegate != null && delegate.containsValue(value);
         }
@@ -146,8 +146,8 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public Object get(Object key)
         {
-            if (AUTH_METHOD_KEY.equals(key))
-                return authMethod;
+            if (AUTHENTICATOR_NAME_KEY.equals(key))
+                return authenticatorName;
             if (delegate == null)
                 return null;
             return delegate.get(key);
@@ -156,13 +156,13 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public Object put(Object key, Object value)
         {
-            if (AUTH_METHOD_KEY.equals(key))
+            if (AUTHENTICATOR_NAME_KEY.equals(key))
             {
-                String authMethod = this.authMethod;
-                this.authMethod = (String)value;
+                String authenticatorName = this.authenticatorName;
+                this.authenticatorName = (String)value;
                 if (delegate != null)
-                    delegate.put(AUTH_METHOD_KEY, value);
-                return authMethod;
+                    delegate.put(AUTHENTICATOR_NAME_KEY, value);
+                return authenticatorName;
             }
 
             return getDelegate(true).put(key, value);
@@ -171,13 +171,13 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public Object remove(Object key)
         {
-            if (AUTH_METHOD_KEY.equals(key))
+            if (AUTHENTICATOR_NAME_KEY.equals(key))
             {
-                String authMethod = this.authMethod;
-                this.authMethod = null;
+                String authenticatorName = this.authenticatorName;
+                this.authenticatorName = null;
                 if (delegate != null)
-                    delegate.remove(AUTH_METHOD_KEY);
-                return authMethod;
+                    delegate.remove(AUTHENTICATOR_NAME_KEY);
+                return authenticatorName;
             }
             if (delegate == null)
                 return null;
@@ -200,7 +200,7 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public void clear()
         {
-            authMethod = null;
+            authenticatorName = null;
             delegate = null;
         }
 
@@ -229,15 +229,15 @@ public class JaspiMessageInfo implements MessageInfo
             if (create)
             {
                 delegate = new HashMap();
-                if (authMethod != null)
-                    delegate.put(AUTH_METHOD_KEY, authMethod);
+                if (authenticatorName != null)
+                    delegate.put(AUTHENTICATOR_NAME_KEY, authenticatorName);
             }
             return delegate;
         }
 
-        String getAuthMethod()
+        String getAuthenticatorName()
         {
-            return authMethod;
+            return authenticatorName;
         }
     }
 }

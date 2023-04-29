@@ -104,7 +104,7 @@ public interface Authenticator
      */
     interface Configuration
     {
-        String getAuthMethod();
+        String getAuthenticatorName();
 
         String getRealmName();
 
@@ -139,9 +139,9 @@ public interface Authenticator
             }
 
             @Override
-            public String getAuthMethod()
+            public String getAuthenticatorName()
             {
-                return _configuration.getAuthMethod();
+                return _configuration.getAuthenticatorName();
             }
 
             @Override

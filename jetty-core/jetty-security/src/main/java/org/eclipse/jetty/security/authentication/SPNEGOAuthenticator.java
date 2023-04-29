@@ -46,7 +46,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(SPNEGOAuthenticator.class);
 
-    private final String _authMethod;
+    private final String _name;
     private Duration _authenticationDuration = Duration.ofNanos(-1);
 
     public SPNEGOAuthenticator()
@@ -55,19 +55,19 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     }
 
     /**
-     * Allow for a custom authMethod value to be set for instances where SPNEGO may not be appropriate
+     * Allow for a custom name value to be set for instances where SPNEGO may not be appropriate
      *
-     * @param authMethod the auth method
+     * @param name the authenticator name
      */
-    public SPNEGOAuthenticator(String authMethod)
+    public SPNEGOAuthenticator(String name)
     {
-        _authMethod = authMethod;
+        _name = name;
     }
 
     @Override
     public String getName()
     {
-        return _authMethod;
+        return _name;
     }
 
     /**

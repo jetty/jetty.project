@@ -188,7 +188,7 @@ public class OpenIdCredentials implements Serializable
         fields.add("grant_type", "authorization_code");
 
         Request request = configuration.getHttpClient().POST(configuration.getTokenEndpoint());
-        switch (configuration.getAuthMethod())
+        switch (configuration.getAuthenticatorName())
         {
             case "client_secret_basic":
                 URI uri = URI.create(configuration.getTokenEndpoint());
@@ -200,7 +200,7 @@ public class OpenIdCredentials implements Serializable
                 fields.add("client_secret", configuration.getClientSecret());
                 break;
             default:
-                throw new IllegalStateException(configuration.getAuthMethod());
+                throw new IllegalStateException(configuration.getAuthenticatorName());
         }
 
         FormRequestContent formContent = new FormRequestContent(fields);

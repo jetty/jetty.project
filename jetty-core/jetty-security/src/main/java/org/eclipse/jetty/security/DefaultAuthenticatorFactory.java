@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * The Default Authenticator Factory.
- * Uses the {@link Configuration#getAuthMethod()} to select an {@link Authenticator} from: <ul>
+ * Uses the {@link Configuration#getAuthenticatorName()} to select an {@link Authenticator} from: <ul>
  * <li>{@link BasicAuthenticator}</li>
  * <li>{@link DigestAuthenticator}</li>
  * <li>{@link FormAuthenticator}</li>
@@ -53,7 +53,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
     @Override
     public Authenticator getAuthenticator(Server server, Context context, Configuration configuration)
     {
-        String auth = configuration.getAuthMethod();
+        String auth = configuration.getAuthenticatorName();
         Authenticator authenticator = null;
 
         if (Authenticator.BASIC_AUTH.equalsIgnoreCase(auth))

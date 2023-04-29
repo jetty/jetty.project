@@ -33,7 +33,7 @@
         <Arg name="tokenEndpoint"><Property name="jetty.openid.provider.tokenEndpoint"/></Arg>
         <Arg name="clientId"><Property name="jetty.openid.clientId"/></Arg>
         <Arg name="clientSecret"><Property name="jetty.openid.clientSecret"/></Arg>
-        <Arg name="authMethod"><Property name="jetty.openid.authMethod" default="client_secret_post"/></Arg>
+        <Arg name="authenticatorName"><Property name="jetty.openid.authenticatorName" deprecated="jetty.openid.authMethod" default="client_secret_post"/></Arg>
         <Arg name="httpClient"><Ref refid="HttpClient"/></Arg>
         <Set name="authenticateNewUsers">
           <Property name="jetty.openid.authenticateNewUsers" default="false"/>

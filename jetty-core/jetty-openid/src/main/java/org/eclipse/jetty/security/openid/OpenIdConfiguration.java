@@ -50,7 +50,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private final String clientId;
     private final String clientSecret;
     private final List<String> scopes = new ArrayList<>();
-    private final String authMethod;
+    private final String authenticatorName;
     private String authEndpoint;
     private String tokenEndpoint;
     private String endSessionEndpoint;
@@ -90,7 +90,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
-     * @param authMethod Authentication method to use with the Token Endpoint.
+     * @param authenticationName Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
      */
     public OpenIdConfiguration(@Name("issuer") String issuer,
@@ -98,10 +98,10 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("tokenEndpoint") String tokenEndpoint,
                                @Name("clientId") String clientId,
                                @Name("clientSecret") String clientSecret,
-                               @Name("authMethod") String authMethod,
+                               @Name("authenticationName") String authenticationName,
                                @Name("httpClient") HttpClient httpClient)
     {
-        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authMethod, httpClient);
+        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authenticationName, httpClient);
     }
 
     /**
@@ -112,7 +112,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param endSessionEndpoint the URL of the OpdnID provider's end session endpoint if configured.
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
-     * @param authMethod Authentication method to use with the Token Endpoint.
+     * @param authenticatorName Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
      */
     public OpenIdConfiguration(@Name("issuer") String issuer,
@@ -121,7 +121,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("endSessionEndpoint") String endSessionEndpoint,
                                @Name("clientId") String clientId,
                                @Name("clientSecret") String clientSecret,
-                               @Name("authMethod") String authMethod,
+                               @Name("authenticatorName") String authenticatorName,
                                @Name("httpClient") HttpClient httpClient)
     {
         this.issuer = issuer;
@@ -131,7 +131,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         this.endSessionEndpoint = endSessionEndpoint;
         this.tokenEndpoint = tokenEndpoint;
         this.httpClient = httpClient != null ? httpClient : newHttpClient();
-        this.authMethod = authMethod == null ? "client_secret_post" : authMethod;
+        this.authenticatorName = authenticatorName == null ? "client_secret_post" : authenticatorName;
 
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
@@ -250,9 +250,9 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         return endSessionEndpoint;
     }
 
-    public String getAuthMethod()
+    public String getAuthenticatorName()
     {
-        return authMethod;
+        return authenticatorName;
     }
 
     public void addScopes(String... scopes)
@@ -296,7 +296,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     @Override
     public String toString()
     {
-        return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authMethod=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
-            getClass().getSimpleName(), hashCode(), issuer, clientId, authEndpoint, authMethod, tokenEndpoint, scopes, authenticateNewUsers);
+        return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authenticator=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
+            getClass().getSimpleName(), hashCode(), issuer, clientId, authEndpoint, authenticatorName, tokenEndpoint, scopes, authenticateNewUsers);
     }
 }

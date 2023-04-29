@@ -307,15 +307,15 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         // Security elements
         SecurityHandler security = context.getSecurityHandler();
 
-        if (security != null && (security.getRealmName() != null || security.getAuthMethod() != null))
+        if (security != null && (security.getRealmName() != null || security.getAuthenticatorName() != null))
         {
             out.openTag("login-config");
-            if (security.getAuthMethod() != null)
-                out.tag("auth-method", origin(md, "auth-method"), security.getAuthMethod());
+            if (security.getAuthenticatorName() != null)
+                out.tag("auth-method", origin(md, "auth-method"), security.getAuthenticatorName());
             if (security.getRealmName() != null)
                 out.tag("realm-name", origin(md, "realm-name"), security.getRealmName());
 
-            if (Authenticator.FORM_AUTH.equalsIgnoreCase(security.getAuthMethod()))
+            if (Authenticator.FORM_AUTH.equalsIgnoreCase(security.getAuthenticatorName()))
             {
                 out.openTag("form-login-config");
                 out.tag("form-login-page", origin(md, "form-login-page"), security.getParameter(FormAuthenticator.__FORM_LOGIN_PAGE));
