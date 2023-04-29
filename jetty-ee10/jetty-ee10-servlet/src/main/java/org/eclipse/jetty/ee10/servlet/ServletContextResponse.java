@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
@@ -53,7 +52,6 @@ public class ServletContextResponse extends ContextResponse
     private final HttpOutput _httpOutput;
     private final ServletChannel _servletChannel;
     private final ServletApiResponse _httpServletResponse;
-    private final ServletContextRequest _request;
     private String _characterEncoding;
     private String _contentType;
     private MimeTypes.Type _mimeType;
@@ -82,18 +80,11 @@ public class ServletContextResponse extends ContextResponse
 
     public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
     {
-        super(servletChannel.getContext(), response.getRequest(), response);
-        _request = request;
+        super(servletChannel.getContext(), request, response);
         _response = response;
         _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
         _httpServletResponse = newServletApiResponse();
-    }
-
-    @Override
-    public Request getRequest()
-    {
-        return _request;
     }
 
     protected ResponseWriter getWriter()
@@ -173,7 +164,7 @@ public class ServletContextResponse extends ContextResponse
 
     protected ServletContextRequest getServletContextRequest()
     {
-        return _request;
+        return (ServletContextRequest)getRequest();
     }
 
     protected ServletApiResponse newServletApiResponse()
@@ -319,23 +310,22 @@ public class ServletContextResponse extends ContextResponse
             {
                 switch (cb)
                 {
-                    case CLOSE:
-                        headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
-                        break;
-                    case KEEP_ALIVE:
-                        if (HttpVersion.HTTP_1_0.is(_request.getConnectionMetaData().getProtocol()))
+                    case CLOSE -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
+                    case KEEP_ALIVE ->
+                    {
+                        if (HttpVersion.HTTP_1_0.is(getRequest().getConnectionMetaData().getProtocol()))
                             headers.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
-                        break;
-                    case TE:
-                        headers.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
-                        break;
-                    default:
+                    }
+                    case TE -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
+                    default ->
+                    {
+                    }
                 }
             }
         }
 
         // recreate session cookies
-        HttpSession session = _request.getServletApiRequest().getSession(false);
+        HttpSession session = getServletContextRequest().getServletApiRequest().getSession(false);
         if (session != null && session.isNew())
         {
             SessionHandler sh = _servletChannel.getContextHandler().getSessionHandler();
@@ -344,7 +334,7 @@ public class ServletContextResponse extends ContextResponse
                 ManagedSession managedSession = SessionHandler.ServletSessionApi.getSession(session);
                 if (managedSession != null)
                 {
-                    HttpCookie c = sh.getSessionCookie(managedSession, _request.isSecure());
+                    HttpCookie c = sh.getSessionCookie(managedSession, getRequest().isSecure());
                     if (c != null)
                         Response.addCookie(_response, c);
                 }
@@ -375,25 +365,16 @@ public class ServletContextResponse extends ContextResponse
 
             switch (field.getHeader())
             {
-                case CONTENT_TYPE:
-                case CONTENT_LENGTH:
-                case CONTENT_ENCODING:
-                case CONTENT_LANGUAGE:
-                case CONTENT_RANGE:
-                case CONTENT_MD5:
-                case CONTENT_LOCATION:
-                case TRANSFER_ENCODING:
-                case CACHE_CONTROL:
-                case LAST_MODIFIED:
-                case EXPIRES:
-                case VARY:
-                    i.remove();
-                    continue;
-                case ETAG:
+                case CONTENT_TYPE, CONTENT_LENGTH, CONTENT_ENCODING, CONTENT_LANGUAGE, CONTENT_RANGE, CONTENT_MD5,
+                    CONTENT_LOCATION, TRANSFER_ENCODING, CACHE_CONTROL, LAST_MODIFIED, EXPIRES, VARY -> i.remove();
+                case ETAG ->
+                {
                     if (getStatus() != HttpStatus.NOT_MODIFIED_304)
                         i.remove();
-                    continue;
-                default:
+                }
+                default ->
+                {
+                }
             }
         }
     }
@@ -425,7 +406,7 @@ public class ServletContextResponse extends ContextResponse
             return _mimeType.getCharsetString();
         
         // Try charset assumed from content type (assumed charsets are not added to content type header).
-        MimeTypes mimeTypes = _request.getContext().getMimeTypes();
+        MimeTypes mimeTypes = getRequest().getContext().getMimeTypes();
         encoding = mimeTypes.getCharsetAssumedFromContentType(_contentType);
         if (encoding != null)
             return encoding;
