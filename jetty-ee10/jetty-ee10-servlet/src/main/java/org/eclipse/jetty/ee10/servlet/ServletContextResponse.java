@@ -48,7 +48,6 @@ public class ServletContextResponse extends ContextResponse
         NONE, STREAM, WRITER
     }
 
-    private final Response _response;
     private final HttpOutput _httpOutput;
     private final ServletChannel _servletChannel;
     private final ServletApiResponse _httpServletResponse;
@@ -81,7 +80,6 @@ public class ServletContextResponse extends ContextResponse
     public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
     {
         super(servletChannel.getContext(), request, response);
-        _response = response;
         _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
         _httpServletResponse = newServletApiResponse();
@@ -336,7 +334,7 @@ public class ServletContextResponse extends ContextResponse
                 {
                     HttpCookie c = sh.getSessionCookie(managedSession, getRequest().isSecure());
                     if (c != null)
-                        Response.addCookie(_response, c);
+                        Response.addCookie(getWrapped(), c);
                 }
                 else
                 {
@@ -474,12 +472,12 @@ public class ServletContextResponse extends ContextResponse
                 {
                     _mimeType = _mimeType.getBaseType();
                     _contentType = _mimeType.asString();
-                    _response.getHeaders().put(_mimeType.getContentTypeField());
+                    getWrapped().getHeaders().put(_mimeType.getContentTypeField());
                 }
                 else if (_contentType != null)
                 {
                     _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                    _response.getHeaders().put(HttpHeader.CONTENT_TYPE, _contentType);
+                    getWrapped().getHeaders().put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
             }
         }
@@ -492,14 +490,14 @@ public class ServletContextResponse extends ContextResponse
                 _contentType = _mimeType.getBaseType().asString() + ";charset=" + _characterEncoding;
                 _mimeType = MimeTypes.CACHE.get(_contentType);
                 if (_mimeType == null || HttpGenerator.__STRICT)
-                    _response.getHeaders().put(HttpHeader.CONTENT_TYPE, _contentType);
+                    getWrapped().getHeaders().put(HttpHeader.CONTENT_TYPE, _contentType);
                 else
-                    _response.getHeaders().put(_mimeType.getContentTypeField());
+                    getWrapped().getHeaders().put(_mimeType.getContentTypeField());
             }
             else if (_contentType != null)
             {
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
-                _response.getHeaders().put(HttpHeader.CONTENT_TYPE, _contentType);
+                getWrapped().getHeaders().put(HttpHeader.CONTENT_TYPE, _contentType);
             }
         }
     }
