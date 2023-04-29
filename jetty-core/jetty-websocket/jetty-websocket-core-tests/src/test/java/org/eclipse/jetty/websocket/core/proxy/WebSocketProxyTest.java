@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.proxy;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -168,6 +167,20 @@ public class WebSocketProxyTest
 
         response.get(5, TimeUnit.SECONDS);
         clientFrameHandler.sendText("hello world");
+
+        Frame frame = proxyClientSide.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        frame = serverFrameHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        frame = proxyServerSide.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        frame = clientFrameHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+
         clientFrameHandler.close(CloseStatus.NORMAL, "standard close");
         assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
@@ -175,11 +188,6 @@ public class WebSocketProxyTest
 
         assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
         assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.CLOSED));
-
-        assertThat(Objects.requireNonNull(proxyClientSide.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
-        assertThat(Objects.requireNonNull(serverFrameHandler.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
-        assertThat(Objects.requireNonNull(proxyServerSide.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
-        assertThat(Objects.requireNonNull(clientFrameHandler.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
 
         assertThat(CloseStatus.getCloseStatus(proxyClientSide.receivedFrames.poll()).getReason(), is("standard close"));
         assertThat(CloseStatus.getCloseStatus(serverFrameHandler.receivedFrames.poll()).getReason(), is("standard close"));
