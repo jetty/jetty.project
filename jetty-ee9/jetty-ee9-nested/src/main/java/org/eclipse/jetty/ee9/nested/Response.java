@@ -1217,7 +1217,6 @@ public class Response implements HttpServletResponse
                 case LAST_MODIFIED:
                 case EXPIRES:
                 case ETAG:
-                case DATE:
                 case VARY:
                     i.remove();
                     continue;
