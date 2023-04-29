@@ -19,12 +19,12 @@ import java.util.Objects;
 import org.eclipse.jetty.websocket.core.CoreSession;
 
 /**
- * <p>Partial implementation of {@link MessageSink}.</p>
- * <p>The application function passed to the constructor as a {@link MethodHandle}
- * either delegates the demand for more WebSocket frames to the {@link MessageSink}
- * implementation -- and therefore {@code autoDemand==false}, or explicitly demands
- * for more WebSocket frames (via APIs that eventually call
- * {@link CoreSession#demand(long)}) -- and therefore {@code autoDemand==true}.</p>
+ * <p>Abstract implementation of {@link MessageSink}.</p>
+ * <p>Management of demand for WebSocket frames may either be entirely managed
+ * by the {@link MessageSink} implementation ({@code autoDemand==true}); or
+ * it may be managed collaboratively between the application function passed
+ * to the constructor as a {@link MethodHandle} and the {@link MessageSink}
+ * implementation ({@code autoDemand==true}).</p>
  * <p>{@link MessageSink} implementations must handle the demand for WebSocket
  * frames in this way:</p>
  * <ul>
