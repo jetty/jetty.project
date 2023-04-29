@@ -21,22 +21,24 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 /**
  * <p>Partial implementation of {@link MessageSink}.</p>
  * <p>The application function passed to the constructor as a {@link MethodHandle}
- * can either explicitly demand for more WebSocket frames (by eventually calling
- * {@link CoreSession#demand(long)}) or implicitly delegate the demand for more
- * WebSocket frames to the implementation.
- * In the former case, the constructor parameter {@code autoDemand==false}; in
- * the latter case, the constructor parameter {@code autoDemand==true}.</p>
- * <p>The {@link MessageSink} implementation must manage the demand for WebSocket
- * frames even when the application function is not invoked.</p>
- * <p>For example, a {@link MessageSink} implementation that accumulates data frames
- * until a whole message is assembled must internally demand for more WebSocket
- * frames, regardless of the value of {@code autoDemand}, until the whole message
- * is assembled.
- * Then the {@link MessageSink} implementation invokes the application function,
- * that may explicitly manage the demand or may delegate the demand to the
- * {@link MessageSink} implementation.
- * When the invocation of the application function returns, the {@link MessageSink}
- * implementation must call {@link #autoDemand()}.</p>
+ * either delegates the demand for more WebSocket frames to the {@link MessageSink}
+ * implementation -- and therefore {@code autoDemand==false}, or explicitly demands
+ * for more WebSocket frames (via APIs that eventually call
+ * {@link CoreSession#demand(long)}) -- and therefore {@code autoDemand==true}.</p>
+ * <p>{@link MessageSink} implementations must handle the demand for WebSocket
+ * frames in this way:</p>
+ * <ul>
+ * <li>When {@code autoDemand==false}, the {@link MessageSink} manages the
+ * demand until the conditions to invoke the application function are met;
+ * when the {@link MessageSink} invokes the application function, then the
+ * application function is responsible to demand for more WebSocket frames.</li>
+ * <li>When {@code autoDemand==true}, only the {@link MessageSink} manages the
+ * demand for WebSocket frames. If the {@link MessageSink} invokes the application
+ * function, the {@link MessageSink} must demand for WebSocket frames after the
+ * invocation of the application function returns successfully.</li>
+ * </ul>
+ * <p>Method {@link #autoDemand()} helps to manage the demand after the
+ * invocation of the application function returns successfully.</p>
  */
 public abstract class AbstractMessageSink implements MessageSink
 {
@@ -44,6 +46,14 @@ public abstract class AbstractMessageSink implements MessageSink
     private final MethodHandle methodHandle;
     private final boolean autoDemand;
 
+    /**
+     * Creates a new {@link MessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     * as explained in {@link AbstractMessageSink}
+     */
     public AbstractMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
         this.session = Objects.requireNonNull(session, "CoreSession");
