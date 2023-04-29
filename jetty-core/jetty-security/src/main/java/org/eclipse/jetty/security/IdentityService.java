@@ -60,7 +60,7 @@ public interface IdentityService
     UserIdentity getSystemUserIdentity();
 
     /**
-     * An associate between an identity and the current thread that can be terminated by closing.
+     * An association between an identity and the current thread that can be terminated by {@link #close()}.
      * @see #associate(UserIdentity, RunAsToken)
      */
     interface Association extends AutoCloseable
