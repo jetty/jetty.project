@@ -90,7 +90,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
-     * @param authenticationName Authentication method to use with the Token Endpoint.
+     * @param authenticatorName Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
      */
     public OpenIdConfiguration(@Name("issuer") String issuer,
@@ -98,10 +98,10 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("tokenEndpoint") String tokenEndpoint,
                                @Name("clientId") String clientId,
                                @Name("clientSecret") String clientSecret,
-                               @Name("authenticationName") String authenticationName,
+                               @Name("authenticatorName") String authenticatorName,
                                @Name("httpClient") HttpClient httpClient)
     {
-        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authenticationName, httpClient);
+        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authenticatorName, httpClient);
     }
 
     /**
