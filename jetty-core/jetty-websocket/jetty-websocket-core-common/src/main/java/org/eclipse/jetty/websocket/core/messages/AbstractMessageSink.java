@@ -28,11 +28,11 @@ import org.eclipse.jetty.websocket.core.CoreSession;
  * <p>{@link MessageSink} implementations must handle the demand for WebSocket
  * frames in this way:</p>
  * <ul>
- * <li>When {@code autoDemand==false}, the {@link MessageSink} manages the
+ * <li>If {@code autoDemand==false}, the {@link MessageSink} manages the
  * demand until the conditions to invoke the application function are met;
  * when the {@link MessageSink} invokes the application function, then the
  * application function is responsible to demand for more WebSocket frames.</li>
- * <li>When {@code autoDemand==true}, only the {@link MessageSink} manages the
+ * <li>If {@code autoDemand==true}, only the {@link MessageSink} manages the
  * demand for WebSocket frames. If the {@link MessageSink} invokes the application
  * function, the {@link MessageSink} must demand for WebSocket frames after the
  * invocation of the application function returns successfully.</li>
