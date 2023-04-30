@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class OpenIdReamNameTest
+public class OpenIdRealmNameTest
 {
     private final Server server = new Server();
 

@@ -100,11 +100,6 @@ public class JaspiMessageInfo implements MessageInfo
         _response = ServletContextResponse.getServletContextResponse((ServletResponse)response);
     }
 
-    public String getAuthenticatorName()
-    {
-        return _map.getAuthenticatorName();
-    }
-
     //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
     private static class MIMap implements Map
     {
