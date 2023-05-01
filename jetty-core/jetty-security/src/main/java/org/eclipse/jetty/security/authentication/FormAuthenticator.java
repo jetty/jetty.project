@@ -118,7 +118,7 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getName()
+    public String getAuthenticationType()
     {
         return Authenticator.FORM_AUTH;
     }
@@ -165,7 +165,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (user != null)
         {
             Session session = request.getSession(true);
-            AuthenticationState cached = new SessionAuthentication(getName(), user, password);
+            AuthenticationState cached = new SessionAuthentication(getAuthenticationType(), user, password);
             session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);
         }
         return user;
@@ -279,7 +279,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 String originalURI = savedURI != null ? savedURI.asString() : Request.getContextPath(request);
                 if (originalURI == null)
                     originalURI = "/";
-                UserAuthenticationSent formAuth = new UserAuthenticationSent(getName(), user);
+                UserAuthenticationSent formAuth = new UserAuthenticationSent(getAuthenticationType(), user);
                 Response.sendRedirect(request, response, callback, encodeURL(originalURI, request), true);
                 return formAuth;
             }

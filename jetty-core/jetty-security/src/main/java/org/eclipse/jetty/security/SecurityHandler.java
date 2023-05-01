@@ -71,7 +71,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     private Authenticator _authenticator;
     private Authenticator.Factory _authenticatorFactory;
     private String _realmName;
-    private String _authenticatorName;
+    private String _authenticationType;
     private final Map<String, String> _parameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
@@ -159,7 +159,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         updateBean(_authenticator, authenticator);
         _authenticator = authenticator;
         if (_authenticator != null)
-            _authenticatorName = _authenticator.getName();
+            _authenticationType = _authenticator.getAuthenticationType();
     }
 
     /**
@@ -214,21 +214,21 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
      * @return the name of the Authenticator
      */
     @Override
-    public String getAuthenticatorName()
+    public String getAuthenticationType()
     {
-        return _authenticatorName;
+        return _authenticationType;
     }
 
     /**
-     * @param authenticatorName the name of the Authenticator to use
+     * @param authenticationType the name of the Authenticator to use
      * @throws IllegalStateException if the SecurityHandler is running
      */
-    public void setAuthenticatorName(String authenticatorName)
+    public void setAuthenticationType(String authenticationType)
     {
         if (isRunning())
             throw new IllegalStateException("running");
-        _authenticatorName = authenticatorName;
-        if (_authenticator != null && !_authenticator.getName().equals(_authenticatorName))
+        _authenticationType = authenticationType;
+        if (_authenticator != null && !_authenticator.getAuthenticationType().equals(_authenticationType))
             _authenticator = null;
     }
 

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -149,7 +150,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getName()
+    public String getAuthenticationType()
     {
         return Authenticator.OPENID_AUTH;
     }
@@ -235,7 +236,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (user != null)
         {
             Session session = request.getSession(true);
-            AuthenticationState cached = new SessionAuthentication(getName(), user, credentials);
+            AuthenticationState cached = new SessionAuthentication(getAuthenticationType(), user, credentials);
             synchronized (session)
             {
                 session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);
@@ -273,7 +274,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     {
         if (session != null)
         {
-            Map<String, Object> claims = (Map)session.getAttribute(CLAIMS);
+            Map<String, Object> claims = (Map<String, Object>)session.getAttribute(CLAIMS);
             if (claims != null)
                 return OpenIdCredentials.checkExpiry(claims);
         }
@@ -490,7 +491,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     return AuthenticationState.SEND_FAILURE;
                 }
 
-                LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getName(), user);
+                LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getAuthenticationType(), user);
                 if (LOG.isDebugEnabled())
                     LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
 
@@ -729,6 +730,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private static class MRUMap extends LinkedHashMap<String, UriRedirectInfo>
     {
+        @Serial
         private static final long serialVersionUID = 5375723072014233L;
 
         private final int _size;
@@ -747,6 +749,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private static class UriRedirectInfo implements Serializable
     {
+        @Serial
         private static final long serialVersionUID = 139567755844461433L;
 
         private final HttpURI _uri;
@@ -758,12 +761,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             _uri = request.getHttpURI();
             _method = request.getMethod();
 
-            // TODO:
             if (MimeTypes.Type.FORM_ENCODED.is(request.getHeaders().get(HttpHeader.CONTENT_TYPE)) && HttpMethod.POST.is(request.getMethod()))
             {
-                MultiMap<String> formParameters = new MultiMap<>();
-                // request.extractFormParameters(formParameters);
-                _formParameters = formParameters;
+                // TODO request.extractFormParameters(formParameters);
+                _formParameters = new MultiMap<>();
             }
             else
             {

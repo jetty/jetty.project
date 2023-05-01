@@ -90,7 +90,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getName()
+    public String getAuthenticationType()
     {
         return Authenticator.DIGEST_AUTH;
     }
@@ -160,7 +160,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                 UserIdentity user = login(digest.username, digest, req, res);
                 if (user != null)
                 {
-                    return new UserAuthenticationSucceeded(getName(), user);
+                    return new UserAuthenticationSucceeded(getAuthenticationType(), user);
                 }
             }
             else if (n == 0)

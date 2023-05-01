@@ -46,7 +46,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(SPNEGOAuthenticator.class);
 
-    private final String _name;
+    private final String _type;
     private Duration _authenticationDuration = Duration.ofNanos(-1);
 
     public SPNEGOAuthenticator()
@@ -57,17 +57,17 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     /**
      * Allow for a custom name value to be set for instances where SPNEGO may not be appropriate
      *
-     * @param name the authenticator name
+     * @param type the authenticator name
      */
-    public SPNEGOAuthenticator(String name)
+    public SPNEGOAuthenticator(String type)
     {
-        _name = name;
+        _type = type;
     }
 
     @Override
-    public String getName()
+    public String getAuthenticationType()
     {
-        return _name;
+        return _type;
     }
 
     /**
@@ -136,7 +136,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
                         httpSession = req.getSession(true);
                     httpSession.setAttribute(UserIdentityHolder.ATTRIBUTE, new UserIdentityHolder(identity));
                 }
-                return new UserAuthenticationSucceeded(getName(), identity);
+                return new UserAuthenticationSucceeded(getAuthenticationType(), identity);
             }
             else
             {
@@ -166,7 +166,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
                         // Allow non-GET requests even if they're expired, so that
                         // the client does not need to send the request content again.
                         if (!expired || !HttpMethod.GET.is(req.getMethod()))
-                            return new UserAuthenticationSucceeded(getName(), identity);
+                            return new UserAuthenticationSucceeded(getAuthenticationType(), identity);
                     }
                 }
             }

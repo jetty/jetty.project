@@ -34,7 +34,7 @@ public class OpenIdRealmNameTest
     {
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         assertThat(securityHandler.getKnownAuthenticatorFactories().size(), greaterThanOrEqualTo(2));
-        securityHandler.setAuthenticatorName(Authenticator.OPENID_AUTH);
+        securityHandler.setAuthenticationType(Authenticator.OPENID_AUTH);
         securityHandler.setRealmName(realmName);
         return securityHandler;
     }

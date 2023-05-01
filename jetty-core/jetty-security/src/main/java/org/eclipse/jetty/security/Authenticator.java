@@ -51,9 +51,9 @@ public interface Authenticator
     void setConfiguration(Configuration configuration);
 
     /**
-     * @return The name of the authentication mechanism
+     * @return The name of the authentication type
      */
-    String getName();
+    String getAuthenticationType();
 
     /**
      * Called after {@link #validateRequest(Request, Response, Callback)} and
@@ -104,7 +104,7 @@ public interface Authenticator
      */
     interface Configuration
     {
-        String getAuthenticatorName();
+        String getAuthenticationType();
 
         String getRealmName();
 
@@ -139,9 +139,9 @@ public interface Authenticator
             }
 
             @Override
-            public String getAuthenticatorName()
+            public String getAuthenticationType()
             {
-                return _configuration.getAuthenticatorName();
+                return _configuration.getAuthenticationType();
             }
 
             @Override
@@ -198,7 +198,7 @@ public interface Authenticator
         }
 
         @Override
-        public String getName()
+        public String getAuthenticationType()
         {
             return null;
         }

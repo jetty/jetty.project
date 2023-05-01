@@ -26,7 +26,7 @@ public class OpenIdAuthenticatorFactory implements Authenticator.Factory
     public Authenticator getAuthenticator(Server server, Context context, Authenticator.Configuration configuration)
     {
         LoginService loginService = configuration.getLoginService();
-        String auth = configuration.getAuthenticatorName();
+        String auth = configuration.getAuthenticationType();
         if (Authenticator.OPENID_AUTH.equalsIgnoreCase(auth))
         {
             // If we have an OpenIdLoginService we can extract the configuration.

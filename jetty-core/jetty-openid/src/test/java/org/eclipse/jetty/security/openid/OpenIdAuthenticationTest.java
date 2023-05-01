@@ -92,7 +92,7 @@ public class OpenIdAuthenticationTest
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         assertThat(securityHandler.getKnownAuthenticatorFactories().size(), greaterThanOrEqualTo(2));
         securityHandler.setLoginService(loginService);
-        securityHandler.setAuthenticatorName(Authenticator.OPENID_AUTH);
+        securityHandler.setAuthenticationType(Authenticator.OPENID_AUTH);
         securityHandler.setRealmName(openIdProvider.getProvider());
 
         // Configure Contexts.

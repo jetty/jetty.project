@@ -63,7 +63,7 @@ public class DefaultIdentityServiceTest
         }
 
         @Override
-        public String getName()
+        public String getAuthenticationType()
         {
             return getClass().getSimpleName();
         }

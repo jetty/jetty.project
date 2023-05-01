@@ -129,7 +129,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public String getName()
+    public String getAuthenticationType()
     {
         return "JASPI";
     }
@@ -144,7 +144,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             HttpSession session = ((HttpServletRequest)request).getSession(true);
             if (session != null)
             {
-                SessionAuthentication sessionAuth = new SessionAuthentication(getName(), user, password);
+                SessionAuthentication sessionAuth = new SessionAuthentication(getAuthenticationType(), user, password);
                 session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, sessionAuth);
             }
         }
@@ -224,7 +224,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 if (cached != null)
                     return cached;
 
-                return new UserAuthenticationSucceeded(getName(), userIdentity);
+                return new UserAuthenticationSucceeded(getAuthenticationType(), userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {

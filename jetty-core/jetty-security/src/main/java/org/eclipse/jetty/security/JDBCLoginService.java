@@ -51,11 +51,9 @@ public class JDBCLoginService extends AbstractLoginService
     protected Connection _con;
 
     /**
-     * JDBCUserPrincipal
-     * 
      * A UserPrincipal with extra jdbc key info.
      */
-    public class JDBCUserPrincipal extends UserPrincipal
+    public static class JDBCUserPrincipal extends UserPrincipal
     {
         final int _userKey;
 
