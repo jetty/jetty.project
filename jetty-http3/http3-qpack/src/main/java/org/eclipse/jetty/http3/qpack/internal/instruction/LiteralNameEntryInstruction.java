@@ -82,7 +82,7 @@ public class LiteralNameEntryInstruction implements Instruction
         else
         {
             buffer.put((byte)(0x00));
-            NBitIntegerEncoder.encode(buffer, 5, _value.length());
+            NBitIntegerEncoder.encode(buffer, 7, _value.length());
             buffer.put(_value.getBytes(StandardCharsets.ISO_8859_1));
         }
 

@@ -182,9 +182,26 @@ public abstract class EncodableEntry
         public int getRequiredSize(int base)
         {
             String value = getValue();
-            int relativeIndex =  _nameEntry.getIndex() - base;
             int valueLength = _huffman ? HuffmanEncoder.octetsNeeded(value) : value.length();
-            return 1 + NBitIntegerEncoder.octetsNeeded(4, relativeIndex) + 1 + NBitIntegerEncoder.octetsNeeded(7, valueLength) + valueLength;
+
+            int nameOctets;
+            if (_nameEntry.isStatic())
+            {
+                int relativeIndex =  _nameEntry.getIndex();
+                nameOctets = NBitIntegerEncoder.octetsNeeded(4, relativeIndex);
+            }
+            else if (_nameEntry.getIndex() < base)
+            {
+                int relativeIndex = base - (_nameEntry.getIndex() + 1);
+                nameOctets = NBitIntegerEncoder.octetsNeeded(4, relativeIndex);
+            }
+            else
+            {
+                int relativeIndex = _nameEntry.getIndex() - base;
+                nameOctets = NBitIntegerEncoder.octetsNeeded(3, relativeIndex);
+            }
+
+            return 1 + nameOctets + 1 + NBitIntegerEncoder.octetsNeeded(7, valueLength) + valueLength;
         }
 
         @Override

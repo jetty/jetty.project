@@ -290,10 +290,13 @@ public class MetaDataBuilder
      */
     public void checkSize(int length, boolean huffman) throws SessionException
     {
+        if (length < 0)
+            throw new IllegalArgumentException();
+
         // Apply a huffman fudge factor
         if (huffman)
-            length = (length * 4) / 3;
-        if ((_size + length) > _maxSize)
+            length = Math.multiplyExact(length, 4) / 3;
+        if (Math.addExact(_size, length) > _maxSize)
             throw new SessionException("Header too large %d > %d", _size + length, _maxSize);
     }
 }
