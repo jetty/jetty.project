@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated
 public class PushSessionCacheFilter implements Filter
 {
     private static final String RESPONSE_ATTR = "PushSessionCacheFilter.response";
