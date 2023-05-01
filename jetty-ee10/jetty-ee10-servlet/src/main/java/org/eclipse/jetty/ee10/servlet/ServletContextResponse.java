@@ -379,7 +379,6 @@ public class ServletContextResponse extends ContextResponse
                 case CACHE_CONTROL:
                 case LAST_MODIFIED:
                 case EXPIRES:
-                case DATE:
                 case VARY:
                     i.remove();
                     continue;
