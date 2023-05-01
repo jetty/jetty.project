@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+@Deprecated
 public class PushSessionCacheFilter implements Filter
 {
     private static final String TARGET_ATTR = "PushCacheFilter.target";
