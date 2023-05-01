@@ -59,6 +59,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -156,6 +157,7 @@ public class ErrorPageTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(595));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
         String actualContentType = response.get(HttpHeader.CONTENT_TYPE);
         // should not expect to see charset line from servlet
         assertThat(actualContentType, not(containsString("charset=US-ASCII")));

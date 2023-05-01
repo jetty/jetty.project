@@ -78,7 +78,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -736,7 +735,6 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
     }
 
-    @Disabled
     @Test
     @Tag("external")
     public void testExternalServer() throws Exception
@@ -750,9 +748,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         clientConnector.setExecutor(executor);
         httpClient.start();
 
-//        ContentResponse response = httpClient.GET("https://http2.akamai.com/");
         ContentResponse response = httpClient.GET("https://webtide.com/");
-
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         httpClient.stop();
