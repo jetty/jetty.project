@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -475,52 +476,65 @@ public class ServletChannel
 
                     case SEND_ERROR:
                     {
+                        Object errorException = _servletContextRequest.getAttribute((RequestDispatcher.ERROR_EXCEPTION));
+                        Throwable cause = errorException instanceof Throwable throwable ? throwable : null;
                         try
                         {
-                            // Get ready to send an error response
-                            getResponse().resetContent();
-
-                            // the following is needed as you cannot trust the response code and reason
-                            // as those could have been modified after calling sendError
-                            Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                            if (code == null)
-                                code = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                            getResponse().setStatus(code);
-
-                            // The handling of the original dispatch failed, and we are now going to either generate
-                            // and error response ourselves or dispatch for an error page.  If there is content left over
-                            // from the failed dispatch, then we try to consume it here and if we fail we add a
-                            // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
-                            // by then.
-                            if (!_httpInput.consumeAvailable())
-                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
-
-                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
-
-                            // If we can't have a body or have no ErrorHandler, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
+                            if (_state.isResponseCommitted())
                             {
-                                sendResponseAndComplete();
+                                abort(cause == null ? new IllegalStateException("Committed on sendError") : cause);
                             }
                             else
                             {
-                                // TODO: do this non-blocking.
-                                // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
-                                // _state.completing();
-                                try (Blocker.Callback blocker = Blocker.callback())
+                                // Get ready to send an error response
+                                getResponse().resetContent();
+
+                                // the following is needed as you cannot trust the response code and reason
+                                // as those could have been modified after calling sendError
+                                Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                                if (code == null)
+                                    code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+                                getResponse().setStatus(code);
+
+                                // The handling of the original dispatch failed, and we are now going to either generate
+                                // and error response ourselves or dispatch for an error page.  If there is content left over
+                                // from the failed dispatch, then we try to consume it here and if we fail we add a
+                                // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
+                                // by then.
+                                if (!_httpInput.consumeAvailable())
+                                    ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+
+                                ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                                Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
+
+                                // If we can't have a body or have no ErrorHandler, then create a minimal error response.
+                                if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
                                 {
-                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
-                                    blocker.block();
+                                    sendResponseAndComplete();
+                                }
+                                else
+                                {
+                                    // TODO: do this non-blocking.
+                                    // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
+                                    // _state.completing();
+                                    try (Blocker.Callback blocker = Blocker.callback())
+                                    {
+                                        dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
+                                        blocker.block();
+                                    }
                                 }
                             }
                         }
                         catch (Throwable x)
                         {
+                            if (cause == null)
+                                cause = x;
+                            else if (ExceptionUtil.areNotAssociated(cause, x))
+                                cause.addSuppressed(x);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform ERROR dispatch, aborting", x);
+                                LOG.debug("Could not perform ERROR dispatch, aborting", cause);
                             if (_state.isResponseCommitted())
-                                abort(x);
+                                abort(cause);
                             else
                             {
                                 try
@@ -530,9 +544,9 @@ public class ServletChannel
                                 }
                                 catch (Throwable t)
                                 {
-                                    if (x != t)
-                                        x.addSuppressed(t);
-                                    abort(x);
+                                    if (ExceptionUtil.areNotAssociated(cause, t))
+                                        cause.addSuppressed(t);
+                                    abort(cause);
                                 }
                             }
                         }

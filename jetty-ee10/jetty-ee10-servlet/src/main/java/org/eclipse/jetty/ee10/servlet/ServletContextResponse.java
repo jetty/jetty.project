@@ -351,6 +351,8 @@ public class ServletContextResponse extends ContextResponse
 
     public void resetContent()
     {
+        if (isCommitted())
+            throw new IllegalStateException("Committed");
         _httpOutput.resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;
@@ -368,25 +370,16 @@ public class ServletContextResponse extends ContextResponse
 
             switch (field.getHeader())
             {
-                case CONTENT_TYPE:
-                case CONTENT_LENGTH:
-                case CONTENT_ENCODING:
-                case CONTENT_LANGUAGE:
-                case CONTENT_RANGE:
-                case CONTENT_MD5:
-                case CONTENT_LOCATION:
-                case TRANSFER_ENCODING:
-                case CACHE_CONTROL:
-                case LAST_MODIFIED:
-                case EXPIRES:
-                case VARY:
-                    i.remove();
-                    continue;
-                case ETAG:
+                case CONTENT_TYPE, CONTENT_LENGTH, CONTENT_ENCODING, CONTENT_LANGUAGE, CONTENT_RANGE, CONTENT_MD5,
+                    CONTENT_LOCATION, TRANSFER_ENCODING, CACHE_CONTROL, LAST_MODIFIED, EXPIRES, VARY -> i.remove();
+                case ETAG ->
+                {
                     if (getStatus() != HttpStatus.NOT_MODIFIED_304)
                         i.remove();
-                    continue;
-                default:
+                }
+                default ->
+                {
+                }
             }
         }
     }
