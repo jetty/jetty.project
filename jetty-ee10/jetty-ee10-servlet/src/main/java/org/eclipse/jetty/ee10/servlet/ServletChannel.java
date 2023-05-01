@@ -480,48 +480,41 @@ public class ServletChannel
                         Throwable cause = errorException instanceof Throwable throwable ? throwable : null;
                         try
                         {
-                            if (_state.isResponseCommitted())
+                            // Get ready to send an error response
+                            getResponse().resetContent();
+
+                            // the following is needed as you cannot trust the response code and reason
+                            // as those could have been modified after calling sendError
+                            Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                            if (code == null)
+                                code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+                            getResponse().setStatus(code);
+
+                            // The handling of the original dispatch failed, and we are now going to either generate
+                            // and error response ourselves or dispatch for an error page.  If there is content left over
+                            // from the failed dispatch, then we try to consume it here and if we fail we add a
+                            // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
+                            // by then.
+                            if (!_httpInput.consumeAvailable())
+                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+
+                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
+
+                            // If we can't have a body or have no ErrorHandler, then create a minimal error response.
+                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
                             {
-                                abort(cause == null ? new IllegalStateException("Committed on sendError") : cause);
+                                sendResponseAndComplete();
                             }
                             else
                             {
-                                // Get ready to send an error response
-                                getResponse().resetContent();
-
-                                // the following is needed as you cannot trust the response code and reason
-                                // as those could have been modified after calling sendError
-                                Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                                if (code == null)
-                                    code = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                                getResponse().setStatus(code);
-
-                                // The handling of the original dispatch failed, and we are now going to either generate
-                                // and error response ourselves or dispatch for an error page.  If there is content left over
-                                // from the failed dispatch, then we try to consume it here and if we fail we add a
-                                // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
-                                // by then.
-                                if (!_httpInput.consumeAvailable())
-                                    ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
-
-                                ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                                Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
-
-                                // If we can't have a body or have no ErrorHandler, then create a minimal error response.
-                                if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
+                                // TODO: do this non-blocking.
+                                // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
+                                // _state.completing();
+                                try (Blocker.Callback blocker = Blocker.callback())
                                 {
-                                    sendResponseAndComplete();
-                                }
-                                else
-                                {
-                                    // TODO: do this non-blocking.
-                                    // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
-                                    // _state.completing();
-                                    try (Blocker.Callback blocker = Blocker.callback())
-                                    {
-                                        dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
-                                        blocker.block();
-                                    }
+                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
+                                    blocker.block();
                                 }
                             }
                         }
@@ -534,7 +527,9 @@ public class ServletChannel
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", cause);
                             if (_state.isResponseCommitted())
+                            {
                                 abort(cause);
+                            }
                             else
                             {
                                 try
