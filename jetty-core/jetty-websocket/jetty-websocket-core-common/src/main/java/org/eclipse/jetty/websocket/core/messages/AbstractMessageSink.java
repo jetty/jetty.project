@@ -22,16 +22,15 @@ import org.eclipse.jetty.websocket.core.CoreSession;
  * <p>Abstract implementation of {@link MessageSink}.</p>
  * <p>Management of demand for WebSocket frames may either be entirely managed
  * by the {@link MessageSink} implementation ({@code autoDemand==true}); or
- * it may be managed collaboratively between the application function passed
- * to the constructor as a {@link MethodHandle} and the {@link MessageSink}
- * implementation ({@code autoDemand==true}).</p>
+ * it may be managed collaboratively between the application and the
+ * {@link MessageSink} implementation ({@code autoDemand==true}).</p>
  * <p>{@link MessageSink} implementations must handle the demand for WebSocket
  * frames in this way:</p>
  * <ul>
  * <li>If {@code autoDemand==false}, the {@link MessageSink} manages the
  * demand until the conditions to invoke the application function are met;
  * when the {@link MessageSink} invokes the application function, then the
- * application function is responsible to demand for more WebSocket frames.</li>
+ * application is responsible to demand for more WebSocket frames.</li>
  * <li>If {@code autoDemand==true}, only the {@link MessageSink} manages the
  * demand for WebSocket frames. If the {@link MessageSink} invokes the application
  * function, the {@link MessageSink} must demand for WebSocket frames after the
