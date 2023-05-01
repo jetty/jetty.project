@@ -63,8 +63,8 @@ public class HuffmanDecoder
             _bits += 8;
             while (_bits >= 8)
             {
-                int c = (_current >>> (_bits - 8)) & 0xFF;
-                _node = Huffman.tree[_node * 256 + c];
+                int i = (_current >>> (_bits - 8)) & 0xFF;
+                _node = Huffman.tree[_node * 256 + i];
                 if (rowbits[_node] != 0)
                 {
                     if (rowsym[_node] == Huffman.EOS)
@@ -74,9 +74,9 @@ public class HuffmanDecoder
                     }
 
                     // terminal node
-                    int i = 0xFF & rowsym[_node];
-                    i = HttpTokens.sanitizeFieldVchar(i);
-                    _builder.append((byte)i);
+                    char c = rowsym[_node];
+                    c = HttpTokens.sanitizeFieldVchar(c);
+                    _builder.append((byte)c);
                     _bits -= rowbits[_node];
                     _node = 0;
                 }
@@ -90,28 +90,28 @@ public class HuffmanDecoder
 
         while (_bits > 0)
         {
-            int c = (_current << (8 - _bits)) & 0xFF;
+            int i = (_current << (8 - _bits)) & 0xFF;
             int lastNode = _node;
-            _node = Huffman.tree[_node * 256 + c];
+            _node = Huffman.tree[_node * 256 + i];
 
             if (rowbits[_node] == 0 || rowbits[_node] > _bits)
             {
                 int requiredPadding = 0;
-                for (int i = 0; i < _bits; i++)
+                for (int j = 0; j < _bits; j++)
                 {
                     requiredPadding = (requiredPadding << 1) | 1;
                 }
 
-                if ((c >> (8 - _bits)) != requiredPadding)
+                if ((i >> (8 - _bits)) != requiredPadding)
                     throw new EncodingException("incorrect_padding");
 
                 _node = lastNode;
                 break;
             }
 
-            int i = 0xFF & rowsym[_node];
-            i = HttpTokens.sanitizeFieldVchar(i);
-            _builder.append((byte)i);
+            char c = rowsym[_node];
+            c = HttpTokens.sanitizeFieldVchar(c);
+            _builder.append((byte)c);
             _bits -= rowbits[_node];
             _node = 0;
         }

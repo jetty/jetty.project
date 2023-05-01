@@ -66,15 +66,6 @@ public class HuffmanEncoder
     }
 
     /**
-     * @param buffer the buffer to encode into.
-     * @param b the byte array to encode.
-     */
-    public static void encode(ByteBuffer buffer, byte[] b)
-    {
-        encode(CODES, buffer, b);
-    }
-
-    /**
      * @param s the string to encode in lowercase.
      * @return the number of octets needed to encode the string, or -1 if it cannot be encoded.
      */
@@ -124,36 +115,6 @@ public class HuffmanEncoder
                  throw new IllegalArgumentException();
             int code = table[c][0];
             int bits = table[c][1];
-
-            current <<= bits;
-            current |= code;
-            n += bits;
-
-            while (n >= 8)
-            {
-                n -= 8;
-                buffer.put((byte)(current >> n));
-            }
-        }
-
-        if (n > 0)
-        {
-            current <<= (8 - n);
-            current |= (0xFF >>> n);
-            buffer.put((byte)(current));
-        }
-    }
-
-    private static void encode(final int[][] table, ByteBuffer buffer, byte[] b)
-    {
-        long current = 0;
-        int n = 0;
-
-        for (byte value : b)
-        {
-            int i = 0xFF & value;
-            int code = table[i][0];
-            int bits = table[i][1];
 
             current <<= bits;
             current |= code;

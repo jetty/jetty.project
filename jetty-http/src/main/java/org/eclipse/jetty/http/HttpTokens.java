@@ -236,9 +236,14 @@ public class HttpTokens
      * This is used when decoding to not decode illegal characters based on RFC9110.
      * CR, LF, or NUL are replaced with ' ', all other control and multibyte characters
      * are replaced with '?'. If this is given a legal character the same value will be returned.
-     *
+     * <pre>
+     * field-vchar = VCHAR / obs-text
+     * obs-text = %x80-FF
+     * VCHAR          =  %x21-7E
+     * </pre>
      * @param c the character to test.
-     * @return the original character or the replacement character ' ' or '?'.
+     * @return the original character or the replacement character ' ' or '?',
+     * the return value is guaranteed to be a valid ISO-8859-1 character.
      */
     public static char sanitizeFieldVchar(char c)
     {
@@ -259,20 +264,6 @@ public class HttpTokens
         return c;
     }
 
-    /**
-     * This is used when decoding to not decode illegal characters based on RFC9110.
-     * CR, LF, or NUL are replaced with ' ', all other control and multibyte characters
-     * are replaced with '?'. If this is given a legal character the same value will be returned.
-     *
-     * @param i the character to test.
-     * @return the original character or the replacement character ' ' or '?'.
-     */
-    public static int sanitizeFieldVchar(int i)
-    {
-        if (i > Character.MAX_VALUE)
-            return '?';
-        return sanitizeFieldVchar((char)i);
-    }
 
     /**
      * Checks whether this is an invalid VCHAR based on RFC9110.
