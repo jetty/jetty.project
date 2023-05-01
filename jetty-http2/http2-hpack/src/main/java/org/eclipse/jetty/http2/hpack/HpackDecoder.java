@@ -72,7 +72,8 @@ public class HpackDecoder
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
-        // If the buffer is big, don't even think about decoding it
+        // If the buffer is big, don't even think about decoding it.
+        // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
         if (buffer.remaining() > _builder.getMaxSize())
             throw new HpackException.SessionException("431 Request Header Fields too large");
 
@@ -169,7 +170,6 @@ public class HpackDecoder
                 {
                     huffmanName = (buffer.get() & 0x80) == 0x80;
                     int length = integerDecode(buffer, 7);
-                    _builder.checkSize(length, huffmanName);
                     if (huffmanName)
                         name = huffmanDecode(buffer, length);
                     else
@@ -210,7 +210,6 @@ public class HpackDecoder
                 // decode the value
                 boolean huffmanValue = (buffer.get() & 0x80) == 0x80;
                 int length = integerDecode(buffer, 7);
-                _builder.checkSize(length, huffmanValue);
                 if (huffmanValue)
                     value = huffmanDecode(buffer, length);
                 else

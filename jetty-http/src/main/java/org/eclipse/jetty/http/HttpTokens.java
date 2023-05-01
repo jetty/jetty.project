@@ -264,7 +264,6 @@ public class HttpTokens
         return c;
     }
 
-
     /**
      * Checks whether this is an invalid VCHAR based on RFC9110.
      * If this not a valid ISO-8859-1 character or a control character

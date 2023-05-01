@@ -136,6 +136,7 @@ public class QpackDecoder implements Dumpable
             LOG.debug("Decoding: streamId={}, buffer={}", streamId, BufferUtil.toDetailString(buffer));
 
         // If the buffer is big, don't even think about decoding it
+        // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
         int maxHeaderSize = getMaxHeaderSize();
         if (buffer.remaining() > maxHeaderSize)
             throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
