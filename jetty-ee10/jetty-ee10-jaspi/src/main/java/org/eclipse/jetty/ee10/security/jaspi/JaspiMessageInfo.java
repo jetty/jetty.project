@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public class JaspiMessageInfo implements MessageInfo
 {
-    public static final String AUTHENTICATOR_NAME_KEY = "jakarta.servlet.http.authType";
+    public static final String AUTHENTICATION_TYPE_KEY = "jakarta.servlet.http.authType";
     private final Callback _callback;
     private Request _request;
     private Response _response;
@@ -103,7 +103,7 @@ public class JaspiMessageInfo implements MessageInfo
     //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
     private static class MIMap implements Map
     {
-        private String authenticatorName;
+        private String authenticationType;
         private Map delegate;
 
         private MIMap()
@@ -125,15 +125,15 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public boolean containsKey(Object key)
         {
-            if (AUTHENTICATOR_NAME_KEY.equals(key))
-                return authenticatorName != null;
+            if (AUTHENTICATION_TYPE_KEY.equals(key))
+                return authenticationType != null;
             return delegate != null && delegate.containsKey(key);
         }
 
         @Override
         public boolean containsValue(Object value)
         {
-            if (authenticatorName == value || (authenticatorName != null && authenticatorName.equals(value)))
+            if (authenticationType == value || (authenticationType != null && authenticationType.equals(value)))
                 return true;
             return delegate != null && delegate.containsValue(value);
         }
@@ -141,8 +141,8 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public Object get(Object key)
         {
-            if (AUTHENTICATOR_NAME_KEY.equals(key))
-                return authenticatorName;
+            if (AUTHENTICATION_TYPE_KEY.equals(key))
+                return authenticationType;
             if (delegate == null)
                 return null;
             return delegate.get(key);
@@ -151,13 +151,13 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public Object put(Object key, Object value)
         {
-            if (AUTHENTICATOR_NAME_KEY.equals(key))
+            if (AUTHENTICATION_TYPE_KEY.equals(key))
             {
-                String authenticatorName = this.authenticatorName;
-                this.authenticatorName = (String)value;
+                String authenticationType = this.authenticationType;
+                this.authenticationType = (String)value;
                 if (delegate != null)
-                    delegate.put(AUTHENTICATOR_NAME_KEY, value);
-                return authenticatorName;
+                    delegate.put(AUTHENTICATION_TYPE_KEY, value);
+                return authenticationType;
             }
 
             return getDelegate(true).put(key, value);
@@ -166,13 +166,13 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public Object remove(Object key)
         {
-            if (AUTHENTICATOR_NAME_KEY.equals(key))
+            if (AUTHENTICATION_TYPE_KEY.equals(key))
             {
-                String authenticatorName = this.authenticatorName;
-                this.authenticatorName = null;
+                String authenticationType = this.authenticationType;
+                this.authenticationType = null;
                 if (delegate != null)
-                    delegate.remove(AUTHENTICATOR_NAME_KEY);
-                return authenticatorName;
+                    delegate.remove(AUTHENTICATION_TYPE_KEY);
+                return authenticationType;
             }
             if (delegate == null)
                 return null;
@@ -195,7 +195,7 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public void clear()
         {
-            authenticatorName = null;
+            authenticationType = null;
             delegate = null;
         }
 
@@ -224,15 +224,15 @@ public class JaspiMessageInfo implements MessageInfo
             if (create)
             {
                 delegate = new HashMap();
-                if (authenticatorName != null)
-                    delegate.put(AUTHENTICATOR_NAME_KEY, authenticatorName);
+                if (authenticationType != null)
+                    delegate.put(AUTHENTICATION_TYPE_KEY, authenticationType);
             }
             return delegate;
         }
 
-        String getAuthenticatorName()
+        String getAuthenticationType()
         {
-            return authenticatorName;
+            return authenticationType;
         }
     }
 }

@@ -96,17 +96,17 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
         return AuthStatus.SEND_SUCCESS;
     }
 
-    protected boolean login(Subject clientSubject, String credentials, String authenticatorName, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String credentials, String authenticationType, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ') + 1);
         credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
         int i = credentials.indexOf(':');
         String userName = credentials.substring(0, i);
         String password = credentials.substring(i + 1);
-        return login(clientSubject, userName, new Password(password), authenticatorName, messageInfo);
+        return login(clientSubject, userName, new Password(password), authenticationType, messageInfo);
     }
 
-    protected boolean login(Subject clientSubject, String username, Credential credential, String authenticatorName, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String username, Credential credential, String authenticationType, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         CredentialValidationCallback credValidationCallback = new CredentialValidationCallback(clientSubject, username, credential);
         callbackHandler.handle(new Callback[]{credValidationCallback});
@@ -120,7 +120,7 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
                 GroupPrincipalCallback groupPrincipalCallback = new GroupPrincipalCallback(clientSubject, loginCallback.getRoles());
                 callbackHandler.handle(new Callback[]{callerPrincipalCallback, groupPrincipalCallback});
             }
-            messageInfo.getMap().put(JaspiMessageInfo.AUTHENTICATOR_NAME_KEY, authenticatorName);
+            messageInfo.getMap().put(JaspiMessageInfo.AUTHENTICATION_TYPE_KEY, authenticationType);
         }
         return credValidationCallback.getResult();
     }

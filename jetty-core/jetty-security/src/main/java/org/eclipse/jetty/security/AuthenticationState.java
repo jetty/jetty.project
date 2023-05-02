@@ -186,7 +186,7 @@ public interface AuthenticationState
         /**
          * @return The method used to authenticate the user.
          */
-        String getAuthenticatorName();
+        String getAuthenticationType();
 
         /**
          * @return The {@link UserIdentity} of the authenticated user.

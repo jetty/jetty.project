@@ -227,7 +227,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         AuthenticationState authenticationState = getUndeferredAuthentication();
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
-            return succeededAuthentication.getAuthenticatorName();
+            return succeededAuthentication.getAuthenticationType();
         return null;
     }
 

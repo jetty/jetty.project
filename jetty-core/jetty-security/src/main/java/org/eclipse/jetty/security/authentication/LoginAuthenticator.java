@@ -134,19 +134,19 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         @Serial
         private static final long serialVersionUID = -6290411814232723403L;
-        protected String _authenticatorName;
+        protected String _authenticationType;
         protected transient UserIdentity _userIdentity;
 
-        public UserAuthenticationSucceeded(String authenticatorName, UserIdentity userIdentity)
+        public UserAuthenticationSucceeded(String authenticationType, UserIdentity userIdentity)
         {
-            _authenticatorName = authenticatorName;
+            _authenticationType = authenticationType;
             _userIdentity = userIdentity;
         }
 
         @Override
-        public String getAuthenticatorName()
+        public String getAuthenticationType()
         {
-            return _authenticatorName;
+            return _authenticationType;
         }
 
         @Override
@@ -189,7 +189,7 @@ public abstract class LoginAuthenticator implements Authenticator
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(getClass().getSimpleName(), hashCode(), getAuthenticatorName(), getUserIdentity());
+            return "%s@%x{%s,%s}".formatted(getClass().getSimpleName(), hashCode(), getAuthenticationType(), getUserIdentity());
         }
     }
 
