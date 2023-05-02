@@ -19,9 +19,9 @@ import java.util.Set;
 import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.nested.UserIdentity.Scope;
+import org.eclipse.jetty.ee9.nested.UserIdentityScope;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.security.UserIdentity;
 
 /**
  * AbstractUserAuthentication
@@ -54,7 +54,7 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     }
 
     @Override
-    public boolean isUserInRole(Scope scope, String role)
+    public boolean isUserInRole(UserIdentityScope scope, String role)
     {
         String roleToTest = null;
         if (scope != null && scope.getRoleRefMap() != null)
@@ -70,10 +70,10 @@ public abstract class AbstractUserAuthentication implements User, Serializable
             if (!declaredRolesContains("**"))
                 return true;
             else
-                return _userIdentity.isUserInRole(role, scope);
+                return _userIdentity.isUserInRole(UserIdentityScope.deRefRole(scope, role));
         }
 
-        return _userIdentity.isUserInRole(role, scope);
+        return _userIdentity.isUserInRole(UserIdentityScope.deRefRole(scope, role));
     }
 
     public boolean declaredRolesContains(String roleName)

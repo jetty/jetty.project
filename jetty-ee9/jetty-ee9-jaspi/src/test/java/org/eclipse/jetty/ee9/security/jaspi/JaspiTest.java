@@ -28,15 +28,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.security.AbstractLoginService;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.RolePrincipal;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.security.AbstractLoginService;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
@@ -77,13 +77,13 @@ public class JaspiTest
         }
 
         @Override
-        protected List<RolePrincipal> loadRoleInfo(UserPrincipal user)
+        protected List<org.eclipse.jetty.security.RolePrincipal> loadRoleInfo(org.eclipse.jetty.security.UserPrincipal user)
         {
             return _roles.get(user.getName());
         }
 
         @Override
-        protected UserPrincipal loadUserInfo(String username)
+        protected org.eclipse.jetty.security.UserPrincipal loadUserInfo(String username)
         {
             return _users.get(username);
         }
@@ -140,7 +140,7 @@ public class JaspiTest
         security.setAuthenticatorFactory(jaspiAuthFactory);
         // security.setAuthenticator(new BasicAuthenticator());
 
-        Constraint constraint = new Constraint("All", "users");
+        ServletConstraint constraint = new ServletConstraint("All", "users");
         constraint.setAuthenticate(true);
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/jaspi/*");
@@ -180,7 +180,7 @@ public class JaspiTest
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, Matchers.containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
     }
 
     @Test
@@ -189,7 +189,7 @@ public class JaspiTest
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
                 Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, Matchers.containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
     }
 
     @Test

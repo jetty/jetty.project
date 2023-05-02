@@ -97,7 +97,7 @@ public class ErrorHandler implements Request.Handler
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
-        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(servletContextRequest.getHttpServletRequest()) : null;
+        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(servletContextRequest.getServletApiRequest()) : null;
         ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
@@ -106,7 +106,7 @@ public class ErrorHandler implements Request.Handler
         {
             try
             {
-                errorDispatcher.error(servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse());
+                errorDispatcher.error(servletContextRequest.getServletApiRequest(), servletContextRequest.getHttpServletResponse());
                 callback.succeeded();
                 return true;
             }
@@ -124,7 +124,7 @@ public class ErrorHandler implements Request.Handler
         String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
-        generateAcceptableResponse(servletContextRequest, servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse(), response.getStatus(), message);
+        generateAcceptableResponse(servletContextRequest, servletContextRequest.getServletApiRequest(), servletContextRequest.getHttpServletResponse(), response.getStatus(), message);
         callback.succeeded();
         return true;
     }

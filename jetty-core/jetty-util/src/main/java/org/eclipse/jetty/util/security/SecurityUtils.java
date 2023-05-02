@@ -18,6 +18,9 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.security.Permission;
 import java.security.PrivilegedAction;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionException;
+import javax.security.auth.Subject;
 
 /**
  * <p>Collections of utility methods to deal with the scheduled removal
@@ -25,9 +28,40 @@ import java.security.PrivilegedAction;
  */
 public class SecurityUtils
 {
-    private static final MethodHandle doPrivileged = lookup();
+    private static final MethodHandle doAs = lookupDoAs();
+    private static final MethodHandle doPrivileged = lookupDoPrivileged();
 
-    private static MethodHandle lookup()
+    private static MethodHandle lookupDoAs()
+    {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try
+        {
+            // Subject.doAs() is deprecated for removal and replaced by Subject.callAs().
+            // Lookup first the new API, since for Java versions where both exists, the
+            // new API delegates to the old API (for example Java 18, 19 and 20).
+            // Otherwise (Java 17), lookup the old API.
+            return lookup.findStatic(Subject.class, "callAs", MethodType.methodType(Object.class, Subject.class, Callable.class));
+        }
+        catch (Throwable x)
+        {
+            try
+            {
+                // Lookup the old API.
+                MethodType oldSignature = MethodType.methodType(Object.class, Subject.class, PrivilegedAction.class);
+                MethodHandle doAs = lookup.findStatic(Subject.class, "doAs", oldSignature);
+                // Convert the Callable used in the new API to the PrivilegedAction used in the old API.
+                MethodType convertSignature = MethodType.methodType(PrivilegedAction.class, Callable.class);
+                MethodHandle converter = lookup.findStatic(SecurityUtils.class, "callableToPrivilegedAction", convertSignature);
+                return MethodHandles.filterArguments(doAs, 1, converter);
+            }
+            catch (Throwable t)
+            {
+                return null;
+            }
+        }
+    }
+
+    private static MethodHandle lookupDoPrivileged()
     {
         try
         {
@@ -116,6 +150,53 @@ public class SecurityUtils
         {
             throw new RuntimeException(x);
         }
+    }
+
+    /**
+     * <p>Runs the given action as the given subject.</p>
+     *
+     * @param subject the subject this action runs as
+     * @param action the action to run
+     * @return the result of the action
+     * @param <T> the type of the result
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T doAs(Subject subject, Callable<T> action)
+    {
+        try
+        {
+            MethodHandle methodHandle = doAs;
+            if (methodHandle == null)
+                return action.call();
+            return (T)methodHandle.invoke(subject, action);
+        }
+        catch (RuntimeException | Error x)
+        {
+            throw x;
+        }
+        catch (Throwable x)
+        {
+            throw new CompletionException(x);
+        }
+    }
+
+    private static <T> PrivilegedAction<T> callableToPrivilegedAction(Callable<T> callable)
+    {
+        return () ->
+        {
+            try
+            {
+                return callable.call();
+            }
+            catch (RuntimeException x)
+            {
+                throw x;
+            }
+            catch (Exception x)
+            {
+                throw new RuntimeException(x);
+            }
+        };
     }
 
     private SecurityUtils()

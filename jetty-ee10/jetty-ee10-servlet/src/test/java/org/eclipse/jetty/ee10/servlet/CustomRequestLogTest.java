@@ -24,12 +24,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
-import org.eclipse.jetty.ee10.servlet.security.UserStore;
-import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.UserStore;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.RequestLog;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -81,10 +81,9 @@ public class CustomRequestLogTest
         loginService.setUserStore(userStore);
         loginService.setName("realm");
 
-        Constraint constraint = new Constraint();
-        constraint.setName("auth");
-        constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"**"});
+        Constraint constraint = new Constraint.Builder()
+            .name("auth")
+            .authorization(Constraint.Authorization.ANY_USER).build();
 
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/secure/*");

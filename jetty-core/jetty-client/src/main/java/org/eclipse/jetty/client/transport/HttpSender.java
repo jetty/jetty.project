@@ -540,11 +540,13 @@ public abstract class HttpSender
                 }
             }
 
+            boolean last = chunk.isLast();
             chunk.release();
+            chunk = null;
 
             if (proceed)
             {
-                if (chunk.isLast())
+                if (last)
                 {
                     success = true;
                     complete = true;
@@ -568,7 +570,10 @@ public abstract class HttpSender
         public void failed(Throwable x)
         {
             if (chunk != null)
+            {
                 chunk.release();
+                chunk = null;
+            }
 
             HttpRequest request = exchange.getRequest();
             Content.Source content = request.getBody();

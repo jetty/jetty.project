@@ -67,7 +67,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-openid</artifactId>
+      <artifactId>jetty-ee10-servlet</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

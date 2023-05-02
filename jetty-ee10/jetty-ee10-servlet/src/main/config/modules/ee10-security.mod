@@ -8,6 +8,7 @@ ee10
 
 [depend]
 server
+security
 ee10-servlet
 
 [lib]

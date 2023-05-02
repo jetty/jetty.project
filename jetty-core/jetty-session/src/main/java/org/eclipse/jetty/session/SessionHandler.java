@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * A minimal SessionHandler.
+ * A simple core SessionHandler
  */
 public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
@@ -35,6 +35,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     public void setServer(Server server)
     {
         _server = server;
+        Handler handler = getHandler();
+        if (handler != null)
+            handler.setServer(server);
     }
 
     @Override
@@ -79,7 +82,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         return null;
     }
 
-    public class SessionRequest extends Request.Wrapper
+    private class SessionRequest extends Request.Wrapper
     {
         private final AtomicReference<ManagedSession> _session = new AtomicReference<>();
         private String _requestedSessionId;

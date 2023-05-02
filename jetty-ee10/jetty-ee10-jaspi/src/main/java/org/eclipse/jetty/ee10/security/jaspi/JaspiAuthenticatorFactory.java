@@ -19,16 +19,11 @@ import java.util.Set;
 import javax.security.auth.Subject;
 
 import jakarta.security.auth.message.config.AuthConfigFactory;
-import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.ee10.servlet.security.Authenticator;
-import org.eclipse.jetty.ee10.servlet.security.Authenticator.AuthConfiguration;
-import org.eclipse.jetty.ee10.servlet.security.DefaultAuthenticatorFactory;
-import org.eclipse.jetty.ee10.servlet.security.IdentityService;
-import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Jakarta Authentication (JASPI) Authenticator Factory.
@@ -47,7 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticatorFactory.class);
     public static final String MESSAGE_LAYER = "HttpServlet";
 
     private Subject _serviceSubject;
@@ -86,7 +80,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     @Override
-    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
+    public Authenticator getAuthenticator(Server server, Context context, Authenticator.Configuration configuration)
     {
         AuthConfigFactory factory = AuthConfigFactory.getFactory();
         if (factory == null)
@@ -127,20 +121,20 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
      * then use the virtualServerName of the context. 
      * If this is also null, then use the name of the a principal in the service subject. 
      * If none are found, return "server".
-     * @param context 
-     *
+     * @param context the context
      * @param server the server to find the name of
      * @return the server name from the service Subject (or default value if not
      *         found in subject or principals)
      */
-    protected String findServerName(ServletContext context, Server server)
+    protected String findServerName(Context context, Server server)
     {   
         if (_serverName != null)
             return _serverName;
-        
-        String virtualServerName = context.getVirtualServerName();
-        if (virtualServerName != null)
-            return virtualServerName;
+
+        List<String> virtualHosts = context.getVirtualHosts();
+
+        if (virtualHosts != null && !virtualHosts.isEmpty())
+            return virtualHosts.get(0);
 
         Subject subject = findServiceSubject(server);
         if (subject != null)

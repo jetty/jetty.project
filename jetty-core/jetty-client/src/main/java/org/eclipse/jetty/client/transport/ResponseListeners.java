@@ -71,14 +71,17 @@ public class ResponseListeners
         completeListener = that.completeListener;
     }
 
-    public void addBeginListener(Response.BeginListener listener)
+    public boolean addBeginListener(Response.BeginListener listener)
     {
+        if (listener == null)
+            return false;
         Response.BeginListener existing = beginListener;
         beginListener = existing == null ? listener : response ->
         {
             notifyBegin(existing, response);
             notifyBegin(listener, response);
         };
+        return true;
     }
 
     public void notifyBegin(Response response)
@@ -99,8 +102,10 @@ public class ResponseListeners
         }
     }
 
-    public void addHeaderListener(Response.HeaderListener listener)
+    public boolean addHeaderListener(Response.HeaderListener listener)
     {
+        if (listener == null)
+            return false;
         Response.HeaderListener existing = headerListener;
         headerListener = existing == null ? listener : (response, field) ->
         {
@@ -108,6 +113,7 @@ public class ResponseListeners
             boolean r2 = notifyHeader(listener, response, field);
             return r1 && r2;
         };
+        return true;
     }
 
     public boolean notifyHeader(Response response, HttpField field)
@@ -130,14 +136,17 @@ public class ResponseListeners
         }
     }
 
-    public void addHeadersListener(Response.HeadersListener listener)
+    public boolean addHeadersListener(Response.HeadersListener listener)
     {
+        if (listener == null)
+            return false;
         Response.HeadersListener existing = headersListener;
         headersListener = existing == null ? listener : response ->
         {
             notifyHeaders(existing, response);
             notifyHeaders(listener, response);
         };
+        return true;
     }
 
     public void notifyHeaders(Response response)
@@ -158,8 +167,10 @@ public class ResponseListeners
         }
     }
 
-    public void addContentSourceListener(Response.ContentSourceListener listener)
+    public boolean addContentSourceListener(Response.ContentSourceListener listener)
     {
+        if (listener == null)
+            return false;
         Response.ContentSourceListener existing = contentSourceListener;
         if (existing == null)
         {
@@ -179,6 +190,7 @@ public class ResponseListeners
                 contentSourceListener = demultiplexer;
             }
         }
+        return true;
     }
 
     public boolean hasContentSourceListeners()
@@ -234,14 +246,17 @@ public class ResponseListeners
         }
     }
 
-    public void addSuccessListener(Response.SuccessListener listener)
+    public boolean addSuccessListener(Response.SuccessListener listener)
     {
+        if (listener == null)
+            return false;
         Response.SuccessListener existing = successListener;
         successListener = existing == null ? listener : response ->
         {
             notifySuccess(existing, response);
             notifySuccess(listener, response);
         };
+        return true;
     }
 
     public void notifySuccess(Response response)
@@ -262,14 +277,17 @@ public class ResponseListeners
         }
     }
 
-    public void addFailureListener(Response.FailureListener listener)
+    public boolean addFailureListener(Response.FailureListener listener)
     {
+        if (listener == null)
+            return false;
         Response.FailureListener existing = failureListener;
         failureListener = existing == null ? listener : (response, failure) ->
         {
             notifyFailure(existing, response, failure);
             notifyFailure(listener, response, failure);
         };
+        return true;
     }
 
     public void notifyFailure(Response response, Throwable failure)
@@ -290,13 +308,15 @@ public class ResponseListeners
         }
     }
 
-    public void addCompleteListener(Response.CompleteListener listener)
+    public boolean addCompleteListener(Response.CompleteListener listener)
     {
-        addCompleteListener(listener, true);
+        return addCompleteListener(listener, true);
     }
 
-    private void addCompleteListener(Response.CompleteListener listener, boolean includeOtherEvents)
+    private boolean addCompleteListener(Response.CompleteListener listener, boolean includeOtherEvents)
     {
+        if (listener == null)
+            return false;
         if (includeOtherEvents)
         {
             if (listener instanceof Response.BeginListener l)
@@ -318,6 +338,7 @@ public class ResponseListeners
             notifyComplete(existing, result);
             notifyComplete(listener, result);
         };
+        return true;
     }
 
     public void notifyComplete(Result result)
@@ -338,26 +359,28 @@ public class ResponseListeners
         }
     }
 
-    public void addListener(Response.Listener listener)
+    public boolean addListener(Response.Listener listener)
     {
-        addBeginListener(listener);
-        addHeaderListener(listener);
-        addHeadersListener(listener);
-        addContentSourceListener(listener);
-        addSuccessListener(listener);
-        addFailureListener(listener);
-        addCompleteListener(listener, false);
+        // Use binary OR to avoid short-circuit.
+        return addBeginListener(listener) |
+               addHeaderListener(listener) |
+               addHeadersListener(listener) |
+               addContentSourceListener(listener) |
+               addSuccessListener(listener) |
+               addFailureListener(listener) |
+               addCompleteListener(listener, false);
     }
 
-    public void addResponseListeners(ResponseListeners listeners)
+    public boolean addResponseListeners(ResponseListeners listeners)
     {
-        addBeginListener(listeners.beginListener);
-        addHeaderListener(listeners.headerListener);
-        addHeadersListener(listeners.headersListener);
-        addContentSourceListener(listeners.contentSourceListener);
-        addSuccessListener(listeners.successListener);
-        addFailureListener(listeners.failureListener);
-        addCompleteListener(listeners.completeListener, false);
+        // Use binary OR to avoid short-circuit.
+        return addBeginListener(listeners.beginListener) |
+               addHeaderListener(listeners.headerListener) |
+               addHeadersListener(listeners.headersListener) |
+               addContentSourceListener(listeners.contentSourceListener) |
+               addSuccessListener(listeners.successListener) |
+               addFailureListener(listeners.failureListener) |
+               addCompleteListener(listeners.completeListener, false);
     }
 
     private void emitEvents(Response response)

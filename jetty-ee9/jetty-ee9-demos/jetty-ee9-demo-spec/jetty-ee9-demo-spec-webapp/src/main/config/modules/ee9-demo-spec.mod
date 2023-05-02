@@ -16,7 +16,7 @@ jdbc
 ee9-jsp
 ee9-annotations
 ext
-ee9-demo-realm
+demo-realm
 ee9-demo-mock-resources
 
 [files]

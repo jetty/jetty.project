@@ -58,7 +58,6 @@
     <module>jetty-ee9-glassfish-jstl</module>
     <module>jetty-ee9-annotations</module>
     <module>jetty-ee9-cdi</module>
-    <module>jetty-ee9-jaas</module>
     <module>jetty-ee9-jaspi</module>
     <module>jetty-ee9-jndi</module>
     <module>jetty-ee9-jspc-maven-plugin</module>
@@ -102,11 +101,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-nested</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-jaas</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

@@ -19,10 +19,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,13 +35,12 @@ import java.util.stream.Stream;
  */
 public class Fields implements Iterable<Fields.Field>
 {
-    private final boolean caseSensitive;
+    public static final Fields EMPTY = new Fields(Collections.emptyMap());
+
     private final Map<String, Field> fields;
 
     /**
      * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>
-     *
-     * @see #Fields(Fields, boolean)
      */
     public Fields()
     {
@@ -49,29 +48,23 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>
+     * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>**
      *
      * @param caseSensitive whether this {@code Fields} instance must be case sensitive
-     * @see #Fields(Fields, boolean)
      */
     public Fields(boolean caseSensitive)
     {
-        this.caseSensitive = caseSensitive;
-        fields = new LinkedHashMap<>();
+        this(caseSensitive ? new LinkedHashMap<>() : new TreeMap<>(String::compareToIgnoreCase));
     }
 
-    /**
-     * <p>Creates a {@code Fields} instance by copying the fields from the given
-     * {@code Fields} and making it (im)mutable depending on the given {@code immutable} parameter</p>
-     *
-     * @param original the {@code Fields} to copy fields from
-     * @param immutable whether this instance is immutable
-     */
-    public Fields(Fields original, boolean immutable)
+    public Fields(Map<String, Field> fields)
     {
-        this.caseSensitive = original.caseSensitive;
-        Map<String, Field> copy = new LinkedHashMap<>(original.fields);
-        fields = immutable ? Collections.unmodifiableMap(copy) : copy;
+        this.fields = fields;
+    }
+
+    public Fields asImmutable()
+    {
+        return new Fields(Collections.unmodifiableMap(fields));
     }
 
     @Override
@@ -79,21 +72,24 @@ public class Fields implements Iterable<Fields.Field>
     {
         if (this == obj)
             return true;
-        if (obj == null || getClass() != obj.getClass())
+        if (obj == null)
             return false;
-        Fields that = (Fields)obj;
-        if (getSize() != that.getSize())
-            return false;
-        if (caseSensitive != that.caseSensitive)
-            return false;
-        for (Map.Entry<String, Field> entry : fields.entrySet())
+        if (obj instanceof Fields that)
         {
-            String name = entry.getKey();
-            Field value = entry.getValue();
-            if (!value.equals(that.get(name), caseSensitive))
+            if (getSize() != that.getSize())
                 return false;
+            if (!fields.getClass().equals(that.fields.getClass()))
+                return false;
+            for (Map.Entry<String, Field> entry : fields.entrySet())
+            {
+                String name = entry.getKey();
+                Field value = entry.getValue();
+                if (!value.equals(that.get(name)))
+                    return false;
+            }
+            return true;
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -120,18 +116,13 @@ public class Fields implements Iterable<Fields.Field>
         return fields.values().stream();
     }
 
-    protected String normalizeName(String name)
-    {
-        return caseSensitive ? name : name.toLowerCase(Locale.ENGLISH);
-    }
-
     /**
      * @param name the field name
      * @return the {@link Field} with the given name, or null if no such field exists
      */
     public Field get(String name)
     {
-        return fields.get(normalizeName(name));
+        return fields.get(name);
     }
 
     /**
@@ -159,6 +150,18 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
+     * @param name the field name
+     * @return the values of the field with the given name, or empty list if no such field exists
+     */
+    public List<String> getValuesOrEmpty(String name)
+    {
+        Field field = get(name);
+        if (field == null)
+            return Collections.emptyList();
+        return field.getValues();
+    }
+
+    /**
      * <p>Inserts or replaces the given name/value pair as a single-valued {@link Field}.</p>
      *
      * @param name the field name
@@ -168,7 +171,7 @@ public class Fields implements Iterable<Fields.Field>
     {
         // Preserve the case for the field name
         Field field = new Field(name, value);
-        fields.put(normalizeName(name), field);
+        fields.put(name, field);
     }
 
     /**
@@ -179,7 +182,10 @@ public class Fields implements Iterable<Fields.Field>
     public void put(Field field)
     {
         if (field != null)
-            fields.put(normalizeName(field.getName()), field);
+        {
+            String s = field.getName();
+            fields.put(s, field);
+        }
     }
 
     /**
@@ -191,7 +197,7 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(String name, String value)
     {
-        String key = normalizeName(name);
+        String key = name;
         fields.compute(key, (k, f) ->
         {
             if (f == null)
@@ -210,7 +216,8 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(Field field)
     {
-        String key = normalizeName(field.getName());
+        String s = field.getName();
+        String key = s;
         fields.compute(key, (k, f) ->
         {
             if (f == null)
@@ -218,6 +225,12 @@ public class Fields implements Iterable<Fields.Field>
             else
                 return new Field(f.getName(), f.getValues(), field.getValues());
         });
+    }
+
+    public void addAll(Fields fields)
+    {
+        for (Field field : fields)
+            add(field);
     }
 
     /**
@@ -228,7 +241,7 @@ public class Fields implements Iterable<Fields.Field>
      */
     public Field remove(String name)
     {
-        return fields.remove(normalizeName(name));
+        return fields.remove(name);
     }
 
     /**
@@ -312,18 +325,6 @@ public class Fields implements Iterable<Fields.Field>
             this.values = List.copyOf(list);
         }
 
-        @SuppressWarnings("ReferenceEquality")
-        public boolean equals(Field that, boolean caseSensitive)
-        {
-            if (this == that)
-                return true;
-            if (that == null)
-                return false;
-            if (caseSensitive)
-                return equals(that);
-            return name.equalsIgnoreCase(that.name) && values.equals(that.values);
-        }
-
         @Override
         public boolean equals(Object obj)
         {
@@ -393,4 +394,25 @@ public class Fields implements Iterable<Fields.Field>
             return String.format("%s=%s", name, values);
         }
     }
+
+    /**
+     * <p>Combine two Fields</p>
+     * @param a The base Fields or null
+     * @param b The overlayed Fields or null
+     * @return Fields, which may be empty, but never null.
+     */
+    public static Fields combine(Fields a, Fields b)
+    {
+        if (b == null || b.isEmpty())
+            return a == null ? EMPTY : a;
+
+        if (a == null || a.isEmpty())
+            return b;
+
+        Fields fields = new Fields();
+        fields.addAll(a);
+        fields.addAll(b);
+        return fields;
+    }
+
 }
