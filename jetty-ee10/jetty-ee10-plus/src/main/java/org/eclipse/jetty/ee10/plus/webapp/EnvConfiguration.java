@@ -61,9 +61,10 @@ public class EnvConfiguration extends AbstractConfiguration
 
     public EnvConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
-        addDependents(PlusConfiguration.class, JettyWebXmlConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.jndi.");
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class)
+            .addDependents(PlusConfiguration.class, JettyWebXmlConfiguration.class)
+            .protectAndExpose("org.eclipse.jetty.jndi."));
     }
 
     public void setJettyEnvResource(Resource resource)

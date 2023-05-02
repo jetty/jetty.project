@@ -190,7 +190,7 @@ public interface Configuration
 
     class Wrapper implements Configuration
     {
-        private Configuration delegate;
+        private final Configuration delegate;
 
         public Wrapper(Configuration delegate)
         {

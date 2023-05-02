@@ -46,6 +46,12 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     public WebInfConfiguration()
     {
+        this(new Builder());
+    }
+
+    protected WebInfConfiguration(Builder builder)
+    {
+        super(builder);
     }
 
     @Override
@@ -92,15 +98,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         //reset the base resource back to what it was before we did any unpacking of resources
         //TODO there is something wrong with the config of the resource base as this should never be null
         context.setBaseResource(_preUnpackBaseResource == null ? null : _preUnpackBaseResource);
-    }
-
-    @Override
-    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
-    {
-        Path tmpDir = Files.createTempDirectory(template.getTempDirectory().getParentFile().toPath(), WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context));
-        File tmpDirAsFile = tmpDir.toFile();
-        tmpDirAsFile.deleteOnExit();
-        context.setTempDirectory(tmpDirAsFile);
     }
 
     /**

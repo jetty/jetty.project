@@ -30,15 +30,15 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
 {
     public JettyWebSocketConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-        addDependents("org.eclipse.jetty.ee10.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-
-        protectAndExpose("org.eclipse.jetty.websocket.api.");
-        protectAndExpose("org.eclipse.jetty.websocket.server.");
-        protectAndExpose("org.eclipse.jetty.ee10.websocket.server.");
-        protectAndExpose("org.eclipse.jetty.ee10.websocket.servlet."); // For WebSocketUpgradeFilter
-        hide("org.eclipse.jetty.websocket.server.internal.");
-        hide("org.eclipse.jetty.ee10.websocket.server.internal.");
-        hide("org.eclipse.jetty.ee10.websocket.server.config.");
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
+            .addDependents("org.eclipse.jetty.ee10.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName())
+            .protectAndExpose("org.eclipse.jetty.websocket.api.")
+            .protectAndExpose("org.eclipse.jetty.websocket.server.")
+            .protectAndExpose("org.eclipse.jetty.ee10.websocket.server.")
+            .protectAndExpose("org.eclipse.jetty.ee10.websocket.servlet.") // For WebSocketUpgradeFilter
+            .hide("org.eclipse.jetty.websocket.server.internal.")
+            .hide("org.eclipse.jetty.ee10.websocket.server.internal.")
+            .hide("org.eclipse.jetty.ee10.websocket.server.config."));
     }
 }

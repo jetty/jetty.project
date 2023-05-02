@@ -481,7 +481,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x", this.getClass(), this.hashCode());
+        return String.format("%s@%x%s", this.getClass(), this.hashCode(), _configurations);
     }
 
     public void preConfigure(WebAppContext webapp) throws Exception

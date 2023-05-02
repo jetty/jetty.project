@@ -37,7 +37,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
 
     public WebXmlConfiguration()
     {
-        addDependencies(WebInfConfiguration.class);
+        super(new Builder().addDependencies(WebInfConfiguration.class));
     }
 
     /**

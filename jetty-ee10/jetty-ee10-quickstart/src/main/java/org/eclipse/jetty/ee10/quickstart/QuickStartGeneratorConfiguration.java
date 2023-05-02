@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -92,7 +91,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     public QuickStartGeneratorConfiguration(boolean abort)
     {
-        super(false);
+        super(new Builder().enabledByDefault(false));
         _count = 0;
         _abort = abort;
     }
@@ -131,9 +130,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      *
      * @param stream the stream to generate the quickstart-web.xml to
      * @throws IOException if unable to generate the quickstart-web.xml
-     * @throws FileNotFoundException if unable to find the file
      */
-    public void generateQuickStartWebXml(WebAppContext context, OutputStream stream) throws FileNotFoundException, IOException
+    public void generateQuickStartWebXml(WebAppContext context, OutputStream stream) throws IOException
     {
         if (context == null)
             throw new IllegalStateException("No webapp for quickstart generation");
@@ -326,9 +324,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             out.closeTag();
         }
 
-        if (security instanceof ConstraintAware)
+        if (security instanceof ConstraintAware ca)
         {
-            ConstraintAware ca = (ConstraintAware)security;
             for (String r : ca.getRoles())
             {
                 out.openTag("security-role", origin(md, "security-role." + r))
@@ -377,20 +374,15 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
                 switch (m.getConstraint().getDataConstraint())
                 {
-                    case Constraint.DC_NONE:
+                    case Constraint.DC_NONE ->
                         out.openTag("user-data-constraint").tag("transport-guarantee", "NONE").closeTag();
-                        break;
-
-                    case Constraint.DC_INTEGRAL:
+                    case Constraint.DC_INTEGRAL ->
                         out.openTag("user-data-constraint").tag("transport-guarantee", "INTEGRAL").closeTag();
-                        break;
-
-                    case Constraint.DC_CONFIDENTIAL:
+                    case Constraint.DC_CONFIDENTIAL ->
                         out.openTag("user-data-constraint").tag("transport-guarantee", "CONFIDENTIAL").closeTag();
-                        break;
-
-                    default:
-                        break;
+                    default ->
+                    {
+                    }
                 }
 
                 out.closeTag();
@@ -691,11 +683,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         String ot = n + ".filter.";
 
-        if (holder instanceof FilterHolder)
-        {
-            out.tag("filter-class", origin(md, ot + "filter-class"), holder.getClassName());
-            out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
-        }
+        out.tag("filter-class", origin(md, ot + "filter-class"), holder.getClassName());
+        out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
         for (String p : holder.getInitParameters().keySet())
         {
@@ -721,11 +710,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         String ot = n + ".servlet.";
 
-        ServletHolder s = (ServletHolder)holder;
-        if (s.getForcedPath() != null && s.getClassName() == null)
-            out.tag("jsp-file", s.getForcedPath());
+        if (holder.getForcedPath() != null && holder.getClassName() == null)
+            out.tag("jsp-file", holder.getForcedPath());
         else
-            out.tag("servlet-class", origin(md, ot + "servlet-class"), s.getClassName());
+            out.tag("servlet-class", origin(md, ot + "servlet-class"), holder.getClassName());
 
         for (String p : holder.getInitParameters().keySet())
         {
@@ -737,20 +725,20 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 .closeTag();
         }
 
-        if (s.getInitOrder() >= 0)
-            out.tag("load-on-startup", Integer.toString(s.getInitOrder()));
+        if (holder.getInitOrder() >= 0)
+            out.tag("load-on-startup", Integer.toString(holder.getInitOrder()));
 
-        if (!s.isEnabled())
+        if (!holder.isEnabled())
             out.tag("enabled", origin(md, ot + "enabled"), "false");
 
         out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
-        if (s.getRunAsRole() != null)
+        if (holder.getRunAsRole() != null)
             out.openTag("run-as", origin(md, ot + "run-as"))
-                .tag("role-name", s.getRunAsRole())
+                .tag("role-name", holder.getRunAsRole())
                 .closeTag();
 
-        Map<String, String> roles = s.getRoleLinks();
+        Map<String, String> roles = holder.getRoleLinks();
         if (roles != null)
         {
             for (Map.Entry<String, String> e : roles.entrySet())
@@ -763,10 +751,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //multipart-config
-        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)s.getRegistration()).getMultipartConfig();
+        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
         if (multipartConfig != null)
         {
-            out.openTag("multipart-config", origin(md, s.getName() + ".servlet.multipart-config"));
+            out.openTag("multipart-config", origin(md, holder.getName() + ".servlet.multipart-config"));
             if (multipartConfig.getLocation() != null)
                 out.tag("location", multipartConfig.getLocation());
             out.tag("max-file-size", Long.toString(multipartConfig.getMaxFileSize()));
@@ -796,7 +784,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             LOG.debug("origin of {} is {}", name, origin);
         if (origin == null)
             return Collections.emptyMap();
-        return Collections.singletonMap(_originAttribute, origin.toString() + ":" + (_count++));
+        return Collections.singletonMap(_originAttribute, origin + ":" + (_count++));
     }
 
     @Override

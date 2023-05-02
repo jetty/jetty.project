@@ -519,6 +519,12 @@ public class ClassMatcher extends AbstractSet<String>
         add(pattern);
     }
 
+    public ClassMatcher asImmutable()
+    {
+        // TODO
+        return this;
+    }
+
     public boolean include(String name)
     {
         if (name == null)

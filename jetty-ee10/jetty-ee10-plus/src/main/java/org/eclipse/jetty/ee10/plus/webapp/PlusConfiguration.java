@@ -43,19 +43,14 @@ public class PlusConfiguration extends AbstractConfiguration
 
     public PlusConfiguration()
     {
-        addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
-        addDependents(JettyWebXmlConfiguration.class);
+        super(new Builder()
+            .addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class)
+            .addDependents(JettyWebXmlConfiguration.class));
     }
 
     @Override
     public void preConfigure(WebAppContext context)
         throws Exception
-    {
-        context.getObjectFactory().addDecorator(new PlusDecorator(context));
-    }
-
-    @Override
-    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
         context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }

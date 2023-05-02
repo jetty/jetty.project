@@ -426,6 +426,9 @@ public class WebAppContextTest
 
         server.start();
 
+        System.err.println(Configurations.getServerDefault(server));
+        System.err.println(context.getConfigurations());
+
         String rawResponse = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response OK", response.getStatus(), is(HttpStatus.OK_200));

@@ -241,56 +241,80 @@ public class ConfigurationsTest
 
     public static class ConfigFoo extends AbstractConfiguration
     {
+        public ConfigFoo()
         {
-            addDependents(ConfigBar.class);
+            super(new Builder().addDependents(ConfigBar.class));
         }
     }
 
     public static class ConfigBar extends AbstractConfiguration
     {
+        public ConfigBar()
+        {
+            super(new Builder());
+        }
     }
 
     public static class ConfigX extends AbstractConfiguration
     {
+        public ConfigX()
         {
-            addDependencies(ConfigBar.class);
+            super(new Builder().addDependencies(ConfigBar.class));
         }
     }
 
     public static class ConfigY extends AbstractConfiguration
     {
+        public ConfigY()
         {
-            addDependencies(ConfigX.class);
-            addDependents(ConfigZ.class);
+            super(new Builder()
+                .addDependencies(ConfigX.class)
+                .addDependents(ConfigZ.class));
         }
     }
 
     public static class ConfigZ extends AbstractConfiguration
     {
+        public ConfigZ()
+        {
+            super(new Builder());
+        }
     }
 
     public static class ConfigTom extends AbstractConfiguration
     {
+        public ConfigTom()
+        {
+            super(new Builder());
+        }
     }
 
     public static class ConfigDick extends AbstractConfiguration
     {
+        public ConfigDick()
         {
-            addDependencies(ConfigTom.class);
+            this(new Builder());
+        }
+
+        public ConfigDick(Builder builder)
+        {
+            super(builder.addDependencies(ConfigTom.class));
         }
     }
 
     public static class ConfigHarry extends AbstractConfiguration
     {
+        public ConfigHarry()
         {
-            addDependencies(ConfigDick.class);
+            super(new Builder().addDependencies(ConfigDick.class));
         }
     }
 
     public static class ConfigExtendedDick extends ConfigDick
     {
+        public ConfigExtendedDick()
         {
-            addDependencies(ConfigTom.class);
+            super(new Builder().addDependencies(ConfigTom.class));
         }
 
         @Override
