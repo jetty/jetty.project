@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.websocket.tests;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -35,11 +34,12 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -48,8 +48,6 @@ import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -155,7 +153,7 @@ public class PermessageDeflateBufferTest
         Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         String s = randomText();
-        session.getRemote().sendString(s);
+        session.sendText(s, Callback.NOOP);
         assertThat(socket.textMessages.poll(5, TimeUnit.SECONDS), is(s));
 
         session.close();
@@ -175,7 +173,7 @@ public class PermessageDeflateBufferTest
 
         ByteBuffer message = randomBytes(1024);
         session.setMaxFrameSize(64);
-        session.getRemote().sendBytes(message);
+        session.sendBinary(message, Callback.NOOP);
         assertThat(socket.binaryMessages.poll(5, TimeUnit.SECONDS), equalTo(message));
 
         session.close();
@@ -196,7 +194,7 @@ public class PermessageDeflateBufferTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
         Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
-        session.getRemote().sendPartialString("partial", false);
+        session.sendPartialText("partial", false, Callback.NOOP);
 
         // Wait for the idle timeout to elapse.
         assertTrue(incomingFailEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -219,7 +217,7 @@ public class PermessageDeflateBufferTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
         Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
-        session.getRemote().sendPartialString("partial", false);
+        session.sendPartialText("partial", false, Callback.NOOP);
         // Wait for the server to process the partial message.
         assertThat(socket.partialMessages.poll(5, TimeUnit.SECONDS), equalTo("partial" + "last=true"));
 
@@ -250,7 +248,7 @@ public class PermessageDeflateBufferTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/outgoingFail");
         Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
-        session.getRemote().sendString("hello");
+        session.sendText("hello", Callback.NOOP);
 
         // Wait for the idle timeout to elapse.
         assertTrue(outgoingFailEndPoint.closeLatch.await(2 * idleTimeout.toMillis(), TimeUnit.SECONDS));
@@ -273,7 +271,7 @@ public class PermessageDeflateBufferTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/outgoingFail");
         Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
-        session.getRemote().sendString("hello");
+        session.sendText("hello", Callback.NOOP);
         // Wait for the server to process the message.
         assertThat(socket.partialMessages.poll(5, TimeUnit.SECONDS), equalTo("hello" + "last=false"));
 
@@ -294,14 +292,12 @@ public class PermessageDeflateBufferTest
     @WebSocket
     public static class PartialTextSocket
     {
-        private static final Logger LOG = LoggerFactory.getLogger(EventSocket.class);
-
         public Session session;
         public BlockingQueue<String> partialMessages = new BlockingArrayQueue<>();
         public CountDownLatch openLatch = new CountDownLatch(1);
         public CountDownLatch closeLatch = new CountDownLatch(1);
 
-        @OnWebSocketConnect
+        @OnWebSocketOpen
         public void onOpen(Session session)
         {
             this.session = session;
@@ -309,7 +305,7 @@ public class PermessageDeflateBufferTest
         }
 
         @OnWebSocketMessage
-        public void onMessage(String message, boolean last) throws IOException
+        public void onMessage(String message, boolean last)
         {
             partialMessages.offer(message + "last=" + last);
         }
@@ -327,9 +323,9 @@ public class PermessageDeflateBufferTest
         public CountDownLatch closeLatch = new CountDownLatch(1);
 
         @OnWebSocketMessage
-        public void onMessage(Session session, String message) throws IOException
+        public void onMessage(Session session, String message)
         {
-            session.getRemote().sendPartialString(message, false);
+            session.sendPartialText(message, false, Callback.NOOP);
         }
 
         @OnWebSocketClose
@@ -345,9 +341,9 @@ public class PermessageDeflateBufferTest
         public CountDownLatch closeLatch = new CountDownLatch(1);
 
         @OnWebSocketMessage
-        public void onMessage(Session session, String message, boolean last) throws IOException
+        public void onMessage(Session session, String message, boolean last)
         {
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
         }
 
         @OnWebSocketClose

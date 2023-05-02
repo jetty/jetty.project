@@ -74,13 +74,13 @@ public class AutoFragmentTest
 
         // Turn off fragmentation on the server.
         assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
-        serverHandler.coreSession.setMaxFrameSize(0);
-        serverHandler.coreSession.setAutoFragment(false);
+        serverHandler.getCoreSession().setMaxFrameSize(0);
+        serverHandler.getCoreSession().setAutoFragment(false);
 
         // Set the client to fragment to the maxFrameSize.
         int maxFrameSize = 30;
-        clientHandler.coreSession.setMaxFrameSize(maxFrameSize);
-        clientHandler.coreSession.setAutoFragment(true);
+        clientHandler.getCoreSession().setMaxFrameSize(maxFrameSize);
+        clientHandler.getCoreSession().setAutoFragment(true);
 
         // Send a message which is too large.
         int size = maxFrameSize * 2;
@@ -88,7 +88,7 @@ public class AutoFragmentTest
         Arrays.fill(array, 0, size, (byte)'X');
         ByteBuffer message = BufferUtil.toBuffer(array);
         Frame sentFrame = new Frame(OpCode.BINARY, BufferUtil.copy(message));
-        clientHandler.coreSession.sendFrame(sentFrame, Callback.NOOP, false);
+        clientHandler.getCoreSession().sendFrame(sentFrame, Callback.NOOP, false);
 
         // We should not receive any frames larger than the max frame size.
         // So our message should be split into two frames.
@@ -121,20 +121,20 @@ public class AutoFragmentTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.
-        clientHandler.coreSession.setMaxFrameSize(0);
-        clientHandler.coreSession.setAutoFragment(false);
+        clientHandler.getCoreSession().setMaxFrameSize(0);
+        clientHandler.getCoreSession().setAutoFragment(false);
 
         // Set the server should fragment to the maxFrameSize.
         int maxFrameSize = 30;
         assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
-        serverHandler.coreSession.setMaxFrameSize(maxFrameSize);
-        serverHandler.coreSession.setAutoFragment(true);
+        serverHandler.getCoreSession().setMaxFrameSize(maxFrameSize);
+        serverHandler.getCoreSession().setAutoFragment(true);
 
         // Send a message which is too large.
         int size = maxFrameSize * 2;
         byte[] message = new byte[size];
         Arrays.fill(message, 0, size, (byte)'X');
-        clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.toBuffer(message)), Callback.NOOP, false);
+        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.toBuffer(message)), Callback.NOOP, false);
 
         // We should not receive any frames larger than the max frame size.
         // So our message should be split into two frames.
@@ -166,14 +166,14 @@ public class AutoFragmentTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.
-        clientHandler.coreSession.setMaxFrameSize(0);
-        clientHandler.coreSession.setAutoFragment(false);
+        clientHandler.getCoreSession().setMaxFrameSize(0);
+        clientHandler.getCoreSession().setAutoFragment(false);
 
         // Set a small maxFrameSize on the server.
         int maxFrameSize = 10;
         assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
-        serverHandler.coreSession.setMaxFrameSize(maxFrameSize);
-        serverHandler.coreSession.setAutoFragment(true);
+        serverHandler.getCoreSession().setMaxFrameSize(maxFrameSize);
+        serverHandler.getCoreSession().setAutoFragment(true);
 
         // Generate a large random payload.
         int payloadSize = 1000;
@@ -187,7 +187,7 @@ public class AutoFragmentTest
         BufferUtil.flipToFlush(payload, 0);
 
         // Send the large random payload which should be fragmented on the server.
-        clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payloadSize * 2);
@@ -219,14 +219,14 @@ public class AutoFragmentTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.
-        clientHandler.coreSession.setMaxFrameSize(0);
-        clientHandler.coreSession.setAutoFragment(false);
+        clientHandler.getCoreSession().setMaxFrameSize(0);
+        clientHandler.getCoreSession().setAutoFragment(false);
 
         // Set a small maxFrameSize on the server.
         int maxFrameSize = 1024;
         assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
-        serverHandler.coreSession.setMaxFrameSize(maxFrameSize);
-        serverHandler.coreSession.setAutoFragment(true);
+        serverHandler.getCoreSession().setMaxFrameSize(maxFrameSize);
+        serverHandler.getCoreSession().setAutoFragment(true);
 
         // Highly compressible payload.
         byte[] data = new byte[512 * 1024];
@@ -234,7 +234,7 @@ public class AutoFragmentTest
         ByteBuffer payload = ByteBuffer.wrap(data);
 
         // Send the payload which should be fragmented on the server.
-        clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payload.remaining() * 2);
@@ -282,13 +282,13 @@ public class AutoFragmentTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.
-        clientHandler.coreSession.setMaxFrameSize(0);
-        clientHandler.coreSession.setAutoFragment(false);
+        clientHandler.getCoreSession().setMaxFrameSize(0);
+        clientHandler.getCoreSession().setAutoFragment(false);
 
         // Set maxFrameSize and autoFragment on the server.
         assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
-        serverHandler.coreSession.setMaxFrameSize(maxFrameSize);
-        serverHandler.coreSession.setAutoFragment(true);
+        serverHandler.getCoreSession().setMaxFrameSize(maxFrameSize);
+        serverHandler.getCoreSession().setAutoFragment(true);
 
         // Send the payload which should be fragmented by the server permessage-deflate.
         ByteBuffer sendPayload = BufferUtil.copy(payload);

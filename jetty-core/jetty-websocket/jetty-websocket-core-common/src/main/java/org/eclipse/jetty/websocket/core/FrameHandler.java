@@ -16,102 +16,113 @@ package org.eclipse.jetty.websocket.core;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * Interface for local WebSocket Endpoint Frame handling.
- *
- * <p>
- * This is the receiver of Parsed Frames.  It is implemented by the Application (or Application API layer or Framework)
- * as the primary API to/from the Core websocket implementation.   The instance to be used for each websocket connection
- * is instantiated by the application, either:
- * </p>
+ * <p>Handles incoming WebSocket frames for a given endpoint.</p>
+ * <p>FrameHandler is the receiver of parsed WebSocket frames.
+ * It is implemented by application code as the primary API to
+ * interact with the WebSocket implementation.</p>
+ * <p>The FrameHandler instance to be used for each WebSocket
+ * connection is instantiated by the application, either:</p>
  * <ul>
- * <li>On the server, the application layer must provide a {@code org.eclipse.jetty.websocket.core.server.WebSocketNegotiator} instance
- * to negotiate and accept websocket connections, which will return the FrameHandler instance to use from
- * {@code org.eclipse.jetty.websocket.core.server.WebSocketNegotiator#negotiate(Negotiation)}.</li>
- * <li>On the client, the application returns the FrameHandler instance to user from the {@code ClientUpgradeRequest}
- * instance that it passes to the {@code org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(ClientUpgradeRequest)} method/</li>
+ * <li>On the server, the application must provide a
+ * {@code WebSocketNegotiator} to negotiate and accept WebSocket
+ * connections, which will return the FrameHandler instance from
+ * {@code WebSocketNegotiator#negotiate(Negotiation)}.</li>
+ * <li>On the client, the application returns the FrameHandler
+ * instance from the {@code CoreClientUpgradeRequest} instance
+ * passed to {@code WebSocketCoreClient#connect(ClientUpgradeRequest)}.</li>
  * </ul>
- * <p>
- * Once instantiated the FrameHandler follows is used as follows:
- * </p>
+ * <p>Once instantiated the FrameHandler is used as follows:</p>
  * <ul>
- * <li>The {@link #onOpen(CoreSession, Callback)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
- * to obtain information about the connection and to send frames</li>
- * <li>Every data and control frame received is passed to {@link #onFrame(Frame, Callback)}.</li>
- * <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onFrame(Frame, Callback)} to give the
- * Application an opportunity to send the response itself. If an appropriate response has not been sent when the callback passed is completed, then a
- * response will be generated.</li>
- * <li>If an error is detected or received, then {@link #onError(Throwable, Callback)} will be called to inform the application of the cause of the problem.
- * The connection will then be closed or aborted and the {@link #onClosed(CloseStatus, Callback)} method called.</li>
- * <li>The {@link #onClosed(CloseStatus, Callback)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
- * will indicate the nature of the close.</li>
+ * <li>The {@link #onOpen(CoreSession, Callback)} method is called
+ * when negotiation of the connection is completed.
+ * The {@link CoreSession} argument is used to configure the connection,
+ * to obtain information about the connection, and to send frames</li>
+ * <li>Every data and control frame received is passed to
+ * {@link #onFrame(Frame, Callback)}.</li>
+ * <li>Received control frames that require a response (e.g. PING, CLOSE)
+ * are first passed to {@link #onFrame(Frame, Callback)} to give the
+ * application an opportunity to respond explicitly. If a response
+ * has not been sent when the callback argument is completed, then
+ * the implementation will generate a response.</li>
+ * <li>If an error is detected or received, then
+ * {@link #onError(Throwable, Callback)} will be called to inform
+ * the application of the cause of the problem.
+ * The connection will then be closed or aborted and then
+ * {@link #onClosed(CloseStatus, Callback)} will be called.</li>
+ * <li>The {@link #onClosed(CloseStatus, Callback)} method is always
+ * called once a WebSocket connection is terminated, either gracefully
+ * or not. The error code will indicate the nature of the close.</li>
  * </ul>
+ * <p>FrameHandler is responsible to manage the demand for more
+ * WebSocket frames, either directly by calling {@link CoreSession#demand(long)}
+ * or by delegating the demand management to other components.</p>
  */
 public interface FrameHandler extends IncomingFrames
 {
     /**
-     * Async notification that Connection is being opened.
-     * <p>
-     * FrameHandler can write during this call, but can not receive frames until the callback is succeeded.
-     * </p>
-     * <p>
-     * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if auto-demanding,
-     * or can now call {@link CoreSession#demand(long)} to receive frames if it is not auto-demanding.
-     * If the FrameHandler fails the callback a close frame will be sent with {@link CloseStatus#SERVER_ERROR} and
-     * the connection will be closed. <br>
-     * </p>
+     * <p>Invoked when the WebSocket connection is opened.</p>
+     * <p>It is allowed to send WebSocket frames via
+     * {@link CoreSession#sendFrame(Frame, Callback, boolean)}.
+     * <p>WebSocket frames cannot be received  until a call to
+     * {@link CoreSession#demand(long)} is made.</p>
+     * <p>If the callback argument is failed, the implementation
+     * sends a CLOSE frame with {@link CloseStatus#SERVER_ERROR},
+     * and the connection will be closed.</p>
      *
      * @param coreSession the session associated with this connection.
-     * @param callback the callback to indicate success in processing (or failure)
+     * @param callback the callback to indicate success or failure of
+     * the processing of this event.
      */
     void onOpen(CoreSession coreSession, Callback callback);
 
     /**
-     * Receiver of all Frames.
-     * This method will never be called in parallel for the same session and will be called
-     * sequentially to satisfy all outstanding demand signaled by calls to
-     * {@link CoreSession#demand(long)}.
-     * Control and Data frames are passed to this method.
-     * Close frames may be responded to by the handler, but if an appropriate close response is not
-     * sent once the callback is succeeded, then a response close will be generated and sent.
+     * <p>Invoked when a WebSocket frame is received.</p>
+     * <p>This method will never be called concurrently for the
+     * same session; will be called sequentially to satisfy the
+     * outstanding demand signaled by calls to
+     * {@link CoreSession#demand(long)}.</p>
+     * <p>Both control and data frames are passed to this method.</p>
+     * <p>CLOSE frames may be responded from this method, but if
+     * they are not responded, then the implementation will respond
+     * when the callback is completed.</p>
+     * <p>The callback argument must be completed to indicate
+     * that the buffers associated with the frame can be recycled.</p>
+     * <p>Additional WebSocket frames (of any type, including CLOSE
+     * frames) cannot be received  until a call to
+     * {@link CoreSession#demand(long)} is made.</p>
      *
-     * @param frame the raw frame
-     * @param callback the callback to indicate success in processing frame (or failure)
+     * @param frame the WebSocket frame.
+     * @param callback the callback to indicate success or failure of
+     * the processing of this event.
      */
     void onFrame(Frame frame, Callback callback);
 
     /**
-     * An error has occurred or been detected in websocket-core and being reported to FrameHandler.
-     * A call to onError will be followed by a call to {@link #onClosed(CloseStatus, Callback)} giving the close status
-     * derived from the error. This will not be called more than once, {@link #onClosed(CloseStatus, Callback)}
+     * <p>Invoked when an error has occurred or has been detected.</p>
+     * <p>A call to this method will be followed by a call to
+     * {@link #onClosed(CloseStatus, Callback)} with the close status
+     * derived from the error.</p>
+     * <p>This method will not be called more than once, {@link #onClosed(CloseStatus, Callback)}
      * will be called on the callback completion.
      *
-     * @param cause the reason for the error
-     * @param callback the callback to indicate success in processing (or failure)
+     * @param cause the error cause
+     * @param callback the callback to indicate success or failure of
+     * the processing of this event.
      */
     void onError(Throwable cause, Callback callback);
 
     /**
-     * This is the Close Handshake Complete event.
-     * <p>
-     * The connection is now closed, no reading or writing is possible anymore.
-     * Implementations of FrameHandler can cleanup their resources for this connection now.
-     * This method will be called only once.
-     * </p>
+     * <p>Invoked when a WebSocket close event happened.</p>
+     * <p>The WebSocket connection is closed, no reading or writing
+     * is possible anymore.</p>
+     * <p>Implementations of this method may cleanup resources
+     * that have been allocated.</p>
+     * <p>This method will not be called more than once.</p>
      *
-     * @param closeStatus the close status received from remote, or in the case of abnormal closure from local.
-     * @param callback the callback to indicate success in processing (or failure)
+     * @param closeStatus the close status received from the remote peer,
+     * or generated locally in the case of abnormal closures.
+     * @param callback the callback to indicate success or failure of
+     * the processing of this event.
      */
     void onClosed(CloseStatus closeStatus, Callback callback);
-
-    /**
-     * Does the FrameHandler manage it's own demand?
-     *
-     * @return true if demand will be managed by an automatic call to demand(1) after every succeeded callback passed to
-     * {@link #onFrame(Frame, Callback)}. If false the FrameHandler will need to manage its own demand by calling
-     * {@link CoreSession#demand(long)} when it is willing to receive new Frames.
-     */
-    default boolean isAutoDemanding()
-    {
-        return true;
-    }
 }

@@ -27,7 +27,7 @@ public interface OutgoingFrames
      * layers and extensions present in the implementation.
      * <p>
      * If you are implementing a mutation, you are obliged to handle
-     * the incoming WriteCallback appropriately.
+     * the incoming Callback appropriately.
      *
      * @param frame the frame to eventually write to the network layer.
      * @param callback the callback to notify when the frame is written.

@@ -18,7 +18,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +26,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public abstract class AbstractCloseEndpoint extends WebSocketAdapter
+public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAutoDemanding
 {
     public final Logger log;
-    public CountDownLatch openLatch = new CountDownLatch(1);
+    public CountDownLatch connectLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public String closeReason = null;
     public int closeStatusCode = -1;
@@ -42,11 +41,18 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
     }
 
     @Override
-    public void onWebSocketConnect(Session sess)
+    public void onWebSocketOpen(Session sess)
     {
-        super.onWebSocketConnect(sess);
-        log.debug("onWebSocketConnect({})", sess);
-        openLatch.countDown();
+        super.onWebSocketOpen(sess);
+        log.debug("onWebSocketOpen({})", sess);
+        connectLatch.countDown();
+    }
+
+    @Override
+    public void onWebSocketError(Throwable cause)
+    {
+        log.debug("onWebSocketError({})", cause.getClass().getSimpleName());
+        errors.offer(cause);
     }
 
     @Override
@@ -58,25 +64,13 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
         closeLatch.countDown();
     }
 
-    @Override
-    public void onWebSocketError(Throwable cause)
-    {
-        log.debug("onWebSocketError({})", cause.getClass().getSimpleName());
-        errors.offer(cause);
-    }
-
-    public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher)
-        throws InterruptedException
+    public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher) throws InterruptedException
     {
         assertThat("Client Close Event Occurred", closeLatch.await(clientTimeoutMs, TimeUnit.MILLISECONDS), is(true));
         assertThat("Client Close Event Status Code", closeStatusCode, statusCodeMatcher);
         if (reasonMatcher == null)
-        {
             assertThat("Client Close Event Reason", closeReason, nullValue());
-        }
         else
-        {
             assertThat("Client Close Event Reason", closeReason, reasonMatcher);
-        }
     }
 }

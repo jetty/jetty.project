@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -37,26 +36,13 @@ import org.eclipse.jetty.websocket.core.OpCode;
  */
 public class ClientDemo
 {
-    public class TestSocket extends WebSocketAdapter
+    public class TestSocket extends Session.Listener.Abstract
     {
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
-        {
-        }
-
-        @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-            super.onWebSocketClose(statusCode, reason);
-        }
-
-        @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             if (verbose)
-            {
-                System.err.printf("%s#onWebSocketConnect %s %s\n", this.getClass().getSimpleName(), session, session.getClass().getSimpleName());
-            }
+                System.err.printf("%s#onWebSocketOpen %s %s\n", this.getClass().getSimpleName(), session, session.getClass().getSimpleName());
         }
 
         public void send(byte op, byte[] data, int maxFragmentLength)

@@ -177,7 +177,7 @@ public class CoreAutobahnClient
             if (!echoHandler.closeLatch.await(5, TimeUnit.MINUTES))
             {
                 LOG.warn("could not close {}, aborting session", echoHandler);
-                echoHandler.coreSession.abort();
+                echoHandler.getCoreSession().abort();
             }
         }
     }

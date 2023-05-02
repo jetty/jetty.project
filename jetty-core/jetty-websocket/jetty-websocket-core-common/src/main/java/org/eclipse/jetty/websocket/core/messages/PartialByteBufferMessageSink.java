@@ -14,16 +14,29 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
+/**
+ * <p>A {@link MessageSink} implementation that delivers BINARY frames
+ * to the application function passed to the constructor in the form
+ * of a {@link ByteBuffer}.</p>
+ */
 public class PartialByteBufferMessageSink extends AbstractMessageSink
 {
-    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
+    /**
+     * Creates a new {@link PartialByteBufferMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
+    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
     }
 
     @Override
@@ -32,14 +45,25 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         try
         {
             if (frame.hasPayload() || frame.isFin())
-                methodHandle.invoke(frame.getPayload(), frame.isFin());
-
-            callback.succeeded();
-            session.demand(1);
+            {
+                invoke(getMethodHandle(), frame.getPayload(), frame.isFin(), callback);
+                autoDemand();
+            }
+            else
+            {
+                callback.succeeded();
+                getCoreSession().demand(1);
+            }
         }
         catch (Throwable t)
         {
             callback.failed(t);
         }
+    }
+
+    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, boolean fin, Callback callback) throws Throwable
+    {
+        methodHandle.invoke(byteBuffer, fin);
+        callback.succeeded();
     }
 }

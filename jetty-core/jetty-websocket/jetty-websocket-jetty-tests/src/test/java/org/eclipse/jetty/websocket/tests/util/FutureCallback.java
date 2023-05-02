@@ -15,20 +15,19 @@ package org.eclipse.jetty.websocket.tests.util;
 
 import java.util.concurrent.Future;
 
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Allows events to a {@link WriteCallback} to drive a {@link Future} for the user.
+ * Allows events to a {@link Callback} to drive a {@link Future} for the user.
  */
-public class FutureWriteCallback extends FutureCallback implements WriteCallback
+public class FutureCallback extends org.eclipse.jetty.util.FutureCallback implements Callback
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FutureWriteCallback.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FutureCallback.class);
 
     @Override
-    public void writeFailed(Throwable cause)
+    public void fail(Throwable cause)
     {
         if (LOG.isDebugEnabled())
             LOG.debug(".writeFailed", cause);
@@ -36,7 +35,7 @@ public class FutureWriteCallback extends FutureCallback implements WriteCallback
     }
 
     @Override
-    public void writeSuccess()
+    public void succeed()
     {
         if (LOG.isDebugEnabled())
             LOG.debug(".writeSuccess");

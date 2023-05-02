@@ -509,7 +509,7 @@ public class HugeResourceTest
         Thread.sleep(100);
         stalled.set(false);
         demand.get().run();
-        assertTrue(complete.await(30, TimeUnit.SECONDS));
+        assertTrue(complete.await(90, TimeUnit.SECONDS));
         Response response = responseRef.get();
 
         assertThat("HTTP Response Code", response.getStatus(), is(200));

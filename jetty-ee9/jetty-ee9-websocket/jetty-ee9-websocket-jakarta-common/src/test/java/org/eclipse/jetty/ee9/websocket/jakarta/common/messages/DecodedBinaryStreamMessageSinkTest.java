@@ -58,7 +58,6 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         data.put((byte)31);
         data.flip();
         sink.accept(new Frame(OpCode.BINARY).setPayload(data).setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("12-31-1999"));
@@ -91,11 +90,8 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         data3.flip();
 
         sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(false), callback1);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data2).setFin(false), callback2);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data3).setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("01-01-2000"));

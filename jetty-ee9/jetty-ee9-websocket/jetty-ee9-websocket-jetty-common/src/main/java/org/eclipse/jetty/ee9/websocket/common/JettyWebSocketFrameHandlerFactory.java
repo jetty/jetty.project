@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.Frame;
@@ -118,12 +117,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         new InvokerUtils.Arg(boolean.class).required()
     };
 
-    private static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(byte[].class).required(),
-        new InvokerUtils.Arg(boolean.class).required()
-    };
-
     private final WebSocketContainer container;
     private final WebSocketComponents components;
     private final Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
@@ -198,7 +191,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             metadata);
     }
 
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketSession session)
     {
         if (msgHandle == null)
             return null;
@@ -209,8 +202,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
             MethodHandle ctorHandle = lookup.findConstructor(sinkClass,
-                MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
-            return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle);
+                MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, boolean.class));
+            return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle, true);
         }
         catch (NoSuchMethodException e)
         {

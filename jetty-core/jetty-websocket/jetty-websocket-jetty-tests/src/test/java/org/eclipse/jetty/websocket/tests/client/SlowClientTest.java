@@ -20,6 +20,7 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
@@ -104,7 +105,8 @@ public class SlowClientTest
             writer.join();
 
             // Close
-            clientEndpoint.getSession().close(StatusCode.NORMAL, "Done");
+            Session session = clientEndpoint.getSession();
+            session.close(StatusCode.NORMAL, "Done", Callback.NOOP);
 
             // confirm close received on server
             clientEndpoint.assertReceivedCloseEvent(10000, is(StatusCode.NORMAL), containsString("Done"));

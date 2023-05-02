@@ -41,11 +41,10 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle);
+        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", writer.getBuffer().toString(), is("Hello World"));
@@ -58,18 +57,15 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle);
+        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
         FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), callback1);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Writer contents", writer.getBuffer().toString(), is("Hello, World"));

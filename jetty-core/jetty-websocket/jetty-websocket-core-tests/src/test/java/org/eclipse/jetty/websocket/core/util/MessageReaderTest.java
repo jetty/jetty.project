@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.messages.MessageReader;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MessageReaderTest
 {
-    private final MessageReader reader = new MessageReader();
+    private final MessageReader reader = new MessageReader(new CoreSession.Empty());
     private final CompletableFuture<String> message = new CompletableFuture<>();
     private boolean first = true;
 

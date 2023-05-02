@@ -46,7 +46,6 @@ public class MessageHandlerTest
     static byte[] fourByteUtf8Bytes = fourByteUtf8String.getBytes(StandardCharsets.UTF_8);
     static byte[] nonUtf8Bytes = {0x7F, (byte)0xFF, (byte)0xFF};
 
-    boolean autoDemanding;
     CoreSession coreSession;
     List<String> textMessages = new ArrayList<>();
     List<ByteBuffer> binaryMessages = new ArrayList<>();
@@ -55,10 +54,8 @@ public class MessageHandlerTest
     MessageHandler handler;
 
     @BeforeEach
-    public void beforeEach() throws Exception
+    public void beforeEach()
     {
-        autoDemanding = true;
-
         coreSession = new CoreSession.Empty()
         {
             private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
@@ -91,12 +88,6 @@ public class MessageHandlerTest
             {
                 binaryMessages.add(message);
                 callbacks.add(callback);
-            }
-
-            @Override
-            public boolean isAutoDemanding()
-            {
-                return autoDemanding;
             }
         };
 

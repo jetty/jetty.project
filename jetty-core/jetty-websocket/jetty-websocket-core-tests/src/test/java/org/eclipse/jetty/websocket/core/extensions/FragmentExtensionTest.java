@@ -59,7 +59,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         // Simulate initial demand from onOpen().
-        coreSession.autoDemand();
+        coreSession.demand(1);
 
         // Quote
         List<String> quote = new ArrayList<>();
@@ -131,7 +131,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         // Simulate initial demand from onOpen().
-        coreSession.autoDemand();
+        coreSession.demand(1);
 
         String payload = "Are you there?";
         Frame ping = new Frame(OpCode.PING).setPayload(payload);
