@@ -226,7 +226,6 @@ public class ClassMatcher extends AbstractSet<String>
         }
     }
 
-    @SuppressWarnings("serial")
     public static class ByClass extends HashSet<Entry> implements Predicate<String>
     {
         private final Map<String, Entry> _entries = new HashMap<>();
@@ -329,7 +328,6 @@ public class ClassMatcher extends AbstractSet<String>
         }
     }
 
-    @SuppressWarnings("serial")
     public static class ByLocation extends HashSet<Entry> implements Predicate<URI>
     {
         @Override
@@ -379,7 +377,6 @@ public class ClassMatcher extends AbstractSet<String>
         }
     }
 
-    @SuppressWarnings("serial")
     public static class ByModule extends HashSet<Entry> implements Predicate<URI>
     {
         private final Index.Mutable<Entry> _entries = new Index.Builder<Entry>()
@@ -493,36 +490,52 @@ public class ClassMatcher extends AbstractSet<String>
         }
     }
 
-    Map<String, Entry> _entries = new HashMap<>();
-    IncludeExcludeSet<Entry, String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
-    IncludeExcludeSet<Entry, URI> _locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
+    private final Map<String, Entry> _entries;
+    private final IncludeExcludeSet<Entry, String> _patterns;
+    private final IncludeExcludeSet<Entry, URI> _locations;
+
+    private ClassMatcher(Map<String, Entry> entries, IncludeExcludeSet<Entry, String> patterns, IncludeExcludeSet<Entry, URI> locations)
+    {
+        _entries = entries;
+        _patterns = patterns == null ? new IncludeExcludeSet<>(ByPackageOrName.class) : patterns;
+        _locations = locations == null ? new IncludeExcludeSet<>(ByLocationOrModule.class) : locations;
+    }
+
+    private ClassMatcher(Map<String, Entry> entries)
+    {
+        this(entries, null, null);
+    }
 
     public ClassMatcher()
     {
+        this(new HashMap<>());
     }
 
-    @SuppressWarnings("CopyConstructorMissesField")
     public ClassMatcher(ClassMatcher patterns)
     {
+        this(new HashMap<>());
         if (patterns != null)
             setAll(patterns.getPatterns());
     }
 
     public ClassMatcher(String... patterns)
     {
+        this(new HashMap<>());
         if (patterns != null && patterns.length > 0)
             setAll(patterns);
     }
 
     public ClassMatcher(String pattern)
     {
+        this(new HashMap<>());
         add(pattern);
     }
 
     public ClassMatcher asImmutable()
     {
-        // TODO
-        return this;
+        return new ClassMatcher(Map.copyOf(_entries),
+            _patterns.asImmutable(),
+            _locations.asImmutable());
     }
 
     public boolean include(String name)
@@ -626,9 +639,8 @@ public class ClassMatcher extends AbstractSet<String>
     @Override
     public boolean remove(Object o)
     {
-        if (!(o instanceof String))
+        if (!(o instanceof String pattern))
             return false;
-        String pattern = (String)o;
 
         Entry entry = _entries.remove(pattern);
         if (entry == null)

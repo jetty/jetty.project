@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UriPatternPredicate;
@@ -88,8 +87,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
 
-    private ResourceFactory.Closeable _resourceFactory;
-
     public MetaInfConfiguration()
     {
         super(new Builder().addDependencies(WebXmlConfiguration.class));
@@ -98,8 +95,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        _resourceFactory = ResourceFactory.closeable();
-
         //find container jars/modules and select which ones to scan
         findAndFilterContainerPaths(context);
 
@@ -110,14 +105,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.getMetaData().setWebInfClassesResources(findClassDirs(context));
 
         scanJars(context);
-    }
-
-    @Override
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-        IO.close(_resourceFactory);
-        _resourceFactory = null;
-        super.deconfigure(context);
     }
 
     /**
@@ -143,12 +130,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (StringUtil.isBlank(pattern))
             return; // TODO review if this short cut will allow later code simplifications
 
+        ResourceFactory resourceFactory = ResourceFactory.of(context);
+
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
         UriPatternPredicate uriPatternPredicate = new UriPatternPredicate(pattern, false);
         Consumer<URI> addContainerResource = (uri) ->
         {
-            Resource resource = _resourceFactory.newResource(uri);
+            Resource resource = resourceFactory.newResource(uri);
             if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
@@ -197,14 +186,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     {
                         for (Path listEntry: listing.toList())
                         {
-                            Resource resource = _resourceFactory.newResource(listEntry);
+                            Resource resource = resourceFactory.newResource(listEntry);
                             context.getMetaData().addContainerResource(resource);
                         }
                     }
                 }
                 else
                 {
-                    Resource resource = _resourceFactory.newResource(path);
+                    Resource resource = resourceFactory.newResource(path);
                     context.getMetaData().addContainerResource(resource);
                 }
             }
@@ -389,6 +378,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // Resource target does not exist
         if (Resources.missing(target))
             return;
+        ResourceFactory resourceFactory = ResourceFactory.of(context);
 
         Resource resourcesDir;
         if (cache != null && cache.containsKey(target))
@@ -417,7 +407,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 // Resource represents a packed jar
                 URI uri = target.getURI();
-                resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
+                resourcesDir = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
 
             if (Resources.isReadableDirectory(resourcesDir) && (cache != null))
@@ -462,6 +452,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public void scanForFragment(WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Resource> cache)
     {
+        ResourceFactory resourceFactory = ResourceFactory.of(context);
+
         Resource webFrag;
         if (cache != null && cache.containsKey(jar))
         {
@@ -482,12 +474,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 LOG.debug("{} META-INF/web-fragment.xml checked", jar);
             if (jar.isDirectory())
             {
-                webFrag = _resourceFactory.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
+                webFrag = resourceFactory.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
             }
             else
             {
                 URI uri = jar.getURI();
-                webFrag = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
+                webFrag = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
             if (Resources.isReadable(webFrag) && (cache != null))
@@ -560,7 +552,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                tlds.addAll(getTlds(uri));
+                tlds.addAll(getTlds(context, uri));
             }
 
             if (cache != null)
@@ -605,7 +597,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @throws IOException if unable to scan the directory
      */
     // TODO: Needs to use resource.
-    public Collection<URL> getTlds(Path dir) throws IOException
+    private Collection<URL> getTlds(Path dir) throws IOException
     {
         if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
@@ -633,10 +625,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @return the collection of tlds as url references
      * @throws IOException if unable to scan the jar file
      */
-    public Collection<URL> getTlds(URI uri) throws IOException
+    private Collection<URL> getTlds(WebAppContext context, URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        Resource r = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/"));
+        Resource r = ResourceFactory.of(context).newResource(URIUtil.uriJarPrefix(uri, "!/"));
         try (Stream<Path> stream = Files.walk(r.getPath()))
         {
             Iterator<Path> it = stream

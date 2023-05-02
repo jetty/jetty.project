@@ -37,26 +37,19 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     private final Set<T> _excludes;
     private final Predicate<P> _excludePredicate;
 
-    private static class SetContainsPredicate<T> implements Predicate<T>
+    private record SetContainsPredicate<T>(Set<T> set) implements Predicate<T>
     {
-        private final Set<T> set;
-
-        public SetContainsPredicate(Set<T> set)
-        {
-            this.set = set;
-        }
-
         @Override
         public boolean test(T item)
-        {
-            return set.contains(item);
-        }
+            {
+                return set.contains(item);
+            }
 
         @Override
         public String toString()
-        {
-            return "CONTAINS";
-        }
+            {
+                return "CONTAINS";
+            }
     }
 
     /**
@@ -66,6 +59,12 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     {
         // noinspection unchecked
         this(HashSet.class);
+    }
+
+    public IncludeExcludeSet<T, P> asImmutable()
+    {
+        // TODO
+        return this;
     }
 
     /**
@@ -141,7 +140,8 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         _includes.add(element);
     }
 
-    public void include(T... element)
+    @SafeVarargs
+    public final void include(T... element)
     {
         _includes.addAll(Arrays.asList(element));
     }
@@ -151,7 +151,8 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         _excludes.add(element);
     }
 
-    public void exclude(T... element)
+    @SafeVarargs
+    public final void exclude(T... element)
     {
         _excludes.addAll(Arrays.asList(element));
     }

@@ -41,8 +41,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";
-
-    protected Resource _preUnpackBaseResource;
+    public static final String ORIGINAL_RESOURCE_BASE = "org.eclipse.jetty.webapp.originalResourceBase";
 
     public WebInfConfiguration()
     {
@@ -96,8 +95,8 @@ public class WebInfConfiguration extends AbstractConfiguration
             context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
-        //TODO there is something wrong with the config of the resource base as this should never be null
-        context.setBaseResource(_preUnpackBaseResource == null ? null : _preUnpackBaseResource);
+        Resource originalBaseResource = (Resource)context.removeAttribute(ORIGINAL_RESOURCE_BASE);
+        context.setBaseResource(originalBaseResource);
     }
 
     /**
@@ -186,7 +185,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     public void unpack(WebAppContext context) throws IOException
     {
         Resource webApp = context.getBaseResource();
-        _preUnpackBaseResource = context.getBaseResource();
+        context.setAttribute(ORIGINAL_RESOURCE_BASE, context.getBaseResource());
 
         if (webApp == null)
         {

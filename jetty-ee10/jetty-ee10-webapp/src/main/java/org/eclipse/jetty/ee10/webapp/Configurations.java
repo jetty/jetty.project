@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Configurations extends AbstractList<Configuration> implements Dumpable
 {
+    public static final String SERVER_DEFAULT_ATTR = "org.eclipse.jetty.webapp.configurations";
     private static final Logger LOG = LoggerFactory.getLogger(Configurations.class);
     private static final AutoLock __lock = new AutoLock();
     private static final List<Configuration> __known = new ArrayList<>();
@@ -176,7 +177,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             return configurations;
         configurations = getServerDefault(server);
         server.addBean(configurations);
-        server.setAttribute(Configuration.ATTR, null);
+        server.setAttribute(SERVER_DEFAULT_ATTR, null);
         return configurations;
     }
 
@@ -200,8 +201,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                 configurations = new Configurations(configurations);
             else
             {
-                Object attr = server.getAttribute(Configuration.ATTR);
-                LOG.debug("{} attr({})= {}", server, Configuration.ATTR, attr);
+                Object attr = server.getAttribute(SERVER_DEFAULT_ATTR);
+                LOG.debug("{} attr({})= {}", server, SERVER_DEFAULT_ATTR, attr);
                 if (attr instanceof Configurations)
                     configurations = new Configurations((Configurations)attr);
                 else if (attr instanceof String[])

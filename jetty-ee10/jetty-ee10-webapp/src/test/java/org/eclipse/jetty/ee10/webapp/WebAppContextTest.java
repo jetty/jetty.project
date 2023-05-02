@@ -222,7 +222,7 @@ public class WebAppContextTest
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = newServer();
-        server.setAttribute(Configuration.ATTR, classNames);
+        server.setAttribute(Configurations.SERVER_DEFAULT_ATTR, classNames);
         wac.setServer(server);
         assertThat(wac.getConfigurations(), Matchers.contains(configs));
     }
