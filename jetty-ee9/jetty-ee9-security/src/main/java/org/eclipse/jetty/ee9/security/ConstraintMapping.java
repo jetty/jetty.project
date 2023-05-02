@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee9.security;
 
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 
 public class ConstraintMapping
 {
@@ -22,12 +22,12 @@ public class ConstraintMapping
 
     String _pathSpec;
 
-    Constraint _constraint;
+    ServletConstraint _constraint;
 
     /**
      * @return Returns the constraint.
      */
-    public Constraint getConstraint()
+    public ServletConstraint getConstraint()
     {
         return _constraint;
     }
@@ -35,7 +35,7 @@ public class ConstraintMapping
     /**
      * @param constraint The constraint to set.
      */
-    public void setConstraint(Constraint constraint)
+    public void setConstraint(ServletConstraint constraint)
     {
         this._constraint = constraint;
     }

@@ -94,14 +94,13 @@
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty-quiche-native.version>0.16.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-<!--    <jetty.test.version>6.0</jetty.test.version>-->
-    <jetty.test.version>6.0-SNAPSHOT</jetty.test.version>
+    <jetty.test.version>6.1</jetty.test.version>
     <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
     <jmh.version>1.36</jmh.version>
     <jna.version>5.13.0</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.10</json-smart.version>
-    <junit.version>5.9.2</junit.version>
+    <junit.version>5.9.3</junit.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.20.0</log4j2.version>
@@ -1291,6 +1290,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-openid</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1302,6 +1306,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-rewrite</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-security</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

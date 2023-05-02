@@ -47,12 +47,10 @@
     <module>jetty-ee10-glassfish-jstl</module>
     <module>jetty-ee10-annotations</module>
     <module>jetty-ee10-cdi</module>
-    <module>jetty-ee10-jaas</module>
     <module>jetty-ee10-jaspi</module>
     <module>jetty-ee10-jndi</module>
     <module>jetty-ee10-jspc-maven-plugin</module>
     <module>jetty-ee10-maven-plugin</module>
-    <module>jetty-ee10-openid</module>
     <module>jetty-ee10-osgi</module>
     <module>jetty-ee10-plus</module>
     <module>jetty-ee10-proxy</module>
@@ -92,8 +90,8 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-jaas</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-security</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -117,8 +115,8 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-openid</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-openid</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

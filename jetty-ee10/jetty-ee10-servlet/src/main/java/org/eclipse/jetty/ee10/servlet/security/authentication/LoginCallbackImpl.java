@@ -16,8 +16,6 @@ package org.eclipse.jetty.ee10.servlet.security.authentication;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.ee10.servlet.security.IdentityService;
-
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user
  * principal and group info as well.
@@ -37,7 +35,7 @@ public class LoginCallbackImpl implements LoginCallback
 
     private Principal userPrincipal;
 
-    private String[] roles = IdentityService.NO_ROLES;
+    private String[] roles = new String[0];
 
     //TODO could use Credential instance instead of Object if Basic/Form create a Password object
     public LoginCallbackImpl(Subject subject, String userName, Object credential)

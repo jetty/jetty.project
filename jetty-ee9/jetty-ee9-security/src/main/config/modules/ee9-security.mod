@@ -8,6 +8,7 @@ ee9
 
 [depend]
 server
+security
 ee9-servlet
 
 [lib]

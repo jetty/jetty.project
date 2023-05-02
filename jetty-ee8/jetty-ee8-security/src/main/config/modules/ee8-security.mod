@@ -8,6 +8,7 @@ ee8
 
 [depend]
 server
+security
 ee8-servlet
 
 [lib]

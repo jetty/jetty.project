@@ -13,21 +13,51 @@
 
 package org.eclipse.jetty.client;
 
-import org.junit.jupiter.api.Disabled;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.eclipse.jetty.client.Authentication.ANY_REALM;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO
-@Disabled
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 {
-    @Test
-    public void testNeedToUpdateThisTest()
-    {
-        fail("This test needs to be updated to use Core version of Basic Auth (when available)");
-    }
-    /*
     private String realm = "TestRealm";
 
     public void startBasic(Scenario scenario, Handler handler) throws Exception
@@ -51,23 +81,16 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     private void start(Scenario scenario, Authenticator authenticator, Handler handler) throws Exception
     {
         server = new Server();
-        File realmFile = MavenTestingUtils.getTestResourceFile("realm.properties");
-        LoginService loginService = new HashLoginService(realm, realmFile.getAbsolutePath());
+        Path realmFile = MavenTestingUtils.getTestResourcePath("realm.properties");
+        LoginService loginService = new HashLoginService(realm, ResourceFactory.root().newResource(realmFile));
         server.addBean(loginService);
 
-        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+        Constraint constraint = new Constraint.Builder().authorization(Constraint.Authorization.ANY_USER).build();
+        securityHandler.put("/secure", constraint);
 
-        Constraint constraint = new Constraint();
-        constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"**"}); //allow any authenticated user
-        ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/secure");
-        mapping.setConstraint(constraint);
-
-        securityHandler.addConstraintMapping(mapping);
         securityHandler.setAuthenticator(authenticator);
         securityHandler.setLoginService(loginService);
-
         securityHandler.setHandler(handler);
         start(scenario, securityHandler);
     }
@@ -133,7 +156,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
         AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(1));
-        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
+        Request.Listener requestListener = new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -141,7 +164,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 requests.get().countDown();
             }
         };
-        client.getRequestListeners().add(requestListener);
+        client.getRequestListeners().addListener(requestListener);
 
         // Request without Authentication causes a 401
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
@@ -149,12 +172,12 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertNotNull(response);
         assertEquals(401, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
-        client.getRequestListeners().remove(requestListener);
+        client.getRequestListeners().removeListener(requestListener);
 
         authenticationStore.addAuthentication(authentication);
 
         requests.set(new CountDownLatch(2));
-        requestListener = new Request.Listener.Adapter()
+        requestListener = new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -162,7 +185,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 requests.get().countDown();
             }
         };
-        client.getRequestListeners().add(requestListener);
+        client.getRequestListeners().addListener(requestListener);
 
         // Request with authentication causes a 401 (no previous successful authentication) + 200
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
@@ -170,10 +193,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
-        client.getRequestListeners().remove(requestListener);
+        client.getRequestListeners().removeListener(requestListener);
 
         requests.set(new CountDownLatch(1));
-        requestListener = new Request.Listener.Adapter()
+        requestListener = new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -181,7 +204,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 requests.get().countDown();
             }
         };
-        client.getRequestListeners().add(requestListener);
+        client.getRequestListeners().addListener(requestListener);
 
         // Further requests do not trigger 401 because there is a previous successful authentication
         // Remove existing header to be sure it's added by the implementation
@@ -190,26 +213,31 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
-        client.getRequestListeners().remove(requestListener);
+        client.getRequestListeners().removeListener(requestListener);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testBasicAuthenticationThenRedirect(Scenario scenario) throws Exception
     {
-        startBasic(scenario, new EmptyServerHandler()
+        startBasic(scenario, new Handler.Abstract()
         {
             private final AtomicInteger requests = new AtomicInteger();
 
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 int r = requests.incrementAndGet();
                 if (r == 1)
                 {
-                    String path = request.getRequestURI() + "/" + r;
-                    response.sendRedirect(URIUtil.newURI(scenario.getScheme(), request.getServerName(), request.getServerPort(), path, null));
+                    String location = request.getHttpURI().asString() + "/" + r;
+                    org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, location);
                 }
+                else
+                {
+                    callback.succeeded();
+                }
+                return true;
             }
         });
 
@@ -217,7 +245,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         CountDownLatch requests = new CountDownLatch(3);
-        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
+        Request.Listener requestListener = new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -225,7 +253,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 requests.countDown();
             }
         };
-        client.getRequestListeners().add(requestListener);
+        client.getRequestListeners().addListener(requestListener);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -235,20 +263,28 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertTrue(requests.await(5, TimeUnit.SECONDS));
-        client.getRequestListeners().remove(requestListener);
+        client.getRequestListeners().removeListener(requestListener);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testRedirectThenBasicAuthentication(Scenario scenario) throws Exception
     {
-        startBasic(scenario, new EmptyServerHandler()
+        startBasic(scenario, new Handler.Abstract()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                if (request.getRequestURI().endsWith("/redirect"))
-                    response.sendRedirect(URIUtil.newURI(scenario.getScheme(), request.getServerName(), request.getServerPort(), "/secure", null));
+                if (org.eclipse.jetty.server.Request.getPathInContext(request).endsWith("/redirect"))
+                {
+                    String location = HttpURI.build(request.getHttpURI()).path("/secure").asString();
+                    org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, location);
+                }
+                else
+                {
+                    callback.succeeded();
+                }
+                return true;
             }
         });
 
@@ -256,7 +292,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         CountDownLatch requests = new CountDownLatch(3);
-        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
+        Request.Listener requestListener = new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -264,7 +300,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 requests.countDown();
             }
         };
-        client.getRequestListeners().add(requestListener);
+        client.getRequestListeners().addListener(requestListener);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -274,7 +310,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertTrue(requests.await(5, TimeUnit.SECONDS));
-        client.getRequestListeners().remove(requestListener);
+        client.getRequestListeners().removeListener(requestListener);
     }
 
     @ParameterizedTest
@@ -284,7 +320,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         startBasic(scenario, new EmptyServerHandler());
 
         AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(2));
-        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
+        Request.Listener requestListener = new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -292,7 +328,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 requests.get().countDown();
             }
         };
-        client.getRequestListeners().add(requestListener);
+        client.getRequestListeners().addListener(requestListener);
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
@@ -397,7 +433,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         authenticationStore.addAuthenticationResult(new BasicAuthentication.BasicResult(uri, "basic", "basic"));
 
         AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
+        client.getRequestListeners().addListener(new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -429,14 +465,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         CountDownLatch resultLatch = new CountDownLatch(1);
         byte[] data = new byte[]{'h', 'e', 'l', 'l', 'o'};
-        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(data))
-        {
-            @Override
-            public boolean isReproducible()
-            {
-                return false;
-            }
-        };
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(data));
         Request request = client.newRequest(uri)
             .path("/secure")
             .body(content);
@@ -455,12 +484,13 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testRequestFailsAfterResponse(Scenario scenario) throws Exception
     {
-        startBasic(scenario, new EmptyServerHandler()
+        startBasic(scenario, new Handler.Abstract()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                IO.readBytes(jettyRequest.getInputStream());
+                Content.Source.consumeAll(request, callback);
+                return true;
             }
         });
 
@@ -469,10 +499,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client)
         {
             @Override
-            public Listener getResponseListener()
+            public Response.Listener getResponseListener()
             {
                 Response.Listener listener = super.getResponseListener();
-                return new Listener.Adapter()
+                return new Response.Listener()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -500,11 +530,17 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         {
             switch (index)
             {
-                case 0:
+                case 0 ->
+                {
                     return ByteBuffer.wrap(new byte[]{'h', 'e', 'l', 'l', 'o'});
-                case 1:
+                }
+                case 1 ->
+                {
                     return ByteBuffer.wrap(new byte[]{'w', 'o', 'r', 'l', 'd'});
-                case 2:
+                }
+                case 2 ->
+                {
+                    // Only fail the first exchange of the conversation.
                     if (fail.compareAndSet(true, false))
                     {
                         // Wait for the 401 response to arrive
@@ -522,9 +558,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                     {
                         return null;
                     }
-
-                default:
-                    throw new IllegalStateException();
+                }
+                default -> throw new IllegalStateException();
             }
         });
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -547,21 +582,23 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void testInfiniteAuthentication(Scenario scenario) throws Exception
     {
         String authType = "Authenticate";
-        start(scenario, new EmptyServerHandler()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Always reply with a 401 to see if the client
                 // can handle an infinite authentication loop.
                 response.setStatus(HttpStatus.UNAUTHORIZED_401);
                 response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, authType);
+                callback.succeeded();
+                return true;
             }
         });
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        authenticationStore.addAuthentication(new AbstractAuthentication(uri, Authentication.ANY_REALM)
+        authenticationStore.addAuthentication(new AbstractAuthentication(uri, ANY_REALM)
         {
             @Override
             public String getType()
@@ -600,7 +637,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
 
-        HeaderInfo headerInfo = aph.getHeaderInfo("Digest realm=\"thermostat\", qop=\"auth\", nonce=\"1523430383\"").get(0);
+        Authentication.HeaderInfo headerInfo = aph.getHeaderInfo("Digest realm=\"thermostat\", qop=\"auth\", nonce=\"1523430383\"").get(0);
         assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
         assertEquals("auth", headerInfo.getParameter("qop"));
         assertEquals("thermostat", headerInfo.getParameter("realm"));
@@ -625,10 +662,12 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals("1523430383", headerInfo.getParameter("nonce"));
 
         // test multiple authentications
-        List<HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest qop=\"auth\", realm=\"thermostat\", nonce=\"1523430383\", " +
-                "Digest realm=\"thermostat2\", qop=\"auth2\", nonce=\"4522530354\", " +
-                "Digest qop=\"auth3\", nonce=\"9523570528\", realm=\"thermostat3\", " +
-                "Digest qop=\"auth4\", nonce=\"3526435321\"");
+        List<Authentication.HeaderInfo> headerInfoList = aph.getHeaderInfo("""
+            Digest qop="auth", realm="thermostat", nonce="1523430383",\
+            Digest realm="thermostat2", qop="auth2", nonce="4522530354",\
+            Digest qop="auth3", nonce="9523570528", realm="thermostat3",\
+            Digest qop="auth4", nonce="3526435321"\
+            """);
 
         assertTrue(headerInfoList.get(0).getType().equalsIgnoreCase("Digest"));
         assertEquals("auth", headerInfoList.get(0).getParameter("qop"));
@@ -650,7 +689,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertNull(headerInfoList.get(3).getParameter("realm"));
         assertEquals("3526435321", headerInfoList.get(3).getParameter("nonce"));
 
-        List<HeaderInfo> headerInfos = aph.getHeaderInfo("Newauth realm=\"apps\", type=1, title=\"Login to \\\"apps\\\"\", Basic realm=\"simple\"");
+        List<Authentication.HeaderInfo> headerInfos = aph.getHeaderInfo("Newauth realm=\"apps\", type=1, title=\"Login to \\\"apps\\\"\", Basic realm=\"simple\"");
         assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Newauth"));
         assertEquals("apps", headerInfos.get(0).getParameter("realm"));
         assertEquals("1", headerInfos.get(0).getParameter("type"));
@@ -666,11 +705,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
 
-        HeaderInfo headerInfo = aph.getHeaderInfo("Scheme").get(0);
+        Authentication.HeaderInfo headerInfo = aph.getHeaderInfo("Scheme").get(0);
         assertTrue(headerInfo.getType().equalsIgnoreCase("Scheme"));
         assertNull(headerInfo.getParameter("realm"));
 
-        List<HeaderInfo> headerInfos = aph.getHeaderInfo("Scheme1    ,    Scheme2        ,      Scheme3");
+        List<Authentication.HeaderInfo> headerInfos = aph.getHeaderInfo("Scheme1    ,    Scheme2        ,      Scheme3");
         assertEquals(3, headerInfos.size());
         assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme1"));
         assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Scheme2"));
@@ -725,7 +764,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void testEqualsInParam()
     {
         AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
-        HeaderInfo headerInfo;
+        Authentication.HeaderInfo headerInfo;
 
         headerInfo = aph.getHeaderInfo("Digest realm=\"=the=rmo=stat=\", qop=\"=a=u=t=h=\", nonce=\"=1523430383=\"").get(0);
         assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
@@ -734,7 +773,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals("=1523430383=", headerInfo.getParameter("nonce"));
 
         // test multiple authentications
-        List<HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest qop=\"=au=th=\", realm=\"=ther=mostat=\", nonce=\"=152343=0383=\", " +
+        List<Authentication.HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest qop=\"=au=th=\", realm=\"=ther=mostat=\", nonce=\"=152343=0383=\", " +
                 "Digest realm=\"=thermostat2\", qop=\"=auth2\", nonce=\"=4522530354\", " +
                 "Digest qop=\"auth3=\", nonce=\"9523570528=\", realm=\"thermostat3=\", ");
 
@@ -758,63 +797,58 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void testSingleChallengeLooksLikeMultipleChallenges()
     {
         AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
-        List<HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest param=\",f \"");
+        List<Authentication.HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest param=\",f \"");
         assertEquals(1, headerInfoList.size());
 
         headerInfoList = aph.getHeaderInfo("Digest realm=\"thermostat\", qop=\",Digest realm=hello\", nonce=\"1523430383=\"");
         assertEquals(1, headerInfoList.size());
 
-        HeaderInfo headerInfo = headerInfoList.get(0);
+        Authentication.HeaderInfo headerInfo = headerInfoList.get(0);
         assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
         assertEquals(",Digest realm=hello", headerInfo.getParameter("qop"));
         assertEquals("thermostat", headerInfo.getParameter("realm"));
         assertEquals(headerInfo.getParameter("nonce"), "1523430383=");
     }
 
-    private static class GeneratingRequestContent extends AbstractRequestContent
+    private static class GeneratingRequestContent implements Request.Content
     {
         private final IntFunction<ByteBuffer> generator;
+        private int index;
 
         private GeneratingRequestContent(IntFunction<ByteBuffer> generator)
         {
-            super("application/octet-stream");
             this.generator = generator;
         }
 
         @Override
-        public boolean isReproducible()
+        public boolean rewind()
         {
+            index = 0;
             return true;
         }
 
         @Override
-        protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
+        public Content.Chunk read()
         {
-            return new SubscriptionImpl(consumer, emitInitialContent);
+            ByteBuffer buffer = generator.apply(index++);
+            boolean last = false;
+            if (buffer == null)
+            {
+                buffer = BufferUtil.EMPTY_BUFFER;
+                last = true;
+            }
+            return Content.Chunk.from(buffer, last);
         }
 
-        private class SubscriptionImpl extends AbstractSubscription
+        @Override
+        public void demand(Runnable demandCallback)
         {
-            private int index;
+            demandCallback.run();
+        }
 
-            public SubscriptionImpl(Consumer consumer, boolean emitInitialContent)
-            {
-                super(consumer, emitInitialContent);
-            }
-
-            @Override
-            protected boolean produceContent(Producer producer)
-            {
-                ByteBuffer buffer = generator.apply(index++);
-                boolean last = false;
-                if (buffer == null)
-                {
-                    buffer = BufferUtil.EMPTY_BUFFER;
-                    last = true;
-                }
-                return producer.produce(buffer, last, Callback.NOOP);
-            }
+        @Override
+        public void fail(Throwable failure)
+        {
         }
     }
-     */
 }

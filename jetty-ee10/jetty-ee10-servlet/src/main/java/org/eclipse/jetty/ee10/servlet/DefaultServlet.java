@@ -1083,8 +1083,7 @@ public class DefaultServlet extends HttpServlet
                 welcomeTarget = URIUtil.addPaths(servletPath, welcomeTarget);
 
             servletResponse.setContentLength(0);
-            servletResponse.sendRedirect(welcomeTarget);
-            callback.succeeded();
+            Response.sendRedirect(request, response, callback, welcomeTarget);
         }
 
         @Override

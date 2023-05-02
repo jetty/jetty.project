@@ -867,7 +867,7 @@ public class ServletRequestState
         //       - after both unhandle and complete for async
 
         ServletContextRequest servletContextRequest = _servletChannel.getServletContextRequest();
-        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
 
         final Request request = _servletChannel.getServletContextRequest();
         final Response response = _servletChannel.getResponse();

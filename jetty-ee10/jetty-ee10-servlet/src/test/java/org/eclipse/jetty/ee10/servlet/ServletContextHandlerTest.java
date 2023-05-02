@@ -64,14 +64,13 @@ import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.RoleInfo;
-import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -1524,7 +1523,7 @@ public class ServletContextHandlerTest
         context.setContextPath("/");
         _server.setHandler(context);
         _server.start();
-        assertThat(((ConstraintSecurityHandler)context.getSecurityHandler()).getRoles(), containsInAnyOrder("tom", "dick", "harry"));
+        assertThat(((ConstraintSecurityHandler)context.getSecurityHandler()).getKnownRoles(), containsInAnyOrder("tom", "dick", "harry"));
     }
 
     @Test
@@ -1800,29 +1799,9 @@ public class ServletContextHandlerTest
         SecurityHandler myHandler = new SecurityHandler()
         {
             @Override
-            protected RoleInfo prepareConstraintInfo(String pathInContext, HttpServletRequest request)
+            protected Constraint getConstraint(String pathInContext, Request request)
             {
                 return null;
-            }
-
-            @Override
-            protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response,
-                                                       Callback callback, RoleInfo constraintInfo)
-            {
-                return false;
-            }
-
-            @Override
-            protected boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo)
-            {
-                return false;
-            }
-
-            @Override
-            protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response,
-                                                          Object constraintInfo, UserIdentity userIdentity)
-            {
-                return false;
             }
         };
 

@@ -16,6 +16,8 @@ package org.eclipse.jetty.util;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -287,5 +289,28 @@ public class ExceptionUtil
 
     private ExceptionUtil()
     {
+    }
+
+    /**
+     * <p>Get from a {@link CompletableFuture} and convert any uncheck exceptions to {@link RuntimeException}.</p>
+     * @param completableFuture The future to get from.
+     * @param <T> The type of the {@code CompletableFuture}
+     * @return The value from calling {@link CompletableFuture#get()}
+     * @throws RuntimeException if the call to {@link CompletableFuture#get()} throws.
+     */
+    public static <T> T get(CompletableFuture<T> completableFuture)
+    {
+        try
+        {
+            return completableFuture.get();
+        }
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException(e);
+        }
+        catch (ExecutionException e)
+        {
+            throw new RuntimeException(e.getCause());
+        }
     }
 }

@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.webapp.Configuration;
-import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
@@ -86,7 +85,7 @@ public class JakartaClientShutdownWithServerWebAppTest
         WSServer.WebApp app = server.createWebApp(contextName);
 
         // Exclude the Jakarta WebSocket configuration from the webapp.
-        Configuration[] configurations = Configurations.getKnown().stream()
+        Configuration[] configurations = app.getWebAppContext().getConfigurations().stream()
             .filter(configuration -> !(configuration instanceof JakartaWebSocketConfiguration))
             .toArray(Configuration[]::new);
         app.getWebAppContext().setConfigurations(configurations);

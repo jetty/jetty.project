@@ -23,17 +23,16 @@ detected.
 
   <Get name="securityHandler">
     <Set name="loginService">
-      <New class="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
         <Set name="name">Test Realm</Set>        
         <Set name="config"><Ref refid="realmResource"/></Set>
       </New>
     </Set>
     <Set name="authenticator">
-      <New class="org.eclipse.jetty.ee10.servlet.security.authentication.FormAuthenticator">
+      <New class="org.eclipse.jetty.security.authentication.FormAuthenticator">
         <Set name="alwaysSaveUri">true</Set>
       </New>
     </Set>
-    <Set name="checkWelcomeFiles">true</Set>
   </Get>
 
   <Set name="parentLoaderPriority">true</Set>

@@ -25,8 +25,9 @@ import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.SslClientCertAuthenticator;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,17 +63,17 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         String auth = configuration.getAuthMethod();
         Authenticator authenticator = null;
 
-        if (Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
+        if (Authenticator.BASIC_AUTH.equalsIgnoreCase(auth))
             authenticator = new BasicAuthenticator();
-        else if (Constraint.__DIGEST_AUTH.equalsIgnoreCase(auth))
+        else if (Authenticator.DIGEST_AUTH.equalsIgnoreCase(auth))
             authenticator = new DigestAuthenticator();
-        else if (Constraint.__FORM_AUTH.equalsIgnoreCase(auth))
+        else if (Authenticator.FORM_AUTH.equalsIgnoreCase(auth))
             authenticator = new FormAuthenticator();
-        else if (Constraint.__SPNEGO_AUTH.equalsIgnoreCase(auth))
+        else if (Authenticator.SPNEGO_AUTH.equalsIgnoreCase(auth))
             authenticator = new ConfigurableSpnegoAuthenticator();
-        else if (Constraint.__NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
-            authenticator = new ConfigurableSpnegoAuthenticator(Constraint.__NEGOTIATE_AUTH);
-        if (Constraint.__CERT_AUTH.equalsIgnoreCase(auth) || Constraint.__CERT_AUTH2.equalsIgnoreCase(auth))
+        else if (Authenticator.NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
+            authenticator = new ConfigurableSpnegoAuthenticator(Authenticator.NEGOTIATE_AUTH);
+        if (Authenticator.CERT_AUTH.equalsIgnoreCase(auth) || Authenticator.CERT_AUTH2.equalsIgnoreCase(auth))
         {
             Collection<SslContextFactory.Server> sslContextFactories = server.getBeans(SslContextFactory.Server.class);
             if (sslContextFactories.size() != 1)

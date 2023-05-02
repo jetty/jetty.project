@@ -28,7 +28,7 @@
             <webApp>
               <contextPath>/test-jaas</contextPath>
               <securityHandler implementation="org.eclipse.jetty.security.ConstraintSecurityHandler">
-                <loginService implementation="org.eclipse.jetty.ee9.jaas.JAASLoginService">
+                <loginService implementation="org.eclipse.jetty.security.jaas.JAASLoginService">
                   <name>Test JAAS Realm</name>
                   <loginModuleName>ee9-xyz</loginModuleName>
                 </loginService>

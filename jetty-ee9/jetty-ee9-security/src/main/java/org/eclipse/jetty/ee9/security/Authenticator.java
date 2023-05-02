@@ -20,6 +20,8 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
 
 /**
@@ -34,6 +36,14 @@ import org.eclipse.jetty.server.Server;
  */
 public interface Authenticator
 {
+    String BASIC_AUTH = org.eclipse.jetty.security.Authenticator.BASIC_AUTH;
+    String FORM_AUTH = org.eclipse.jetty.security.Authenticator.FORM_AUTH;
+    String DIGEST_AUTH = org.eclipse.jetty.security.Authenticator.DIGEST_AUTH;
+    String CERT_AUTH = org.eclipse.jetty.security.Authenticator.CERT_AUTH;
+    String CERT_AUTH2 = org.eclipse.jetty.security.Authenticator.CERT_AUTH2;
+    String SPNEGO_AUTH = org.eclipse.jetty.security.Authenticator.SPNEGO_AUTH;
+    String NEGOTIATE_AUTH = org.eclipse.jetty.security.Authenticator.NEGOTIATE_AUTH;
+    String OPENID_AUTH = org.eclipse.jetty.security.Authenticator.OPENID_AUTH;
 
     /**
      * Configure the Authenticator

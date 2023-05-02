@@ -301,7 +301,7 @@ public class TestServletAnnotations
         sh.setRoles(Set.of("humpty", "dumpty"));
         DeclareRolesAnnotationHandler handler = new DeclareRolesAnnotationHandler(wac);
         handler.doHandle(ServletC.class);
-        assertThat(sh.getRoles(), containsInAnyOrder("humpty", "alice", "dumpty"));
+        assertThat(sh.getKnownRoles(), containsInAnyOrder("humpty", "alice", "dumpty"));
     }
 
     private void copyClass(Class<?> clazz, Path outputDir) throws IOException, URISyntaxException

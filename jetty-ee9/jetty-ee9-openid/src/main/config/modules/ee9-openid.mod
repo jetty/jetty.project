@@ -8,6 +8,7 @@ ee9
 
 [depend]
 ee9-security
+openid
 client
 
 [lib]

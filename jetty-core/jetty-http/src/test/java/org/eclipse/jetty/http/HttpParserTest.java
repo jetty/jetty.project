@@ -235,6 +235,21 @@ public class HttpParserTest
 
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
+    public void testLineParse5(String eoln)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /ctx/testLoginPage;jsessionid=123456789;other HTTP/1.0" + eoln + eoln, StandardCharsets.UTF_8);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/ctx/testLoginPage;jsessionid=123456789;other", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(-1, _headers);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\r\n", "\n"})
     public void testLongURLParse(String eoln)
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/ HTTP/1.0" + eoln + eoln);

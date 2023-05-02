@@ -409,8 +409,10 @@ public interface Request extends Attributes, Content.Source
 
     static Fields extractQueryParameters(Request request)
     {
-        Fields fields = new Fields(true);
         String query = request.getHttpURI().getQuery();
+        if (StringUtil.isBlank(query))
+            return Fields.EMPTY;
+        Fields fields = new Fields(true);
         if (StringUtil.isNotBlank(query))
             UrlEncoded.decodeUtf8To(query, fields);
         return fields;
@@ -423,6 +425,13 @@ public interface Request extends Attributes, Content.Source
         if (StringUtil.isNotBlank(query))
             UrlEncoded.decodeTo(query, fields::add, charset);
         return fields;
+    }
+
+    static Fields getParameters(Request request) throws Exception
+    {
+        Fields queryFields = Request.extractQueryParameters(request);
+        Fields formFields = FormFields.from(request).get();
+        return Fields.combine(queryFields, formFields);
     }
 
     @SuppressWarnings("unchecked")
@@ -457,7 +466,6 @@ public interface Request extends Attributes, Content.Source
      */
     static String toRedirectURI(Request request, String location)
     {
-        // TODO write some tests for this
         if (!URIUtil.hasScheme(location) && !request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
         {
             StringBuilder url = new StringBuilder(128);
