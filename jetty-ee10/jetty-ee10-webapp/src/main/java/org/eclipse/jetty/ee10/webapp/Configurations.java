@@ -213,9 +213,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         if (configurations == null)
         {
             configurations = new Configurations(Configurations.getKnown().stream()
-                .filter(c -> c.isEnabledByDefault())
-                .map(c -> c.getClass().getName())
-                .toArray(String[]::new));
+                .filter(Configuration::isEnabledByDefault)
+                .toList());
         }
 
         if (LOG.isDebugEnabled())
@@ -224,10 +223,26 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         return configurations;
     }
 
-    protected List<Configuration> _configurations = new ArrayList<>();
+    private final List<Configuration> _configurations;
 
     public Configurations()
     {
+        this(Collections.emptyList());
+    }
+
+    public Configurations(List<Configuration> configurations)
+    {
+        _configurations = new ArrayList<>(configurations == null ? Collections.emptyList() : configurations);
+    }
+
+    public Configurations(Configuration... configurations)
+    {
+        this(Arrays.asList(configurations));
+    }
+
+    public Configurations(String... configurationClassNames)
+    {
+        this(Arrays.stream(configurationClassNames).map(Configurations::newConfiguration).toList());
     }
 
     protected static Configuration newConfiguration(String classname)
@@ -250,23 +265,6 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         }
     }
 
-    public Configurations(String... classes)
-    {
-        add(classes);
-    }
-
-    public Configurations(List<String> classes)
-    {
-        add(classes.toArray(new String[classes.size()]));
-    }
-
-    public Configurations(Configurations classlist)
-    {
-        this(classlist._configurations.stream()
-            .map(c -> c.getClass().getName())
-            .toArray(String[]::new));
-    }
-    
     @Override
     public boolean add(Configuration configuration)
     {
@@ -367,7 +365,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
 
     public String[] toArray()
     {
-        return _configurations.stream().map(c -> c.getClass().getName()).toArray(String[]::new);
+        return _configurations.stream().map(Configuration::getClass).map(Class::getName).toArray(String[]::new);
     }
 
     public void sort()
