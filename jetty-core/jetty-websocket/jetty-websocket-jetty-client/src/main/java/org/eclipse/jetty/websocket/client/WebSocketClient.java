@@ -35,10 +35,9 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.eclipse.jetty.websocket.api.Configurable;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.client.internal.JettyClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
@@ -52,7 +51,7 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer
+public class WebSocketClient extends ContainerLifeCycle implements Configurable, WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClient.class);
     private final WebSocketCoreClient coreClient;
@@ -178,12 +177,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
-    public WebSocketBehavior getBehavior()
-    {
-        return WebSocketBehavior.CLIENT;
-    }
-
-    @Override
     public void addSessionListener(WebSocketSessionListener listener)
     {
         sessionListeners.add(listener);
@@ -218,46 +211,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
-    public int getInputBufferSize()
-    {
-        return configurationCustomizer.getInputBufferSize();
-    }
-
-    @Override
-    public int getOutputBufferSize()
-    {
-        return configurationCustomizer.getOutputBufferSize();
-    }
-
-    @Override
-    public long getMaxBinaryMessageSize()
-    {
-        return configurationCustomizer.getMaxBinaryMessageSize();
-    }
-
-    @Override
-    public long getMaxTextMessageSize()
-    {
-        return configurationCustomizer.getMaxTextMessageSize();
-    }
-
-    @Override
-    public long getMaxFrameSize()
-    {
-        return configurationCustomizer.getMaxFrameSize();
-    }
-
-    @Override
-    public boolean isAutoFragment()
-    {
-        return configurationCustomizer.isAutoFragment();
-    }
-
-    @Override
     public void setIdleTimeout(Duration duration)
     {
         configurationCustomizer.setIdleTimeout(duration);
         getHttpClient().setIdleTimeout(duration.toMillis());
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return configurationCustomizer.getInputBufferSize();
     }
 
     @Override
@@ -267,9 +230,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
+    public int getOutputBufferSize()
+    {
+        return configurationCustomizer.getOutputBufferSize();
+    }
+
+    @Override
     public void setOutputBufferSize(int size)
     {
         configurationCustomizer.setOutputBufferSize(size);
+    }
+
+    @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return configurationCustomizer.getMaxBinaryMessageSize();
     }
 
     @Override
@@ -279,9 +254,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
+    public long getMaxTextMessageSize()
+    {
+        return configurationCustomizer.getMaxTextMessageSize();
+    }
+
+    @Override
     public void setMaxTextMessageSize(long size)
     {
         configurationCustomizer.setMaxTextMessageSize(size);
+    }
+
+    @Override
+    public long getMaxFrameSize()
+    {
+        return configurationCustomizer.getMaxFrameSize();
     }
 
     @Override
@@ -291,9 +278,27 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
+    public boolean isAutoFragment()
+    {
+        return configurationCustomizer.isAutoFragment();
+    }
+
+    @Override
     public void setAutoFragment(boolean autoFragment)
     {
         configurationCustomizer.setAutoFragment(autoFragment);
+    }
+
+    @Override
+    public int getMaxOutgoingFrames()
+    {
+        return configurationCustomizer.getMaxOutgoingFrames();
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
+    {
+        configurationCustomizer.setMaxOutgoingFrames(maxOutgoingFrames);
     }
 
     public SocketAddress getBindAddress()

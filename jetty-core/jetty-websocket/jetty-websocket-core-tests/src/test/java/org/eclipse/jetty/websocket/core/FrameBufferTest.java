@@ -85,8 +85,8 @@ public class FrameBufferTest extends WebSocketTester
         TestFrameHandler clientHandler = new TestFrameHandler();
         client.connect(clientHandler, server.getUri()).get(5, TimeUnit.SECONDS);
         serverHandler.open.await(5, TimeUnit.SECONDS);
-        clientHandler.coreSession.setAutoFragment(false);
-        serverHandler.coreSession.setAutoFragment(false);
+        clientHandler.getCoreSession().setAutoFragment(false);
+        serverHandler.getCoreSession().setAutoFragment(false);
 
         int payloadLen = 32 * 1024;
         byte[] array = new byte[payloadLen];

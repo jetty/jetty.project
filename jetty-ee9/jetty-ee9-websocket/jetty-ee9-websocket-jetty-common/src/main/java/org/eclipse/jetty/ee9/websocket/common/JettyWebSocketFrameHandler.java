@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.websocket.common;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
@@ -82,7 +81,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private WebSocketSession session;
     private SuspendState state = SuspendState.DEMANDING;
     private Runnable delayedOnFrame;
-    private CoreSession coreSession;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
                                       Object endpointInstance,
@@ -151,7 +149,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
-            this.coreSession = coreSession;
             session = new WebSocketSession(container, coreSession, this);
             if (!session.isOpen())
                 throw new IllegalStateException("Session is not open");
@@ -165,13 +162,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             pingHandle = InvokerUtils.bindTo(pingHandle, session);
             pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
-            Executor executor = container.getExecutor();
-
             if (textHandle != null)
-                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, session);
+                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, session);
 
             if (binaryHandle != null)
-                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, session);
+                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, session);
 
             if (openHandle != null)
                 openHandle.invoke();
@@ -191,7 +186,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
@@ -227,26 +222,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         switch (frame.getOpCode())
         {
-            case OpCode.CLOSE:
-                onCloseFrame(frame, callback);
-                break;
-            case OpCode.PING:
-                onPingFrame(frame, callback);
-                break;
-            case OpCode.PONG:
-                onPongFrame(frame, callback);
-                break;
-            case OpCode.TEXT:
-                onTextFrame(frame, callback);
-                break;
-            case OpCode.BINARY:
-                onBinaryFrame(frame, callback);
-                break;
-            case OpCode.CONTINUATION:
-                onContinuationFrame(frame, callback);
-                break;
-            default:
-                callback.failed(new IllegalStateException());
+            case OpCode.CLOSE -> onCloseFrame(frame, callback);
+            case OpCode.PING -> onPingFrame(frame, callback);
+            case OpCode.PONG -> onPongFrame(frame, callback);
+            case OpCode.TEXT -> onTextFrame(frame, callback);
+            case OpCode.BINARY -> onBinaryFrame(frame, callback);
+            case OpCode.CONTINUATION -> onContinuationFrame(frame, callback);
+            default -> callback.failed(new IllegalStateException());
         }
     }
 
@@ -283,7 +265,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             // We are now closed and cannot suspend or resume.
             state = SuspendState.CLOSED;
@@ -422,15 +404,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         acceptMessage(frame, callback);
     }
 
-    @Override
-    public boolean isAutoDemanding()
-    {
-        return false;
-    }
-
     public void suspend()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
@@ -448,7 +424,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         boolean needDemand = false;
         Runnable delayedFrame = null;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
@@ -485,7 +461,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private void demand()
     {
         boolean demand = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
@@ -517,8 +493,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (cause instanceof BadPayloadException)
             return new org.eclipse.jetty.ee9.websocket.api.exceptions.BadPayloadException(cause.getMessage(), cause);
 
-        if (cause instanceof CloseException)
-            return new org.eclipse.jetty.ee9.websocket.api.exceptions.CloseException(((CloseException)cause).getStatusCode(), cause.getMessage(), cause);
+        if (cause instanceof CloseException ce)
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.CloseException(ce.getStatusCode(), cause.getMessage(), cause);
 
         if (cause instanceof WebSocketTimeoutException)
             return new org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketTimeoutException(cause.getMessage(), cause);
@@ -526,11 +502,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (cause instanceof InvalidSignatureException)
             return new org.eclipse.jetty.ee9.websocket.api.exceptions.InvalidWebSocketException(cause.getMessage(), cause);
 
-        if (cause instanceof UpgradeException)
-        {
-            UpgradeException ue = (UpgradeException)cause;
+        if (cause instanceof UpgradeException ue)
             return new org.eclipse.jetty.ee9.websocket.api.exceptions.UpgradeException(ue.getRequestURI(), ue.getResponseStatusCode(), cause);
-        }
 
         return cause;
     }

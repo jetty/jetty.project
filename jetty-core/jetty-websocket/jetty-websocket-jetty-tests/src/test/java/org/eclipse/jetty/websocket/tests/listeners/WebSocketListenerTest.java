@@ -27,9 +27,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
@@ -99,12 +99,12 @@ public class WebSocketListenerTest
 
         // Send and receive echo on client.
         String payload = "hello world";
-        clientEndpoint.session.getRemote().sendString(payload);
+        clientEndpoint.session.sendText(payload, Callback.NOOP);
         String echoMessage = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertThat(echoMessage, is(payload));
 
         // Close normally.
-        clientEndpoint.session.close(StatusCode.NORMAL, "standard close");
+        clientEndpoint.session.close(StatusCode.NORMAL, "standard close", Callback.NOOP);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeCode, is(StatusCode.NORMAL));
         assertThat(clientEndpoint.closeReason, is("standard close"));
@@ -119,12 +119,12 @@ public class WebSocketListenerTest
 
         // Send and receive echo on client.
         ByteBuffer payload = BufferUtil.toBuffer("hello world");
-        clientEndpoint.session.getRemote().sendBytes(payload);
+        clientEndpoint.session.sendBinary(payload, Callback.NOOP);
         ByteBuffer echoMessage = clientEndpoint.binaryMessages.poll(5, TimeUnit.SECONDS);
         assertThat(echoMessage, is(payload));
 
         // Close normally.
-        clientEndpoint.session.close(StatusCode.NORMAL, "standard close");
+        clientEndpoint.session.close(StatusCode.NORMAL, "standard close", Callback.NOOP);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeCode, is(StatusCode.NORMAL));
         assertThat(clientEndpoint.closeReason, is("standard close"));
@@ -136,10 +136,10 @@ public class WebSocketListenerTest
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
         BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
-        WebSocketListener clientEndpoint = new WebSocketListener()
+        Session.Listener clientEndpoint = new Session.Listener.AutoDemanding()
         {
             @Override
-            public void onWebSocketConnect(Session session)
+            public void onWebSocketOpen(Session session)
             {
                 openLatch.countDown();
             }
@@ -162,12 +162,12 @@ public class WebSocketListenerTest
 
         // Send and receive echo on client.
         String payload = "hello world";
-        session.getRemote().sendString(payload);
+        session.sendText(payload, Callback.NOOP);
         String echoMessage = textMessages.poll(5, TimeUnit.SECONDS);
         assertThat(echoMessage, is(payload));
 
         // Close normally.
-        session.close(StatusCode.NORMAL, "standard close");
+        session.close(StatusCode.NORMAL, "standard close", Callback.NOOP);
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 

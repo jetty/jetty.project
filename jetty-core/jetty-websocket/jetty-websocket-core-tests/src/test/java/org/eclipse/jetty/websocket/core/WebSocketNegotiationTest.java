@@ -484,7 +484,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         // The list of Extensions on the client contains the internal Extensions.
         StringBuilder negotiatedExtensions = new StringBuilder();
-        List<Extension> extensions = ((WebSocketCoreSession)clientHandler.coreSession).getExtensionStack().getExtensions();
+        List<Extension> extensions = ((WebSocketCoreSession)clientHandler.getCoreSession()).getExtensionStack().getExtensions();
         for (int i = 0; i < extensions.size(); i++)
         {
             negotiatedExtensions.append(extensions.get(i).getConfig().getParameterizedName());

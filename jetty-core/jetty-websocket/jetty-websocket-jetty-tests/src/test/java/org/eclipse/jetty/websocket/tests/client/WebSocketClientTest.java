@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.util.WSURI;
@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.ConnectMessageEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.ParamsEndpoint;
-import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
+import org.eclipse.jetty.websocket.tests.util.FutureCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,8 +153,7 @@ public class WebSocketClientTest
             Collection<Session> sessions = client.getOpenSessions();
             assertThat("client.sessions.size", sessions.size(), is(1));
 
-            RemoteEndpoint remote = cliSock.getSession().getRemote();
-            remote.sendString("Hello World!");
+            cliSock.getSession().sendText("Hello World!", Callback.NOOP);
 
             // wait for response from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -184,10 +183,9 @@ public class WebSocketClientTest
             Collection<Session> sessions = client.getOpenSessions();
             assertThat("client.sessions.size", sessions.size(), is(1));
 
-            RemoteEndpoint remote = cliSock.getSession().getRemote();
-            remote.sendPartialString("Hello", false);
-            remote.sendPartialString(" ", false);
-            remote.sendPartialString("World", true);
+            cliSock.getSession().sendPartialText("Hello", false, Callback.NOOP);
+            cliSock.getSession().sendPartialText(" ", false, Callback.NOOP);
+            cliSock.getSession().sendPartialText("World", true, Callback.NOOP);
 
             // wait for response from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -217,10 +215,9 @@ public class WebSocketClientTest
             Collection<Session> sessions = client.getOpenSessions();
             assertThat("client.sessions.size", sessions.size(), is(1));
 
-            RemoteEndpoint remote = cliSock.getSession().getRemote();
-            remote.sendPartialString("Hello", false);
-            remote.sendPartialString(" ", false);
-            remote.sendPartialString("World", true);
+            cliSock.getSession().sendPartialText("Hello", false, Callback.NOOP);
+            cliSock.getSession().sendPartialText(" ", false, Callback.NOOP);
+            cliSock.getSession().sendPartialText("World", true, Callback.NOOP);
 
             String[] parts = {
                 "The difference between the right word ",
@@ -228,9 +225,15 @@ public class WebSocketClientTest
                 "between lightning and a lightning bug."
             };
 
-            remote.sendPartialBytes(BufferUtil.toBuffer(parts[0]), false);
-            remote.sendPartialBytes(BufferUtil.toBuffer(parts[1]), false);
-            remote.sendPartialBytes(BufferUtil.toBuffer(parts[2]), true);
+            Session session2 = cliSock.getSession();
+            ByteBuffer b2 = BufferUtil.toBuffer(parts[0]);
+            session2.sendPartialBinary(b2, false, Callback.NOOP);
+            Session session1 = cliSock.getSession();
+            ByteBuffer b1 = BufferUtil.toBuffer(parts[1]);
+            session1.sendPartialBinary(b1, false, Callback.NOOP);
+            Session session = cliSock.getSession();
+            ByteBuffer b = BufferUtil.toBuffer(parts[2]);
+            session.sendPartialBinary(b, true, Callback.NOOP);
 
             // wait for response from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -264,9 +267,9 @@ public class WebSocketClientTest
             Collection<Session> sessions = client.getOpenSessions();
             assertThat("client.sessions.size", sessions.size(), is(1));
 
-            FutureWriteCallback callback = new FutureWriteCallback();
+            FutureCallback callback = new FutureCallback();
 
-            cliSock.getSession().getRemote().sendString("Hello World!", callback);
+            cliSock.getSession().sendText("Hello World!", callback);
             callback.get(5, TimeUnit.SECONDS);
 
             // wait for response from server
@@ -295,7 +298,7 @@ public class WebSocketClientTest
 
             // wait for message from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Message", received, containsString("Greeting from onConnect"));
+            assertThat("Message", received, containsString("Greeting from onOpen"));
         }
     }
 
@@ -313,10 +316,10 @@ public class WebSocketClientTest
 
         try (Session sess = future.get(5, TimeUnit.SECONDS))
         {
-            Assertions.assertTrue(cliSock.openLatch.await(1, TimeUnit.SECONDS));
+            Assertions.assertTrue(cliSock.connectLatch.await(1, TimeUnit.SECONDS));
 
-            InetSocketAddress local = (InetSocketAddress)cliSock.getSession().getLocalAddress();
-            InetSocketAddress remote = (InetSocketAddress)cliSock.getSession().getRemoteAddress();
+            InetSocketAddress local = (InetSocketAddress)cliSock.getSession().getLocalSocketAddress();
+            InetSocketAddress remote = (InetSocketAddress)cliSock.getSession().getRemoteSocketAddress();
 
             assertThat("Local Socket Address", local, notNullValue());
             assertThat("Remote Socket Address", remote, notNullValue());
@@ -359,7 +362,7 @@ public class WebSocketClientTest
             Arrays.fill(buf, (byte)'x');
             String msg = StringUtil.toUTF8String(buf, 0, buf.length);
 
-            sess.getRemote().sendString(msg);
+            sess.sendText(msg, Callback.NOOP);
 
             // wait for message from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);

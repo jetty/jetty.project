@@ -34,10 +34,11 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Configurable;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -84,10 +85,10 @@ public class JettyClientClassLoaderTest
     {
         LinkedBlockingQueue<String> textMessages = new LinkedBlockingQueue<>();
 
-        @OnWebSocketConnect
+        @OnWebSocketOpen
         public void onOpen(Session session) throws Exception
         {
-            session.getRemote().sendString("ContextClassLoader: " + Thread.currentThread().getContextClassLoader());
+            session.sendText("ContextClassLoader: " + Thread.currentThread().getContextClassLoader(), Callback.NOOP);
         }
 
         @OnWebSocketMessage
@@ -152,7 +153,7 @@ public class JettyClientClassLoaderTest
         @OnWebSocketMessage
         public void onMessage(Session session, String message) throws Exception
         {
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
         }
     }
 
@@ -162,7 +163,7 @@ public class JettyClientClassLoaderTest
 
         // Copy over the individual jars required for Javax WebSocket.
         app.createWebInf();
-        app.copyLib(WebSocketPolicy.class, "jetty-websocket-jetty-api.jar");
+        app.copyLib(Configurable.class, "jetty-websocket-jetty-api.jar");
         app.copyLib(WebSocketClient.class, "jetty-websocket-jetty-client.jar");
         app.copyLib(WebSocketSession.class, "jetty-websocket-jetty-common.jar");
         app.copyLib(ContainerLifeCycle.class, "jetty-util.jar");

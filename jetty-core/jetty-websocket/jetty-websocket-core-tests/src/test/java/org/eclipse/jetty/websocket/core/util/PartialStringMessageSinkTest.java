@@ -51,7 +51,7 @@ public class PartialStringMessageSinkTest
     @BeforeEach
     public void before() throws Exception
     {
-        messageSink = new PartialStringMessageSink(coreSession, endpoint.getMethodHandle());
+        messageSink = new PartialStringMessageSink(coreSession, endpoint.getMethodHandle(), true);
     }
 
     @Test

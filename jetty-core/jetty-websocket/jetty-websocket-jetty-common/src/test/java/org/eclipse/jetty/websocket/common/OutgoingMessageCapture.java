@@ -22,12 +22,13 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.slf4j.Logger;
@@ -45,7 +46,6 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     private final MethodHandle wholeTextHandle;
     private final MethodHandle wholeBinaryHandle;
     private MessageSink messageSink;
-    private long maxMessageSize = 2 * 1024 * 1024;
 
     public OutgoingMessageCapture()
     {
@@ -55,7 +55,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
             MethodHandle text = lookup.findVirtual(this.getClass(), "onWholeText", MethodType.methodType(Void.TYPE, String.class));
             this.wholeTextHandle = text.bindTo(this);
 
-            MethodHandle binary = lookup.findVirtual(this.getClass(), "onWholeBinary", MethodType.methodType(Void.TYPE, ByteBuffer.class));
+            MethodHandle binary = lookup.findVirtual(this.getClass(), "onWholeBinary", MethodType.methodType(Void.TYPE, ByteBuffer.class, Callback.class));
             this.wholeBinaryHandle = binary.bindTo(this);
         }
         catch (NoSuchMethodException | IllegalAccessException e)
@@ -65,7 +65,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(Frame frame, org.eclipse.jetty.util.Callback callback, boolean batch)
     {
         switch (frame.getOpCode())
         {
@@ -96,7 +96,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new StringMessageSink(this, wholeTextHandle);
+                messageSink = new StringMessageSink(this, wholeTextHandle, true);
                 break;
             }
             case OpCode.BINARY:
@@ -104,7 +104,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new ByteBufferMessageSink(this, wholeBinaryHandle);
+                messageSink = new ByteBufferMessageSink(this, wholeBinaryHandle, true);
                 break;
             }
             case OpCode.CONTINUATION:
@@ -119,7 +119,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
         if (OpCode.isDataFrame(frame.getOpCode()))
         {
             Frame copy = Frame.copy(frame);
-            messageSink.accept(copy, Callback.from(() -> {}, Throwable::printStackTrace));
+            messageSink.accept(copy, org.eclipse.jetty.util.Callback.from(() -> {}, Throwable::printStackTrace));
             if (frame.isFin())
                 messageSink = null;
         }
@@ -140,16 +140,10 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     }
 
     @SuppressWarnings("unused")
-    public void onWholeBinary(ByteBuffer buf)
+    public void onWholeBinary(ByteBuffer buf, Callback callback)
     {
-        ByteBuffer copy = null;
-        if (buf != null)
-        {
-            copy = ByteBuffer.allocate(buf.remaining());
-            copy.put(buf);
-            copy.flip();
-        }
-        this.binaryMessages.offer(copy);
+        this.binaryMessages.offer(BufferUtil.copy(buf));
+        callback.succeed();
     }
 
     private String dataHint(ByteBuffer payload)

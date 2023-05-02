@@ -19,41 +19,29 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.common.internal.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.core.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.core.messages.MessageSink;
-import org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
@@ -68,12 +56,7 @@ import org.eclipse.jetty.websocket.core.util.ReflectUtils;
  * </p>
  * <ul>
  * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
- * <li>Extends {@link org.eclipse.jetty.websocket.api.WebSocketAdapter}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketConnectionListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPartialListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPingPongListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketFrameListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.Session.Listener}</li>
  * </ul>
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
@@ -85,14 +68,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 
     private static final InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
         new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(ByteBuffer.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(byte[].class).required(),
-        new InvokerUtils.Arg(int.class), // offset
-        new InvokerUtils.Arg(int.class) // length
+        new InvokerUtils.Arg(ByteBuffer.class).required(),
+        new InvokerUtils.Arg(Callback.class).required()
     };
 
     private static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
@@ -114,13 +91,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private static final InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
         new InvokerUtils.Arg(Session.class),
         new InvokerUtils.Arg(ByteBuffer.class).required(),
-        new InvokerUtils.Arg(boolean.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(byte[].class).required(),
-        new InvokerUtils.Arg(boolean.class).required()
+        new InvokerUtils.Arg(boolean.class).required(),
+        new InvokerUtils.Arg(Callback.class).required()
     };
 
     private final WebSocketContainer container;
@@ -153,16 +125,12 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 
     public JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {
-        if (WebSocketConnectionListener.class.isAssignableFrom(endpointClass))
-        {
+        if (Session.Listener.class.isAssignableFrom(endpointClass))
             return createListenerMetadata(endpointClass);
-        }
 
         WebSocket websocket = endpointClass.getAnnotation(WebSocket.class);
         if (websocket != null)
-        {
             return createAnnotatedMetadata(websocket, endpointClass);
-        }
 
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
@@ -171,62 +139,10 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        final MethodHandle openHandle = InvokerUtils.bindTo(metadata.getOpenHandle(), endpointInstance);
-        final MethodHandle closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
-        final MethodHandle errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
-        final MethodHandle textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
-        final MethodHandle binaryHandle = InvokerUtils.bindTo(metadata.getBinaryHandle(), endpointInstance);
-        final Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
-        final Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
-        final MethodHandle frameHandle = InvokerUtils.bindTo(metadata.getFrameHandle(), endpointInstance);
-        final MethodHandle pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
-        final MethodHandle pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
-        BatchMode batchMode = metadata.getBatchMode();
-
         // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
         components.getObjectFactory().decorate(endpointInstance);
 
-        return new JettyWebSocketFrameHandler(
-            container,
-            endpointInstance,
-            openHandle, closeHandle, errorHandle,
-            textHandle, binaryHandle,
-            textSinkClass, binarySinkClass,
-            frameHandle, pingHandle, pongHandle,
-            batchMode,
-            metadata);
-    }
-
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
-    {
-        if (msgHandle == null)
-            return null;
-        if (sinkClass == null)
-            return null;
-
-        try
-        {
-            MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
-            MethodHandle ctorHandle = lookup.findConstructor(sinkClass,
-                MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
-            return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle);
-        }
-        catch (NoSuchMethodException e)
-        {
-            throw new RuntimeException("Missing expected MessageSink constructor found at: " + sinkClass.getName(), e);
-        }
-        catch (IllegalAccessException | InstantiationException | InvocationTargetException e)
-        {
-            throw new RuntimeException("Unable to create MessageSink: " + sinkClass.getName(), e);
-        }
-        catch (RuntimeException e)
-        {
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            throw new RuntimeException(t);
-        }
+        return new JettyWebSocketFrameHandler(container, endpointInstance, metadata);
     }
 
     private MethodHandle toMethodHandle(MethodHandles.Lookup lookup, Method method)
@@ -244,99 +160,121 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createListenerMetadata(Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
+        metadata.setAutoDemand(Session.Listener.AutoDemanding.class.isAssignableFrom(endpointClass));
+
         MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
 
-        if (!WebSocketConnectionListener.class.isAssignableFrom(endpointClass))
-            throw new IllegalArgumentException("Class " + endpointClass + " does not implement " + WebSocketConnectionListener.class);
-
-        Method openMethod = ReflectUtils.findMethod(WebSocketConnectionListener.class, "onWebSocketConnect", Session.class);
-        MethodHandle open = toMethodHandle(lookup, openMethod);
-        metadata.setOpenHandler(open, openMethod);
-
-        Method closeMethod = ReflectUtils.findMethod(WebSocketConnectionListener.class, "onWebSocketClose", int.class, String.class);
-        MethodHandle close = toMethodHandle(lookup, closeMethod);
-        metadata.setCloseHandler(close, closeMethod);
-
-        Method errorMethod = ReflectUtils.findMethod(WebSocketConnectionListener.class, "onWebSocketError", Throwable.class);
-        MethodHandle error = toMethodHandle(lookup, errorMethod);
-        metadata.setErrorHandler(error, errorMethod);
-
-        // Simple Data Listener
-        if (WebSocketListener.class.isAssignableFrom(endpointClass))
+        Method openMethod = findMethod(endpointClass, "onWebSocketOpen", Session.class);
+        if (openMethod != null)
         {
-            Method textMethod = ReflectUtils.findMethod(WebSocketListener.class, "onWebSocketText", String.class);
-            MethodHandle text = toMethodHandle(lookup, textMethod);
-            metadata.setTextHandler(StringMessageSink.class, text, textMethod);
-
-            Method binaryMethod = ReflectUtils.findMethod(WebSocketListener.class, "onWebSocketBinary", byte[].class, int.class, int.class);
-            MethodHandle binary = toMethodHandle(lookup, binaryMethod);
-            metadata.setBinaryHandle(ByteArrayMessageSink.class, binary, binaryMethod);
+            MethodHandle connectHandle = toMethodHandle(lookup, openMethod);
+            metadata.setOpenHandle(connectHandle, openMethod);
         }
 
-        // Ping/Pong Listener
-        if (WebSocketPingPongListener.class.isAssignableFrom(endpointClass))
+        Method frameMethod = findMethod(endpointClass, "onWebSocketFrame", Frame.class, Callback.class);
+        if (frameMethod != null)
         {
-            Method pongMethod = ReflectUtils.findMethod(WebSocketPingPongListener.class, "onWebSocketPong", ByteBuffer.class);
-            MethodHandle pong = toMethodHandle(lookup, pongMethod);
-            metadata.setPongHandle(pong, pongMethod);
-
-            Method pingMethod = ReflectUtils.findMethod(WebSocketPingPongListener.class, "onWebSocketPing", ByteBuffer.class);
-            MethodHandle ping = toMethodHandle(lookup, pingMethod);
-            metadata.setPingHandle(ping, pingMethod);
+            MethodHandle frameHandle = toMethodHandle(lookup, frameMethod);
+            metadata.setFrameHandle(frameHandle, frameMethod);
         }
 
-        // Partial Data / Message Listener
-        if (WebSocketPartialListener.class.isAssignableFrom(endpointClass))
+        Method pingMethod = findMethod(endpointClass, "onWebSocketPing", ByteBuffer.class);
+        if (pingMethod != null)
         {
-            Method textMethod = ReflectUtils.findMethod(WebSocketPartialListener.class, "onWebSocketPartialText", String.class, boolean.class);
-            MethodHandle text = toMethodHandle(lookup, textMethod);
-            metadata.setTextHandler(PartialStringMessageSink.class, text, textMethod);
-
-            Method binaryMethod = ReflectUtils.findMethod(WebSocketPartialListener.class, "onWebSocketPartialBinary", ByteBuffer.class, boolean.class);
-            MethodHandle binary = toMethodHandle(lookup, binaryMethod);
-            metadata.setBinaryHandle(PartialByteBufferMessageSink.class, binary, binaryMethod);
+            MethodHandle pingHandle = toMethodHandle(lookup, pingMethod);
+            metadata.setPingHandle(pingHandle, pingMethod);
         }
 
-        // Frame Listener
-        if (WebSocketFrameListener.class.isAssignableFrom(endpointClass))
+        Method pongMethod = findMethod(endpointClass, "onWebSocketPong", ByteBuffer.class);
+        if (pongMethod != null)
         {
-            Method frameMethod = ReflectUtils.findMethod(WebSocketFrameListener.class, "onWebSocketFrame", Frame.class);
-            MethodHandle frame = toMethodHandle(lookup, frameMethod);
-            metadata.setFrameHandler(frame, frameMethod);
+            MethodHandle pongHandle = toMethodHandle(lookup, pongMethod);
+            metadata.setPongHandle(pongHandle, pongMethod);
+        }
+
+        Method partialTextMethod = findMethod(endpointClass, "onWebSocketPartialText", String.class, boolean.class);
+        if (partialTextMethod != null)
+        {
+            MethodHandle partialTextHandle = toMethodHandle(lookup, partialTextMethod);
+            metadata.setTextHandle(PartialStringMessageSink.class, partialTextHandle, partialTextMethod);
+        }
+
+        Method partialBinaryMethod = findMethod(endpointClass, "onWebSocketPartialBinary", ByteBuffer.class, boolean.class, Callback.class);
+        if (partialBinaryMethod != null)
+        {
+            MethodHandle partialBinaryHandle = toMethodHandle(lookup, partialBinaryMethod);
+            metadata.setBinaryHandle(PartialByteBufferMessageSink.class, partialBinaryHandle, partialBinaryMethod);
+        }
+
+        Method textMethod = findMethod(endpointClass, "onWebSocketText", String.class);
+        if (textMethod != null)
+        {
+            MethodHandle textHandle = toMethodHandle(lookup, textMethod);
+            metadata.setTextHandle(StringMessageSink.class, textHandle, textMethod);
+        }
+
+        Method binaryMethod = findMethod(endpointClass, "onWebSocketBinary", ByteBuffer.class, Callback.class);
+        if (binaryMethod != null)
+        {
+            MethodHandle binaryHandle = toMethodHandle(lookup, binaryMethod);
+            metadata.setBinaryHandle(ByteBufferMessageSink.class, binaryHandle, binaryMethod);
+        }
+
+        Method errorMethod = findMethod(endpointClass, "onWebSocketError", Throwable.class);
+        if (errorMethod != null)
+        {
+            MethodHandle errorHandle = toMethodHandle(lookup, errorMethod);
+            metadata.setErrorHandle(errorHandle, errorMethod);
+        }
+
+        Method closeMethod = findMethod(endpointClass, "onWebSocketClose", int.class, String.class);
+        if (closeMethod != null)
+        {
+            MethodHandle closeHandle = toMethodHandle(lookup, closeMethod);
+            metadata.setCloseHandle(closeHandle, closeMethod);
         }
 
         return metadata;
     }
 
+    private Method findMethod(Class<?> klass, String name, Class<?>... parameters)
+    {
+        // Verify if the method is overridden in the endpoint class, to avoid
+        // calling all methods of Session.Listener even if they are not overridden.
+        Method method = ReflectUtils.findMethod(klass, name, parameters);
+        if (method == null)
+            return null;
+        if (!isOverridden(method))
+            return null;
+        // The method is overridden, but it may be declared in a non-public
+        // class, for example an anonymous class, where it won't be accessible,
+        // therefore replace it with the accessible version from Session.Listener.
+        if (!Modifier.isPublic(klass.getModifiers()))
+            method = ReflectUtils.findMethod(Session.Listener.class, name, parameters);
+        return method;
+    }
+
+    private boolean isOverridden(Method method)
+    {
+        return method != null && method.getDeclaringClass() != Session.Listener.class;
+    }
+
     private JettyWebSocketFrameHandlerMetadata createAnnotatedMetadata(WebSocket anno, Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
-
-        int max = anno.inputBufferSize();
-        if (max >= 0)
-            metadata.setInputBufferSize(max);
-        max = anno.maxBinaryMessageSize();
-        if (max >= 0)
-            metadata.setMaxBinaryMessageSize(max);
-        max = anno.maxTextMessageSize();
-        if (max >= 0)
-            metadata.setMaxTextMessageSize(max);
-        max = anno.idleTimeout();
-        if (max >= 0)
-            metadata.setIdleTimeout(Duration.ofMillis(max));
-        metadata.setBatchMode(anno.batchMode());
+        metadata.setAutoDemand(anno.autoDemand());
 
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;
 
-        // OnWebSocketConnect [0..1]
-        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketConnect.class);
+        // OnWebSocketOpen [0..1]
+        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketOpen.class);
         if (onmethod != null)
         {
-            assertSignatureValid(endpointClass, onmethod, OnWebSocketConnect.class);
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketOpen.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION);
-            metadata.setOpenHandler(methodHandle, onmethod);
+            metadata.setOpenHandle(methodHandle, onmethod);
         }
 
         // OnWebSocketClose [0..1]
@@ -348,7 +286,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg STATUS_CODE = new InvokerUtils.Arg(int.class);
             final InvokerUtils.Arg REASON = new InvokerUtils.Arg(String.class);
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, STATUS_CODE, REASON);
-            metadata.setCloseHandler(methodHandle, onmethod);
+            metadata.setCloseHandle(methodHandle, onmethod);
         }
 
         // OnWebSocketError [0..1]
@@ -359,7 +297,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, CAUSE);
-            metadata.setErrorHandler(methodHandle, onmethod);
+            metadata.setErrorHandle(methodHandle, onmethod);
         }
 
         // OnWebSocketFrame [0..1]
@@ -369,13 +307,14 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             assertSignatureValid(endpointClass, onmethod, OnWebSocketFrame.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(Frame.class).required();
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, FRAME);
-            metadata.setFrameHandler(methodHandle, onmethod);
+            final InvokerUtils.Arg CALLBACK = new InvokerUtils.Arg(Callback.class).required();
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, FRAME, CALLBACK);
+            metadata.setFrameHandle(methodHandle, onmethod);
         }
 
         // OnWebSocketMessage [0..2]
         Method[] onMessages = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
-        if (onMessages != null && onMessages.length > 0)
+        if (onMessages != null)
         {
             // The different kind of @OnWebSocketMessage method parameter signatures expected
             for (Method onMsg : onMessages)
@@ -387,7 +326,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 {
                     // Normal Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
-                    metadata.setTextHandler(StringMessageSink.class, methodHandle, onMsg);
+                    metadata.setTextHandle(StringMessageSink.class, methodHandle, onMsg);
                     continue;
                 }
 
@@ -400,18 +339,12 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryArrayCallingArgs);
-                if (methodHandle != null)
-                {
-                    // byte[] Binary Message
-                    assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
-                    metadata.setBinaryHandle(ByteArrayMessageSink.class, methodHandle, onMsg);
-                    continue;
-                }
-
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
+                    if (!metadata.isAutoDemand())
+                        throw new InvalidWebSocketException("InputStream methods require auto-demanding WebSocket endpoints");
+
                     // InputStream Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(InputStreamMessageSink.class, methodHandle, onMsg);
@@ -421,9 +354,12 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, readerCallingArgs);
                 if (methodHandle != null)
                 {
+                    if (!metadata.isAutoDemand())
+                        throw new InvalidWebSocketException("Reader methods require auto-demanding WebSocket endpoints");
+
                     // Reader Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
-                    metadata.setTextHandler(ReaderMessageSink.class, methodHandle, onMsg);
+                    metadata.setTextHandle(ReaderMessageSink.class, methodHandle, onMsg);
                     continue;
                 }
 
@@ -432,7 +368,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 {
                     // Partial Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
-                    metadata.setTextHandler(PartialStringMessageSink.class, methodHandle, onMsg);
+                    metadata.setTextHandle(PartialStringMessageSink.class, methodHandle, onMsg);
                     continue;
                 }
 

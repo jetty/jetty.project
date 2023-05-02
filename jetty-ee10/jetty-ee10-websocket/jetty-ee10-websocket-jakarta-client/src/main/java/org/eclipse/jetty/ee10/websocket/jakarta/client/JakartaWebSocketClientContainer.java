@@ -334,7 +334,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         {
             container.addManaged(this);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} registered for Context shutdown to {}", this, container);
+                LOG.debug("{} registered for WebApp shutdown to {}", this, container);
             return;
         }
 

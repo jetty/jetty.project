@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -44,7 +44,7 @@ public class SlowServerEndpoint
                 {
                     try
                     {
-                        session.getRemote().sendString("Hello/" + i + "/");
+                        session.sendText("Hello/" + i + "/", Callback.NOOP);
                         // fake some slowness
                         TimeUnit.MILLISECONDS.sleep(random.nextInt(2000));
                     }
@@ -58,14 +58,7 @@ public class SlowServerEndpoint
         else
         {
             // echo message.
-            try
-            {
-                session.getRemote().sendString(msg);
-            }
-            catch (IOException ignore)
-            {
-                LOG.trace("IGNORED", ignore);
-            }
+            session.sendText(msg, Callback.NOOP);
         }
     }
 }

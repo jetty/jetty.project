@@ -21,6 +21,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -96,7 +97,7 @@ public class SlowServerTest
 
             int messageCount = 10;
 
-            session.getRemote().sendString("send-slow|" + messageCount);
+            session.sendText("send-slow|" + messageCount, Callback.NOOP);
 
             // Verify receive
             LinkedBlockingQueue<String> responses = clientEndpoint.messageQueue;

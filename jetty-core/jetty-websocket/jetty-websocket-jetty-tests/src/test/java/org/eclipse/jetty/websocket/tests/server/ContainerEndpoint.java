@@ -15,10 +15,10 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import java.util.Collection;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
  * On Message, return container information
@@ -49,15 +49,15 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
             {
                 ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
             }
-            session.getRemote().sendString(ret.toString(), WriteCallback.NOOP);
+            session.sendText(ret.toString(), Callback.NOOP);
         }
-        session.close(StatusCode.NORMAL, "ContainerEndpoint");
+        session.close(StatusCode.NORMAL, "ContainerEndpoint", Callback.NOOP);
     }
 
     @Override
-    public void onWebSocketConnect(Session sess)
+    public void onWebSocketOpen(Session sess)
     {
-        log.debug("onWebSocketConnect({})", sess);
+        log.debug("onWebSocketOpen({})", sess);
         this.session = sess;
     }
 }

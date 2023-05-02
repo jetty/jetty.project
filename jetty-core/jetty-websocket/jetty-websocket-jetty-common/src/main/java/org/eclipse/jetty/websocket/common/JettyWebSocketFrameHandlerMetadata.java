@@ -15,38 +15,32 @@ package org.eclipse.jetty.websocket.common;
 
 import java.lang.invoke.MethodHandle;
 
-import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 
 public class JettyWebSocketFrameHandlerMetadata extends Configuration.ConfigurationCustomizer
 {
+    private boolean autoDemand;
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
-
     private MethodHandle frameHandle;
-
     private MethodHandle textHandle;
     private Class<? extends MessageSink> textSink;
     private MethodHandle binaryHandle;
     private Class<? extends MessageSink> binarySink;
-
     private MethodHandle pingHandle;
     private MethodHandle pongHandle;
 
-    // Batch Configuration
-    private BatchMode batchMode = BatchMode.OFF;
-
-    public void setBatchMode(BatchMode batchMode)
+    public boolean isAutoDemand()
     {
-        this.batchMode = batchMode;
+        return autoDemand;
     }
 
-    public BatchMode getBatchMode()
+    public void setAutoDemand(boolean autoDemand)
     {
-        return batchMode;
+        this.autoDemand = autoDemand;
     }
 
     public void setBinaryHandle(Class<? extends MessageSink> sinkClass, MethodHandle binary, Object origin)
@@ -66,7 +60,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
         return binarySink;
     }
 
-    public void setCloseHandler(MethodHandle close, Object origin)
+    public void setCloseHandle(MethodHandle close, Object origin)
     {
         assertNotSet(this.closeHandle, "CLOSE Handler", origin);
         this.closeHandle = close;
@@ -77,7 +71,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
         return closeHandle;
     }
 
-    public void setErrorHandler(MethodHandle error, Object origin)
+    public void setErrorHandle(MethodHandle error, Object origin)
     {
         assertNotSet(this.errorHandle, "ERROR Handler", origin);
         this.errorHandle = error;
@@ -88,7 +82,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
         return errorHandle;
     }
 
-    public void setFrameHandler(MethodHandle frame, Object origin)
+    public void setFrameHandle(MethodHandle frame, Object origin)
     {
         assertNotSet(this.frameHandle, "FRAME Handler", origin);
         this.frameHandle = frame;
@@ -99,10 +93,10 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
         return frameHandle;
     }
 
-    public void setOpenHandler(MethodHandle open, Object origin)
+    public void setOpenHandle(MethodHandle openHandle, Object origin)
     {
         assertNotSet(this.openHandle, "OPEN Handler", origin);
-        this.openHandle = open;
+        this.openHandle = openHandle;
     }
 
     public MethodHandle getOpenHandle()
@@ -132,7 +126,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
         return pongHandle;
     }
 
-    public void setTextHandler(Class<? extends MessageSink> sinkClass, MethodHandle text, Object origin)
+    public void setTextHandle(Class<? extends MessageSink> sinkClass, MethodHandle text, Object origin)
     {
         assertNotSet(this.textHandle, "TEXT Handler", origin);
         this.textHandle = text;

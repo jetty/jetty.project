@@ -22,6 +22,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
@@ -163,7 +164,7 @@ public class ServerCloseTest
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
             serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SERVER_ERROR), containsString("Intentional FastFail"));
 
-            // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketConnect")
+            // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketOpen")
             assertThat("socket.onErrors", serverEndpoint.errors.size(), greaterThanOrEqualTo(1));
             Throwable cause = serverEndpoint.errors.poll(5, SECONDS);
             assertThat("Error type", cause, instanceOf(RuntimeException.class));
@@ -235,7 +236,7 @@ public class ServerCloseTest
         {
             session = futSession.get(5, SECONDS);
 
-            session.getRemote().sendString("openSessions");
+            session.sendText("openSessions", Callback.NOOP);
 
             String msg = clientEndpoint.messageQueue.poll(5, SECONDS);
 
@@ -269,8 +270,9 @@ public class ServerCloseTest
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
-        serverEndpoint.getSession().close(StatusCode.SHUTDOWN, "SHUTDOWN hard close");
+        assertTrue(serverEndpoint.connectLatch.await(5, SECONDS));
+        Session session = serverEndpoint.getSession();
+        session.close(StatusCode.SHUTDOWN, "SHUTDOWN hard close", Callback.NOOP);
 
         // Verify that client got close
         clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SHUTDOWN), containsString("SHUTDOWN hard close"));
@@ -293,8 +295,9 @@ public class ServerCloseTest
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
-        serverEndpoint.getSession().close(StatusCode.SHUTDOWN, "SHUTDOWN hard close");
+        assertTrue(serverEndpoint.connectLatch.await(5, SECONDS));
+        Session session = serverEndpoint.getSession();
+        session.close(StatusCode.SHUTDOWN, "SHUTDOWN hard close", Callback.NOOP);
 
         // Verify that client got close
         clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SHUTDOWN), containsString("SHUTDOWN hard close"));
