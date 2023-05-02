@@ -419,11 +419,20 @@ public class ServletChannel
                     {
                         dispatch(() ->
                         {
-                            ServletHandler servletHandler = _context.getServletContextHandler().getServletHandler();
-                            ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
+                            try
+                            {
+                                _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
 
-                            mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getHttpServletRequest(), _servletContextRequest.getHttpServletResponse());
-                        }, true);
+                                ServletHandler servletHandler = _context.getServletContextHandler().getServletHandler();
+                                ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
+
+                                mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getHttpServletRequest(), _servletContextRequest.getHttpServletResponse());
+                            }
+                            finally
+                            {
+                                _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+                            }
+                        });
 
                         break;
                     }
@@ -432,40 +441,49 @@ public class ServletChannel
                     {
                         dispatch(() ->
                         {
-                            HttpURI uri;
-                            String pathInContext;
-                            AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
-                            String dispatchString = asyncContextEvent.getDispatchPath();
-                            if (dispatchString != null)
+                            try
                             {
-                                String contextPath = _context.getContextPath();
-                                HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
-                                pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
-                                uri = HttpURI.build(_servletContextRequest.getHttpURI())
-                                    .path(URIUtil.addPaths(contextPath, pathInContext))
-                                    .query(dispatchUri.getQuery());
-                            }
-                            else
-                            {
-                                uri = asyncContextEvent.getBaseURI();
-                                if (uri == null)
+                                _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+
+                                HttpURI uri;
+                                String pathInContext;
+                                AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
+                                String dispatchString = asyncContextEvent.getDispatchPath();
+                                if (dispatchString != null)
                                 {
-                                    uri = _servletContextRequest.getHttpURI();
-                                    pathInContext = Request.getPathInContext(_servletContextRequest);
+                                    String contextPath = _context.getContextPath();
+                                    HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
+                                    pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
+                                    uri = HttpURI.build(_servletContextRequest.getHttpURI())
+                                        .path(URIUtil.addPaths(contextPath, pathInContext))
+                                        .query(dispatchUri.getQuery());
                                 }
                                 else
                                 {
-                                    pathInContext = uri.getCanonicalPath();
-                                    if (_context.getContextPath().length() > 1)
-                                        pathInContext = pathInContext.substring(_context.getContextPath().length());
+                                    uri = asyncContextEvent.getBaseURI();
+                                    if (uri == null)
+                                    {
+                                        uri = _servletContextRequest.getHttpURI();
+                                        pathInContext = Request.getPathInContext(_servletContextRequest);
+                                    }
+                                    else
+                                    {
+                                        pathInContext = uri.getCanonicalPath();
+                                        if (_context.getContextPath().length() > 1)
+                                            pathInContext = pathInContext.substring(_context.getContextPath().length());
+                                    }
                                 }
-                            }
-                            // We first worked with the core pathInContext above, but now need to convert to servlet style
-                            String decodedPathInContext = URIUtil.decodePath(pathInContext);
+                                // We first worked with the core pathInContext above, but now need to convert to servlet style
+                                String decodedPathInContext = URIUtil.decodePath(pathInContext);
 
-                            Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, decodedPathInContext);
-                            dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
-                        }, true);
+                                Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, decodedPathInContext);
+                                dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
+                            }
+                            finally
+                            {
+                                _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+                            }
+                        });
                         break;
                     }
 
@@ -512,7 +530,7 @@ public class ServletChannel
                                 {
                                     // We do not notify ServletRequestListener on this dispatch because it might not
                                     // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
-                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker), false);
+                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
                                     blocker.block();
                                 }
                             }
@@ -650,13 +668,11 @@ public class ServletChannel
         return false;
     }
 
-    private void dispatch(Dispatchable dispatchable, boolean notifyRequestListener) throws Exception
+    private void dispatch(Dispatchable dispatchable) throws Exception
     {
         try
         {
             _servletContextRequest.getResponse().getHttpOutput().reopen();
-            if (notifyRequestListener)
-                _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
             getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_servletContextRequest);
             dispatchable.dispatch();
@@ -669,8 +685,6 @@ public class ServletChannel
         finally
         {
             _combinedListener.onAfterDispatch(_servletContextRequest);
-            if (notifyRequestListener)
-                _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
         }
     }
 
