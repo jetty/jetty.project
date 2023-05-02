@@ -129,7 +129,7 @@ public class HpackTest
         }
         catch (HpackException.SessionException e)
         {
-            assertThat(e.getMessage(), containsString("Header too large"));
+            assertThat(e.getMessage(), containsString("Header size 198 > 164"));
         }
     }
 
