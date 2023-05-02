@@ -238,8 +238,8 @@ public class HttpTokens
      * are replaced with '?'. If this is given a legal character the same value will be returned.
      * <pre>
      * field-vchar = VCHAR / obs-text
-     * obs-text = %x80-FF
-     * VCHAR          =  %x21-7E
+     * obs-text    = %x80-FF
+     * VCHAR       = %x21-7E
      * </pre>
      * @param c the character to test.
      * @return the original character or the replacement character ' ' or '?',
