@@ -1,3 +1,5 @@
+jetty-12.0.0-SNAPSHOT
+
 jetty-12.0.0.beta1 - 02 May 2023
  + 6184 Remove usages of classes associated with JEP-411 that deprecate/remove
    the SecurityManager from the JVM
