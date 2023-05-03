@@ -1,4 +1,46 @@
 jetty-12.0.0-SNAPSHOT
+ + Jan is now using IntelliJ!
+
+jetty-12.0.0.beta1 - 02 May 2023
+ + 6184 Remove usages of classes associated with JEP-411 that deprecate/remove
+   the SecurityManager from the JVM
+ + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
+ + 7608 Jetty-12 MetaData cleanup needed
+ + 8740 Jetty 12 - Move org.eclipse.jetty.server.context.ManagedAttributes to
+   core
+ + 9237 Decouple QTP `idleTimeout` from pool shrink rate
+ + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
+ + 9311 Performance of `ArrayRetainableByteBufferPool.acquire()` can degenerate
+   pathologically as the buckets grow in size
+ + 9391 Jetty 12: port/move Jetty WebSocket APIs, client and server to
+   jetty-core
+ + 9400 Jetty logs warning with stacktrace when annotation parser encounters
+   module-info.class file inside elasticsearch-x-content jar
+ + 9408 HugeResourceTest failing
+ + 9410 Jetty 12: review locking in `MultiPartFormData` and
+   `MultiPartByteRanges`
+ + 9412 Jetty 12: WebSocket hangs when
+   ServerEndpointConfig.Configurator.getEndpointInstance() throws
+ + 9438 Jetty 12: Review JakartaWebSocketClientContainer use of reflection
+ + 9440 Jetty 12: HttpCookieStore should return cookies for "ws" schemes
+ + 9442 Jetty 12 Documentation Html artifact not populated
+ + 9444 Unexpected encoding in request.getPathInfo() with Jetty 12 beta 0
+ + 9459 Path is missing from JSESSIONID cookie in 12 beta 0
+ + 9463 NPE when starting jetty-ee10-maven-plugin
+ + 9464 Respect expiry time of ID token
+ + 9466 WebSocket `DeploymentException` is not thrown by client nor server
+ + 9467 Jetty 12 - Review BOMs
+ + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
+ + 9497 Maven plugin add support for jar projects in `:effective-web-xml`
+ + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9537 "error-on-el-not-found" behavior is not as specified
+ + 9552 Jetty 12 - Rewrite of the Jetty WebSocket APIs
+ + 9554 Move (qpack/hpack) HuffmanDecoder / HuffmanEncoder / NBitInteger* to
+   common location
+ + 9556 Password Util does not ask for password
+ + 9617 Update to apache jasper 10.1.7 for jetty-12 ee10
+ + 9656 jetty-12 ee10 PushBuilderImpl.push must throw IllegalStateException
+ + 9685 Jetty doesn't set the date header on error responses
 
 jetty-12.0.0.beta0 - 23 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
@@ -8,9 +50,9 @@ jetty-12.0.0.beta0 - 23 February 2023
  + 8993 `Content.Chunk.isTerminal()` cannot discriminate `EOF` from chunks
    containing a pooled empty buffer
  + 9038 Jetty 12 - Review EE10 Http[Input|Output].Interceptor APIs
- + 9046 Fix jetty-12 tck tests 
+ + 9046 Fix jetty-12 tck tests
    com.sun.ts.tests.servlet.api.jakarta_servlet_http.httpsessionx.URLClient.invalidateHttpSessionTest
-   and 
+   and
    com.sun.ts.tests.servlet.api.jakarta_servlet_http.httpsessionx.URLClient.invalidateHttpSessionxTest
  + 9051 Review Jetty-12 DelayedHandler
  + 9059 IteratingCallback not serializing close() and failed()
@@ -23,8 +65,7 @@ jetty-12.0.0.beta0 - 23 February 2023
    modules
  + 9166 Jetty 12: review/remove ByteBufferPool
  + 9173 Configuring SameSite on a per-cookie basis in Jetty 12
- + 9181 Jetty 9 java.lang.NullPointerException
-   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
  + 9182 Jetty 12 - Public version of JakartaWebSocketServerContainer
  + 9183 ConnectHandler may close the connection instead of sending 200 OK
  + 9210 Jetty 12 - Review Pool and Pool.Entry
@@ -37,7 +78,7 @@ jetty-12.0.0.beta0 - 23 February 2023
  + 9301 JSTL fails in JPMS
  + 9322 404 handler not working in jetty-12
  + 9326 Jetty 12 - Rename DecryptedEndPoint to SslEndPoint
- + 9334 Better support for Cookie RFC 2965 compliance
+ + 9334 Better support for Cookie RFC 2965 compliance (CVE-2023-26049)
  + 9336 Review LifeCycle of Parts in Jetty 12
  + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
    hard-coded message
@@ -116,24 +157,37 @@ jetty-12.0.0.alpha3 - 07 December 2022
    containing a pooled empty buffer
  + 8999 Overuse of FileID.isArchive() and inability to deal with packed jars
    without .jar extension
- + 9006 WebSocket Message InputStream read() returns signed byte 
+ + 9006 WebSocket Message InputStream read() returns signed byte
  + 8695 Update quiche to 0.16.0
+
+jetty-11.0.15 - 11 April 2023
+ + 6184 Remove usages of classes associated with JEP-411 that deprecate/remove
+   the SecurityManager from the JVM
+ + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
+ + 9237 Decouple QTP `idleTimeout` from pool shrink rate
+ + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
+ + 9400 Jetty logs warning with stacktrace when annotation parser encounters
+   module-info.class file inside elasticsearch-x-content jar
+ + 9464 Respect expiry time of ID token
+ + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
+ + 9497 Maven plugin effective web xml: add support for jar projects
+ + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9517 Jetty 10.0.14 uses wrong pathSpec for request
+ + 9556 Password Util does not ask for password
 
 jetty-11.0.14 - 22 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
  + 9059 IteratingCallback not serializing close() and failed()
  + 9119 Wrong value of javax.servlet.forward.context_path attribute
- + 9181 Jetty 9 java.lang.NullPointerException
-   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
  + 9183 ConnectHandler may close the connection instead of sending 200 OK
  + 9285 ContextHandler sends redirect on BaseResponse instead of Wrapped
    Response object from Handler chain
- + 9334 Better support for Cookie RFC 2965 compliance
+ + 9334 Better support for Cookie RFC 2965 (CVE-2023-26048)
  + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
    hard-coded message
- + jetty-12 null
-
- jetty-11.0.13 - 07 December 2022
+ + 9339 Cleanup CookieCutter Parsing (CVE-2023-26049) jetty-11.0.13 - 07
+   December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
  + 7286 WebSocket write can time out even if the frame / callback has not been
    failed.
@@ -207,19 +261,33 @@ jetty-11.0.12 - 14 September 2022
  + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
    an authority-form request-target
 
+jetty-10.0.15 - 11 April 2023
+ + 6184 JEP-411 will deprecate/remove the SecurityManager from the JVM
+ + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
+ + 9237 Decouple QTP `idleTimeout` from pool shrink rate
+ + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
+ + 9400 Jetty logs warning with stacktrace when annotation parser encounters
+   module-info.class file inside elasticsearch-x-content jar
+ + 9464 Respect expiry time of ID token
+ + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
+ + 9497 Maven plugin effective web xml: add support for jar projects
+ + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9517 Jetty 10.0.14 uses wrong pathSpec for request
+ + 9556 Password Util does not ask for password
+
 jetty-10.0.14 - 22 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
  + 9059 IteratingCallback not serializing close() and failed()
  + 9119 Wrong value of javax.servlet.forward.context_path attribute
- + 9181 Jetty 9 java.lang.NullPointerException
-   SessionHandler.checkRequestedSessionId(SessionHandler.java:1733)
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
  + 9183 ConnectHandler may close the connection instead of sending 200 OK
  + 9285 ContextHandler sends redirect on BaseResponse instead of Wrapped
    Response object from Handler chain
+ + 9344 Cleanup Multipart Handling (CVE-2023-26048)
+ + 9339 Cleanup CookieCutter Parsing (CVE-2023-26049)
  + 9334 Better support for Cookie RFC 2965 compliance
  + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
    hard-coded message
- + jetty-12 null
 
 jetty-10.0.13 - 07 December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
@@ -1193,7 +1261,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers

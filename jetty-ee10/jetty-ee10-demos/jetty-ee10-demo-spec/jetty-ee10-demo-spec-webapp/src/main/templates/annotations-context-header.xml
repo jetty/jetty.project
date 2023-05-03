@@ -21,7 +21,7 @@
 
   <Get name="securityHandler">
     <Set name="loginService">
-      <New class="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
         <Set name="name">Test Realm</Set>
         <Set name="config"><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Set>
       </New>

@@ -546,8 +546,8 @@ public class WebSocketCloseTest extends WebSocketTester
             LOG.debug("onOpen {}", coreSession);
             this.coreSession = coreSession;
             state = this.coreSession.toString();
-            opened.countDown();
             callback.succeeded();
+            opened.countDown();
         }
 
         @Override
@@ -581,12 +581,6 @@ public class WebSocketCloseTest extends WebSocketTester
             error = cause;
             state = coreSession.toString();
             callback.succeeded();
-        }
-
-        @Override
-        public boolean isAutoDemanding()
-        {
-            return false;
         }
     }
 }

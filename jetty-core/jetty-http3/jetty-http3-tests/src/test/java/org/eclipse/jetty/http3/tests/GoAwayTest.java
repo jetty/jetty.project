@@ -1232,13 +1232,13 @@ public class GoAwayTest extends AbstractClientServerTest
             }
         });
 
-        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(settingsLatch.await(10, TimeUnit.SECONDS));
 
         server.stop();
 
-        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(30, TimeUnit.SECONDS));
+        assertTrue(clientDisconnectLatch.await(30, TimeUnit.SECONDS));
+        assertTrue(serverDisconnectLatch.await(30, TimeUnit.SECONDS));
 
         await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
         await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));

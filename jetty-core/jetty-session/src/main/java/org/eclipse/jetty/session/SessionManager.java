@@ -80,9 +80,9 @@ public interface SessionManager extends LifeCycle, SessionConfig
     void newSession(Request request, String requestedSessionId, Consumer<ManagedSession> consumer);
 
     ManagedSession getManagedSession(Request request);
-    
+
     Session.API newSessionAPIWrapper(ManagedSession session);
-    
+
     void sessionTimerExpired(ManagedSession session, long now);
 
     void commit(ManagedSession session);
@@ -90,32 +90,34 @@ public interface SessionManager extends LifeCycle, SessionConfig
     void complete(ManagedSession session);
 
     void invalidate(String id) throws Exception;
-    
+
     void scavenge() throws Exception;
-    
+
     boolean isIdInUse(String id) throws Exception;
 
     HttpCookie getSessionCookie(ManagedSession session, boolean requestIsSecure);
 
     void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId) throws Exception;
-    
+
     long calculateInactivityTimeout(String id, long timeRemaining, long maxInactiveMs);
-    
+
     SessionInactivityTimer newSessionInactivityTimer(ManagedSession session);
-    
+
     Context getContext();
 
     SessionIdManager getSessionIdManager();
 
     void setSessionIdManager(SessionIdManager idManager);
-    
+
     SessionCache getSessionCache();
 
     void setSessionCache(SessionCache cache);
-    
+
     void recordSessionTime(ManagedSession session);
-    
+
     int getSessionsCreated();
+
+    String encodeURI(Request request, String uri, boolean cookiesInUse);
 
     default void onSessionIdChanged(Session session, String oldId)
     {

@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -51,17 +53,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class TryPathsHandlerTest
 {
-    public WorkDir workDir;
     private static final String CONTEXT_PATH = "/ctx";
     private Server server;
     private SslContextFactory.Server sslContextFactory;
     private ServerConnector connector;
     private ServerConnector sslConnector;
-    private Path rootPath;
 
-    private void start(List<String> paths, Handler handler) throws Exception
+    private void start(List<String> paths, Handler handler, Path tmpPath) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server, 1, 1);
@@ -74,8 +75,7 @@ public class TryPathsHandlerTest
         server.addConnector(sslConnector);
 
         ContextHandler context = new ContextHandler(CONTEXT_PATH);
-        rootPath = workDir.getEmptyPathDir();
-        context.setBaseResourceAsPath(rootPath);
+        context.setBaseResourceAsPath(tmpPath);
         server.setHandler(context);
 
         TryPathsHandler tryPaths = new TryPathsHandler();
@@ -94,8 +94,9 @@ public class TryPathsHandlerTest
     }
 
     @Test
-    public void testTryPaths() throws Exception
+    public void testTryPaths(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
@@ -123,7 +124,7 @@ public class TryPathsHandlerTest
             }
         });
 
-        start(List.of("/maintenance.txt", "$path", "/forward?p=$path"), resourceHandler);
+        start(List.of("/maintenance.txt", "$path", "/forward?p=$path"), resourceHandler, tmpPath);
 
         try (SocketChannel channel = SocketChannel.open())
         {
@@ -139,7 +140,7 @@ public class TryPathsHandlerTest
 
             // Create the specific static file that is requested.
             String path = "idx.txt";
-            Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
+            Files.writeString(tmpPath.resolve(path), "hello", StandardOpenOption.CREATE);
             // Make a second request with the specific file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/" + path);
@@ -151,7 +152,7 @@ public class TryPathsHandlerTest
 
             // Create the "maintenance" file, it should be served first.
             path = "maintenance.txt";
-            Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
+            Files.writeString(tmpPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
             // Make a third request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/whatever");
@@ -164,8 +165,9 @@ public class TryPathsHandlerTest
     }
 
     @Test
-    public void testTryPathsWithPathMappings() throws Exception
+    public void testTryPathsWithPathMappings(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
@@ -204,7 +206,7 @@ public class TryPathsHandlerTest
             }
         });
 
-        start(List.of("/maintenance.txt", "$path", "/forward?p=$path"), pathMappingsHandler);
+        start(List.of("/maintenance.txt", "$path", "/forward?p=$path"), pathMappingsHandler, tmpPath);
 
         try (SocketChannel channel = SocketChannel.open())
         {
@@ -220,7 +222,7 @@ public class TryPathsHandlerTest
 
             // Create the specific static file that is requested.
             String path = "idx.txt";
-            Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
+            Files.writeString(tmpPath.resolve(path), "hello", StandardOpenOption.CREATE);
             // Make a second request with the specific file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/" + path);
@@ -231,7 +233,7 @@ public class TryPathsHandlerTest
             assertEquals("hello", response.getContent());
 
             // Request an existing PHP file.
-            Files.writeString(rootPath.resolve("index.php"), "raw-php-contents", StandardOpenOption.CREATE);
+            Files.writeString(tmpPath.resolve("index.php"), "raw-php-contents", StandardOpenOption.CREATE);
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/index.php");
             channel.write(request.generate());
@@ -242,7 +244,7 @@ public class TryPathsHandlerTest
 
             // Create the "maintenance" file, it should be served first.
             path = "maintenance.txt";
-            Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
+            Files.writeString(tmpPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
             // Make a second request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/whatever");
@@ -255,8 +257,9 @@ public class TryPathsHandlerTest
     }
 
     @Test
-    public void testTryPathsAsync404() throws Exception
+    public void testTryPathsAsync404(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
@@ -301,7 +304,7 @@ public class TryPathsHandlerTest
             }
         });
 
-        start(List.of("/notFound", "/maintenance.txt", "$path", "/forward?p=$path"), resourceHandler);
+        start(List.of("/notFound", "/maintenance.txt", "$path", "/forward?p=$path"), resourceHandler, tmpPath);
 
         try (SocketChannel channel = SocketChannel.open())
         {
@@ -317,7 +320,7 @@ public class TryPathsHandlerTest
 
             // Create the specific static file that is requested.
             String path = "idx.txt";
-            Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
+            Files.writeString(tmpPath.resolve(path), "hello", StandardOpenOption.CREATE);
             // Make a second request with the specific file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/" + path);
@@ -329,7 +332,7 @@ public class TryPathsHandlerTest
 
             // Create the "maintenance" file, it should be served first.
             path = "maintenance.txt";
-            Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
+            Files.writeString(tmpPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
             // Make a third request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/whatever");
@@ -342,8 +345,9 @@ public class TryPathsHandlerTest
     }
 
     @Test
-    public void testSecureRequestIsForwarded() throws Exception
+    public void testSecureRequestIsForwarded(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         String path = "/secure";
         start(List.of("$path"), new Handler.Abstract.NonBlocking()
         {
@@ -357,7 +361,7 @@ public class TryPathsHandlerTest
                 callback.succeeded();
                 return true;
             }
-        });
+        }, tmpPath);
 
         try (SSLSocket sslSocket = sslContextFactory.newSslSocket())
         {

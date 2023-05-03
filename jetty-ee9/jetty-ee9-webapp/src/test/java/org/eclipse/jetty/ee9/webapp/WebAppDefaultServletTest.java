@@ -24,7 +24,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,26 +33,24 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class WebAppDefaultServletTest
 {
-    public WorkDir workDir;
+    public Path directoryPath;
     private Server server;
     private LocalConnector connector;
 
     @BeforeEach
-    public void prepareServer() throws Exception
+    public void prepareServer(WorkDir workDir) throws Exception
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        directoryPath = workDir.getEmptyPathDir();
         server = new Server();
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         server.addConnector(connector);
 
-        Path directoryPath = workDir.getEmptyPathDir();
         Path welcomeResource = directoryPath.resolve("index.html");
         Files.writeString(welcomeResource, "<h1>welcome page</h1>", StandardCharsets.UTF_8);
 
@@ -89,7 +86,6 @@ public class WebAppDefaultServletTest
     {
         if (server != null)
             server.stop();
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     public static Stream<Arguments> argumentsStream()

@@ -76,12 +76,10 @@ public class OnMessageReturnTest
         }
     }
 
-    public WorkDir testdir;
-
     @Test
-    public void testEchoReturn() throws Exception
+    public void testEchoReturn(WorkDir workDir) throws Exception
     {
-        WSServer wsb = new WSServer(testdir.getPath());
+        WSServer wsb = new WSServer(workDir.getEmptyPathDir());
         WSServer.WebApp app = wsb.createWebApp("app");
         app.copyWebInf("empty-web.xml");
         app.copyClass(EchoReturnEndpoint.class);

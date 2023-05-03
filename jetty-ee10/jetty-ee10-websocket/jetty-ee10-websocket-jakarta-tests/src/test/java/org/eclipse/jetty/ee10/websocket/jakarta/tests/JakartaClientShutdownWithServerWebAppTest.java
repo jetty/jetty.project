@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.webapp.Configuration;
-import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
@@ -39,11 +38,13 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+@Isolated
 public class JakartaClientShutdownWithServerWebAppTest
 {
     private WSServer server;
@@ -86,7 +87,7 @@ public class JakartaClientShutdownWithServerWebAppTest
         WSServer.WebApp app = server.createWebApp(contextName);
 
         // Exclude the Jakarta WebSocket configuration from the webapp.
-        Configuration[] configurations = Configurations.getKnown().stream()
+        Configuration[] configurations = app.getWebAppContext().getConfigurations().stream()
             .filter(configuration -> !(configuration instanceof JakartaWebSocketConfiguration))
             .toArray(Configuration[]::new);
         app.getWebAppContext().setConfigurations(configurations);
@@ -176,14 +177,15 @@ public class JakartaClientShutdownWithServerWebAppTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         // Collect the toString result of the ShutdownContainers from the dump.
-        List<String> results = Arrays.stream(server.getServer().dump().split("\n"))
+        String dump = server.getServer().dump();
+        List<String> results = Arrays.stream(dump.split("\n"))
             .filter(line -> line.contains("+> " + JakartaWebSocketShutdownContainer.class.getSimpleName())).toList();
 
         // We only have 3 Shutdown Containers and they all contain only 1 item to be shutdown.
-        assertThat(results.size(), is(3));
+        assertThat(dump, results.size(), is(3));
         for (String result : results)
         {
-            assertThat(result, containsString("size=1"));
+            assertThat(dump, result, containsString("size=1"));
         }
     }
 }

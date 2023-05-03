@@ -34,14 +34,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -249,12 +249,9 @@ public class ServletRequestListenerTest
         start(contextHandler ->
         {
             ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-            securityHandler.addRole("admin");
             ConstraintMapping constraintMapping = new ConstraintMapping();
             constraintMapping.setPathSpec("/authed");
-            Constraint constraint = new Constraint("admin", "admin");
-            constraint.setAuthenticate(true);
-            constraintMapping.setConstraint(constraint);
+            constraintMapping.setConstraint(Constraint.FORBIDDEN);
             securityHandler.addConstraintMapping(constraintMapping);
             contextHandler.setSecurityHandler(securityHandler);
             contextHandler.addServlet(new HttpServlet()

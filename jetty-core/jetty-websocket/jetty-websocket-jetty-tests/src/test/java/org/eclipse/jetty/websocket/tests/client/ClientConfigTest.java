@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +24,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -62,7 +63,7 @@ public class ClientConfigTest
 
     public static Stream<Arguments> data()
     {
-        return Stream.of("clientConfig", "annotatedConfig", "sessionConfig").map(Arguments::of);
+        return Stream.of("clientConfig", "sessionConfig").map(Arguments::of);
     }
 
     @BeforeEach
@@ -93,11 +94,6 @@ public class ClientConfigTest
         server.stop();
     }
 
-    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE, batchMode = BatchMode.ON)
-    public static class AnnotatedConfigEndpoint extends EventSocket
-    {
-    }
-
     @WebSocket
     public static class SessionConfigEndpoint extends EventSocket
     {
@@ -124,7 +120,6 @@ public class ClientConfigTest
                 client.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
                 yield new EventSocket();
             }
-            case "annotatedConfig" -> new AnnotatedConfigEndpoint();
             case "sessionConfig" -> new SessionConfigEndpoint();
             default -> throw new IllegalStateException();
         };
@@ -162,7 +157,8 @@ public class ClientConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(MESSAGE));
+        ByteBuffer buffer = BufferUtil.toBuffer(MESSAGE);
+        clientEndpoint.session.sendBinary(buffer, Callback.NOOP);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
@@ -180,7 +176,7 @@ public class ClientConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString("hello world");
+        clientEndpoint.session.sendText("hello world", Callback.NOOP);
         Thread.sleep(IDLE_TIMEOUT + 500);
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -199,7 +195,7 @@ public class ClientConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString(MESSAGE);
+        clientEndpoint.session.sendText(MESSAGE, Callback.NOOP);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));

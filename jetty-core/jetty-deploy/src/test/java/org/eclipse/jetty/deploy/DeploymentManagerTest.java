@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
 
@@ -34,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentManagerTest
 {
-    public WorkDir testdir;
 
     @Test
     public void testReceiveApp() throws Exception
@@ -135,12 +135,13 @@ public class DeploymentManagerTest
     }
 
     @Test
-    public void testXmlConfigured() throws Exception
+    public void testXmlConfigured(WorkDir workDir) throws Exception
     {
+        Path testdir = workDir.getEmptyPathDir();
         XmlConfiguredJetty jetty = null;
         try
         {
-            jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+            jetty = new XmlConfiguredJetty(testdir);
             jetty.addConfiguration("jetty.xml");
             jetty.addConfiguration("jetty-http.xml");
             jetty.addConfiguration("jetty-deploymgr-contexts.xml");

@@ -53,8 +53,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(WorkDirExtension.class)
 public class TestServletAnnotations
 {
-    public WorkDir workDir;
-
     public class TestWebServletAnnotationHandler extends WebServletAnnotationHandler
     {
         List<DiscoveredAnnotation> _list = null;
@@ -74,7 +72,7 @@ public class TestServletAnnotations
     }
 
     @Test
-    public void testServletAnnotation() throws Exception
+    public void testServletAnnotation(WorkDir workDir) throws Exception
     {
         Path root = workDir.getEmptyPathDir();
         copyClass(org.eclipse.jetty.ee9.annotations.ServletC.class, root);

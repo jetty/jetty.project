@@ -55,6 +55,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -77,11 +78,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Isolated()
 @ExtendWith(WorkDirExtension.class)
 public class WebAppContextTest
 {
     public static final Logger LOG = LoggerFactory.getLogger(WebAppContextTest.class);
-    public WorkDir workDir;
     private final List<Object> lifeCycles = new ArrayList<>();
 
     @BeforeEach
@@ -203,6 +204,7 @@ public class WebAppContextTest
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.WebXmlConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.MetaInfConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.JaasConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.WebAppConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration");
 
@@ -272,9 +274,9 @@ public class WebAppContextTest
     }
 
     @Test
-    public void testAlias() throws Exception
+    public void testAlias(WorkDir workDir) throws Exception
     {
-        Path tempDir = workDir.getEmptyPathDir().resolve("dir");
+        Path tempDir = workDir.getEmptyPathDir();
         FS.ensureEmpty(tempDir);
 
         Path webinf = tempDir.resolve("WEB-INF");

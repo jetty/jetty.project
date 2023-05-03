@@ -242,7 +242,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             promise.failed(failure);
         }
 
-        private class TunnelListener extends Response.Listener.Adapter
+        private class TunnelListener implements Response.Listener
         {
             private final HttpConversation conversation;
 

@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.session.SessionHandler.SessionRequest;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,8 +72,7 @@ public class SessionHandlerTest
                 String pathInContext = Request.getPathInContext(request);
                 String[] split = pathInContext.substring(1).split("/");
 
-                SessionRequest sessionRequest = Request.as(request, SessionRequest.class);
-                Session session = sessionRequest.getSession(false);
+                Session session = request.getSession(false);
 
                 int n = 0;
                 while (n < split.length)
@@ -112,7 +110,7 @@ public class SessionHandlerTest
                                 callback.failed(new IllegalStateException("Session already created"));
                                 return true;
                             }
-                            session = sessionRequest.getSession(true);
+                            session = request.getSession(true);
                         }
 
                         case "invalidate" ->

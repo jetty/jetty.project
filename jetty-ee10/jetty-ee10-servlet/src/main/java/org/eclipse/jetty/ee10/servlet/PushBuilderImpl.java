@@ -97,7 +97,7 @@ class PushBuilderImpl implements PushBuilder
     {
         String pushPath = getPath();
         if (pushPath == null || pushPath.isBlank())
-            throw new IllegalArgumentException("invalid push path: " + pushPath);
+            throw new IllegalStateException("invalid push path: " + pushPath);
 
         String query = getQueryString();
         String pushQuery = query;

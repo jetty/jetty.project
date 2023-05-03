@@ -17,6 +17,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.security.UserIdentity;
 
 /**
  * The Authentication state of a request.
@@ -46,7 +47,7 @@ public interface Authentication
 
         UserIdentity getUserIdentity();
 
-        boolean isUserInRole(UserIdentity.Scope scope, String role);
+        boolean isUserInRole(UserIdentityScope scope, String role);
     }
 
     /**

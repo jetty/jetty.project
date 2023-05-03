@@ -57,10 +57,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(WorkDirExtension.class)
+@ExtendWith(WorkDirExtension.class) 
 public class IOTest
 {
-    public WorkDir workDir;
 
     @Test
     public void testIO() throws Exception
@@ -428,10 +427,10 @@ public class IOTest
     }
 
     @Test
-    public void testGatherWrite() throws Exception
+    public void testGatherWrite(WorkDir workDir) throws Exception
     {
-        Path dir = workDir.getEmptyPathDir();
-        Path file = Files.createTempFile(dir, "test", ".txt");
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path file = Files.createTempFile(tmpPath, "test", ".txt");
         FileChannel out = FileChannel.open(file,
             StandardOpenOption.CREATE,
             StandardOpenOption.READ,
@@ -604,4 +603,5 @@ public class IOTest
         assertFalse(Files.isSymbolicLink(realPath));
         assertFalse(Files.isSymbolicLink(linkPath));
     }
+
 }

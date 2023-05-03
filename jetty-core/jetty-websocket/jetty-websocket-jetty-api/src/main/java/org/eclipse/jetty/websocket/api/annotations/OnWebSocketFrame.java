@@ -20,23 +20,20 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.Session;
 
 /**
- * (ADVANCED) Annotation for tagging methods to receive frame events.
- * <p>
- * Acceptable method patterns.<br>
- * Note: {@code methodName} can be any name you want to use.
+ * <p>Annotation for methods to receive WebSocket frame events.</p>
+ * <p>Acceptable method patterns:</p>
  * <ol>
- * <li><code>public void methodName({@link Frame} frame)</code></li>
- * <li><code>public void methodName({@link Session} session, {@link Frame} frame)</code></li>
+ * <li>{@code public void <methodName>(Frame frame)}</li>
+ * <li>{@code public void <methodName>(Session session, Frame frame)}</li>
  * </ol>
+ *
+ * @see Frame
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(value =
-    {ElementType.METHOD})
+@Target(ElementType.METHOD)
 public @interface OnWebSocketFrame
 {
-    /* no config */
 }

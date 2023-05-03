@@ -180,6 +180,17 @@ public interface Container
     }
 
     /**
+     * A utility method to unmanage a bean from a container.
+     * @param parent the parent container
+     * @param child the child bean
+     */
+    static void unmanage(Object parent, Object child)
+    {
+        if (parent instanceof Container container)
+            container.unmanage(child);
+    }
+
+    /**
      * A utility method to remove a bean from a container.
      * @param parent the parent container.
      * @param child the child bean.

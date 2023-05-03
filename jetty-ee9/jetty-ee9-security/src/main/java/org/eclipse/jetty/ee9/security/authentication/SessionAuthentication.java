@@ -21,11 +21,11 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.AbstractUserAuthentication;
 import org.eclipse.jetty.ee9.security.Authenticator;
-import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +91,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
             return;
         }
 
-        _userIdentity = loginService.login(_name, _credentials, null);
+        _userIdentity = loginService.login(_name, _credentials, null, null);
         LOG.debug("Deserialized and relogged in {}", this);
     }
 

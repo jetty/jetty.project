@@ -825,7 +825,7 @@ public class DefaultServletTest
         assumeMkDirSupported(docRoot, "dir;");
 
         /* create some content outside of the docroot */
-        Path sekret = workDir.getPath().resolve("sekret");
+        Path sekret = docRoot.resolve("sekret");
         FS.ensureDirExists(sekret);
         Path pass = sekret.resolve("pass");
         Files.writeString(pass, "Sssh, you shouldn't be seeing this", UTF_8);
@@ -951,7 +951,7 @@ public class DefaultServletTest
         Path inde = dir.resolve("index.htm");
         Path index = dir.resolve("index.html");
 
-        Path altRoot = workDir.getPath().resolve("altroot");
+        Path altRoot = docRoot.resolve("altroot");
         Path altDir = altRoot.resolve("dir");
         FS.ensureDirExists(altDir);
         Path altInde = altDir.resolve("index.htm");

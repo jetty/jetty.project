@@ -28,22 +28,22 @@ import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestAnnotationConfiguration
 {
     public static class TestableAnnotationConfiguration extends AnnotationConfiguration
@@ -57,7 +57,6 @@ public class TestAnnotationConfiguration
         }
     }
 
-    public WorkDir workDir;
     public Path web25;
     public Path web31false;
     public Path web31true;
@@ -73,9 +72,9 @@ public class TestAnnotationConfiguration
     public Resource webInfClasses;
 
     @BeforeEach
-    public void setup() throws Exception
+    public void setup(WorkDir workDir) throws Exception
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        unpacked = workDir.getEmptyPathDir();
         web25 = MavenTestingUtils.getTargetPath().resolve("test-classes/web25.xml");
         web31false = MavenTestingUtils.getTargetPath().resolve("test-classes/web31false.xml");
         web31true = MavenTestingUtils.getTargetPath().resolve("test-classes/web31true.xml");
@@ -93,7 +92,6 @@ public class TestAnnotationConfiguration
         testWebInfClassesJar = jarDir.resolve("test-sci-for-webinf.jar");
 
         // unpack some classes to pretend that are in WEB-INF/classes
-        unpacked = workDir.getEmptyPathDir();
         FS.cleanDirectory(unpacked);
         JAR.unpack(testWebInfClassesJar.toFile(), unpacked.toFile());
         webInfClasses = ResourceFactory.root().newResource(unpacked);
@@ -110,12 +108,6 @@ public class TestAnnotationConfiguration
             testSciJar.toUri().toURL(), targetClasses.getURI().toURL(), webInfClasses.getURI().toURL()
         },
             containerLoader);
-    }
-
-    @AfterEach
-    public void afterEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test

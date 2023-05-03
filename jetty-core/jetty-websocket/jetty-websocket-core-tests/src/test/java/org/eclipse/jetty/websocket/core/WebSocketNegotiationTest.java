@@ -28,7 +28,6 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
@@ -485,7 +484,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         // The list of Extensions on the client contains the internal Extensions.
         StringBuilder negotiatedExtensions = new StringBuilder();
-        List<Extension> extensions = ((WebSocketCoreSession)clientHandler.coreSession).getExtensionStack().getExtensions();
+        List<Extension> extensions = ((WebSocketCoreSession)clientHandler.getCoreSession()).getExtensionStack().getExtensions();
         for (int i = 0; i < extensions.size(); i++)
         {
             negotiatedExtensions.append(extensions.get(i).getConfig().getParameterizedName());

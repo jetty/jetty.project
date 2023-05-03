@@ -96,29 +96,17 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
         return AuthStatus.SEND_SUCCESS;
     }
 
-    /**
-     * @param messageInfo message info to examine for mandatory flag
-     * @return whether authentication is mandatory or optional
-     */
-    protected boolean isMandatory(MessageInfo messageInfo)
-    {
-        String mandatory = (String)messageInfo.getMap().get(JaspiMessageInfo.MANDATORY_KEY);
-        if (mandatory == null)
-            return false;
-        return Boolean.parseBoolean(mandatory);
-    }
-
-    protected boolean login(Subject clientSubject, String credentials, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String credentials, String authenticationType, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ') + 1);
         credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
         int i = credentials.indexOf(':');
         String userName = credentials.substring(0, i);
         String password = credentials.substring(i + 1);
-        return login(clientSubject, userName, new Password(password), authMethod, messageInfo);
+        return login(clientSubject, userName, new Password(password), authenticationType, messageInfo);
     }
 
-    protected boolean login(Subject clientSubject, String username, Credential credential, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String username, Credential credential, String authenticationType, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         CredentialValidationCallback credValidationCallback = new CredentialValidationCallback(clientSubject, username, credential);
         callbackHandler.handle(new Callback[]{credValidationCallback});
@@ -132,7 +120,7 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
                 GroupPrincipalCallback groupPrincipalCallback = new GroupPrincipalCallback(clientSubject, loginCallback.getRoles());
                 callbackHandler.handle(new Callback[]{callerPrincipalCallback, groupPrincipalCallback});
             }
-            messageInfo.getMap().put(JaspiMessageInfo.AUTH_METHOD_KEY, authMethod);
+            messageInfo.getMap().put(JaspiMessageInfo.AUTHENTICATION_TYPE_KEY, authenticationType);
         }
         return credValidationCallback.getResult();
     }

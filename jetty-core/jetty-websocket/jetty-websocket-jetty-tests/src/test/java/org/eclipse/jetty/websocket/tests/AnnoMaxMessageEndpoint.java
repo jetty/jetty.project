@@ -15,17 +15,24 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-@SuppressWarnings("unused")
-@WebSocket(maxTextMessageSize = 100 * 1024)
+@WebSocket
 public class AnnoMaxMessageEndpoint
 {
+    @OnWebSocketOpen
+    public void onOpen(Session session)
+    {
+        session.setMaxTextMessageSize(100 * 1024);
+    }
+
     @OnWebSocketMessage
     public void onMessage(Session session, String msg) throws IOException
     {
-        session.getRemote().sendString(msg);
+        session.sendText(msg, Callback.NOOP);
     }
 }

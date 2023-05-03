@@ -17,8 +17,8 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
 

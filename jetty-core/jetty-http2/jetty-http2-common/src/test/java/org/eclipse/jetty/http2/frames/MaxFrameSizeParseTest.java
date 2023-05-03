@@ -35,7 +35,7 @@ public class MaxFrameSizeParseTest
         int maxFrameLength = Frame.DEFAULT_MAX_LENGTH + 16;
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)

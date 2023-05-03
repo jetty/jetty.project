@@ -233,6 +233,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * Feed a full header method
      */
     @Test
+    @Tag("flaky")
     public void testFullMethod() throws Exception
     {
         // TODO this test is flakey

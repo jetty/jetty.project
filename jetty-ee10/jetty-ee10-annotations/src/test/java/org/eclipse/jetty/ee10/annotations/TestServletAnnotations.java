@@ -53,8 +53,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(WorkDirExtension.class)
 public class TestServletAnnotations
 {
-    public WorkDir workDir;
-
     public class TestWebServletAnnotationHandler extends WebServletAnnotationHandler
     {
         List<DiscoveredAnnotation> _list = null;
@@ -74,7 +72,7 @@ public class TestServletAnnotations
     }
 
     @Test
-    public void testServletAnnotation() throws Exception
+    public void testServletAnnotation(WorkDir workDir) throws Exception
     {
         Path root = workDir.getEmptyPathDir();
         copyClass(org.eclipse.jetty.ee10.annotations.ServletC.class, root);
@@ -303,7 +301,7 @@ public class TestServletAnnotations
         sh.setRoles(Set.of("humpty", "dumpty"));
         DeclareRolesAnnotationHandler handler = new DeclareRolesAnnotationHandler(wac);
         handler.doHandle(ServletC.class);
-        assertThat(sh.getRoles(), containsInAnyOrder("humpty", "alice", "dumpty"));
+        assertThat(sh.getKnownRoles(), containsInAnyOrder("humpty", "alice", "dumpty"));
     }
 
     private void copyClass(Class<?> clazz, Path outputDir) throws IOException, URISyntaxException

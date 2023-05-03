@@ -99,6 +99,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return context == null ? (server == null ? null : server.getContext()) : context;
     }
 
+    // Do not remove, invoked via reflection.
     public static ContextHandler getCurrentContextHandler()
     {
         Context context = getCurrentContext();
@@ -1141,7 +1142,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         public ScopedContext()
         {
-            // TODO Should the ScopedContext attributes be a layer over the ServerContext attributes?
             super(_persistentAttributes);
         }
 

@@ -21,8 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
@@ -35,7 +36,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class CloseTrackingEndpoint extends WebSocketAdapter
+public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemanding
 {
     private static final Logger LOG = LoggerFactory.getLogger(CloseTrackingEndpoint.class);
 
@@ -43,7 +44,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     public String closeReason = null;
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public AtomicInteger closeCount = new AtomicInteger(0);
-    public CountDownLatch openLatch = new CountDownLatch(1);
+    public CountDownLatch connectLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
 
     public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
@@ -89,11 +90,11 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     }
 
     @Override
-    public void onWebSocketConnect(Session session)
+    public void onWebSocketOpen(Session session)
     {
-        LOG.debug("onWebSocketConnect({})", session);
-        super.onWebSocketConnect(session);
-        openLatch.countDown();
+        super.onWebSocketOpen(session);
+        LOG.debug("onWebSocketOpen({})", session);
+        connectLatch.countDown();
     }
 
     @Override
@@ -112,10 +113,11 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     }
 
     @Override
-    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    public void onWebSocketBinary(ByteBuffer payload, Callback callback)
     {
-        LOG.debug("onWebSocketBinary({},{},{})", payload, offset, len);
-        binaryMessageQueue.offer(ByteBuffer.wrap(payload, offset, len));
+        LOG.debug("onWebSocketBinary({})", payload.remaining());
+        binaryMessageQueue.offer(BufferUtil.copy(payload));
+        callback.succeed();
     }
 
     public EndPoint getEndPoint()

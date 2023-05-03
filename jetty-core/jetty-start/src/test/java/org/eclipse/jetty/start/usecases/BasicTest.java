@@ -98,7 +98,7 @@ public class BasicTest extends AbstractUseCase
         PathAssert.assertDirExists("Required Directory: maindir/", results.baseHome.getPath("maindir/"));
 
         // === Validate home/base property uri values
-        Props props = results.startArgs.getCoreEnvironment().getProperties();
+        Props props = results.startArgs.getJettyEnvironment().getProperties();
 
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(results.baseHome.getHome()));
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(not(startsWith("file:"))));
@@ -184,9 +184,7 @@ public class BasicTest extends AbstractUseCase
         ExecResults results = exec(runArgs, true);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/logging-a.xml"
-        );
+        List<String> expectedXmls = List.of("${jetty.home}/etc/logging-a.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
@@ -221,9 +219,7 @@ public class BasicTest extends AbstractUseCase
         ExecResults results = exec(runArgs, true);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/logging-b.xml"
-        );
+        List<String> expectedXmls = List.of("${jetty.home}/etc/logging-b.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
@@ -374,7 +370,7 @@ public class BasicTest extends AbstractUseCase
     @Test
     public void testHomeWithSpaces() throws Exception
     {
-        homeDir = workDir.getPath().resolve("jetty home with spaces");
+        homeDir = testdir.resolve("jetty home with spaces");
         FS.ensureDirExists(homeDir);
 
         setupDistHome();
@@ -408,7 +404,7 @@ public class BasicTest extends AbstractUseCase
         assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
 
         // === Validate home/base property uri values
-        Props props = results.startArgs.getCoreEnvironment().getProperties();
+        Props props = results.startArgs.getJettyEnvironment().getProperties();
 
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(results.baseHome.getHome()));
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(not(startsWith("file:"))));

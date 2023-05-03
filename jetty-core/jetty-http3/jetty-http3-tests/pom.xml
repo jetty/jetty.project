@@ -11,6 +11,9 @@
   <name>Core :: HTTP3 :: Tests</name>
 
   <properties>
+    <!-- too flaky to support parallel tests in CI -->
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
+    <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>

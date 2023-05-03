@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
 
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
-    public WorkDir workDir;
+    private Path tmpPath;
 
     private static class RemoteAddressRequest extends org.eclipse.jetty.ee9.nested.Request
     {
@@ -101,9 +102,10 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     }
 
     @BeforeEach
-    public void setUp() throws Exception
+    public void setUp(WorkDir workDir) throws Exception
     {
-        startServer(workDir, DoSFilter.class);
+        tmpPath = workDir.getEmptyPathDir();
+        startServer(tmpPath, DoSFilter.class);
     }
 
     // TODO Remove mock request. Use a real one

@@ -59,6 +59,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -70,6 +71,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -104,6 +106,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * Resource Handler test
  */
+@ExtendWith(WorkDirExtension.class)
 public class ResourceHandlerTest
 {
     public WorkDir workDir;
@@ -117,39 +120,39 @@ public class ResourceHandlerTest
     private static void addBasicWelcomeScenarios(Scenarios scenarios)
     {
         scenarios.addScenario(
-            "GET /context/one/ (index.htm match)",
-            """
-                GET /context/one/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"))
+                "GET /context/one/ (index.htm match)",
+                """
+                    GET /context/one/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """,
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"))
         );
 
         scenarios.addScenario(
-            "GET /context/two/ (index.html match)",
-            """
-                GET /context/two/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
+                "GET /context/two/ (index.html match)",
+                """
+                    GET /context/two/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """,
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
 
         scenarios.addScenario(
-            "GET /context/three/ (index.html wins over index.htm)",
-            """
-                GET /context/three/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
+                "GET /context/three/ (index.html wins over index.htm)",
+                """
+                    GET /context/three/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """,
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
         );
     }
 
@@ -191,8 +194,8 @@ public class ResourceHandlerTest
                 Connection: close\r
                 \r
                 """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
 
         scenarios.addScenario("""
@@ -201,8 +204,8 @@ public class ResourceHandlerTest
                 Connection: close\r
                 \r
                 """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), containsString("Hello Index"))
         );
 
         List<String> notEncodedPrefixes = new ArrayList<>();
@@ -216,7 +219,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.NOT_FOUND_404
+                    HttpStatus.NOT_FOUND_404
             );
 
             scenarios.addScenario("""
@@ -225,7 +228,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX", prefix),
-                HttpStatus.NOT_FOUND_404
+                    HttpStatus.NOT_FOUND_404
             );
 
             scenarios.addScenario("""
@@ -234,8 +237,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX", prefix),
-                HttpStatus.NOT_FOUND_404,
-                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                    HttpStatus.NOT_FOUND_404,
+                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario("""
@@ -244,8 +247,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.BAD_REQUEST_400,
-                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                    HttpStatus.BAD_REQUEST_400,
+                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario("""
@@ -254,8 +257,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.BAD_REQUEST_400,
-                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                    HttpStatus.BAD_REQUEST_400,
+                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario("""
@@ -264,8 +267,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.NOT_FOUND_404,
-                (response) -> assertThat(response.getContent(), not(containsString("Hello Index")))
+                    HttpStatus.NOT_FOUND_404,
+                    (response) -> assertThat(response.getContent(), not(containsString("Hello Index")))
             );
 
             scenarios.addScenario("""
@@ -274,7 +277,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.BAD_REQUEST_400
+                    HttpStatus.BAD_REQUEST_400
             );
 
             scenarios.addScenario("""
@@ -283,12 +286,12 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.NOT_FOUND_404,
-                (response) ->
-                {
-                    String body = response.getContent();
-                    assertThat(body, not(containsString("Directory: ")));
-                }
+                    HttpStatus.NOT_FOUND_404,
+                    (response) ->
+                    {
+                        String body = response.getContent();
+                        assertThat(body, not(containsString("Directory: ")));
+                    }
             );
         }
 
@@ -308,8 +311,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.MOVED_TEMPORARILY_302,
-                (response) -> assertThat("Location header", response.get(HttpHeader.LOCATION), endsWith(prefix + "/"))
+                    HttpStatus.MOVED_TEMPORARILY_302,
+                    (response) -> assertThat("Location header", response.get(HttpHeader.LOCATION), endsWith(prefix + "/"))
             );
 
             scenarios.addScenario("""
@@ -318,7 +321,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.OK_200
+                    HttpStatus.OK_200
             );
 
             scenarios.addScenario("""
@@ -327,8 +330,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                    HttpStatus.OK_200,
+                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario("""
@@ -337,8 +340,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+                    HttpStatus.OK_200,
+                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
             );
 
             scenarios.addScenario("""
@@ -347,13 +350,13 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.NOT_FOUND_404,
-                (response) ->
-                {
-                    String body = response.getContent();
-                    assertThat(body, containsString("Not Found"));
-                    assertThat(body, not(containsString("Directory: ")));
-                }
+                    HttpStatus.NOT_FOUND_404,
+                    (response) ->
+                    {
+                        String body = response.getContent();
+                        assertThat(body, containsString("Not Found"));
+                        assertThat(body, not(containsString("Directory: ")));
+                    }
             );
 
             scenarios.addScenario("""
@@ -362,8 +365,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.NOT_FOUND_404,
-                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                    HttpStatus.NOT_FOUND_404,
+                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario("""
@@ -372,8 +375,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+                    HttpStatus.OK_200,
+                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
             );
         }
 
@@ -398,228 +401,228 @@ public class ResourceHandlerTest
         Scenarios scenarios = new Scenarios();
 
         scenarios.addScenario(
-            "No range requested",
-            """
-                GET /context/data.txt HTTP/1.1\r
-                Host: localhost\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
+                "No range requested",
+                """
+                    GET /context/data.txt HTTP/1.1\r
+                    Host: localhost\r
+                    Connection: close\r
+                    \r
+                    """,
+                HttpStatus.OK_200,
+                (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
         );
 
         scenarios.addScenario(
-            "Simple range request (no-close)",
-            """
-                GET /context/data.txt HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
-                assertThat(response, containsHeaderValue("Content-Length", "10"));
-                assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
-            }
+                "Simple range request (no-close)",
+                """
+                    GET /context/data.txt HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
+                    assertThat(response, containsHeaderValue("Content-Length", "10"));
+                    assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
+                }
         );
 
         scenarios.addScenario(
-            "Simple range request w/close",
-            """
-                GET /context/data.txt HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
-                assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
-            });
+                "Simple range request w/close",
+                """
+                    GET /context/data.txt HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9\r
+                    Connection: close\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
+                    assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
+                });
 
         scenarios.addScenario(
-            "Multiple ranges (x3)",
-            """
-                GET /context/data.txt HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9,20-29,40-49\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                String body = response.getContent();
+                "Multiple ranges (x3)",
+                """
+                    GET /context/data.txt HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9,20-29,40-49\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                String boundary = getContentTypeBoundary(contentType);
+                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                    String boundary = getContentTypeBoundary(contentType);
 
-                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
 
-                assertThat(response.getContent(), startsWith("--" + boundary));
-                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-            }
+                    assertThat(response.getContent(), startsWith("--" + boundary));
+                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+                }
         );
 
         scenarios.addScenario("Multiple ranges (x4)",
-            """
-                GET /context/data.txt HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9,20-29,40-49,70-79\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                String body = response.getContent();
+                """
+                    GET /context/data.txt HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9,20-29,40-49,70-79\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                String boundary = getContentTypeBoundary(contentType);
+                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                    String boundary = getContentTypeBoundary(contentType);
 
-                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                assertThat(response.getContent(), startsWith("--" + boundary));
-                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-            }
+                    assertThat(response.getContent(), startsWith("--" + boundary));
+                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+                }
         );
 
         scenarios.addScenario(
-            "Multiple ranges (x4) with empty range request",
-            """
-                GET /context/data.txt HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9,20-29,40-49,60-60,70-79\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                String body = response.getContent();
+                "Multiple ranges (x4) with empty range request",
+                """
+                    GET /context/data.txt HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9,20-29,40-49,60-60,70-79\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                String boundary = getContentTypeBoundary(contentType);
+                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                    String boundary = getContentTypeBoundary(contentType);
 
-                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range request
-                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                    assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range request
+                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                assertThat(response.getContent(), startsWith("--" + boundary));
-                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-            }
+                    assertThat(response.getContent(), startsWith("--" + boundary));
+                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+                }
         );
 
         // test a range request with a file with no suffix, therefore no mimetype
 
         scenarios.addScenario(
-            "No mimetype resource - no range requested",
-            """
-                GET /context/nofilesuffix HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
+                "No mimetype resource - no range requested",
+                """
+                    GET /context/nofilesuffix HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """,
+                HttpStatus.OK_200,
+                (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
         );
 
         scenarios.addScenario(
-            "No mimetype resource - simple range request",
-            """
-                GET /context/nofilesuffix HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
-                assertThat(response, containsHeaderValue(HttpHeader.CONTENT_RANGE, "bytes 0-9/80"));
-                assertThat(response, not(containsHeader(HttpHeader.CONTENT_TYPE)));
-            }
+                "No mimetype resource - simple range request",
+                """
+                    GET /context/nofilesuffix HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
+                    assertThat(response, containsHeaderValue(HttpHeader.CONTENT_RANGE, "bytes 0-9/80"));
+                    assertThat(response, not(containsHeader(HttpHeader.CONTENT_TYPE)));
+                }
         );
 
         scenarios.addScenario(
-            "No mimetype resource - multiple ranges (x3)",
-            """
-                GET /context/nofilesuffix HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9,20-29,40-49\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                String body = response.getContent();
+                "No mimetype resource - multiple ranges (x3)",
+                """
+                    GET /context/nofilesuffix HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9,20-29,40-49\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                String boundary = getContentTypeBoundary(contentType);
+                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                    String boundary = getContentTypeBoundary(contentType);
 
-                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
 
-                assertThat(response.getContent(), startsWith("--" + boundary));
-                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-            }
+                    assertThat(response.getContent(), startsWith("--" + boundary));
+                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+                }
         );
 
         scenarios.addScenario(
-            "No mimetype resource - multiple ranges (x5) with empty range request",
-            """
-                GET /context/nofilesuffix HTTP/1.1\r
-                Host: localhost\r
-                Range: bytes=0-9,20-29,40-49,60-60,70-79\r
-                \r
-                """,
-            HttpStatus.PARTIAL_CONTENT_206,
-            (response) ->
-            {
-                String body = response.getContent();
+                "No mimetype resource - multiple ranges (x5) with empty range request",
+                """
+                    GET /context/nofilesuffix HTTP/1.1\r
+                    Host: localhost\r
+                    Range: bytes=0-9,20-29,40-49,60-60,70-79\r
+                    \r
+                    """,
+                HttpStatus.PARTIAL_CONTENT_206,
+                (response) ->
+                {
+                    String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                String boundary = getContentTypeBoundary(contentType);
+                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                    String boundary = getContentTypeBoundary(contentType);
 
-                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                assertThat(body, containsString("Content-Range: bytes 40-49/80"));
-                assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
-                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                    assertThat(body, containsString("Content-Range: bytes 40-49/80"));
+                    assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
+                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                assertThat(response.getContent(), startsWith("--" + boundary));
-                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-            }
+                    assertThat(response.getContent(), startsWith("--" + boundary));
+                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+                }
         );
 
         return scenarios.stream();
@@ -630,14 +633,14 @@ public class ResourceHandlerTest
         Scenarios scenarios = new Scenarios();
 
         scenarios.addScenario(
-            "GET /context/ - (no match)",
-            """
-                GET /context/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.FORBIDDEN_403
+                "GET /context/ - (no match)",
+                """
+                    GET /context/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """,
+                HttpStatus.FORBIDDEN_403
         );
 
         addBasicWelcomeScenarios(scenarios);
@@ -698,7 +701,7 @@ public class ResourceHandlerTest
         getLocalConnectorConfig().setOutputBufferSize(2048);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -716,7 +719,7 @@ public class ResourceHandlerTest
         getLocalConnectorConfig().setOutputBufferSize(16 * 1024);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -734,7 +737,7 @@ public class ResourceHandlerTest
         getLocalConnectorConfig().setOutputBufferSize(8);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -750,7 +753,7 @@ public class ResourceHandlerTest
     {
         setupBigFiles(docRoot);
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/bigger.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1169,7 +1172,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/directory/ HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1194,7 +1197,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1224,7 +1227,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1241,7 +1244,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/simple.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1267,7 +1270,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1284,7 +1287,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/simple.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1310,7 +1313,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1327,7 +1330,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/simple.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1349,7 +1352,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/does-not-exist HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1369,7 +1372,7 @@ public class ResourceHandlerTest
         setupBigFiles(docRoot);
 
         long expectedSize = Files.size(docRoot.resolve("big.txt")) +
-            Files.size(docRoot.resolve("big.txt.gz"));
+                Files.size(docRoot.resolve("big.txt.gz"));
 
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
         CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getHttpContentFactory();
@@ -1377,7 +1380,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response1 = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1394,7 +1397,7 @@ public class ResourceHandlerTest
             }
 
             HttpTester.Response response2 = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1420,7 +1423,7 @@ public class ResourceHandlerTest
     {
         setupBigFiles(docRoot);
         long expectedSize = Files.size(docRoot.resolve("big.txt")) +
-            Files.size(docRoot.resolve("big.txt.gz"));
+                Files.size(docRoot.resolve("big.txt.gz"));
 
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
         _rootResourceHandler.setEtags(true);
@@ -1429,7 +1432,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response1 = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1450,7 +1453,7 @@ public class ResourceHandlerTest
             }
 
             HttpTester.Response response2 = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1467,7 +1470,7 @@ public class ResourceHandlerTest
             assertThat(response2.getContent(), endsWith("   400\tThis is a big file\n"));
 
             HttpTester.Response response3 = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1478,7 +1481,7 @@ public class ResourceHandlerTest
             assertThat(response3.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
             HttpTester.Response response4 = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/big.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1509,7 +1512,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/temp.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1534,7 +1537,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/temp.txt HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1560,7 +1563,7 @@ public class ResourceHandlerTest
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("""
+                    _local.getResponse("""
                     GET /context/directory/ HTTP/1.1\r
                     Host: local\r
                     Connection: close\r
@@ -1582,7 +1585,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setEtags(true);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1601,7 +1604,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setEtags(true);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 HEAD /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1640,9 +1643,9 @@ public class ResourceHandlerTest
         Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
         _rootResourceHandler.setPrecompressedFormats(
-            new CompressedContentFormat("bzip2", ".bz2"),
-            new CompressedContentFormat("gzip", ".gz"),
-            new CompressedContentFormat("br", ".br")
+                new CompressedContentFormat("bzip2", ".bz2"),
+                new CompressedContentFormat("gzip", ".gz"),
+                new CompressedContentFormat("br", ".br")
         );
 
         String rawResponse;
@@ -1736,25 +1739,25 @@ public class ResourceHandlerTest
     public static Stream<Arguments> directoryRedirectSource()
     {
         return Stream.of(
-            Arguments.of("""
+                Arguments.of("""
                 GET /context/directory HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """, "/context/directory/"),
-            Arguments.of("""
+                Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678 HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """, "/context/directory/;JSESSIONID=12345678"),
-            Arguments.of("""
+                Arguments.of("""
                 GET /context/directory?name=value HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """, "/context/directory/?name=value"),
-            Arguments.of("""
+                Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678?name=value HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1780,7 +1783,7 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1795,7 +1798,7 @@ public class ResourceHandlerTest
         assertThat(content, containsString("/context/directory/"));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/jetty-dir.css HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1811,12 +1814,12 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         _rootResourceHandler.stop();
         _rootResourceHandler.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer0")),
-            _rootResourceHandler.getBaseResource()));
+                ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer0")),
+                _rootResourceHandler.getBaseResource()));
         _rootResourceHandler.start();
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/other/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1830,7 +1833,7 @@ public class ResourceHandlerTest
         assertThat(content, containsString("/context/other/data.txt"));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/other/jetty-dir.css HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1840,7 +1843,7 @@ public class ResourceHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/double/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1854,7 +1857,7 @@ public class ResourceHandlerTest
         assertThat(content, containsString("/context/double/zero.txt"));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/double/jetty-dir.css HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1870,13 +1873,13 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         _rootResourceHandler.stop();
         _rootResourceHandler.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer0")),
-            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer1")),
-            _rootResourceHandler.getBaseResource()));
+                ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer0")),
+                ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer1")),
+                _rootResourceHandler.getBaseResource()));
         _rootResourceHandler.start();
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1893,7 +1896,7 @@ public class ResourceHandlerTest
         assertThat(content, containsString("/context/double/"));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/double/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1908,7 +1911,7 @@ public class ResourceHandlerTest
         assertThat(content, containsString("/context/double/one.txt"));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/double/jetty-dir.css HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1926,7 +1929,7 @@ public class ResourceHandlerTest
         Files.writeString(testFile, "some content\n");
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/test-etag-file.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1947,7 +1950,7 @@ public class ResourceHandlerTest
         while (Files.getLastModifiedTime(testFile).equals(before));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/test-etag-file.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1965,7 +1968,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setEtags(true);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -1977,7 +1980,7 @@ public class ResourceHandlerTest
         String etag = response.get(ETAG);
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2265,7 +2268,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setGzipEquivalentFileExtensions(List.of(CompressedContentFormat.GZIP.getExtension()));
 
         HttpTester.Response response1 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt.gz HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2275,7 +2278,7 @@ public class ResourceHandlerTest
         assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
 
         HttpTester.Response response2 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2291,7 +2294,7 @@ public class ResourceHandlerTest
         setupSimpleText(docRoot);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2306,8 +2309,8 @@ public class ResourceHandlerTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "Hello World",
-        "Now is the time for all good men to come to the aid of the party"
+            "Hello World",
+            "Now is the time for all good men to come to the aid of the party"
     })
     public void testIfETag(String content) throws Exception
     {
@@ -2412,8 +2415,8 @@ public class ResourceHandlerTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "Hello World",
-        "Now is the time for all good men to come to the aid of the party"
+            "Hello World",
+            "Now is the time for all good men to come to the aid of the party"
     })
     public void testIfModified(String content) throws Exception
     {
@@ -2508,7 +2511,7 @@ public class ResourceHandlerTest
         setupSimpleText(docRoot);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2520,7 +2523,7 @@ public class ResourceHandlerTest
         String lastModified = response.get(LAST_MODIFIED);
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2532,7 +2535,7 @@ public class ResourceHandlerTest
         assertThat(response.getContent(), is(""));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2553,7 +2556,7 @@ public class ResourceHandlerTest
         Files.writeString(testFile, "some content\n");
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/test-unmodified-since-file.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2597,7 +2600,7 @@ public class ResourceHandlerTest
         setupSimpleText(docRoot);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2609,7 +2612,7 @@ public class ResourceHandlerTest
         String lastModified = response.get(LAST_MODIFIED);
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2627,7 +2630,7 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2645,7 +2648,7 @@ public class ResourceHandlerTest
     public void testJettyDirRedirect() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2885,7 +2888,7 @@ public class ResourceHandlerTest
     public void testNonExistentFile() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/no-such-file.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2902,7 +2905,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2921,7 +2924,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2941,7 +2944,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2960,7 +2963,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
 
         HttpTester.Response response1 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2975,7 +2978,7 @@ public class ResourceHandlerTest
         assertThat(response1.getContentBytes(), is(bigGzBytes));
 
         HttpTester.Response response2 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -2995,7 +2998,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(new CompressedContentFormat("zip", ".zip"), CompressedContentFormat.GZIP);
 
         HttpTester.Response response1 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3008,7 +3011,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP, new CompressedContentFormat("zip", ".zip"));
 
         HttpTester.Response response2 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3028,7 +3031,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP, new CompressedContentFormat("zip", ".zip"));
 
         HttpTester.Response response1 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3041,7 +3044,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setPrecompressedFormats(new CompressedContentFormat("zip", ".zip"), CompressedContentFormat.GZIP);
 
         HttpTester.Response response2 = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/big.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3061,9 +3064,9 @@ public class ResourceHandlerTest
         Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
         _rootResourceHandler.setPrecompressedFormats(
-            new CompressedContentFormat("bzip2", ".bz2"),
-            new CompressedContentFormat("gzip", ".gz"),
-            new CompressedContentFormat("br", ".br")
+                new CompressedContentFormat("bzip2", ".bz2"),
+                new CompressedContentFormat("gzip", ".gz"),
+                new CompressedContentFormat("br", ".br")
         );
 
         String rawResponse;
@@ -3181,7 +3184,7 @@ public class ResourceHandlerTest
         setupSimpleText(docRoot);
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/simple.txt/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3211,7 +3214,7 @@ public class ResourceHandlerTest
         }
 
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/biggest.txt HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3315,7 +3318,7 @@ public class ResourceHandlerTest
     {
         copySimpleTestResource(docRoot);
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/directory/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3357,7 +3360,7 @@ public class ResourceHandlerTest
     {
         setupQuestionMarkDir(docRoot);
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/dir? HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3366,17 +3369,17 @@ public class ResourceHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/dir%3F HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """));
-        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.getField(LOCATION).getValue(), endsWith("/context/dir%3F/"));
 
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/dir%3F/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -3387,13 +3390,13 @@ public class ResourceHandlerTest
 
         _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/dir%3F/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """));
-        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.getField(LOCATION).getValue(), endsWith("/context/dir%3F/welcome.txt"));
     }
 
@@ -3591,13 +3594,13 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REDIRECT);
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+                _local.getResponse("""
                 GET /context/directory/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """));
-        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get(LOCATION), containsString("/context/directory/welcome.txt"));
     }
 
@@ -3842,8 +3845,8 @@ public class ResourceHandlerTest
         try (Stream<Path> walk = Files.walk(simpleSrc, 4))
         {
             List<Path> testSources = walk
-                .filter(Files::isRegularFile)
-                .map(simpleSrc::relativize).toList();
+                    .filter(Files::isRegularFile)
+                    .map(simpleSrc::relativize).toList();
             for (Path testSourceRelative : testSources)
             {
                 Path src = simpleSrc.resolve(testSourceRelative);

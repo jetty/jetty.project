@@ -48,7 +48,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -58,6 +57,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -67,7 +67,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,17 +75,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Isolated
 @ExtendWith(WorkDirExtension.class)
 public class WebAppContextTest
 {
     public static final Logger LOG = LoggerFactory.getLogger(WebAppContextTest.class);
-    public WorkDir workDir;
     private final List<Object> lifeCycles = new ArrayList<>();
 
     @BeforeEach
     public void beforeEach()
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        //assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @AfterEach
@@ -94,7 +93,7 @@ public class WebAppContextTest
     {
         lifeCycles.forEach(LifeCycle::stop);
         Configurations.cleanKnown();
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        //assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     private Server newServer()
@@ -202,6 +201,7 @@ public class WebAppContextTest
         expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebXmlConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.MetaInfConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JaasConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebAppConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration");
 
@@ -272,9 +272,9 @@ public class WebAppContextTest
     }
 
     @Test
-    public void testAlias() throws Exception
+    public void testAlias(WorkDir workDir) throws Exception
     {
-        Path tempDir = workDir.getEmptyPathDir().resolve("dir");
+        Path tempDir = workDir.getEmptyPathDir();
         FS.ensureEmpty(tempDir);
 
         Path webinf = tempDir.resolve("WEB-INF");

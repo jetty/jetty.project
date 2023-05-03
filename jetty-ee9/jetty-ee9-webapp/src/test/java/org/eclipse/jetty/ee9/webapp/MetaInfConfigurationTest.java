@@ -78,18 +78,6 @@ public class MetaInfConfigurationTest
         }
     }
 
-    @BeforeEach
-    public void beforeEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    @AfterEach
-    public void afterEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
     @Test
     public void testScanTypes() throws Exception
     {

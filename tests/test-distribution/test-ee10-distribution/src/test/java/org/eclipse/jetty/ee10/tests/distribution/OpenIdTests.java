@@ -46,7 +46,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,ee10-webapp,ee10-deploy,ee10-openid"
+            "--add-to-start=http,ee10-webapp,ee10-deploy,openid"
         };
 
         String clientId = "clientId123";
@@ -74,7 +74,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 startHttpClient(false);
                 String uri = "http://localhost:" + port + "/test";
                 openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
@@ -108,7 +108,6 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 content = response.getContentAsString();
                 assertThat(content, containsString("not authenticated"));
-
             }
         }
         finally

@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.SessionTrackingMode;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
@@ -43,9 +44,9 @@ import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
 import org.eclipse.jetty.ee9.servlet.Source;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.slf4j.Logger;
@@ -1455,7 +1456,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             return;
         }
 
-        Constraint scBase = new Constraint();
+        ServletConstraint scBase = new ServletConstraint();
 
         //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive
         //across fragments
@@ -1485,15 +1486,15 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 data = data.get("transport-guarantee");
                 String guarantee = data.toString(false, true).toUpperCase(Locale.ENGLISH);
                 if (guarantee == null || guarantee.length() == 0 || "NONE".equals(guarantee))
-                    scBase.setDataConstraint(Constraint.DC_NONE);
+                    scBase.setDataConstraint(ServletConstraint.DC_NONE);
                 else if ("INTEGRAL".equals(guarantee))
-                    scBase.setDataConstraint(Constraint.DC_INTEGRAL);
+                    scBase.setDataConstraint(ServletConstraint.DC_INTEGRAL);
                 else if ("CONFIDENTIAL".equals(guarantee))
-                    scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+                    scBase.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
                 else
                 {
                     LOG.warn("Unknown user-data-constraint: {}", guarantee);
-                    scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+                    scBase.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
                 }
             }
             Iterator<XmlParser.Node> iter = node.iterator("web-resource-collection");
@@ -1501,7 +1502,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 XmlParser.Node collection = iter.next();
                 String name = collection.getString("web-resource-name", false, true);
-                Constraint sc = (Constraint)scBase.clone();
+                ServletConstraint sc = (ServletConstraint)scBase.clone();
                 sc.setName(name);
 
                 Iterator<XmlParser.Node> iter2 = collection.iterator("url-pattern");
@@ -1640,7 +1641,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     unknownOrigin(originRealmName);
             }
 
-            if (Constraint.__FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthMethod()))
+            if (Authenticator.FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthMethod()))
             {
                 XmlParser.Node formConfig = node.get("form-login-config");
                 if (formConfig != null)

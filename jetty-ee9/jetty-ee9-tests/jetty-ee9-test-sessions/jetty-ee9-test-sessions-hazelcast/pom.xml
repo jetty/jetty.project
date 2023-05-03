@@ -9,6 +9,7 @@
   <artifactId>jetty-ee9-test-sessions-hazelcast</artifactId>
   <name>EE9 :: Tests :: Sessions :: Hazelcast</name>
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
   </properties>
   <build>

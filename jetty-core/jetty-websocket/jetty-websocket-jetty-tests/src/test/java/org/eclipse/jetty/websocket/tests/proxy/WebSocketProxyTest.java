@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -72,7 +73,7 @@ public class WebSocketProxyTest
         context.setHandler(wsHandler);
         wsHandler.configure(container ->
         {
-            container.addMapping("/proxy", (rq, rs, cb) -> webSocketProxy.getWebSocketConnectionListener());
+            container.addMapping("/proxy", (rq, rs, cb) -> webSocketProxy.getSessionListener());
             serverSocket = new EchoSocket();
             container.addMapping("/echo", (rq, rs, cb) ->
             {
@@ -110,15 +111,16 @@ public class WebSocketProxyTest
         assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
 
         // Test an echo spread across multiple frames.
-        clientSocket.session.getRemote().sendPartialString("hell", false);
-        clientSocket.session.getRemote().sendPartialString("o w", false);
-        clientSocket.session.getRemote().sendPartialString("orld", false);
-        clientSocket.session.getRemote().sendPartialString("!", true);
+        Callback.Completable.with(c -> clientSocket.session.sendPartialText("hell", false, c))
+            .compose(c -> clientSocket.session.sendPartialText("o w", false, c))
+            .compose(c -> clientSocket.session.sendPartialText("orld", false, c))
+            .compose(c -> clientSocket.session.sendPartialText("!", true, c))
+            .get();
         String response = clientSocket.textMessages.poll(5, TimeUnit.SECONDS);
         assertThat(response, is("hello world!"));
 
         // Test we closed successfully on the client side.
-        clientSocket.session.close(StatusCode.NORMAL, "test initiated close");
+        clientSocket.session.close(StatusCode.NORMAL, "test initiated close", Callback.NOOP);
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
         assertThat(clientSocket.closeReason, is("test initiated close"));
@@ -212,7 +214,7 @@ public class WebSocketProxyTest
         assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
 
-        clientSocket.session.getRemote().sendString("hello world!");
+        clientSocket.session.sendText("hello world!", Callback.NOOP);
 
         // Verify expected client close.
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
@@ -245,7 +247,7 @@ public class WebSocketProxyTest
         serverSocket.session.setIdleTimeout(Duration.ZERO);
 
         // Send and receive an echo message.
-        clientSocket.session.getRemote().sendString("test echo message");
+        clientSocket.session.sendText("test echo message", Callback.NOOP);
         assertThat(clientSocket.textMessages.poll(clientSessionIdleTimeout, TimeUnit.SECONDS), is("test echo message"));
 
         // Wait more than the idleTimeout period, the clientToProxy connection should fail which should fail the proxyToServer.
@@ -273,19 +275,22 @@ public class WebSocketProxyTest
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
 
         // Test unsolicited pong from client.
-        clientSocket.session.getRemote().sendPong(BufferUtil.toBuffer("unsolicited pong from client"));
+        ByteBuffer b2 = BufferUtil.toBuffer("unsolicited pong from client");
+        clientSocket.session.sendPong(b2, Callback.NOOP);
         assertThat(serverEndpoint.pingMessages.size(), is(0));
         assertThat(serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("unsolicited pong from client")));
 
         // Test unsolicited pong from server.
-        serverEndpoint.session.getRemote().sendPong(BufferUtil.toBuffer("unsolicited pong from server"));
+        ByteBuffer b1 = BufferUtil.toBuffer("unsolicited pong from server");
+        serverEndpoint.session.sendPong(b1, Callback.NOOP);
         assertThat(clientSocket.pingMessages.size(), is(0));
         assertThat(clientSocket.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("unsolicited pong from server")));
 
         // Test pings from client.
         for (int i = 0; i < 15; i++)
         {
-            clientSocket.session.getRemote().sendPing(intToStringByteBuffer(i));
+            ByteBuffer b = intToStringByteBuffer(i);
+            clientSocket.session.sendPing(b, Callback.NOOP);
         }
         for (int i = 0; i < 15; i++)
         {
@@ -296,7 +301,8 @@ public class WebSocketProxyTest
         // Test pings from server.
         for (int i = 0; i < 23; i++)
         {
-            serverEndpoint.session.getRemote().sendPing(intToStringByteBuffer(i));
+            ByteBuffer b = intToStringByteBuffer(i);
+            serverEndpoint.session.sendPing(b, Callback.NOOP);
         }
         for (int i = 0; i < 23; i++)
         {
@@ -304,7 +310,7 @@ public class WebSocketProxyTest
             assertThat(serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
         }
 
-        clientSocket.session.close(StatusCode.NORMAL, "closing from test");
+        clientSocket.session.close(StatusCode.NORMAL, "closing from test", Callback.NOOP);
 
         // Verify expected client close.
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
@@ -338,19 +344,14 @@ public class WebSocketProxyTest
         public BlockingQueue<ByteBuffer> pongMessages = new BlockingArrayQueue<>();
 
         @OnWebSocketFrame
-        public void onWebSocketFrame(Frame frame)
+        public void onWebSocketFrame(Frame frame, Callback callback)
         {
             switch (frame.getOpCode())
             {
-                case OpCode.PING:
-                    pingMessages.add(BufferUtil.copy(frame.getPayload()));
-                    break;
-                case OpCode.PONG:
-                    pongMessages.add(BufferUtil.copy(frame.getPayload()));
-                    break;
-                default:
-                    break;
+                case OpCode.PING -> pingMessages.add(BufferUtil.copy(frame.getPayload()));
+                case OpCode.PONG -> pongMessages.add(BufferUtil.copy(frame.getPayload()));
             }
+            callback.succeed();
         }
     }
 

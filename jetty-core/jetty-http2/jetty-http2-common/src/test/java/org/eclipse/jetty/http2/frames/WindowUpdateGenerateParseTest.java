@@ -37,7 +37,7 @@ public class WindowUpdateGenerateParseTest
         WindowUpdateGenerator generator = new WindowUpdateGenerator(new HeaderGenerator(bufferPool));
 
         final List<WindowUpdateFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onWindowUpdate(WindowUpdateFrame frame)
@@ -78,7 +78,7 @@ public class WindowUpdateGenerateParseTest
         WindowUpdateGenerator generator = new WindowUpdateGenerator(new HeaderGenerator(bufferPool));
 
         final List<WindowUpdateFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener()
         {
             @Override
             public void onWindowUpdate(WindowUpdateFrame frame)

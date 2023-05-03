@@ -175,7 +175,7 @@ public class ProxyServlet extends AbstractProxyServlet
         }
     }
 
-    protected class ProxyResponseListener extends Response.Listener.Adapter
+    protected class ProxyResponseListener implements Response.Listener
     {
         private final HttpServletRequest request;
         private final HttpServletResponse response;

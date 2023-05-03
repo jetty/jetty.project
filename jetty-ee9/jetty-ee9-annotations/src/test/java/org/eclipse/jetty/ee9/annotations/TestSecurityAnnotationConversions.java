@@ -22,13 +22,13 @@ import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServlet;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -98,9 +98,9 @@ public class TestSecurityAnnotationConversions
 
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
-        Constraint expectedConstraint = new Constraint();
+        ServletConstraint expectedConstraint = new ServletConstraint();
         expectedConstraint.setAuthenticate(true);
-        expectedConstraint.setDataConstraint(Constraint.DC_NONE);
+        expectedConstraint.setDataConstraint(ServletConstraint.DC_NONE);
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
 
@@ -155,10 +155,10 @@ public class TestSecurityAnnotationConversions
 
         //set up the expected outcomes:compareResults
         //1 ConstraintMapping per ServletMapping
-        Constraint expectedConstraint = new Constraint();
+        ServletConstraint expectedConstraint = new ServletConstraint();
         expectedConstraint.setAuthenticate(true);
         expectedConstraint.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        expectedConstraint.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
         expectedMappings[0] = new ConstraintMapping();
@@ -185,15 +185,15 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
-        Constraint expectedConstraint1 = new Constraint();
+        ServletConstraint expectedConstraint1 = new ServletConstraint();
         expectedConstraint1.setAuthenticate(true);
         expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint1.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        expectedConstraint1.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
 
         //a Constraint for the PermitAll on the doGet method with a userdata
         //constraint of DC_CONFIDENTIAL inherited from the class
-        Constraint expectedConstraint2 = new Constraint();
-        expectedConstraint2.setDataConstraint(Constraint.DC_NONE);
+        ServletConstraint expectedConstraint2 = new ServletConstraint();
+        expectedConstraint2.setDataConstraint(ServletConstraint.DC_NONE);
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
@@ -237,15 +237,15 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
-        Constraint expectedConstraint1 = new Constraint();
+        ServletConstraint expectedConstraint1 = new ServletConstraint();
         expectedConstraint1.setAuthenticate(true);
         expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint1.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        expectedConstraint1.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
 
         //a Constraint for the Permit on the GET method with a userdata
         //constraint of DC_CONFIDENTIAL
-        Constraint expectedConstraint2 = new Constraint();
-        expectedConstraint2.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        ServletConstraint expectedConstraint2 = new ServletConstraint();
+        expectedConstraint2.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();

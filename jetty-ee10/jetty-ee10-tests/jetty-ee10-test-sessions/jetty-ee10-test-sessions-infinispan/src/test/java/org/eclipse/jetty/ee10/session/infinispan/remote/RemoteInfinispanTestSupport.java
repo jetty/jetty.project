@@ -58,7 +58,7 @@ public class RemoteInfinispanTestSupport
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
 
-    private static final GenericContainer INFINISPAN = new GenericContainer(IMAGE_NAME)
+    private final GenericContainer infinispan = new GenericContainer(IMAGE_NAME)
             .withEnv("USER", "theuser")
             .withEnv("PASS", "foobar")
             .withEnv("MGMT_USER", "admin")
@@ -68,7 +68,6 @@ public class RemoteInfinispanTestSupport
             .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
             .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
             .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
-
     private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
 
     public RemoteInfinispanTestSupport()
@@ -79,22 +78,22 @@ public class RemoteInfinispanTestSupport
     public RemoteInfinispanTestSupport(String cacheName)
     {
         if (cacheName == null)
-            cacheName = DEFAULT_CACHE_NAME + System.currentTimeMillis();
+            cacheName = DEFAULT_CACHE_NAME + System.nanoTime();
 
         _name = cacheName;
 
-        if (!INFINISPAN.isRunning())
+        if (!infinispan.isRunning())
         {
             try
             {
                 long start = System.currentTimeMillis();
 
-                INFINISPAN.start();
-                System.setProperty("hotrod.host", INFINISPAN.getContainerIpAddress());
+                infinispan.start();
+                System.setProperty("hotrod.host", infinispan.getContainerIpAddress());
 
                 LOG.info("Infinispan container started for {}:{} - {}ms",
-                        INFINISPAN.getContainerIpAddress(),
-                        INFINISPAN.getMappedPort(11222),
+                        infinispan.getContainerIpAddress(),
+                        infinispan.getMappedPort(11222),
                         System.currentTimeMillis() - start);
             }
             catch (Exception e)
@@ -114,8 +113,8 @@ public class RemoteInfinispanTestSupport
 
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
                     .addServer()
-                    .host(INFINISPAN.getContainerIpAddress())
-                    .port(INFINISPAN.getMappedPort(11222))
+                    .host(infinispan.getContainerIpAddress())
+                    .port(infinispan.getMappedPort(11222))
                     // we just want to limit connectivity to list of host:port we knows at start
                     // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
                     .clientIntelligence(ClientIntelligence.BASIC)
@@ -180,7 +179,7 @@ public class RemoteInfinispanTestSupport
 
     public void shutdown() throws Exception
     {
-        INFINISPAN.stop();
+        infinispan.stop();
     }
 
     public void createSession(InfinispanSessionData data)

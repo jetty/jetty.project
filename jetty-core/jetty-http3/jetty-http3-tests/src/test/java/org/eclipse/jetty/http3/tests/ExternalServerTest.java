@@ -31,15 +31,20 @@ import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.util.HostPort;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
+@Tag("external")
 public class ExternalServerTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ExternalServerTest.class);
+
     @Test
     @Tag("external")
     public void testExternalServerWithHttpClient() throws Exception
@@ -52,8 +57,7 @@ public class ExternalServerTest
         {
             URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
             ContentResponse response = httpClient.newRequest(uri).send();
-            System.err.println("response = " + response);
-            System.err.println(response.getContentAsString());
+            assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
         }
         finally
         {
@@ -69,11 +73,7 @@ public class ExternalServerTest
         client.start();
         try
         {
-            HostPort hostPort = new HostPort("google.com:443");
-//            HostPort hostPort = new HostPort("nghttp2.org:4433");
-//            HostPort hostPort = new HostPort("quic.tech:8443");
-//            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
-//            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
+            HostPort hostPort = new HostPort("maven-central-eu.storage-download.googleapis.com:443");
             Session.Client session = client.connect(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {})
                 .get(5, TimeUnit.SECONDS);
 
@@ -85,7 +85,8 @@ public class ExternalServerTest
                 @Override
                 public void onResponse(Stream.Client stream, HeadersFrame frame)
                 {
-                    System.err.println("RESPONSE HEADER = " + frame);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("RESPONSE HEADER = {}", frame);
                     if (frame.isLast())
                     {
                         requestLatch.countDown();
@@ -98,7 +99,8 @@ public class ExternalServerTest
                 public void onDataAvailable(Stream.Client stream)
                 {
                     Stream.Data data = stream.readData();
-                    System.err.println("RESPONSE DATA = " + data);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("RESPONSE DATA = {}", data);
                     if (data != null)
                     {
                         data.release();
@@ -114,7 +116,8 @@ public class ExternalServerTest
                 @Override
                 public void onTrailer(Stream.Client stream, HeadersFrame frame)
                 {
-                    System.err.println("RESPONSE TRAILER = " + frame);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("RESPONSE TRAILER = {}", frame);
                     requestLatch.countDown();
                 }
             });

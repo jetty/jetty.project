@@ -95,7 +95,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
-    public WorkDir testdir;
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
@@ -444,7 +443,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     x.printStackTrace();
                 }
             })
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onSuccess(Response response)
@@ -457,7 +456,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .onRequestQueued(request -> latch.countDown())
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onSuccess(Response response)
@@ -546,8 +545,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testExchangeIsCompleteOnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
+    public void testExchangeIsCompleteOnlyWhenBothRequestAndResponseAreComplete(Scenario scenario, WorkDir workDir) throws Exception
     {
+        Path targetTestsDir = workDir.getEmptyPathDir();
         start(scenario, new EmptyServerHandler()
         {
             @Override
@@ -561,7 +561,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         // Prepare a big file to upload
-        Path targetTestsDir = testdir.getEmptyPathDir();
         Files.createDirectories(targetTestsDir);
         Path file = Paths.get(targetTestsDir.toString(), "http_client_conversation.big");
         try (OutputStream output = Files.newOutputStream(file, StandardOpenOption.CREATE))
@@ -585,7 +584,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 requestTime.set(NanoTime.now());
                 latch.countDown();
             })
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onSuccess(Response response)
@@ -637,7 +636,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .body(body)
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -666,7 +665,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
                 connectionPool.getActiveConnections().iterator().next().close();
             })
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -731,7 +730,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
-                .send(new Response.Listener.Adapter()
+                .send(new Response.Listener()
                 {
                     @Override
                     public boolean onHeader(Response response, HttpField field)
@@ -1405,7 +1404,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .send(new Response.Listener.Adapter()
+            .send(new Response.Listener()
             {
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)

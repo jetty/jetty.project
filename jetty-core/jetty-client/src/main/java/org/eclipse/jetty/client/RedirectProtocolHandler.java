@@ -19,7 +19,7 @@ import org.eclipse.jetty.http.HttpHeader;
 /**
  * <p>A protocol handler that handles redirect status codes 301, 302, 303, 307 and 308.</p>
  */
-public class RedirectProtocolHandler extends Response.Listener.Adapter implements ProtocolHandler
+public class RedirectProtocolHandler implements ProtocolHandler, Response.Listener
 {
     public static final String NAME = "redirect";
 

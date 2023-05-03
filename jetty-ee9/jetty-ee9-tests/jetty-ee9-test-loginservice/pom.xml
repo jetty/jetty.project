@@ -9,6 +9,7 @@
   <artifactId>jetty-ee9-test-loginservice</artifactId>
   <name>EE9 :: Tests :: Login Service</name>
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.loginservice</bundle-symbolic-name>
   </properties>
   <dependencies>

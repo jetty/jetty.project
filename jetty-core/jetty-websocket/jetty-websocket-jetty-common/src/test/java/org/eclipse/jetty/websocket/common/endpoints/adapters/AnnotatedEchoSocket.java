@@ -15,14 +15,21 @@ package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Example EchoSocket using Annotations.
  */
-@WebSocket(maxTextMessageSize = 64 * 1024)
+@WebSocket
 public class AnnotatedEchoSocket
 {
+    @OnWebSocketOpen
+    public void onOpen(Session session)
+    {
+        session.setMaxTextMessageSize(64 * 1024);
+    }
+
     @OnWebSocketMessage
     public void onText(Session session, String message)
     {
@@ -30,7 +37,7 @@ public class AnnotatedEchoSocket
         {
             System.out.printf("Echoing back message [%s]%n", message);
             // echo the message back
-            session.getRemote().sendString(message, null);
+            session.sendText(message, null);
         }
     }
 }

@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -82,7 +83,7 @@ public class SimpleEchoTest
         session.setIdleTimeout(Duration.ofSeconds(timeout));
 
         String message = "hello world 1234";
-        session.getRemote().sendString(message);
+        session.sendText(message, Callback.NOOP);
         String received = clientEndpoint.textMessages.poll(timeout, TimeUnit.SECONDS);
         assertThat(received, equalTo(message));
 

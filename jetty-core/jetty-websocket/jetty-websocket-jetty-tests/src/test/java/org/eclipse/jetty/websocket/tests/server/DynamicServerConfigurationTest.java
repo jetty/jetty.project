@@ -26,8 +26,8 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
@@ -86,7 +86,7 @@ public class DynamicServerConfigurationTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, org.eclipse.jetty.util.Callback callback) throws Exception
             {
                 String pathInContext = Request.getPathInContext(request);
                 if ("/config".equals(pathInContext))
@@ -114,7 +114,7 @@ public class DynamicServerConfigurationTest
         future = wsClient.connect(clientEndPoint, wsUri);
         try (Session session = future.get(5, SECONDS))
         {
-            session.getRemote().sendString("OK");
+            session.sendText("OK", Callback.NOOP);
 
             String reply = clientEndPoint.textMessages.poll(5, SECONDS);
             assertEquals("OK", reply);

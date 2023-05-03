@@ -9,6 +9,7 @@
   <name>Core :: Start</name>
   <description>The start utility</description>
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.start</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.start.*</spotbugs.onlyAnalyze>
   </properties>

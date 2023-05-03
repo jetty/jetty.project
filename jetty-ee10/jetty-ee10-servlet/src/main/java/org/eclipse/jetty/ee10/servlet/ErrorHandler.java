@@ -89,7 +89,7 @@ public class ErrorHandler implements Request.Handler
         }
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         ServletContextHandler contextHandler = servletContextRequest.getContext().getServletContextHandler();
         String cacheControl = getCacheControl();

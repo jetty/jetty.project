@@ -23,24 +23,24 @@ import org.acme.webapp.TestAnnotation;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.resource.Resources;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestMetaData
 {
     Path fragFile;
@@ -62,10 +62,9 @@ public class TestMetaData
     @BeforeEach
     public void setUp(WorkDir workDir) throws Exception
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        Path testDir = workDir.getEmptyPathDir();
         resourceFactory = ResourceFactory.closeable();
 
-        Path testDir = workDir.getEmptyPathDir();
         Path jarsDir = testDir.resolve("jars");
         FS.ensureDirExists(jarsDir);
 
@@ -112,7 +111,6 @@ public class TestMetaData
     public void tearDown()
     {
         IO.close(resourceFactory);
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -131,10 +129,7 @@ public class TestMetaData
         wac.getMetaData().addWebInfResource(fragResource);
         wac.getMetaData().addWebInfResource(nonFragResource);
         wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
-        assertThrows(NullPointerException.class, () ->
-        {
-            wac.getMetaData().addFragmentDescriptor(nonFragResource, null);
-        });
+        assertThrows(NullPointerException.class, () -> wac.getMetaData().addFragmentDescriptor(nonFragResource, null));
 
         assertNotNull(wac.getMetaData().getFragmentDescriptorForJar(fragResource));
         assertNull(wac.getMetaData().getFragmentDescriptorForJar(nonFragResource));

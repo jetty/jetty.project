@@ -18,35 +18,30 @@ import java.util.List;
 
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity;
-import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
-import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ServletSecurityAnnotationHandler
- *
- * Inspect a class to see if it has an <code>&#064;ServletSecurity</code> annotation on it,
+ * <p>Inspect a class to see if it has an <code>&#064;ServletSecurity</code> annotation on it,
  * setting up the <code>&lt;security-constraint&gt;s</code>.
- *
- * A servlet can be defined in:
+ * </p>
+ * <p>A servlet can be defined in:</p>
  * <ul>
  * <li>web.xml</li>
  * <li>web-fragment.xml</li>
  * <li>@WebServlet annotation discovered</li>
  * <li>ServletContext.createServlet</li>
  * </ul>
- *
+ * <p>
  * The ServletSecurity annotation for a servlet should only be processed
- * iff metadata-complete == false.
+ * iff metadata-complete == false.</p>
  */
 public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
@@ -58,15 +53,15 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     }
 
     @Override
-    public void doHandle(Class clazz)
+    public void doHandle(Class<?> clazz)
     {
-        if (!(_context.getSecurityHandler() instanceof ConstraintAware))
+        if (!(_context.getSecurityHandler() instanceof ConstraintAware securityHandler))
         {
             LOG.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
             return;
         }
 
-        ServletSecurity servletSecurity = (ServletSecurity)clazz.getAnnotation(ServletSecurity.class);
+        ServletSecurity servletSecurity = clazz.getAnnotation(ServletSecurity.class);
         if (servletSecurity == null)
             return;
 
@@ -83,7 +78,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         }
 
         //Make a fresh list
-        constraintMappings = new ArrayList<ConstraintMapping>();
+        constraintMappings = new ArrayList<>();
 
         ServletSecurityElement securityElement = new ServletSecurityElement(servletSecurity);
         for (ServletMapping sm : servletMappings)
@@ -96,30 +91,10 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         }
 
         //set up the security constraints produced by the annotation
-        ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
-
-        for (ConstraintMapping m : constraintMappings)
-        {
-            securityHandler.addConstraintMapping(m);
-        }
+        constraintMappings.forEach(securityHandler::addConstraintMapping);
 
         //Servlet Spec 3.1 requires paths with uncovered http methods to be reported
         securityHandler.checkPathsWithUncoveredHttpMethods();
-    }
-
-    /**
-     * Make a jetty Constraint object, which represents the <code>&lt;auth-constraint&gt;</code> and
-     * <code>&lt;user-data-constraint&gt;</code> elements, based on the security annotation.
-     *
-     * @param servlet the servlet
-     * @param rolesAllowed the roles allowed
-     * @param permitOrDeny the role / permission semantic
-     * @param transport the transport guarantee
-     * @return the constraint
-     */
-    protected Constraint makeConstraint(Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
-    {
-        return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
     }
 
     /**
@@ -130,7 +105,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      */
     protected List<ServletMapping> getServletMappings(String className)
     {
-        List<ServletMapping> results = new ArrayList<ServletMapping>();
+        List<ServletMapping> results = new ArrayList<>();
         ServletMapping[] mappings = _context.getServletHandler().getServletMappings();
         for (ServletMapping mapping : mappings)
         {
@@ -168,10 +143,10 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             //and we will not be processing the annotation (ie web.xml or programmatic override).
             for (int i = 0; constraintMappings != null && i < constraintMappings.size() && !exists; i++)
             {
-                for (int j = 0; j < pathSpecs.length; j++)
+                for (String pathSpec : pathSpecs)
                 {
                     //TODO decide if we need to check the origin
-                    if (pathSpecs[j].equals(constraintMappings.get(i).getPathSpec()))
+                    if (pathSpec.equals(constraintMappings.get(i).getPathSpec()))
                     {
                         exists = true;
                         break;

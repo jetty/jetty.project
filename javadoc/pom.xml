@@ -267,16 +267,11 @@
       <artifactId>jetty-http3-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!--<dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jaas</artifactId>
+      <artifactId>jetty-security</artifactId>
       <scope>provided</scope>
-    </dependency>-->
-    <!--<dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jaspi</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.memcached</groupId>
       <artifactId>jetty-memcached-sessions</artifactId>

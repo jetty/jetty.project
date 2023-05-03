@@ -50,8 +50,7 @@ import org.eclipse.jetty.ee9.nested.ScopedHandler;
 import org.eclipse.jetty.ee9.nested.ServletPathMapping;
 import org.eclipse.jetty.ee9.nested.ServletRequestHttpWrapper;
 import org.eclipse.jetty.ee9.nested.ServletResponseHttpWrapper;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.nested.UserIdentityScope;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
@@ -59,6 +58,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.MultiMap;
@@ -458,7 +458,7 @@ public class ServletHandler extends ScopedHandler
         final ServletPathMapping old_servlet_path_mapping = baseRequest.getServletPathMapping();
 
         ServletHolder servletHolder = null;
-        UserIdentity.Scope oldScope = null;
+        UserIdentityScope oldScope = null;
 
         MatchedResource<MappedServlet> matched = getMatchedServlet(target);
         if (matched != null)

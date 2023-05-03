@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -58,9 +57,9 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
 
         // assertEquals(0, args.getEnabledModules().size(), "--stop should not build module tree");
-        assertEquals("10000", args.getCoreEnvironment().getProperties().getString("STOP.PORT"), "--stop missing port");
-        assertEquals("foo", args.getCoreEnvironment().getProperties().getString("STOP.KEY"), "--stop missing key");
-        assertEquals("300", args.getCoreEnvironment().getProperties().getString("STOP.WAIT"), "--stop missing wait");
+        assertEquals("10000", args.getJettyEnvironment().getProperties().getString("STOP.PORT"), "--stop missing port");
+        assertEquals("foo", args.getJettyEnvironment().getProperties().getString("STOP.KEY"), "--stop missing key");
+        assertEquals("300", args.getJettyEnvironment().getProperties().getString("STOP.WAIT"), "--stop missing wait");
     }
 
     @Test
@@ -133,7 +132,7 @@ public class MainTest
         }
 
         // Test a System Property that comes from JVM
-        List<String> warnings = output.stream().filter((line) -> line.startsWith("WARN")).collect(Collectors.toList());
+        List<String> warnings = output.stream().filter((line) -> line.startsWith("WARN")).toList();
         // warnings.forEach(System.out::println);
         Iterator<String> warningIter = warnings.iterator();
 

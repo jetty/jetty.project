@@ -73,8 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class SessionHandlerTest
 {
-    public WorkDir workDir;
-    
+
     public static class SessionConsumer implements Consumer<ManagedSession>
     {
         private ManagedSession _session;
@@ -104,7 +103,7 @@ public class SessionHandlerTest
      * Test that a session listener can access classes only visible to the context it is in.
      */
     @Test
-    public void testSessionListenerWithClassloader() throws Exception
+    public void testSessionListenerWithClassloader(WorkDir workDir) throws Exception
     {
         Path foodir = workDir.getEmptyPathDir();
         Path fooClass = foodir.resolve("Foo.class");
@@ -347,6 +346,7 @@ public class SessionHandlerTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
+
             assertTrue(sessionCookie != null);
             assertThat(sessionCookie, containsString("Path=/"));
 

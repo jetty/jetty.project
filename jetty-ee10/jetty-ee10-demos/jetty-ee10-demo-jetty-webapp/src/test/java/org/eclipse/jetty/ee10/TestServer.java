@@ -18,11 +18,11 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -40,14 +40,10 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Disabled;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Disabled("Not a test case")
 public class TestServer
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TestServer.class);
-
     public static void main(String[] args) throws Exception
     {
         Path webappProjectRoot = MavenTestingUtils.getBasePath();

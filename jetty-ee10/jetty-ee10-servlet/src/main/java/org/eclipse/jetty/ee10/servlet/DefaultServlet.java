@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.time.Duration;
@@ -188,9 +189,9 @@ public class DefaultServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
 
+    private ServletContextHandler _contextHandler;
     private ServletResourceService _resourceService;
     private WelcomeServletMode _welcomeServletMode;
-    private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
     private boolean _isPathInfoOnly;
 
@@ -202,19 +203,17 @@ public class DefaultServlet extends HttpServlet
     @Override
     public void init() throws ServletException
     {
-        ServletContextHandler servletContextHandler = initContextHandler(getServletContext());
-        _resourceService = new ServletResourceService(servletContextHandler);
+        _contextHandler = initContextHandler(getServletContext());
+        _resourceService = new ServletResourceService(_contextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
-
-        _baseResource = servletContextHandler.getBaseResource();
-        _resourceFactory = ResourceFactory.closeable();
+        _baseResource = _contextHandler.getBaseResource();
 
         String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
             {
-                _baseResource = _resourceFactory.newResource(rb);
+                _baseResource = Objects.requireNonNull(_contextHandler.newResource(rb));
             }
             catch (Exception e)
             {
@@ -230,17 +229,19 @@ public class DefaultServlet extends HttpServlet
         HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
         if (contentFactory == null)
         {
-            MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
-            contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
+            MimeTypes mimeTypes = _contextHandler.getMimeTypes();
+            ResourceFactory resourceFactory = _baseResource != null ? ResourceFactory.of(_baseResource) : this::getResource;
+            contentFactory = new ResourceHttpContentFactory(resourceFactory, mimeTypes);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
-            Resource styleSheet = servletContextHandler.getServer().getDefaultStyleSheet();
+            Resource styleSheet = _contextHandler.getServer().getDefaultStyleSheet();
             String stylesheetParam = getInitParameter("stylesheet");
             if (stylesheetParam != null)
             {
                 try
                 {
-                    Resource s = _resourceFactory.newResource(stylesheetParam);
+                    HttpContent styleSheetContent = contentFactory.getContent(stylesheetParam);
+                    Resource s = styleSheetContent == null ? null : styleSheetContent.getResource();
                     if (Resources.isReadableFile(s))
                         styleSheet = s;
                     else
@@ -267,7 +268,7 @@ public class DefaultServlet extends HttpServlet
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                ByteBufferPool bufferPool = getByteBufferPool(servletContextHandler);
+                ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
                 ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                 contentFactory = cached;
@@ -281,8 +282,8 @@ public class DefaultServlet extends HttpServlet
         }
         _resourceService.setHttpContentFactory(contentFactory);
 
-        if (servletContextHandler.getWelcomeFiles() == null)
-            servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
+        if (_contextHandler.getWelcomeFiles() == null)
+            _contextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
 
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
@@ -336,7 +337,6 @@ public class DefaultServlet extends HttpServlet
         if (LOG.isDebugEnabled())
         {
             LOG.debug("  .baseResource = {}", _baseResource);
-            LOG.debug("  .resourceFactory = {}", _resourceFactory);
             LOG.debug("  .resourceService = {}", _resourceService);
             LOG.debug("  .isPathInfoOnly = {}", _isPathInfoOnly);
             LOG.debug("  .welcomeServletMode = {}", _welcomeServletMode);
@@ -370,13 +370,6 @@ public class DefaultServlet extends HttpServlet
         }
 
         return null;
-    }
-
-    @Override
-    public void destroy()
-    {
-        super.destroy();
-        IO.close(_resourceFactory);
     }
 
     private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
@@ -552,6 +545,23 @@ public class DefaultServlet extends HttpServlet
         if (LOG.isDebugEnabled())
             LOG.debug("doHead(req={}, resp={}) (calling doGet())", req, resp);
         doGet(req, resp);
+    }
+
+    private Resource getResource(URI uri)
+    {
+        String uriPath = uri.getRawPath();
+        Resource result = null;
+        try
+        {
+            result = _contextHandler.getResource(uriPath);
+        }
+        catch (IOException x)
+        {
+            LOG.trace("IGNORED", x);
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Resource {}={}", uriPath, result);
+        return result;
     }
 
     private static class ServletCoreRequest extends Request.Wrapper
@@ -1083,8 +1093,7 @@ public class DefaultServlet extends HttpServlet
                 welcomeTarget = URIUtil.addPaths(servletPath, welcomeTarget);
 
             servletResponse.setContentLength(0);
-            servletResponse.sendRedirect(welcomeTarget);
-            callback.succeeded();
+            Response.sendRedirect(request, response, callback, welcomeTarget);
         }
 
         @Override

@@ -24,6 +24,6 @@ module org.eclipse.jetty.ee10.security.jaspi
     exports org.eclipse.jetty.ee10.security.jaspi.modules;
     exports org.eclipse.jetty.ee10.security.jaspi.provider;
 
-    provides org.eclipse.jetty.ee10.servlet.security.Authenticator.Factory with
+    provides org.eclipse.jetty.security.Authenticator.Factory with
         org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticatorFactory;
 }

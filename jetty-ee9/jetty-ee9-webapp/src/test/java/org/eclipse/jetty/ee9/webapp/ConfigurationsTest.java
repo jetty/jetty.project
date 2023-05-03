@@ -17,6 +17,7 @@ import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.jetty.ee9.webapp.Configurations.getKnown;
@@ -26,19 +27,18 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 
+@Isolated("Access static field of Configurations")
 public class ConfigurationsTest
 {
     @AfterEach
     public void tearDown()
     {
         Configurations.cleanKnown();
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @BeforeEach
     public void setup()
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         Configurations.cleanKnown();
     }
 

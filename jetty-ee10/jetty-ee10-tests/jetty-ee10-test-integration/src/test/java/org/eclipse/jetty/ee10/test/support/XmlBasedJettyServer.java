@@ -158,7 +158,7 @@ public class XmlBasedJettyServer
         assertEquals(1, serverCount, "Server load count");
 
         this._server = foundServer;
-        this._server.setStopTimeout(2000);
+        this._server.setStopTimeout(10000);
     }
 
     public String getScheme()

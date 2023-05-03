@@ -9,6 +9,7 @@
   <artifactId>jetty-ee9-test-sessions-mongodb</artifactId>
   <name>EE9 :: Tests :: Sessions :: Mongo</name>
   <properties>
+    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
     <embedmongo.host>localhost</embedmongo.host>
   </properties>

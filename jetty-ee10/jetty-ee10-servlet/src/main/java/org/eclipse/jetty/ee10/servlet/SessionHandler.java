@@ -58,8 +58,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
     private final SessionCookieConfig _cookieConfig = new CookieConfig();
 
-    private ServletContextHandler.ServletScopedContext _servletContextHandlerContext;
-
     private Server _server;
     private Handler _handler;
 
@@ -259,7 +257,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         private void checkState()
         {
-            if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
+            if (isStarted())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
         }
     }
@@ -387,8 +385,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     @Override
     public ManagedSession getManagedSession(Request request)
     {
-        ServletApiRequest apiRequest = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletApiRequest);
-        return apiRequest == null ? null : apiRequest.getServletContextRequest().getManagedSession();
+        return Request.as(request, ServletContextRequest.class).getManagedSession();
     }
 
     /**
@@ -440,9 +437,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     public void doStart() throws Exception
     {
         super.doStart();
-        if (!(getContext() instanceof ServletContextHandler.ServletScopedContext))
-            throw new IllegalStateException("!ServlerContextHandler.Context");
-        _servletContextHandlerContext = (ServletContextHandler.ServletScopedContext)getContext();
         configureCookies();
     }
 

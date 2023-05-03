@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.start.Environment;
+import org.eclipse.jetty.start.StartEnvironment;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
@@ -113,7 +113,7 @@ public class EnvironmentsTest extends AbstractUseCase
         assertThat(results.getEnvironments(), hasSize(2));
         for (String e : List.of("envA", "envB"))
         {
-            Environment environment = results.getEnvironment(e);
+            StartEnvironment environment = results.getEnvironment(e);
             assertThat(environment, notNullValue());
             assertThat(environment.getName(), is(e));
             assertThat(environment.getClasspath().getElements(), contains(baseDir.resolve("lib/%s.jar".formatted(e))));

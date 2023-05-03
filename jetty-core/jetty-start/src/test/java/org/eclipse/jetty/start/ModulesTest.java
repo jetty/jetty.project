@@ -41,14 +41,12 @@ public class ModulesTest
 {
     private static final String TEST_SOURCE = "<test>";
 
-    public WorkDir testdir;
-
     @Test
-    public void testLoadAllModules() throws IOException
+    public void testLoadAllModules(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -69,7 +67,7 @@ public class ModulesTest
         modules.registerAll();
 
         // Check versions
-        String platformProperty = args.getCoreEnvironment().getProperties().getString("java.version.platform");
+        String platformProperty = args.getJettyEnvironment().getProperties().getString("java.version.platform");
         assertThat("java.version.platform", Integer.parseInt(platformProperty), greaterThanOrEqualTo(8));
 
         List<String> moduleNames = new ArrayList<>();
@@ -140,11 +138,11 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolveServerHttp() throws IOException
+    public void testResolveServerHttp(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -203,11 +201,11 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolveNotRequiredModuleNotFound() throws IOException
+    public void testResolveNotRequiredModuleNotFound(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=cannot-find-me"};
 
         // Configuration
@@ -247,16 +245,16 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getCoreEnvironment().getProperties();
+        Props props = args.getJettyEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is(nullValue()));
     }
 
     @Test
-    public void testResolveNotRequiredModuleFound() throws IOException
+    public void testResolveNotRequiredModuleFound(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=dive"};
 
         // Configuration
@@ -298,16 +296,16 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getCoreEnvironment().getProperties();
+        Props props = args.getJettyEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dive"));
     }
 
     @Test
-    public void testResolveNotRequiredModuleFoundDynamic() throws IOException
+    public void testResolveNotRequiredModuleFoundDynamic(WorkDir workDir) throws IOException
     {
+        Path baseDir = workDir.getEmptyPathDir();
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
-        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=dynamic"};
 
         // Configuration
@@ -349,7 +347,7 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getCoreEnvironment().getProperties();
+        Props props = args.getJettyEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dynamic"));
     }
 

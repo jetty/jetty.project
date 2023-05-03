@@ -167,7 +167,7 @@ public class PrefaceTest extends AbstractTest
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
             AtomicBoolean closed = new AtomicBoolean();
-            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -311,7 +311,7 @@ public class PrefaceTest extends AbstractTest
 
             CountDownLatch clientSettingsLatch = new CountDownLatch(1);
             AtomicBoolean responded = new AtomicBoolean();
-            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)

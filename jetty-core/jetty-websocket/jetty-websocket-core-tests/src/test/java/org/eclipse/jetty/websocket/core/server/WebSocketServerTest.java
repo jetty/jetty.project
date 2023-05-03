@@ -94,9 +94,9 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public boolean isAutoDemanding()
+            protected void demand()
             {
-                return false;
+                // Demand is explicitly performed by the test code.
             }
         };
 
@@ -147,15 +147,8 @@ public class WebSocketServerTest extends WebSocketTester
             @Override
             public void onOpen(CoreSession coreSession, Callback callback)
             {
-                super.onOpen(coreSession);
-                callback.succeeded();
+                super.onOpen(coreSession, callback);
                 coreSession.demand(1);
-            }
-
-            @Override
-            public boolean isAutoDemanding()
-            {
-                return false;
             }
 
             @Override
@@ -254,15 +247,8 @@ public class WebSocketServerTest extends WebSocketTester
             @Override
             public void onOpen(CoreSession coreSession, Callback callback)
             {
-                super.onOpen(coreSession);
-                callback.succeeded();
+                super.onOpen(coreSession, callback);
                 coreSession.demand(3);
-            }
-
-            @Override
-            public boolean isAutoDemanding()
-            {
-                return false;
             }
 
             @Override
@@ -271,6 +257,12 @@ public class WebSocketServerTest extends WebSocketTester
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
+            }
+
+            @Override
+            protected void demand()
+            {
+                // Demand is explicitly performed by the test code.
             }
         };
 
@@ -323,12 +315,6 @@ public class WebSocketServerTest extends WebSocketTester
             {
                 closedStatus.set(closeStatus);
                 super.onClosed(closeStatus);
-            }
-
-            @Override
-            public boolean isAutoDemanding()
-            {
-                return false;
             }
 
             @Override
@@ -390,12 +376,6 @@ public class WebSocketServerTest extends WebSocketTester
                 super.onOpen(coreSession);
                 callback.succeeded();
                 coreSession.demand(2);
-            }
-
-            @Override
-            public boolean isAutoDemanding()
-            {
-                return false;
             }
 
             @Override

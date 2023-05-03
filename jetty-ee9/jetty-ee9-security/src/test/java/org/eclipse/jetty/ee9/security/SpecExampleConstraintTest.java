@@ -25,12 +25,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -68,7 +68,7 @@ public class SpecExampleConstraintTest
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
-        loginService.putUser("fred", new Password("password"), IdentityService.NO_ROLES);
+        loginService.putUser("fred", new Password("password"), new String[0]);
         loginService.putUser("harry", new Password("password"), new String[]{"HOMEOWNER"});
         loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
@@ -103,7 +103,7 @@ public class SpecExampleConstraintTest
         </security-constraint>
         */
 
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setAuthenticate(true);
         constraint0.setName("precluded methods");
         ConstraintMapping mapping0 = new ConstraintMapping();
@@ -135,7 +135,7 @@ public class SpecExampleConstraintTest
         </auth-constraint>
         </security-constraint>
         */
-        Constraint constraint1 = new Constraint();
+        ServletConstraint constraint1 = new ServletConstraint();
         constraint1.setAuthenticate(true);
         constraint1.setName("wholesale");
         constraint1.setRoles(new String[]{"SALESCLERK"});
@@ -164,11 +164,11 @@ public class SpecExampleConstraintTest
           </user-data-constraint>
         </security-constraint>
          */
-        Constraint constraint2 = new Constraint();
+        ServletConstraint constraint2 = new ServletConstraint();
         constraint2.setAuthenticate(true);
         constraint2.setName("wholesale 2");
         constraint2.setRoles(new String[]{"CONTRACTOR"});
-        constraint2.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        constraint2.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping5 = new ConstraintMapping();
         mapping5.setPathSpec("/acme/wholesale/*");
         mapping5.setMethod("GET");
@@ -192,7 +192,7 @@ public class SpecExampleConstraintTest
 </auth-constraint>
 </security-constraint>
 */
-        Constraint constraint4 = new Constraint();
+        ServletConstraint constraint4 = new ServletConstraint();
         constraint4.setName("retail");
         constraint4.setAuthenticate(true);
         constraint4.setRoles(new String[]{"CONTRACTOR", "HOMEOWNER"});
