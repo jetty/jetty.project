@@ -579,7 +579,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public String[] getConfigurationClasses()
     {
         loadConfigurations();
-        return _configurations.toArray();
+        return _configurations.toStringArray();
     }
 
     /**
@@ -862,9 +862,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     protected Configurations newConfigurations()
     {
-        Configurations configurations = new Configurations();
-        configurations.add(Configurations.getServerDefault(getServer()).toArray());
-        return configurations;
+        return new Configurations(Configurations.getServerDefault(getServer()).getConfigurations());
     }
     
     @Override
@@ -950,6 +948,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setConfigurationClasses(List<String> configurations)
     {
         setConfigurationClasses(configurations.toArray(new String[0]));
+    }
+
+    /**
+     * @param configurations The configurations to set.
+     */
+    public void setConfigurations(Configurations configurations)
+    {
+        _configurations = configurations == null ? new Configurations() : configurations;
     }
 
     /**
