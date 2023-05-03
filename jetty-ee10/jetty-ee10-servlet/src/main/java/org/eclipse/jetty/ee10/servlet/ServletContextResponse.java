@@ -346,6 +346,8 @@ public class ServletContextResponse extends ContextResponse
 
     public void resetContent()
     {
+        if (isCommitted())
+            throw new IllegalStateException("Committed");
         _httpOutput.resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;

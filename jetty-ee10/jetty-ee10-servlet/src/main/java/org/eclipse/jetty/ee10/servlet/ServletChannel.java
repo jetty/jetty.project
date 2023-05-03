@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -475,6 +476,8 @@ public class ServletChannel
 
                     case SEND_ERROR:
                     {
+                        Object errorException = _servletContextRequest.getAttribute((RequestDispatcher.ERROR_EXCEPTION));
+                        Throwable cause = errorException instanceof Throwable throwable ? throwable : null;
                         try
                         {
                             // Get ready to send an error response
@@ -517,10 +520,16 @@ public class ServletChannel
                         }
                         catch (Throwable x)
                         {
+                            if (cause == null)
+                                cause = x;
+                            else if (ExceptionUtil.areNotAssociated(cause, x))
+                                cause.addSuppressed(x);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform ERROR dispatch, aborting", x);
+                                LOG.debug("Could not perform ERROR dispatch, aborting", cause);
                             if (_state.isResponseCommitted())
-                                abort(x);
+                            {
+                                abort(cause);
+                            }
                             else
                             {
                                 try
@@ -530,9 +539,9 @@ public class ServletChannel
                                 }
                                 catch (Throwable t)
                                 {
-                                    if (x != t)
-                                        x.addSuppressed(t);
-                                    abort(x);
+                                    if (ExceptionUtil.areNotAssociated(cause, t))
+                                        cause.addSuppressed(t);
+                                    abort(cause);
                                 }
                             }
                         }
