@@ -18,6 +18,7 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -473,13 +474,17 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
 
     public void preConfigure(WebAppContext webapp) throws Exception
     {
-        // Configure webapp
-        // iterate with index to allows changes to the Configurations
-        // during calls to preConfiguration.
-        for (Configuration configuration : _configurations)
+        // TODO currently we iterate with index to allows changes to the Configurations
+        //      during calls to preConfiguration. Would be better to have a cleaner way of
+        //      mutating the configurations
+        for (int i = 0; i < _configurations.size(); i++)
         {
+            Configuration configuration = _configurations.get(i);
             LOG.debug("preConfigure with {}", configuration);
             configuration.preConfigure(webapp);
+
+            if (_configurations.get(i) != configuration)
+                throw new ConcurrentModificationException("Cannot change prior configuration");
         }
     }
 
