@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 /**
  * Used to decode integers as described in RFC7541.
  */
-public class NBitIntegerParser
+public class NBitIntegerDecoder
 {
     private int _prefix;
     private long _total;

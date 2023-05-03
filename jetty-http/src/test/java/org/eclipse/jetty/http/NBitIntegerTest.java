@@ -15,8 +15,8 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SuppressWarnings("PointlessArithmeticExpression")
 public class NBitIntegerTest
 {
-    private final NBitIntegerParser _parser = new NBitIntegerParser();
+    private final NBitIntegerDecoder _decoder = new NBitIntegerDecoder();
 
     @Test
     public void testOctetsNeeded()
@@ -125,8 +125,8 @@ public class NBitIntegerTest
     public void testDecode(int n, int expected, String encoded)
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        _parser.setPrefix(n);
-        assertEquals(expected, _parser.decodeInt(buf));
+        _decoder.setPrefix(n);
+        assertEquals(expected, _decoder.decodeInt(buf));
     }
 
     @Test
@@ -149,8 +149,8 @@ public class NBitIntegerTest
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("77EaFF"));
         buf.position(1);
-        _parser.setPrefix(5);
-        assertEquals(10, _parser.decodeInt(buf));
+        _decoder.setPrefix(5);
+        assertEquals(10, _decoder.decodeInt(buf));
     }
 
     @Test
@@ -173,8 +173,8 @@ public class NBitIntegerTest
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("881f9a0aff"));
         buf.position(1);
-        _parser.setPrefix(5);
-        assertEquals(1337, _parser.decodeInt(buf));
+        _decoder.setPrefix(5);
+        assertEquals(1337, _decoder.decodeInt(buf));
     }
 
     @Test
@@ -197,7 +197,7 @@ public class NBitIntegerTest
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("882aFf"));
         buf.position(1);
-        _parser.setPrefix(8);
-        assertEquals(42, _parser.decodeInt(buf));
+        _decoder.setPrefix(8);
+        assertEquals(42, _decoder.decodeInt(buf));
     }
 }

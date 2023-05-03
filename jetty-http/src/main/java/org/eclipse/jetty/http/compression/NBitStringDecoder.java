@@ -27,9 +27,9 @@ import org.eclipse.jetty.util.CharsetStringBuilder;
  * <p>Characters which are illegal field-vchar values are replaced with
  * either ' ' or '?' as described in RFC9110</p>
  */
-public class NBitStringParser
+public class NBitStringDecoder
 {
-    private final NBitIntegerParser _integerParser;
+    private final NBitIntegerDecoder _integerDecoder;
     private final HuffmanDecoder _huffmanBuilder;
     private final CharsetStringBuilder.Iso88591StringBuilder _builder;
     private boolean _huffman;
@@ -46,9 +46,9 @@ public class NBitStringParser
         VALUE
     }
 
-    public NBitStringParser()
+    public NBitStringDecoder()
     {
-        _integerParser = new NBitIntegerParser();
+        _integerDecoder = new NBitIntegerDecoder();
         _huffmanBuilder = new HuffmanDecoder();
         _builder = new CharsetStringBuilder.Iso88591StringBuilder();
     }
@@ -84,11 +84,11 @@ public class NBitStringParser
                     byte firstByte = buffer.get(buffer.position());
                     _huffman = ((0x80 >>> (8 - _prefix)) & firstByte) != 0;
                     _state = State.LENGTH;
-                    _integerParser.setPrefix(_prefix - 1);
+                    _integerDecoder.setPrefix(_prefix - 1);
                     continue;
 
                 case LENGTH:
-                    _length = _integerParser.decodeInt(buffer);
+                    _length = _integerDecoder.decodeInt(buffer);
                     if (_length < 0)
                         return null;
                     _state = State.VALUE;
@@ -122,7 +122,7 @@ public class NBitStringParser
     public void reset()
     {
         _state = State.PARSING;
-        _integerParser.reset();
+        _integerDecoder.reset();
         _huffmanBuilder.reset();
         _builder.reset();
         _prefix = 0;

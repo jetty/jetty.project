@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -53,12 +53,12 @@ public class HpackContextTest
         if (prefix != 8)
             buffer.position(buffer.position() - 1);
 
-        NBitIntegerParser parser = new NBitIntegerParser();
-        parser.setPrefix(prefix);
-        int decodedInt = parser.decodeInt(buffer);
+        NBitIntegerDecoder decoder = new NBitIntegerDecoder();
+        decoder.setPrefix(prefix);
+        int decodedInt = decoder.decodeInt(buffer);
         if (decodedInt < 0)
             throw new EncodingException("invalid integer encoding");
-        parser.reset();
+        decoder.reset();
         return decodedInt;
     }
 

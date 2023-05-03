@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
@@ -52,7 +52,7 @@ public class QpackDecoder implements Dumpable
     private final QpackContext _context;
     private final DecoderInstructionParser _parser;
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
-    private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
+    private final NBitIntegerDecoder _integerDecoder = new NBitIntegerDecoder();
     private final InstructionHandler _instructionHandler = new InstructionHandler();
     private final Map<Long, AtomicInteger> _blockedStreams = new HashMap<>();
     private int _maxHeaderSize;

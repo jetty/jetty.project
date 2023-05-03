@@ -21,7 +21,7 @@ import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
@@ -41,7 +41,7 @@ public class HpackDecoder
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
     private final HuffmanDecoder _huffmanDecoder;
-    private final NBitIntegerParser _integerParser;
+    private final NBitIntegerDecoder _integerDecoder;
     private int _localMaxDynamicTableSize;
 
     /**
@@ -54,7 +54,7 @@ public class HpackDecoder
         _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
         _huffmanDecoder = new HuffmanDecoder();
-        _integerParser = new NBitIntegerParser();
+        _integerDecoder = new NBitIntegerDecoder();
     }
 
     public HpackContext getHpackContext()
@@ -281,8 +281,8 @@ public class HpackDecoder
             if (prefix != 8)
                 buffer.position(buffer.position() - 1);
 
-            _integerParser.setPrefix(prefix);
-            int decodedInt = _integerParser.decodeInt(buffer);
+            _integerDecoder.setPrefix(prefix);
+            int decodedInt = _integerDecoder.decodeInt(buffer);
             if (decodedInt < 0)
                 throw new EncodingException("invalid integer encoding");
             return decodedInt;
@@ -295,7 +295,7 @@ public class HpackDecoder
         }
         finally
         {
-            _integerParser.reset();
+            _integerDecoder.reset();
         }
     }
 
