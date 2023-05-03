@@ -79,7 +79,7 @@ public interface CharsetStringBuilder
     {
         Objects.requireNonNull(charset);
         if (charset == StandardCharsets.ISO_8859_1)
-            return new Iso8859StringBuilder();
+            return new Iso88591StringBuilder();
         if (charset == StandardCharsets.US_ASCII)
             return new UsAsciiStringBuilder();
 
@@ -87,7 +87,7 @@ public interface CharsetStringBuilder
         return new DecoderStringBuilder(charset.newDecoder());
     }
 
-    class Iso8859StringBuilder implements CharsetStringBuilder
+    class Iso88591StringBuilder implements CharsetStringBuilder
     {
         private final StringBuilder _builder = new StringBuilder();
 
@@ -275,5 +275,3 @@ public interface CharsetStringBuilder
         }
     }
 }
-
-

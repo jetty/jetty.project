@@ -69,7 +69,7 @@ public class HuffmanEncoder
      * @param s the string to encode in lowercase.
      * @return the number of octets needed to encode the string, or -1 if it cannot be encoded.
      */
-    public static int octetsNeededLowercase(String s)
+    public static int octetsNeededLowerCase(String s)
     {
         return octetsNeeded(LCCODES, s);
     }
@@ -78,7 +78,7 @@ public class HuffmanEncoder
      * @param buffer the buffer to encode into in lowercase.
      * @param s the string to encode.
      */
-    public static void encodeLowercase(ByteBuffer buffer, String s)
+    public static void encodeLowerCase(ByteBuffer buffer, String s)
     {
         encode(LCCODES, buffer, s);
     }

@@ -31,7 +31,7 @@ public class NBitStringParser
 {
     private final NBitIntegerParser _integerParser;
     private final HuffmanDecoder _huffmanBuilder;
-    private final CharsetStringBuilder.Iso8859StringBuilder _builder;
+    private final CharsetStringBuilder.Iso88591StringBuilder _builder;
     private boolean _huffman;
     private int _count;
     private int _length;
@@ -50,7 +50,7 @@ public class NBitStringParser
     {
         _integerParser = new NBitIntegerParser();
         _huffmanBuilder = new HuffmanDecoder();
-        _builder = new CharsetStringBuilder.Iso8859StringBuilder();
+        _builder = new CharsetStringBuilder.Iso88591StringBuilder();
     }
 
     /**

@@ -173,7 +173,7 @@ public class HpackDecoder
                     if (huffmanName)
                         name = huffmanDecode(buffer, length);
                     else
-                        name = toISO8859String(buffer, length);
+                        name = toISO88591String(buffer, length);
                     check:
                     for (int i = name.length(); i-- > 0; )
                     {
@@ -213,7 +213,7 @@ public class HpackDecoder
                 if (huffmanValue)
                     value = huffmanDecode(buffer, length);
                 else
-                    value = toISO8859String(buffer, length);
+                    value = toISO88591String(buffer, length);
 
                 // Make the new field
                 HttpField field;
@@ -321,12 +321,12 @@ public class HpackDecoder
         }
     }
 
-    public static String toISO8859String(ByteBuffer buffer, int length)
+    public static String toISO88591String(ByteBuffer buffer, int length)
     {
-        CharsetStringBuilder.Iso8859StringBuilder builder = new CharsetStringBuilder.Iso8859StringBuilder();
+        CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
         for (int i = 0; i < length; ++i)
         {
-            builder.append((char)(0x7F & buffer.get()));
+            builder.append(HttpTokens.sanitizeFieldVchar((char)buffer.get()));
         }
         return builder.build();
     }

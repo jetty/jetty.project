@@ -257,10 +257,9 @@ public class HttpTokens
                 return ' ';
 
             default:
-                if (c >= 256 || c < ' ')
+                if (isIllegalFieldVchar(c))
                     return '?';
         }
-
         return c;
     }
 

@@ -29,7 +29,7 @@ import static org.eclipse.jetty.http.compression.Huffman.rowsym;
  */
 public class HuffmanDecoder
 {
-    private final CharsetStringBuilder.Iso8859StringBuilder _builder = new CharsetStringBuilder.Iso8859StringBuilder();
+    private final CharsetStringBuilder.Iso88591StringBuilder _builder = new CharsetStringBuilder.Iso88591StringBuilder();
     private int _length = 0;
     private int _count = 0;
     private int _node = 0;
