@@ -37,6 +37,10 @@ import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated no replacement for this deprecated http feature
+ */
+@Deprecated
 public class PushSessionCacheFilter implements Filter
 {
     private static final String RESPONSE_ATTR = "PushSessionCacheFilter.response";
@@ -45,6 +49,11 @@ public class PushSessionCacheFilter implements Filter
     private static final Logger LOG = LoggerFactory.getLogger(PushSessionCacheFilter.class);
     private final ConcurrentMap<String, Target> _cache = new ConcurrentHashMap<>();
     private long _associateDelay = 5000L;
+
+    public PushSessionCacheFilter()
+    {
+        LOG.warn(PushSessionCacheFilter.class.getSimpleName() + " is an example class not suitable for production.");
+    }
 
     @Override
     public void init(FilterConfig config) throws ServletException
