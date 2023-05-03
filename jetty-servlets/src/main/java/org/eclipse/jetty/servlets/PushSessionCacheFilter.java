@@ -41,6 +41,10 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * @deprecated no replacement for this deprecated http feature
+ */
+@Deprecated
 public class PushSessionCacheFilter implements Filter
 {
     private static final String TARGET_ATTR = "PushCacheFilter.target";
@@ -48,6 +52,11 @@ public class PushSessionCacheFilter implements Filter
     private static final Logger LOG = Log.getLogger(PushSessionCacheFilter.class);
     private final ConcurrentMap<String, Target> _cache = new ConcurrentHashMap<>();
     private long _associateDelay = 5000L;
+
+    public PushSessionCacheFilter()
+    {
+        LOG.warn(PushSessionCacheFilter.class.getSimpleName() + " is an example class not suitable for production.");
+    }
 
     @Override
     public void init(FilterConfig config) throws ServletException
