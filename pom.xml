@@ -278,13 +278,6 @@
   </modules>
 
   <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.extensions</groupId>
-        <artifactId>maven-build-cache-extension</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
-      </extension>
-    </extensions>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
