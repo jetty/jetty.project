@@ -1,4 +1,5 @@
 jetty-12.0.0-SNAPSHOT
+ + Jan is now using IntelliJ!
 
 jetty-12.0.0.beta0 - 23 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
