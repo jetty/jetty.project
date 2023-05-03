@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -28,15 +29,12 @@ import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.client.Socks5.AddrType;
-import org.eclipse.jetty.client.Socks5.AuthType;
-import org.eclipse.jetty.client.Socks5.Command;
-import org.eclipse.jetty.client.Socks5.SockConst;
-import org.eclipse.jetty.client.Socks5.UsernamePasswordAuthentication;
+import org.eclipse.jetty.client.Socks5.UsernamePasswordAuthenticationFactory;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -47,10 +45,11 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Socks5ProxyTest 
+public class Socks5ProxyTest
 {
     private ServerSocketChannel proxy;
     private HttpClient client;
@@ -65,9 +64,7 @@ public class Socks5ProxyTest
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         connector.setExecutor(clientThreads);
-        connector.setSslContextFactory(new SslContextFactory.Client());
         client = new HttpClient(new HttpClientTransportOverHTTP(connector));
-        client.setExecutor(clientThreads);
         client.start();
     }
 
@@ -109,45 +106,49 @@ public class Socks5ProxyTest
             int initLen = 3;
             ByteBuffer buffer = ByteBuffer.allocate(initLen);
             int read = channel.read(buffer);
+            buffer.flip();
             assertEquals(initLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            assertEquals(1, buffer.get(1) & 0xFF);
-            assertEquals(AuthType.NO_AUTH, buffer.get(2) & 0xFF);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(1, buffer.get());
+            byte authenticationMethod = Socks5.NoAuthenticationFactory.METHOD;
+            assertEquals(authenticationMethod, buffer.get());
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.NO_AUTH}));
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
 
-            // read addr
+            // Read server address.
             int addrLen = 10;
             buffer = ByteBuffer.allocate(addrLen);
             read = channel.read(buffer);
-            assertEquals(addrLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            assertEquals(Command.CONNECT, buffer.get(1) & 0xFF);
-            assertEquals(SockConst.RSV, buffer.get(2) & 0xFF);
-            assertEquals(AddrType.IPV4, buffer.get(3) & 0xFF);
-            assertEquals(ip1, buffer.get(4) & 0xFF);
-            assertEquals(ip2, buffer.get(5) & 0xFF);
-            assertEquals(ip3, buffer.get(6) & 0xFF);
-            assertEquals(ip4, buffer.get(7) & 0xFF);
-            assertEquals(serverPort, buffer.getShort(8) & 0xFFFF);
-
-            // Socks5 connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, SockConst.SUCCEEDED, SockConst.RSV, AddrType.IPV4, 0, 0, 0, 0, 0, 0}));
-
-            buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
-            read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            assertEquals(addrLen, read);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(Socks5.COMMAND_CONNECT, buffer.get());
+            assertEquals(Socks5.RESERVED, buffer.get());
+            assertEquals(Socks5.ADDRESS_TYPE_IPV4, buffer.get());
+            assertEquals(ip1, buffer.get());
+            assertEquals(ip2, buffer.get());
+            assertEquals(ip3, buffer.get());
+            assertEquals(ip4, buffer.get());
+            assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
-            // http response
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+            // Write connect response.
+            channel.write(ByteBuffer.wrap(new byte[]{
+                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 2, 13, 13
+            }));
+
+            // Parse the HTTP request.
+            HttpTester.Request request = HttpTester.parseRequest(channel);
+            assertNotNull(request);
+            assertEquals(method, request.getMethod());
+            assertEquals(path, request.getUri());
+
+            // Write the HTTP response.
+            String response = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Length: 0\r\n" +
+                              "Connection: close\r\n" +
+                              "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -180,46 +181,51 @@ public class Socks5ProxyTest
             int initLen = 3;
             ByteBuffer buffer = ByteBuffer.allocate(initLen);
             int read = channel.read(buffer);
+            buffer.flip();
             assertEquals(initLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            assertEquals(1, buffer.get(1) & 0xFF);
-            assertEquals(AuthType.NO_AUTH, buffer.get(2) & 0xFF);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(1, buffer.get());
+            byte authenticationMethod = Socks5.NoAuthenticationFactory.METHOD;
+            assertEquals(authenticationMethod, buffer.get());
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.NO_AUTH}));
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
 
-            // read addr
+            // Read server address.
             int addrLen = 7 + serverHost.length();
             buffer = ByteBuffer.allocate(addrLen);
             read = channel.read(buffer);
+            buffer.flip();
             assertEquals(addrLen, read);
-            buffer.flip();
-            byte[] bs = buffer.array();
-            assertEquals(SockConst.VER, bs[0] & 0xFF);
-            assertEquals(Command.CONNECT, bs[1] & 0xFF);
-            assertEquals(SockConst.RSV, bs[2] & 0xFF);
-            assertEquals(AddrType.DOMAIN_NAME, bs[3] & 0xFF);
-            int hLen = bs[4] & 0xFF;
-            assertEquals(serverHost.length(), hLen);
-            assertEquals(serverHost, new String(bs, 5, hLen, StandardCharsets.UTF_8));
-            assertEquals(serverPort, buffer.getShort(5 + hLen) & 0xFFFF);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(Socks5.COMMAND_CONNECT, buffer.get());
+            assertEquals(Socks5.RESERVED, buffer.get());
+            assertEquals(Socks5.ADDRESS_TYPE_DOMAIN, buffer.get());
+            int hostLen = buffer.get() & 0xFF;
+            assertEquals(serverHost.length(), hostLen);
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + hostLen);
+            assertEquals(serverHost, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
-            // Socks5 connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, SockConst.SUCCEEDED, SockConst.RSV, AddrType.IPV4, 0, 0, 0, 0, 0, 0}));
+            // Write connect response.
+            channel.write(ByteBuffer.wrap(new byte[]{
+                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 3, 11, 11
+            }));
 
-            buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
-            read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
-            buffer.flip();
-            assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            // Parse the HTTP request.
+            HttpTester.Request request = HttpTester.parseRequest(channel);
+            assertNotNull(request);
+            assertEquals(method, request.getMethod());
+            assertEquals(path, request.getUri());
 
-            // http response
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+            // Write the HTTP response.
+            String response = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Length: 0\r\n" +
+                              "Connection: close\r\n" +
+                              "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -231,8 +237,9 @@ public class Socks5ProxyTest
         String username = "jetty";
         String password = "pass";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort)
-            .addAuthentication(new UsernamePasswordAuthentication(username, password)));
+        Socks5Proxy socks5Proxy = new Socks5Proxy("127.0.0.1", proxyPort);
+        socks5Proxy.putAuthenticationFactory(new UsernamePasswordAuthenticationFactory(username, password));
+        client.getProxyConfiguration().addProxy(socks5Proxy);
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -259,79 +266,83 @@ public class Socks5ProxyTest
             int initLen = 2;
             ByteBuffer buffer = ByteBuffer.allocate(initLen);
             int read = channel.read(buffer);
+            buffer.flip();
             assertEquals(initLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            int authTypeLen = buffer.get(1) & 0xFF;
+            assertEquals(Socks5.VERSION, buffer.get());
+            int authTypeLen = buffer.get() & 0xFF;
             assertTrue(authTypeLen > 0);
 
             buffer = ByteBuffer.allocate(authTypeLen);
             read = channel.read(buffer);
-
-            // assert contains username password authorization
-            assertEquals(authTypeLen, read);
             buffer.flip();
+            assertEquals(authTypeLen, read);
             byte[] authTypes = new byte[authTypeLen];
             buffer.get(authTypes);
-            assertTrue(containAuthType(authTypes, AuthType.USER_PASS));
+            byte authenticationMethod = Socks5.UsernamePasswordAuthenticationFactory.METHOD;
+            assertTrue(containsAuthType(authTypes, authenticationMethod));
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.USER_PASS}));
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
 
-            // read username password
+            // Read authentication request.
             buffer = ByteBuffer.allocate(3 + username.length() + password.length());
             read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            byte[] userPass = buffer.array();
-            assertEquals(SockConst.USER_PASS_VER, userPass[0] & 0xFF);
-            int uLen = userPass[1] & 0xFF;
-            assertEquals(username.length(), uLen);
-            assertEquals(username, new String(userPass, 2, uLen, StandardCharsets.UTF_8));
-            int pLen = userPass[2 + uLen];
-            assertEquals(password.length(), pLen);
-            assertEquals(password, new String(userPass, 3 + uLen, pLen, StandardCharsets.UTF_8));
+            assertEquals(buffer.capacity(), read);
+            assertEquals(1, buffer.get());
+            int usernameLen = buffer.get() & 0xFF;
+            assertEquals(username.length(), usernameLen);
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + usernameLen);
+            assertEquals(username, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            int passwordLen = buffer.get() & 0xFF;
+            assertEquals(password.length(), passwordLen);
+            assertEquals(password, StandardCharsets.US_ASCII.decode(buffer).toString());
 
-            // authorization success
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.USER_PASS_VER, SockConst.SUCCEEDED}));
+            // Write authentication response.
+            channel.write(ByteBuffer.wrap(new byte[]{1, 0}));
 
-            // read addr
+            // Read server address.
             int addrLen = 10;
             buffer = ByteBuffer.allocate(addrLen);
             read = channel.read(buffer);
-            assertEquals(addrLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            assertEquals(Command.CONNECT, buffer.get(1) & 0xFF);
-            assertEquals(SockConst.RSV, buffer.get(2) & 0xFF);
-            assertEquals(AddrType.IPV4, buffer.get(3) & 0xFF);
-            assertEquals(ip1, buffer.get(4) & 0xFF);
-            assertEquals(ip2, buffer.get(5) & 0xFF);
-            assertEquals(ip3, buffer.get(6) & 0xFF);
-            assertEquals(ip4, buffer.get(7) & 0xFF);
-            assertEquals(serverPort, buffer.getShort(8) & 0xFFFF);
-
-            // Socks5 connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, SockConst.SUCCEEDED, SockConst.RSV, AddrType.IPV4, 0, 0, 0, 0, 0, 0}));
-
-            buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
-            read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            assertEquals(addrLen, read);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(Socks5.COMMAND_CONNECT, buffer.get());
+            assertEquals(Socks5.RESERVED, buffer.get());
+            assertEquals(Socks5.ADDRESS_TYPE_IPV4, buffer.get());
+            assertEquals(ip1, buffer.get());
+            assertEquals(ip2, buffer.get());
+            assertEquals(ip3, buffer.get());
+            assertEquals(ip4, buffer.get());
+            assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
-            // http response
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+            // Write connect response.
+            channel.write(ByteBuffer.wrap(new byte[]{
+                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 4, 17, 17
+            }));
+
+            // Parse the HTTP request.
+            HttpTester.Request request = HttpTester.parseRequest(channel);
+            assertNotNull(request);
+            assertEquals(method, request.getMethod());
+            assertEquals(path, request.getUri());
+
+            // Write the HTTP response.
+            String response = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Length: 0\r\n" +
+                              "Connection: close\r\n" +
+                              "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
     @Test
-    public void testSocks5ProxyIpv4AuthNoAcceptable() throws Exception
+    public void testSocks5ProxyAuthNoAcceptable() throws Exception
     {
         int proxyPort = proxy.socket().getLocalPort();
         client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort));
@@ -356,22 +367,24 @@ public class Socks5ProxyTest
             int read = channel.read(buffer);
             assertEquals(initLen, read);
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.NO_ACCEPTABLE}));
+            // Deny authentication method.
+            byte notAcceptable = -1;
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, notAcceptable}));
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(2 * timeout, TimeUnit.MILLISECONDS));
-            assertThat(x.getCause(), instanceOf(SocketException.class));
+            assertThat(x.getCause(), instanceOf(IOException.class));
         }
     }
 
     @Test
-    public void testSocks5ProxyIpv4UsernamePasswordAuthFailed() throws Exception
+    public void testSocks5ProxyUsernamePasswordAuthFailed() throws Exception
     {
         String username = "jetty";
         String password = "pass";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort)
-            .addAuthentication(new UsernamePasswordAuthentication(username, password)));
+        Socks5Proxy socks5Proxy = new Socks5Proxy("127.0.0.1", proxyPort);
+        socks5Proxy.putAuthenticationFactory(new UsernamePasswordAuthenticationFactory(username, password));
+        client.getProxyConfiguration().addProxy(socks5Proxy);
 
         long timeout = 1000;
         String serverHost = "127.0.0.13";
@@ -391,43 +404,46 @@ public class Socks5ProxyTest
             int initLen = 2;
             ByteBuffer buffer = ByteBuffer.allocate(initLen);
             int read = channel.read(buffer);
+            buffer.flip();
             assertEquals(initLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            int authTypeLen = buffer.get(1) & 0xFF;
+            assertEquals(Socks5.VERSION, buffer.get());
+            int authTypeLen = buffer.get() & 0xFF;
             assertTrue(authTypeLen > 0);
 
             buffer = ByteBuffer.allocate(authTypeLen);
             read = channel.read(buffer);
-
-            // assert contains username password authorization
-            assertEquals(authTypeLen, read);
             buffer.flip();
+            assertEquals(authTypeLen, read);
             byte[] authTypes = new byte[authTypeLen];
             buffer.get(authTypes);
-            assertTrue(containAuthType(authTypes, AuthType.USER_PASS));
+            byte authenticationMethod = Socks5.UsernamePasswordAuthenticationFactory.METHOD;
+            assertTrue(containsAuthType(authTypes, authenticationMethod));
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.USER_PASS}));
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
 
-            // read username password
+            // Read authentication request.
             buffer = ByteBuffer.allocate(3 + username.length() + password.length());
             read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            byte[] userPass = buffer.array();
-            assertEquals(SockConst.USER_PASS_VER, userPass[0] & 0xFF);
-            int uLen = userPass[1] & 0xFF;
-            assertEquals(username.length(), uLen);
-            assertEquals(username, new String(userPass, 2, uLen, StandardCharsets.UTF_8));
-            int pLen = userPass[2 + uLen];
-            assertEquals(password.length(), pLen);
-            assertEquals(password, new String(userPass, 3 + uLen, pLen, StandardCharsets.UTF_8));
+            assertEquals(buffer.capacity(), read);
+            assertEquals(1, buffer.get());
+            int usernameLen = buffer.get() & 0xFF;
+            assertEquals(username.length(), usernameLen);
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + usernameLen);
+            assertEquals(username, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            int passwordLen = buffer.get() & 0xFF;
+            assertEquals(password.length(), passwordLen);
+            assertEquals(password, StandardCharsets.US_ASCII.decode(buffer).toString());
 
-            // authorization failed
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.USER_PASS_VER, SockConst.AUTH_FAILED}));
+            // Fail authentication.
+            byte authenticationFailed = 1; // Any non-zero.
+            channel.write(ByteBuffer.wrap(new byte[]{1, authenticationFailed}));
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(2 * timeout, TimeUnit.MILLISECONDS));
-            assertThat(x.getCause(), instanceOf(SocketException.class));
+            assertThat(x.getCause(), instanceOf(IOException.class));
         }
     }
 
@@ -437,8 +453,9 @@ public class Socks5ProxyTest
         String username = "jetty";
         String password = "pass";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort)
-            .addAuthentication(new UsernamePasswordAuthentication(username, password)));
+        Socks5Proxy socks5Proxy = new Socks5Proxy("127.0.0.1", proxyPort);
+        socks5Proxy.putAuthenticationFactory(new UsernamePasswordAuthenticationFactory(username, password));
+        client.getProxyConfiguration().addProxy(socks5Proxy);
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -461,73 +478,78 @@ public class Socks5ProxyTest
             int initLen = 2;
             ByteBuffer buffer = ByteBuffer.allocate(initLen);
             int read = channel.read(buffer);
+            buffer.flip();
             assertEquals(initLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            int authTypeLen = buffer.get(1) & 0xFF;
+            assertEquals(Socks5.VERSION, buffer.get());
+            int authTypeLen = buffer.get() & 0xFF;
             assertTrue(authTypeLen > 0);
 
             buffer = ByteBuffer.allocate(authTypeLen);
             read = channel.read(buffer);
-
-            // assert contains username password authorization
-            assertEquals(authTypeLen, read);
             buffer.flip();
+            assertEquals(authTypeLen, read);
             byte[] authTypes = new byte[authTypeLen];
             buffer.get(authTypes);
-            assertTrue(containAuthType(authTypes, AuthType.USER_PASS));
+            byte authenticationMethod = Socks5.UsernamePasswordAuthenticationFactory.METHOD;
+            assertTrue(containsAuthType(authTypes, authenticationMethod));
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.USER_PASS}));
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
 
-            // read username password
+            // Read authentication request.
             buffer = ByteBuffer.allocate(3 + username.length() + password.length());
             read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            byte[] userPass = buffer.array();
-            assertEquals(SockConst.USER_PASS_VER, userPass[0] & 0xFF);
-            int uLen = userPass[1] & 0xFF;
-            assertEquals(username.length(), uLen);
-            assertEquals(username, new String(userPass, 2, uLen, StandardCharsets.UTF_8));
-            int pLen = userPass[2 + uLen];
-            assertEquals(password.length(), pLen);
-            assertEquals(password, new String(userPass, 3 + uLen, pLen, StandardCharsets.UTF_8));
+            assertEquals(buffer.capacity(), read);
+            assertEquals(1, buffer.get());
+            int usernameLen = buffer.get() & 0xFF;
+            assertEquals(username.length(), usernameLen);
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + usernameLen);
+            assertEquals(username, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            int passwordLen = buffer.get() & 0xFF;
+            assertEquals(password.length(), passwordLen);
+            assertEquals(password, StandardCharsets.US_ASCII.decode(buffer).toString());
 
-            // authorization success
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.USER_PASS_VER, SockConst.SUCCEEDED}));
+            // Write authentication response.
+            channel.write(ByteBuffer.wrap(new byte[]{1, 0}));
 
-            // read addr
+            // Read server address.
             int addrLen = 7 + serverHost.length();
             buffer = ByteBuffer.allocate(addrLen);
             read = channel.read(buffer);
+            buffer.flip();
             assertEquals(addrLen, read);
-            buffer.flip();
-            byte[] bs = buffer.array();
-            assertEquals(SockConst.VER, bs[0] & 0xFF);
-            assertEquals(Command.CONNECT, bs[1] & 0xFF);
-            assertEquals(SockConst.RSV, bs[2] & 0xFF);
-            assertEquals(AddrType.DOMAIN_NAME, bs[3] & 0xFF);
-            int hLen = bs[4] & 0xFF;
-            assertEquals(serverHost.length(), hLen);
-            assertEquals(serverHost, new String(bs, 5, hLen, StandardCharsets.UTF_8));
-            assertEquals(serverPort, buffer.getShort(5 + hLen) & 0xFFFF);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(Socks5.COMMAND_CONNECT, buffer.get());
+            assertEquals(Socks5.RESERVED, buffer.get());
+            assertEquals(Socks5.ADDRESS_TYPE_DOMAIN, buffer.get());
+            int domainLen = buffer.get() & 0xFF;
+            assertEquals(serverHost.length(), domainLen);
+            limit = buffer.limit();
+            buffer.limit(buffer.position() + domainLen);
+            assertEquals(serverHost, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
-            // Socks5 connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, SockConst.SUCCEEDED, SockConst.RSV, AddrType.IPV4, 0, 0, 0, 0, 0, 0}));
+            // Write connect response.
+            channel.write(ByteBuffer.wrap(new byte[]{
+                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 5, 19, 19
+            }));
 
-            buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
-            read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
-            buffer.flip();
-            assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            // Parse the HTTP request.
+            HttpTester.Request request = HttpTester.parseRequest(channel);
+            assertNotNull(request);
+            assertEquals(method, request.getMethod());
+            assertEquals(path, request.getUri());
 
-            // http response
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+            // Write the HTTP response.
+            String response = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Length: 0\r\n" +
+                              "Connection: close\r\n" +
+                              "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -539,8 +561,9 @@ public class Socks5ProxyTest
         String username = "jetty";
         String password = "pass";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort)
-            .addAuthentication(new UsernamePasswordAuthentication(username, password)));
+        Socks5Proxy socks5Proxy = new Socks5Proxy("127.0.0.1", proxyPort);
+        socks5Proxy.putAuthenticationFactory(new UsernamePasswordAuthenticationFactory(username, password));
+        client.getProxyConfiguration().addProxy(socks5Proxy);
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -563,78 +586,81 @@ public class Socks5ProxyTest
             int initLen = 2;
             ByteBuffer buffer = ByteBuffer.allocate(initLen);
             int read = channel.read(buffer);
+            buffer.flip();
             assertEquals(initLen, read);
-            assertEquals(SockConst.VER, buffer.get(0) & 0xFF);
-            int authTypeLen = buffer.get(1) & 0xFF;
+            assertEquals(Socks5.VERSION, buffer.get());
+            int authTypeLen = buffer.get() & 0xFF;
             assertTrue(authTypeLen > 0);
 
             buffer = ByteBuffer.allocate(authTypeLen);
             read = channel.read(buffer);
-
-            // assert contains username password authorization
-            assertEquals(authTypeLen, read);
             buffer.flip();
+            assertEquals(authTypeLen, read);
             byte[] authTypes = new byte[authTypeLen];
             buffer.get(authTypes);
-            assertTrue(containAuthType(authTypes, AuthType.USER_PASS));
+            byte authenticationMethod = Socks5.UsernamePasswordAuthenticationFactory.METHOD;
+            assertTrue(containsAuthType(authTypes, authenticationMethod));
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.USER_PASS}));
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
 
-            // read username password
+            // Read authentication request.
             buffer = ByteBuffer.allocate(3 + username.length() + password.length());
             read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            byte[] userPass = buffer.array();
-            assertEquals(SockConst.USER_PASS_VER, userPass[0] & 0xFF);
-            int uLen = userPass[1] & 0xFF;
-            assertEquals(username.length(), uLen);
-            assertEquals(username, new String(userPass, 2, uLen, StandardCharsets.UTF_8));
-            int pLen = userPass[2 + uLen];
-            assertEquals(password.length(), pLen);
-            assertEquals(password, new String(userPass, 3 + uLen, pLen, StandardCharsets.UTF_8));
+            assertEquals(buffer.capacity(), read);
+            assertEquals(1, buffer.get());
+            int usernameLen = buffer.get() & 0xFF;
+            assertEquals(username.length(), usernameLen);
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + usernameLen);
+            assertEquals(username, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            int passwordLen = buffer.get() & 0xFF;
+            assertEquals(password.length(), passwordLen);
+            assertEquals(password, StandardCharsets.US_ASCII.decode(buffer).toString());
 
-            // authorization success
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.USER_PASS_VER, SockConst.SUCCEEDED}));
+            // Write authentication response.
+            channel.write(ByteBuffer.wrap(new byte[]{1, 0}));
 
-            // read addr
+            // Read server address.
             int addrLen = 7 + serverHost.length();
             buffer = ByteBuffer.allocate(addrLen);
             read = channel.read(buffer);
-            assertEquals(addrLen, read);
             buffer.flip();
-            byte[] bs = buffer.array();
-            assertEquals(SockConst.VER, bs[0] & 0xFF);
-            assertEquals(Command.CONNECT, bs[1] & 0xFF);
-            assertEquals(SockConst.RSV, bs[2] & 0xFF);
-            assertEquals(AddrType.DOMAIN_NAME, bs[3] & 0xFF);
-            int hLen = bs[4] & 0xFF;
-            assertEquals(serverHost.length(), hLen);
-            assertEquals(serverHost, new String(bs, 5, hLen, StandardCharsets.UTF_8));
-            assertEquals(serverPort, buffer.getShort(5 + hLen) & 0xFFFF);
+            assertEquals(addrLen, read);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(Socks5.COMMAND_CONNECT, buffer.get());
+            assertEquals(Socks5.RESERVED, buffer.get());
+            assertEquals(Socks5.ADDRESS_TYPE_DOMAIN, buffer.get());
+            int domainLen = buffer.get() & 0xFF;
+            assertEquals(serverHost.length(), domainLen);
+            limit = buffer.limit();
+            buffer.limit(buffer.position() + domainLen);
+            assertEquals(serverHost, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
-            // Socks5 connect response.
-            byte[] chunk1 = new byte[]{SockConst.VER, SockConst.SUCCEEDED, SockConst.RSV, AddrType.IPV4};
-            byte[] chunk2 = new byte[]{0, 0, 0, 0, 0, 0};
+            // Write connect response.
+            byte[] chunk1 = new byte[]{Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4};
             channel.write(ByteBuffer.wrap(chunk1));
             // Wait before sending the second chunk.
             Thread.sleep(1000);
+            byte[] chunk2 = new byte[]{127, 0, 0, 6, 21, 21};
             channel.write(ByteBuffer.wrap(chunk2));
 
-            buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
-            read = channel.read(buffer);
-            assertEquals(buffer.capacity(), read);
-            buffer.flip();
-            assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            // Parse the HTTP request.
+            HttpTester.Request request = HttpTester.parseRequest(channel);
+            assertNotNull(request);
+            assertEquals(method, request.getMethod());
+            assertEquals(path, request.getUri());
 
-            // http response
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+            // Write the HTTP response.
+            String response = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Length: 0\r\n" +
+                              "Connection: close\r\n" +
+                              "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -647,7 +673,7 @@ public class Socks5ProxyTest
         String serverHost = "127.0.0.13"; // Server host different from proxy host.
         int serverPort = proxyPort + 1; // Any port will do.
 
-        SslContextFactory clientTLS = client.getSslContextFactory();
+        SslContextFactory.Client clientTLS = client.getSslContextFactory();
         clientTLS.reload(ssl ->
         {
             // The client keystore contains the trustedCertEntry for the
@@ -682,19 +708,23 @@ public class Socks5ProxyTest
             int initLen = 3;
             ByteBuffer buffer = ByteBuffer.allocate(initLen);
             int read = channel.read(buffer);
+            buffer.flip();
             assertEquals(initLen, read);
 
-            // write acceptable methods
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, AuthType.NO_AUTH}));
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, Socks5.NoAuthenticationFactory.METHOD}));
 
-            // read addr
+            // Read server address.
             int addrLen = 10;
             buffer = ByteBuffer.allocate(addrLen);
             read = channel.read(buffer);
+            buffer.flip();
             assertEquals(addrLen, read);
 
-            // Socks5 connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{SockConst.VER, SockConst.SUCCEEDED, SockConst.RSV, AddrType.IPV4, 0, 0, 0, 0, 0, 0}));
+            // Write connect response.
+            channel.write(ByteBuffer.wrap(new byte[]{
+                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 7, 23, 23
+            }));
 
             // Wrap the socket with TLS.
             SslContextFactory.Server serverTLS = new SslContextFactory.Server();
@@ -705,30 +735,19 @@ public class Socks5ProxyTest
             SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(channel.socket(), serverHost, serverPort, false);
             sslSocket.setUseClientMode(false);
 
-            // Read the request.
-            int crlfs = 0;
-            InputStream input = sslSocket.getInputStream();
-            while (true)
-            {
-                read = input.read();
-                if (read < 0)
-                    break;
-                if (read == '\r' || read == '\n')
-                    ++crlfs;
-                else
-                    crlfs = 0;
-                if (crlfs == 4)
-                    break;
-            }
+            // Parse the HTTP request.
+            HttpTester.Request request = HttpTester.parseRequest(sslSocket.getInputStream());
+            assertNotNull(request);
+            assertEquals(method, request.getMethod());
+            assertEquals(path, request.getUri());
 
-            // Send the response.
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            // Write the HTTP response.
+            String response = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Length: 0\r\n" +
+                              "Connection: close\r\n" +
+                              "\r\n";
             OutputStream output = sslSocket.getOutputStream();
-            output.write(response.getBytes(StandardCharsets.UTF_8));
+            output.write(response.getBytes(StandardCharsets.US_ASCII));
             output.flush();
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -761,7 +780,7 @@ public class Socks5ProxyTest
     }
 
     @Test
-    public void testSocksProxyClosesConnectionImmediately() throws Exception
+    public void testSocksProxyClosesConnectionInHandshake() throws Exception
     {
         int proxyPort = proxy.socket().getLocalPort();
         client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort));
@@ -779,7 +798,112 @@ public class Socks5ProxyTest
             channel.close();
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
-            assertThat(x.getCause(), instanceOf(SocketException.class));
+            assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
+        }
+    }
+
+    @Test
+    public void testSocksProxyClosesConnectionInAuthentication() throws Exception
+    {
+        String username = "jetty";
+        String password = "pass";
+        int proxyPort = proxy.socket().getLocalPort();
+        Socks5Proxy socks5Proxy = new Socks5Proxy("127.0.0.1", proxyPort);
+        socks5Proxy.putAuthenticationFactory(new UsernamePasswordAuthenticationFactory(username, password));
+        client.getProxyConfiguration().addProxy(socks5Proxy);
+
+        // Use an address to avoid resolution of "localhost" to multiple addresses.
+        String serverHost = "127.0.0.13";
+        int serverPort = proxyPort + 1; // Any port will do
+        Request request = client.newRequest(serverHost, serverPort);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        try (SocketChannel channel = proxy.accept())
+        {
+            int initLen = 2;
+            ByteBuffer buffer = ByteBuffer.allocate(initLen);
+            int read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(initLen, read);
+            assertEquals(Socks5.VERSION, buffer.get());
+            int authTypeLen = buffer.get() & 0xFF;
+            assertTrue(authTypeLen > 0);
+
+            buffer = ByteBuffer.allocate(authTypeLen);
+            read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(authTypeLen, read);
+            byte[] authTypes = new byte[authTypeLen];
+            buffer.get(authTypes);
+            byte authenticationMethod = Socks5.UsernamePasswordAuthenticationFactory.METHOD;
+            assertTrue(containsAuthType(authTypes, authenticationMethod));
+
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
+
+            // Read authentication request.
+            buffer = ByteBuffer.allocate(3 + username.length() + password.length());
+            read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(buffer.capacity(), read);
+            assertEquals(1, buffer.get());
+            int usernameLen = buffer.get() & 0xFF;
+            assertEquals(username.length(), usernameLen);
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + usernameLen);
+            assertEquals(username, StandardCharsets.US_ASCII.decode(buffer).toString());
+            buffer.limit(limit);
+            int passwordLen = buffer.get() & 0xFF;
+            assertEquals(password.length(), passwordLen);
+            assertEquals(password, StandardCharsets.US_ASCII.decode(buffer).toString());
+
+            channel.close();
+
+            ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
+            assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
+        }
+    }
+
+    @Test
+    public void testSocksProxyClosesConnectionInConnect() throws Exception
+    {
+        int proxyPort = proxy.socket().getLocalPort();
+        client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort));
+
+        // Use an address to avoid resolution of "localhost" to multiple addresses.
+        String serverHost = "127.0.0.13";
+        int serverPort = proxyPort + 1; // Any port will do
+        Request request = client.newRequest(serverHost, serverPort);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        try (SocketChannel channel = proxy.accept())
+        {
+            int initLen = 3;
+            ByteBuffer buffer = ByteBuffer.allocate(initLen);
+            int read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(initLen, read);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(1, buffer.get());
+            byte authenticationMethod = Socks5.NoAuthenticationFactory.METHOD;
+            assertEquals(authenticationMethod, buffer.get());
+
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, authenticationMethod}));
+
+            // Read server address.
+            int addrLen = 10;
+            buffer = ByteBuffer.allocate(addrLen);
+            read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(addrLen, read);
+
+            channel.close();
+
+            ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
+            assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
         }
     }
 
@@ -801,18 +925,140 @@ public class Socks5ProxyTest
             channel.write(ByteBuffer.wrap(new byte[]{1, 2, 3, 4, 5}));
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
-            assertThat(x.getCause(), instanceOf(SocketException.class));
+            assertThat(x.getCause(), instanceOf(IOException.class));
         }
     }
 
-    private boolean containAuthType(byte[] methods, byte method)
+    @Test
+    public void testSocks5ProxyConnectFailed() throws Exception
+    {
+        int proxyPort = proxy.socket().getLocalPort();
+        client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort));
+
+        String serverHost = "127.0.0.13";
+        int serverPort = proxyPort + 1; // Any port will do
+        Request request = client.newRequest(serverHost, serverPort);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        try (SocketChannel channel = proxy.accept())
+        {
+            int initLen = 3;
+            ByteBuffer buffer = ByteBuffer.allocate(initLen);
+            int read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(initLen, read);
+
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, Socks5.NoAuthenticationFactory.METHOD}));
+
+            // Read server address.
+            int addrLen = 10;
+            buffer = ByteBuffer.allocate(addrLen);
+            read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(addrLen, read);
+
+            // Write connect response failure.
+            channel.write(ByteBuffer.wrap(new byte[]{
+                Socks5.VERSION, 1, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 8, 29, 29
+            }));
+
+            ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
+            assertThat(x.getCause(), instanceOf(IOException.class));
+        }
+    }
+
+    @Test
+    public void testSocks5ProxyIPv6NoAuth() throws Exception
+    {
+        int proxyPort = proxy.socket().getLocalPort();
+        client.getProxyConfiguration().addProxy(new Socks5Proxy("127.0.0.1", proxyPort));
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        String serverHost = "::13";
+        int serverPort = proxyPort + 1; // Any port will do
+        String method = "GET";
+        String path = "/path";
+        client.newRequest(serverHost, serverPort)
+            .method(method)
+            .path(path)
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
+
+        try (SocketChannel channel = proxy.accept())
+        {
+            int initLen = 3;
+            ByteBuffer buffer = ByteBuffer.allocate(initLen);
+            int read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(initLen, read);
+
+            // Write handshake response.
+            channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, Socks5.NoAuthenticationFactory.METHOD}));
+
+            // Read server address.
+            int addrLen = 22;
+            buffer = ByteBuffer.allocate(addrLen);
+            read = channel.read(buffer);
+            buffer.flip();
+            assertEquals(addrLen, read);
+            assertEquals(Socks5.VERSION, buffer.get());
+            assertEquals(Socks5.COMMAND_CONNECT, buffer.get());
+            assertEquals(Socks5.RESERVED, buffer.get());
+            assertEquals(Socks5.ADDRESS_TYPE_IPV6, buffer.get());
+            for (int i = 0; i < 15; ++i)
+            {
+                assertEquals(0, buffer.get());
+            }
+            assertEquals(0x13, buffer.get());
+            assertEquals(serverPort, buffer.getShort() & 0xFFFF);
+
+            // Write connect response.
+            ByteBuffer byteBuffer = ByteBuffer.allocate(22)
+                .put(Socks5.VERSION)
+                .put((byte)0)
+                .put(Socks5.RESERVED)
+                .put(Socks5.ADDRESS_TYPE_IPV6)
+                .put(InetAddress.getByName(serverHost).getAddress())
+                .putShort((short)3131)
+                .flip();
+            // Write slowly 1 byte at a time.
+            for (int limit = 1; limit <= buffer.capacity(); ++limit)
+            {
+                byteBuffer.limit(limit);
+                channel.write(byteBuffer);
+                Thread.sleep(100);
+            }
+
+            // Parse the HTTP request.
+            HttpTester.Request request = HttpTester.parseRequest(channel);
+            assertNotNull(request);
+            assertEquals(method, request.getMethod());
+            assertEquals(path, request.getUri());
+
+            // Write the HTTP response.
+            String response = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Length: 0\r\n" +
+                              "Connection: close\r\n" +
+                              "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
+
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    private boolean containsAuthType(byte[] methods, byte method)
     {
         for (byte m : methods)
         {
             if (m == method)
-            {
                 return true;
-            }
         }
         return false;
     }

@@ -13,26 +13,21 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.ProxyConfiguration.Proxy;
-import org.eclipse.jetty.client.Socks5.AddrType;
-import org.eclipse.jetty.client.Socks5.AuthType;
-import org.eclipse.jetty.client.Socks5.Authentication;
-import org.eclipse.jetty.client.Socks5.Command;
-import org.eclipse.jetty.client.Socks5.NoAuthentication;
-import org.eclipse.jetty.client.Socks5.Reply;
-import org.eclipse.jetty.client.Socks5.RequestStage;
-import org.eclipse.jetty.client.Socks5.ResponseStage;
-import org.eclipse.jetty.client.Socks5.SockConst;
+import org.eclipse.jetty.client.Socks5.NoAuthenticationFactory;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -41,15 +36,26 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>Client-side proxy configuration for SOCKS5, defined by
+ * <a href="https://datatracker.ietf.org/doc/html/rfc1928">RFC 1928</a>.</p>
+ * <p>Multiple authentication methods are supported via
+ * {@link #putAuthenticationFactory(Socks5.Authentication.Factory)}.
+ * By default only the {@link Socks5.NoAuthenticationFactory NO AUTH}
+ * authentication method is configured.
+ * The {@link Socks5.UsernamePasswordAuthenticationFactory USERNAME/PASSWORD}
+ * is available to applications but must be explicitly configured and
+ * added.</p>
+ */
 public class Socks5Proxy extends Proxy 
 {
-    private static final int MAX_AUTHRATIONS = 255;
     private static final Logger LOG = LoggerFactory.getLogger(Socks5Proxy.class);
 
-    private LinkedHashMap<Byte, Authentication> authorizations = new LinkedHashMap<>();
+    private final Map<Byte, Socks5.Authentication.Factory> authentications = new LinkedHashMap<>();
 
     public Socks5Proxy(String host, int port)
     {
@@ -59,290 +65,330 @@ public class Socks5Proxy extends Proxy
     public Socks5Proxy(Origin.Address address, boolean secure)
     {
         super(address, secure, null, null);
-        // default support no_auth
-        addAuthentication(new NoAuthentication());
-    }
-
-    public Socks5Proxy addAuthentication(Authentication authentication)
-    {
-        if (authorizations.size() >= MAX_AUTHRATIONS)
-        {
-            throw new IllegalArgumentException("too much authentications");
-        }
-        authorizations.put(authentication.getAuthType(), authentication);
-        return this;
+        putAuthenticationFactory(new NoAuthenticationFactory());
     }
 
     /**
-     * remove authorization by type
-     * @see AuthType
-     * @param type authorization type
+     * <p>Provides this class with the given SOCKS5 authentication method.</p>
+     *
+     * @param authenticationFactory the SOCKS5 authentication factory
+     * @return the previous authentication method of the same type, or {@code null}
+     * if there was none of that type already present
      */
-    public Socks5Proxy removeAuthentication(byte type)
+    public Socks5.Authentication.Factory putAuthenticationFactory(Socks5.Authentication.Factory authenticationFactory)
     {
-        authorizations.remove(type);
-        return this;
+        return authentications.put(authenticationFactory.getMethod(), authenticationFactory);
+    }
+
+    /**
+     * <p>Removes the authentication of the given {@code method}.</p>
+     *
+     * @param method the authentication method to remove
+     */
+    public Socks5.Authentication.Factory removeAuthenticationFactory(byte method)
+    {
+        return authentications.remove(method);
     }
 
     @Override
     public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory) 
     {
-        return new Socks5ProxyClientConnectionFactory(connectionFactory, authorizations);
+        return new Socks5ProxyClientConnectionFactory(connectionFactory);
     }
 
-    @Override
-    public boolean matches(Origin origin) 
+    private class Socks5ProxyClientConnectionFactory implements ClientConnectionFactory
     {
-        return true;
+        private final ClientConnectionFactory connectionFactory;
+
+        private Socks5ProxyClientConnectionFactory(ClientConnectionFactory connectionFactory)
+        {
+            this.connectionFactory = connectionFactory;
+        }
+
+        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+        {
+            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            Executor executor = destination.getHttpClient().getExecutor();
+            Socks5ProxyConnection connection = new Socks5ProxyConnection(endPoint, executor, connectionFactory, context, authentications);
+            return customize(connection, context);
+        }
     }
 
-    private static class Socks5ProxyConnection extends AbstractConnection implements Callback 
+    private static class Socks5ProxyConnection extends AbstractConnection implements org.eclipse.jetty.io.Connection.UpgradeFrom
     {
         private static final Pattern IPv4_PATTERN = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
+
+        // SOCKS5 response max length is 262 bytes.
+        private final ByteBuffer byteBuffer = BufferUtil.allocate(512);
         private final ClientConnectionFactory connectionFactory;
         private final Map<String, Object> context;
+        private final Map<Byte, Socks5.Authentication.Factory> authentications;
+        private State state = State.HANDSHAKE;
 
-        private LinkedHashMap<Byte, Authentication> authorizations;
-
-        private Authentication selectedAuthentication;
-        private RequestStage requestStage = RequestStage.INIT;
-        private ResponseStage responseStage = null;
-        private int variableLen;
-
-        public Socks5ProxyConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context) 
+        private Socks5ProxyConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context, Map<Byte, Socks5.Authentication.Factory> authentications)
         {
             super(endPoint, executor);
             this.connectionFactory = connectionFactory;
             this.context = context;
+            this.authentications = Map.copyOf(authentications);
         }
 
-        public void onOpen() 
+        @Override
+        public ByteBuffer onUpgradeFrom()
+        {
+            return BufferUtil.copy(byteBuffer);
+        }
+
+        @Override
+        public void onOpen()
         {
             super.onOpen();
-            this.writeHandshakeCmd();
+            sendHandshake();
         }
 
-        private void writeHandshakeCmd() 
+        private void sendHandshake()
         {
-            switch (requestStage)
+            try
             {
-                case INIT:
-                    // write supported authorizations
-                    int authLen = authorizations.size();
-                    ByteBuffer init = ByteBuffer.allocate(2 + authLen);
-                    init.put(SockConst.VER).put((byte)authLen);
-                    for (byte type : authorizations.keySet())
-                    {
-                        init.put(type);
-                    }
-                    init.flip();
-                    setResponseStage(ResponseStage.INIT);
-                    this.getEndPoint().write(this, init);
-                    break;
-                case AUTH:
-                    ByteBuffer auth = selectedAuthentication.authorize();
-                    setResponseStage(ResponseStage.AUTH);
-                    this.getEndPoint().write(this, auth);
-                    break;
-                case CONNECTING:
-                    HttpDestination destination = (HttpDestination)this.context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                    String host = destination.getHost();
-                    short port = (short)destination.getPort();
-                    setResponseStage(ResponseStage.CONNECTING);
-                    Matcher matcher = IPv4_PATTERN.matcher(host);
-                    if (matcher.matches()) 
-                    {
-                        // ip
-                        ByteBuffer buffer = ByteBuffer.allocate(10);
-                        buffer.put(SockConst.VER)
-                            .put(Command.CONNECT)
-                            .put(SockConst.RSV)
-                            .put(AddrType.IPV4);
-                        for (int i = 1; i <= 4; ++i) 
-                        {
-                            buffer.put((byte)Integer.parseInt(matcher.group(i)));
-                        }
-                        buffer.putShort(port);
-                        buffer.flip();
-                        this.getEndPoint().write(this, buffer);
-                    } 
-                    else 
-                    {
-                        // domain
-                        byte[] hostBytes = host.getBytes(StandardCharsets.UTF_8);
-                        ByteBuffer buffer = ByteBuffer.allocate(7 + hostBytes.length);
-                        buffer.put(SockConst.VER)
-                            .put(Command.CONNECT)
-                            .put(SockConst.RSV)
-                            .put(AddrType.DOMAIN_NAME);
-
-                        buffer.put((byte)hostBytes.length)
-                            .put(hostBytes)
-                            .putShort(port);
-                        buffer.flip();
-                        this.getEndPoint().write(this, buffer);
-                    }
-                    break;
+                // +-------------+--------------------+------------------+
+                // | version (1) | num of methods (1) | methods (1..255) |
+                // +-------------+--------------------+------------------+
+                int size = authentications.size();
+                ByteBuffer byteBuffer = ByteBuffer.allocate(1 + 1 + size)
+                    .put(Socks5.VERSION)
+                    .put((byte)size);
+                authentications.keySet().forEach(byteBuffer::put);
+                byteBuffer.flip();
+                getEndPoint().write(Callback.from(this::handshakeSent, this::fail), byteBuffer);
+            }
+            catch (Throwable x)
+            {
+                fail(x);
             }
         }
 
-        public void succeeded() 
+        private void handshakeSent()
         {
-            if (LOG.isDebugEnabled()) 
-            {
+            if (LOG.isDebugEnabled())
                 LOG.debug("Written SOCKS5 handshake request");
-            }
-            this.fillInterested();
+            state = State.HANDSHAKE;
+            fillInterested();
         }
 
-        public void failed(Throwable x) 
+        private void fail(Throwable x)
         {
-            this.close();
+            if (LOG.isDebugEnabled())
+                LOG.debug("SOCKS5 failure", x);
+            getEndPoint().close(x);
             @SuppressWarnings("unchecked")
             Promise<Connection> promise = (Promise<Connection>)this.context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
             promise.failed(x);
         }
 
-        public void onFillable() 
+        @Override
+        public boolean onIdleExpired()
         {
-            try 
+            fail(new TimeoutException("Idle timeout expired"));
+            return false;
+        }
+
+        @Override
+        public void onFillable()
+        {
+            try
             {
-                Socks5Parser parser = new Socks5Parser();
-                ByteBuffer buffer;
-                do 
+                switch (state)
                 {
-                    buffer = BufferUtil.allocate(parser.expected());
-                    int filled = this.getEndPoint().fill(buffer);
-                    if (LOG.isDebugEnabled()) 
-                    {
-                        LOG.debug("Read SOCKS5 connect response, {} bytes", (long)filled);
-                    }
-
-                    if (filled < 0) 
-                    {
-                        throw new SocketException("SOCKS5 tunnel failed, connection closed");
-                    }
-
-                    if (filled == 0) 
-                    {
-                        this.fillInterested();
-                        return;
-                    }
-                } 
-                while (!parser.parse(buffer));
-            } 
-            catch (Exception e) 
+                    case HANDSHAKE:
+                        receiveHandshake();
+                        break;
+                    case CONNECT:
+                        receiveConnect();
+                        break;
+                    default:
+                        throw new IllegalStateException();
+                }
+            }
+            catch (Throwable x)
             {
-                this.failed(e);
+                fail(x);
             }
         }
 
-        private void onSocks5Response(byte[] bs) throws SocketException 
+        private void receiveHandshake() throws IOException
         {
-            switch (responseStage)
+            // +-------------+------------+
+            // | version (1) | method (1) |
+            // +-------------+------------+
+            int filled = getEndPoint().fill(byteBuffer);
+            if (filled < 0)
+                throw new ClosedChannelException();
+            if (byteBuffer.remaining() < 2)
             {
-                case INIT:
-                    if (bs[0] != SockConst.VER)
+                fillInterested();
+                return;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Received SOCKS5 handshake response {}", BufferUtil.toDetailString(byteBuffer));
+
+            byte version = byteBuffer.get();
+            if (version != Socks5.VERSION)
+                throw new IOException("Unsupported SOCKS5 version: " + version);
+
+            byte method = byteBuffer.get();
+            if (method == -1)
+                throw new IOException("Unacceptable SOCKS5 authentication methods");
+
+            Socks5.Authentication.Factory factory = authentications.get(method);
+            if (factory == null)
+                throw new IOException("Unknown SOCKS5 authentication method: " + method);
+
+            factory.newAuthentication().authenticate(getEndPoint(), Callback.from(this::sendConnect, this::fail));
+        }
+
+        private void sendConnect()
+        {
+            try
+            {
+                // +-------------+-------------+--------------+------------------+------------------------+----------+
+                // | version (1) | command (1) | reserved (1) | address type (1) | address bytes (4..255) | port (2) |
+                // +-------------+-------------+--------------+------------------+------------------------+----------+
+                HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+                Origin.Address address = destination.getOrigin().getAddress();
+                String host = address.getHost();
+                short port = (short)address.getPort();
+
+                ByteBuffer byteBuffer;
+                Matcher matcher = IPv4_PATTERN.matcher(host);
+                if (matcher.matches())
+                {
+                    byteBuffer = ByteBuffer.allocate(10)
+                        .put(Socks5.VERSION)
+                        .put(Socks5.COMMAND_CONNECT)
+                        .put(Socks5.RESERVED)
+                        .put(Socks5.ADDRESS_TYPE_IPV4);
+                    for (int i = 1; i <= 4; ++i)
                     {
-                        throw new SocketException("SOCKS5 tunnel failed with err VER " + bs[0]);
+                        byteBuffer.put(Byte.parseByte(matcher.group(i)));
                     }
-                    if (bs[1] == AuthType.NO_AUTH)
-                    {
-                        requestStage = RequestStage.CONNECTING;
-                        writeHandshakeCmd();
-                    } 
-                    else if (bs[1] == AuthType.NO_ACCEPTABLE)
-                    {
-                        throw new SocketException("SOCKS : No acceptable methods");
-                    }
-                    else 
-                    {
-                        selectedAuthentication = authorizations.get(bs[1]);
-                        if (selectedAuthentication == null)
-                        {
-                            throw new SocketException("SOCKS5 tunnel failed with unknown auth type");
-                        }
-                        requestStage = RequestStage.AUTH;
-                        writeHandshakeCmd();
-                    }
-                    break;
-                case AUTH:
-                    if (bs[0] != SockConst.USER_PASS_VER)
-                    {
-                        throw new SocketException("SOCKS5 tunnel failed with err UserPassVer " + bs[0]);
-                    }
-                    if (bs[1] != SockConst.SUCCEEDED)
-                    {
-                        throw new SocketException("SOCKS : authentication failed");
-                    }
-                    // authorization successful
-                    requestStage = RequestStage.CONNECTING;
-                    writeHandshakeCmd();
-                    break;
-                case CONNECTING:
-                    if (bs[0] != SockConst.VER)
-                    {
-                        throw new SocketException("SOCKS5 tunnel failed with err VER " + bs[0]);
-                    }
-                    switch (bs[1])
-                    {
-                        case SockConst.SUCCEEDED:
-                            switch (bs[3])
-                            {
-                                case AddrType.IPV4:
-                                    setResponseStage(ResponseStage.CONNECTED_IPV4);
-                                    fillInterested();
-                                    break;
-                                case AddrType.DOMAIN_NAME:
-                                    setResponseStage(ResponseStage.CONNECTED_DOMAIN_NAME);
-                                    fillInterested();
-                                    break;
-                                case AddrType.IPV6:
-                                    setResponseStage(ResponseStage.CONNECTED_IPV6);
-                                    fillInterested();
-                                    break;
-                                default:
-                                    throw new SocketException("SOCKS: unknown addr type " + bs[3]);
-                            }
-                            break;
-                        case Reply.GENERAL:
-                            throw new SocketException("SOCKS server general failure");
-                        case Reply.RULE_BAN:
-                            throw new SocketException("SOCKS: Connection not allowed by ruleset");
-                        case Reply.NETWORK_UNREACHABLE:
-                            throw new SocketException("SOCKS: Network unreachable");
-                        case Reply.HOST_UNREACHABLE:
-                            throw new SocketException("SOCKS: Host unreachable");
-                        case Reply.CONNECT_REFUSE:
-                            throw new SocketException("SOCKS: Connection refused");
-                        case Reply.TTL_TIMEOUT:
-                            throw new SocketException("SOCKS: TTL expired");
-                        case Reply.CMD_UNSUPPORTED:
-                            throw new SocketException("SOCKS: Command not supported");
-                        case Reply.ATYPE_UNSUPPORTED:
-                            throw new SocketException("SOCKS: address type not supported");
-                        default:
-                            throw new SocketException("SOCKS: unknown code " + bs[1]);
-                    }
-                    break;
-                case CONNECTED_DOMAIN_NAME:
-                case CONNECTED_IPV6:
-                    variableLen = 2 + bs[0];
-                    setResponseStage(ResponseStage.READ_REPLY_VARIABLE);
-                    fillInterested();
-                    break;
-                case CONNECTED_IPV4:
-                case READ_REPLY_VARIABLE:
+                    byteBuffer.putShort(port)
+                        .flip();
+                }
+                else if (URIUtil.isValidHostRegisteredName(host))
+                {
+                    byte[] bytes = host.getBytes(StandardCharsets.US_ASCII);
+                    if (bytes.length > 255)
+                        throw new IOException("Invalid host name: " + host);
+                    byteBuffer = ByteBuffer.allocate(7 + bytes.length)
+                        .put(Socks5.VERSION)
+                        .put(Socks5.COMMAND_CONNECT)
+                        .put(Socks5.RESERVED)
+                        .put(Socks5.ADDRESS_TYPE_DOMAIN)
+                        .put((byte)bytes.length)
+                        .put(bytes)
+                        .putShort(port)
+                        .flip();
+                }
+                else
+                {
+                    // Assume IPv6.
+                    byte[] bytes = InetAddress.getByName(host).getAddress();
+                    byteBuffer = ByteBuffer.allocate(22)
+                        .put(Socks5.VERSION)
+                        .put(Socks5.COMMAND_CONNECT)
+                        .put(Socks5.RESERVED)
+                        .put(Socks5.ADDRESS_TYPE_IPV6)
+                        .put(bytes)
+                        .putShort(port)
+                        .flip();
+                }
+
+                getEndPoint().write(Callback.from(this::connectSent, this::fail), byteBuffer);
+            }
+            catch (Throwable x)
+            {
+                fail(x);
+            }
+        }
+
+        private void connectSent()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Written SOCKS5 connect request");
+            state = State.CONNECT;
+            fillInterested();
+        }
+
+        private void receiveConnect() throws IOException
+        {
+            // +-------------+-----------+--------------+------------------+------------------------+----------+
+            // | version (1) | reply (1) | reserved (1) | address type (1) | address bytes (4..255) | port (2) |
+            // +-------------+-----------+--------------+------------------+------------------------+----------+
+            int filled = getEndPoint().fill(byteBuffer);
+            if (filled < 0)
+                throw new ClosedChannelException();
+            if (byteBuffer.remaining() < 5)
+            {
+                fillInterested();
+                return;
+            }
+            byte addressType = byteBuffer.get(3);
+            int length = 6;
+            if (addressType == Socks5.ADDRESS_TYPE_IPV4)
+                length += 4;
+            else if (addressType == Socks5.ADDRESS_TYPE_DOMAIN)
+                length += 1 + (byteBuffer.get(4) & 0xFF);
+            else if (addressType == Socks5.ADDRESS_TYPE_IPV6)
+                length += 16;
+            else
+                throw new IOException("Invalid SOCKS5 address type: " + addressType);
+            if (byteBuffer.remaining() < length)
+            {
+                fillInterested();
+                return;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Received SOCKS5 connect response {}", BufferUtil.toDetailString(byteBuffer));
+
+            // We have all the SOCKS5 bytes.
+            byte version = byteBuffer.get();
+            if (version != Socks5.VERSION)
+                throw new IOException("Unsupported SOCKS5 version: " + version);
+
+            byte status = byteBuffer.get();
+            switch (status)
+            {
+                case 0:
+                    // Consume the buffer before upgrading to the tunnel.
+                    byteBuffer.position(length);
                     tunnel();
                     break;
+                case 1:
+                    throw new IOException("SOCKS5 general failure");
+                case 2:
+                    throw new IOException("SOCKS5 connection not allowed");
+                case 3:
+                    throw new IOException("SOCKS5 network unreachable");
+                case 4:
+                    throw new IOException("SOCKS5 host unreachable");
+                case 5:
+                    throw new IOException("SOCKS5 connection refused");
+                case 6:
+                    throw new IOException("SOCKS5 timeout expired");
+                case 7:
+                    throw new IOException("SOCKS5 unsupported command");
+                case 8:
+                    throw new IOException("SOCKS5 unsupported address");
                 default:
-                    throw new SocketException("BAD SOCKS5 PROTOCOL");
+                    throw new IOException("SOCKS5 unknown status: " + status);
             }
         }
 
-        private void tunnel() 
+        private void tunnel()
         {
-            try 
+            try
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 // Don't want to do DNS resolution here.
@@ -350,110 +396,21 @@ public class Socks5Proxy extends Proxy
                 context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
-                {
                     connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
-                }
-                org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
+                var newConnection = connectionFactory.newConnection(getEndPoint(), context);
                 getEndPoint().upgrade(newConnection);
                 if (LOG.isDebugEnabled())
-                {
                     LOG.debug("SOCKS5 tunnel established: {} over {}", this, newConnection);
-                }
-            } 
-            catch (Exception e) 
+            }
+            catch (Throwable x)
             {
-                this.failed(e);
+                fail(x);
             }
         }
 
-        void setResponseStage(ResponseStage responseStage) 
+        private enum State
         {
-            LOG.debug("set responseStage to {}", responseStage);
-            this.responseStage = responseStage;
-        }
-
-        private class Socks5Parser 
-        {
-            private final int expectedLength;
-            private final byte[] bs;
-            private int cursor;
-
-            private Socks5Parser() 
-            {
-                switch (Socks5ProxyConnection.this.responseStage)
-                {
-                    case INIT:
-                        expectedLength = 2;
-                        break;
-                    case AUTH:
-                        expectedLength = 2;
-                        break;
-                    case CONNECTING:
-                        expectedLength = 4;
-                        break;
-                    case CONNECTED_IPV4:
-                        expectedLength = 6;
-                        break;
-                    case CONNECTED_IPV6:
-                        expectedLength = 1;
-                        break;
-                    case CONNECTED_DOMAIN_NAME:
-                        expectedLength = 1;
-                        break;
-                    case READ_REPLY_VARIABLE:
-                        expectedLength = Socks5ProxyConnection.this.variableLen;
-                        break;
-                    default:
-                        expectedLength = 0;
-                        break;
-                }
-                bs = new byte[expectedLength];
-            }
-
-            private boolean parse(ByteBuffer buffer) throws SocketException 
-            {
-                while (buffer.hasRemaining()) 
-                {
-                    byte current = buffer.get();
-                    bs[cursor] = current;
-
-                    ++this.cursor;
-                    if (this.cursor != expectedLength) 
-                    {
-                        continue;
-                    }
-
-                    onSocks5Response(bs);
-                    return true;
-                }
-                return false;
-            }
-
-            private int expected() 
-            {
-                return expectedLength - this.cursor;
-            }
-        }
-    }
-
-    public static class Socks5ProxyClientConnectionFactory implements ClientConnectionFactory 
-    {
-        private final ClientConnectionFactory connectionFactory;
-        private final LinkedHashMap<Byte, Authentication> authorizations;
-
-        public Socks5ProxyClientConnectionFactory(ClientConnectionFactory connectionFactory, LinkedHashMap<Byte, Authentication> authorizations) 
-        {
-            this.connectionFactory = connectionFactory;
-            this.authorizations = authorizations;
-        }
-
-        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) 
-        {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            Executor executor = destination.getHttpClient().getExecutor();
-            Socks5ProxyConnection connection = new Socks5ProxyConnection(endPoint, executor, this.connectionFactory, context);
-            connection.authorizations = authorizations;
-            return this.customize(connection, context);
+            HANDSHAKE, CONNECT
         }
     }
 }

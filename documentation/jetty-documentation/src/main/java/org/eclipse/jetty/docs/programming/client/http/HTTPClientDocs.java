@@ -34,6 +34,8 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
+import org.eclipse.jetty.client.Socks5;
+import org.eclipse.jetty.client.Socks5Proxy;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -663,6 +665,30 @@ public class HTTPClientDocs
 
         ContentResponse response = httpClient.GET("http://domain.com/path");
         // end::proxy[]
+    }
+
+    public void proxySocks5() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::proxySocks5[]
+        Socks5Proxy proxy = new Socks5Proxy("proxyHost", 8888);
+        String socks5User = "jetty";
+        String socks5Pass = "secret";
+        var socks5AuthenticationFactory = new Socks5.UsernamePasswordAuthenticationFactory(socks5User, socks5Pass);
+        // Add the authentication method to the proxy.
+        proxy.putAuthenticationFactory(socks5AuthenticationFactory);
+
+        // Do not proxy requests for localhost:8080.
+        proxy.getExcludedAddresses().add("localhost:8080");
+
+        // Add the new proxy to the list of proxies already registered.
+        ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
+        proxyConfig.addProxy(proxy);
+
+        ContentResponse response = httpClient.GET("http://domain.com/path");
+        // end::proxySocks5[]
     }
 
     public void proxyAuthentication() throws Exception
