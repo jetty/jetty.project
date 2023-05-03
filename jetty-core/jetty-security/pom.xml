@@ -23,8 +23,8 @@
         <configuration>
           <argLine>
             @{argLine} 
-	    ${jetty.surefire.argLine} 
-	    --add-reads org.eclipse.jetty.security=org.eclipse.jetty.logging 
+	          ${jetty.surefire.argLine}
+	          --add-reads org.eclipse.jetty.security=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>
