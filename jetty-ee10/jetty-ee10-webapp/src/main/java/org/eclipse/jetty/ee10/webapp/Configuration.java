@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.TopologicalSort;
  * {@link WebAppContext#setConfigurations(Configuration[])}, {@link WebAppContext#addConfiguration(Configuration...)}
  * or {@link WebAppContext#getConfigurations()}.
  * </p>
+ * <p>Since EE10 in Jetty-12, Configuration implementations must be stateless/immutable.</p>
  * <p>Since Jetty-9.4, Configurations are self ordering using the {@link #getDependencies()} and
  * {@link #getDependents()} methods for a {@link TopologicalSort} initiated by {@link Configurations#sort()}
  * when a {@link WebAppContext} is started.  This means that feature configurations
