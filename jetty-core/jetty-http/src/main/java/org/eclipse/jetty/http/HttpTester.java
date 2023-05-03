@@ -451,8 +451,8 @@ public class HttpTester
                 while (!generator.isEnd())
                 {
                     HttpGenerator.Result result = info instanceof MetaData.Request
-                        ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
-                        : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
+                            ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
+                            : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
                     switch (result)
                     {
                         case NEED_HEADER:

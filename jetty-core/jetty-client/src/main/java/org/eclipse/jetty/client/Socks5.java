@@ -13,140 +13,226 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * <p>Helper class for SOCKS5 proxying.</p>
+ *
+ * @see Socks5Proxy
+ */
 public class Socks5
 {
+    /**
+     * The SOCKS protocol version: {@value}.
+     */
+    public static final byte VERSION = 0x05;
+    /**
+     * The SOCKS5 {@code CONNECT} command used in SOCKS5 connect requests.
+     */
+    public static final byte COMMAND_CONNECT = 0x01;
+    /**
+     * The reserved byte value: {@value}.
+     */
+    public static final byte RESERVED = 0x00;
+    /**
+     * The address type for IPv4 used in SOCKS5 connect requests and responses.
+     */
+    public static final byte ADDRESS_TYPE_IPV4 = 0x01;
+    /**
+     * The address type for domain names used in SOCKS5 connect requests and responses.
+     */
+    public static final byte ADDRESS_TYPE_DOMAIN = 0x03;
+    /**
+     * The address type for IPv6 used in SOCKS5 connect requests and responses.
+     */
+    public static final byte ADDRESS_TYPE_IPV6 = 0x04;
 
-    public enum RequestStage
+    private Socks5()
     {
-        INIT,
-        AUTH,
-        CONNECTING
     }
 
-    public enum ResponseStage
-    {
-        INIT,
-        AUTH,
-        CONNECTING,
-        CONNECTED_IPV4,
-        CONNECTED_DOMAIN_NAME,
-        CONNECTED_IPV6,
-        READ_REPLY_VARIABLE
-    }
-
-    public interface SockConst
-    {
-        byte VER = 0x05;
-        byte USER_PASS_VER = 0x01;
-        byte RSV = 0x00;
-        byte SUCCEEDED = 0x00;
-        byte AUTH_FAILED = 0x01;
-    }
-
-    public interface AuthType
-    {
-        byte NO_AUTH = 0x00;
-        byte USER_PASS = 0x02;
-        byte NO_ACCEPTABLE = -1;
-    }
-
-    public interface Command
-    {
-
-        byte CONNECT = 0x01;
-        byte BIND = 0x02;
-        byte UDP = 0x03;
-    }
-
-    public interface Reply
-    {
-
-        byte GENERAL = 0x01;
-        byte RULE_BAN = 0x02;
-        byte NETWORK_UNREACHABLE = 0x03;
-        byte HOST_UNREACHABLE = 0x04;
-        byte CONNECT_REFUSE = 0x05;
-        byte TTL_TIMEOUT = 0x06;
-        byte CMD_UNSUPPORTED = 0x07;
-        byte ATYPE_UNSUPPORTED = 0x08;
-    }
-
-    public interface AddrType
-    {
-        byte IPV4 = 0x01;
-        byte DOMAIN_NAME = 0x03;
-        byte IPV6 = 0x04;
-    }
-
+    /**
+     * <p>A SOCKS5 authentication method.</p>
+     * <p>Implementations should send and receive the bytes that
+     * are specific to the particular authentication method.</p>
+     */
     public interface Authentication
     {
         /**
-         * get supported authentication type
-         * @see AuthType
-         * @return
+         * <p>Performs the authentication send and receive bytes
+         * exchanges specific for this {@link Authentication}.</p>
+         *
+         * @param endPoint the {@link EndPoint} to send to and receive from the SOCKS5 server
+         * @param callback the callback to complete when the authentication is complete
          */
-        byte getAuthType();
+        void authenticate(EndPoint endPoint, Callback callback);
 
         /**
-         * write authorize command
-         * @return
+         * A factory for {@link Authentication}s.
          */
-        ByteBuffer authorize();
+        interface Factory
+        {
+            /**
+             * @return the authentication method defined by RFC 1928
+             */
+            byte getMethod();
+
+            /**
+             * @return a new {@link Authentication}
+             */
+            Authentication newAuthentication();
+        }
     }
 
-    public static class NoAuthentication implements Authentication
+    /**
+     * <p>The implementation of the {@code NO AUTH} authentication method defined in
+     * <a href="https://datatracker.ietf.org/doc/html/rfc1928">RFC 1928</a>.</p>
+     */
+    public static class NoAuthenticationFactory implements Authentication.Factory
     {
+        public static final byte METHOD = 0x00;
 
         @Override
-        public byte getAuthType() 
+        public byte getMethod()
         {
-            return AuthType.NO_AUTH;
+            return METHOD;
         }
 
         @Override
-        public ByteBuffer authorize() 
+        public Authentication newAuthentication()
         {
-            throw new UnsupportedOperationException("authorize error");
+            return (endPoint, callback) -> callback.succeeded();
         }
-
     }
 
-    public static class UsernamePasswordAuthentication implements Authentication
+    /**
+     * <p>The implementation of the {@code USERNAME/PASSWORD} authentication method defined in
+     * <a href="https://datatracker.ietf.org/doc/html/rfc1929">RFC 1929</a>.</p>
+     */
+    public static class UsernamePasswordAuthenticationFactory implements Authentication.Factory
     {
-        private String username;
-        private String password;
+        public static final byte METHOD = 0x02;
+        public static final byte VERSION = 0x01;
+        private static final Logger LOG = LoggerFactory.getLogger(UsernamePasswordAuthenticationFactory.class);
 
-        public UsernamePasswordAuthentication(String username, String password)
+        private final String userName;
+        private final String password;
+        private final Charset charset;
+
+        public UsernamePasswordAuthenticationFactory(String userName, String password)
         {
-            this.username = username;
-            this.password = password;
+            this(userName, password, StandardCharsets.US_ASCII);
+        }
+
+        public UsernamePasswordAuthenticationFactory(String userName, String password, Charset charset)
+        {
+            this.userName = Objects.requireNonNull(userName);
+            this.password = Objects.requireNonNull(password);
+            this.charset = Objects.requireNonNull(charset);
         }
 
         @Override
-        public byte getAuthType() 
+        public byte getMethod()
         {
-            return AuthType.USER_PASS;
+            return METHOD;
         }
 
         @Override
-        public ByteBuffer authorize() 
+        public Authentication newAuthentication()
         {
-            byte uLen = (byte)username.length();
-            byte pLen = (byte)(password == null ? 0 : password.length());
-            ByteBuffer userPass = ByteBuffer.allocate(3 + uLen + pLen);
-            userPass.put(SockConst.USER_PASS_VER)
-                .put(uLen)
-                .put(username.getBytes(StandardCharsets.UTF_8))
-                .put(pLen);
-            if (password != null)
+            return new UsernamePasswordAuthentication(this);
+        }
+
+        private static class UsernamePasswordAuthentication implements Authentication, Callback
+        {
+            private final ByteBuffer byteBuffer = BufferUtil.allocate(2);
+            private final UsernamePasswordAuthenticationFactory factory;
+            private EndPoint endPoint;
+            private Callback callback;
+
+            private UsernamePasswordAuthentication(UsernamePasswordAuthenticationFactory factory)
             {
-                userPass.put(password.getBytes(StandardCharsets.UTF_8));
+                this.factory = factory;
             }
-            userPass.flip();
-            return userPass;
+
+            @Override
+            public void authenticate(EndPoint endPoint, Callback callback)
+            {
+                this.endPoint = endPoint;
+                this.callback = callback;
+
+                byte[] userNameBytes = factory.userName.getBytes(factory.charset);
+                byte[] passwordBytes = factory.password.getBytes(factory.charset);
+                ByteBuffer byteBuffer = ByteBuffer.allocate(3 + userNameBytes.length + passwordBytes.length)
+                    .put(VERSION)
+                    .put((byte)userNameBytes.length)
+                    .put(userNameBytes)
+                    .put((byte)passwordBytes.length)
+                    .put(passwordBytes)
+                    .flip();
+                endPoint.write(Callback.from(this::authenticationSent, this::failed), byteBuffer);
+            }
+
+            private void authenticationSent()
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Written SOCKS5 username/password authentication request");
+                endPoint.fillInterested(this);
+            }
+
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    int filled = endPoint.fill(byteBuffer);
+                    if (filled < 0)
+                        throw new ClosedChannelException();
+                    if (byteBuffer.remaining() < 2)
+                    {
+                        endPoint.fillInterested(this);
+                        return;
+                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Received SOCKS5 username/password authentication response");
+                    byte version = byteBuffer.get();
+                    if (version != VERSION)
+                        throw new IOException("Unsupported username/password authentication version: " + version);
+                    byte status = byteBuffer.get();
+                    if (status != 0)
+                        throw new IOException("SOCK5 username/password authentication failure");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("SOCKS5 username/password authentication succeeded");
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    failed(x);
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                callback.failed(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
         }
     }
 }
