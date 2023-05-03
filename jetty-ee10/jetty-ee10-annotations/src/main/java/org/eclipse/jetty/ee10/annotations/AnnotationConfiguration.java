@@ -1127,7 +1127,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
      *
      * @param state the state for the scan
      * @param parser the annotation parser to use
-     * @throws Exception if unable to scan and/or parse
      */
     protected void parseWebInfClasses(State state, AnnotationParser parser)
     {
