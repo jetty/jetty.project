@@ -13,21 +13,21 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket
 public class ParamsEndpoint
 {
-    @OnWebSocketConnect
-    public void onConnect(Session session) throws IOException
+    @OnWebSocketOpen
+    public void onOpen(Session session)
     {
         Map<String, List<String>> params = session.getUpgradeRequest().getParameterMap();
         StringBuilder msg = new StringBuilder();
@@ -39,6 +39,6 @@ public class ParamsEndpoint
             msg.append("\n");
         }
 
-        session.getRemote().sendString(msg.toString());
+        session.sendText(msg.toString(), Callback.NOOP);
     }
 }

@@ -14,9 +14,9 @@
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.ee9.security.ConstraintSecurityHandler">
      <Set name="loginService">
-       <New class="org.eclipse.jetty.ee9.jaas.JAASLoginService">
+       <New class="org.eclipse.jetty.security.jaas.JAASLoginService">
          <Set name="name">Demo JAAS Realm</Set>
-         <Set name="loginModuleName">ee9-xyz</Set>
+         <Set name="loginModuleName">demo</Set>
        </New>
      </Set>
     </New>

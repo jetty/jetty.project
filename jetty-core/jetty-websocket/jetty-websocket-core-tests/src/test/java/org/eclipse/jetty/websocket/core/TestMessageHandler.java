@@ -27,7 +27,6 @@ public class TestMessageHandler extends MessageHandler
 {
     protected static final Logger LOG = LoggerFactory.getLogger(TestMessageHandler.class);
 
-    public CoreSession coreSession;
     public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
     public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
     public CloseStatus closeStatus;
@@ -40,7 +39,6 @@ public class TestMessageHandler extends MessageHandler
     public void onOpen(CoreSession coreSession, Callback callback)
     {
         super.onOpen(coreSession, callback);
-        this.coreSession = coreSession;
         openLatch.countDown();
     }
 

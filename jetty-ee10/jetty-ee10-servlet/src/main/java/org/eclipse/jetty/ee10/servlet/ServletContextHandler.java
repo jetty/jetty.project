@@ -67,12 +67,12 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -91,7 +91,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
@@ -276,6 +278,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         _securityHandler = securityHandler;
         _servletHandler = servletHandler;
 
+        setErrorHandler(errorHandler);
+
         _objFactory = new DecoratedObjectFactory();
         addBean(_objFactory, true);
 
@@ -304,9 +308,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        // TODO almost certainly this is wrong
-        super.dump(out, indent);
         dumpObjects(out, indent,
+            new ClassLoaderDump(getClassLoader()),
+            Dumpable.named("context " + this, getContext()),
+            Dumpable.named("handler attributes " + this, getContext().getPersistentAttributes()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
@@ -726,8 +731,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         if (_localeEncodingMap == null)
             return null;
-        String encoding = _localeEncodingMap.get(locale);
-        return encoding;
+        return _localeEncodingMap.get(locale);
     }
 
     /**
@@ -837,30 +841,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         return Collections.emptySet();
     }
 
-    private String normalizeHostname(String host)
-    {
-        if (host == null)
-            return null;
-        int connectorIndex = host.indexOf('@');
-        String connector = null;
-        if (connectorIndex > 0)
-        {
-            host = host.substring(0, connectorIndex);
-            connector = host.substring(connectorIndex);
-        }
-
-        if (host.endsWith("."))
-            host = host.substring(0, host.length() - 1);
-        if (connector != null)
-            host += connector;
-
-        return host;
-    }
-
     /**
      * Listener for all threads entering context scope, including async IO callbacks
      */
-    public static interface ServletContextScopeListener extends EventListener
+    public interface ServletContextScopeListener extends EventListener
     {
         /**
          * @param context The context being entered
@@ -1194,7 +1178,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
-        DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
+        DispatcherType dispatch = scopedRequest.getServletApiRequest().getDispatcherType();
         if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getDecodedPathInContext()))
         {
             Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
@@ -1320,7 +1304,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         _startListeners = true;
         String managedAttributes = _initParams.get(MANAGED_ATTRIBUTES);
         if (managedAttributes != null)
-            addEventListener(new ManagedAttributeListener((ServletContextHandler)this, StringUtil.csvSplit(managedAttributes)));
+            addEventListener(new ManagedAttributeListener(this, StringUtil.csvSplit(managedAttributes)));
 
         super.doStart();
 
@@ -1545,7 +1529,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
         {
             HashSet<String> union = new HashSet<>();
-            Set<String> existing = ((ConstraintAware)_securityHandler).getRoles();
+            Set<String> existing = ((ConstraintAware)_securityHandler).getKnownRoles();
             if (existing != null)
                 union.addAll(existing);
             union.addAll(Arrays.asList(roleNames));
@@ -1845,7 +1829,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
 
         @Override
-        public java.util.Collection getIncludePreludes()
+        public java.util.Collection<String> getIncludePreludes()
         {
             return new ArrayList<>(_includePreludes); //must be a copy
         }
@@ -1857,7 +1841,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
 
         @Override
-        public java.util.Collection getIncludeCodas()
+        public java.util.Collection<String> getIncludeCodas()
         {
             return new ArrayList<>(_includeCodas); //must be a copy
         }
@@ -1969,7 +1953,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
 
         @Override
-        public java.util.Collection getTaglibs()
+        public java.util.Collection<TaglibDescriptor> getTaglibs()
         {
             return new ArrayList<>(_taglibs);
         }
@@ -1980,7 +1964,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
 
         @Override
-        public java.util.Collection getJspPropertyGroups()
+        public java.util.Collection<JspPropertyGroupDescriptor> getJspPropertyGroups()
         {
             return new ArrayList<>(_jspPropertyGroups);
         }
@@ -2382,8 +2366,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             try
             {
-                T result = getContext().decorate(clazz.getDeclaredConstructor().newInstance());
-                return result;
+                return getContext().decorate(clazz.getDeclaredConstructor().newInstance());
             }
             catch (Exception e)
             {
@@ -3032,7 +3015,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public String toString()
         {
-            return "ServletContext@" + ServletContextHandler.this.toString();
+            return "ServletContext@" + ServletContextHandler.this;
         }
 
         public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
@@ -3119,7 +3102,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 addBean(holder, true);
         }
         
-        public java.util.Collection getServletContainerInitializerHolders()
+        public java.util.Collection<ServletContainerInitializerHolder> getServletContainerInitializerHolders()
         {
             return getContainedBeans(ServletContainerInitializerHolder.class);
         }
@@ -3143,19 +3126,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                     removeBean(h);
             }
             super.doStop();
-        }
-    }
-
-    private static class Caller extends SecurityManager
-    {
-        public ClassLoader getCallerClassLoader(int depth)
-        {
-            if (depth < 0)
-                return null;
-            Class<?>[] classContext = getClassContext();
-            if (classContext.length <= depth)
-                return null;
-            return classContext[depth].getClassLoader();
         }
     }
 }

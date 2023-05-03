@@ -26,10 +26,9 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.websocket.api.Configurable;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -48,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * URI paths to WebSocket endpoints and configure WebSocket parameters such as idle timeouts,
  * max WebSocket message sizes, etc.</p>
  */
-public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, Invocable
+public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, Configurable, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerWebSocketContainer.class);
 
@@ -111,12 +110,6 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
                     LOG.debug("Failure while invoking listener {}", listener, x);
             }
         }
-    }
-
-    @Override
-    public WebSocketBehavior getBehavior()
-    {
-        return configuration.getBehavior();
     }
 
     @Override
@@ -201,6 +194,18 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     public void setAutoFragment(boolean autoFragment)
     {
         configuration.setAutoFragment(autoFragment);
+    }
+
+    @Override
+    public int getMaxOutgoingFrames()
+    {
+        return configuration.getMaxOutgoingFrames();
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
+    {
+        configuration.setMaxOutgoingFrames(maxOutgoingFrames);
     }
 
     /**
@@ -296,12 +301,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         this.invocationType = invocationType;
     }
 
-    private static class Configuration extends org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer implements WebSocketPolicy
+    private static class Configuration extends org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer implements Configurable
     {
-        @Override
-        public WebSocketBehavior getBehavior()
-        {
-            return WebSocketBehavior.SERVER;
-        }
     }
 }

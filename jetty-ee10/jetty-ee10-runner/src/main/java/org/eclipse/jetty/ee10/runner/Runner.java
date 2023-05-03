@@ -28,17 +28,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
-import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
@@ -55,7 +56,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -365,10 +365,10 @@ public class Runner
                                     ResourceFactory resourceFactory = ResourceFactory.of(statsContext);
                                     Resource statsResource = resourceFactory.newResource(_statsPropFile);
                                     final HashLoginService loginService = new HashLoginService("StatsRealm", statsResource);
-                                    Constraint constraint = new Constraint();
-                                    constraint.setName("Admin Only");
-                                    constraint.setRoles(new String[]{"admin"});
-                                    constraint.setAuthenticate(true);
+                                    Constraint constraint = new Constraint.Builder()
+                                        .name("Admin Only")
+                                        .roles("admin")
+                                        .build();
 
                                     ConstraintMapping cm = new ConstraintMapping();
                                     cm.setConstraint(constraint);

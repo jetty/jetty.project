@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.SessionTrackingMode;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
@@ -39,14 +41,14 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler.TagLib;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.servlet.Source;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.servlet.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.slf4j.Logger;
@@ -1282,116 +1284,138 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public void visitSecurityConstraint(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
-        if (context.getSecurityHandler() == null)
+        if (!(context.getSecurityHandler() instanceof ConstraintAware constraintAware))
         {
-            LOG.warn("security-constraint declared but SecurityHandler==null");
+            LOG.warn("security-constraint declared but SecurityHandler not ConstraintAware");
             return;
         }
 
-        Constraint scBase = new Constraint();
+        Constraint.Builder scBase = new Constraint.Builder(Constraint.ALLOWED_ANY_TRANSPORT);
 
-        //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive
-        //across fragments
+        //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive across fragments
 
         //TODO: need to remember origin of the constraints
-        try
+        XmlParser.Node auths = node.get("auth-constraint");
+
+        if (auths != null)
         {
-            XmlParser.Node auths = node.get("auth-constraint");
-
-            if (auths != null)
-            {
-                scBase.setAuthenticate(true);
-                // auth-constraint
-                Iterator<XmlParser.Node> iter = auths.iterator("role-name");
-                List<String> roles = new ArrayList<String>();
-                while (iter.hasNext())
-                {
-                    String role = iter.next().toString(false, true);
-                    roles.add(role);
-                }
-                scBase.setRoles(roles.toArray(new String[roles.size()]));
-            }
-
-            XmlParser.Node data = node.get("user-data-constraint");
-            if (data != null)
-            {
-                data = data.get("transport-guarantee");
-                String guarantee = data.toString(false, true).toUpperCase(Locale.ENGLISH);
-                if (guarantee == null || guarantee.length() == 0 || "NONE".equals(guarantee))
-                    scBase.setDataConstraint(Constraint.DC_NONE);
-                else if ("INTEGRAL".equals(guarantee))
-                    scBase.setDataConstraint(Constraint.DC_INTEGRAL);
-                else if ("CONFIDENTIAL".equals(guarantee))
-                    scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
-                else
-                {
-                    LOG.warn("Unknown user-data-constraint: {}", guarantee);
-                    scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
-                }
-            }
-            Iterator<XmlParser.Node> iter = node.iterator("web-resource-collection");
+            // auth-constraint
+            Iterator<XmlParser.Node> iter = auths.iterator("role-name");
+            List<String> roles = new ArrayList<String>();
             while (iter.hasNext())
             {
-                XmlParser.Node collection = iter.next();
-                String name = collection.getString("web-resource-name", false, true);
-                Constraint sc = (Constraint)scBase.clone();
-                sc.setName(name);
+                String role = iter.next().toString(false, true);
+                if (StringUtil.isBlank(role))
+                    continue;
 
-                Iterator<XmlParser.Node> iter2 = collection.iterator("url-pattern");
-                while (iter2.hasNext())
+                switch (role)
                 {
-                    String url = iter2.next().toString(false, true);
-                    url = ServletPathSpec.normalize(url);
-                    //remember origin so we can process ServletRegistration.Dynamic.setServletSecurityElement() correctly
-                    context.getMetaData().setOrigin("constraint.url." + url, descriptor);
-
-                    Iterator<XmlParser.Node> methods = collection.iterator("http-method");
-                    Iterator<XmlParser.Node> ommissions = collection.iterator("http-method-omission");
-
-                    if (methods.hasNext())
+                    case ConstraintSecurityHandler.ANY_KNOWN_ROLE -> // "*"
                     {
-                        if (ommissions.hasNext())
-                            throw new IllegalStateException("web-resource-collection cannot contain both http-method and http-method-omission");
-
-                        //configure all the http-method elements for each url
-                        while (methods.hasNext())
+                        if (scBase.getAuthorization() == null)
                         {
-                            String method = ((XmlParser.Node)methods.next()).toString(false, true);
-                            ConstraintMapping mapping = new ConstraintMapping();
-                            mapping.setMethod(method);
-                            mapping.setPathSpec(url);
-                            mapping.setConstraint(sc);
-                            ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
+                            scBase.authorization(Constraint.Authorization.KNOWN_ROLE);
+                            roles = null;
                         }
                     }
-                    else if (ommissions.hasNext())
+                    case ConstraintSecurityHandler.ANY_ROLE -> // "**"
                     {
-                        //configure all the http-method-omission elements for each url
-                        // TODO use the array
-                        while (ommissions.hasNext())
-                        {
-                            String method = ((XmlParser.Node)ommissions.next()).toString(false, true);
-                            ConstraintMapping mapping = new ConstraintMapping();
-                            mapping.setMethodOmissions(new String[]{method});
-                            mapping.setPathSpec(url);
-                            mapping.setConstraint(sc);
-                            ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
-                        }
+                        scBase.authorization(Constraint.Authorization.ANY_USER);
+                        roles = null;
                     }
-                    else
+                    default ->
                     {
-                        //No http-methods or http-method-omissions specified, the constraint applies to all
-                        ConstraintMapping mapping = new ConstraintMapping();
-                        mapping.setPathSpec(url);
-                        mapping.setConstraint(sc);
-                        ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
+                        if (roles != null)
+                            roles.add(role);
                     }
+                }
+            }
+
+            if (roles != null)
+            {
+                if (roles.isEmpty())
+                    scBase.authorization(Constraint.Authorization.FORBIDDEN);
+                else
+                {
+                    scBase.authorization(Constraint.Authorization.SPECIFIC_ROLE);
+                    scBase.roles(roles.toArray(new String[0]));
                 }
             }
         }
-        catch (CloneNotSupportedException e)
+
+        XmlParser.Node data = node.get("user-data-constraint");
+        if (data != null)
         {
-            LOG.warn("Unable to clone {}", scBase, e);
+            data = data.get("transport-guarantee");
+            String guarantee = data.toString(false, true).toUpperCase(Locale.ENGLISH);
+            scBase.transport(
+                switch (guarantee)
+                {
+                    case "INTEGRAL", "CONFIDENTIAL" -> Constraint.Transport.SECURE;
+                    case "NONE" -> Constraint.Transport.ANY;
+                    default ->
+                    {
+                        LOG.warn("Unknown user-data-constraint: {}", guarantee);
+                        yield null;
+                    }
+                });
+        }
+        Iterator<XmlParser.Node> iter = node.iterator("web-resource-collection");
+        while (iter.hasNext())
+        {
+            XmlParser.Node collection = iter.next();
+            scBase.name(collection.getString("web-resource-name", false, true));
+            Constraint sc = scBase.build();
+
+            Iterator<XmlParser.Node> iter2 = collection.iterator("url-pattern");
+            while (iter2.hasNext())
+            {
+                String url = iter2.next().toString(false, true);
+                url = ServletPathSpec.normalize(url);
+                //remember origin so we can process ServletRegistration.Dynamic.setServletSecurityElement() correctly
+                context.getMetaData().setOrigin("constraint.url." + url, descriptor);
+
+                Iterator<XmlParser.Node> methods = collection.iterator("http-method");
+                Iterator<XmlParser.Node> ommissions = collection.iterator("http-method-omission");
+
+                if (methods.hasNext())
+                {
+                    if (ommissions.hasNext())
+                        throw new IllegalStateException("web-resource-collection cannot contain both http-method and http-method-omission");
+
+                    //configure all the http-method elements for each url
+                    while (methods.hasNext())
+                    {
+                        String method = methods.next().toString(false, true);
+                        ConstraintMapping mapping = new ConstraintMapping();
+                        mapping.setMethod(method);
+                        mapping.setPathSpec(url);
+                        mapping.setConstraint(sc);
+                        constraintAware.addConstraintMapping(mapping);
+                    }
+                }
+                else if (ommissions.hasNext())
+                {
+                    //configure all the http-method-omission elements for each url
+                    while (ommissions.hasNext())
+                    {
+                        String method = ommissions.next().toString(false, true);
+                        ConstraintMapping mapping = new ConstraintMapping();
+                        mapping.setMethodOmissions(new String[]{method});
+                        mapping.setPathSpec(url);
+                        mapping.setConstraint(sc);
+                        constraintAware.addConstraintMapping(mapping);
+                    }
+                }
+                else
+                {
+                    //No http-methods or http-method-omissions specified, the constraint applies to all
+                    ConstraintMapping mapping = new ConstraintMapping();
+                    mapping.setPathSpec(url);
+                    mapping.setConstraint(sc);
+                    constraintAware.addConstraintMapping(mapping);
+                }
+            }
         }
     }
 
@@ -1410,7 +1434,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case NotSet:
                 {
                     //not already set, so set it now
-                    context.getSecurityHandler().setAuthMethod(method.toString(false, true));
+                    context.getSecurityHandler().setAuthenticationType(method.toString(false, true));
                     context.getMetaData().setOrigin("auth-method", descriptor);
                     break;
                 }
@@ -1421,7 +1445,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //if it was already set by a web xml descriptor and we're parsing another web xml descriptor, then override it
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        context.getSecurityHandler().setAuthMethod(method.toString(false, true));
+                        context.getSecurityHandler().setAuthenticationType(method.toString(false, true));
                         context.getMetaData().setOrigin("auth-method", descriptor);
                     }
                     break;
@@ -1429,7 +1453,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //it was already set by another fragment, if we're parsing a fragment, the values must match
-                    if (!context.getSecurityHandler().getAuthMethod().equals(method.toString(false, true)))
+                    if (!context.getSecurityHandler().getAuthenticationType().equals(method.toString(false, true)))
                         throw new IllegalStateException("Conflicting auth-method value in " + descriptor.getURI());
                     break;
                 }
@@ -1473,7 +1497,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     unknownOrigin(originRealmName);
             }
 
-            if (Constraint.__FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthMethod()))
+            if (Authenticator.FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthenticationType()))
             {
                 XmlParser.Node formConfig = node.get("form-login-config");
                 if (formConfig != null)
@@ -1494,7 +1518,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         case NotSet:
                         {
                             //Never been set before, so accept it
-                            context.getSecurityHandler().setInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE, loginPageName);
+                            context.getSecurityHandler().setParameter(FormAuthenticator.__FORM_LOGIN_PAGE, loginPageName);
                             context.getMetaData().setOrigin("form-login-page", descriptor);
                             break;
                         }
@@ -1505,7 +1529,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             //a web xml descriptor previously set it, only allow another one to change it (web.xml/web-default.xml/web-override.xml)
                             if (!(descriptor instanceof FragmentDescriptor))
                             {
-                                context.getSecurityHandler().setInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE, loginPageName);
+                                context.getSecurityHandler().setParameter(FormAuthenticator.__FORM_LOGIN_PAGE, loginPageName);
                                 context.getMetaData().setOrigin("form-login-page", descriptor);
                             }
                             break;
@@ -1513,7 +1537,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         case WebFragment:
                         {
                             //a web-fragment previously set it. We must be parsing yet another web-fragment, so the values must agree
-                            if (!context.getSecurityHandler().getInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE).equals(loginPageName))
+                            if (!context.getSecurityHandler().getParameter(FormAuthenticator.__FORM_LOGIN_PAGE).equals(loginPageName))
                                 throw new IllegalStateException("Conflicting form-login-page value in " + descriptor.getURI());
                             break;
                         }
@@ -1528,7 +1552,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         case NotSet:
                         {
                             //Never been set before, so accept it
-                            context.getSecurityHandler().setInitParameter(FormAuthenticator.__FORM_ERROR_PAGE, errorPageName);
+                            context.getSecurityHandler().setParameter(FormAuthenticator.__FORM_ERROR_PAGE, errorPageName);
                             context.getMetaData().setOrigin("form-error-page", descriptor);
                             break;
                         }
@@ -1539,7 +1563,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             //a web xml descriptor previously set it, only allow another one to change it (web.xml/web-default.xml/web-override.xml)
                             if (!(descriptor instanceof FragmentDescriptor))
                             {
-                                context.getSecurityHandler().setInitParameter(FormAuthenticator.__FORM_ERROR_PAGE, errorPageName);
+                                context.getSecurityHandler().setParameter(FormAuthenticator.__FORM_ERROR_PAGE, errorPageName);
                                 context.getMetaData().setOrigin("form-error-page", descriptor);
                             }
                             break;
@@ -1547,7 +1571,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         case WebFragment:
                         {
                             //a web-fragment previously set it. We must be parsing yet another web-fragment, so the values must agree
-                            if (!context.getSecurityHandler().getInitParameter(FormAuthenticator.__FORM_ERROR_PAGE).equals(errorPageName))
+                            if (!context.getSecurityHandler().getParameter(FormAuthenticator.__FORM_ERROR_PAGE).equals(errorPageName))
                                 throw new IllegalStateException("Conflicting form-error-page value in " + descriptor.getURI());
                             break;
                         }
@@ -1573,7 +1597,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //ServletSpec 3.0, p74 elements with multiplicity >1 are additive when merged
         XmlParser.Node roleNode = node.get("role-name");
         String role = roleNode.toString(false, true);
-        ((ConstraintAware)context.getSecurityHandler()).addRole(role);
+        ((ConstraintAware)context.getSecurityHandler()).addKnownRole(role);
         context.getMetaData().setOrigin("security-role." + role, descriptor);
     }
 

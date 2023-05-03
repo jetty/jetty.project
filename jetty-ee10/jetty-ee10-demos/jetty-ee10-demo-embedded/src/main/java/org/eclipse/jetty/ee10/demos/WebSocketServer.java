@@ -18,8 +18,8 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -39,7 +39,7 @@ public class WebSocketServer
         @OnWebSocketMessage
         public void onMessage(Session session, String message)
         {
-            session.getRemote().sendString(message, WriteCallback.NOOP);
+            session.sendText(message, Callback.NOOP);
         }
     }
 

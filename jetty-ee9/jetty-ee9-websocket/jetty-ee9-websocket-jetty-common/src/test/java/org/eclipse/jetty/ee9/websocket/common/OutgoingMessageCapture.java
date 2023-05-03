@@ -96,7 +96,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new StringMessageSink(this, wholeTextHandle);
+                messageSink = new StringMessageSink(this, wholeTextHandle, true);
                 break;
             }
             case OpCode.BINARY:
@@ -104,7 +104,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new ByteBufferMessageSink(this, wholeBinaryHandle);
+                messageSink = new ByteBufferMessageSink(this, wholeBinaryHandle, true);
                 break;
             }
             case OpCode.CONTINUATION:

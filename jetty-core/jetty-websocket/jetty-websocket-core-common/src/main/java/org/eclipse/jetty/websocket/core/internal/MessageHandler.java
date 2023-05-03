@@ -32,11 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A utility implementation of FrameHandler that defragments
- * text frames into a String message before calling {@link #onText(String, Callback)}.
- * Flow control is by default automatic, but an implementation
- * may extend {@link #isAutoDemanding()} to return false and then explicitly control
- * demand with calls to {@link CoreSession#demand(long)}.
+ * <p>A utility implementation of FrameHandler that aggregates TEXT frames
+ * into a String message before calling {@link #onText(String, Callback)}.
  */
 public class MessageHandler implements FrameHandler
 {
@@ -120,6 +117,7 @@ public class MessageHandler implements FrameHandler
 
         this.coreSession = coreSession;
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     @Override
@@ -130,30 +128,26 @@ public class MessageHandler implements FrameHandler
 
         switch (frame.getOpCode())
         {
-            case OpCode.CLOSE:
-                onCloseFrame(frame, callback);
-                break;
-            case OpCode.PING:
-                onPingFrame(frame, callback);
-                break;
-            case OpCode.PONG:
-                onPongFrame(frame, callback);
-                break;
-            case OpCode.TEXT:
+            case OpCode.CLOSE -> onCloseFrame(frame, callback);
+            case OpCode.PING -> onPingFrame(frame, callback);
+            case OpCode.PONG -> onPongFrame(frame, callback);
+            case OpCode.TEXT ->
+            {
                 dataType = OpCode.TEXT;
                 onTextFrame(frame, callback);
-                break;
-            case OpCode.BINARY:
+            }
+            case OpCode.BINARY ->
+            {
                 dataType = OpCode.BINARY;
                 onBinaryFrame(frame, callback);
-                break;
-            case OpCode.CONTINUATION:
+            }
+            case OpCode.CONTINUATION ->
+            {
                 onContinuationFrame(frame, callback);
                 if (frame.isFin())
                     dataType = OpCode.UNDEFINED;
-                break;
-            default:
-                callback.failed(new IllegalStateException());
+            }
+            default -> callback.failed(new IllegalStateException());
         }
     }
 
@@ -199,7 +193,8 @@ public class MessageHandler implements FrameHandler
                 long currentSize = frame.getPayload().remaining() + textBuffer.length();
                 if (currentSize > maxSize)
                     throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
-                textBuffer.append(frame.getPayload());
+                else
+                    textBuffer.append(frame.getPayload());
             }
 
             if (frame.isFin())
@@ -211,8 +206,11 @@ public class MessageHandler implements FrameHandler
             {
                 if (textBuffer.hasCodingErrors())
                     throw new BadPayloadException("Invalid UTF-8");
-                callback.succeeded();
+                else
+                    callback.succeeded();
             }
+
+            coreSession.demand(1);
         }
         catch (Throwable t)
         {
@@ -232,8 +230,8 @@ public class MessageHandler implements FrameHandler
                 long currentSize = frame.getPayload().remaining() + binaryBuffer.size();
                 if (currentSize > maxSize)
                     throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
-
-                BufferUtil.writeTo(frame.getPayload(), binaryBuffer);
+                else
+                    BufferUtil.writeTo(frame.getPayload(), binaryBuffer);
             }
 
             if (frame.isFin())
@@ -245,6 +243,8 @@ public class MessageHandler implements FrameHandler
             {
                 callback.succeeded();
             }
+
+            coreSession.demand(1);
         }
         catch (Throwable t)
         {
@@ -256,27 +256,21 @@ public class MessageHandler implements FrameHandler
     {
         switch (dataType)
         {
-            case OpCode.BINARY:
-                onBinaryFrame(frame, callback);
-                break;
-
-            case OpCode.TEXT:
-                onTextFrame(frame, callback);
-                break;
-
-            default:
-                throw new IllegalStateException();
+            case OpCode.BINARY -> onBinaryFrame(frame, callback);
+            case OpCode.TEXT -> onTextFrame(frame, callback);
+            default -> throw new IllegalStateException();
         }
     }
 
     protected void onPingFrame(Frame frame, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG, true, frame.getPayload()), callback, false);
+        coreSession.sendFrame(new Frame(OpCode.PONG, true, frame.getPayload()), Callback.from(() -> coreSession.demand(1), callback), false);
     }
 
     protected void onPongFrame(Frame frame, Callback callback)
     {
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     protected void onCloseFrame(Frame frame, Callback callback)
@@ -346,7 +340,7 @@ public class MessageHandler implements FrameHandler
             int i = 0;
 
             @Override
-            protected Action process() throws Throwable
+            protected Action process()
             {
                 if (i + 1 > parts.length)
                     return Action.SUCCEEDED;
@@ -398,7 +392,7 @@ public class MessageHandler implements FrameHandler
             int i = 0;
 
             @Override
-            protected Action process() throws Throwable
+            protected Action process()
             {
                 if (i + 1 > parts.length)
                     return Action.SUCCEEDED;

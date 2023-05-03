@@ -20,6 +20,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -68,7 +69,7 @@ public class WebSocketServerTest
 
             Future<Session> sessionFut = webSocketClient.connect(clientEndpoint, wsUri);
             Session session = sessionFut.get(2, SECONDS);
-            session.getRemote().sendString("Hello World");
+            session.sendText("Hello World", Callback.NOOP);
 
             String response = clientEndpoint.messages.poll(2, SECONDS);
             assertThat("Response", response, is("Hello World"));

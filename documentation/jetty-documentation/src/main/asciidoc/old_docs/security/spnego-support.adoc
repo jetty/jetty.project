@@ -70,11 +70,11 @@ embedded, via the `jetty.xml` or in a context file for the webapp.
 
 This is what the configuration within a context XML file would look like:
 
-[source, xml, subs="{sub-order}"]
+[source,xml,subs="{sub-order}"]
 ----
 <Get name="securityHandler">
   <Set name="loginService">
-    <New class="org.eclipse.jetty.security.ConfigurableSpnegoLoginService">
+    <New class="org.eclipse.jetty.security.SPNEGOLoginService">
       <Arg>Test Realm</Arg>
       <Arg><Ref refid="authorizationService" /></Arg>
       <Set name="keyTabPath"><Ref refid="keyTabPath" /></Set>

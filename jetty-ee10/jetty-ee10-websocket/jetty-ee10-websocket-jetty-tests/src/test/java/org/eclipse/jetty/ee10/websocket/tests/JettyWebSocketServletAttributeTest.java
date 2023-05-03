@@ -25,8 +25,8 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -118,7 +118,7 @@ public class JettyWebSocketServletAttributeTest
         EventSocket clientEndpoint = new EventSocket();
         try (Session session = client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS))
         {
-            session.getRemote().sendString("hello", WriteCallback.NOOP);
+            session.sendText("hello", Callback.NOOP);
             String path = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
             assertEquals(param, path);
         }
@@ -137,7 +137,7 @@ public class JettyWebSocketServletAttributeTest
         @OnWebSocketMessage
         public void onText(Session session, String text) throws IOException
         {
-            session.getRemote().sendString(param);
+            session.sendText(param, Callback.NOOP);
         }
     }
 }

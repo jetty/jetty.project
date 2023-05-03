@@ -1142,7 +1142,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         public ScopedContext()
         {
-            // TODO Should the ScopedContext attributes be a layer over the ServerContext attributes?
             super(_persistentAttributes);
         }
 

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>JNDI Configuration</p>
  * <p>This configuration configures the WebAppContext system/server classes to
- * be able to see the org.eclipse.jetty.jaas package.
+ * be able to see the org.eclipse.jetty.jndi package.
  * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
  * which is unknown to the jndi package.
  * </p>

@@ -16,9 +16,11 @@ module org.eclipse.jetty.ee
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.security;
 
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 
     exports org.eclipse.jetty.ee;
+    exports org.eclipse.jetty.ee.security;
 }

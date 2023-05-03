@@ -83,19 +83,12 @@ public class DemandTest
         public void onError(Throwable cause, Callback callback)
         {
             callback.succeeded();
-            _coreSession.demand(1);
         }
 
         @Override
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
             callback.succeeded();
-        }
-
-        @Override
-        public boolean isAutoDemanding()
-        {
-            return false;
         }
     }
 

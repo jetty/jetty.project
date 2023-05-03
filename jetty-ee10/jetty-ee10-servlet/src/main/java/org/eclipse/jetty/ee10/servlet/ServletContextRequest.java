@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +25,6 @@ import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -51,8 +51,8 @@ public class ServletContextRequest extends ContextRequest
     static final int INPUT_STREAM = 1;
     static final int INPUT_READER = 2;
 
-    static final Fields NO_PARAMS = new Fields(new Fields(), true);
-    static final Fields BAD_PARAMS = new Fields(new Fields(), true);
+    static final Fields NO_PARAMS = new Fields(Collections.emptyMap());
+    static final Fields BAD_PARAMS = new Fields(Collections.emptyMap());
 
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
@@ -75,7 +75,7 @@ public class ServletContextRequest extends ContextRequest
     }
 
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
-    private final ServletApiRequest _httpServletRequest;
+    private final ServletApiRequest _servletApiRequest;
     private final ServletContextResponse _response;
     final ServletHandler.MappedServlet _mappedServlet;
     private final HttpInput _httpInput;
@@ -100,7 +100,7 @@ public class ServletContextRequest extends ContextRequest
     {
         super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
-        _httpServletRequest = newServletApiRequest();
+        _servletApiRequest = newServletApiRequest();
         _mappedServlet = matchedResource.getResource();
         _httpInput = _servletChannel.getHttpInput();
         _decodedPathInContext = decodedPathInContext;
@@ -260,14 +260,9 @@ public class ServletContextRequest extends ContextRequest
         return _servletChannel;
     }
 
-    public HttpServletRequest getHttpServletRequest()
-    {
-        return _httpServletRequest;
-    }
-
     public ServletApiRequest getServletApiRequest()
     {
-        return _httpServletRequest;
+        return _servletApiRequest;
     }
 
     public HttpServletResponse getHttpServletResponse()

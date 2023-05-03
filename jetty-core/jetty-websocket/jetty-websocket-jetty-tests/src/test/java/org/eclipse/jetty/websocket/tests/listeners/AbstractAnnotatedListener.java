@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.websocket.tests.listeners;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @WebSocket
@@ -26,8 +26,8 @@ public class AbstractAnnotatedListener
 {
     protected Session _session;
 
-    @OnWebSocketConnect
-    public void onWebSocketConnect(Session session)
+    @OnWebSocketOpen
+    public void onWebSocketOpen(Session session)
     {
         _session = session;
     }
@@ -40,25 +40,11 @@ public class AbstractAnnotatedListener
 
     public void sendText(String message, boolean last)
     {
-        try
-        {
-            _session.getRemote().sendPartialString(message, last);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        _session.sendPartialText(message, last, Callback.NOOP);
     }
 
     public void sendBinary(ByteBuffer message, boolean last)
     {
-        try
-        {
-            _session.getRemote().sendPartialBytes(message, last);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        _session.sendPartialBinary(message, last, Callback.NOOP);
     }
 }

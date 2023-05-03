@@ -25,9 +25,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -112,10 +111,9 @@ public class PartialListenerTest
         {
             session = futSession.get(5, SECONDS);
 
-            RemoteEndpoint clientRemote = session.getRemote();
-            clientRemote.sendPartialString("hello", false);
-            clientRemote.sendPartialString(" ", false);
-            clientRemote.sendPartialString("world", true);
+            session.sendPartialText("hello", false, Callback.NOOP);
+            session.sendPartialText(" ", false, Callback.NOOP);
+            session.sendPartialText("world", true, Callback.NOOP);
 
             String event = serverEndpoint.partialEvents.poll(5, SECONDS);
             assertThat("Event", event, is("TEXT[payload=hello, fin=false]"));
@@ -144,10 +142,9 @@ public class PartialListenerTest
         {
             session = futSession.get(5, SECONDS);
 
-            RemoteEndpoint clientRemote = session.getRemote();
-            clientRemote.sendPartialBytes(BufferUtil.toBuffer("hello"), false);
-            clientRemote.sendPartialBytes(BufferUtil.toBuffer(" "), false);
-            clientRemote.sendPartialBytes(BufferUtil.toBuffer("world"), true);
+            session.sendPartialBinary(BufferUtil.toBuffer("hello"), false, Callback.NOOP);
+            session.sendPartialBinary(BufferUtil.toBuffer(" "), false, Callback.NOOP);
+            session.sendPartialBinary(BufferUtil.toBuffer("world"), true, Callback.NOOP);
 
             String event = serverEndpoint.partialEvents.poll(5, SECONDS);
             assertThat("Event", event, is("BINARY[payload=<<<hello>>>, fin=false]"));
@@ -179,18 +176,17 @@ public class PartialListenerTest
         {
             session = futSession.get(5, SECONDS);
 
-            RemoteEndpoint clientRemote = session.getRemote();
-            clientRemote.sendPartialString("hello", false);
-            clientRemote.sendPartialString(" ", false);
-            clientRemote.sendPartialString("world", true);
+            session.sendPartialText("hello", false, Callback.NOOP);
+            session.sendPartialText(" ", false, Callback.NOOP);
+            session.sendPartialText("world", true, Callback.NOOP);
 
-            clientRemote.sendPartialBytes(BufferUtil.toBuffer("greetings"), false);
-            clientRemote.sendPartialBytes(BufferUtil.toBuffer(" "), false);
-            clientRemote.sendPartialBytes(BufferUtil.toBuffer("mars"), true);
+            session.sendPartialBinary(BufferUtil.toBuffer("greetings"), false, Callback.NOOP);
+            session.sendPartialBinary(BufferUtil.toBuffer(" "), false, Callback.NOOP);
+            session.sendPartialBinary(BufferUtil.toBuffer("mars"), true, Callback.NOOP);
 
-            clientRemote.sendPartialString("salutations", false);
-            clientRemote.sendPartialString(" ", false);
-            clientRemote.sendPartialString("phobos", true);
+            session.sendPartialText("salutations", false, Callback.NOOP);
+            session.sendPartialText(" ", false, Callback.NOOP);
+            session.sendPartialText("phobos", true, Callback.NOOP);
 
             String event;
             event = serverEndpoint.partialEvents.poll(5, SECONDS);
@@ -220,22 +216,33 @@ public class PartialListenerTest
         }
     }
 
-    public static class PartialEndpoint implements WebSocketPartialListener
+    public static class PartialEndpoint implements Session.Listener
     {
         public Session session;
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public LinkedBlockingQueue<String> partialEvents = new LinkedBlockingQueue<>();
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason)
+        public void onWebSocketOpen(Session session)
         {
-            closeLatch.countDown();
+            this.session = session;
+            session.demand();
         }
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketPartialText(String payload, boolean fin)
         {
-            this.session = session;
+            partialEvents.offer(String.format("TEXT[payload=%s, fin=%b]", TextUtils.maxStringLength(30, payload), fin));
+            session.demand();
+        }
+
+        @Override
+        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
+        {
+            // our testcases always send bytes limited in the US-ASCII range.
+            partialEvents.offer(String.format("BINARY[payload=<<<%s>>>, fin=%b]", BufferUtil.toUTF8String(payload), fin));
+            callback.succeed();
+            session.demand();
         }
 
         @Override
@@ -245,16 +252,9 @@ public class PartialListenerTest
         }
 
         @Override
-        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
+        public void onWebSocketClose(int statusCode, String reason)
         {
-            // our testcases always send bytes limited in the US-ASCII range.
-            partialEvents.offer(String.format("BINARY[payload=<<<%s>>>, fin=%b]", BufferUtil.toUTF8String(payload), fin));
-        }
-
-        @Override
-        public void onWebSocketPartialText(String payload, boolean fin)
-        {
-            partialEvents.offer(String.format("TEXT[payload=%s, fin=%b]", TextUtils.maxStringLength(30, payload), fin));
+            closeLatch.countDown();
         }
     }
 }

@@ -89,7 +89,7 @@ public class ClientConnectTest
         assertThat("Error", capcause, errorMatcher);
 
         // Validate that websocket didn't see an open event
-        assertThat("Open Latch", wsocket.openLatch.getCount(), is(1L));
+        assertThat("Open Latch", wsocket.connectLatch.getCount(), is(1L));
 
         // Return the captured cause
         return (E)capcause;

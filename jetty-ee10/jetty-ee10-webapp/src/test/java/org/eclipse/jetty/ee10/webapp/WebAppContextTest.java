@@ -204,6 +204,7 @@ public class WebAppContextTest
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.WebXmlConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.MetaInfConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.JaasConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.WebAppConfiguration");
         expectedConfigurations.add("org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration");
 

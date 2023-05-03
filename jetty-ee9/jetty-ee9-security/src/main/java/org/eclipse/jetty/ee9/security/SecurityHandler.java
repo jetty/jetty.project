@@ -34,8 +34,12 @@ import org.eclipse.jetty.ee9.nested.Handler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
@@ -500,7 +504,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
 
             // check authentication
-            Object previousIdentity = null;
+            IdentityService.Association identityAssociation = null;
             try
             {
                 Authentication authentication = baseRequest.getAuthentication();
@@ -522,7 +526,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     Authentication.User userAuth = (Authentication.User)authentication;
                     baseRequest.setAuthentication(authentication);
                     if (_identityService != null)
-                        previousIdentity = _identityService.associate(userAuth.getUserIdentity());
+                    {
+                        UserIdentity user = userAuth.getUserIdentity();
+                        identityAssociation = _identityService.associate(user, null);
+                    }
 
                     if (isAuthMandatory)
                     {
@@ -550,7 +557,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                     finally
                     {
-                        previousIdentity = deferred.getPreviousAssociation();
+                        identityAssociation = deferred.getAssociation();
                     }
 
                     if (authenticator != null)
@@ -574,7 +581,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 {
                     baseRequest.setAuthentication(authentication);
                     if (_identityService != null)
-                        previousIdentity = _identityService.associate(null);
+                        identityAssociation = _identityService.associate(null, null);
                     handler.handle(pathInContext, baseRequest, request, response);
                     if (authenticator != null)
                         authenticator.secureResponse(request, response, isAuthMandatory, null);
@@ -588,8 +595,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
             finally
             {
-                if (_identityService != null)
-                    _identityService.disassociate(previousIdentity);
+                IO.close(identityAssociation);
             }
         }
         else
@@ -619,11 +625,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
         IdentityService identityService = getIdentityService();
         if (identityService != null)
-        {
-            // TODO recover previous from threadlocal (or similar)
-            Object previous = null;
-            identityService.disassociate(previous);
-        }
+            identityService.onLogout(user.getUserIdentity());
     }
 
     protected abstract RoleInfo prepareConstraintInfo(String pathInContext, Request request);

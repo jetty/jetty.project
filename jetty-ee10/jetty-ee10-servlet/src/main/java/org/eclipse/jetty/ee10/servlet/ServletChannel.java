@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 
 import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
-import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -422,7 +422,7 @@ public class ServletChannel
                             ServletHandler servletHandler = _context.getServletContextHandler().getServletHandler();
                             ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
 
-                            mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getHttpServletRequest(), _servletContextRequest.getHttpServletResponse());
+                            mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getServletApiRequest(), _servletContextRequest.getHttpServletResponse());
                         });
 
                         break;
@@ -653,7 +653,7 @@ public class ServletChannel
         try
         {
             _servletContextRequest.getResponse().getHttpOutput().reopen();
-            _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+            _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getServletApiRequest());
             getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_servletContextRequest);
             dispatchable.dispatch();
@@ -666,7 +666,7 @@ public class ServletChannel
         finally
         {
             _combinedListener.onAfterDispatch(_servletContextRequest);
-            _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+            _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getServletApiRequest());
         }
     }
 
@@ -688,20 +688,20 @@ public class ServletChannel
         if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(_servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
+                LOG.debug(_servletContextRequest.getServletApiRequest().getRequestURI(), failure);
         }
         else if (noStack != null)
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
-                LOG.warn("handleException {}", _servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
+                LOG.warn("handleException {}", _servletContextRequest.getServletApiRequest().getRequestURI(), failure);
             else
-                LOG.warn("handleException {} {}", _servletContextRequest.getHttpServletRequest().getRequestURI(), noStack.toString());
+                LOG.warn("handleException {} {}", _servletContextRequest.getServletApiRequest().getRequestURI(), noStack.toString());
         }
         else
         {
             ServletContextRequest request = _servletContextRequest;
-            LOG.warn(request == null ? "unknown request" : request.getHttpServletRequest().getRequestURI(), failure);
+            LOG.warn(request == null ? "unknown request" : request.getServletApiRequest().getRequestURI(), failure);
         }
 
         if (isCommitted())
@@ -818,9 +818,9 @@ public class ServletChannel
 
         if (getServer().getRequestLog() != null)
         {
-            Authentication authentication = apiRequest.getAuthentication();
-            if (authentication instanceof Authentication.User userAuthentication)
-                _servletContextRequest.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
+            AuthenticationState authenticationState = apiRequest.getAuthentication();
+            if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
+                _servletContextRequest.setAttribute(CustomRequestLog.USER_NAME, succeededAuthentication.getUserIdentity().getUserPrincipal().getName());
 
             String realPath = apiRequest.getServletContext().getRealPath(Request.getPathInContext(_servletContextRequest));
             _servletContextRequest.setAttribute(CustomRequestLog.REAL_PATH, realPath);

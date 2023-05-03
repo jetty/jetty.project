@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Syntax;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -90,7 +92,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     
     /**
      * Called when a session is first accessed by request processing.
-     *
      * Updates the last access time for the session and generates a fresh cookie if necessary.
      *
      * @param session the session object
@@ -643,6 +644,94 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     @Override
+    public String encodeURI(Request request, String uri, boolean cookiesInUse)
+    {
+        HttpURI httpURI = null;
+        if (isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(uri))
+        {
+            httpURI = HttpURI.from(uri);
+            String path = httpURI.getPath();
+            path = (path == null ? "" : path);
+            int port = httpURI.getPort();
+            if (port < 0)
+                port = HttpScheme.getDefaultPort(httpURI.getScheme());
+
+            // Is it the same server?
+            if (!Request.getServerName(request).equalsIgnoreCase(httpURI.getHost()))
+                return uri;
+            if (Request.getServerPort(request) != port)
+                return uri;
+            if (request.getContext() != null && !path.startsWith(request.getContext().getContextPath()))
+                return uri;
+        }
+
+        String sessionURLPrefix = getSessionIdPathParameterNamePrefix();
+        if (sessionURLPrefix == null)
+            return uri;
+
+        if (uri == null)
+            return null;
+
+        // should not encode if cookies in evidence
+        if ((isUsingCookies() && cookiesInUse) || !isUsingURLs())
+        {
+            int prefix = uri.indexOf(sessionURLPrefix);
+            if (prefix != -1)
+            {
+                int suffix = uri.indexOf("?", prefix);
+                if (suffix < 0)
+                    suffix = uri.indexOf("#", prefix);
+
+                if (suffix <= prefix)
+                    return uri.substring(0, prefix);
+                return uri.substring(0, prefix) + uri.substring(suffix);
+            }
+            return uri;
+        }
+
+        // get session;
+        Session session = request.getSession(false);
+
+        // no session
+        if (session == null || !session.isValid())
+            return uri;
+
+        String id = session.getExtendedId();
+
+        if (httpURI == null)
+            httpURI = HttpURI.from(uri);
+
+        // Already encoded
+        int prefix = uri.indexOf(sessionURLPrefix);
+        if (prefix != -1)
+        {
+            int suffix = uri.indexOf("?", prefix);
+            if (suffix < 0)
+                suffix = uri.indexOf("#", prefix);
+
+            if (suffix <= prefix)
+                return uri.substring(0, prefix + sessionURLPrefix.length()) + id;
+            return uri.substring(0, prefix + sessionURLPrefix.length()) + id +
+                uri.substring(suffix);
+        }
+
+        // edit the session
+        int suffix = uri.indexOf('?');
+        if (suffix < 0)
+            suffix = uri.indexOf('#');
+        if (suffix < 0)
+        {
+            return uri +
+                ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path, insert the root path
+                sessionURLPrefix + id;
+        }
+
+        return uri.substring(0, suffix) +
+            ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path so insert the root path
+            sessionURLPrefix + id + uri.substring(suffix);
+    }
+
+    @Override
     public void onSessionIdChanged(Session session, String oldId)
     {
         for (Session.LifeCycleListener listener : _sessionLifeCycleListeners)
@@ -1001,12 +1090,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * when either the session has not been accessed for a
      * configurable amount of time, or the session itself
      * has passed its expiry.
-     *
+     * <p>
      * If it has passed its expiry, then we will mark it for
      * scavenging by next run of the HouseKeeper; if it has
      * been idle longer than the configured eviction period,
      * we evict from the cache.
-     *
+     * <p>
      * If none of the above are true, then the System timer
      * is inconsistent and the caller of this method will
      * need to reset the timer.
@@ -1020,7 +1109,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         if (session == null)
             return;
 
-        try (AutoLock lock = session.lock())
+        try (AutoLock ignored = session.lock())
         {
             if (session.isExpiredAt(now))
             {
@@ -1194,10 +1283,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     
     /**
      * Prepare sessions for session manager shutdown
-     *
-     * @throws Exception if unable to shutdown sesssions
      */
-    private void shutdownSessions() throws Exception
+    private void shutdownSessions()
     {
         _sessionCache.shutdown();
     }

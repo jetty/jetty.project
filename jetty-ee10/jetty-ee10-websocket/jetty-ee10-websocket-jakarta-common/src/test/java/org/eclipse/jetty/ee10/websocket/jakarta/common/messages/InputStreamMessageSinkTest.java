@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.ee10.websocket.jakarta.common.AbstractSessionTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -46,7 +46,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -64,7 +64,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback fin1Callback = new FutureCallback();
         ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -76,6 +76,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", byteStream.toString(UTF_8), is("Hello World"));
         assertThat("FinCallback.done", fin1Callback.isDone(), is(true));
+
+        await().atMost(1, TimeUnit.SECONDS).until(() -> !sink.isDispatched());
 
         FutureCallback fin2Callback = new FutureCallback();
         ByteBuffer data2 = BufferUtil.toBuffer("Greetings Earthling", UTF_8);
@@ -93,7 +95,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
@@ -118,7 +120,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

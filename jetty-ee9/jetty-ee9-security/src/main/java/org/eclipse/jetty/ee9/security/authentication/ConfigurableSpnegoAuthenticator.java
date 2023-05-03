@@ -26,17 +26,18 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.ConfigurableSpnegoLoginService;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
-import org.eclipse.jetty.ee9.security.SpnegoUserIdentity;
-import org.eclipse.jetty.ee9.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.security.RoleDelegateUserIdentity;
+import org.eclipse.jetty.security.SPNEGOLoginService;
+import org.eclipse.jetty.security.SPNEGOUserPrincipal;
+import org.eclipse.jetty.security.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.getOrCreateSession;
 
 /**
  * <p>A LoginAuthenticator that uses SPNEGO and the GSS API to authenticate requests.</p>
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * {@link #getAuthenticationDuration() duration} using the HTTP session; this avoids
  * that the client is asked to authenticate for every request.</p>
  *
- * @see ConfigurableSpnegoLoginService
+ * @see SPNEGOLoginService
  */
 public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 {
@@ -55,7 +56,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 
     public ConfigurableSpnegoAuthenticator()
     {
-        this(Constraint.__SPNEGO_AUTH);
+        this(SPNEGO_AUTH);
     }
 
     /**
@@ -102,12 +103,13 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, ServletRequest servletRequest)
     {
-        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, servletRequest);
+        Request baseRequest = Request.getBaseRequest(servletRequest);
+        if (baseRequest == null)
+            return null;
+        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService
+            .login(username, password, baseRequest.getCoreRequest(), getOrCreateSession(servletRequest));
         if (user != null && user.isEstablished())
-        {
-            Request request = Request.getBaseRequest(servletRequest);
-            renewSession(request, request == null ? null : request.getResponse());
-        }
+            renewSession(baseRequest, baseRequest.getResponse());
         return user;
     }
 
@@ -127,7 +129,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         // We have a token from the client, so run the login.
         if (header != null && spnegoToken != null)
         {
-            SpnegoUserIdentity identity = (SpnegoUserIdentity)login(null, spnegoToken, request);
+            RoleDelegateUserIdentity identity = (RoleDelegateUserIdentity)login(null, spnegoToken, request);
             if (identity.isEstablished())
             {
                 if (!DeferredAuthentication.isDeferred(response))
@@ -136,7 +138,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
                         LOG.debug("Sending final token");
                     // Send to the client the final token so that the
                     // client can establish the GSS context with the server.
-                    SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
+                    SPNEGOUserPrincipal principal = (SPNEGOUserPrincipal)identity.getUserPrincipal();
                     setSpnegoToken(response, principal.getEncodedToken());
                 }
 
@@ -155,7 +157,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
                     return Authentication.UNAUTHENTICATED;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Sending intermediate challenge");
-                SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
+                SPNEGOUserPrincipal principal = (SPNEGOUserPrincipal)identity.getUserPrincipal();
                 sendChallenge(response, principal.getEncodedToken());
                 return Authentication.SEND_CONTINUE;
             }

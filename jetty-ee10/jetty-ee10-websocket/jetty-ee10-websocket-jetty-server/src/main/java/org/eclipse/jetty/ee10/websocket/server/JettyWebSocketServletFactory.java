@@ -15,10 +15,9 @@ package org.eclipse.jetty.ee10.websocket.server;
 
 import java.util.Set;
 
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.Configurable;
 
-public interface JettyWebSocketServletFactory extends WebSocketPolicy
+public interface JettyWebSocketServletFactory extends Configurable
 {
     /**
      * Add a WebSocket mapping to a provided {@link JettyWebSocketCreator}.
@@ -69,10 +68,4 @@ public interface JettyWebSocketServletFactory extends WebSocketPolicy
      * @return a set the available extension names.
      */
     Set<String> getAvailableExtensionNames();
-
-    @Override
-    default WebSocketBehavior getBehavior()
-    {
-        return WebSocketBehavior.SERVER;
-    }
 }

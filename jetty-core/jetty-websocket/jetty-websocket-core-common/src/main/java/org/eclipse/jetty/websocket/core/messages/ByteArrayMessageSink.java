@@ -25,22 +25,31 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
+/**
+ * <p>A {@link MessageSink} implementation that accumulates BINARY frames
+ * into a message that is then delivered to the application function
+ * passed to the constructor in the form of a {@code byte[]}.</p>
+ */
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private static final byte[] EMPTY_BUFFER = new byte[0];
-    private ByteBufferCallbackAccumulator out;
+    private ByteBufferCallbackAccumulator accumulator;
 
-    public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
+    /**
+     * Creates a new {@link ByteArrayMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new message has been assembled
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
+    public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
 
         // This uses the offset length byte array signature not supported by jakarta websocket.
         // The jakarta layer instead uses decoders for whole byte array messages instead of this message sink.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
         if (methodHandle.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
-        {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override
@@ -48,62 +57,59 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         try
         {
-            long size = (out == null ? 0 : out.getLength()) + frame.getPayloadLength();
-            long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
-            if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
+            long size = (accumulator == null ? 0 : accumulator.getLength()) + frame.getPayloadLength();
+            long maxSize = getCoreSession().getMaxBinaryMessageSize();
+            if (maxSize > 0 && size > maxSize)
             {
-                throw new MessageTooLargeException(
-                    String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize));
-            }
-
-            // If we are fin and no OutputStream has been created we don't need to aggregate.
-            if (frame.isFin() && (out == null))
-            {
-                if (frame.hasPayload())
-                {
-                    byte[] buf = BufferUtil.toArray(frame.getPayload());
-                    methodHandle.invoke(buf, 0, buf.length);
-                }
-                else
-                    methodHandle.invoke(EMPTY_BUFFER, 0, 0);
-
-                callback.succeeded();
-                session.demand(1);
+                callback.failed(new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize)));
                 return;
             }
 
-            // Aggregate the frame payload.
-            if (frame.hasPayload())
+            ByteBuffer payload = frame.getPayload();
+            if (frame.isFin() && accumulator == null)
             {
-                ByteBuffer payload = frame.getPayload();
-                if (out == null)
-                    out = new ByteBufferCallbackAccumulator();
-                out.addEntry(payload, callback);
+                byte[] buf = BufferUtil.toArray(payload);
+                getMethodHandle().invoke(buf, 0, buf.length);
+                callback.succeeded();
+                autoDemand();
+                return;
             }
 
-            // If the methodHandle throws we don't want to fail callback twice.
-            callback = Callback.NOOP;
+            if (!frame.isFin() && !frame.hasPayload())
+            {
+                callback.succeeded();
+                getCoreSession().demand(1);
+                return;
+            }
+
+            if (accumulator == null)
+                accumulator = new ByteBufferCallbackAccumulator();
+            accumulator.addEntry(payload, callback);
+
             if (frame.isFin())
             {
-                byte[] buf = out.takeByteArray();
-                methodHandle.invoke(buf, 0, buf.length);
+                // Do not complete twice the callback if the invocation fails.
+                callback = Callback.NOOP;
+                byte[] buf = accumulator.takeByteArray();
+                getMethodHandle().invoke(buf, 0, buf.length);
+                autoDemand();
+            }
+            else
+            {
+                getCoreSession().demand(1);
             }
 
-            session.demand(1);
         }
         catch (Throwable t)
         {
-            if (out != null)
-                out.fail(t);
+            if (accumulator != null)
+                accumulator.fail(t);
             callback.failed(t);
         }
         finally
         {
             if (frame.isFin())
-            {
-                // reset
-                out = null;
-            }
+                accumulator = null;
         }
     }
 }

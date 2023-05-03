@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.ee10.websocket.jakarta.common.AbstractSessionTest;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -47,7 +46,7 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedBinaryMessageSink<Calendar> sink = new DecodedBinaryMessageSink<>(AbstractSessionTest.session.getCoreSession(), copyHandle, decoders);
+        DecodedBinaryMessageSink<Calendar> sink = new DecodedBinaryMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = ByteBuffer.allocate(16);
@@ -70,7 +69,7 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedBinaryMessageSink<Calendar> sink = new DecodedBinaryMessageSink<>(AbstractSessionTest.session.getCoreSession(), copyHandle, decoders);
+        DecodedBinaryMessageSink<Calendar> sink = new DecodedBinaryMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

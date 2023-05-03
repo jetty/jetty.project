@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee9.security;
 import java.util.Set;
 
 import org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 
 /**
  * A wrapper for {@link AuthConfiguration}. This allows you create a new AuthConfiguration which can

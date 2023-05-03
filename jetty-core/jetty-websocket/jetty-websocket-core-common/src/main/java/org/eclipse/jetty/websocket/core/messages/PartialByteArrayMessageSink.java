@@ -20,13 +20,23 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
+/**
+ * <p>A {@link MessageSink} implementation that delivers BINARY frames
+ * to the application function passed to the constructor in the form
+ * of a {@code byte[]}.</p>
+ */
 public class PartialByteArrayMessageSink extends AbstractMessageSink
 {
-    private static byte[] EMPTY_BUFFER = new byte[0];
-
-    public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
+    /**
+     * Creates a new {@link PartialByteArrayMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
+    public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
     }
 
     @Override
@@ -36,12 +46,16 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
         {
             if (frame.hasPayload() || frame.isFin())
             {
-                byte[] buffer = frame.hasPayload() ? BufferUtil.toArray(frame.getPayload()) : EMPTY_BUFFER;
-                methodHandle.invoke(buffer, frame.isFin());
+                byte[] buffer = BufferUtil.toArray(frame.getPayload());
+                getMethodHandle().invoke(buffer, frame.isFin());
+                callback.succeeded();
+                autoDemand();
             }
-
-            callback.succeeded();
-            session.demand(1);
+            else
+            {
+                callback.succeeded();
+                getCoreSession().demand(1);
+            }
         }
         catch (Throwable t)
         {

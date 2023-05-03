@@ -34,7 +34,6 @@
     <module>jetty-ee8-servlet</module>
     <module>jetty-ee8-servlets</module>
     <module>jetty-ee8-webapp</module>
-    <module>jetty-ee8-jaas</module>
     <module>jetty-ee8-plus</module>
     <module>jetty-ee8-jndi</module>
     <module>jetty-ee8-maven-plugin</module>
@@ -275,11 +274,6 @@
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
           <artifactId>jetty-ee8-quickstart</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-jaas</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>

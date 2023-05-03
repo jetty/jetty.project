@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,7 @@ public class WebSocketClientBadUriTest
     {
         public CountDownLatch openLatch = new CountDownLatch(1);
 
-        @OnWebSocketConnect
+        @OnWebSocketOpen
         public void onOpen(Session session)
         {
             openLatch.countDown();
