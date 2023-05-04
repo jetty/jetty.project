@@ -176,6 +176,36 @@ public class HttpTester
         return r;
     }
 
+    public static Request parseRequest(InputStream inputStream) throws IOException
+    {
+        return parseRequest(from(inputStream));
+    }
+
+    public static Request parseRequest(ReadableByteChannel channel) throws IOException
+    {
+        return parseRequest(from(channel));
+    }
+
+    public static Request parseRequest(Input input) throws IOException
+    {
+        Request request;
+        HttpParser parser = input.takeHttpParser();
+        if (parser != null)
+        {
+            request = (Request)parser.getHandler();
+        }
+        else
+        {
+            request = newRequest();
+            parser = new HttpParser(request);
+        }
+        parse(input, parser);
+        if (request.isComplete())
+            return request;
+        input.setHttpParser(parser);
+        return null;
+    }
+
     public static Response parseResponse(String response)
     {
         Response r = new Response();
@@ -230,7 +260,7 @@ public class HttpTester
         else
             r = (Response)parser.getHandler();
 
-        parseResponse(in, parser, r);
+        parse(in, parser);
 
         if (r.isComplete())
             return r;
@@ -246,13 +276,13 @@ public class HttpTester
         {
             parser = new HttpParser(response);
         }
-        parseResponse(in, parser, response);
+        parse(in, parser);
 
         if (!response.isComplete())
             in.setHttpParser(parser);
     }
 
-    private static void parseResponse(Input in, HttpParser parser, Response r) throws IOException
+    private static void parse(Input in, HttpParser parser) throws IOException
     {
         ByteBuffer buffer = in.getBuffer();
 
