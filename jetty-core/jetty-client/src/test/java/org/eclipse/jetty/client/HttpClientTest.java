@@ -48,6 +48,7 @@ import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -553,7 +554,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                 response.setStatus(HttpStatus.OK_200);
                 Content.Sink.write(response, true, null);
                 Content.Source.consumeAll(request);
@@ -1163,7 +1164,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 // Send the headers at this point, then write the content.
                 byte[] content = "TEST".getBytes(UTF_8);
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
                 Content.Sink.write(response, false, null);
                 response.write(true, ByteBuffer.wrap(content), callback);
                 return true;

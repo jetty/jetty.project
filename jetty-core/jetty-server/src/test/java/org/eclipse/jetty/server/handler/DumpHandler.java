@@ -189,7 +189,7 @@ public class DumpHandler extends Handler.Abstract
 
         // commit now
         if (!Boolean.parseBoolean(params.getValue("no-content-length")))
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, buf.size() + 1000);
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, buf.size() + 1000);
 
         response.getHeaders().add("Before-Flush", response.isCommitted() ? "Committed???" : "Not Committed");
 

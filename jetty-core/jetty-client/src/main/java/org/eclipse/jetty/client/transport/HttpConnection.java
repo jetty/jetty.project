@@ -96,7 +96,7 @@ public abstract class HttpConnection implements IConnection, Attachable
         // the request is associated to the channel and sent.
         // Use a counter to support multiplexed requests.
         boolean send;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             send = idleTimeoutGuard >= 0;
             if (send)
@@ -122,7 +122,7 @@ public abstract class HttpConnection implements IConnection, Attachable
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
 
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 --idleTimeoutGuard;
                 idleTimeoutNanoTime = NanoTime.now();
@@ -271,7 +271,7 @@ public abstract class HttpConnection implements IConnection, Attachable
 
     public boolean onIdleTimeout(long idleTimeout, Throwable failure)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (idleTimeoutGuard == 0)
             {

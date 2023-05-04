@@ -1222,7 +1222,7 @@ public class GoAwayTest extends AbstractTest
             private void respond(Stream stream)
             {
                 long remotePort = ((InetSocketAddress)stream.getSession().getRemoteSocketAddress()).getPort();
-                HttpFields responseHeaders = HttpFields.build().putLongField("X-Remote-Port", remotePort);
+                HttpFields responseHeaders = HttpFields.build().put("X-Remote-Port", remotePort);
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, responseHeaders);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true));
             }

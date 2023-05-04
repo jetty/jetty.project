@@ -254,7 +254,9 @@ public class HpackEncoder
                 if (!contentLengthEncoded)
                 {
                     long contentLength = metadata.getContentLength();
-                    if (contentLength >= 0)
+                    if (contentLength == 0)
+                        encode(buffer, HttpFields.CONTENT_LENGTH_0);
+                    else if (contentLength > 0)
                         encode(buffer, new HttpField(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength)));
                 }
             }

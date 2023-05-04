@@ -47,6 +47,7 @@ import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -102,7 +103,7 @@ public class HttpClientStreamTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                 Content.Sink.write(response, false, null);
 
                 Content.Source.consumeAll(request);
@@ -224,7 +225,7 @@ public class HttpClientStreamTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Say we want to send this much...
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2 * data.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2 * data.length);
                 // ...but write only half...
                 Content.Sink.write(response, false, ByteBuffer.wrap(data));
                 // ...then shutdown output
@@ -344,7 +345,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, chunk1.length + chunk2.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, chunk1.length + chunk2.length);
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
                 response.write(true, ByteBuffer.wrap(chunk2), callback);
                 return true;
@@ -395,7 +396,7 @@ public class HttpClientStreamTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 byte[] data = new byte[1024];
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
                 return true;
             }

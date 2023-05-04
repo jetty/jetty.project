@@ -116,7 +116,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // Setting the Content-Length triggers the HTTP
                 // content mode for response content parsing,
                 // otherwise the RAW content mode is used.
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
                 return true;
             }
@@ -564,7 +564,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Promise some content, then flush the headers, then fail to send the content.
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 16);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 16);
                 Content.Sink.write(response, false, null);
                 throw new NullPointerException("Explicitly thrown by test");
             }

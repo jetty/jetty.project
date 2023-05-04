@@ -16,6 +16,7 @@ package org.eclipse.jetty.http2.hpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
@@ -36,8 +37,6 @@ import org.slf4j.LoggerFactory;
 public class HpackDecoder
 {
     private static final Logger LOG = LoggerFactory.getLogger(HpackDecoder.class);
-    private static final HttpField.LongValueHttpField CONTENT_LENGTH_0 =
-        new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
@@ -239,7 +238,7 @@ public class HpackDecoder
 
                         case CONTENT_LENGTH:
                             if ("0".equals(value))
-                                field = CONTENT_LENGTH_0;
+                                field = HttpFields.CONTENT_LENGTH_0;
                             else
                                 field = new HttpField.LongValueHttpField(header, name, value);
                             break;

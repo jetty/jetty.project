@@ -1834,7 +1834,7 @@ public class GzipHandlerTest
             boolean knownLast = Boolean.parseBoolean(parameters.getValue("knownLast"));
 
             if (cl)
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, (long)count.get() * bytes.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, (long)count.get() * bytes.length);
 
             Runnable writer = new Runnable()
             {
@@ -1955,7 +1955,7 @@ public class GzipHandlerTest
             }
 
             ByteBuffer slice = byteBuffer.slice();
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, slice.remaining());
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, slice.remaining());
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
             response.write(true, slice, callback);
             return true;

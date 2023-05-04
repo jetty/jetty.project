@@ -270,7 +270,7 @@ public class StreamResetTest extends AbstractTest
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length * 10L);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length * 10L);
                 Content.Sink.write(response, false, null);
                 // Wait for the commit callback to complete.
                 commitLatch.countDown();
@@ -349,7 +349,7 @@ public class StreamResetTest extends AbstractTest
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.remaining());
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.remaining());
                 Content.Sink.write(response, false, null);
 
                 commitLatch.countDown();
