@@ -13,8 +13,15 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,68 +29,47 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class QuotedStringTokenizerTest
 {
-    /*
-     * Test for String nextToken()
-     */
-    @Test
-    public void testTokenizer0()
+    public static Stream<Arguments> tokenizerTests()
     {
-        QuotedStringTokenizer tok =
-            new QuotedStringTokenizer("abc\n\"d\\\"'\"\n'p\\',y'\nz");
-        checkTok(tok, false, false);
+        return Stream.of(
+            Arguments.of("", ", ", false, false, new String[] {}),
+            Arguments.of("a,b,c", ",", false, false, new String[] {"a", "b", "c"}),
+            Arguments.of("a,b, c", ",", false, false, new String[] {"a", "b", " c"}),
+            Arguments.of("a,b, c", " ,", false, false, new String[] {"a", "b", "c"}),
+            Arguments.of("a,b, c", " ,", false, false, new String[] {"a", "b", "c"}),
+            Arguments.of("a,b,c", ",", true, false, new String[] {"a", ",", "b", ",", "c"}),
+            Arguments.of("a, b, c", ", ", true, false, new String[] {"a", ",", " ", "b", ",", " ", "c"}),
+
+            Arguments.of("a,\"b\",c", ",", false, false, new String[] {"a", "b", "c"}),
+            Arguments.of("a,\"b,c\"", ",", false, false, new String[] {"a", "b,c"}),
+            Arguments.of("a,\"b\",c", ",", false, true, new String[] {"a", "\"b\"", "c"}),
+            Arguments.of("a,\"b,c\"", ",", false, true, new String[] {"a", "\"b,c\""}),
+
+            Arguments.of("a,\"\\\"b\\\"\",c", ",", false, false, new String[] {"a", "\"b\"", "c"}),
+
+            Arguments.of("a,\"b,c", ",", false, true, new String[] {"a", "\"b,c"}),
+
+            Arguments.of("", ", ", false, false, new String[] {})
+        );
     }
 
-    /*
-     * Test for String nextToken()
-     */
-    @Test
-    public void testTokenizer1()
+    @ParameterizedTest
+    @MethodSource("tokenizerTests")
+    public void testTokenizer(String string, String delims, boolean delim, boolean quotes, String[] expected)
     {
-        QuotedStringTokenizer tok =
-            new QuotedStringTokenizer("abc, \"d\\\"'\",'p\\',y' z",
-                " ,");
-        checkTok(tok, false, false);
-    }
+        QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(string, delims, delim, quotes);
 
-    /*
-     * Test for String nextToken()
-     */
-    @Test
-    public void testTokenizer2()
-    {
-        QuotedStringTokenizer tok =
-            new QuotedStringTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-                false);
-        checkTok(tok, false, false);
-
-        tok = new QuotedStringTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            true);
-        checkTok(tok, true, false);
-    }
-
-    /*
-     * Test for String nextToken()
-     */
-    @Test
-    public void testTokenizer3()
-    {
-        QuotedStringTokenizer tok;
-
-        tok = new QuotedStringTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            false, false);
-        checkTok(tok, false, false);
-
-        tok = new QuotedStringTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            false, true);
-        checkTok(tok, false, true);
-
-        tok = new QuotedStringTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            true, false);
-        checkTok(tok, true, false);
-
-        tok = new QuotedStringTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            true, true);
-        checkTok(tok, true, true);
+        if (expected == null)
+            assertFalse(tokenizer.hasMoreTokens());
+        else
+        {
+            int i = 0;
+            while (i < expected.length)
+            {
+                assertTrue(tokenizer.hasMoreTokens());
+                assertThat(tokenizer.nextToken(), Matchers.equalTo(expected[i++]));
+            }
+        }
     }
 
     @Test
@@ -93,7 +79,7 @@ public class QuotedStringTokenizerTest
 
         buf.setLength(0);
         QuotedStringTokenizer.quote(buf, "abc \n efg");
-        assertEquals("\"abc \\n efg\"", buf.toString());
+        assertEquals("\"abc \n efg\"", buf.toString());
 
         buf.setLength(0);
         QuotedStringTokenizer.quote(buf, "abcefg");
@@ -111,32 +97,8 @@ public class QuotedStringTokenizerTest
     public void testTokenizer4()
     {
         QuotedStringTokenizer tok = new QuotedStringTokenizer("abc'def,ghi'jkl", ",");
-        tok.setSingle(false);
         assertEquals("abc'def", tok.nextToken());
         assertEquals("ghi'jkl", tok.nextToken());
-        tok = new QuotedStringTokenizer("abc'def,ghi'jkl", ",");
-        tok.setSingle(true);
-        assertEquals("abcdef,ghijkl", tok.nextToken());
-    }
-
-    private void checkTok(QuotedStringTokenizer tok, boolean delim, boolean quotes)
-    {
-        assertTrue(tok.hasMoreElements());
-        assertTrue(tok.hasMoreTokens());
-        assertEquals("abc", tok.nextToken());
-        if (delim)
-            assertEquals(",", tok.nextToken());
-        if (delim)
-            assertEquals(" ", tok.nextToken());
-
-        assertEquals(quotes ? "\"d\\\"'\"" : "d\"'", tok.nextElement());
-        if (delim)
-            assertEquals(",", tok.nextToken());
-        assertEquals(quotes ? "'p\\',y'" : "p',y", tok.nextToken());
-        if (delim)
-            assertEquals(" ", tok.nextToken());
-        assertEquals("z", tok.nextToken());
-        assertFalse(tok.hasMoreTokens());
     }
 
     /*
@@ -147,9 +109,10 @@ public class QuotedStringTokenizerTest
     {
         assertEquals("abc", QuotedStringTokenizer.quoteIfNeeded("abc", " ,"));
         assertEquals("\"a c\"", QuotedStringTokenizer.quoteIfNeeded("a c", " ,"));
-        assertEquals("\"a'c\"", QuotedStringTokenizer.quoteIfNeeded("a'c", " ,"));
-        assertEquals("\"a\\n\\r\\t\"", QuotedStringTokenizer.quote("a\n\r\t"));
-        assertEquals("\"\\u0000\\u001f\"", QuotedStringTokenizer.quote("\u0000\u001f"));
+        assertEquals("a'c", QuotedStringTokenizer.quoteIfNeeded("a'c", " ,"));
+        assertEquals("\"a\\\"c\"", QuotedStringTokenizer.quoteIfNeeded("a\"c", " ,"));
+        assertEquals("a\n\r\t", QuotedStringTokenizer.quoteIfNeeded("a\n\r\t", " ,"));
+        assertEquals("\u0000\u001f", QuotedStringTokenizer.quoteIfNeeded("\u0000\u001f", ", "));
     }
 
     @Test
@@ -158,9 +121,9 @@ public class QuotedStringTokenizerTest
         assertEquals("abc", QuotedStringTokenizer.unquote("abc"));
         assertEquals("a\"c", QuotedStringTokenizer.unquote("\"a\\\"c\""));
         assertEquals("a'c", QuotedStringTokenizer.unquote("\"a'c\""));
-        assertEquals("a\n\r\t", QuotedStringTokenizer.unquote("\"a\\n\\r\\t\""));
-        assertEquals("\u0000\u001f ", QuotedStringTokenizer.unquote("\"\u0000\u001f\u0020\""));
-        assertEquals("\u0000\u001f ", QuotedStringTokenizer.unquote("\"\u0000\u001f\u0020\""));
+        assertEquals("anrt", QuotedStringTokenizer.unquote("\"a\\n\\r\\t\""));
+        assertEquals("\u0000\u001f ", QuotedStringTokenizer.unquote("\"\u0000\u001f \""));
+        assertEquals("\u0000\u001f ", QuotedStringTokenizer.unquote("\"\u0000\u001f \""));
         assertEquals("ab\u001ec", QuotedStringTokenizer.unquote("ab\u001ec"));
         assertEquals("ab\u001ec", QuotedStringTokenizer.unquote("\"ab\u001ec\""));
     }
