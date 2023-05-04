@@ -182,7 +182,7 @@ public class HandlerDocs
 
             long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
             if (contentLength >= 0)
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
 
             Content.copy(request, response, callback);
             return true;

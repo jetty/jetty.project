@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -505,7 +506,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 }
 
                 // Redirect to the original URI.
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                 int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                     ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
                 Response.sendRedirect(request, response, cb, redirectCode, uriRedirectInfo.getUri().toString(), true);

@@ -46,6 +46,7 @@ public interface HttpFields extends Iterable<HttpField>
     HttpField EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
     HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
     HttpField CONNECTION_KEEPALIVE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+    HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
     HttpFields EMPTY = build().asImmutable();
 
@@ -551,7 +552,7 @@ public interface HttpFields extends Iterable<HttpField>
     default int size()
     {
         int s = 0;
-        for (HttpField f : this)
+        for (HttpField ignored : this)
             s++;
         return s;
     }
@@ -584,6 +585,19 @@ public interface HttpFields extends Iterable<HttpField>
             return this;
         }
 
+        /**
+         * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
+         * headers of the same name.
+         *
+         * @param name the name of the field
+         * @param value the value of the field.
+         * @return this builder
+         */
+        default Mutable add(String name, long value)
+        {
+            return add(new HttpField.LongValueHttpField(name, value));
+        }
+
         default Mutable add(HttpHeader header, HttpHeaderValue value)
         {
             return add(header, value.toString());
@@ -604,6 +618,19 @@ public interface HttpFields extends Iterable<HttpField>
 
             HttpField field = new HttpField(header, value);
             return add(field);
+        }
+
+        /**
+         * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
+         * headers of the same name.
+         *
+         * @param header the header
+         * @param value the value of the field.
+         * @return this builder
+         */
+        default Mutable add(HttpHeader header, long value)
+        {
+            return add(new HttpField.LongValueHttpField(header, value));
         }
 
         default Mutable add(HttpField field)
@@ -824,7 +851,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param date the field date value
          * @return this builder
          */
-        default Mutable putDateField(HttpHeader name, long date)
+        default Mutable putDate(HttpHeader name, long date)
         {
             return put(name, DateGenerator.formatDate(date));
         }
@@ -836,33 +863,37 @@ public interface HttpFields extends Iterable<HttpField>
          * @param date the field date value
          * @return this builder
          */
-        default Mutable putDateField(String name, long date)
+        default Mutable putDate(String name, long date)
         {
             return put(name, DateGenerator.formatDate(date));
         }
 
         /**
-         * Sets the value of an long field.
+         * Sets the value of a long field.
          *
-         * @param name the field name
+         * @param header the field name
          * @param value the field long value
          * @return this builder
          */
-        default Mutable putLongField(HttpHeader name, long value)
+        default Mutable put(HttpHeader header, long value)
         {
-            return put(new HttpField.LongValueHttpField(name, value));
+            if (value == 0 && header == HttpHeader.CONTENT_LENGTH)
+                return put(HttpFields.CONTENT_LENGTH_0);
+            return put(new HttpField.LongValueHttpField(header, value));
         }
 
         /**
-         * Sets the value of an long field.
+         * Sets the value of a long field.
          *
          * @param name the field name
          * @param value the field long value
          * @return this builder
          */
-        default Mutable putLongField(String name, long value)
+        default Mutable put(String name, long value)
         {
-            return put(name, Long.toString(value));
+            if (value == 0 && HttpHeader.CONTENT_LENGTH.is(name))
+                return put(HttpFields.CONTENT_LENGTH_0);
+            return put(new HttpField.LongValueHttpField(name, value));
         }
 
         /**

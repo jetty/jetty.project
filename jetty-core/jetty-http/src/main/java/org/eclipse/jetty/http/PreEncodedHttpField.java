@@ -64,10 +64,12 @@ public class PreEncodedHttpField extends HttpField
     }
 
     private final EnumMap<HttpVersion, byte[]> _encodedFields = new EnumMap<>(HttpVersion.class);
+    private final long _longValue;
 
-    public PreEncodedHttpField(HttpHeader header, String name, String value)
+    private PreEncodedHttpField(HttpHeader header, String name, String value, long longValue)
     {
         super(header, name, value);
+        _longValue = longValue;
         for (HttpFieldPreEncoder encoder : __encoders.values())
         {
             HttpVersion version = encoder.getHttpVersion();
@@ -78,14 +80,29 @@ public class PreEncodedHttpField extends HttpField
         }
     }
 
+    public PreEncodedHttpField(HttpHeader header, String name, String value)
+    {
+        this(header, name, value, Long.MIN_VALUE);
+    }
+
     public PreEncodedHttpField(HttpHeader header, String value)
     {
         this(header, header.asString(), value);
     }
 
+    public PreEncodedHttpField(HttpHeader header, long value)
+    {
+        this(header, header.asString(), Long.toString(value), value);
+    }
+
     public PreEncodedHttpField(String name, String value)
     {
         this(null, name, value);
+    }
+
+    public PreEncodedHttpField(String name, long value)
+    {
+        this(null, name, Long.toString(value), value);
     }
 
     public void putTo(ByteBuffer bufferInFillMode, HttpVersion version)
@@ -96,5 +113,27 @@ public class PreEncodedHttpField extends HttpField
     public int getEncodedLength(HttpVersion version)
     {
         return _encodedFields.get(version).length;
+    }
+
+    @Override
+    public boolean contains(String search)
+    {
+        return super.contains(search);
+    }
+
+    @Override
+    public int getIntValue()
+    {
+        if (_longValue == Long.MIN_VALUE)
+            return super.getIntValue();
+        return (int)_longValue;
+    }
+
+    @Override
+    public long getLongValue()
+    {
+        if (_longValue == Long.MIN_VALUE)
+            return super.getIntValue();
+        return _longValue;
     }
 }

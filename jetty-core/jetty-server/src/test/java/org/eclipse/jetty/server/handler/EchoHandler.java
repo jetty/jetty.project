@@ -49,7 +49,7 @@ public class EchoHandler extends Handler.Abstract.NonBlocking
 
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
 
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
             Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);

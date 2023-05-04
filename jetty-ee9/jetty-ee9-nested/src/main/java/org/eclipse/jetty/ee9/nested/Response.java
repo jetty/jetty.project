@@ -587,9 +587,9 @@ public class Response implements HttpServletResponse
         {
             HttpHeader header = HttpHeader.CACHE.get(name);
             if (header == null)
-                _fields.putDateField(name, date);
+                _fields.putDate(name, date);
             else
-                _fields.putDateField(header, date);
+                _fields.putDate(header, date);
         }
     }
 
@@ -705,7 +705,7 @@ public class Response implements HttpServletResponse
     {
         if (isMutable())
         {
-            _fields.putLongField(name, value);
+            _fields.put(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
                 _contentLength = value;
         }
@@ -892,7 +892,7 @@ public class Response implements HttpServletResponse
                 throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
             _contentLength = len;
-            _fields.putLongField(HttpHeader.CONTENT_LENGTH, len);
+            _fields.put(HttpHeader.CONTENT_LENGTH, len);
             if (isAllContentWritten(written))
             {
                 try
@@ -911,7 +911,7 @@ public class Response implements HttpServletResponse
             if (written > 0)
                 throw new IllegalArgumentException("setContentLength(0) when already written " + written);
             _contentLength = len;
-            _fields.put(HttpHeader.CONTENT_LENGTH, "0");
+            _fields.put(HttpFields.CONTENT_LENGTH_0);
         }
         else
         {
@@ -975,7 +975,7 @@ public class Response implements HttpServletResponse
         if (isCommitted() || !isMutable())
             return;
         _contentLength = len;
-        _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
+        _fields.put(HttpHeader.CONTENT_LENGTH, len);
     }
 
     @Override
@@ -1378,7 +1378,7 @@ public class Response implements HttpServletResponse
         }
         else if (contentLength > NO_CONTENT_LENGTH)
         {
-            _fields.putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+            _fields.put(HttpHeader.CONTENT_LENGTH, contentLength);
             _contentLength = contentLength;
         }
 
