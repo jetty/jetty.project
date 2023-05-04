@@ -97,13 +97,20 @@ public class QpackEncoder implements Dumpable
     private final InstructionHandler _instructionHandler = new InstructionHandler();
     private int _knownInsertCount = 0;
     private int _blockedStreams = 0;
+    private int _maxTableCapacity;
 
-    public QpackEncoder(Instruction.Handler handler, int maxBlockedStreams)
+    public QpackEncoder(Instruction.Handler handler)
     {
         _handler = handler;
         _context = new QpackContext();
-        _maxBlockedStreams = maxBlockedStreams;
         _parser = new EncoderInstructionParser(_instructionHandler);
+    }
+
+    @Deprecated
+    public QpackEncoder(Instruction.Handler handler, int maxBlockedStreams)
+    {
+        this(handler);
+        setMaxBlockedStreams(maxBlockedStreams);
     }
 
     Map<Long, StreamInfo> getStreamInfoMap()
@@ -121,6 +128,16 @@ public class QpackEncoder implements Dumpable
         _maxBlockedStreams = maxBlockedStreams;
     }
 
+    public int getMaxTableCapacity()
+    {
+        return _maxTableCapacity;
+    }
+
+    public void setMaxTableCapacity(int maxTableCapacity)
+    {
+        _maxTableCapacity = maxTableCapacity;
+    }
+
     public int getCapacity()
     {
         return _context.getDynamicTable().getCapacity();
@@ -133,6 +150,8 @@ public class QpackEncoder implements Dumpable
      */
     public void setCapacity(int capacity)
     {
+        if (capacity > _maxTableCapacity)
+            throw new IllegalArgumentException("DynamicTable capacity exceeds SETTINGS_QPACK_MAX_TABLE_CAPACITY");
         _context.getDynamicTable().setCapacity(capacity);
         _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
         notifyInstructionHandler();

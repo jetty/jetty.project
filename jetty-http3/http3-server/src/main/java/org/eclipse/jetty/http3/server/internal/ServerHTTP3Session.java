@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -43,6 +44,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerHTTP3Session.class);
 
+    private final HTTP3Configuration configuration;
     private final HTTP3SessionServer session;
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
@@ -52,6 +54,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     public ServerHTTP3Session(HTTP3Configuration configuration, ServerQuicSession quicSession, Session.Server.Listener listener)
     {
         super(quicSession);
+        this.configuration = configuration;
         this.session = new HTTP3SessionServer(this, listener);
         addBean(session);
         session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
@@ -62,7 +65,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         long encoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
-        this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
+        this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher));
         addBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
@@ -70,7 +73,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         long decoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
         InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
-        this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), configuration.getMaxRequestHeadersSize());
+        this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher));
         addBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
@@ -107,8 +110,21 @@ public class ServerHTTP3Session extends ServerProtocolSession
         // Queue the mandatory SETTINGS frame.
         Map<Long, Long> settings = session.onPreface();
         if (settings == null)
-            settings = Map.of();
+            settings = new HashMap<>();
+
         // TODO: add default settings.
+        if (!settings.containsKey(SettingsFrame.MAX_TABLE_CAPACITY))
+            settings.put(SettingsFrame.MAX_TABLE_CAPACITY, (long)configuration.getMaxTableCapacity());
+        if (!settings.containsKey(SettingsFrame.MAX_BLOCKED_STREAMS))
+            settings.put(SettingsFrame.MAX_BLOCKED_STREAMS, (long)configuration.getMaxBlockedStreams());
+        if (!settings.containsKey(SettingsFrame.MAX_FIELD_SECTION_SIZE))
+            settings.put(SettingsFrame.MAX_FIELD_SECTION_SIZE, (long)configuration.getMaxRequestHeadersSize());
+
+        QpackDecoder qpackDecoder = getQpackDecoder();
+        qpackDecoder.setMaxTableCapacity(Math.toIntExact(settings.get(SettingsFrame.MAX_TABLE_CAPACITY)));
+        qpackDecoder.setMaxBlockedStreams(Math.toIntExact(settings.get(SettingsFrame.MAX_BLOCKED_STREAMS)));
+        qpackDecoder.setMaxHeaderSize(Math.toIntExact(settings.get(SettingsFrame.MAX_FIELD_SECTION_SIZE)));
+
         SettingsFrame frame = new SettingsFrame(settings);
         if (controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::failControlStream)))
             controlFlusher.iterate();

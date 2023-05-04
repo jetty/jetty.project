@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
 
@@ -57,6 +58,7 @@ public class QpackDecoder implements Dumpable
     private final Map<Long, AtomicInteger> _blockedStreams = new HashMap<>();
     private int _maxHeaderSize;
     private int _maxBlockedStreams;
+    private int _maxTableCapacity;
 
     private static class MetaDataNotification
     {
@@ -77,15 +79,18 @@ public class QpackDecoder implements Dumpable
         }
     }
 
-    /**
-     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
-     */
-    public QpackDecoder(Instruction.Handler handler, int maxHeaderSize)
+    public QpackDecoder(Instruction.Handler handler)
     {
         _context = new QpackContext();
         _handler = handler;
         _parser = new DecoderInstructionParser(_instructionHandler);
-        _maxHeaderSize = maxHeaderSize;
+    }
+
+    @Deprecated
+    public QpackDecoder(Instruction.Handler handler, int maxHeaderSize)
+    {
+        this(handler);
+        setMaxHeaderSize(maxHeaderSize);
     }
 
     QpackContext getQpackContext()
@@ -98,6 +103,9 @@ public class QpackDecoder implements Dumpable
         return _maxHeaderSize;
     }
 
+    /**
+     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
+     */
     public void setMaxHeaderSize(int maxHeaderSize)
     {
         _maxHeaderSize = maxHeaderSize;
@@ -111,6 +119,16 @@ public class QpackDecoder implements Dumpable
     public void setMaxBlockedStreams(int maxBlockedStreams)
     {
         _maxBlockedStreams = maxBlockedStreams;
+    }
+
+    public int getMaxTableCapacity()
+    {
+        return _maxTableCapacity;
+    }
+
+    public void setMaxTableCapacity(int maxTableCapacity)
+    {
+        _maxTableCapacity = maxTableCapacity;
     }
 
     public interface Handler
@@ -154,7 +172,7 @@ public class QpackDecoder implements Dumpable
         // Decode the Required Insert Count using the DynamicTable state.
         DynamicTable dynamicTable = _context.getDynamicTable();
         int insertCount = dynamicTable.getInsertCount();
-        int maxDynamicTableSize = dynamicTable.getCapacity();
+        int maxDynamicTableSize = getMaxTableCapacity();
         int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
 
         try
@@ -204,10 +222,13 @@ public class QpackDecoder implements Dumpable
      * the Encoder to the Decoder. This method will fully consume the supplied {@link ByteBuffer} and produce instructions
      * to update the state of the Decoder and its Dynamic Table.
      * @param buffer a buffer containing bytes from the Encoder stream.
-     * @throws QpackException if there was an error parsing or handling the instructions.
+     * @throws QpackException.SessionException if there was an error parsing or handling the instructions.
      */
-    public void parseInstructions(ByteBuffer buffer) throws QpackException
+    public void parseInstructions(ByteBuffer buffer) throws QpackException.SessionException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parsing Instructions {}", BufferUtil.toDetailString(buffer));
+
         try
         {
             while (BufferUtil.hasContent(buffer))
@@ -335,8 +356,10 @@ public class QpackDecoder implements Dumpable
     class InstructionHandler implements DecoderInstructionParser.Handler
     {
         @Override
-        public void onSetDynamicTableCapacity(int capacity)
+        public void onSetDynamicTableCapacity(int capacity) throws QpackException
         {
+            if (capacity > _maxTableCapacity)
+                throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "DynamicTable capacity exceeds SETTINGS_QPACK_MAX_TABLE_CAPACITY");
             _context.getDynamicTable().setCapacity(capacity);
         }
 

@@ -66,12 +66,30 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private GoAwayFrame goAwayRecv;
     private Runnable zeroStreamsAction;
     private CompletableFuture<Void> shutdown;
+    private int maxTableSize = 1024 * 1024;
 
     public HTTP3Session(ProtocolSession session, Session.Listener listener)
     {
         this.session = session;
         this.listener = listener;
         this.streamTimeouts = new StreamTimeouts(session.getQuicSession().getScheduler());
+    }
+
+    /**
+     * @param maxTableSize the maximum dynamic table size allowed to be set by the remote decoder from a SETTINGS frame.
+     */
+    public void setMaxTableSize(int maxTableSize)
+    {
+        this.maxTableSize = maxTableSize;
+    }
+
+    /**
+     *
+     * @return the maximum dynamic table size allowed to be set by the remote decoder from a SETTINGS frame.
+     */
+    public int getMaxTableSize()
+    {
+        return maxTableSize;
     }
 
     public ProtocolSession getProtocolSession()

@@ -27,7 +27,8 @@ public class HTTP3Configuration
     private int outputBufferSize = 2048;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private int maxBlockedStreams = 0;
+    private int maxBlockedStreams = 8;
+    private int maxTableCapacity = 1024 * 1024;
     private int maxRequestHeadersSize = 8192;
     private int maxResponseHeadersSize = 8192;
 
@@ -85,6 +86,18 @@ public class HTTP3Configuration
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
+
+    @ManagedAttribute("The defautl max size of QPACK dynamic table for the remote encoder to be sent in SETTINGS frame")
+    public int getMaxTableCapacity()
+    {
+        return maxTableCapacity;
+    }
+
+    public void setMaxTableCapacity(int maxTableCapacity)
+    {
+        this.maxTableCapacity = maxTableCapacity;
+    }
+
 
     @ManagedAttribute("The max number of QPACK blocked streams")
     public int getMaxBlockedStreams()

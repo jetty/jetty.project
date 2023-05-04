@@ -150,20 +150,19 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     @Override
     protected void onSettingMaxTableCapacity(long value)
     {
-        getProtocolSession().getQpackEncoder().setCapacity((int)value);
+        getProtocolSession().getQpackEncoder().setMaxTableCapacity((int)value);
+        getProtocolSession().getQpackEncoder().setCapacity((int)Math.min(value, getMaxTableSize()));
     }
 
     @Override
     protected void onSettingMaxFieldSectionSize(long value)
     {
-        getProtocolSession().getQpackDecoder().setMaxHeaderSize((int)value);
+        // TODO: this is the header size limit that the local encoder should respect.
     }
 
     @Override
     protected void onSettingMaxBlockedStreams(long value)
     {
-        ClientHTTP3Session session = getProtocolSession();
-        session.getQpackDecoder().setMaxBlockedStreams((int)value);
-        session.getQpackEncoder().setMaxBlockedStreams((int)value);
+        getProtocolSession().getQpackEncoder().setMaxBlockedStreams((int)value);
     }
 }

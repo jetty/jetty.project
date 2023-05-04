@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -112,5 +111,5 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
         }
     }
 
-    protected abstract void parseInstruction(ByteBuffer buffer) throws QpackException;
+    protected abstract void parseInstruction(ByteBuffer buffer);
 }
