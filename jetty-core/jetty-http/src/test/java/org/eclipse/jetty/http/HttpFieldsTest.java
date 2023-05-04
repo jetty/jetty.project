@@ -749,7 +749,7 @@ public class HttpFieldsTest
         assertEquals(d3 + 2000, d4);
         assertEquals(951825600000L, d5);
 
-        fields.putDateField("D2", d1);
+        fields.putDate("D2", d1);
         assertEquals("Fri, 31 Dec 1999 23:59:59 GMT", fields.get("D2"));
     }
 
@@ -758,16 +758,16 @@ public class HttpFieldsTest
     {
         HttpFields.Mutable fields = HttpFields.build();
 
-        fields.putDateField("Dzero", 0);
+        fields.putDate("Dzero", 0);
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT", fields.get("Dzero"));
 
-        fields.putDateField("Dminus", -1);
+        fields.putDate("Dminus", -1);
         assertEquals("Wed, 31 Dec 1969 23:59:59 GMT", fields.get("Dminus"));
 
-        fields.putDateField("Dminus", -1000);
+        fields.putDate("Dminus", -1000);
         assertEquals("Wed, 31 Dec 1969 23:59:59 GMT", fields.get("Dminus"));
 
-        fields.putDateField("Dancient", Long.MIN_VALUE);
+        fields.putDate("Dancient", Long.MIN_VALUE);
         assertEquals("Sun, 02 Dec 55 16:47:04 GMT", fields.get("Dancient"));
     }
 
@@ -793,8 +793,8 @@ public class HttpFieldsTest
         assertEquals(42, i1);
         assertEquals(-44, i3);
 
-        header.putLongField("I5", 46);
-        header.putLongField("I6", -47);
+        header.put("I5", 46);
+        header.put("I6", -47);
         assertEquals("46", header.get("I5"));
         assertEquals("-47", header.get("I6"));
     }

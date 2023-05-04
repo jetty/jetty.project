@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -345,7 +346,7 @@ public class ConnectHandler extends Handler.Wrapper
     {
         try
         {
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+            response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
             if (statusCode != HttpStatus.OK_200)
             {
                 response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);

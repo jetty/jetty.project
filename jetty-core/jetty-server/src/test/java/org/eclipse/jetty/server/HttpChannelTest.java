@@ -263,7 +263,7 @@ public class HttpChannelTest
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+            .put(HttpHeader.CONTENT_LENGTH, body.remaining())
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         stream.addContent(body, true);
@@ -307,7 +307,7 @@ public class HttpChannelTest
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+            .put(HttpHeader.CONTENT_LENGTH, body.remaining())
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
@@ -348,7 +348,7 @@ public class HttpChannelTest
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+            .put(HttpHeader.CONTENT_LENGTH, body.remaining())
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
@@ -505,7 +505,7 @@ public class HttpChannelTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false, null, Callback.from(() ->
                 {
                     throw new Error("testing");
@@ -574,7 +574,7 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(true, BufferUtil.toBuffer("12345"), callback);
                 return true;
             }
@@ -610,7 +610,7 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
                     BufferUtil.toBuffer("12345"), Callback.from(() ->
                         response.write(true, null, callback)));
@@ -644,7 +644,7 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(true, BufferUtil.toBuffer("1234567890"), callback);
                 return true;
             }
@@ -680,7 +680,7 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, BufferUtil.toBuffer("1234"), Callback.from(() -> response.write(true, BufferUtil.toBuffer("567890"), callback)));
                 return true;
             }
@@ -718,7 +718,7 @@ public class HttpChannelTest
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+            .put(HttpHeader.CONTENT_LENGTH, body.remaining())
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
@@ -748,7 +748,7 @@ public class HttpChannelTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
                 return true;
             }
@@ -762,7 +762,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, 10)
+            .put(HttpHeader.CONTENT_LENGTH, 10)
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
@@ -792,7 +792,7 @@ public class HttpChannelTest
                 response.setStatus(200);
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
                 return true;
             }
@@ -806,7 +806,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, 10)
+            .put(HttpHeader.CONTENT_LENGTH, 10)
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
@@ -839,7 +839,7 @@ public class HttpChannelTest
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+            .put(HttpHeader.CONTENT_LENGTH, body.remaining())
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
@@ -902,7 +902,7 @@ public class HttpChannelTest
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+            .put(HttpHeader.CONTENT_LENGTH, body.remaining())
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
@@ -1043,7 +1043,7 @@ public class HttpChannelTest
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+            .put(HttpHeader.CONTENT_LENGTH, body.remaining())
             .put(HttpHeader.TRAILER, "Some")
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();

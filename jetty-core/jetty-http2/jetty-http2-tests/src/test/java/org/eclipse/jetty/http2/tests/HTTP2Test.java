@@ -27,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -270,7 +269,7 @@ public class HTTP2Test extends AbstractTest
 
         Random random = new Random();
         HttpFields fields = HttpFields.build()
-            .putLongField(downloadBytes, random.nextInt(128 * 1024))
+            .put(downloadBytes, random.nextInt(128 * 1024))
             .put("User-Agent", "HTTP2Client/" + Jetty.VERSION);
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);

@@ -534,7 +534,7 @@ public class StopTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
             response.write(true, ByteBuffer.wrap("a".getBytes()), new Callback()
             {
                 @Override

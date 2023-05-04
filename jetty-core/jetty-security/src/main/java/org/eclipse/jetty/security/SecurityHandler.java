@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
@@ -538,7 +538,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             int port = httpConfig.getSecurePort();
 
             String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+            response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
 
             Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);
         }
