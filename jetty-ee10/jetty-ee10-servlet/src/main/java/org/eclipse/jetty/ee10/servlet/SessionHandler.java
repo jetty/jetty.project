@@ -257,8 +257,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         private void checkState()
         {
-            if (isStarted())
+            ServletContextHandler handler = ServletContextHandler.getCurrentServletContextHandler();
+            if (handler != null && handler.isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+
         }
     }
 
