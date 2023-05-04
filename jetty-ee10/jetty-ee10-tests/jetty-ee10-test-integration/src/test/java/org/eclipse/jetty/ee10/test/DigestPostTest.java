@@ -37,14 +37,15 @@ import org.eclipse.jetty.client.DigestAuthentication;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.security.AbstractLoginService;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.RolePrincipal;
-import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
-import org.eclipse.jetty.ee10.servlet.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.security.AbstractLoginService;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -53,7 +54,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterAll;
@@ -133,8 +133,10 @@ public class DigestPostTest
             security.setAuthenticator(new DigestAuthenticator());
             security.setLoginService(realm);
 
-            Constraint constraint = new Constraint("SecureTest", "test");
-            constraint.setAuthenticate(true);
+            Constraint constraint = new Constraint.Builder()
+                .name("SecureTest")
+                .roles("test")
+                .build();
             ConstraintMapping mapping = new ConstraintMapping();
             mapping.setConstraint(constraint);
             mapping.setPathSpec("/*");

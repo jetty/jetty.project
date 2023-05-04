@@ -59,7 +59,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorPageTest
@@ -102,6 +104,7 @@ public class ErrorPageTest
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
         _context.addServlet(ExceptionServlet.class, "/exception-servlet");
+        _context.addServlet(FailSendErrorAfterCommit.class, "/fail-senderror-after-commit/*");
 
         Handler.Singleton noopHandler = new Handler.Wrapper()
         {
@@ -156,6 +159,7 @@ public class ErrorPageTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(595));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
         String actualContentType = response.get(HttpHeader.CONTENT_TYPE);
         // should not expect to see charset line from servlet
         assertThat(actualContentType, not(containsString("charset=US-ASCII")));
@@ -280,6 +284,14 @@ public class ErrorPageTest
 
         assertThat(response, not(containsString("This shouldn't be seen")));
         assertThat(response, not(containsString("BadHeader")));
+    }
+
+    @Test
+    public void testCommitSendError() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail-senderror-after-commit/ HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("Response committed"));
+        assertThat(response, not(Matchers.containsString("HTTP/1.1 599 599")));
     }
 
     @Test
@@ -724,6 +736,20 @@ public class ErrorPageTest
                 LOG.trace("IGNORED", ignore);
             }
         }
+    }
+
+    public static class FailSendErrorAfterCommit extends HttpServlet implements Servlet
+    {
+         @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+         {
+             response.getWriter().append("Response committed");
+             response.flushBuffer();
+
+             assertThrows(IllegalStateException.class,
+                 () -> response.sendError(599),
+                 "Cannot sendError after commit");
+         }
     }
 
     public static class ErrorContentTypeCharsetWriterInitializedServlet extends HttpServlet

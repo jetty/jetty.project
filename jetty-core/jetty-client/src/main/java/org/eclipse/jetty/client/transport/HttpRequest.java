@@ -273,7 +273,7 @@ public class HttpRequest implements Request
     @Override
     public Fields getParams()
     {
-        return new Fields(params, true);
+        return params.asImmutable();
     }
 
     @Override

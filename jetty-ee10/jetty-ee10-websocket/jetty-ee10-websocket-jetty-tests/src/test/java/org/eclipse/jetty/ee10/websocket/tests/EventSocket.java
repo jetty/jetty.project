@@ -19,12 +19,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,6 @@ public class EventSocket
     private static final Logger LOG = LoggerFactory.getLogger(EventSocket.class);
 
     public Session session;
-    private String behavior;
 
     public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
     public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
@@ -47,11 +48,10 @@ public class EventSocket
     public CountDownLatch errorLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
 
-    @OnWebSocketConnect
+    @OnWebSocketOpen
     public void onOpen(Session session)
     {
         this.session = session;
-        behavior = session.getPolicy().getBehavior().name();
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onOpen(): {}", this, session);
         openLatch.countDown();
@@ -66,12 +66,12 @@ public class EventSocket
     }
 
     @OnWebSocketMessage
-    public void onMessage(byte[] buf, int offset, int len) throws IOException
+    public void onMessage(ByteBuffer message, Callback callback)
     {
-        ByteBuffer message = ByteBuffer.wrap(buf, offset, len);
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onMessage(): {}", this, message);
-        binaryMessages.offer(message);
+        binaryMessages.offer(BufferUtil.copy(message));
+        callback.succeed();
     }
 
     @OnWebSocketClose
@@ -88,7 +88,7 @@ public class EventSocket
     public void onError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onError(): {}", this, cause);
+            LOG.debug("{}  onError()", this, cause);
         error = cause;
         errorLatch.countDown();
     }
@@ -96,6 +96,6 @@ public class EventSocket
     @Override
     public String toString()
     {
-        return String.format("[%s@%s]", behavior, Integer.toHexString(hashCode()));
+        return String.format("[%s@%x]", getClass().getSimpleName(), hashCode());
     }
 }

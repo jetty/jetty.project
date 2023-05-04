@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -31,6 +30,8 @@ import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;
@@ -44,10 +45,6 @@ import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.servlet.Source;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.MetaData.OriginInfo;
@@ -55,11 +52,15 @@ import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.Constraint.Transport;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.AttributeNormalizer;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlAppendable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,9 +132,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      *
      * @param stream the stream to generate the quickstart-web.xml to
      * @throws IOException if unable to generate the quickstart-web.xml
-     * @throws FileNotFoundException if unable to find the file
      */
-    public void generateQuickStartWebXml(WebAppContext context, OutputStream stream) throws FileNotFoundException, IOException
+    public void generateQuickStartWebXml(WebAppContext context, OutputStream stream) throws IOException
     {
         if (context == null)
             throw new IllegalStateException("No webapp for quickstart generation");
@@ -307,29 +307,28 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         // Security elements
         SecurityHandler security = context.getSecurityHandler();
 
-        if (security != null && (security.getRealmName() != null || security.getAuthMethod() != null))
+        if (security != null && (security.getRealmName() != null || security.getAuthenticationType() != null))
         {
             out.openTag("login-config");
-            if (security.getAuthMethod() != null)
-                out.tag("auth-method", origin(md, "auth-method"), security.getAuthMethod());
+            if (security.getAuthenticationType() != null)
+                out.tag("auth-method", origin(md, "auth-method"), security.getAuthenticationType());
             if (security.getRealmName() != null)
                 out.tag("realm-name", origin(md, "realm-name"), security.getRealmName());
 
-            if (Constraint.__FORM_AUTH.equalsIgnoreCase(security.getAuthMethod()))
+            if (Authenticator.FORM_AUTH.equalsIgnoreCase(security.getAuthenticationType()))
             {
                 out.openTag("form-login-config");
-                out.tag("form-login-page", origin(md, "form-login-page"), security.getInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE));
-                out.tag("form-error-page", origin(md, "form-error-page"), security.getInitParameter(FormAuthenticator.__FORM_ERROR_PAGE));
+                out.tag("form-login-page", origin(md, "form-login-page"), security.getParameter(FormAuthenticator.__FORM_LOGIN_PAGE));
+                out.tag("form-error-page", origin(md, "form-error-page"), security.getParameter(FormAuthenticator.__FORM_ERROR_PAGE));
                 out.closeTag();
             }
 
             out.closeTag();
         }
 
-        if (security instanceof ConstraintAware)
+        if (security instanceof ConstraintAware ca)
         {
-            ConstraintAware ca = (ConstraintAware)security;
-            for (String r : ca.getRoles())
+            for (String r : ca.getKnownRoles())
             {
                 out.openTag("security-role", origin(md, "security-role." + r))
                     .tag("role-name", r)
@@ -358,40 +357,46 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     out.closeTag();
                 }
 
-                if (m.getConstraint().getAuthenticate())
+                Constraint.Authorization authorization = m.getConstraint().getAuthorization();
+
+                switch (authorization)
                 {
-                    String[] roles = m.getConstraint().getRoles();
-                    if (roles != null && roles.length > 0)
+                    case ALLOWED, INHERIT ->
+                    {
+                    }
+                    case FORBIDDEN -> out.tag("auth-constraint");
+                    case ANY_USER ->
                     {
                         out.openTag("auth-constraint");
-                        if (m.getConstraint().getRoles() != null)
-                            for (String r : m.getConstraint().getRoles())
-                            {
-                                out.tag("role-name", r);
-                            }
+                        out.tag("role-name", "**");
                         out.closeTag();
                     }
-                    else
-                        out.tag("auth-constraint");
+                    case KNOWN_ROLE ->
+                    {
+                        out.openTag("auth-constraint");
+                        out.tag("role-name", "*");
+                        out.closeTag();
+                    }
+                    case SPECIFIC_ROLE ->
+                    {
+                        Set<String> roles = m.getConstraint().getRoles();
+                        if (roles != null && roles.size() > 0)
+                        {
+                            out.openTag("auth-constraint");
+                            if (m.getConstraint().getRoles() != null)
+                                for (String r : m.getConstraint().getRoles())
+                                {
+                                    out.tag("role-name", r);
+                                }
+                            out.closeTag();
+                        }
+                    }
                 }
 
-                switch (m.getConstraint().getDataConstraint())
-                {
-                    case Constraint.DC_NONE:
-                        out.openTag("user-data-constraint").tag("transport-guarantee", "NONE").closeTag();
-                        break;
-
-                    case Constraint.DC_INTEGRAL:
-                        out.openTag("user-data-constraint").tag("transport-guarantee", "INTEGRAL").closeTag();
-                        break;
-
-                    case Constraint.DC_CONFIDENTIAL:
-                        out.openTag("user-data-constraint").tag("transport-guarantee", "CONFIDENTIAL").closeTag();
-                        break;
-
-                    default:
-                        break;
-                }
+                if (Transport.SECURE.equals(m.getConstraint().getTransport()))
+                    out.openTag("user-data-constraint").tag("transport-guarantee", "CONFIDENTIAL").closeTag();
+                else if (Transport.ANY.equals(m.getConstraint().getTransport()))
+                    out.openTag("user-data-constraint").tag("transport-guarantee", "NONE").closeTag();
 
                 out.closeTag();
             }
@@ -691,11 +696,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         String ot = n + ".filter.";
 
-        if (holder instanceof FilterHolder)
-        {
-            out.tag("filter-class", origin(md, ot + "filter-class"), holder.getClassName());
-            out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
-        }
+        out.tag("filter-class", origin(md, ot + "filter-class"), holder.getClassName());
+        out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
         for (String p : holder.getInitParameters().keySet())
         {
@@ -721,11 +723,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         String ot = n + ".servlet.";
 
-        ServletHolder s = (ServletHolder)holder;
-        if (s.getForcedPath() != null && s.getClassName() == null)
-            out.tag("jsp-file", s.getForcedPath());
+        if (holder.getForcedPath() != null && holder.getClassName() == null)
+            out.tag("jsp-file", holder.getForcedPath());
         else
-            out.tag("servlet-class", origin(md, ot + "servlet-class"), s.getClassName());
+            out.tag("servlet-class", origin(md, ot + "servlet-class"), holder.getClassName());
 
         for (String p : holder.getInitParameters().keySet())
         {
@@ -737,20 +738,20 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 .closeTag();
         }
 
-        if (s.getInitOrder() >= 0)
-            out.tag("load-on-startup", Integer.toString(s.getInitOrder()));
+        if (holder.getInitOrder() >= 0)
+            out.tag("load-on-startup", Integer.toString(holder.getInitOrder()));
 
-        if (!s.isEnabled())
+        if (!holder.isEnabled())
             out.tag("enabled", origin(md, ot + "enabled"), "false");
 
         out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
-        if (s.getRunAsRole() != null)
+        if (holder.getRunAsRole() != null)
             out.openTag("run-as", origin(md, ot + "run-as"))
-                .tag("role-name", s.getRunAsRole())
+                .tag("role-name", holder.getRunAsRole())
                 .closeTag();
 
-        Map<String, String> roles = s.getRoleLinks();
+        Map<String, String> roles = holder.getRoleLinks();
         if (roles != null)
         {
             for (Map.Entry<String, String> e : roles.entrySet())
@@ -763,10 +764,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //multipart-config
-        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)s.getRegistration()).getMultipartConfig();
+        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
         if (multipartConfig != null)
         {
-            out.openTag("multipart-config", origin(md, s.getName() + ".servlet.multipart-config"));
+            out.openTag("multipart-config", origin(md, holder.getName() + ".servlet.multipart-config"));
             if (multipartConfig.getLocation() != null)
                 out.tag("location", multipartConfig.getLocation());
             out.tag("max-file-size", Long.toString(multipartConfig.getMaxFileSize()));
@@ -796,7 +797,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             LOG.debug("origin of {} is {}", name, origin);
         if (origin == null)
             return Collections.emptyMap();
-        return Collections.singletonMap(_originAttribute, origin.toString() + ":" + (_count++));
+        return Collections.singletonMap(_originAttribute, origin + ":" + (_count++));
     }
 
     @Override

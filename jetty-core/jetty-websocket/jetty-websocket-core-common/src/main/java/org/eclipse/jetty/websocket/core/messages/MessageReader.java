@@ -24,8 +24,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -36,49 +36,45 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class MessageReader extends Reader implements MessageSink
 {
-    private static final int BUFFER_SIZE = WebSocketConstants.DEFAULT_INPUT_BUFFER_SIZE;
-
     private final ByteBuffer buffer;
     private final MessageInputStream stream;
     private final CharsetDecoder utf8Decoder = UTF_8.newDecoder()
         .onUnmappableCharacter(CodingErrorAction.REPORT)
         .onMalformedInput(CodingErrorAction.REPORT);
 
-    public MessageReader()
+    public MessageReader(CoreSession coreSession)
     {
-        this(BUFFER_SIZE);
-    }
-
-    public MessageReader(int bufferSize)
-    {
-        this.stream = new MessageInputStream();
-        this.buffer = BufferUtil.allocate(bufferSize);
+        this.stream = new MessageInputStream(coreSession);
+        this.buffer = BufferUtil.allocate(coreSession.getInputBufferSize());
     }
 
     @Override
-    public int read(char[] cbuf, int off, int len) throws IOException
+    public int read(char[] chars, int off, int len) throws IOException
     {
-        CharBuffer charBuffer = CharBuffer.wrap(cbuf, off, len);
-        boolean endOfInput = false;
+        CharBuffer charBuffer = CharBuffer.wrap(chars, off, len);
+        boolean eof;
         while (true)
         {
             int read = stream.read(buffer);
-            if (read == 0)
+            eof = read < 0;
+            if (eof || read == 0)
                 break;
-            if (read < 0)
-            {
-                endOfInput = true;
-                break;
-            }
         }
 
-        CoderResult result = utf8Decoder.decode(buffer, charBuffer, endOfInput);
+        CoderResult result = utf8Decoder.decode(buffer, charBuffer, eof);
         if (result.isError())
             result.throwException();
 
-        if (endOfInput && (charBuffer.position() == 0))
+        if (eof && charBuffer.position() == off)
             return -1;
-        return charBuffer.position();
+
+        return charBuffer.position() - off;
+    }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+        stream.fail(failure);
     }
 
     @Override

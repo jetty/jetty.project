@@ -27,13 +27,13 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoggedOutAuthentication;
-import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeferredAuthentication.class);
     protected final LoginAuthenticator _authenticator;
-    private Object _previousAssociation;
+    private IdentityService.Association _association;
 
     public DeferredAuthentication(LoginAuthenticator authenticator)
     {
@@ -62,7 +62,10 @@ public class DeferredAuthentication implements Authentication.Deferred
                 IdentityService identityService = loginService.getIdentityService();
 
                 if (identityService != null)
-                    _previousAssociation = identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                {
+                    UserIdentity user = ((User)authentication).getUserIdentity();
+                    _association = identityService.associate(user, null);
+                }
 
                 return authentication;
             }
@@ -85,7 +88,10 @@ public class DeferredAuthentication implements Authentication.Deferred
 
             Authentication authentication = _authenticator.validateRequest(request, response, true);
             if (authentication instanceof Authentication.User && identityService != null)
-                _previousAssociation = identityService.associate(((Authentication.User)authentication).getUserIdentity());
+            {
+                UserIdentity user = ((User)authentication).getUserIdentity();
+                _association = identityService.associate(user, null);
+            }
             return authentication;
         }
         catch (ServerAuthException e)
@@ -107,7 +113,7 @@ public class DeferredAuthentication implements Authentication.Deferred
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
             UserAuthentication authentication = new UserAuthentication("API", identity);
             if (identityService != null)
-                _previousAssociation = identityService.associate(identity);
+                _association = identityService.associate(identity, null);
             return authentication;
         }
         return null;
@@ -127,9 +133,9 @@ public class DeferredAuthentication implements Authentication.Deferred
         return Authentication.UNAUTHENTICATED;
     }
 
-    public Object getPreviousAssociation()
+    public IdentityService.Association getAssociation()
     {
-        return _previousAssociation;
+        return _association;
     }
 
     /**

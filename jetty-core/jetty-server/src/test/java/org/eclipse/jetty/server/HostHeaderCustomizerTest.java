@@ -15,17 +15,18 @@ package org.eclipse.jetty.server;
 
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
-import org.junit.jupiter.api.Disabled;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // TODO
 public class HostHeaderCustomizerTest
 {
     @Test
@@ -34,25 +35,33 @@ public class HostHeaderCustomizerTest
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
         final String serverName = "test_server_name";
-        final int serverPort = 13;
+        final int serverPort = 23232;
         final String redirectPath = "/redirect";
         httpConfig.addCustomizer(new HostHeaderCustomizer(serverName, serverPort));
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         server.addConnector(connector);
-        /* TODO
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                assertEquals(serverName, request.getServerName());
-                assertEquals(serverPort, request.getServerPort());
-                assertEquals(serverName + ":" + serverPort, request.getHeader("Host"));
-                response.sendRedirect(redirectPath);
+                // Test "Host" header
+                assertEquals(serverName + ":" + serverPort, request.getHeaders().get(HttpHeader.HOST));
+
+                // Test "getHttpURI()"
+                HttpURI httpURI = request.getHttpURI();
+                assertEquals(serverName, httpURI.getHost());
+                assertEquals(serverPort, httpURI.getPort());
+
+                // Test Request.getServerName / Request.getServerPort
+                assertEquals(serverName, Request.getServerName(request));
+                assertEquals(serverPort, Request.getServerPort(request));
+
+                // Issue redirect
+                Response.sendRedirect(request, response, callback, redirectPath);
+                return true;
             }
         });
-        */
         server.start();
         try
         {
@@ -71,11 +80,10 @@ public class HostHeaderCustomizerTest
 
                     String location = response.get("location");
                     assertNotNull(location);
-                    String schemePrefix = "http://";
-                    assertTrue(location.startsWith(schemePrefix));
-                    assertTrue(location.endsWith(redirectPath));
-                    String hostPort = location.substring(schemePrefix.length(), location.length() - redirectPath.length());
-                    assertEquals(serverName + ":" + serverPort, hostPort);
+                    URI redirectURI = new URI(location);
+                    assertEquals("http", redirectURI.getScheme());
+                    assertEquals(redirectPath, redirectURI.getPath());
+                    assertEquals(serverName + ":" + serverPort, redirectURI.getAuthority());
                 }
             }
         }
@@ -95,21 +103,30 @@ public class HostHeaderCustomizerTest
         httpConfig.addCustomizer(new HostHeaderCustomizer());
         final ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         server.addConnector(connector);
-        /* TODO
-        server.setHandler(new AbstractHandler()
+
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                assertEquals(serverName, request.getServerName());
-                assertEquals(connector.getLocalPort(), request.getServerPort());
-                assertEquals(serverName + ":" + connector.getLocalPort(), request.getHeader("Host"));
-                response.sendRedirect(redirectPath);
+                // Test "Host" header
+                assertEquals(serverName + ":" + connector.getLocalPort(), request.getHeaders().get(HttpHeader.HOST));
+
+                // Test "getHttpURI()"
+                HttpURI httpURI = request.getHttpURI();
+                assertEquals(serverName, httpURI.getHost());
+                assertEquals(connector.getLocalPort(), httpURI.getPort());
+
+                // Test Request.getServerName / Request.getServerPort
+                assertEquals(serverName, Request.getServerName(request));
+                assertEquals(connector.getLocalPort(), Request.getServerPort(request));
+
+                // Issue redirect
+                Response.sendRedirect(request, response, callback, redirectPath);
+                return true;
             }
         });
 
-         */
         server.start();
 
         try
@@ -129,11 +146,10 @@ public class HostHeaderCustomizerTest
 
                     String location = response.get("location");
                     assertNotNull(location);
-                    String schemePrefix = "http://";
-                    assertTrue(location.startsWith(schemePrefix));
-                    assertTrue(location.endsWith(redirectPath));
-                    String hostPort = location.substring(schemePrefix.length(), location.length() - redirectPath.length());
-                    assertEquals(serverName + ":" + connector.getLocalPort(), hostPort);
+                    URI redirectURI = new URI(location);
+                    assertEquals("http", redirectURI.getScheme());
+                    assertEquals(redirectPath, redirectURI.getPath());
+                    assertEquals(serverName + ":" + connector.getLocalPort(), redirectURI.getAuthority());
                 }
             }
         }

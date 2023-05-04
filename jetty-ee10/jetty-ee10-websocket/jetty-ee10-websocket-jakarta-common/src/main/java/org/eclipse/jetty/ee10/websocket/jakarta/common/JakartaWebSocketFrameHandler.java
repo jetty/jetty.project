@@ -322,12 +322,6 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    @Override
-    public boolean isAutoDemanding()
-    {
-        return false;
-    }
-
     public Set<MessageHandler> getMessageHandlers()
     {
         return messageHandlerMap.values().stream()
@@ -600,6 +594,11 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         {
             callback.succeeded();
             coreSession.demand(1);
+        }, x ->
+        {
+            // Ignore failures, as we might be OSHUT but receive a PING.
+            callback.succeeded();
+            coreSession.demand(1);
         }), false);
     }
 
@@ -616,14 +615,19 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
                 // Use JSR356 PongMessage interface
                 JakartaWebSocketPongMessage pongMessage = new JakartaWebSocketPongMessage(payload);
                 pongHandle.invoke(pongMessage);
+                callback.succeeded();
+                coreSession.demand(1);
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
+                callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause));
             }
         }
-        callback.succeeded();
-        coreSession.demand(1);
+        else
+        {
+            callback.succeeded();
+            coreSession.demand(1);
+        }
     }
 
     public void onText(Frame frame, Callback callback)
@@ -646,14 +650,9 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     {
         switch (dataType)
         {
-            case OpCode.TEXT:
-                onText(frame, callback);
-                break;
-            case OpCode.BINARY:
-                onBinary(frame, callback);
-                break;
-            default:
-                throw new ProtocolException("Unable to process continuation during dataType " + dataType);
+            case OpCode.TEXT -> onText(frame, callback);
+            case OpCode.BINARY -> onBinary(frame, callback);
+            default -> callback.failed(new ProtocolException("Unable to process continuation during dataType " + dataType));
         }
     }
 

@@ -24,13 +24,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -116,10 +116,9 @@ public class FrameAnnotationTest
         {
             session = futSession.get(5, SECONDS);
 
-            RemoteEndpoint clientRemote = session.getRemote();
-            clientRemote.sendPartialString("hello", false);
-            clientRemote.sendPartialString(" ", false);
-            clientRemote.sendPartialString("world", true);
+            session.sendPartialText("hello", false, Callback.NOOP);
+            session.sendPartialText(" ", false, Callback.NOOP);
+            session.sendPartialText("world", true, Callback.NOOP);
 
             String event = serverEndpoint.frameEvents.poll(5, SECONDS);
             assertThat("Event", event, is("FRAME[TEXT,fin=false,payload=hello,len=5]"));
@@ -141,16 +140,21 @@ public class FrameAnnotationTest
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public LinkedBlockingQueue<String> frameEvents = new LinkedBlockingQueue<>();
 
-        @OnWebSocketClose
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-            closeLatch.countDown();
-        }
-
-        @OnWebSocketConnect
-        public void onWebSocketConnect(Session session)
+        @OnWebSocketOpen
+        public void onWebSocketOpen(Session session)
         {
             this.session = session;
+        }
+
+        @OnWebSocketFrame
+        public void onWebSocketFrame(Frame frame, Callback callback)
+        {
+            frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
+                OpCode.name(frame.getOpCode()),
+                frame.isFin(),
+                BufferUtil.toUTF8String(frame.getPayload()),
+                frame.getPayloadLength()));
+            callback.succeed();
         }
 
         @OnWebSocketError
@@ -159,14 +163,10 @@ public class FrameAnnotationTest
             cause.printStackTrace(System.err);
         }
 
-        @OnWebSocketFrame
-        public void onWebSocketFrame(Frame frame)
+        @OnWebSocketClose
+        public void onWebSocketClose(int statusCode, String reason)
         {
-            frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
-                OpCode.name(frame.getOpCode()),
-                frame.isFin(),
-                BufferUtil.toUTF8String(frame.getPayload()),
-                frame.getPayloadLength()));
+            closeLatch.countDown();
         }
     }
 }

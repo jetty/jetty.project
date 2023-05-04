@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -92,7 +93,7 @@ public class ConnectionHeaderTest
         {
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            session.getRemote().sendString(msg);
+            session.sendText(msg, Callback.NOOP);
 
             // Read frame (hopefully text frame)
             String response = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);

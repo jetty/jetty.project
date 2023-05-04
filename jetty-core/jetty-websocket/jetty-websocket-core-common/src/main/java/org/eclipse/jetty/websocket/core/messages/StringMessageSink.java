@@ -22,14 +22,26 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
+/**
+ * <p>A {@link MessageSink} implementation that accumulates TEXT frames
+ * into a message that is then delivered to the application function
+ * passed to the constructor in the form of a {@link String}.</p>
+ */
 public class StringMessageSink extends AbstractMessageSink
 {
     private Utf8StringBuilder out;
     private int size;
 
-    public StringMessageSink(CoreSession session, MethodHandle methodHandle)
+    /**
+     * Creates a new {@link StringMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new message has been assembled
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
+    public StringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
         this.size = 0;
     }
 
@@ -39,23 +51,29 @@ public class StringMessageSink extends AbstractMessageSink
         try
         {
             size += frame.getPayloadLength();
-            long maxTextMessageSize = session.getMaxTextMessageSize();
-            if (maxTextMessageSize > 0 && size > maxTextMessageSize)
+            long maxSize = getCoreSession().getMaxTextMessageSize();
+            if (maxSize > 0 && size > maxSize)
             {
-                throw new MessageTooLargeException(String.format("Text message too large: (actual) %,d > (configured max text message size) %,d",
-                    size, maxTextMessageSize));
+                callback.failed(new MessageTooLargeException(String.format("Text message too large: %,d > %,d", size, maxSize)));
+                return;
             }
 
             if (out == null)
-                out = new Utf8StringBuilder(session.getInputBufferSize());
+                out = new Utf8StringBuilder(getCoreSession().getInputBufferSize());
 
             out.append(frame.getPayload());
+
             if (frame.isFin())
             {
-                methodHandle.invoke(out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
+                getMethodHandle().invoke(out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
+                callback.succeeded();
+                autoDemand();
             }
-            callback.succeeded();
-            session.demand(1);
+            else
+            {
+                callback.succeeded();
+                getCoreSession().demand(1);
+            }
         }
         catch (Throwable t)
         {
@@ -65,7 +83,6 @@ public class StringMessageSink extends AbstractMessageSink
         {
             if (frame.isFin())
             {
-                // reset
                 size = 0;
                 out = null;
             }

@@ -43,7 +43,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,7 +68,6 @@ public class BadURITest
     }
 
     @Test
-    @Disabled("TODO: need to fix ErrorHandler")
     public void testBadURI() throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);

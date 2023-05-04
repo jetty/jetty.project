@@ -26,9 +26,7 @@ import java.util.function.Supplier;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.servlet.writer.EncodingHttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.Iso88591HttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
@@ -37,21 +35,16 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 
 /**
  * The Jetty low level implementation of the ee10 {@link HttpServletResponse} object.
@@ -108,99 +101,7 @@ public class ServletApiResponse implements HttpServletResponse
         SessionManager sessionManager = _response.getServletContextRequest().getServletChannel().getContextHandler().getSessionHandler();
         if (sessionManager == null)
             return url;
-
-        ServletContextRequest request = _response.getServletContextRequest();
-        HttpServletRequest httpServletRequest = request.getHttpServletRequest();
-
-        HttpURI uri = null;
-        if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
-        {
-            uri = HttpURI.from(url);
-            String path = uri.getPath();
-            path = (path == null ? "" : path);
-            int port = uri.getPort();
-            if (port < 0)
-                port = HttpScheme.getDefaultPort(uri.getScheme());
-
-            // Is it the same server?
-            if (!Request.getServerName(request).equalsIgnoreCase(uri.getHost()))
-                return url;
-            if (Request.getServerPort(request) != port)
-                return url;
-            if (request.getContext() != null && !path.startsWith(request.getContext().getContextPath()))
-                return url;
-        }
-
-        String sessionURLPrefix = sessionManager.getSessionIdPathParameterNamePrefix();
-        if (sessionURLPrefix == null)
-            return url;
-
-        if (url == null)
-            return null;
-
-        // should not encode if cookies in evidence
-        if ((sessionManager.isUsingCookies() && httpServletRequest.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
-        {
-            int prefix = url.indexOf(sessionURLPrefix);
-            if (prefix != -1)
-            {
-                int suffix = url.indexOf("?", prefix);
-                if (suffix < 0)
-                    suffix = url.indexOf("#", prefix);
-
-                if (suffix <= prefix)
-                    return url.substring(0, prefix);
-                return url.substring(0, prefix) + url.substring(suffix);
-            }
-            return url;
-        }
-
-        // get session;
-        HttpSession session = httpServletRequest.getSession(false);
-
-        // no session
-        if (session == null || !(session instanceof Session.API))
-            return url;
-
-        // invalid session
-        Session.API api = (Session.API)session;
-
-        if (!api.getSession().isValid())
-            return url;
-
-        String id = api.getSession().getExtendedId();
-
-        if (uri == null)
-            uri = HttpURI.from(url);
-
-        // Already encoded
-        int prefix = url.indexOf(sessionURLPrefix);
-        if (prefix != -1)
-        {
-            int suffix = url.indexOf("?", prefix);
-            if (suffix < 0)
-                suffix = url.indexOf("#", prefix);
-
-            if (suffix <= prefix)
-                return url.substring(0, prefix + sessionURLPrefix.length()) + id;
-            return url.substring(0, prefix + sessionURLPrefix.length()) + id +
-                url.substring(suffix);
-        }
-
-        // edit the session
-        int suffix = url.indexOf('?');
-        if (suffix < 0)
-            suffix = url.indexOf('#');
-        if (suffix < 0)
-        {
-            return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
-                sessionURLPrefix + id;
-        }
-
-        return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
-            sessionURLPrefix + id + url.substring(suffix);
+        return sessionManager.encodeURI(_response.getServletContextRequest(), url, getResponse().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
     }
 
     @Override
@@ -227,7 +128,12 @@ public class ServletApiResponse implements HttpServletResponse
                     }
                 }
             }
-            default -> _response.getState().sendError(sc, msg);
+            default ->
+            {
+                if (isCommitted())
+                    throw new IllegalStateException("Committed");
+                _response.getState().sendError(sc, msg);
+            }
         }
     }
 

@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.websocket.api.exceptions;
 
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
@@ -22,12 +21,10 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * <p>
  * A valid WebSocket should do one of the following:
  * <ul>
- * <li>Implement {@link WebSocketListener}</li>
- * <li>Extend {@link WebSocketAdapter}</li>
+ * <li>Implement {@link Session.Listener}</li>
  * <li>Declare the {@link WebSocket &#064;WebSocket} annotation on the type</li>
  * </ul>
  */
-@SuppressWarnings("serial")
 public class InvalidWebSocketException extends WebSocketException
 {
     public InvalidWebSocketException(String message)

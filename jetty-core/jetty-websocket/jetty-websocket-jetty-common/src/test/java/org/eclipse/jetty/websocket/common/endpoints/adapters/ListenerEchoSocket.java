@@ -13,20 +13,23 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 /**
  * Example EchoSocket using Listener.
  */
-public class ListenerEchoSocket implements WebSocketListener
+public class ListenerEchoSocket implements Session.Listener
 {
     private Session outbound;
 
     @Override
-    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    public void onWebSocketBinary(ByteBuffer payload, Callback callback)
     {
-        /* only interested in text messages */
+        // only interested in text messages.
+        callback.succeed();
     }
 
     @Override
@@ -36,7 +39,7 @@ public class ListenerEchoSocket implements WebSocketListener
     }
 
     @Override
-    public void onWebSocketConnect(Session session)
+    public void onWebSocketOpen(Session session)
     {
         this.outbound = session;
     }
@@ -54,7 +57,7 @@ public class ListenerEchoSocket implements WebSocketListener
         {
             System.out.printf("Echoing back message [%s]%n", message);
             // echo the message back
-            outbound.getRemote().sendString(message, null);
+            outbound.sendText(message, null);
         }
     }
 }

@@ -25,6 +25,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -152,7 +153,7 @@ public class ErrorCloseTest
         serverSocket.methodsToThrow.add("onMessage");
         EventSocket clientSocket = new EventSocket();
         client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
-        clientSocket.session.getRemote().sendString("trigger onMessage error");
+        clientSocket.session.sendText("trigger onMessage error", Callback.NOOP);
 
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
@@ -194,7 +195,7 @@ public class ErrorCloseTest
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketSession.class))
         {
-            clientSocket.session.getRemote().sendString("trigger onMessage error");
+            clientSocket.session.sendText("trigger onMessage error", Callback.NOOP);
             assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
             assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         }

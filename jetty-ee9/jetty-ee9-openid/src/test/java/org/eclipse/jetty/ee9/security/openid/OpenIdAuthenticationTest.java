@@ -27,22 +27,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.AbstractLoginService;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
+import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.LoginService;
-import org.eclipse.jetty.ee9.security.RolePrincipal;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.security.AbstractLoginService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.security.openid.OpenIdConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -87,13 +89,13 @@ public class OpenIdAuthenticationTest
         context.addServlet(ErrorPage.class, "/error");
 
         // configure security constraints
-        Constraint constraint = new Constraint();
-        constraint.setName(Constraint.__OPENID_AUTH);
+        ServletConstraint constraint = new ServletConstraint();
+        constraint.setName(Authenticator.OPENID_AUTH);
         constraint.setRoles(new String[]{"**"});
         constraint.setAuthenticate(true);
 
-        Constraint adminConstraint = new Constraint();
-        adminConstraint.setName(Constraint.__OPENID_AUTH);
+        ServletConstraint adminConstraint = new ServletConstraint();
+        adminConstraint.setName(Authenticator.OPENID_AUTH);
         adminConstraint.setRoles(new String[]{"admin"});
         adminConstraint.setAuthenticate(true);
 
@@ -112,7 +114,7 @@ public class OpenIdAuthenticationTest
         ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
         assertThat(securityHandler.getKnownAuthenticatorFactories().size(), greaterThanOrEqualTo(2));
 
-        securityHandler.setAuthMethod(Constraint.__OPENID_AUTH);
+        securityHandler.setAuthMethod(Authenticator.OPENID_AUTH);
         securityHandler.setRealmName(openIdProvider.getProvider());
         securityHandler.setLoginService(loginService);
         securityHandler.addConstraintMapping(profileMapping);

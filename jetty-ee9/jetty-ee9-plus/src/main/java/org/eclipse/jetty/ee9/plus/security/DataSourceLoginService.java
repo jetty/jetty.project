@@ -29,10 +29,10 @@ import javax.naming.NamingException;
 import javax.sql.DataSource;
 
 import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.ee9.security.AbstractLoginService;
-import org.eclipse.jetty.ee9.security.IdentityService;
-import org.eclipse.jetty.ee9.security.RolePrincipal;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.security.AbstractLoginService;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class DataSourceLoginService extends AbstractLoginService
     /**
      * DBUser
      */
-    public class DBUserPrincipal extends UserPrincipal
+    public static class DBUserPrincipal extends UserPrincipal
     {
         private int _key;
 

@@ -42,8 +42,9 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.security.IdentityService;
-import org.eclipse.jetty.ee10.servlet.security.RunAsToken;
+import org.eclipse.jetty.security.AuthenticationState;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
@@ -605,7 +606,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
                 IdentityService identityService = getServletHandler().getIdentityService();
                 if (identityService != null)
                 {
-                    RunAsToken runAsToken = identityService.newRunAsToken(_runAsRole);
+                    IdentityService.RunAsToken runAsToken = identityService.newRunAsToken(_runAsRole);
                     servlet = new RunAs(servlet, identityService, runAsToken);
                 }
             }
@@ -1312,9 +1313,9 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     private static class RunAs extends Wrapper
     {
         final IdentityService _identityService;
-        final RunAsToken _runAsToken;
+        final IdentityService.RunAsToken _runAsToken;
 
-        public RunAs(Servlet servlet, IdentityService identityService, RunAsToken runAsToken)
+        public RunAs(Servlet servlet, IdentityService identityService, IdentityService.RunAsToken runAsToken)
         {
             super(servlet);
             _identityService = identityService;
@@ -1324,42 +1325,30 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
+            try (IdentityService.Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().init(config);
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
             }
         }
 
         @Override
-        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        public void service(ServletRequest request, ServletResponse res) throws ServletException, IOException
         {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
+            ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+            AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(servletContextRequest);
+            UserIdentity userIdentity = (authenticationState instanceof AuthenticationState.Succeeded user) ? user.getUserIdentity() : _identityService.getSystemUserIdentity();
+            try (IdentityService.Association ignored = _identityService.associate(userIdentity, _runAsToken))
             {
-                getWrapped().service(req, res);
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
+                getWrapped().service(request, res);
             }
         }
 
         @Override
         public void destroy()
         {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
+            try (IdentityService.Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().destroy();
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
             }
         }
     }

@@ -21,13 +21,13 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ResourceHandler;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -86,7 +86,7 @@ public class AliasedConstraintTest
 
         List<ConstraintMapping> constraints = new ArrayList<>();
 
-        Constraint constraint0 = new Constraint();
+        ServletConstraint constraint0 = new ServletConstraint();
         constraint0.setAuthenticate(true);
         constraint0.setName("forbid");
         ConstraintMapping mapping0 = new ConstraintMapping();

@@ -37,7 +37,7 @@ public class JakartaAutobahnSocket
     public CountDownLatch closeLatch = new CountDownLatch(1);
 
     @OnOpen
-    public void onConnect(Session session)
+    public void onOpen(Session session)
     {
         this.session = session;
         session.setMaxTextMessageBufferSize(Integer.MAX_VALUE);

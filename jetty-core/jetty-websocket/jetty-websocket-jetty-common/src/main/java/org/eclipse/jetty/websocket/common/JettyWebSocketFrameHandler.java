@@ -14,21 +14,20 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -48,71 +47,45 @@ import org.slf4j.LoggerFactory;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
-    private enum SuspendState
-    {
-        DEMANDING,
-        SUSPENDING,
-        SUSPENDED,
-        CLOSED
-    }
-
-    private final AutoLock lock = new AutoLock();
+    private final AtomicBoolean closeNotified = new AtomicBoolean();
     private final Logger log;
     private final WebSocketContainer container;
     private final Object endpointInstance;
-    private final BatchMode batchMode;
-    private final AtomicBoolean closeNotified = new AtomicBoolean();
+    private final JettyWebSocketFrameHandlerMetadata metadata;
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
     private MethodHandle textHandle;
-    private final Class<? extends MessageSink> textSinkClass;
     private MethodHandle binaryHandle;
+    private final Class<? extends MessageSink> textSinkClass;
     private final Class<? extends MessageSink> binarySinkClass;
     private MethodHandle frameHandle;
     private MethodHandle pingHandle;
     private MethodHandle pongHandle;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
-
-    private final Configuration.Customizer customizer;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSession session;
-    private SuspendState state = SuspendState.DEMANDING;
-    private Runnable delayedOnFrame;
-    private CoreSession coreSession;
 
-    public JettyWebSocketFrameHandler(WebSocketContainer container,
-                                      Object endpointInstance,
-                                      MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                      MethodHandle textHandle, MethodHandle binaryHandle,
-                                      Class<? extends MessageSink> textSinkClass,
-                                      Class<? extends MessageSink> binarySinkClass,
-                                      MethodHandle frameHandle,
-                                      MethodHandle pingHandle, MethodHandle pongHandle,
-                                      BatchMode batchMode,
-                                      Configuration.Customizer customizer)
+    public JettyWebSocketFrameHandler(WebSocketContainer container, Object endpointInstance, JettyWebSocketFrameHandlerMetadata metadata)
     {
         this.log = LoggerFactory.getLogger(endpointInstance.getClass());
-
         this.container = container;
         this.endpointInstance = endpointInstance;
+        this.metadata = metadata;
 
-        this.openHandle = openHandle;
-        this.closeHandle = closeHandle;
-        this.errorHandle = errorHandle;
-        this.textHandle = textHandle;
-        this.binaryHandle = binaryHandle;
-        this.textSinkClass = textSinkClass;
-        this.binarySinkClass = binarySinkClass;
-        this.frameHandle = frameHandle;
-        this.pingHandle = pingHandle;
-        this.pongHandle = pongHandle;
-
-        this.batchMode = batchMode;
-        this.customizer = customizer;
+        this.openHandle = InvokerUtils.bindTo(metadata.getOpenHandle(), endpointInstance);
+        this.closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
+        this.errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
+        this.textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
+        this.binaryHandle = InvokerUtils.bindTo(metadata.getBinaryHandle(), endpointInstance);
+        this.textSinkClass = metadata.getTextSink();
+        this.binarySinkClass = metadata.getBinarySink();
+        this.frameHandle = InvokerUtils.bindTo(metadata.getFrameHandle(), endpointInstance);
+        this.pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
+        this.pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
     }
 
     public void setUpgradeRequest(UpgradeRequest upgradeRequest)
@@ -135,11 +108,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         return upgradeResponse;
     }
 
-    public BatchMode getBatchMode()
-    {
-        return batchMode;
-    }
-
     public WebSocketSession getSession()
     {
         return session;
@@ -150,8 +118,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         try
         {
-            customizer.customize(coreSession);
-            this.coreSession = coreSession;
+            metadata.customize(coreSession);
             session = new WebSocketSession(container, coreSession, this);
             if (!session.isOpen())
                 throw new IllegalStateException("Session is not open");
@@ -165,13 +132,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             pingHandle = InvokerUtils.bindTo(pingHandle, session);
             pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
-            Executor executor = container.getExecutor();
-
             if (textHandle != null)
-                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, session);
+                textSink = createMessageSink(textSinkClass, session, textHandle, isAutoDemand());
 
             if (binaryHandle != null)
-                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, session);
+                binarySink = createMessageSink(binarySinkClass, session, binaryHandle, isAutoDemand());
 
             if (openHandle != null)
                 openHandle.invoke();
@@ -180,74 +145,90 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 
             callback.succeeded();
-            demand();
         }
         catch (Throwable cause)
         {
             callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause));
         }
+        finally
+        {
+            autoDemand();
+        }
+    }
+
+    private static MessageSink createMessageSink(Class<? extends MessageSink> sinkClass, WebSocketSession session, MethodHandle msgHandle, boolean autoDemanding)
+    {
+        if (msgHandle == null)
+            return null;
+        if (sinkClass == null)
+            return null;
+
+        try
+        {
+            MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
+            MethodHandle ctorHandle = lookup.findConstructor(sinkClass,
+                MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, boolean.class));
+            return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle, autoDemanding);
+        }
+        catch (NoSuchMethodException e)
+        {
+            throw new RuntimeException("Missing expected MessageSink constructor found at: " + sinkClass.getName(), e);
+        }
+        catch (IllegalAccessException | InstantiationException | InvocationTargetException e)
+        {
+            throw new RuntimeException("Unable to create MessageSink: " + sinkClass.getName(), e);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new RuntimeException(t);
+        }
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback coreCallback)
     {
-        try (AutoLock l = lock.lock())
-        {
-            switch (state)
-            {
-                case DEMANDING:
-                    break;
-
-                case SUSPENDING:
-                    delayedOnFrame = () -> onFrame(frame, callback);
-                    state = SuspendState.SUSPENDED;
-                    return;
-
-                default:
-                    throw new IllegalStateException();
-            }
-
-            // If we have received a close frame, set state to closed to disallow further suspends and resumes.
-            if (frame.getOpCode() == OpCode.CLOSE)
-                state = SuspendState.CLOSED;
-        }
-
-        // Send to raw frame handling on user side (eg: WebSocketFrameListener)
+        CompletableFuture<Void> frameCallback = null;
         if (frameHandle != null)
         {
             try
             {
-                frameHandle.invoke(new JettyWebSocketFrame(frame));
+                frameCallback = new org.eclipse.jetty.websocket.api.Callback.Completable();
+                frameHandle.invoke(new JettyWebSocketFrame(frame), frameCallback);
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause);
+                coreCallback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause));
+                return;
             }
         }
 
+        Callback.Completable eventCallback = new Callback.Completable();
         switch (frame.getOpCode())
         {
-            case OpCode.CLOSE:
-                onCloseFrame(frame, callback);
-                break;
-            case OpCode.PING:
-                onPingFrame(frame, callback);
-                break;
-            case OpCode.PONG:
-                onPongFrame(frame, callback);
-                break;
-            case OpCode.TEXT:
-                onTextFrame(frame, callback);
-                break;
-            case OpCode.BINARY:
-                onBinaryFrame(frame, callback);
-                break;
-            case OpCode.CONTINUATION:
-                onContinuationFrame(frame, callback);
-                break;
-            default:
-                callback.failed(new IllegalStateException());
-        }
+            case OpCode.CLOSE -> onCloseFrame(frame, eventCallback);
+            case OpCode.PING -> onPingFrame(frame, eventCallback);
+            case OpCode.PONG -> onPongFrame(frame, eventCallback);
+            case OpCode.TEXT -> onTextFrame(frame, eventCallback);
+            case OpCode.BINARY -> onBinaryFrame(frame, eventCallback);
+            case OpCode.CONTINUATION -> onContinuationFrame(frame, eventCallback);
+            default -> coreCallback.failed(new IllegalStateException());
+        };
+
+        // Combine the callback from the frame handler and the event handler.
+        CompletableFuture<Void> callback = eventCallback;
+        if (frameCallback != null)
+            callback = frameCallback.thenCompose(ignored -> eventCallback);
+        callback.whenComplete((r, x) ->
+        {
+            if (x == null)
+                coreCallback.succeeded();
+            else
+                coreCallback.failed(x);
+        });
     }
 
     @Override
@@ -257,11 +238,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             cause = convertCause(cause);
             if (errorHandle != null)
+            {
                 errorHandle.invoke(cause);
+            }
             else
             {
                 if (log.isDebugEnabled())
-                    log.warn("Unhandled Error: Endpoint {}", endpointInstance.getClass().getName(), cause);
+                    log.debug("Unhandled Error: Endpoint {}", endpointInstance.getClass().getName(), cause);
                 else
                     log.warn("Unhandled Error: Endpoint {} : {}", endpointInstance.getClass().getName(), cause.toString());
             }
@@ -275,22 +258,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    private void onCloseFrame(Frame frame, Callback callback)
-    {
-        notifyOnClose(CloseStatus.getCloseStatus(frame), callback);
-    }
-
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        try (AutoLock l = lock.lock())
-        {
-            // We are now closed and cannot suspend or resume.
-            state = SuspendState.CLOSED;
-        }
-
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
+    }
+
+    private void onCloseFrame(Frame frame, Callback callback)
+    {
+        notifyOnClose(CloseStatus.getCloseStatus(frame), callback);
     }
 
     private void notifyOnClose(CloseStatus closeStatus, Callback callback)
@@ -306,47 +283,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             if (closeHandle != null)
                 closeHandle.invoke(closeStatus.getCode(), closeStatus.getReason());
-
             callback.succeeded();
         }
         catch (Throwable cause)
         {
             callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
         }
-    }
-
-    public String toString()
-    {
-        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), this.hashCode(), endpointInstance.getClass().getName());
-    }
-
-    private void acceptMessage(Frame frame, Callback callback)
-    {
-        // No message sink is active
-        if (activeMessageSink == null)
-        {
-            callback.succeeded();
-            demand();
-            return;
-        }
-
-        // Accept the payload into the message sink
-        activeMessageSink.accept(frame, callback);
-        if (frame.isFin())
-            activeMessageSink = null;
-    }
-
-    private void onBinaryFrame(Frame frame, Callback callback)
-    {
-        if (activeMessageSink == null)
-            activeMessageSink = binarySink;
-
-        acceptMessage(frame, callback);
-    }
-
-    private void onContinuationFrame(Frame frame, Callback callback)
-    {
-        acceptMessage(frame, callback);
     }
 
     private void onPingFrame(Frame frame, Callback callback)
@@ -358,35 +300,34 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 ByteBuffer payload = frame.getPayload();
                 if (payload == null)
                     payload = BufferUtil.EMPTY_BUFFER;
-
+                else
+                    payload = BufferUtil.copy(payload);
                 pingHandle.invoke(payload);
+                callback.succeeded();
+                autoDemand();
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PING method error: " + cause.getMessage(), cause);
+                callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " PING method error: " + cause.getMessage(), cause));
             }
-
-            callback.succeeded();
-            demand();
         }
         else
         {
             // Automatically respond.
-            getSession().getRemote().sendPong(frame.getPayload(), new WriteCallback()
+            getSession().sendPong(frame.getPayload(), new org.eclipse.jetty.websocket.api.Callback()
             {
                 @Override
-                public void writeSuccess()
+                public void succeed()
                 {
                     callback.succeeded();
-                    demand();
+                    autoDemand();
                 }
 
                 @Override
-                public void writeFailed(Throwable x)
+                public void fail(Throwable x)
                 {
-                    // Ignore failures, we might be output closed and receive ping.
+                    // Ignore failures, we might be output closed and receive a PING.
                     callback.succeeded();
-                    demand();
                 }
             });
         }
@@ -401,109 +342,72 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 ByteBuffer payload = frame.getPayload();
                 if (payload == null)
                     payload = BufferUtil.EMPTY_BUFFER;
-
+                else
+                    payload = BufferUtil.copy(payload);
                 pongHandle.invoke(payload);
+                callback.succeeded();
+                autoDemand();
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
+                callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause));
             }
         }
-
-        callback.succeeded();
-        demand();
+        else
+        {
+            autoDemand();
+        }
     }
 
     private void onTextFrame(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = textSink;
-
-        acceptMessage(frame, callback);
+        acceptFrame(frame, callback);
     }
 
-    @Override
-    public boolean isAutoDemanding()
+    private void onBinaryFrame(Frame frame, Callback callback)
     {
-        return false;
+        if (activeMessageSink == null)
+            activeMessageSink = binarySink;
+        acceptFrame(frame, callback);
     }
 
-    public void suspend()
+    private void onContinuationFrame(Frame frame, Callback callback)
     {
-        try (AutoLock l = lock.lock())
-        {
-            switch (state)
-            {
-                case DEMANDING:
-                    state = SuspendState.SUSPENDING;
-                    break;
-
-                default:
-                    throw new IllegalStateException(state.name());
-            }
-        }
+        acceptFrame(frame, callback);
     }
 
-    public void resume()
+    private void acceptFrame(Frame frame, Callback callback)
     {
-        boolean needDemand = false;
-        Runnable delayedFrame = null;
-        try (AutoLock l = lock.lock())
+        // No message sink is active.
+        if (activeMessageSink == null)
         {
-            switch (state)
-            {
-                case DEMANDING:
-                    throw new IllegalStateException("Already Resumed");
-
-                case SUSPENDED:
-                    needDemand = true;
-                    delayedFrame = delayedOnFrame;
-                    delayedOnFrame = null;
-                    state = SuspendState.DEMANDING;
-                    break;
-
-                case SUSPENDING:
-                    if (delayedOnFrame != null)
-                        throw new IllegalStateException();
-                    state = SuspendState.DEMANDING;
-                    break;
-
-                default:
-                    throw new IllegalStateException(state.name());
-            }
+            callback.succeeded();
+            autoDemand();
+            return;
         }
 
-        if (needDemand)
-        {
-            if (delayedFrame != null)
-                delayedFrame.run();
-            else
-                session.getCoreSession().demand(1);
-        }
+        // Accept the payload into the message sink.
+        activeMessageSink.accept(frame, callback);
+        if (frame.isFin())
+            activeMessageSink = null;
     }
 
-    private void demand()
+    boolean isAutoDemand()
     {
-        boolean demand = false;
-        try (AutoLock l = lock.lock())
-        {
-            switch (state)
-            {
-                case DEMANDING:
-                    demand = true;
-                    break;
+        return metadata.isAutoDemand();
+    }
 
-                case SUSPENDING:
-                    state = SuspendState.SUSPENDED;
-                    break;
-
-                default:
-                    throw new IllegalStateException(state.name());
-            }
-        }
-
-        if (demand)
+    private void autoDemand()
+    {
+        if (isAutoDemand())
             session.getCoreSession().demand(1);
+    }
+
+    public String toString()
+    {
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), this.hashCode(), endpointInstance.getClass().getName());
     }
 
     public static Throwable convertCause(Throwable cause)

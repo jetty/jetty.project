@@ -35,7 +35,7 @@ The Maven artifact coordinates are the following:
 [[pg-client-websocket-start]]
 ==== Starting WebSocketClient
 
-The main class is `org.eclipse.jetty.ee9.websocket.client.WebSocketClient`; you instantiate it, configure it, and then start it like may other Jetty components.
+The main class is `org.eclipse.jetty.websocket.client.WebSocketClient`; you instantiate it, configure it, and then start it like may other Jetty components.
 This is a minimal example:
 
 [source,java,indent=0]
@@ -124,7 +124,7 @@ In code:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=connectHTTP11]
 ----
 
-`WebSocketClient.connect()` links the client-side WebSocket _endpoint_ to a specific server URI, and returns a `CompletableFuture` of an `org.eclipse.jetty.ee9.websocket.api.Session`.
+`WebSocketClient.connect()` links the client-side WebSocket _endpoint_ to a specific server URI, and returns a `CompletableFuture` of an `org.eclipse.jetty.websocket.api.Session`.
 
 The endpoint offers APIs to _receive_ WebSocket data (or errors) from the server, while the session offers APIs to _send_ WebSocket data to the server.
 
@@ -133,7 +133,7 @@ The endpoint offers APIs to _receive_ WebSocket data (or errors) from the server
 
 Initiating a WebSocket communication with a server using HTTP/1.1 is detailed in link:https://tools.ietf.org/html/rfc8441[RFC 8441].
 
-A WebSocket client establishes a TCP connection to the server or reuses an existing one currently used for HTTP/2, then sends an HTTP/2 _connect_ request over an HTTP/2 stream.
+A WebSocket client establishes a TCP connection to the server or reuses an existing one currently used for HTTP/2, then sends an HTTP/2 _CONNECT_ request over an HTTP/2 stream.
 
 If the server supports upgrading to WebSocket, it responds with HTTP status code `200`, then switches the communication over that stream, either incoming or outgoing, to happen using HTTP/2 `DATA` frames wrapping WebSocket frames.
 

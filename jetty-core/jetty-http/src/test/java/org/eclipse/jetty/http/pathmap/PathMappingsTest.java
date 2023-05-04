@@ -24,6 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
@@ -594,4 +595,25 @@ public class PathMappingsTest
             ));
     }
 
+    @Test
+    public void testMappingsOrder()
+    {
+        PathMappings<String> p = new PathMappings<>();
+        p.put("/foo/*", "foo");
+        p.put("*.txt", "txt");
+        p.put("/foo/bar/bob/*", "foobarbob");
+        p.put("*.thing.txt", "thingtxt");
+        p.put("/", "default");
+        p.put("/foo/bar/*", "foobar");
+
+        assertThat(p.getMatches("/foo/bar/bob/some.thing.txt").stream().map(MappedResource::getResource).toList(),
+            contains(
+                "foobarbob",
+                "foobar",
+                "foo",
+                "thingtxt",
+                "txt",
+                "default"
+            ));
+    }
 }

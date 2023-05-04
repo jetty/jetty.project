@@ -35,17 +35,17 @@ import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,16 +68,16 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private final PathMappings<Map<String, RoleInfo>> _constraintRoles = new PathMappings<>();
     private boolean _denyUncoveredMethods = false;
 
-    public static Constraint createConstraint()
+    public static ServletConstraint createConstraint()
     {
-        return new Constraint();
+        return new ServletConstraint();
     }
 
-    public static Constraint createConstraint(Constraint constraint)
+    public static ServletConstraint createConstraint(ServletConstraint constraint)
     {
         try
         {
-            return (Constraint)constraint.clone();
+            return (ServletConstraint)constraint.clone();
         }
         catch (CloneNotSupportedException e)
         {
@@ -94,9 +94,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param dataConstraint the data constraint
      * @return the constraint
      */
-    public static Constraint createConstraint(String name, boolean authenticate, String[] roles, int dataConstraint)
+    public static ServletConstraint createConstraint(String name, boolean authenticate, String[] roles, int dataConstraint)
     {
-        Constraint constraint = createConstraint();
+        ServletConstraint constraint = createConstraint();
         if (name != null)
             constraint.setName(name);
         constraint.setAuthenticate(authenticate);
@@ -112,7 +112,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param element the http constraint element
      * @return the created constraint
      */
-    public static Constraint createConstraint(String name, HttpConstraintElement element)
+    public static ServletConstraint createConstraint(String name, HttpConstraintElement element)
     {
         return createConstraint(name, element.getRolesAllowed(), element.getEmptyRoleSemantic(), element.getTransportGuarantee());
     }
@@ -126,9 +126,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param transport the transport guarantee
      * @return the created constraint
      */
-    public static Constraint createConstraint(String name, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
+    public static ServletConstraint createConstraint(String name, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
-        Constraint constraint = createConstraint();
+        ServletConstraint constraint = createConstraint();
 
         if (rolesAllowed == null || rolesAllowed.length == 0)
         {
@@ -154,7 +154,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
 
         //Equivalent to //<user-data-constraint><transport-guarantee>CONFIDENTIAL</transport-guarantee></user-data-constraint>
-        constraint.setDataConstraint((transport.equals(TransportGuarantee.CONFIDENTIAL) ? Constraint.DC_CONFIDENTIAL : Constraint.DC_NONE));
+        constraint.setDataConstraint((transport.equals(TransportGuarantee.CONFIDENTIAL) ? ServletConstraint.DC_CONFIDENTIAL : ServletConstraint.DC_NONE));
         return constraint;
     }
 
@@ -212,7 +212,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         List<ConstraintMapping> mappings = new ArrayList<>();
 
         //Create a constraint that will describe the default case (ie if not overridden by specific HttpMethodConstraints)
-        Constraint httpConstraint;
+        ServletConstraint httpConstraint;
         ConstraintMapping httpConstraintMapping = null;
 
         if (securityElement.getEmptyRoleSemantic() != EmptyRoleSemantic.PERMIT ||
@@ -238,7 +238,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             for (HttpMethodConstraintElement methodConstraintElement : methodConstraintElements)
             {
                 //Make a Constraint that captures the <auth-constraint> and <user-data-constraint> elements supplied for the HttpMethodConstraintElement
-                Constraint methodConstraint = ConstraintSecurityHandler.createConstraint(name, methodConstraintElement);
+                ServletConstraint methodConstraint = ConstraintSecurityHandler.createConstraint(name, methodConstraintElement);
                 ConstraintMapping mapping = new ConstraintMapping();
                 mapping.setConstraint(methodConstraint);
                 mapping.setPathSpec(pathSpec);
@@ -513,7 +513,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void configureRoleInfo(RoleInfo ri, ConstraintMapping mapping)
     {
-        Constraint constraint = mapping.getConstraint();
+        ServletConstraint constraint = mapping.getConstraint();
         boolean forbidden = constraint.isForbidden();
         ri.setForbidden(forbidden);
 
@@ -699,7 +699,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         boolean isUserInRole = false;
         for (String role : roleInfo.getRoles())
         {
-            if (userIdentity.isUserInRole(role, null))
+            if (userIdentity.isUserInRole(role))
             {
                 isUserInRole = true;
                 break;
