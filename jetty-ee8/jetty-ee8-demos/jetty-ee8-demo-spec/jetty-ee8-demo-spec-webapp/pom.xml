@@ -204,7 +204,7 @@
               <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
             </webApp>
             <loginServices>
-              <loginService implementation="org.eclipse.jetty.ee8.security.HashLoginService">
+              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
                 <config>${project.build.directory}/realm.properties</config>
               </loginService>

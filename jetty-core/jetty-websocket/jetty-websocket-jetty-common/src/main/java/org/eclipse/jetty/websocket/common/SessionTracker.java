@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
@@ -76,7 +77,7 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
                     break;
 
                 // SHUTDOWN is abnormal close status so it will hard close connection after sent.
-                session.close(StatusCode.SHUTDOWN, "Container being shut down");
+                session.close(StatusCode.SHUTDOWN, "Container being shut down", Callback.NOOP);
             }
         });
     }

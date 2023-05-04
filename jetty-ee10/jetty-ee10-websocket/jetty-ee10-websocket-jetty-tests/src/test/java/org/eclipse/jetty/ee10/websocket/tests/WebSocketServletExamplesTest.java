@@ -19,18 +19,19 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
-import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.UserStore;
-import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.UserStore;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -83,10 +84,10 @@ public class WebSocketServletExamplesTest
         loginService.setUserStore(userStore);
         loginService.setName(realm);
 
-        Constraint constraint = new Constraint();
-        constraint.setName("auth");
-        constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"**"});
+        Constraint constraint = new Constraint.Builder()
+            .name("auth")
+            .authorization(Constraint.Authorization.ANY_USER)
+            .build();
 
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/authed/*");
@@ -112,7 +113,7 @@ public class WebSocketServletExamplesTest
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             String message = "hello world";
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
 
             String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));
@@ -136,7 +137,7 @@ public class WebSocketServletExamplesTest
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             String message = "hello world";
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
 
             String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));
@@ -162,7 +163,7 @@ public class WebSocketServletExamplesTest
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             String message = "hello world";
-            session.getRemote().sendString(message);
+            session.sendText(message, Callback.NOOP);
 
             String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));

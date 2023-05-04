@@ -15,6 +15,10 @@ package org.eclipse.jetty.ee10.servlet.security;
 
 import java.util.List;
 
+import org.eclipse.jetty.security.AbstractLoginService;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.security.UserStore;
 import org.eclipse.jetty.util.security.Credential;
 
 /**

@@ -89,7 +89,6 @@ public class HttpHeaderAuthModule implements ServerAuthModule
     @Override
     public AuthStatus validateRequest(final MessageInfo messageInfo, final Subject client, final Subject serviceSubject) throws AuthException
     {
-
         // Take the request from the messageInfo structure.
         final HttpServletRequest req = (HttpServletRequest)messageInfo.getRequestMessage();
         try

@@ -30,6 +30,7 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
@@ -101,7 +102,7 @@ public class ProgrammaticWebSocketUpgradeTest
         CompletableFuture<Session> connect = client.connect(socket, uri);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
-            session.getRemote().sendString("hello world");
+            session.sendText("hello world", Callback.NOOP);
         }
         assertTrue(socket.closeLatch.await(10, TimeUnit.SECONDS));
 

@@ -37,10 +37,9 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.api.Configurable;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -56,7 +55,7 @@ import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, LifeCycle.Listener
+public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, Configurable, LifeCycle.Listener
 {
     public static final String JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE = WebSocketContainer.class.getName();
 
@@ -285,51 +284,9 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     }
 
     @Override
-    public WebSocketBehavior getBehavior()
-    {
-        return WebSocketBehavior.SERVER;
-    }
-
-    @Override
     public Duration getIdleTimeout()
     {
         return customizer.getIdleTimeout();
-    }
-
-    @Override
-    public int getInputBufferSize()
-    {
-        return customizer.getInputBufferSize();
-    }
-
-    @Override
-    public int getOutputBufferSize()
-    {
-        return customizer.getOutputBufferSize();
-    }
-
-    @Override
-    public long getMaxBinaryMessageSize()
-    {
-        return customizer.getMaxBinaryMessageSize();
-    }
-
-    @Override
-    public long getMaxTextMessageSize()
-    {
-        return customizer.getMaxTextMessageSize();
-    }
-
-    @Override
-    public long getMaxFrameSize()
-    {
-        return customizer.getMaxFrameSize();
-    }
-
-    @Override
-    public boolean isAutoFragment()
-    {
-        return customizer.isAutoFragment();
     }
 
     @Override
@@ -339,9 +296,21 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     }
 
     @Override
+    public int getInputBufferSize()
+    {
+        return customizer.getInputBufferSize();
+    }
+
+    @Override
     public void setInputBufferSize(int size)
     {
         customizer.setInputBufferSize(size);
+    }
+
+    @Override
+    public int getOutputBufferSize()
+    {
+        return customizer.getOutputBufferSize();
     }
 
     @Override
@@ -351,9 +320,21 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     }
 
     @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return customizer.getMaxBinaryMessageSize();
+    }
+
+    @Override
     public void setMaxBinaryMessageSize(long size)
     {
         customizer.setMaxBinaryMessageSize(size);
+    }
+
+    @Override
+    public long getMaxTextMessageSize()
+    {
+        return customizer.getMaxTextMessageSize();
     }
 
     @Override
@@ -363,15 +344,39 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     }
 
     @Override
+    public long getMaxFrameSize()
+    {
+        return customizer.getMaxFrameSize();
+    }
+
+    @Override
     public void setMaxFrameSize(long maxFrameSize)
     {
         customizer.setMaxFrameSize(maxFrameSize);
     }
 
     @Override
+    public boolean isAutoFragment()
+    {
+        return customizer.isAutoFragment();
+    }
+
+    @Override
     public void setAutoFragment(boolean autoFragment)
     {
         customizer.setAutoFragment(autoFragment);
+    }
+
+    @Override
+    public int getMaxOutgoingFrames()
+    {
+        return customizer.getMaxOutgoingFrames();
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
+    {
+        customizer.setMaxOutgoingFrames(maxOutgoingFrames);
     }
 
     @Override

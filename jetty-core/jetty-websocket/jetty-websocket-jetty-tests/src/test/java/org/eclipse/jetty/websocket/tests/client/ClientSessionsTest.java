@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
@@ -118,8 +118,7 @@ public class ClientSessionsTest
                 Collection<Session> sessions = client.getOpenSessions();
                 assertThat("client.connectionManager.sessions.size", sessions.size(), is(1));
 
-                RemoteEndpoint remote = sess.getRemote();
-                remote.sendString("Hello World!");
+                sess.sendText("Hello World!", Callback.NOOP);
 
                 Collection<Session> open = client.getOpenSessions();
                 assertThat("(Before Close) Open Sessions.size", open.size(), is(1));
@@ -127,7 +126,7 @@ public class ClientSessionsTest
                 String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
                 assertThat("Message", received, containsString("Hello World!"));
 
-                sess.close(StatusCode.NORMAL, null);
+                sess.close(StatusCode.NORMAL, null, Callback.NOOP);
             }
 
             cliSock.assertReceivedCloseEvent(30000, is(StatusCode.NORMAL));

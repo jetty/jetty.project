@@ -45,9 +45,10 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.IdentityService;
-import org.eclipse.jetty.ee9.security.RunAsToken;
+import org.eclipse.jetty.ee9.nested.UserIdentityScope;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.IdentityService.Association;
+import org.eclipse.jetty.security.IdentityService.RunAsToken;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
@@ -68,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * requested.
  */
 @ManagedObject("Servlet Holder")
-public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
+public class ServletHolder extends Holder<Servlet> implements UserIdentityScope, Comparable<ServletHolder>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletHolder.class);
     private int _initOrder = -1;
@@ -1351,42 +1352,27 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
+            try (Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().init(config);
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
             }
         }
 
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
+            try (Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().service(req, res);
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
             }
         }
 
         @Override
         public void destroy()
         {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
+            try (Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().destroy();
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
             }
         }
     }

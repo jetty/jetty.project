@@ -58,8 +58,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
@@ -104,7 +106,7 @@ public class WebSocketOverHTTP2Test
         server.addConnector(connector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourcePath("keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
 
@@ -168,13 +170,13 @@ public class WebSocketOverHTTP2Test
         Session session = wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS);
 
         String text = "websocket";
-        session.getRemote().sendString(text);
+        session.sendText(text, Callback.NOOP);
 
         String message = wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(text, message);
 
-        session.close(StatusCode.NORMAL, null);
+        session.close(StatusCode.NORMAL, null, Callback.NOOP);
         assertTrue(wsEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertEquals(StatusCode.NORMAL, wsEndPoint.closeCode);
         assertNull(wsEndPoint.error);
@@ -231,13 +233,13 @@ public class WebSocketOverHTTP2Test
         URI uri = URI.create("wss://localhost:" + tlsConnector.getLocalPort() + "/ws/echo");
         Session session = wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS);
         String text = "websocket";
-        session.getRemote().sendString(text);
+        session.sendText(text, Callback.NOOP);
 
         String message = wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(text, message);
 
-        session.close(StatusCode.NORMAL, null);
+        session.close(StatusCode.NORMAL, null, Callback.NOOP);
         assertTrue(wsEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -361,7 +363,7 @@ public class WebSocketOverHTTP2Test
         EventSocket clientEndpoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/specialEcho");
         Session session = wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
-        session.getRemote().sendString("hello world");
+        session.sendText("hello world", Callback.NOOP);
         String received = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertThat(received, equalTo("hello world"));
 

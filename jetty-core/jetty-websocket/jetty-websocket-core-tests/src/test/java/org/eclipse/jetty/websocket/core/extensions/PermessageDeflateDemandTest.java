@@ -185,11 +185,5 @@ public class PermessageDeflateDemandTest
         {
             callback.succeeded();
         }
-
-        @Override
-        public boolean isAutoDemanding()
-        {
-            return false;
-        }
     }
 }

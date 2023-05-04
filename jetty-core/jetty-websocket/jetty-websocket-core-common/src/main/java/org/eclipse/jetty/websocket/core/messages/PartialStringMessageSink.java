@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.util.Objects;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -22,14 +21,25 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 
+/**
+ * <p>A {@link MessageSink} implementation that delivers TEXT frames
+ * to the application function passed to the constructor in the form
+ * of a {@link String}.</p>
+ */
 public class PartialStringMessageSink extends AbstractMessageSink
 {
-    private Utf8StringBuilder out;
+    private Utf8StringBuilder accumulator;
 
-    public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle)
+    /**
+     * Creates a new {@link PartialStringMessageSink}.
+     *
+     * @param session the WebSocket session
+     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param autoDemand whether this {@link MessageSink} manages demand automatically
+     */
+    public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
-        Objects.requireNonNull(methodHandle, "MethodHandle");
+        super(session, methodHandle, autoDemand);
     }
 
     @Override
@@ -37,28 +47,34 @@ public class PartialStringMessageSink extends AbstractMessageSink
     {
         try
         {
-            if (out == null)
-                out = new Utf8StringBuilder(session.getInputBufferSize());
+            if (accumulator == null)
+                accumulator = new Utf8StringBuilder(getCoreSession().getInputBufferSize());
 
-            out.append(frame.getPayload());
+            accumulator.append(frame.getPayload());
+
             if (frame.isFin())
             {
-                String complete = out.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8"));
-                methodHandle.invoke(complete, true);
-                out = null;
+                String complete = accumulator.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8"));
+                getMethodHandle().invoke(complete, true);
             }
             else
             {
-                String partial = out.takePartialString(() -> new BadPayloadException("Invalid UTF-8"));
-                methodHandle.invoke(partial, false);
+                String partial = accumulator.takePartialString(() -> new BadPayloadException("Invalid UTF-8"));
+                getMethodHandle().invoke(partial, false);
             }
 
             callback.succeeded();
-            session.demand(1);
+
+            autoDemand();
         }
         catch (Throwable t)
         {
             callback.failed(t);
+        }
+        finally
+        {
+            if (frame.isFin())
+                accumulator = null;
         }
     }
 }

@@ -25,12 +25,12 @@ import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +55,7 @@ public class UnauthenticatedTest
 
         // Add a security handler which requires paths under /requireAuth to be authenticated.
         ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-        Constraint requireAuthentication = new Constraint();
+        ServletConstraint requireAuthentication = new ServletConstraint();
         requireAuthentication.setRoles(new String[]{"**"});
         requireAuthentication.setAuthenticate(true);
         ConstraintMapping constraintMapping = new ConstraintMapping();

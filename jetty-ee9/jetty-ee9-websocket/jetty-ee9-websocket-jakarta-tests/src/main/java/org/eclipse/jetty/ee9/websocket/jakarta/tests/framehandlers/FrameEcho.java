@@ -32,15 +32,22 @@ public class FrameEcho implements FrameHandler
     {
         this.coreSession = coreSession;
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        if (frame.isControlFrame())
+        Runnable succeedAndDemand = () ->
+        {
             callback.succeeded();
+            coreSession.demand(1);
+        };
+
+        if (frame.isControlFrame())
+            succeedAndDemand.run();
         else
-            coreSession.sendFrame(Frame.copy(frame), callback, false);
+            coreSession.sendFrame(Frame.copy(frame), Callback.from(succeedAndDemand, callback::failed), false);
     }
 
     @Override

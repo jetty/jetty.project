@@ -115,7 +115,7 @@
               <tempDirectory>${project.build.directory}/work</tempDirectory>
             </webApp>
             <loginServices>
-              <loginService implementation="org.eclipse.jetty.ee8.security.HashLoginService">
+              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
                 <config>${project.build.testOutputDirectory}/test-realm.properties</config>
               </loginService>

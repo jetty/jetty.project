@@ -21,9 +21,9 @@ import org.eclipse.jetty.websocket.api.Session;
 public class FastFailEndpoint extends AbstractCloseEndpoint
 {
     @Override
-    public void onWebSocketConnect(Session sess)
+    public void onWebSocketOpen(Session sess)
     {
-        log.debug("onWebSocketConnect({})", sess);
+        log.debug("onWebSocketOpen({})", sess);
         // Test failure due to unhandled exception
         // this should trigger a fast-fail closure during open/connect
         throw new RuntimeException("Intentional FastFail");

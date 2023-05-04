@@ -32,14 +32,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -96,7 +95,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__DIGEST_AUTH;
+        return DIGEST_AUTH;
     }
 
     @Override
@@ -330,6 +329,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
             try
             {
+                // MD5 required by the specification
                 MessageDigest md = MessageDigest.getInstance("MD5");
                 byte[] ha1;
                 if (credentials instanceof Credential.MD5)

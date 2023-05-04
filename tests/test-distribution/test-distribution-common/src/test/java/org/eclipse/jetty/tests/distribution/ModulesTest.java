@@ -50,7 +50,7 @@ public class ModulesTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee8-openid", "ee9-openid", "ee10-openid"})
+    @ValueSource(strings = {"ee8-openid", "ee9-openid", "openid"})
     public void testOpenidModules(String module) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");

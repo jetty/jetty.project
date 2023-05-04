@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.io.FileNotFoundException;
-import java.net.URL;
 import java.nio.file.Path;
 import javax.naming.NamingException;
 
@@ -25,10 +24,9 @@ import org.eclipse.jetty.ee9.plus.jndi.Resource;
 import org.eclipse.jetty.ee9.plus.jndi.Transaction;
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * ServerWithAnnotations

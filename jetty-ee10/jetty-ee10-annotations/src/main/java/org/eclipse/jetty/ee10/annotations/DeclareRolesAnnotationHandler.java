@@ -15,8 +15,8 @@ package org.eclipse.jetty.ee10.annotations;
 
 import jakarta.annotation.security.DeclareRoles;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.ee.security.ConstraintAware;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
         {
             for (String r : roles)
             {
-                ((ConstraintSecurityHandler)_context.getSecurityHandler()).addRole(r);
+                ((ConstraintSecurityHandler)_context.getSecurityHandler()).addKnownRole(r);
                 _context.getMetaData().setOrigin("security-role." + r, declareRoles, clazz);
             }
         }

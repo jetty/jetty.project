@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
@@ -113,7 +114,7 @@ public class ConnectFutureTest
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitCreator.countDown();
-        assertFalse(clientSocket.openLatch.await(1, TimeUnit.SECONDS));
+        assertFalse(clientSocket.connectLatch.await(1, TimeUnit.SECONDS));
 
         Throwable error = clientSocket.error.get();
         assertThat(error, instanceOf(UpgradeException.class));
@@ -156,7 +157,7 @@ public class ConnectFutureTest
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitListener.countDown();
-        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.connectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientSocket.error.get(), instanceOf(CancellationException.class));
     }
@@ -196,7 +197,7 @@ public class ConnectFutureTest
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitListener.countDown();
-        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.connectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientSocket.error.get(), instanceOf(CancellationException.class));
     }
@@ -208,16 +209,16 @@ public class ConnectFutureTest
             wsHandler.configure(container ->
                 container.addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket())));
 
-        CountDownLatch exitOnOpen = new CountDownLatch(1);
+        CountDownLatch exitOnConnect = new CountDownLatch(1);
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
         {
             @Override
-            public void onWebSocketConnect(Session session)
+            public void onWebSocketOpen(Session session)
             {
                 try
                 {
-                    super.onWebSocketConnect(session);
-                    exitOnOpen.await();
+                    super.onWebSocketOpen(session);
+                    exitOnConnect.await();
                 }
                 catch (InterruptedException e)
                 {
@@ -228,9 +229,9 @@ public class ConnectFutureTest
 
         // Abort during the call to onOpened. This is after the connection upgrade, but before future completion.
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
-        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.connectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(connect.cancel(true));
-        exitOnOpen.countDown();
+        exitOnConnect.countDown();
 
         // We got an error on the WebSocket endpoint and an error from the future.
         assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
@@ -249,8 +250,9 @@ public class ConnectFutureTest
         Session session = connect.get(5, TimeUnit.SECONDS);
 
         // If we can send and receive messages the future has been completed.
-        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
-        clientSocket.getSession().getRemote().sendString("hello");
+        assertTrue(clientSocket.connectLatch.await(5, TimeUnit.SECONDS));
+        Session session1 = clientSocket.getSession();
+        session1.sendText("hello", Callback.NOOP);
         assertThat(clientSocket.messageQueue.poll(5, TimeUnit.SECONDS), Matchers.is("hello"));
 
         // After it has been completed we should not get any errors from cancelling it.
@@ -345,16 +347,16 @@ public class ConnectFutureTest
             wsHandler.configure(container ->
                 container.addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket())));
 
-        CountDownLatch exitOnOpen = new CountDownLatch(1);
+        CountDownLatch exitOnConnect = new CountDownLatch(1);
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
         {
             @Override
-            public void onWebSocketConnect(Session session)
+            public void onWebSocketOpen(Session session)
             {
                 try
                 {
-                    super.onWebSocketConnect(session);
-                    exitOnOpen.await();
+                    super.onWebSocketOpen(session);
+                    exitOnConnect.await();
                 }
                 catch (InterruptedException e)
                 {
@@ -365,9 +367,9 @@ public class ConnectFutureTest
 
         // Complete the CompletableFuture with an exception the during the call to onOpened.
         CompletableFuture<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
-        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.connectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(connect.completeExceptionally(new WebSocketException("custom exception")));
-        exitOnOpen.countDown();
+        exitOnConnect.countDown();
 
         // Exception from the future is correct.
         ExecutionException futureError = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
