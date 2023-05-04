@@ -24,23 +24,23 @@ import javax.security.auth.Subject;
  */
 public interface LoginCallback
 {
-    public Subject getSubject();
+    Subject getSubject();
 
-    public String getUserName();
+    String getUserName();
 
-    public Object getCredential();
+    Object getCredential();
 
-    public boolean isSuccess();
+    boolean isSuccess();
 
-    public void setSuccess(boolean success);
+    void setSuccess(boolean success);
 
-    public Principal getUserPrincipal();
+    Principal getUserPrincipal();
 
-    public void setUserPrincipal(Principal userPrincipal);
+    void setUserPrincipal(Principal userPrincipal);
 
-    public String[] getRoles();
+    String[] getRoles();
 
-    public void setRoles(String[] roles);
+    void setRoles(String[] roles);
 
-    public void clearPassword();
+    void clearPassword();
 }

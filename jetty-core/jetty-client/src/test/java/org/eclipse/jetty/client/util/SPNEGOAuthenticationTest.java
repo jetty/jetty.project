@@ -13,23 +13,52 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.ByteArrayInputStream;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.client.Authentication;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.EmptyServerHandler;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.SPNEGOAuthentication;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.SPNEGOLoginService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.SPNEGOAuthenticator;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-// TODO
-@Disabled
 public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 {
-    @Test
-    public void testNeedToUpdateThisTest()
-    {
-        fail("This test needs to be updated to use Core version of SPNEGO (when available)");
-    }
-
-    /*
     private static final Logger LOG = LoggerFactory.getLogger(SPNEGOAuthenticationTest.class);
 
     static
@@ -43,17 +72,17 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         }
     }
 
-    private Path testDirPath = MavenTestingUtils.getTargetTestingPath(SPNEGOAuthenticationTest.class.getSimpleName());
-    private String clientName = "spnego_client";
-    private String clientPassword = "spnego_client_pwd";
-    private String serviceName = "srvc";
-    private String serviceHost = "localhost";
-    private String realm = "jetty.org";
-    private Path realmPropsPath = MavenTestingUtils.getTestResourcePath("realm.properties");
-    private Path serviceKeyTabPath = testDirPath.resolve("service.keytab");
-    private Path clientKeyTabPath = testDirPath.resolve("client.keytab");
+    private final Path testDirPath = MavenTestingUtils.getTargetTestingPath(SPNEGOAuthenticationTest.class.getSimpleName());
+    private final String clientName = "spnego_client";
+    private final String clientPassword = "spnego_client_pwd";
+    private final String serviceName = "srvc";
+    private final String serviceHost = "localhost";
+    private final String realm = "jetty.org";
+    private final Path realmPropsPath = MavenTestingUtils.getTestResourcePath("realm.properties");
+    private final Path serviceKeyTabPath = testDirPath.resolve("service.keytab");
+    private final Path clientKeyTabPath = testDirPath.resolve("client.keytab");
     private SimpleKdcServer kdc;
-    private ConfigurableSpnegoAuthenticator authenticator;
+    private SPNEGOAuthenticator authenticator;
 
     @BeforeEach
     public void prepare() throws Exception
@@ -94,26 +123,19 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     private void startSPNEGO(Scenario scenario, Handler handler) throws Exception
     {
         server = new Server();
-        server.setSessionIdManager(new DefaultSessionIdManager(server));
-        HashLoginService authorizationService = new HashLoginService(realm, realmPropsPath.toString());
-        ConfigurableSpnegoLoginService loginService = new ConfigurableSpnegoLoginService(realm, AuthorizationService.from(authorizationService, ""));
-        loginService.addBean(authorizationService);
-        loginService.setKeyTabPath(serviceKeyTabPath);
-        loginService.setServiceName(serviceName);
-        loginService.setHostName(serviceHost);
-        server.addBean(loginService);
+        HashLoginService hashLoginService = new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
+        SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, hashLoginService);
+        spnegoLoginService.setKeyTabPath(serviceKeyTabPath);
+        spnegoLoginService.setServiceName(serviceName);
+        spnegoLoginService.setHostName(serviceHost);
 
-        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-        Constraint constraint = new Constraint();
-        constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"**"}); //allow any authenticated user
-        ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/secure");
-        mapping.setConstraint(constraint);
-        securityHandler.addConstraintMapping(mapping);
-        authenticator = new ConfigurableSpnegoAuthenticator();
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+        Constraint constraint = new Constraint.Builder().authorization(Constraint.Authorization.ANY_USER).build();
+        securityHandler.put("/secure", constraint);
+
+        authenticator = new SPNEGOAuthenticator();
         securityHandler.setAuthenticator(authenticator);
-        securityHandler.setLoginService(loginService);
+        securityHandler.setLoginService(spnegoLoginService);
         securityHandler.setHandler(handler);
 
         SessionHandler sessionHandler = new SessionHandler();
@@ -169,7 +191,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         assertNull(authnResult);
 
         AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
+        client.getRequestListeners().addListener(new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -191,12 +213,13 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAuthenticationExpiration(Scenario scenario) throws Exception
     {
-        startSPNEGO(scenario, new EmptyServerHandler()
+        startSPNEGO(scenario, new Handler.Abstract()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                IO.readBytes(request.getInputStream());
+                Content.Source.consumeAll(request, callback);
+                return true;
             }
         });
         long timeout = 1000;
@@ -213,7 +236,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         authenticationStore.addAuthentication(authentication);
 
         AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Adapter()
+        client.getRequestListeners().addListener(new Request.Listener()
         {
             @Override
             public void onSuccess(Request request)
@@ -256,5 +279,4 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         // Authentication expired, but POSTs are allowed.
         assertEquals(1, requests.get());
     }
-     */
 }

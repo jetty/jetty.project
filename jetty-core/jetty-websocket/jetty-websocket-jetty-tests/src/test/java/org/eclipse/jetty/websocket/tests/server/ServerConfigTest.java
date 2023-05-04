@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -28,7 +29,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.PathMappingsHandler;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -64,7 +65,6 @@ public class ServerConfigTest
     private static final int MAX_MESSAGE_SIZE = 20;
     private static final int IDLE_TIMEOUT = 500;
 
-    private final EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
     private final EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
     private final EventSocket standardEndpoint = new EventSocket();
 
@@ -73,7 +73,6 @@ public class ServerConfigTest
         return switch (path)
             {
                 case "servletConfig", "containerConfig" -> standardEndpoint;
-                case "annotatedConfig" -> annotatedEndpoint;
                 case "sessionConfig" -> sessionConfigEndpoint;
                 default -> throw new IllegalStateException();
             };
@@ -81,12 +80,7 @@ public class ServerConfigTest
 
     public static Stream<Arguments> data()
     {
-        return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
-    }
-
-    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE, batchMode = BatchMode.ON)
-    public static class AnnotatedConfigEndpoint extends EventSocket
-    {
+        return Stream.of("servletConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
     @WebSocket
@@ -116,16 +110,6 @@ public class ServerConfigTest
                     container.setInputBufferSize(INPUT_BUFFER_SIZE);
                     container.addMapping("/", (rq, rs, cb) -> wsEndPoint);
                 });
-        }
-    }
-
-    public static class AnnotatedConfigWebSocketUpgradeHandler
-    {
-        public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Object wsEndPoint)
-        {
-            return WebSocketUpgradeHandler.from(server, context)
-                .configure(container ->
-                    container.addMapping("/", (rq, rs, cb) -> wsEndPoint));
         }
     }
 
@@ -178,7 +162,6 @@ public class ServerConfigTest
         PathMappingsHandler pathsHandler = new PathMappingsHandler();
         context.setHandler(pathsHandler);
         pathsHandler.addMapping(new ServletPathSpec("/servletConfig"), ConfigWebSocketUpgradeHandler.from(server, context, standardEndpoint));
-        pathsHandler.addMapping(new ServletPathSpec("/annotatedConfig"), AnnotatedConfigWebSocketUpgradeHandler.from(server, context, annotatedEndpoint));
         pathsHandler.addMapping(new ServletPathSpec("/sessionConfig"), SessionConfigWebSocketUpgradeHandler.from(server, context, sessionConfigEndpoint));
         pathsHandler.addMapping(new ServletPathSpec("/"), WebSocketUpgradeHandler.from(server, context)
             .configure(container ->
@@ -241,7 +224,8 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(MESSAGE));
+        ByteBuffer buffer = BufferUtil.toBuffer(MESSAGE);
+        clientEndpoint.session.sendBinary(buffer, Callback.NOOP);
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));
@@ -262,7 +246,7 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString("hello world");
+        clientEndpoint.session.sendText("hello world", Callback.NOOP);
         String msg = serverEndpoint.textMessages.poll(500, TimeUnit.MILLISECONDS);
         assertThat(msg, is("hello world"));
         Thread.sleep(IDLE_TIMEOUT + 500);
@@ -286,7 +270,7 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString(MESSAGE);
+        clientEndpoint.session.sendText(MESSAGE, Callback.NOOP);
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));

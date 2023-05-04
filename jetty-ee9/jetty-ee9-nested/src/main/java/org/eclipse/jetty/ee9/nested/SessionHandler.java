@@ -21,10 +21,12 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
 import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -693,6 +695,20 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
 
     public class ServletSessionApi implements HttpSession, Session.API
     {
+        public static Function<Boolean, Session> getOrCreateSession(ServletRequest servletRequest)
+        {
+            return createSession ->
+            {
+                if (servletRequest instanceof HttpServletRequest request)
+                {
+                    HttpSession session = request.getSession(createSession);
+                    if (session instanceof SessionHandler.ServletSessionApi sessionApi)
+                        return sessionApi.getSession();
+                }
+                return null;
+            };
+        }
+
         private final ManagedSession _session;
 
         private ServletSessionApi(ManagedSession session)

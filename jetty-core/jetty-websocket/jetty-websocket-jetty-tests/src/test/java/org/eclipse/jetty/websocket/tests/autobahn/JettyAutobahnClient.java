@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -157,7 +158,7 @@ public class JettyAutobahnClient
         if (waitForUpgrade(wsUri, response))
         {
             String msg = onCaseCount.textMessages.poll(10, TimeUnit.SECONDS);
-            onCaseCount.session.close(StatusCode.SHUTDOWN, null);
+            onCaseCount.session.close(StatusCode.SHUTDOWN, null, Callback.NOOP);
             assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
             assertNotNull(msg);
             return Integer.decode(msg);

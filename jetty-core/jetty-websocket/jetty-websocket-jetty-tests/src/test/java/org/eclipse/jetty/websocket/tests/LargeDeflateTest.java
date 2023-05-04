@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -85,8 +86,8 @@ public class LargeDeflateTest
         EventSocket clientSocket = new EventSocket();
         Session session = _client.connect(clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest).get();
         ByteBuffer sentMessage = largePayloads();
-        session.getRemote().sendBytes(sentMessage);
-        session.close(StatusCode.NORMAL, "close from test");
+        session.sendBinary(sentMessage, Callback.NOOP);
+        session.close(StatusCode.NORMAL, "close from test", Callback.NOOP);
 
         assertTrue(_serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(_serverSocket.closeCode, is(StatusCode.NORMAL));

@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.io.IOException;
-
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket
 public class ConnectMessageEndpoint
 {
-    @OnWebSocketConnect
-    public void onConnect(Session session) throws IOException
+    @OnWebSocketOpen
+    public void onOpen(Session session)
     {
-        session.getRemote().sendString("Greeting from onConnect");
+        session.sendText("Greeting from onOpen", Callback.NOOP);
     }
 }

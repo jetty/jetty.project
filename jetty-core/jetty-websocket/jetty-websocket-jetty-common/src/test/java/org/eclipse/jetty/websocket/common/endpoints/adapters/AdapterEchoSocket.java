@@ -13,30 +13,22 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Session;
 
 /**
  * Example EchoSocket using Adapter.
  */
-public class AdapterEchoSocket extends WebSocketAdapter
+public class AdapterEchoSocket extends Session.Listener.Abstract
 {
     @Override
     public void onWebSocketText(String message)
     {
-        if (isConnected())
+        if (isOpen())
         {
-            try
-            {
-                System.out.printf("Echoing back message [%s]%n", message);
-                // echo the message back
-                getRemote().sendString(message);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
-            }
+            System.out.printf("Echoing back message [%s]%n", message);
+            // echo the message back
+            getSession().sendText(message, Callback.NOOP);
         }
     }
 }

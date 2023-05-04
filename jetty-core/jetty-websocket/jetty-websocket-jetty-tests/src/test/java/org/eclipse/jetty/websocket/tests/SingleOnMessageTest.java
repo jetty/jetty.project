@@ -23,12 +23,12 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -84,11 +84,10 @@ public class SingleOnMessageTest
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
 
         // The server sends a sequence of Binary and Text messages
-        RemoteEndpoint remote = serverSocket.session.getRemote();
-        remote.sendBytes(BufferUtil.toBuffer("this should get rejected"));
-        remote.sendString("WebSocket_Data0");
-        remote.sendString("WebSocket_Data1");
-        serverSocket.session.close(StatusCode.NORMAL, "test complete");
+        serverSocket.session.sendBinary(BufferUtil.toBuffer("this should get rejected"), Callback.NOOP);
+        serverSocket.session.sendText("WebSocket_Data0", Callback.NOOP);
+        serverSocket.session.sendText("WebSocket_Data1", Callback.NOOP);
+        serverSocket.session.close(StatusCode.NORMAL, "test complete", Callback.NOOP);
 
         // The client receives the messages and has discarded the binary message.
         assertThat(handler.messages.poll(5, TimeUnit.SECONDS), is("WebSocket_Data0"));
@@ -107,13 +106,12 @@ public class SingleOnMessageTest
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
 
         // The server sends a sequence of Binary and Text messages
-        RemoteEndpoint remote = serverSocket.session.getRemote();
-        remote.sendString("this should get rejected");
-        remote.sendBytes(BufferUtil.toBuffer("WebSocket_Data0"));
-        remote.sendBytes(BufferUtil.toBuffer("WebSocket_Data1"));
-        serverSocket.session.close(StatusCode.NORMAL, "test complete");
+        serverSocket.session.sendText("this should get rejected", Callback.NOOP);
+        serverSocket.session.sendBinary(BufferUtil.toBuffer("WebSocket_Data0"), Callback.NOOP);
+        serverSocket.session.sendBinary(BufferUtil.toBuffer("WebSocket_Data1"), Callback.NOOP);
+        serverSocket.session.close(StatusCode.NORMAL, "test complete", Callback.NOOP);
 
-        // The client receives the messages and has discarded the binary message.
+        // The client receives the messages and has discarded the text message.
         assertThat(handler.messages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("WebSocket_Data0")));
         assertThat(handler.messages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("WebSocket_Data1")));
         assertTrue(handler.closeLatch.await(5, TimeUnit.SECONDS));
@@ -139,9 +137,10 @@ public class SingleOnMessageTest
         final BlockingArrayQueue<ByteBuffer> messages = new BlockingArrayQueue<>();
 
         @OnWebSocketMessage
-        public void onMessage(byte[] array, int offset, int length)
+        public void onMessage(ByteBuffer payload, Callback callback)
         {
-            messages.add(BufferUtil.toBuffer(array, offset, length));
+            messages.add(BufferUtil.copy(payload));
+            callback.succeed();
         }
     }
 
@@ -162,8 +161,8 @@ public class SingleOnMessageTest
             this.closeLatch.countDown();
         }
 
-        @OnWebSocketConnect
-        public void onConnect(Session session)
+        @OnWebSocketOpen
+        public void onOpen(Session session)
         {
             this.session = session;
             this.openLatch.countDown();

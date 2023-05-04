@@ -20,7 +20,7 @@ ext
 ee9-servlets
 ee9-websocket-jakarta
 ee9-websocket-jetty
-ee9-demo-realm
+demo-realm
 
 [files]
 webapps/demo-jetty.d/

@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.proxy;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -146,7 +145,7 @@ public class WebSocketProxyTest
         _server.stop();
     }
 
-    public void awaitProxyClose(WebSocketProxy.Client2Proxy client2Proxy, WebSocketProxy.Server2Proxy server2Proxy) throws Exception
+    public void awaitProxyClose(WebSocketProxy.Client2Proxy client2Proxy, WebSocketProxy.Proxy2Server server2Proxy) throws Exception
     {
         if (client2Proxy != null && !client2Proxy.closed.await(5, TimeUnit.SECONDS))
             throw new TimeoutException("client2Proxy close timeout");
@@ -160,7 +159,7 @@ public class WebSocketProxyTest
     {
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
-        WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
+        WebSocketProxy.Proxy2Server proxyServerSide = proxy.proxy2Server;
 
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, proxyUri, clientFrameHandler);
         upgradeRequest.setConfiguration(defaultCustomizer);
@@ -168,6 +167,20 @@ public class WebSocketProxyTest
 
         response.get(5, TimeUnit.SECONDS);
         clientFrameHandler.sendText("hello world");
+
+        Frame frame = proxyClientSide.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        frame = serverFrameHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        frame = proxyServerSide.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        frame = clientFrameHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+
         clientFrameHandler.close(CloseStatus.NORMAL, "standard close");
         assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
@@ -175,11 +188,6 @@ public class WebSocketProxyTest
 
         assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
         assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.CLOSED));
-
-        assertThat(Objects.requireNonNull(proxyClientSide.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
-        assertThat(Objects.requireNonNull(serverFrameHandler.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
-        assertThat(Objects.requireNonNull(proxyServerSide.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
-        assertThat(Objects.requireNonNull(clientFrameHandler.receivedFrames.poll()).getPayloadAsUTF8(), is("hello world"));
 
         assertThat(CloseStatus.getCloseStatus(proxyClientSide.receivedFrames.poll()).getReason(), is("standard close"));
         assertThat(CloseStatus.getCloseStatus(serverFrameHandler.receivedFrames.poll()).getReason(), is("standard close"));
@@ -197,7 +205,7 @@ public class WebSocketProxyTest
     {
         testHandler.blockServerUpgradeRequests();
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
-        WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
+        WebSocketProxy.Proxy2Server proxyServerSide = proxy.proxy2Server;
 
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
@@ -237,7 +245,7 @@ public class WebSocketProxyTest
             }
         };
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
-        WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
+        WebSocketProxy.Proxy2Server proxyServerSide = proxy.proxy2Server;
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
@@ -269,7 +277,7 @@ public class WebSocketProxyTest
     {
         serverFrameHandler.throwOnFrame();
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
-        WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
+        WebSocketProxy.Proxy2Server proxyServerSide = proxy.proxy2Server;
 
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, proxyUri, clientFrameHandler);
@@ -299,7 +307,7 @@ public class WebSocketProxyTest
         frame = serverFrameHandler.receivedFrames.poll();
         assertNull(frame);
 
-        // Server2Proxy
+        // Proxy2Server
         frame = proxyServerSide.receivedFrames.poll();
         assertNotNull(frame);
         closeStatus = CloseStatus.getCloseStatus(frame);
@@ -328,7 +336,7 @@ public class WebSocketProxyTest
     {
         serverFrameHandler.throwOnFrame();
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
-        WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
+        WebSocketProxy.Proxy2Server proxyServerSide = proxy.proxy2Server;
 
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT")
         {
@@ -365,7 +373,7 @@ public class WebSocketProxyTest
         assertThat(frame.getPayloadAsUTF8(), is("hello world"));
         assertNull(serverFrameHandler.receivedFrames.poll());
 
-        // Server2Proxy
+        // Proxy2Server
         frame = proxyServerSide.receivedFrames.poll();
         closeStatus = CloseStatus.getCloseStatus(frame);
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
@@ -382,7 +390,7 @@ public class WebSocketProxyTest
         assertNull(proxyClientSide.receivedFrames.poll());
         assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.FAILED));
 
-        // Server2Proxy is failed by the Client2Proxy
+        // Proxy2Server is failed by the Client2Proxy
         assertNull(proxyServerSide.receivedFrames.poll());
         assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.FAILED));
     }

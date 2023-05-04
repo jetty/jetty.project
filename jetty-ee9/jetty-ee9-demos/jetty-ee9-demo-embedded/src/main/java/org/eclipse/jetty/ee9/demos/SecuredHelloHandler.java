@@ -14,20 +14,19 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.io.FileNotFoundException;
-import java.net.URL;
 import java.util.Collections;
 
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.HashLoginService;
-import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.security.Constraint;
 
 public class SecuredHelloHandler
 {
@@ -70,7 +69,7 @@ public class SecuredHelloHandler
         // This constraint requires authentication and in addition that an
         // authenticated user be a member of a given set of roles for
         // authorization purposes.
-        Constraint constraint = new Constraint();
+        ServletConstraint constraint = new ServletConstraint();
         constraint.setName("auth");
         constraint.setAuthenticate(true);
         constraint.setRoles(new String[]{"user", "admin"});

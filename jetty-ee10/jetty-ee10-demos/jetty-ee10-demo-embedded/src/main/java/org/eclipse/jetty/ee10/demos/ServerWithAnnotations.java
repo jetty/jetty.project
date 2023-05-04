@@ -24,8 +24,8 @@ import org.eclipse.jetty.ee10.plus.jndi.Resource;
 import org.eclipse.jetty.ee10.plus.jndi.Transaction;
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 
 /**

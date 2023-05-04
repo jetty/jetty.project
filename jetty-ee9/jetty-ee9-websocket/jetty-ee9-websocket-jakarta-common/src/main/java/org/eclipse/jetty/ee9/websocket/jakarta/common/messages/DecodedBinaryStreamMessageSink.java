@@ -42,7 +42,7 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
         MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
             .findVirtual(DecodedBinaryStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, InputStream.class))
             .bindTo(this);
-        return new InputStreamMessageSink(coreSession, methodHandle);
+        return new InputStreamMessageSink(coreSession, methodHandle, true);
     }
 
     public void onStreamStart(InputStream stream)

@@ -24,11 +24,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
-import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.security.UserIdentity;
 
 public class BasicAuthenticator extends LoginAuthenticator
 {
@@ -47,7 +46,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     @Override
     public String getAuthMethod()
     {
-        return Constraint.__BASIC_AUTH;
+        return BASIC_AUTH;
     }
 
     @Override
@@ -92,7 +91,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             if (DeferredAuthentication.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
 
-            String value = "basic realm=\"" + _loginService.getName() + "\"";
+            String value = "Basic realm=\"" + _loginService.getName() + "\"";
             Charset charset = getCharset();
             if (charset != null)
                 value += ", charset=\"" + charset.name() + "\"";

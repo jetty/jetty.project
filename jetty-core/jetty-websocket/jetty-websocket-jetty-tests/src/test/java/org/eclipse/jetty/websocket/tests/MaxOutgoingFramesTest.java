@@ -22,16 +22,14 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
+import org.eclipse.jetty.websocket.tests.util.FutureCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,7 +93,7 @@ public class MaxOutgoingFramesTest
         }
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, boolean batch)
+        public void sendFrame(Frame frame, org.eclipse.jetty.util.Callback callback, boolean batch)
         {
             try
             {
@@ -110,7 +108,7 @@ public class MaxOutgoingFramesTest
         }
     }
 
-    public static class CountingCallback implements WriteCallback
+    public static class CountingCallback implements Callback
     {
         private final CountDownLatch successes;
 
@@ -120,13 +118,13 @@ public class MaxOutgoingFramesTest
         }
 
         @Override
-        public void writeSuccess()
+        public void succeed()
         {
             successes.countDown();
         }
 
         @Override
-        public void writeFailed(Throwable t)
+        public void fail(Throwable t)
         {
             t.printStackTrace();
         }
@@ -147,22 +145,21 @@ public class MaxOutgoingFramesTest
         assertTrue(socket.openLatch.await(5, TimeUnit.SECONDS));
 
         int numFrames = 30;
-        RemoteEndpoint remote = socket.session.getRemote();
-        remote.setMaxOutgoingFrames(numFrames);
+        socket.session.setMaxOutgoingFrames(numFrames);
 
         // Verify that we can send up to numFrames without any problem.
         // First send will block in the Extension so it needs to be done in new thread, others frames will be queued.
         CountingCallback countingCallback = new CountingCallback(numFrames);
-        new Thread(() -> remote.sendString("0", countingCallback)).start();
+        new Thread(() -> socket.session.sendText("0", countingCallback)).start();
         assertTrue(firstFrameBlocked.await(5, TimeUnit.SECONDS));
         for (int i = 1; i < numFrames; i++)
         {
-            remote.sendString(Integer.toString(i), countingCallback);
+            socket.session.sendText(Integer.toString(i), countingCallback);
         }
 
         // Sending any more frames will result in WritePendingException.
-        FutureWriteCallback callback = new FutureWriteCallback();
-        remote.sendString("fail", callback);
+        FutureCallback callback = new FutureCallback();
+        socket.session.sendText("fail", callback);
         ExecutionException executionException = assertThrows(ExecutionException.class, () -> callback.get(5, TimeUnit.SECONDS));
         assertThat(executionException.getCause(), instanceOf(WritePendingException.class));
 

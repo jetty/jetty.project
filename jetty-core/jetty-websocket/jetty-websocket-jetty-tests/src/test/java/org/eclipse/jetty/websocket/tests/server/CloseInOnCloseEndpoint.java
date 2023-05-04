@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 
 public class CloseInOnCloseEndpoint extends AbstractCloseEndpoint
@@ -20,7 +22,8 @@ public class CloseInOnCloseEndpoint extends AbstractCloseEndpoint
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        getSession().close(StatusCode.SERVER_ERROR, "this should be a noop");
+        Session session = getSession();
+        session.close(StatusCode.SERVER_ERROR, "this should be a noop", Callback.NOOP);
         super.onWebSocketClose(statusCode, reason);
     }
 }

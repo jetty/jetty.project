@@ -42,7 +42,7 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
         MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
             .findVirtual(DecodedTextStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, Reader.class))
             .bindTo(this);
-        return new ReaderMessageSink(coreSession, methodHandle);
+        return new ReaderMessageSink(coreSession, methodHandle, true);
     }
 
     public void onStreamStart(Reader reader)

@@ -19,23 +19,17 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.api.Session;
-
 /**
- * Annotation for tagging methods to receive connection close events.
- * <p>
- * Acceptable method patterns.<br>
- * Note: {@code methodName} can be any name you want to use.
+ * <p>Annotation for methods to receive WebSocket close events.</p>
+ * <p>Acceptable method patterns:</p>
  * <ol>
- * <li>{@code public void methodName(int statusCode, String reason)}</li>
- * <li><code>public void methodName({@link Session} session, int statusCode, String reason)</code></li>
+ * <li>{@code public void <methodName>(int statusCode, String reason)}</li>
+ * <li>{@code public void <methodName>(Session session, int statusCode, String reason)}</li>
  * </ol>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(value =
-    {ElementType.METHOD})
+@Target(ElementType.METHOD)
 public @interface OnWebSocketClose
 {
-    /* no config */
 }

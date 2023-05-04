@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.util.Arrays;
 import java.util.List;
 
 import jakarta.servlet.annotation.HttpConstraint;
@@ -22,19 +21,22 @@ import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServlet;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.Constraint.Transport;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestSecurityAnnotationConversions
@@ -86,7 +88,6 @@ public class TestSecurityAnnotationConversions
     @Test
     public void testDenyAllOnClass() throws Exception
     {
-
         WebAppContext wac = makeWebAppContext(DenyServlet.class.getCanonicalName(), "denyServlet", new String[]{
             "/foo/*", "*.foo"
         });
@@ -98,9 +99,10 @@ public class TestSecurityAnnotationConversions
 
         //set up the expected outcomes:
         //1 ConstraintMapping per ServletMapping pathSpec
-        Constraint expectedConstraint = new Constraint();
-        expectedConstraint.setAuthenticate(true);
-        expectedConstraint.setDataConstraint(Constraint.DC_NONE);
+        Constraint expectedConstraint = new Constraint.Builder()
+            .authorization(Constraint.Authorization.FORBIDDEN)
+            .transport(Transport.ANY)
+            .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
 
@@ -155,10 +157,10 @@ public class TestSecurityAnnotationConversions
 
         //set up the expected outcomes:compareResults
         //1 ConstraintMapping per ServletMapping
-        Constraint expectedConstraint = new Constraint();
-        expectedConstraint.setAuthenticate(true);
-        expectedConstraint.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint = new Constraint.Builder()
+            .roles("tom", "dick", "harry")
+            .transport(Transport.SECURE)
+            .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
         expectedMappings[0] = new ConstraintMapping();
@@ -185,15 +187,13 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
-        Constraint expectedConstraint1 = new Constraint();
-        expectedConstraint1.setAuthenticate(true);
-        expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint1.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint1 = new Constraint.Builder()
+            .roles("tom", "dick", "harry")
+            .transport(Transport.SECURE)
+            .build();
 
-        //a Constraint for the PermitAll on the doGet method with a userdata
-        //constraint of DC_CONFIDENTIAL inherited from the class
-        Constraint expectedConstraint2 = new Constraint();
-        expectedConstraint2.setDataConstraint(Constraint.DC_NONE);
+        //a Constraint for the PermitAll on the doGet method
+        Constraint expectedConstraint2 = Constraint.ALLOWED_ANY_TRANSPORT;
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
@@ -237,15 +237,16 @@ public class TestSecurityAnnotationConversions
         //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
         //with userdata constraint of DC_CONFIDENTIAL
         //and mappings for each of the pathSpecs
-        Constraint expectedConstraint1 = new Constraint();
-        expectedConstraint1.setAuthenticate(true);
-        expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
-        expectedConstraint1.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint1 = new Constraint.Builder()
+            .roles("tom", "dick", "harry")
+            .transport(Transport.SECURE).build();
 
         //a Constraint for the Permit on the GET method with a userdata
         //constraint of DC_CONFIDENTIAL
-        Constraint expectedConstraint2 = new Constraint();
-        expectedConstraint2.setDataConstraint(Constraint.DC_CONFIDENTIAL);
+        Constraint expectedConstraint2 = new Constraint.Builder()
+            .authorization(Constraint.Authorization.ALLOWED)
+            .transport(Transport.SECURE)
+            .build();
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
@@ -275,9 +276,8 @@ public class TestSecurityAnnotationConversions
         assertNotNull(actualMappings);
         assertEquals(expectedMappings.length, actualMappings.size());
 
-        for (int k = 0; k < actualMappings.size(); k++)
+        for (ConstraintMapping am : actualMappings)
         {
-            ConstraintMapping am = actualMappings.get(k);
             boolean matched = false;
 
             for (int i = 0; i < expectedMappings.length && !matched; i++)
@@ -289,15 +289,15 @@ public class TestSecurityAnnotationConversions
                     {
                         matched = true;
 
-                        assertEquals(em.getConstraint().getAuthenticate(), am.getConstraint().getAuthenticate());
-                        assertEquals(em.getConstraint().getDataConstraint(), am.getConstraint().getDataConstraint());
+                        assertEquals(em.getConstraint().getAuthorization(), am.getConstraint().getAuthorization());
+                        assertEquals(em.getConstraint().getTransport(), am.getConstraint().getTransport());
                         if (em.getMethodOmissions() == null)
                         {
                             assertNull(am.getMethodOmissions());
                         }
                         else
                         {
-                            assertTrue(Arrays.equals(am.getMethodOmissions(), em.getMethodOmissions()));
+                            assertArrayEquals(am.getMethodOmissions(), em.getMethodOmissions());
                         }
 
                         if (em.getConstraint().getRoles() == null)
@@ -306,7 +306,7 @@ public class TestSecurityAnnotationConversions
                         }
                         else
                         {
-                            assertTrue(Arrays.equals(em.getConstraint().getRoles(), am.getConstraint().getRoles()));
+                            assertThat(am.getConstraint().getRoles(), Matchers.equalTo(em.getConstraint().getRoles()));
                         }
                     }
                 }

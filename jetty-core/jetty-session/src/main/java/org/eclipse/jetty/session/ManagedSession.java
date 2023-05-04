@@ -51,6 +51,7 @@ public class ManagedSession implements Session
     /**
      * Attribute set if the session is secure
      */
+    @Deprecated
     public static final String SESSION_CREATED_SECURE = "org.eclipse.jetty.security.sessionCreatedSecure";
 
     /**
@@ -346,6 +347,12 @@ public class ManagedSession implements Session
         {
             return _sessionData.getId();
         }
+    }
+
+    @Override
+    public String encodeURI(Request request, String uri, boolean cookiesInUse)
+    {
+        return _manager.encodeURI(request, uri, cookiesInUse);
     }
 
     @Override

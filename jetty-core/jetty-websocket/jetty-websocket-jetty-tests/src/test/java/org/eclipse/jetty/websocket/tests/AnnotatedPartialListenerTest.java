@@ -24,9 +24,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
@@ -42,26 +41,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AnnotatedPartialListenerTest
 {
-    public static class PartialEchoSocket implements WebSocketPartialListener
+    public static class PartialEchoSocket implements Session.Listener.AutoDemanding
     {
         private Session session;
 
         @Override
-        public void onWebSocketConnect(Session session)
+        public void onWebSocketOpen(Session session)
         {
             this.session = session;
         }
 
         @Override
-        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
+        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
-            session.getRemote().sendPartialBytes(payload, fin, WriteCallback.NOOP);
+            session.sendPartialBinary(payload, fin, callback);
         }
 
         @Override
         public void onWebSocketPartialText(String payload, boolean fin)
         {
-            session.getRemote().sendPartialString(payload, fin, WriteCallback.NOOP);
+            session.sendPartialText(payload, fin, Callback.NOOP);
         }
     }
 
@@ -98,12 +97,13 @@ public class AnnotatedPartialListenerTest
         }
 
         @OnWebSocketMessage
-        public void onMessage(ByteBuffer buffer, boolean last)
+        public void onMessage(ByteBuffer buffer, boolean last, Callback callback)
         {
             MessageSegment messageSegment = new MessageSegment();
             messageSegment.buffer = BufferUtil.copy(buffer);
             messageSegment.last = last;
             messages.add(messageSegment);
+            callback.succeed();
         }
     }
 
@@ -111,12 +111,12 @@ public class AnnotatedPartialListenerTest
     public static class InvalidDoubleBinaryListener
     {
         @OnWebSocketMessage
-        public void onMessage(ByteBuffer bytes, boolean last)
+        public void onMessage(ByteBuffer bytes, boolean last, Callback callback)
         {
         }
 
         @OnWebSocketMessage
-        public void onMessage(ByteBuffer bytes)
+        public void onMessage(ByteBuffer bytes, Callback callback)
         {
         }
     }
@@ -175,9 +175,10 @@ public class AnnotatedPartialListenerTest
         PartialStringListener endpoint = new PartialStringListener();
         try (Session session = client.connect(endpoint, serverUri).get(5, TimeUnit.SECONDS))
         {
-            session.getRemote().sendPartialString("hell", false);
-            session.getRemote().sendPartialString("o w", false);
-            session.getRemote().sendPartialString("orld", true);
+            Callback.Completable.with(c -> session.sendPartialText("hell", false, c))
+                .compose(c -> session.sendPartialText("o w", false, c))
+                .compose(c -> session.sendPartialText("orld", true, c))
+                .get();
         }
 
         PartialStringListener.MessageSegment segment;
@@ -201,9 +202,10 @@ public class AnnotatedPartialListenerTest
         PartialByteBufferListener endpoint = new PartialByteBufferListener();
         try (Session session = client.connect(endpoint, serverUri).get(5, TimeUnit.SECONDS))
         {
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("hell"), false);
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("o w"), false);
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("orld"), true);
+            Callback.Completable.with(c -> session.sendPartialBinary(BufferUtil.toBuffer("hell"), false, c))
+                .compose(c -> session.sendPartialBinary(BufferUtil.toBuffer("o w"), false, c))
+                .compose(c -> session.sendPartialBinary(BufferUtil.toBuffer("orld"), true, c))
+                .get();
         }
 
         PartialByteBufferListener.MessageSegment segment;

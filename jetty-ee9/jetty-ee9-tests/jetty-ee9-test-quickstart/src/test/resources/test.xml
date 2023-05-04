@@ -23,7 +23,7 @@ detected.
 
   <Get name="securityHandler">
     <Set name="loginService">
-      <New class="org.eclipse.jetty.ee9.security.HashLoginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
         <Set name="name">Test Realm</Set>        
         <Set name="config"><Ref refid="realmResource"/></Set>
       </New>

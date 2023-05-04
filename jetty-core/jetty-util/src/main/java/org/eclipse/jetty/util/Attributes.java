@@ -486,6 +486,11 @@ public interface Attributes
             _layer = layer;
         }
 
+        public Attributes getPersistentAttributes()
+        {
+            return _persistent;
+        }
+
         @Override
         public Object removeAttribute(String name)
         {

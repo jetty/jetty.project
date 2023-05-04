@@ -458,8 +458,8 @@ public class ResourceHandlerTest
                 {
                     String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -486,8 +486,8 @@ public class ResourceHandlerTest
                 {
                     String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -516,8 +516,8 @@ public class ResourceHandlerTest
                 {
                     String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -577,8 +577,8 @@ public class ResourceHandlerTest
                 {
                     String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -606,8 +606,8 @@ public class ResourceHandlerTest
                 {
                     String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -3375,7 +3375,7 @@ public class ResourceHandlerTest
                 Connection: close\r
                 \r
                 """));
-        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.getField(LOCATION).getValue(), endsWith("/context/dir%3F/"));
 
         response = HttpTester.parseResponse(
@@ -3396,7 +3396,7 @@ public class ResourceHandlerTest
                 Connection: close\r
                 \r
                 """));
-        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.getField(LOCATION).getValue(), endsWith("/context/dir%3F/welcome.txt"));
     }
 
@@ -3600,7 +3600,7 @@ public class ResourceHandlerTest
                 Connection: close\r
                 \r
                 """));
-        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get(LOCATION), containsString("/context/directory/welcome.txt"));
     }
 

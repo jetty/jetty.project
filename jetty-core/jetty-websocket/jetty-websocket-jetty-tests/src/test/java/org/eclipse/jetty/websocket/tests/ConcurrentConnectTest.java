@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
@@ -104,9 +105,9 @@ public class ConcurrentConnectTest
 
         for (EventSocket l : listeners)
         {
-            l.session.getRemote().sendString("ping");
+            l.session.sendText("ping", Callback.NOOP);
             assertThat(l.textMessages.poll(5, TimeUnit.SECONDS), is("ping"));
-            l.session.close(StatusCode.NORMAL, "close from client");
+            l.session.close(StatusCode.NORMAL, "close from client", Callback.NOOP);
         }
 
         for (EventSocket l : listeners)

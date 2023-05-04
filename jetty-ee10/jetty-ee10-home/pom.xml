@@ -465,8 +465,8 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-jaas</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-security</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -474,8 +474,8 @@
       <artifactId>jetty-ee10-annotations</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-openid</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>

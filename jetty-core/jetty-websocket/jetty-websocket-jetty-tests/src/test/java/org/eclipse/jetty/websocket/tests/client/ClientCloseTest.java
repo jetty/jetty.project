@@ -28,11 +28,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.exceptions.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.util.WSURI;
@@ -74,7 +73,7 @@ public class ClientCloseTest
         {
             // Send message from client to server
             final String echoMsg = "echo-test";
-            clientSocket.getRemote().sendString(echoMsg);
+            clientSocket.getSession().sendText(echoMsg, Callback.NOOP);
 
             // Verify received message
             String recvMsg = clientSocket.messageQueue.poll(5, SECONDS);
@@ -159,7 +158,8 @@ public class ClientCloseTest
 
         // client sends close frame (code 1000, normal)
         final String origCloseReason = "send-more-frames";
-        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+        Session session = clientSocket.getSession();
+        session.close(StatusCode.NORMAL, origCloseReason, Callback.NOOP);
 
         // Verify received messages
         String recvMsg = clientSocket.messageQueue.poll(5, SECONDS);
@@ -193,7 +193,8 @@ public class ClientCloseTest
         // client confirms connection via echo
         confirmConnection(clientSocket, clientConnectFuture);
 
-        clientSocket.getSession().getRemote().sendString("too-large-message");
+        Session session = clientSocket.getSession();
+        session.sendText("too-large-message", Callback.NOOP);
         clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.MESSAGE_TOO_LARGE), containsString("Text message too large"));
 
         // client should have noticed the error
@@ -224,7 +225,8 @@ public class ClientCloseTest
 
         // client sends close frame (triggering server connection abort)
         final String origCloseReason = "abort";
-        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+        Session session = clientSocket.getSession();
+        session.close(StatusCode.NORMAL, origCloseReason, Callback.NOOP);
 
         // client reads -1 (EOF)
         // client triggers close event on client ws-endpoint
@@ -255,7 +257,8 @@ public class ClientCloseTest
 
         // client sends close frame
         final String origCloseReason = "sleep|2500";
-        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+        Session session = clientSocket.getSession();
+        session.close(StatusCode.NORMAL, origCloseReason, Callback.NOOP);
 
         // client close should occur
         clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
@@ -283,8 +286,10 @@ public class ClientCloseTest
         confirmConnection(clientSocket, clientConnectFuture);
 
         // Close twice, first close should succeed and second close is a NOOP
-        clientSocket.getSession().close(StatusCode.NORMAL, "close1");
-        clientSocket.getSession().close(StatusCode.NO_CODE, "close2");
+        Session session1 = clientSocket.getSession();
+        session1.close(StatusCode.NORMAL, "close1", Callback.NOOP);
+        Session session = clientSocket.getSession();
+        session.close(StatusCode.NO_CODE, "close2", Callback.NOOP);
 
         // Second close is ignored, we are notified of the first close.
         clientSocket.assertReceivedCloseEvent(5000, is(StatusCode.NORMAL), containsString("close1"));
@@ -324,7 +329,8 @@ public class ClientCloseTest
             // block all the server threads
             for (int i = 0; i < sessionCount; i++)
             {
-                clientSockets.get(i).getSession().getRemote().sendString("block");
+                Session session = clientSockets.get(i).getSession();
+                session.sendText("block", Callback.NOOP);
             }
 
             assertTimeoutPreemptively(ofSeconds(5), () ->
@@ -375,7 +381,8 @@ public class ClientCloseTest
         try
         {
             // Block on the server so that the server does not detect a read failure
-            clientSocket.getSession().getRemote().sendString("block");
+            Session session1 = clientSocket.getSession();
+            session1.sendText("block", Callback.NOOP);
 
             // setup client endpoint for write failure (test only)
             EndPoint endp = clientSocket.getEndPoint();
@@ -384,7 +391,8 @@ public class ClientCloseTest
             // client enqueue close frame
             // should result in a client write failure
             final String origCloseReason = "Normal Close from Client";
-            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+            Session session = clientSocket.getSession();
+            session.close(StatusCode.NORMAL, origCloseReason, Callback.NOOP);
 
             assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
             assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
@@ -405,15 +413,16 @@ public class ClientCloseTest
         }
     }
 
-    public static class ServerEndpoint implements WebSocketFrameListener, WebSocketListener
+    public static class ServerEndpoint implements Session.Listener.AutoDemanding
     {
         private static final Logger LOG = LoggerFactory.getLogger(ServerEndpoint.class);
         private Session session;
         CountDownLatch block = new CountDownLatch(1);
 
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        public void onWebSocketOpen(Session session)
         {
+            this.session = session;
         }
 
         @Override
@@ -427,7 +436,7 @@ public class ClientCloseTest
                     byte[] buf = new byte[1024 * 1024];
                     Arrays.fill(buf, (byte)'x');
                     String bigmsg = new String(buf, UTF_8);
-                    session.getRemote().sendString(bigmsg);
+                    session.sendText(bigmsg, Callback.NOOP);
                 }
                 else if (message.equals("block"))
                 {
@@ -438,7 +447,7 @@ public class ClientCloseTest
                 else
                 {
                     // simple echo
-                    session.getRemote().sendString(message);
+                    session.sendText(message, Callback.NOOP);
                 }
             }
             catch (Throwable t)
@@ -449,17 +458,6 @@ public class ClientCloseTest
         }
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-        }
-
-        @Override
-        public void onWebSocketConnect(Session session)
-        {
-            this.session = session;
-        }
-
-        @Override
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
@@ -467,7 +465,7 @@ public class ClientCloseTest
         }
 
         @Override
-        public void onWebSocketFrame(Frame frame)
+        public void onWebSocketFrame(Frame frame, Callback callback)
         {
             if (frame.getOpCode() == OpCode.CLOSE)
             {
@@ -478,12 +476,12 @@ public class ClientCloseTest
                 {
                     try
                     {
-                        session.getRemote().sendString("Hello");
-                        session.getRemote().sendString("World");
+                        session.sendText("Hello", Callback.NOOP);
+                        session.sendText("World", Callback.NOOP);
                     }
-                    catch (Throwable ignore)
+                    catch (Throwable x)
                     {
-                        LOG.debug("OOPS", ignore);
+                        LOG.debug("OOPS", x);
                     }
                 }
                 else if (reason.equals("abort"))
@@ -494,9 +492,9 @@ public class ClientCloseTest
                         LOG.info("Server aborting session abruptly");
                         session.disconnect();
                     }
-                    catch (Throwable ignore)
+                    catch (Throwable x)
                     {
-                        LOG.trace("IGNORED", ignore);
+                        LOG.trace("IGNORED", x);
                     }
                 }
                 else if (reason.startsWith("sleep|"))
@@ -508,12 +506,13 @@ public class ClientCloseTest
                         LOG.info("Server Sleeping for {} ms", timeMs);
                         TimeUnit.MILLISECONDS.sleep(timeMs);
                     }
-                    catch (InterruptedException ignore)
+                    catch (InterruptedException x)
                     {
-                        LOG.trace("IGNORED", ignore);
+                        LOG.trace("IGNORED", x);
                     }
                 }
             }
+            callback.succeed();
         }
     }
 }

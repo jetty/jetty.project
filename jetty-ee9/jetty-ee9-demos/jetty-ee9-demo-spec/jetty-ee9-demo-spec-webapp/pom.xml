@@ -166,7 +166,7 @@
               <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
             </webApp>
             <loginServices>
-              <loginService implementation="org.eclipse.jetty.ee9.security.HashLoginService">
+              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
                 <config>src/etc/realm.properties</config>
               </loginService>

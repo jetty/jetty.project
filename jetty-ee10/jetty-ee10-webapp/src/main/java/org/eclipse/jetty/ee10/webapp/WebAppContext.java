@@ -40,15 +40,15 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee.Deployable;
+import org.eclipse.jetty.ee.security.ConstraintAware;
+import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -1306,7 +1306,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
          */
 
         java.util.Collection<String> pathMappings = registration.getMappings();
-        if (pathMappings != null)
+        if (pathMappings != null && getSecurityHandler() instanceof ConstraintAware constraintAware)
         {
             ConstraintSecurityHandler.createConstraint(registration.getName(), servletSecurityElement);
 
@@ -1322,9 +1322,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
                         for (ConstraintMapping m : mappings)
                         {
-                            ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
+                            constraintAware.addConstraintMapping(m);
                         }
-                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
+                        constraintAware.checkPathsWithUncoveredHttpMethods();
                         getMetaData().setOriginAPI("constraint.url." + pathSpec);
                         break;
                     }
@@ -1342,13 +1342,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                     {
                         //mapping established via an annotation or by previous call to this method,
                         //replace the security constraint for this pattern
-                        List<ConstraintMapping> constraintMappings = ConstraintSecurityHandler.removeConstraintMappingsForPath(pathSpec, ((ConstraintAware)getSecurityHandler()).getConstraintMappings());
+                        List<ConstraintMapping> constraintMappings = ConstraintSecurityHandler.removeConstraintMappingsForPath(pathSpec, constraintAware.getConstraintMappings());
 
                         List<ConstraintMapping> freshMappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
                         constraintMappings.addAll(freshMappings);
 
                         ((ConstraintSecurityHandler)getSecurityHandler()).setConstraintMappings(constraintMappings);
-                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
+                        constraintAware.checkPathsWithUncoveredHttpMethods();
                         break;
                     }
                     default:

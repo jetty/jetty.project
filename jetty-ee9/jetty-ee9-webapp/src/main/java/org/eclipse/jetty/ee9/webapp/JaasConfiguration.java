@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>JAAS Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the org.eclipse.jetty.jaas package.
+ * be able to see the org.eclipse.jetty.security.jaas package.
  * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
  * which is unknown to the jaas package.
  * </p>
@@ -33,7 +33,7 @@ public class JaasConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.ee9.jaas.");
+        protectAndExpose("org.eclipse.jetty.security.jaas.");
     }
 
     @Override
@@ -41,7 +41,7 @@ public class JaasConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.ee9.jaas.JAASLoginService") != null;
+            return Loader.loadClass("org.eclipse.jetty.security.jaas.JAASLoginService") != null;
         }
         catch (Throwable e)
         {

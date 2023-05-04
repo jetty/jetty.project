@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.io.IOException;
-
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket
 public class GetAuthHeaderEndpoint
 {
-    @OnWebSocketConnect
-    public void onConnect(Session session) throws IOException
+    @OnWebSocketOpen
+    public void onOpen(Session session)
     {
         String authHeaderName = "Authorization";
         String authHeaderValue = session.getUpgradeRequest().getHeader(authHeaderName);
-        session.getRemote().sendString("Header[" + authHeaderName + "]=" + authHeaderValue);
+        session.sendText("Header[" + authHeaderName + "]=" + authHeaderValue, Callback.NOOP);
     }
 }

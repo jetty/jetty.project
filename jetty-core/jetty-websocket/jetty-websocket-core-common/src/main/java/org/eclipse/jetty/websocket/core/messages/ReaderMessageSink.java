@@ -16,18 +16,17 @@ package org.eclipse.jetty.websocket.core.messages;
 import java.lang.invoke.MethodHandle;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.Frame;
 
 public class ReaderMessageSink extends DispatchedMessageSink
 {
-    public ReaderMessageSink(CoreSession session, MethodHandle methodHandle)
+    public ReaderMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
-        super(session, methodHandle);
+        super(session, methodHandle, autoDemand);
     }
 
     @Override
-    public MessageReader newSink(Frame frame)
+    public MessageReader newMessageSink()
     {
-        return new MessageReader(session.getInputBufferSize());
+        return new MessageReader(getCoreSession());
     }
 }
