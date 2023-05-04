@@ -57,6 +57,7 @@ public interface UserIdentityScope
         if (roleRefMap == null || roleRefMap.isEmpty())
             return role;
 
-        return roleRefMap.get(role);
+        String deref = roleRefMap.get(role);
+        return deref == null ? role : deref;
     }
 }
