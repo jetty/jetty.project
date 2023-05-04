@@ -98,7 +98,6 @@ public class HTTP3Configuration
         this.maxTableCapacity = maxTableCapacity;
     }
 
-
     @ManagedAttribute("The max number of QPACK blocked streams")
     public int getMaxBlockedStreams()
     {
