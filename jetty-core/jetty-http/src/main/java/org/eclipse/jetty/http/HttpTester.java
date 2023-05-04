@@ -95,9 +95,14 @@ public class HttpTester
         public abstract int fillBuffer() throws IOException;
     }
 
+    public static Input from(String string)
+    {
+        return from(BufferUtil.toBuffer(string));
+    }
+
     public static Input from(ByteBuffer data)
     {
-        return new Input(data.slice())
+        return new Input(data)
         {
             @Override
             public int fillBuffer()
@@ -201,16 +206,36 @@ public class HttpTester
         return null;
     }
 
+    public static Response parseHeadResponse(String response)
+    {
+        return parseResponse(response, true);
+    }
+
     public static Response parseResponse(String response)
     {
-        return parseResponse(BufferUtil.toBuffer(response));
+        return parseResponse(response, false);
+    }
+
+    private static Response parseResponse(String response, boolean head)
+    {
+        return parseResponse(BufferUtil.toBuffer(response), head);
+    }
+
+    public static Response parseHeadResponse(ByteBuffer response)
+    {
+        return parseResponse(response, true);
     }
 
     public static Response parseResponse(ByteBuffer response)
     {
+        return parseResponse(response, false);
+    }
+
+    private static Response parseResponse(ByteBuffer response, boolean head)
+    {
         try
         {
-            return parseResponse(from(response));
+            return parseResponse(from(response), head);
         }
         catch (IOException x)
         {
@@ -230,6 +255,11 @@ public class HttpTester
 
     public static Response parseResponse(Input input) throws IOException
     {
+        return parseResponse(input, false);
+    }
+
+    public static Response parseResponse(Input input, boolean head) throws IOException
+    {
         Response response;
         HttpParser parser = input.takeHttpParser();
         if (parser != null)
@@ -241,6 +271,7 @@ public class HttpTester
             response = new Response();
             parser = new HttpParser(response);
         }
+        parser.setHeadResponse(head);
         parse(input, parser);
         if (response.isComplete())
             return response;
