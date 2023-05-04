@@ -59,8 +59,14 @@ public abstract class Parser
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     protected final HeaderParser headerParser = new HeaderParser();
+    private final Listener listener;
     private State state = State.HEADER;
     private int padding;
+
+    protected Parser(Listener listener)
+    {
+        this.listener = listener;
+    }
 
     /**
      * @param buffer the bytes to parse
@@ -68,73 +74,81 @@ public abstract class Parser
      */
     public boolean parse(ByteBuffer buffer)
     {
-        while (true)
+        try
         {
-            switch (state)
+            while (true)
             {
-                case HEADER:
+                switch (state)
                 {
-                    if (!headerParser.parse(buffer))
-                        return false;
-                    state = State.CONTENT;
-                    break;
-                }
-                case CONTENT:
-                {
-                    ContentParser contentParser = findContentParser(headerParser.getFrameType());
-                    if (headerParser.getContentLength() == 0)
+                    case HEADER ->
                     {
-                        padding = headerParser.getPaddingLength();
-                        state = State.PADDING;
-                        if (contentParser.noContent())
-                            return true;
+                        if (!headerParser.parse(buffer))
+                            return false;
+                        state = State.CONTENT;
                     }
-                    else
+                    case CONTENT ->
                     {
-                        ContentParser.Result result = contentParser.parse(buffer);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Parsed request {} content {} result={}", headerParser.getRequest(), headerParser.getFrameType(), result);
-
-                        if (result == ContentParser.Result.PENDING)
+                        ContentParser contentParser = findContentParser(headerParser.getFrameType());
+                        if (headerParser.getContentLength() == 0)
                         {
-                            // Not enough data, signal to read/parse more.
+                            padding = headerParser.getPaddingLength();
+                            state = State.PADDING;
+                            if (contentParser.noContent())
+                                return true;
+                        }
+                        else
+                        {
+                            ContentParser.Result result = contentParser.parse(buffer);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Parsed request {} content {} result={}", headerParser.getRequest(), headerParser.getFrameType(), result);
+
+                            if (result == ContentParser.Result.PENDING)
+                            {
+                                // Not enough data, signal to read/parse more.
+                                return false;
+                            }
+                            if (result == ContentParser.Result.ASYNC)
+                            {
+                                // The content will be processed asynchronously, signal to stop
+                                // parsing; the async operation will eventually resume parsing.
+                                return true;
+                            }
+                            padding = headerParser.getPaddingLength();
+                            state = State.PADDING;
+                        }
+                    }
+                    case PADDING ->
+                    {
+                        if (buffer.remaining() >= padding)
+                        {
+                            buffer.position(buffer.position() + padding);
+                            reset();
+                        }
+                        else
+                        {
+                            padding -= buffer.remaining();
+                            buffer.position(buffer.limit());
                             return false;
                         }
-                        if (result == ContentParser.Result.ASYNC)
-                        {
-                            // The content will be processed asynchronously, signal to stop
-                            // parsing; the async operation will eventually resume parsing.
-                            return true;
-                        }
-                        padding = headerParser.getPaddingLength();
-                        state = State.PADDING;
                     }
-                    break;
-                }
-                case PADDING:
-                {
-                    if (buffer.remaining() >= padding)
-                    {
-                        buffer.position(buffer.position() + padding);
-                        reset();
-                        break;
-                    }
-                    else
-                    {
-                        padding -= buffer.remaining();
-                        buffer.position(buffer.limit());
-                        return false;
-                    }
-                }
-                default:
-                {
-                    throw new IllegalStateException();
+                    default -> throw new IllegalStateException();
                 }
             }
+        }
+        catch (Throwable x)
+        {
+            notifyFailure(headerParser.getRequest(), x);
+            buffer.position(buffer.limit());
+            return true;
         }
     }
 
     protected abstract ContentParser findContentParser(FCGI.FrameType frameType);
+
+    private void notifyFailure(int request, Throwable failure)
+    {
+        listener.onFailure(request, failure);
+    }
 
     private void reset()
     {

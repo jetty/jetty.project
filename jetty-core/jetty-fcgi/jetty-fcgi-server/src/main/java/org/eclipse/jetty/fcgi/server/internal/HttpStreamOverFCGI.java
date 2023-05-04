@@ -57,6 +57,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private String _path;
     private String _query;
     private String _version;
+    private String _secure;
     private Content.Chunk _chunk;
     private boolean _committed;
     private boolean _shutdown;
@@ -101,6 +102,8 @@ public class HttpStreamOverFCGI implements HttpStream
             _query = value;
         else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(name))
             _version = value;
+        else if (FCGI.Headers.HTTPS.equalsIgnoreCase(name))
+            _secure = value;
         else
             processField(field);
     }
@@ -108,8 +111,8 @@ public class HttpStreamOverFCGI implements HttpStream
     public void onHeaders()
     {
         String pathQuery = URIUtil.addPathQuery(_path, _query);
-        // TODO https?
-        MetaData.Request request = new MetaData.Request(_method, HttpScheme.HTTP.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
+        HttpScheme scheme = _secure != null ? HttpScheme.HTTPS : HttpScheme.HTTP;
+        MetaData.Request request = new MetaData.Request(_method, scheme.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
         Runnable task = _httpChannel.onRequest(request);
         _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
         // TODO: here we just execute the task.
@@ -260,7 +263,6 @@ public class HttpStreamOverFCGI implements HttpStream
 
         boolean shutdown = _shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
-        ByteBufferPool bufferPool = _generator.getByteBufferPool();
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
         if (head)
