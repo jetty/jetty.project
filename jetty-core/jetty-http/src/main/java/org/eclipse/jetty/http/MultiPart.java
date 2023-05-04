@@ -1648,11 +1648,7 @@ public class MultiPart
             }
             else
             {
-                // unquote the string, but allow any backslashes that don't
-                // form a valid escape sequence to remain as many browsers
-                // even on *nix systems will not escape a filename containing
-                // backslashes
-                return QuotedStringTokenizer.unquoteOnly(value, true);
+                return QuotedStringTokenizer.unquoteOnly(value);
             }
         }
 

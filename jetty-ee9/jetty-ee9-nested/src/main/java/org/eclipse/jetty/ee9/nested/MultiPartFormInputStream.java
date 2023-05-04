@@ -103,7 +103,6 @@ public class MultiPartFormInputStream
     private int _numParts = 0;
     private volatile Throwable _err;
     private volatile Path _tmpDir;
-    private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
     private State state = State.UNPARSED;
@@ -910,11 +909,7 @@ public class MultiPartFormInputStream
             return value;
         }
         else
-            // unquote the string, but allow any backslashes that don't
-            // form a valid escape sequence to remain as many browsers
-            // even on *nix systems will not escape a filename containing
-            // backslashes
-            return QuotedStringTokenizer.unquoteOnly(value, true);
+            return QuotedStringTokenizer.unquoteOnly(value);
     }
 
     /**
