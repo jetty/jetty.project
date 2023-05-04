@@ -1623,6 +1623,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     LOG.debug("ignored", x);
                 return;
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("aborting", x);
             abort(x);
         }
 

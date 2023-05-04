@@ -579,11 +579,22 @@ public class HttpChannelState implements HttpChannel, Components
                 completeStream = callbackCompleted && _writeState == WriteState.LAST_WRITE_COMPLETED;
             }
 
-            if (thrownFailure != null && !callbackCompleted)
-                request._callback.failed(thrownFailure);
+            if (LOG.isDebugEnabled())
+                LOG.debug("stream={}, thrownFailure={}, failure={}, callbackCompleted={}, writeState={}, completeStream={}", stream, thrownFailure, failure, callbackCompleted, _writeState, completeStream);
 
-            if (completeStream || failure != null)
+            if (thrownFailure != null && !callbackCompleted)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("notifying request._callback.failed({})", Objects.toString(thrownFailure));
+                request._callback.failed(thrownFailure);
+            }
+
+            if (completeStream /* || failure != null */)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("completeStream({}, {})", stream, Objects.toString(failure));
                 completeStream(stream, failure);
+            }
         }
 
         /**
@@ -1329,6 +1340,9 @@ public class HttpChannelState implements HttpChannel, Components
                 Throwable unconsumed = stream.consumeAvailable();
                 if (unconsumed != null && ExceptionUtil.areNotAssociated(unconsumed, failure))
                     failure.addSuppressed(unconsumed);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("_stream.isCommitted={}, _response.isCommitted={}, writeErrorResponse={}", httpChannelState._stream.isCommitted(), _request._response.isCommitted(), writeErrorResponse);
 
                 if (writeErrorResponse)
                 {

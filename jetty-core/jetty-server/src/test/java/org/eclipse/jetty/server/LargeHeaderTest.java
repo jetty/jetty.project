@@ -161,7 +161,7 @@ public class LargeHeaderTest
         AtomicInteger count500 = new AtomicInteger(0);
         AtomicInteger countOther = new AtomicInteger(0);
         AtomicInteger countFailure = new AtomicInteger(0);
-        AtomicInteger countNull = new AtomicInteger(0);
+        AtomicInteger countEmpty = new AtomicInteger(0);
 
         for (int i = 0; i < iterations; i++)
         {
@@ -182,7 +182,7 @@ public class LargeHeaderTest
                     if (rawResponse.isEmpty())
                     {
                         LOG.warn("X-Count: {} - Empty Raw Response", count);
-                        countNull.incrementAndGet();
+                        countEmpty.incrementAndGet();
                         return null;
                     }
 
@@ -190,7 +190,7 @@ public class LargeHeaderTest
                     if (response == null)
                     {
                         LOG.warn("X-Count: {} - Null HttpTester.Response", count);
-                        countNull.incrementAndGet();
+                        countEmpty.incrementAndGet();
                     }
                     else if (response.getStatus() == 500)
                     {
@@ -230,10 +230,10 @@ public class LargeHeaderTest
                 All tasks did not fail as expected.
                 Iterations: %d
                 Count (500 response status) [expected]: %d
-                Count (null response): %d
+                Count (empty response): %d
                 Count (throwables): %d
                 Count (other status codes): %d
-                """.formatted(iterations, count500.get(), countNull.get(), countFailure.get(), countOther.get());
+                """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());
         });
     }
 
@@ -305,7 +305,7 @@ public class LargeHeaderTest
                 All tasks did not fail as expected.
                 Iterations: %d
                 Count (500 response status) [expected]: %d
-                Count (Empty responses): %d
+                Count (empty responses): %d
                 Count (throwables): %d
                 Count (other status codes): %d
                 """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());

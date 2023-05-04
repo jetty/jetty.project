@@ -86,6 +86,8 @@ public class ErrorHandler implements Request.Handler
     @Override
     public boolean handle(Request request, Response response, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("handle({}, {}, {})", request, response, callback);
         if (_cacheControl != null)
             response.getHeaders().put(_cacheControl);
 

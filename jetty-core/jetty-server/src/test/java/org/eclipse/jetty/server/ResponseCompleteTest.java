@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,11 +48,12 @@ import static org.hamcrest.Matchers.is;
  */
 public class ResponseCompleteTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseCompleteTest.class);
     private static final byte[] GET_REQUEST_BYTES = """
         GET / HTTP/1.1
         Host: local
         Connection: close
-                    
+        
         """.getBytes(UTF_8);
     private Server server;
 
@@ -147,6 +150,7 @@ public class ResponseCompleteTest
                                     {
                                         handleLatch.countDown();
                                         failureLatch.await();
+                                        LOG.debug("consumeAvailable allowed to continue");
                                         return super.consumeAvailable();
                                     }
                                     catch (InterruptedException e)
@@ -167,10 +171,14 @@ public class ResponseCompleteTest
                 public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
                     response.setStatus(200);
-                    getServer().getThreadPool().execute(() -> callback.failed(new Exception("Test")));
+                    getServer().getThreadPool().execute(() ->
+                    {
+                        LOG.debug("handle.threadPool.execute() -> callback.failed() being called");
+                        callback.failed(new Exception("Test-Threaded"));
+                    });
                     handleLatch.await();
                     if (throwFromHandler)
-                        throw new Exception("Test");
+                        throw new Exception("Test-Handler");
                     return true;
                 }
             });
@@ -186,11 +194,12 @@ public class ResponseCompleteTest
             Thread.sleep(1000); // ensure we are fully out of the HandlerInvoker.run()
             failureLatch.countDown();
 
+            LOG.debug("Reading response");
             String rawResponse = IO.toString(input, UTF_8);
             assertThat("Raw Response Length", rawResponse.length(), greaterThan(0));
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(500));
-            assertThat(response.getContent(), containsString("<h2>HTTP ERROR 500 java.lang.Exception: Test</h2>"));
+            assertThat(response.getContent(), containsString("<h2>HTTP ERROR 500 java.lang.Exception: Test-Threaded</h2>"));
         }
     }
 
