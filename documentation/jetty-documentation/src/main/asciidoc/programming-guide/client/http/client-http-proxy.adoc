@@ -16,7 +16,12 @@
 
 Jetty's `HttpClient` can be configured to use proxies to connect to destinations.
 
-Two types of proxies are available out of the box: a HTTP proxy (provided by class `org.eclipse.jetty.client.HttpProxy`) and a SOCKS 4 proxy (provided by class `org.eclipse.jetty.client.Socks4Proxy`).
+These types of proxies are available out of the box:
+
+* HTTP proxy (provided by class `org.eclipse.jetty.client.HttpProxy`)
+* SOCKS 4 proxy (provided by class `org.eclipse.jetty.client.Socks4Proxy`)
+* xref:pg-client-http-proxy-socks5[SOCKS 5 proxy] (provided by class `org.eclipse.jetty.client.Socks5Proxy`)
+
 Other implementations may be written by subclassing `ProxyConfiguration.Proxy`.
 
 The following is a typical configuration:
@@ -30,14 +35,26 @@ You specify the proxy host and proxy port, and optionally also the addresses tha
 
 Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via HTTP `CONNECT` (for encrypted HTTPS requests).
 
-Proxying is supported for HTTP/1.1 and HTTP/2.
+Proxying is supported for any version of the HTTP protocol.
+
+[[pg-client-http-proxy-socks5]]
+===== SOCKS5 Proxy Support
+
+SOCKS 5 (defined in link:https://datatracker.ietf.org/doc/html/rfc1928[RFC 1928]) offers choices for authentication methods and supports IPv6 (things that SOCKS 4 does not support).
+
+A typical SOCKS 5 proxy configuration with the username/password authentication method is the following:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=proxySocks5]
+----
 
 [[pg-client-http-proxy-authentication]]
-===== Proxy Authentication Support
+===== HTTP Proxy Authentication Support
 
-Jetty's `HttpClient` supports proxy authentication in the same way it supports xref:pg-client-http-authentication[server authentication].
+Jetty's `HttpClient` supports HTTP proxy authentication in the same way it supports xref:pg-client-http-authentication[server authentication].
 
-In the example below, the proxy requires `BASIC` authentication, but the server requires `DIGEST` authentication, and therefore:
+In the example below, the HTTP proxy requires `BASIC` authentication, but the server requires `DIGEST` authentication, and therefore:
 
 [source,java,indent=0]
 ----
