@@ -501,7 +501,7 @@ public class HttpField
         @Override
         public int getIntValue()
         {
-            return (int)_long;
+            return Math.toIntExact(_long);
         }
 
         @Override
