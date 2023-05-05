@@ -68,7 +68,7 @@ public class HttpTesterTest
                 "\r\n"
         );
         MatcherAssert.assertThat(request.getMethod(), is("GET"));
-        MatcherAssert.assertThat(request.getUri(), is("/uri"));
+        MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_0));
         MatcherAssert.assertThat(request.get(HttpHeader.HOST), is("localhost"));
         MatcherAssert.assertThat(request.getContent(), is(""));
@@ -86,7 +86,7 @@ public class HttpTesterTest
                 "\r\n"
         );
         MatcherAssert.assertThat(request.getMethod(), is("GET"));
-        MatcherAssert.assertThat(request.getUri(), is("/uri"));
+        MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_1));
         MatcherAssert.assertThat(request.get(HttpHeader.HOST), is("localhost"));
         MatcherAssert.assertThat(request.getContent(), is(""));
@@ -108,7 +108,7 @@ public class HttpTesterTest
                 "\r\n"
         );
         MatcherAssert.assertThat(request.getMethod(), is("POST"));
-        MatcherAssert.assertThat(request.getUri(), is("/uri"));
+        MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_0));
         MatcherAssert.assertThat(request.get(HttpHeader.HOST), is("localhost"));
         MatcherAssert.assertThat(request.getContent(), is("0123456789ABCDEF"));
@@ -133,7 +133,7 @@ public class HttpTesterTest
                 "\r\n"
         );
         MatcherAssert.assertThat(request.getMethod(), is("POST"));
-        MatcherAssert.assertThat(request.getUri(), is("/uri"));
+        MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_1));
         MatcherAssert.assertThat(request.get(HttpHeader.HOST), is("localhost"));
         MatcherAssert.assertThat(request.getContent(), is("0123456789ABCDEF"));
