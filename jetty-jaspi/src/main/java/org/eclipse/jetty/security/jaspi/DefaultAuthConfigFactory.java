@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import javax.security.auth.AuthPermission;
 import javax.security.auth.message.config.AuthConfigFactory;
 import javax.security.auth.message.config.AuthConfigProvider;
 import javax.security.auth.message.config.RegistrationListener;
@@ -61,7 +60,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(String className, Map properties, String layer, String appContext, String description)
     {
-        checkPermission("registerAuthConfigProvider");
+        checkPermission();
 
         String key = getKey(layer, appContext);
         AuthConfigProvider configProvider = createConfigProvider(className, properties);
@@ -75,7 +74,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(AuthConfigProvider provider, String layer, String appContext, String description)
     {
-        checkPermission("registerAuthConfigProvider");
+        checkPermission();
 
         String key = getKey(layer, appContext);
         DefaultRegistrationContext context = new DefaultRegistrationContext(provider, layer, appContext, description, false);
@@ -88,7 +87,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public boolean removeRegistration(String registrationID)
     {
-        checkPermission("removeAuthRegistration");
+        checkPermission();
 
         DefaultRegistrationContext registrationContext = _registrations.remove(registrationID);
         if (registrationContext == null)
@@ -101,7 +100,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String[] detachListener(RegistrationListener listener, String layer, String appContext)
     {
-        checkPermission("detachAuthListener");
+        checkPermission();
 
         List<String> registrationIds = new ArrayList<>();
         for (DefaultRegistrationContext registration : _registrations.values())
@@ -138,14 +137,14 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public void refresh()
     {
-        checkPermission("refreshAuth");
+        checkPermission();
 
         // TODO: maybe we should re-construct providers created from classname.
     }
 
-    private static void checkPermission(String permission)
+    private static void checkPermission()
     {
-        SecurityUtils.checkPermission(new AuthPermission(permission));
+        SecurityUtils.checkPermission(providerRegistrationSecurityPermission);
     }
 
     private static String getKey(String layer, String appContext)
