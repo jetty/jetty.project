@@ -1,0 +1,71 @@
+<cache xmlns="http://maven.apache.org/BUILD-CACHE-CONFIG/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://maven.apache.org/BUILD-CACHE-CONFIG/1.0.0 https://maven.apache.org/xsd/build-cache-config-1.0.0.xsd">
+  <configuration>
+    <hashAlgorithm>XXMM</hashAlgorithm>
+    <enabled>true</enabled>
+    <!-- activated via cli -->
+    <!--
+      -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true
+      -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server
+    -->
+    <!--    <remote enabled="true" saveToRemote="true" id="remote-build-cache-server">-->
+    <!--      <url>dav:http://nginx-cache-service.jenkins.svc.cluster.local:80</url>-->
+    <!--    </remote>-->
+    <multiModule>
+      <discovery>
+        <scanProfiles>
+          <scanProfile>ci</scanProfile>
+        </scanProfiles>
+      </discovery>
+    </multiModule>
+  </configuration>
+  <input>
+    <global>
+      <glob>{*.java,*.xml,*.properties,*.mod,*.adoc}</glob>
+    </global>
+    <!--    <plugins>-->
+    <!--      <plugin artifactId="maven-surefire-plugin">-->
+    <!--        <effectivePom>-->
+    <!--          <excludeProperties>-->
+    <!--            <excludeProperty>argLine</excludeProperty>-->
+    <!--          </excludeProperties>-->
+    <!--        </effectivePom>-->
+    <!--      </plugin>-->
+    <!--    </plugins>-->
+  </input>
+  <executionControl>
+    <runAlways>
+      <goalsLists>
+        <goalsList artifactId="maven-install-plugin">
+          <goals>
+            <goal>install</goal>
+          </goals>
+        </goalsList>
+      </goalsLists>
+    </runAlways>
+    <reconcile>
+      <plugins>
+        <!-- workaround for https://issues.apache.org/jira/browse/MBUILDCACHE-56 -->
+        <plugin artifactId="maven-enforcer-plugin" goal="enforce">
+          <nologs>
+            <nolog propertyName="commandLineRules"/>
+          </nologs>
+        </plugin>
+        <plugin artifactId="maven-invoker-plugin" goal="integration-test">
+          <reconciles>
+            <reconcile propertyName="scriptVariables" skipValue="true"/>
+          </reconciles>
+        </plugin>
+        <plugin artifactId="maven-surefire-plugin" goal="test">
+          <reconciles>
+            <reconcile propertyName="skip" skipValue="true"/>
+            <reconcile propertyName="skipExec" skipValue="true"/>
+            <reconcile propertyName="skipTests" skipValue="true"/>
+            <reconcile propertyName="testFailureIgnore" skipValue="true"/>
+            <!--            <reconcile propertyName="argLine" skipValue="true"/>-->
+          </reconciles>
+        </plugin>
+      </plugins>
+    </reconcile>
+  </executionControl>
+</cache>

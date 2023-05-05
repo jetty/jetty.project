@@ -34,7 +34,7 @@ public class JettyDemos
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyDemos.class);
     private static final Path JETTY_DEMOS_DIR;
-    private static final String VERSION;
+    private static String VERSION = System.getProperty("jettyVersion", "unknown");
 
     static
     {
@@ -75,24 +75,24 @@ public class JettyDemos
         JETTY_DEMOS_DIR = demosDir;
 
         String version = "unknown";
-        Path pomFile = demosDir.resolve("pom.xml");
-        try (Stream<String> lineStream = Files.lines(pomFile))
+        if (version.equals(VERSION))
         {
-            String versionLine = lineStream
-                .filter((line) -> line.contains("<version>"))
-                .findFirst()
-                .orElseThrow(() ->
-                {
-                    throw new RuntimeException("Unable to find <version> in " + pomFile);
-                });
 
-            version = versionLine.replaceAll("<[^>]*>", "").trim();
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Unable to find <version> in " + pomFile, e);
-        }
+            Path pomFile = demosDir.resolve("pom.xml");
+            try (Stream<String> lineStream = Files.lines(pomFile))
+            {
+                String versionLine = lineStream
+                        .filter((line) -> line.contains("<version>"))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("Unable to find <version> in " + pomFile));
 
+                version = versionLine.replaceAll("<[^>]*>", "").trim();
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to find <version> in " + pomFile, e);
+            }
+        }
         VERSION = version;
     }
 
@@ -141,6 +141,33 @@ public class JettyDemos
         return JETTY_DEMOS_DIR;
     }
 
+    public static Path find(String path, MavenCoordinate mavenCoordinate) throws FileNotFoundException
+    {
+        try
+        {
+            return find(path);
+        }
+        catch (FileNotFoundException e)
+        {
+            //could be not in the target directory if restored from build cache
+            // but as the build always runs install the artifact should be there in local repository
+        }
+        //.repository/org/eclipse/jetty/ee9/demos/jetty-ee9-demo-jndi-webapp/12.0.0-SNAPSHOT/jetty-ee9-demo-jndi-webapp-12.0.0-SNAPSHOT.war
+        String version = mavenCoordinate.version().isEmpty() ? VERSION : mavenCoordinate.version();
+        Path result = Paths.get(System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository"),
+                mavenCoordinate.groupId().replaceAll("\\.", "/"),
+                mavenCoordinate.artifactId(),
+                version,
+                mavenCoordinate.artifactId() + "-" + version + "." + mavenCoordinate.packaging()
+        );
+        if (!Files.exists(result))
+        {
+            throw new FileNotFoundException(result.toString());
+        }
+        return result;
+    }
+
+    @Deprecated
     public static Path find(String path) throws FileNotFoundException
     {
         String expandedPath = path.replaceAll("@VER@", VERSION);
@@ -151,6 +178,15 @@ public class JettyDemos
         }
         return result;
     }
+
+    /**
+     *
+     * @param groupId Maven groupId
+     * @param artifactId Maven artifactId
+     * @param version can be <code>null</code> and default current project version will be used
+     * @param packaging Maven packaging (war, jar)
+     */
+    public record MavenCoordinate(String groupId, String artifactId, String version, String packaging){}
 
     public static void main(String... arg)
     {
