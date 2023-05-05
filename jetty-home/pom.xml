@@ -475,7 +475,7 @@
               <includeGroupIds>
                 org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.demos
               </includeGroupIds>
-              <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,jakarta.security.auth.message,javax.activation</excludeArtifactIds>
+              <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,jakarta.security.auth.message-api,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
