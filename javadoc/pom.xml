@@ -120,7 +120,7 @@
                 jetty-servlet-api,
                 jetty-javax-websocket-api,
                 javax.mail.glassfish,
-                javax.security.auth.message,
+                jakarta.security.auth.message,
                 plexus-utils,
                 plexus-interpolation
               </excludeArtifactIds>
