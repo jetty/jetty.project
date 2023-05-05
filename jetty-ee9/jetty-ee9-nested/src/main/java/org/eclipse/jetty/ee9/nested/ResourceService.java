@@ -784,7 +784,7 @@ public class ResourceService
             //  if there are no satisfiable ranges, send 416 response
             if (ranges == null || ranges.size() == 0)
             {
-                putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
+                response.setContentLength(0);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);

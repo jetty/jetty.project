@@ -23,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -64,7 +63,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         @Override
         public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
             Socks4ProxyConnection connection = new Socks4ProxyConnection(endPoint, executor, connectionFactory, context);
             return customize(connection, context);
@@ -100,9 +99,10 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
          */
         private void writeSocks4Connect()
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            String host = destination.getHost();
-            short port = (short)destination.getPort();
+            Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            Origin.Address address = destination.getOrigin().getAddress();
+            String host = address.getHost();
+            short port = (short)address.getPort();
             Matcher matcher = IPv4_PATTERN.matcher(host);
             if (matcher.matches())
             {
@@ -201,10 +201,11 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         {
             try
             {
-                HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+                Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+                Origin.Address address = destination.getOrigin().getAddress();
                 // Don't want to do DNS resolution here.
-                InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
-                context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
+                InetSocketAddress inet = InetSocketAddress.createUnresolved(address.getHost(), address.getPort());
+                context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, inet);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
                     connectionFactory = destination.getHttpClient().newSslClientConnectionFactory(null, connectionFactory);

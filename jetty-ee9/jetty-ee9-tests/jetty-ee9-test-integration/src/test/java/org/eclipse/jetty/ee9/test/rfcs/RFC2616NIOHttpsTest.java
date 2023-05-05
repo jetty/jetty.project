@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.test.rfcs;
 
-import java.nio.file.Path;
-
 import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.ee9.test.support.rawhttp.HttpsSocketImpl;
@@ -24,8 +22,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.CleanupMode;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Perform the RFC2616 tests against a server running with the Jetty NIO Connector and listening on HTTPS (HTTP over SSL).
@@ -33,7 +29,6 @@ import org.junit.jupiter.api.io.TempDir;
 @ExtendWith(WorkDirExtension.class)
 public class RFC2616NIOHttpsTest extends RFC2616BaseTest
 {
-
     private static XmlBasedJettyServer xmlBasedJettyServer;
 
     @BeforeAll
