@@ -192,14 +192,16 @@ public class ServletApiResponse implements HttpServletResponse
     public void setIntHeader(String name, int value)
     {
         // TODO do we need int versions?
-        _response.getHeaders().putLongField(name, value);
+        if (!isCommitted())
+            _response.getHeaders().putLongField(name, value);
     }
 
     @Override
     public void addIntHeader(String name, int value)
     {
         // TODO do we need a native version?
-        _response.getHeaders().add(name, Integer.toString(value));
+        if (!isCommitted())
+            _response.getHeaders().add(name, Integer.toString(value));
     }
 
     @Override
