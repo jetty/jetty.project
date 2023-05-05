@@ -126,7 +126,7 @@ public class PreEncodedHttpField extends HttpField
     {
         if (_longValue == Long.MIN_VALUE)
             return super.getIntValue();
-        return (int)_longValue;
+        return Math.toIntExact(_longValue);
     }
 
     @Override
