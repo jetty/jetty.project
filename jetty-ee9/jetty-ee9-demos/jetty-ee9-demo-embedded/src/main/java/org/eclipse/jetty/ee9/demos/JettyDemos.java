@@ -71,9 +71,7 @@ public class JettyDemos
                 LOG.warn("Unable to resolve Jetty Demos location", th);
             }
         }
-
         JETTY_DEMOS_DIR = demosDir;
-
         String version = "unknown";
         if (version.equals(VERSION))
         {
@@ -84,14 +82,16 @@ public class JettyDemos
                         .filter((line) -> line.contains("<version>"))
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("Unable to find <version> in " + pomFile));
+
                 version = versionLine.replaceAll("<[^>]*>", "").trim();
             }
             catch (IOException e)
             {
                 LOG.warn("Unable to find <version> in " + pomFile, e);
             }
+
+            VERSION = version;
         }
-        VERSION = version;
     }
 
     private static Path asDirectory(String path)
