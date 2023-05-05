@@ -558,42 +558,90 @@ public class HttpChannelState implements HttpChannel, Components
                 thrownFailure = t;
             }
 
-            HttpStream stream;
-            Throwable failure;
-            boolean completeStream;
-            boolean callbackCompleted;
+            boolean newBehavior = true;
 
-            // coordinate
-            // 1. callback completed
-            // 2. write state == last write completed
-            // 3. handling
-            // 4. failure
-
-            try (AutoLock ignored = _lock.lock())
+            if (newBehavior)
             {
-                stream = _stream;
-                _handling = null;
-                _handled = true;
-                failure = ExceptionUtil.combine(thrownFailure, _failure);
-                callbackCompleted = _callbackCompleted;
-                completeStream = callbackCompleted && _writeState == WriteState.LAST_WRITE_COMPLETED;
-            }
+                // New behavior
+                HttpStream stream;
+                Throwable failure;
+                boolean completeStream;
+                boolean callbackCompleted;
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("stream={}, thrownFailure={}, failure={}, callbackCompleted={}, writeState={}, completeStream={}", stream, thrownFailure, failure, callbackCompleted, _writeState, completeStream);
+                // coordinate
+                // 1. callback completed
+                // 2. write state == last write completed
+                // 3. handling
+                // 4. failure
 
-            if (thrownFailure != null && !callbackCompleted)
-            {
+                try (AutoLock ignored = _lock.lock())
+                {
+                    stream = _stream;
+                    _handling = null;
+                    _handled = true;
+                    failure = ExceptionUtil.combine(thrownFailure, _failure);
+                    callbackCompleted = _callbackCompleted;
+                    completeStream = callbackCompleted && _writeState == WriteState.LAST_WRITE_COMPLETED;
+                }
+
                 if (LOG.isDebugEnabled())
-                    LOG.debug("notifying request._callback.failed({})", Objects.toString(thrownFailure));
-                request._callback.failed(thrownFailure);
-            }
+                    LOG.debug("stream={}, thrownFailure={}, failure={}, callbackCompleted={}, writeState={}, completeStream={}", stream, thrownFailure, failure, callbackCompleted, _writeState, completeStream);
 
-            if (completeStream /* || failure != null */)
+                if (thrownFailure != null && !callbackCompleted)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("notifying request._callback.failed({})", Objects.toString(thrownFailure));
+                    request._callback.failed(thrownFailure);
+                }
+
+                if (completeStream /*|| failure != null*/)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("completeStream({}, {})", stream, Objects.toString(failure));
+                    completeStream(stream, failure);
+                }
+            }
+            else
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("completeStream({}, {})", stream, Objects.toString(failure));
-                completeStream(stream, failure);
+                // Original Behavior
+                HttpStream stream;
+                Throwable failure = null;
+                boolean completeStream = false;
+
+                try (AutoLock ignored = _lock.lock())
+                {
+                    stream = _stream;
+
+                    LOG.debug("thrownFailure={}", Objects.toString(thrownFailure));
+                    if (thrownFailure == null)
+                    {
+                        _handling = null;
+                        _handled = true;
+                        failure = ExceptionUtil.combine(_failure, thrownFailure);
+                        completeStream = _callbackCompleted && (thrownFailure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
+                        LOG.debug("failure={}, writeState={}, completeStream={}", thrownFailure, _writeState, completeStream);
+                    }
+                }
+
+                if (thrownFailure != null)
+                {
+                    LOG.debug("Calling request.callback.failed({})", Objects.toString(thrownFailure));
+                    request._callback.failed(thrownFailure);
+
+                    try (AutoLock ignored = _lock.lock())
+                    {
+                        _handling = null;
+                        _handled = true;
+                        failure = ExceptionUtil.combine(_failure, thrownFailure);
+                        completeStream = _callbackCompleted && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
+                        LOG.debug("failure={}, writeState={}, completeStream={}", failure, _writeState, completeStream);
+                    }
+                }
+                if (completeStream)
+                {
+                    LOG.debug("calling completeStream({}, {})", stream, Objects.toString(failure));
+                    completeStream(stream, failure);
+                }
             }
         }
 
