@@ -714,7 +714,7 @@ public class HttpChannelTest
             """;
 
         String rawResponse = localConnector.getResponse(rawRequest);
-        assertThat(rawResponse, startsWith("200 "));
+        assertThat(rawResponse, startsWith("HTTP/1.1 200 OK"));
 
         HttpStreamCaptureFailure capture = HttpStreamCaptureFailure.captureRef.get();
         assertTrue(capture.failLatch.await(5, TimeUnit.SECONDS));
