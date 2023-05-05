@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class RFC2616NIOHttpsTest extends RFC2616BaseTest
 {
-
     private static XmlBasedJettyServer xmlBasedJettyServer;
 
     @BeforeAll
