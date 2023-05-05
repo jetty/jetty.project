@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public abstract class AbstractHttpTest
 {
@@ -78,9 +79,9 @@ public abstract class AbstractHttpTest
                 writer.write("\r\n");
                 writer.flush();
 
-                HttpTester.Response response = new HttpTester.Response();
                 HttpTester.Input input = HttpTester.from(socket.getInputStream());
-                HttpTester.parseResponse(input, response);
+                HttpTester.Response response = HttpTester.parseResponse(input);
+                assertNotNull(response);
 
                 if (httpVersion.is("HTTP/1.1") &&
                     response.isComplete() &&

@@ -331,9 +331,8 @@ public class RequestTest
                 """;
 
         LocalConnector.LocalEndPoint localEndPoint = connector.executeRequest(rawRequest);
-
         ByteBuffer rawResponse = localEndPoint.waitForResponse(true, 2, TimeUnit.SECONDS);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseHeadResponse(rawResponse);
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -370,7 +369,7 @@ public class RequestTest
                             
                 """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseHeadResponse(connector.getResponse(rawRequest));
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
