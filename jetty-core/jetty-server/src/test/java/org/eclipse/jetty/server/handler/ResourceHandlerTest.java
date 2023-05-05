@@ -1603,7 +1603,7 @@ public class ResourceHandlerTest
         getLocalConnectorConfig().setOutputBufferSize(8);
         _rootResourceHandler.setEtags(true);
 
-        HttpTester.Response response = HttpTester.parseResponse(
+        HttpTester.Response response = HttpTester.parseHeadResponse(
                 _local.getResponse("""
                 HEAD /context/big.txt HTTP/1.1\r
                 Host: local\r
