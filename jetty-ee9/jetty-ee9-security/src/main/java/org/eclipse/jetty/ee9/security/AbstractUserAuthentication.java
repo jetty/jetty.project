@@ -56,13 +56,11 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     @Override
     public boolean isUserInRole(UserIdentityScope scope, String role)
     {
-        String roleToTest = null;
-        if (scope != null && scope.getRoleRefMap() != null)
-            roleToTest = scope.getRoleRefMap().get(role);
-        if (roleToTest == null)
-            roleToTest = role;
+        String roleToTest = UserIdentityScope.deRefRole(scope, role);
+        roleToTest = (roleToTest == null ? null : roleToTest.trim());
+
         //Servlet Spec 3.1 pg 125 if testing special role **
-        if ("**".equals(roleToTest.trim()))
+        if ("**".equals(roleToTest))
         {
             //if ** is NOT a declared role name, the we return true 
             //as the user is authenticated. If ** HAS been declared as a
@@ -70,10 +68,10 @@ public abstract class AbstractUserAuthentication implements User, Serializable
             if (!declaredRolesContains("**"))
                 return true;
             else
-                return _userIdentity.isUserInRole(UserIdentityScope.deRefRole(scope, role));
+                return _userIdentity.isUserInRole(roleToTest);
         }
 
-        return _userIdentity.isUserInRole(UserIdentityScope.deRefRole(scope, role));
+        return _userIdentity.isUserInRole(roleToTest);
     }
 
     public boolean declaredRolesContains(String roleName)

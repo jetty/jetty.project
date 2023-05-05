@@ -50,6 +50,9 @@ public class DefaultUserIdentity implements UserIdentity
     @Override
     public boolean isUserInRole(String role)
     {
+        if (role == null)
+            return false;
+
         if (DefaultIdentityService.isRoleAssociated(role))
             return true;
 
