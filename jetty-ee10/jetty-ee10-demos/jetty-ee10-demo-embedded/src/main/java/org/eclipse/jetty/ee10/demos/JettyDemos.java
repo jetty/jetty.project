@@ -71,13 +71,10 @@ public class JettyDemos
                 LOG.warn("Unable to resolve Jetty Demos location", th);
             }
         }
-
         JETTY_DEMOS_DIR = demosDir;
-
         String version = "unknown";
         if (version.equals(VERSION))
         {
-
             Path pomFile = demosDir.resolve("pom.xml");
             try (Stream<String> lineStream = Files.lines(pomFile))
             {
@@ -92,8 +89,9 @@ public class JettyDemos
             {
                 LOG.warn("Unable to find <version> in " + pomFile, e);
             }
+
+            VERSION = version;
         }
-        VERSION = version;
     }
 
     private static Path asDirectory(String path)
