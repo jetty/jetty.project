@@ -58,7 +58,6 @@ import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspConfigDescriptor;
 import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
-import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -1450,7 +1449,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      * @param dispatches the dispatcher types for this filter
      * @return the FilterHolder that was created
      */
-    public FilterHolder addFilter(HttpFilter filter, String pathSpec, EnumSet<DispatcherType> dispatches)
+    public FilterHolder addFilter(Filter filter, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
         FilterHolder filterHolder = new FilterHolder(filter);
         getServletHandler().addFilterWithMapping(filterHolder, pathSpec, dispatches);

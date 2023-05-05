@@ -661,7 +661,6 @@ public class ResourceService
         // If there are no satisfiable ranges, send a 416 response.
         if (ranges.isEmpty())
         {
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, ByteRange.toNonSatisfiableHeaderValue(contentLength));
             Response.writeError(request, response, callback, HttpStatus.RANGE_NOT_SATISFIABLE_416);
             return;
