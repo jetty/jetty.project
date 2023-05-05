@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -178,7 +179,8 @@ public class LargeHeaderTest
                     output.write(rawRequest.formatted(count).getBytes(UTF_8));
                     output.flush();
 
-                    String rawResponse = readResponse(client, count, input);
+                    // String rawResponse = readResponse(client, count, input);
+                    String rawResponse = IO.toString(input, UTF_8);
                     if (rawResponse.isEmpty())
                     {
                         LOG.warn("X-Count: {} - Empty Raw Response", count);

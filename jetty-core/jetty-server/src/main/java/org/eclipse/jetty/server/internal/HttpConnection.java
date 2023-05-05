@@ -970,13 +970,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            Callback callback = Callback.from(release(), () ->
-            {
-                if (_shutdownOut)
-                    getEndPoint().shutdownOutput();
-            });
-
-            failedCallback(callback, x);
+            failedCallback(release(), x);
         }
 
         @Override
@@ -1576,6 +1570,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             // we need to organized further processing
             if (LOG.isDebugEnabled())
                 LOG.debug("non-current completion {}", this);
+
+            if (_sendCallback._shutdownOut)
+                getEndPoint().shutdownOutput();
 
             // If we are looking for the next request
             if (_parser.isStart())

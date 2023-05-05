@@ -713,8 +713,8 @@ public class HttpChannelTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
-        assertEquals(200, response.getStatus()); // first write was committed
+        String rawResponse = localConnector.getResponse(rawRequest);
+        assertThat(rawResponse, startsWith("200 "));
 
         HttpStreamCaptureFailure capture = HttpStreamCaptureFailure.captureRef.get();
         assertTrue(capture.failLatch.await(5, TimeUnit.SECONDS));
