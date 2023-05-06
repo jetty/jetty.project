@@ -381,8 +381,11 @@ public class HttpChannelState implements HttpChannel, Components
             Runnable invokeWriteFailure = writeCallback == null ? null : () -> writeCallback.failed(x);
 
             ChannelRequest request = _request;
-            Runnable invokeCallback = () ->
+            Runnable invokeFailure = () ->
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("invokeFailure {}", HttpChannelState.this, x);
+
                 // Only fail the callback if the request was not accepted.
                 boolean handling;
                 try (AutoLock ignore = _lock.lock())
@@ -405,10 +408,10 @@ public class HttpChannelState implements HttpChannel, Components
             // Invoke error listeners.
             Predicate<Throwable> onError = _onError;
             _onError = null;
-            Runnable invokeOnErrorAndCallback = onError == null ? invokeCallback : () ->
+            Runnable invokeOnErrorAndCallback = onError == null ? invokeFailure : () ->
             {
                 if (!onError.test(x))
-                    invokeCallback.run();
+                    invokeFailure.run();
             };
 
             // Serialize all the error actions.
@@ -995,6 +998,12 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    /**
+     * The Channel's implementation of the {@link Response} API.
+     * Also is a {@link Callback} used the {@link #write(boolean, ByteBuffer, Callback)}
+     * method when calling
+     * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
+     */
     public static class ChannelResponse implements Response, Callback
     {
         private final ChannelRequest _request;
@@ -1120,8 +1129,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
-        @Override
-        public void succeeded()
+        public void invokeWriteCallback(Function<Callback, Runnable> invoke)
         {
             // Called when an individual write succeeds.
             Callback callback;
@@ -1134,30 +1142,40 @@ public class HttpChannelState implements HttpChannel, Components
                 if (httpChannel._writeState == WriteState.LAST_WRITTEN)
                     httpChannel._writeState = WriteState.LAST_WRITE_COMPLETED;
             }
-            if (LOG.isDebugEnabled())
-                LOG.debug("write succeeded {} {}", callback, this);
             if (callback != null)
-                httpChannel._serializedInvoker.run(callback::succeeded);
+                httpChannel._serializedInvoker.run(invoke.apply(callback));
         }
 
+        /**
+         * Called when the call to
+         * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
+         * made by {@link ChannelResponse#write(boolean, ByteBuffer, Callback)} succeeds.
+         * The implementation maintains the {@link #_writeState} variable before taking
+         * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
+         */
+        @Override
+        public void succeeded()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("write succeeded {}", this);
+            invokeWriteCallback(c -> c::succeeded);
+        }
+
+        /**
+         * Called when the call to
+         * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
+         * made by {@link ChannelResponse#write(boolean, ByteBuffer, Callback)} fails.
+         * <p>
+         * The implementation maintains the {@link #_writeState} variable before taking
+         * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
+         * @param x The reason for the failure.
+         */
         @Override
         public void failed(Throwable x)
         {
-            // Called when an individual write fails.
-            Callback callback;
-            HttpChannelState httpChannel;
-            try (AutoLock ignored = _request._lock.lock())
-            {
-                httpChannel = _request.lockedGetHttpChannel();
-                callback = httpChannel._writeCallback;
-                httpChannel._writeCallback = null;
-                if (httpChannel._writeState == WriteState.LAST_WRITTEN)
-                    httpChannel._writeState = WriteState.LAST_WRITE_COMPLETED;
-            }
             if (LOG.isDebugEnabled())
-                LOG.debug("write failed {}", callback, x);
-            if (callback != null)
-                httpChannel._serializedInvoker.run(() -> callback.failed(x));
+                LOG.debug("write failed {}", this, x);
+            invokeWriteCallback(c -> () -> c.failed(x));
         }
 
         @Override
@@ -1240,6 +1258,12 @@ public class HttpChannelState implements HttpChannel, Components
                 getTrailersSupplier()
             );
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s %s@%x}".formatted(this.getClass().getSimpleName(), hashCode(), getRequest().getMethod(), getRequest().getHttpURI(), getRequest().hashCode());
+        }
     }
 
     private static class ChannelCallback implements Callback
@@ -1252,6 +1276,9 @@ public class HttpChannelState implements HttpChannel, Components
             _request = request;
         }
 
+        /**
+         * Called when the {@link Handler} (or it's delegates) succeeds the request handling.
+         */
         @Override
         public void succeeded()
         {
@@ -1312,6 +1339,10 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannelState._handlerInvoker.completeStream(stream, failure);
         }
 
+        /**
+         * Called when the {@link Handler} (or it's delegates) fail the request handling.
+         * @param failure The reason for the failure.
+         */
         @Override
         public void failed(Throwable failure)
         {
@@ -1336,7 +1367,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Consume any input.
                 Throwable unconsumed = stream.consumeAvailable();
-                if (unconsumed != null && ExceptionUtil.areNotAssociated(unconsumed, failure))
+                if (ExceptionUtil.areNotAssociated(unconsumed, failure))
                     failure.addSuppressed(unconsumed);
 
                 if (LOG.isDebugEnabled())
@@ -1363,6 +1394,11 @@ public class HttpChannelState implements HttpChannel, Components
             else if (completeStream)
             {
                 httpChannelState._handlerInvoker.completeStream(stream, failure);
+            }
+            else
+            {
+                failure.addSuppressed(new Throwable());
+                LOG.warn("No action on failed {}", this, failure); // TODO what should we do here?
             }
         }
 
@@ -1404,6 +1440,10 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    /**
+     * Used as the {@link Response} and {@link Callback} when writing the error response
+     * from {@link HttpChannelState.ChannelCallback#failed(Throwable)}.
+     */
     private static class ErrorResponse extends Response.Wrapper implements Callback
     {
         private final ChannelRequest _request;
@@ -1451,9 +1491,14 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
+        /**
+         * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} succeeds.
+         */
         @Override
         public void succeeded()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ErrorWrite succeeded: {}", this);
             boolean needLastWrite;
             MetaData.Response responseMetaData = null;
             HttpChannelState httpChannel;
@@ -1486,9 +1531,15 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
+        /**
+         * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} fails.
+         * @param x The reason for the failure.
+         */
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ErrorWrite failed: {}", this, x);
             Throwable failure;
             try (AutoLock ignored = _request._lock.lock())
             {
@@ -1497,6 +1548,12 @@ public class HttpChannelState implements HttpChannel, Components
             if (ExceptionUtil.areNotAssociated(failure, x))
                 failure.addSuppressed(x);
             _request.getHttpChannel()._handlerInvoker.failed(failure);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
         }
     }
 

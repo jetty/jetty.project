@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpException;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -258,22 +260,7 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new Callback.Nested(callback)
-            {
-                @Override
-                public void succeeded()
-                {
-                    buffer.release();
-                    super.succeeded();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    buffer.release();
-                    super.failed(x);
-                }
-            });
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
 
             return true;
         }
@@ -577,6 +564,82 @@ public class ErrorHandler implements Request.Handler
             if (_cause != null)
                 names.add(ERROR_EXCEPTION);
             return names;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+        }
+    }
+
+    /**
+     * The callback used by
+     * {@link ErrorHandler#generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
+     * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
+     * so that the {@link RetainableByteBuffer} used can be released.
+     */
+    private static class WriteErrorCallback extends Callback.Nested
+    {
+        private final Retainable _retainable;
+        private final AtomicReference<Throwable> _completedBy = new AtomicReference<>(); // TODO remove
+
+        public WriteErrorCallback(Callback callback, Retainable retainable)
+        {
+            super(callback);
+            _retainable = retainable;
+        }
+
+        /**
+         * Called when the call to {@link Response#write(boolean, ByteBuffer, Callback)}
+         * by {@link #generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
+         * succeeds.
+         */
+        @Override
+        public void succeeded()
+        {
+            checkCompletion();
+            try
+            {
+                super.succeeded();
+            }
+            finally
+            {
+                _retainable.release();
+            }
+        }
+
+        /**
+         * Called when the call to {@link Response#write(boolean, ByteBuffer, Callback)}
+         * by {@link #generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
+         * fails.
+         * @param x The reason for the failure.
+         */
+        @Override
+        public void failed(Throwable x)
+        {
+            checkCompletion();
+            try
+            {
+                super.failed(x);
+            }
+            finally
+            {
+                _retainable.release();
+            }
+        }
+
+        private void checkCompletion()
+        {
+            // TODO remove
+            Throwable completedBy = new Throwable(this.toString());
+            Throwable alreadyBy = _completedBy.getAndSet(completedBy);
+
+            if (alreadyBy != null)
+            {
+                alreadyBy.addSuppressed(completedBy);
+                LOG.warn("Error write already completed by ", alreadyBy);
+            }
         }
     }
 }
