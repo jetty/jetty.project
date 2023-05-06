@@ -122,13 +122,13 @@ public class HttpChannelState implements HttpChannel, Components
     private boolean _handled;
     private WriteState _writeState = WriteState.NOT_LAST;
     private boolean _callbackCompleted = false;
-    private Throwable _failure;
     private ChannelRequest _request;
     private HttpStream _stream;
     private long _committedContentLength = -1;
     private Runnable _onContentAvailable;
     private Callback _writeCallback;
     private Content.Chunk.Error _error;
+    private Throwable _failure;
     private Predicate<Throwable> _onError;
     private Attributes _cache;
 
@@ -360,7 +360,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _request = new ChannelRequest(this, ERROR_REQUEST);
             }
 
-            // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error.
+            // Set the error to arrange for any subsequent reads, demands or writes to fail.
             if (_error == null)
             {
                 _error = Content.Chunk.from(x);
@@ -371,33 +371,44 @@ public class HttpChannelState implements HttpChannel, Components
                 return null;
             }
 
-            // Invoke onContentAvailable() if we are currently demanding.
+            // If not handled, then we just fail the request callback
+            if (!_handled && _handling == null)
+                return () -> _request._callback.failed(x);
+
+            // if we are currently demanding, take the onContentAvailable runnable to invoke below.
             Runnable invokeOnContentAvailable = _onContentAvailable;
             _onContentAvailable = null;
 
-            // If a write() is in progress, fail the write callback.
+            // If a write call is in progress, take the writeCallback to fail below
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
             Runnable invokeWriteFailure = writeCallback == null ? null : () -> writeCallback.failed(x);
 
+            // Create runnable to invoke any onError listeners
             ChannelRequest request = _request;
-            Runnable invokeFailure = () ->
+            Runnable invokeListeners = () ->
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("invokeFailure {}", HttpChannelState.this, x);
-
-                // Only fail the callback if the request was not accepted.
-                boolean handling;
+                Predicate<Throwable> onError;
                 try (AutoLock ignore = _lock.lock())
                 {
-                    handling = _handling != null || _handled;
+                    onError = _onError;
                 }
-                if (handling)
+
+                try
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("already handled, skipping failing callback in {}", HttpChannelState.this);
+                        LOG.debug("invokeListeners {} {}", HttpChannelState.this, onError, x);
+                    if (onError.test(x))
+                        return;
                 }
-                else
+                catch (Throwable throwable)
+                {
+                    if (ExceptionUtil.areNotAssociated(x, throwable))
+                        x.addSuppressed(throwable);
+                }
+
+                // If the application has not been otherwise informed of the failure
+                if (invokeOnContentAvailable == null && invokeWriteFailure == null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("failing callback in {}", this, x);
@@ -405,17 +416,8 @@ public class HttpChannelState implements HttpChannel, Components
                 }
             };
 
-            // Invoke error listeners.
-            Predicate<Throwable> onError = _onError;
-            _onError = null;
-            Runnable invokeOnErrorAndCallback = onError == null ? invokeFailure : () ->
-            {
-                if (!onError.test(x))
-                    invokeFailure.run();
-            };
-
             // Serialize all the error actions.
-            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnErrorAndCallback);
+            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeListeners);
         }
 
         // Consume content as soon as possible to open any flow control window.
