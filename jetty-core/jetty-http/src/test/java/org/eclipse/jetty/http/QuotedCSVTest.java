@@ -157,6 +157,6 @@ public class QuotedCSVTest
         assertThat(QuotedCSV.join(Collections.singletonList("hi")), is("hi"));
         assertThat(QuotedCSV.join("hi", "ho"), is("hi, ho"));
         assertThat(QuotedCSV.join("h i", "h,o"), is("\"h i\", \"h,o\""));
-        assertThat(QuotedCSV.join("h\"i", "h\to"), is("\"h\\\"i\", \"h\\to\""));
+        assertThat(QuotedCSV.join("h\"i", "h\to"), is("\"h\\\"i\", \"h\to\""));
     }
 }

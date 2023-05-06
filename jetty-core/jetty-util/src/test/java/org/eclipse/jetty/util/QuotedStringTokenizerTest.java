@@ -113,6 +113,7 @@ public class QuotedStringTokenizerTest
         assertEquals("\"a\\\"c\"", QuotedStringTokenizer.quoteIfNeeded("a\"c", " ,"));
         assertEquals("a\n\r\t", QuotedStringTokenizer.quoteIfNeeded("a\n\r\t", " ,"));
         assertEquals("\u0000\u001f", QuotedStringTokenizer.quoteIfNeeded("\u0000\u001f", ", "));
+        assertEquals("\"a\\\"c\"", QuotedStringTokenizer.quoteIfNeeded("a\"c", ", "));
     }
 
     @Test

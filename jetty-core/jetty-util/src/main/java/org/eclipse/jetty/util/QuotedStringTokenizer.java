@@ -256,18 +256,17 @@ public class QuotedStringTokenizer extends StringTokenizer
     {
         if (str == null)
             return;
-        // check for delimiters in input string
-        int len = str.length();
-        if (len == 0)
-            return;
-
-        int ch;
-        for (int i = 0; i < len; i++)
+        if (str.length() == 0)
         {
-            ch = str.codePointAt(i);
-            if (delim.indexOf(ch) >= 0)
+            buf.append("\"\"");
+            return;
+        }
+
+        for (int i = 0; i < str.length(); i++)
+        {
+            char c = str.charAt(i);
+            if (c == '\\' || c == '"' || delim.indexOf(c) >= 0)
             {
-                // found a delimiter codepoint. we need to quote it.
                 quote(buf, str);
                 return;
             }

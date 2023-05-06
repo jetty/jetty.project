@@ -25,10 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -677,7 +674,7 @@ public class MultiPartFormDataTest
 
         String contents = """
             --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="Taken on Aug 22 \\ 2012.jpg"\r
+            content-disposition: form-data; name="stuff"; filename="Taken on Aug 22 \\\\ 2012.jpg"\r
             Content-Type: text/plain\r
             \r
             stuffaaa\r
