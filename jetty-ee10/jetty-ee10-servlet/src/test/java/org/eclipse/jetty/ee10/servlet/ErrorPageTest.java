@@ -104,6 +104,7 @@ public class ErrorPageTest
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
         _context.addServlet(ExceptionServlet.class, "/exception-servlet");
+        _context.addServlet(FailResetBufferAfterCommit.class, "/fail-reset-buffer/*");
         _context.addServlet(FailSendErrorAfterCommit.class, "/fail-senderror-after-commit/*");
 
         Handler.Singleton noopHandler = new Handler.Wrapper()
@@ -284,6 +285,13 @@ public class ErrorPageTest
 
         assertThat(response, not(containsString("This shouldn't be seen")));
         assertThat(response, not(containsString("BadHeader")));
+    }
+
+    @Test
+    public void testFailResetBufferAfterCommit() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail-reset-buffer/foo HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("Some content"));
     }
 
     @Test
@@ -735,6 +743,23 @@ public class ErrorPageTest
             {
                 LOG.trace("IGNORED", ignore);
             }
+        }
+    }
+
+    public static class FailResetBufferAfterCommit extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.getWriter().println("Some content");
+            response.flushBuffer(); //cause a commit
+
+            assertThrows(IllegalStateException.class,
+                () ->
+                {
+                    response.resetBuffer();
+                },
+            "Reset after response committed");
         }
     }
 
