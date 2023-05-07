@@ -320,14 +320,14 @@ public class HttpClientLoadTest extends AbstractTest
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength >= 0)
                     {
-                        response.getHeaders().putLongField("X-Content", contentLength);
+                        response.getHeaders().put("X-Content", contentLength);
                         content = ByteBuffer.allocate(contentLength);
                     }
                     response.write(true, content, callback);
                 }
                 case "POST" ->
                 {
-                    response.getHeaders().putLongField("X-Content", request.getHeaders().getLongField("X-Upload"));
+                    response.getHeaders().put("X-Content", request.getHeaders().getLongField("X-Upload"));
                     Content.copy(request, response, callback);
                 }
                 default -> throw new UnsupportedOperationException();

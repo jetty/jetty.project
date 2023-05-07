@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -73,7 +74,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).endsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
-                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                    response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
                     Content.Sink.write(response, false, null);
                     request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
@@ -81,7 +82,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                    response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                     response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 }
             }
@@ -105,7 +106,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
                 response.setStatus(HttpStatus.OK_200);
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                 response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
             }
         });
@@ -121,7 +122,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Throwable
             {
                 response.setStatus(HttpStatus.OK_200);
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                 Content.Sink.write(response, false, null);
                 request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
             }

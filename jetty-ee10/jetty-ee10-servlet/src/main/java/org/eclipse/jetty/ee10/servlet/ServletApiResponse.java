@@ -167,7 +167,7 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void setDateHeader(String name, long date)
     {
-        _response.getHeaders().putDateField(name, date);
+        _response.getHeaders().putDate(name, date);
     }
 
     @Override
@@ -193,7 +193,7 @@ public class ServletApiResponse implements HttpServletResponse
     {
         // TODO do we need int versions?
         if (!isCommitted())
-            _response.getHeaders().putLongField(name, value);
+            _response.getHeaders().put(name, value);
     }
 
     @Override
@@ -305,7 +305,7 @@ public class ServletApiResponse implements HttpServletResponse
                 throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
             _response.setContentLength(len);
-            _response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, len);
+            _response.getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
             if (_response.isAllContentWritten(written))
             {
                 try
@@ -324,7 +324,7 @@ public class ServletApiResponse implements HttpServletResponse
             if (written > 0)
                 throw new IllegalArgumentException("setContentLength(0) when already written " + written);
             _response.setContentLength(len);
-            _response.getHeaders().put(HttpHeader.CONTENT_LENGTH, "0");
+            _response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
         }
         else
         {
@@ -342,7 +342,7 @@ public class ServletApiResponse implements HttpServletResponse
         if (isCommitted())
             return;
         _response.setContentLength(len);
-        _response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
+        _response.getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
     }
 
     @Override

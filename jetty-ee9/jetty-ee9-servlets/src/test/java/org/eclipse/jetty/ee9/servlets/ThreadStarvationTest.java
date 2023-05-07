@@ -234,7 +234,7 @@ public class ThreadStarvationTest
                     if (c < parties)
                         barrier.await(10, TimeUnit.SECONDS);
                     response.setStatus(200);
-                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 13);
+                    response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 13);
                     Content.Sink.write(response, true, "Hello World!\n", callback);
                     return true;
                 }

@@ -103,7 +103,7 @@ public class SSLReadEOFAfterResponseTest
                 }
 
                 // Second: write the response.
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, bytes.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, bytes.length);
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
                     response.write(true, BufferUtil.toBuffer(bytes), blocker);

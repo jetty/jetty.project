@@ -124,7 +124,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, length);
                 response.write(true, ByteBuffer.wrap(bytes), callback);
                 return true;
             }
@@ -635,7 +635,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, length);
                 response.write(true, ByteBuffer.allocate(length), callback);
                 return true;
             }

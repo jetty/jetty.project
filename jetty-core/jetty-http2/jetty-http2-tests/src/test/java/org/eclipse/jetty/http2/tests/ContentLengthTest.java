@@ -136,7 +136,7 @@ public class ContentLengthTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 // Write a single buffer, with a Content-Length
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
                 return true;
             }

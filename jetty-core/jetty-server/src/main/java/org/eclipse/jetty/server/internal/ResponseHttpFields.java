@@ -279,27 +279,27 @@ public class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public Mutable putDateField(HttpHeader name, long date)
+    public Mutable putDate(HttpHeader name, long date)
     {
-        return _committed.get() ? this : _fields.putDateField(name, date);
+        return _committed.get() ? this : _fields.putDate(name, date);
     }
 
     @Override
-    public Mutable putDateField(String name, long date)
+    public Mutable putDate(String name, long date)
     {
-        return _committed.get() ? this : _fields.putDateField(name, date);
+        return _committed.get() ? this : _fields.putDate(name, date);
     }
 
     @Override
-    public Mutable putLongField(HttpHeader name, long value)
+    public Mutable put(HttpHeader header, long value)
     {
-        return _committed.get() ? this : _fields.putLongField(name, value);
+        return _committed.get() ? this : _fields.put(header, value);
     }
 
     @Override
-    public Mutable putLongField(String name, long value)
+    public Mutable put(String name, long value)
     {
-        return _committed.get() ? this : _fields.putLongField(name, value);
+        return _committed.get() ? this : _fields.put(name, value);
     }
 
     @Override
