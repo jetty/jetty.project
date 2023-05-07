@@ -113,7 +113,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
             // when not using cache
             extraArgs " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
           } else {
-            extraArgs = " -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server "
+            extraArgs = " -Dmaven.build.cache.lazyRestore=true -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server "
           }
           sh "mvn $extraArgs -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
         }
