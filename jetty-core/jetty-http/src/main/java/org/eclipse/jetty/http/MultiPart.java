@@ -26,6 +26,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,6 +68,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class MultiPart
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPart.class);
+    private static final QuotedStringTokenizer CONTENT_DISPOSITION_TOKENIZER = new QuotedStringTokenizer(";", true, false, true);
     private static final int MAX_BOUNDARY_LENGTH = 70;
 
     private MultiPart()
@@ -1609,16 +1611,15 @@ public class MultiPart
             {
                 String namePrefix = "name=";
                 String fileNamePrefix = "filename=";
-                QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(headerValue, ";", false, true);
-                while (tokenizer.hasMoreTokens())
+                for (Iterator<String> tokens = CONTENT_DISPOSITION_TOKENIZER.tokenize(headerValue); tokens.hasNext();)
                 {
-                    String token = tokenizer.nextToken().trim();
+                    String token = tokens.next();
                     String lowerToken = StringUtil.asciiToLowerCase(token);
                     if (lowerToken.startsWith(namePrefix))
                     {
                         int index = lowerToken.indexOf(namePrefix);
                         String value = token.substring(index + namePrefix.length()).trim();
-                        name = QuotedStringTokenizer.unquoteOnly(value);
+                        name = CONTENT_DISPOSITION_TOKENIZER.unquote(value); // TODO should the tokenizer be returnQuotes == false ?
                     }
                     else if (lowerToken.startsWith(fileNamePrefix))
                     {
@@ -1648,7 +1649,7 @@ public class MultiPart
             }
             else
             {
-                return QuotedStringTokenizer.unquoteOnly(value);
+                return QuotedStringTokenizer.unquote(value);
             }
         }
 

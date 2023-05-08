@@ -14,7 +14,9 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.StringTokenizer;
 
 /**
@@ -28,189 +30,198 @@ import java.util.StringTokenizer;
  *
  * @see java.util.StringTokenizer
  */
-public class QuotedStringTokenizer extends StringTokenizer
+public class QuotedStringTokenizer
 {
+    public static final QuotedStringTokenizer COMMA_SEPARATED_VALUES = new QuotedStringTokenizer(",", true, false, false);
+
     private static final String __delim = "\t\n\r";
-    private final String _string;
-    private final StringBuffer _token;
     private final boolean _returnQuotes;
     private final boolean _returnDelimiters;
+    private final boolean _optionalWhiteSpace;
+    private final boolean _embeddedQuotes;
     private String _delim = __delim;
-    private boolean _hasToken = false;
-    private int _i = 0;
-    private int _lastStart = 0;
 
-    public QuotedStringTokenizer(String str,
-                                 String delim,
+    public QuotedStringTokenizer(String delim,
+                                 boolean optionalWhiteSpace,
+                                 boolean returnDelimiters,
+                                 boolean returnQuotes,
+                                 boolean embeddedQuotes)
+    {
+        if (delim != null)
+            _delim = delim;
+        _optionalWhiteSpace = optionalWhiteSpace;
+        _returnDelimiters = returnDelimiters;
+        _returnQuotes = returnQuotes;
+        _embeddedQuotes = embeddedQuotes;
+
+        if (_delim.indexOf('"') >= 0)
+            throw new Error("Can't use quote as delimiters: " + _delim);
+    }
+
+    public QuotedStringTokenizer(String delim,
+                                 boolean optionalWhiteSpace,
                                  boolean returnDelimiters,
                                  boolean returnQuotes)
     {
-        super("");
-        _string = str;
-        if (delim != null)
-            _delim = delim;
-        _returnDelimiters = returnDelimiters;
-        _returnQuotes = returnQuotes;
-
-        if (_delim.indexOf('"') >= 0)
-            throw new Error("Can't use quotes as delimiters: " + _delim);
-
-        _token = new StringBuffer(_string.length() > 1024 ? 512 : _string.length() / 2);
+        this(delim, optionalWhiteSpace, returnDelimiters, returnQuotes, false);
     }
 
-    public QuotedStringTokenizer(String str,
-                                 String delim,
-                                 boolean returnDelimiters)
+    public QuotedStringTokenizer(String delim,
+                                 boolean returnDelimiters,
+                                 boolean returnQuotes)
     {
-        this(str, delim, returnDelimiters, false);
+        this(delim, false, returnDelimiters, returnQuotes);
     }
 
-    public QuotedStringTokenizer(String str,
-                                 String delim)
+    protected boolean isOWS(char c)
     {
-        this(str, delim, false, false);
+        return c == ' ' || c == '\t';
     }
 
-    public QuotedStringTokenizer(String str)
+    public Iterator<String> tokenize(String string)
     {
-        this(str, null, false, false);
-    }
+        Objects.requireNonNull(string);
 
-    @Override
-    public boolean hasMoreTokens()
-    {
-        // Already found a token
-        if (_hasToken)
-            return true;
-
-        _lastStart = _i;
-
-        int state = 0;
-        boolean escape = false;
-        while (_i < _string.length())
+        return new Iterator<>()
         {
-            char c = _string.charAt(_i++);
-
-            switch (state)
+            private enum State
             {
-                case 0 -> // Start
-                {
-                    if (_delim.indexOf(c) >= 0)
-                    {
-                        if (_returnDelimiters)
-                        {
-                            _token.append(c);
-                            return _hasToken = true;
-                        }
-                    }
-                    else if (c == '\"')
-                    {
-                        if (_returnQuotes)
-                            _token.append(c);
-                        state = 3;
-                    }
-                    else
-                    {
-                        _token.append(c);
-                        _hasToken = true;
-                        state = 1;
-                    }
-                }
-                case 1 -> // Token
-                {
-                    _hasToken = true;
-                    if (_delim.indexOf(c) >= 0)
-                    {
-                        if (_returnDelimiters)
-                            _i--;
-                        return _hasToken;
-                    }
-                    else if (c == '\"')
-                    {
-                        if (_returnQuotes)
-                            _token.append(c);
-                        state = 3;
-                    }
-                    else
-                    {
-                        _token.append(c);
-                    }
-                }
-                case 3 -> // Double Quote
-                {
-                    _hasToken = true;
-                    if (escape)
-                    {
-                        escape = false;
-                        _token.append(c);
-                    }
-                    else if (c == '\"')
-                    {
-                        if (_returnQuotes)
-                            _token.append(c);
-                        state = 1;
-                    }
-                    else if (c == '\\')
-                    {
-                        if (_returnQuotes)
-                            _token.append(c);
-                        escape = true;
-                    }
-                    else
-                    {
-                        _token.append(c);
-                    }
-                }
-                default -> throw new IllegalStateException();
+                START,
+                TOKEN,
+                QUOTE,
+                END,
             }
-        }
 
-        return _hasToken;
-    }
+            private final StringBuilder _token = new StringBuilder();
+            State _state = State.START;
+            private boolean _hasToken;
+            private int _i = 0;
 
-    @Override
-    public String nextToken()
-        throws NoSuchElementException
-    {
-        if (!hasMoreTokens() || _token == null)
-            throw new NoSuchElementException();
-        String t = _token.toString();
-        _token.setLength(0);
-        _hasToken = false;
-        return t;
-    }
+            @Override
+            public boolean hasNext()
+            {
+                if (_hasToken)
+                    return true;
 
-    @Override
-    public String nextToken(String delim)
-        throws NoSuchElementException
-    {
-        _delim = delim;
-        _i = _lastStart;
-        _token.setLength(0);
-        _hasToken = false;
-        return nextToken();
-    }
+                boolean escape = false;
+                while (_i < string.length())
+                {
+                    char c = string.charAt(_i++);
 
-    @Override
-    public boolean hasMoreElements()
-    {
-        return hasMoreTokens();
-    }
+                    switch (_state)
+                    {
+                        case START ->
+                        {
+                            if (_delim.indexOf(c) >= 0)
+                            {
+                                if (_returnDelimiters)
+                                {
+                                    _token.append(c);
+                                    return _hasToken = true;
+                                }
+                            }
+                            else if (c == '"')
+                            {
+                                if (_returnQuotes)
+                                    _token.append(c);
+                                _state = State.QUOTE;
+                            }
+                            else if (!_optionalWhiteSpace || !isOWS(c))
+                            {
+                                _token.append(c);
+                                _hasToken = true;
+                                _state = State.TOKEN;
+                            }
+                        }
+                        case TOKEN ->
+                        {
+                            _hasToken = true;
+                            if (_delim.indexOf(c) >= 0)
+                            {
+                                if (_returnDelimiters)
+                                    _i--;
+                                _state = State.START;
+                                return _hasToken;
+                            }
+                            else if (_embeddedQuotes && c == '"')
+                            {
+                                if (_returnQuotes)
+                                    _token.append(c);
+                                _state = State.QUOTE;
+                            }
+                            else if (_optionalWhiteSpace && isOWS(c))
+                            {
+                                _state = State.END;
+                                return _hasToken;
+                            }
+                            else
+                            {
+                                _token.append(c);
+                            }
+                        }
+                        case QUOTE ->
+                        {
+                            _hasToken = true;
+                            if (escape)
+                            {
+                                escape = false;
+                                _token.append(c);
+                            }
+                            else if (c == '\"')
+                            {
+                                if (_returnQuotes)
+                                    _token.append(c);
+                                if (_embeddedQuotes)
+                                    _state = State.TOKEN;
+                                else
+                                {
+                                    _state = State.END;
+                                    return _hasToken;
+                                }
+                            }
+                            else if (c == '\\')
+                            {
+                                if (_returnQuotes)
+                                    _token.append(c);
+                                escape = true;
+                            }
+                            else
+                            {
+                                _token.append(c);
+                            }
+                        }
+                        case END ->
+                        {
+                            if (_delim.indexOf(c) >= 0)
+                            {
+                                _state = State.START;
+                                if (_returnDelimiters)
+                                {
+                                    _token.append(c);
+                                    return _hasToken = true;
+                                }
+                            }
+                            else if (!_optionalWhiteSpace || !isOWS(c))
+                                throw new IllegalArgumentException("characters after end quote");
+                        }
+                        default -> throw new IllegalStateException();
+                    }
+                }
 
-    @Override
-    public Object nextElement()
-        throws NoSuchElementException
-    {
-        return nextToken();
-    }
+                return _hasToken;
+            }
 
-    /**
-     * Not implemented.
-     */
-    @Override
-    public int countTokens()
-    {
-        return -1;
+            @Override
+            public String next()
+            {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+                String t = _token.toString();
+                _token.setLength(0);
+                _hasToken = false;
+                return t;
+            }
+        };
     }
 
     /**
@@ -219,10 +230,9 @@ public class QuotedStringTokenizer extends StringTokenizer
      * embedded delimiters, quote characters or the empty string.
      *
      * @param s The string to quote.
-     * @param delim the delimiter to use to quote the string
      * @return quoted string
      */
-    public static String quoteIfNeeded(String s, String delim)
+    public String quoteIfNeeded(String s)
     {
         if (s == null)
             return null;
@@ -232,7 +242,7 @@ public class QuotedStringTokenizer extends StringTokenizer
         for (int i = 0; i < s.length(); i++)
         {
             char c = s.charAt(i);
-            if (c == '\\' || c == '"' || delim.indexOf(c) >= 0)
+            if (c == '\\' || c == '"' || _delim.indexOf(c) >= 0)
             {
                 StringBuffer b = new StringBuffer(s.length() + 8);
                 quote(b, s);
@@ -250,9 +260,8 @@ public class QuotedStringTokenizer extends StringTokenizer
      *
      * @param buf the buffer to append to
      * @param str the string to possibly quote
-     * @param delim the delimiter characters that will trigger automatic quoting
      */
-    public static void quoteIfNeeded(StringBuilder buf, String str, String delim)
+    public void quoteIfNeeded(StringBuilder buf, String str)
     {
         if (str == null)
             return;
@@ -265,7 +274,11 @@ public class QuotedStringTokenizer extends StringTokenizer
         for (int i = 0; i < str.length(); i++)
         {
             char c = str.charAt(i);
-            if (c == '\\' || c == '"' || delim.indexOf(c) >= 0)
+            if (c == '\\' ||
+                c == '"' ||
+                _delim.indexOf(c) >= 0 ||
+                _optionalWhiteSpace && c == ' '
+            )
             {
                 quote(buf, str);
                 return;
@@ -325,78 +338,6 @@ public class QuotedStringTokenizer extends StringTokenizer
         {
             throw new RuntimeException(x);
         }
-    }
-
-    /**
-     * Quote a string into an Appendable.
-     * Only quotes and backslash are escaped.
-     *
-     * @param buffer The Appendable
-     * @param input The String to quote.
-     */
-    public static void quoteOnly(Appendable buffer, String input)
-    {
-        if (input == null)
-            return;
-
-        try
-        {
-            buffer.append('"');
-            for (int i = 0; i < input.length(); ++i)
-            {
-                char c = input.charAt(i);
-                if (c == '"' || c == '\\')
-                    buffer.append('\\');
-                buffer.append(c);
-            }
-            buffer.append('"');
-        }
-        catch (IOException x)
-        {
-            throw new RuntimeException(x);
-        }
-    }
-
-    /**
-     * Unquote a string, NOT converting unicode sequences
-     *
-     * @param s The string to unquote.
-     * @return quoted string
-     */
-    public static String unquoteOnly(String s)
-    {
-        if (s == null)
-            return null;
-        if (s.length() < 2)
-            return s;
-
-        char first = s.charAt(0);
-        char last = s.charAt(s.length() - 1);
-        if (first != '"' || last != '"')
-            return s;
-
-        StringBuilder b = new StringBuilder(s.length() - 2);
-        boolean escape = false;
-        for (int i = 1; i < s.length() - 1; i++)
-        {
-            char c = s.charAt(i);
-
-            if (escape)
-            {
-                escape = false;
-                b.append(c);
-            }
-            else if (c == '\\')
-            {
-                escape = true;
-            }
-            else
-            {
-                b.append(c);
-            }
-        }
-
-        return b.toString();
     }
 
     /**

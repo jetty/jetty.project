@@ -31,6 +31,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -91,6 +92,7 @@ public class MultiPartFormInputStream
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
+    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = new QuotedStringTokenizer(";", true, false, true);
 
     private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
@@ -733,12 +735,13 @@ public class MultiPartFormInputStream
                     throw new IOException("Missing content-disposition");
                 }
 
-                QuotedStringTokenizer tok = new QuotedStringTokenizer(contentDisposition, ";", false, true);
+                QUOTED_STRING_TOKENIZER.tokenize(contentDisposition);
+
                 String name = null;
                 String filename = null;
-                while (tok.hasMoreTokens())
+                for (Iterator<String> i = QUOTED_STRING_TOKENIZER.tokenize(contentDisposition); i.hasNext();)
                 {
-                    String t = tok.nextToken().trim();
+                    String t = i.next();
                     String tl = StringUtil.asciiToLowerCase(t);
                     if (tl.startsWith("form-data"))
                         formData = true;
@@ -887,7 +890,7 @@ public class MultiPartFormInputStream
     {
         int idx = nameEqualsValue.indexOf('=');
         String value = nameEqualsValue.substring(idx + 1).trim();
-        return QuotedStringTokenizer.unquoteOnly(value);
+        return QuotedStringTokenizer.unquote(value);
     }
 
     private static String filenameValue(String nameEqualsValue)
@@ -909,7 +912,7 @@ public class MultiPartFormInputStream
             return value;
         }
         else
-            return QuotedStringTokenizer.unquoteOnly(value);
+            return QuotedStringTokenizer.unquote(value);
     }
 
     /**

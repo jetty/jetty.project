@@ -182,7 +182,7 @@ public final class HttpCookieUtils
         {
             builder.append(";Domain=");
             if (quoteDomain)
-                QuotedStringTokenizer.quoteOnly(builder, domain);
+                QuotedStringTokenizer.quote(builder, domain);
             else
                 builder.append(domain);
         }
@@ -191,7 +191,7 @@ public final class HttpCookieUtils
         {
             builder.append(";Path=");
             if (quotePath)
-                QuotedStringTokenizer.quoteOnly(builder, path);
+                QuotedStringTokenizer.quote(builder, path);
             else
                 builder.append(path);
         }
@@ -407,7 +407,7 @@ public final class HttpCookieUtils
     private static void quoteIfNeededAndAppend(String text, StringBuilder builder)
     {
         if (isQuoteNeeded(text))
-            QuotedStringTokenizer.quoteOnly(builder, text);
+            QuotedStringTokenizer.quote(builder, text);
         else
             builder.append(text);
     }

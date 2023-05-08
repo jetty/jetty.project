@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -26,6 +26,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
+    private static final QuotedStringTokenizer SPLIT_PARAMETERS = new QuotedStringTokenizer(";", true, false, true);
+    private static final QuotedStringTokenizer NAME_VALUE_PAIR = new QuotedStringTokenizer("=", true, false, false);
     private static final String __zeroquality = "q=0";
     private final HttpHeader _header;
     private final String _name;
@@ -83,17 +85,17 @@ public class HttpField
         if (parameters == null)
             return value.substring(0, i).trim();
 
-        StringTokenizer tok1 = new QuotedStringTokenizer(value.substring(i), ";", false, true);
-        while (tok1.hasMoreTokens())
+        for (Iterator<String> tokens = SPLIT_PARAMETERS.tokenize(value.substring(i)); tokens.hasNext();)
         {
-            String token = tok1.nextToken();
-            StringTokenizer tok2 = new QuotedStringTokenizer(token, "= ");
-            if (tok2.hasMoreTokens())
+            String token = tokens.next();
+
+            Iterator<String> nameValue = NAME_VALUE_PAIR.tokenize(token);
+            if (nameValue.hasNext())
             {
-                String paramName = tok2.nextToken();
+                String paramName = nameValue.next();
                 String paramVal = null;
-                if (tok2.hasMoreTokens())
-                    paramVal = tok2.nextToken();
+                if (nameValue.hasNext())
+                    paramVal = nameValue.next();
                 parameters.put(paramName, paramVal);
             }
         }

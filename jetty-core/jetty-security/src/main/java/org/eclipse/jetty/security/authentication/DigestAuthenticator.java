@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 public class DigestAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(DigestAuthenticator.class);
+    private static final QuotedStringTokenizer __tokenizer = new QuotedStringTokenizer("=, ", true, false);
 
     private final SecureRandom _random = new SecureRandom();
     private long _maxNonceAgeMs = 60 * 1000;
@@ -105,14 +107,13 @@ public class DigestAuthenticator extends LoginAuthenticator
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Credentials: {}", credentials);
-            QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
             final Digest digest = new Digest(req.getMethod());
             String last = null;
             String name = null;
 
-            while (tokenizer.hasMoreTokens())
+            for (Iterator<String> i = __tokenizer.tokenize(credentials); i.hasNext();)
             {
-                String tok = tokenizer.nextToken();
+                String tok = i.next();
                 char c = (tok.length() == 1) ? tok.charAt(0) : '\0';
 
                 switch (c)

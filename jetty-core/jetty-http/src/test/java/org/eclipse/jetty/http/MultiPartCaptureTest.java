@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -154,7 +155,7 @@ public class MultiPartCaptureTest
         String boundaryAttribute = "boundary=";
         int boundaryIndex = expectations.contentType.indexOf(boundaryAttribute);
         assertThat(boundaryIndex, greaterThan(0));
-        String boundary = QuotedStringTokenizer.unquoteOnly(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
+        String boundary = QuotedStringTokenizer.unquote(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
 
         TestPartsListener listener = new TestPartsListener(expectations);
         MultiPart.Parser parser = new MultiPart.Parser(boundary, listener);
@@ -289,10 +290,10 @@ public class MultiPartCaptureTest
             if (StringUtil.isBlank(contentType))
                 return defaultCharset;
 
-            QuotedStringTokenizer tok = new QuotedStringTokenizer(contentType, ";", false, false);
-            while (tok.hasMoreTokens())
+            QuotedStringTokenizer tok = new QuotedStringTokenizer(";", true, false, false);
+            for (Iterator<String> i = tok.tokenize(contentType); i.hasNext();)
             {
-                String str = tok.nextToken().trim();
+                String str = i.next().trim();
                 if (str.startsWith("charset="))
                 {
                     return str.substring("charset=".length());

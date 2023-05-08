@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 import org.hamcrest.Matchers;
@@ -49,7 +50,12 @@ public class QuotedStringTokenizerTest
 
             Arguments.of("a,\"b,c", ",", false, true, new String[] {"a", "\"b,c"}),
 
+            // TODO test optional white space
+
+            // TODO quotes not at start/end
+
             Arguments.of("", ", ", false, false, new String[] {})
+
         );
     }
 
@@ -57,17 +63,19 @@ public class QuotedStringTokenizerTest
     @MethodSource("tokenizerTests")
     public void testTokenizer(String string, String delims, boolean delim, boolean quotes, String[] expected)
     {
-        QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(string, delims, delim, quotes);
+        QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(delims, delim, quotes);
+
+        Iterator<String> iterator = tokenizer.tokenize(string);
 
         if (expected == null)
-            assertFalse(tokenizer.hasMoreTokens());
+            assertFalse(iterator.hasNext());
         else
         {
             int i = 0;
             while (i < expected.length)
             {
-                assertTrue(tokenizer.hasMoreTokens());
-                assertThat(tokenizer.nextToken(), Matchers.equalTo(expected[i++]));
+                assertTrue(iterator.hasNext());
+                assertThat(iterator.next(), Matchers.equalTo(expected[i++]));
             }
         }
     }
@@ -91,29 +99,19 @@ public class QuotedStringTokenizerTest
     }
 
     /*
-     * Test for String nextToken()
-     */
-    @Test
-    public void testTokenizer4()
-    {
-        QuotedStringTokenizer tok = new QuotedStringTokenizer("abc'def,ghi'jkl", ",");
-        assertEquals("abc'def", tok.nextToken());
-        assertEquals("ghi'jkl", tok.nextToken());
-    }
-
-    /*
      * Test for String quote(String, String)
      */
     @Test
     public void testQuoteIfNeeded()
     {
-        assertEquals("abc", QuotedStringTokenizer.quoteIfNeeded("abc", " ,"));
-        assertEquals("\"a c\"", QuotedStringTokenizer.quoteIfNeeded("a c", " ,"));
-        assertEquals("a'c", QuotedStringTokenizer.quoteIfNeeded("a'c", " ,"));
-        assertEquals("\"a\\\"c\"", QuotedStringTokenizer.quoteIfNeeded("a\"c", " ,"));
-        assertEquals("a\n\r\t", QuotedStringTokenizer.quoteIfNeeded("a\n\r\t", " ,"));
-        assertEquals("\u0000\u001f", QuotedStringTokenizer.quoteIfNeeded("\u0000\u001f", ", "));
-        assertEquals("\"a\\\"c\"", QuotedStringTokenizer.quoteIfNeeded("a\"c", ", "));
+        QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(", ", false, false, false, false);
+        assertEquals("abc", tokenizer.quoteIfNeeded("abc"));
+        assertEquals("\"a c\"", tokenizer.quoteIfNeeded("a c"));
+        assertEquals("a'c", tokenizer.quoteIfNeeded("a'c"));
+        assertEquals("\"a\\\"c\"", tokenizer.quoteIfNeeded("a\"c"));
+        assertEquals("a\n\r\t", tokenizer.quoteIfNeeded("a\n\r\t"));
+        assertEquals("\u0000\u001f", tokenizer.quoteIfNeeded("\u0000\u001f"));
+        assertEquals("\"a\\\"c\"", tokenizer.quoteIfNeeded("a\"c"));
     }
 
     @Test
@@ -129,16 +127,6 @@ public class QuotedStringTokenizerTest
         assertEquals("ab\u001ec", QuotedStringTokenizer.unquote("\"ab\u001ec\""));
     }
 
-    @Test
-    public void testUnquoteOnly()
-    {
-        assertEquals("abc", QuotedStringTokenizer.unquoteOnly("abc"));
-        assertEquals("a\"c", QuotedStringTokenizer.unquoteOnly("\"a\\\"c\""));
-        assertEquals("a'c", QuotedStringTokenizer.unquoteOnly("\"a'c\""));
-        assertEquals("a\\n\\r\\t", QuotedStringTokenizer.unquoteOnly("\"a\\\\n\\\\r\\\\t\""));
-        assertEquals("ba\\uXXXXaaa", QuotedStringTokenizer.unquoteOnly("\"ba\\\\uXXXXaaa\""));
-    }
-
     /**
      * When encountering a Content-Disposition line during a multi-part mime file
      * upload, the filename="..." field can contain '\' characters that do not
@@ -150,10 +138,11 @@ public class QuotedStringTokenizerTest
     {
         String contentDisposition = "form-data; name=\"fileup\"; filename=\"Taken on Aug 22 \\ 2012.jpg\"";
 
-        QuotedStringTokenizer tok = new QuotedStringTokenizer(contentDisposition, ";", false, true);
+        QuotedStringTokenizer tok = new QuotedStringTokenizer(";", true, false, true, true);
+        Iterator<String> iter = tok.tokenize(contentDisposition);
 
-        assertEquals("form-data", tok.nextToken().trim());
-        assertEquals("name=\"fileup\"", tok.nextToken().trim());
-        assertEquals("filename=\"Taken on Aug 22 \\ 2012.jpg\"", tok.nextToken().trim());
+        assertEquals("form-data", iter.next());
+        assertEquals("name=\"fileup\"", iter.next());
+        assertEquals("filename=\"Taken on Aug 22 \\ 2012.jpg\"", iter.next());
     }
 }
