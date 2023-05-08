@@ -11,15 +11,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-public class NBitStringParser
+import org.eclipse.jetty.util.CharsetStringBuilder;
+
+/**
+ * <p>Used to decode string literals as described in RFC7541.</p>
+ *
+ * <p>The string literal representation consists of a single bit to indicate whether huffman encoding is used,
+ * followed by the string byte length encoded with the n-bit integer representation also from RFC7541, and
+ * the bytes of the string are directly after this.</p>
+ *
+ * <p>Characters which are illegal field-vchar values are replaced with
+ * either ' ' or '?' as described in RFC9110</p>
+ */
+public class NBitStringDecoder
 {
-    private final NBitIntegerParser _integerParser;
+    private final NBitIntegerDecoder _integerDecoder;
     private final HuffmanDecoder _huffmanBuilder;
-    private final StringBuilder _stringBuilder;
+    private final CharsetStringBuilder.Iso88591StringBuilder _builder;
     private boolean _huffman;
     private int _count;
     private int _length;
@@ -34,13 +46,18 @@ public class NBitStringParser
         VALUE
     }
 
-    public NBitStringParser()
+    public NBitStringDecoder()
     {
-        _integerParser = new NBitIntegerParser();
+        _integerDecoder = new NBitIntegerDecoder();
         _huffmanBuilder = new HuffmanDecoder();
-        _stringBuilder = new StringBuilder();
+        _builder = new CharsetStringBuilder.Iso88591StringBuilder();
     }
 
+    /**
+     * Set the prefix length in of the string representation in bits.
+     * A prefix of 6 means the string representation starts after the first 2 bits.
+     * @param prefix the number of bits in the string prefix.
+     */
     public void setPrefix(int prefix)
     {
         if (_state != State.PARSING)
@@ -48,6 +65,15 @@ public class NBitStringParser
         _prefix = prefix;
     }
 
+    /**
+     * Decode a string from the buffer. If the buffer does not contain the complete string representation
+     * then a value of null is returned to indicate that more data is needed to complete parsing.
+     * This should be only after the prefix has been set with {@link #setPrefix(int)}.
+     * @param buffer the buffer containing the encoded string.
+     * @return the decoded string or null to indicate that more data is needed.
+     * @throws ArithmeticException if the string length value overflows a int.
+     * @throws EncodingException if the string encoding is invalid.
+     */
     public String decode(ByteBuffer buffer) throws EncodingException
     {
         while (true)
@@ -58,11 +84,11 @@ public class NBitStringParser
                     byte firstByte = buffer.get(buffer.position());
                     _huffman = ((0x80 >>> (8 - _prefix)) & firstByte) != 0;
                     _state = State.LENGTH;
-                    _integerParser.setPrefix(_prefix - 1);
+                    _integerDecoder.setPrefix(_prefix - 1);
                     continue;
 
                 case LENGTH:
-                    _length = _integerParser.decodeInt(buffer);
+                    _length = _integerDecoder.decodeInt(buffer);
                     if (_length < 0)
                         return null;
                     _state = State.VALUE;
@@ -70,7 +96,7 @@ public class NBitStringParser
                     continue;
 
                 case VALUE:
-                    String value = _huffman ? _huffmanBuilder.decode(buffer) : asciiStringDecode(buffer);
+                    String value = _huffman ? _huffmanBuilder.decode(buffer) : stringDecode(buffer);
                     if (value != null)
                         reset();
                     return value;
@@ -81,23 +107,24 @@ public class NBitStringParser
         }
     }
 
-    private String asciiStringDecode(ByteBuffer buffer)
+    private String stringDecode(ByteBuffer buffer)
     {
         for (; _count < _length; _count++)
         {
             if (!buffer.hasRemaining())
                 return null;
-            _stringBuilder.append((char)(0x7F & buffer.get()));
+            _builder.append(buffer.get());
         }
-        return _stringBuilder.toString();
+
+        return _builder.build();
     }
 
     public void reset()
     {
         _state = State.PARSING;
-        _integerParser.reset();
+        _integerDecoder.reset();
         _huffmanBuilder.reset();
-        _stringBuilder.setLength(0);
+        _builder.reset();
         _prefix = 0;
         _count = 0;
         _length = 0;
