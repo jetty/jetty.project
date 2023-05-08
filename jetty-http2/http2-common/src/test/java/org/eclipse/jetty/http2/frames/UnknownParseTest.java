@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -48,8 +47,8 @@ public class UnknownParseTest
     public void testInvalidFrameSize()
     {
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
-        parser.init(listener -> new Parser.Listener.Wrapper(listener)
+        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -73,15 +72,15 @@ public class UnknownParseTest
     private void testParse(Function<ByteBuffer, ByteBuffer> fn)
     {
         AtomicBoolean failure = new AtomicBoolean();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
                 failure.set(true);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         // Iterate a few times to be sure the parser is properly reset.
         for (int i = 0; i < 2; ++i)

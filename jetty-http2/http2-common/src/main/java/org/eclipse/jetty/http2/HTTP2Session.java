@@ -94,6 +94,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final AtomicLong bytesWritten = new AtomicLong();
     private final EndPoint endPoint;
+    private final Parser parser;
     private final Generator generator;
     private final Session.Listener listener;
     private final FlowControlStrategy flowControl;
@@ -107,9 +108,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private boolean pushEnabled;
     private boolean connectProtocolEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
         this.endPoint = endPoint;
+        this.parser = parser;
         this.generator = generator;
         this.listener = listener;
         this.flowControl = flowControl;
@@ -210,6 +212,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public EndPoint getEndPoint()
     {
         return endPoint;
+    }
+
+    public Parser getParser()
+    {
+        return parser;
     }
 
     public Generator getGenerator()
@@ -348,8 +355,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         if (frame.isReply())
             return;
 
-        // Iterate over all settings
-        for (Map.Entry<Integer, Integer> entry : frame.getSettings().entrySet())
+        Map<Integer, Integer> settings = frame.getSettings();
+        configure(settings, false);
+        notifySettings(this, frame);
+
+        if (reply)
+        {
+            SettingsFrame replyFrame = new SettingsFrame(Collections.emptyMap(), true);
+            settings(replyFrame, Callback.NOOP);
+        }
+    }
+
+    private void configure(Map<Integer, Integer> settings, boolean local)
+    {
+        for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
             int key = entry.getKey();
             int value = entry.getValue();
@@ -381,14 +400,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating initial stream window size to {} for {}", value, this);
-                    flowControl.updateInitialStreamWindow(this, value, false);
+                    flowControl.updateInitialStreamWindow(this, value, local);
                     break;
                 }
                 case SettingsFrame.MAX_FRAME_SIZE:
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating max frame size to {} for {}", value, this);
-                    generator.setMaxFrameSize(value);
+                    if (local)
+                        parser.setMaxFrameLength(value);
+                    else
+                        generator.setMaxFrameSize(value);
                     break;
                 }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
@@ -413,13 +435,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     break;
                 }
             }
-        }
-        notifySettings(this, frame);
-
-        if (reply)
-        {
-            SettingsFrame replyFrame = new SettingsFrame(Collections.emptyMap(), true);
-            settings(replyFrame, Callback.NOOP);
         }
     }
 
@@ -629,6 +644,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener)
     {
+        if (!isPushEnabled())
+            throw new IllegalStateException("Push is disabled");
         streamsState.push(frame, new Promise.Wrapper<>(promise)
         {
             @Override
@@ -1283,9 +1300,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SETTINGS:
                 {
                     SettingsFrame settingsFrame = (SettingsFrame)frame;
-                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
-                    if (initialWindow != null)
-                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
+                    if (!settingsFrame.isReply())
+                        configure(settingsFrame.getSettings(), true);
                     break;
                 }
                 default:

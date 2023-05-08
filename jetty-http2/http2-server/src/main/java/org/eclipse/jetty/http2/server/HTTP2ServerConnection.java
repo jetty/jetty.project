@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
-public class HTTP2ServerConnection extends HTTP2Connection
+public class HTTP2ServerConnection extends HTTP2Connection implements ServerParser.Listener
 {
     /**
      * @param protocol An HTTP2 protocol variant
@@ -86,17 +86,11 @@ public class HTTP2ServerConnection extends HTTP2Connection
     private final HttpConfiguration httpConfig;
     private boolean recycleHttpChannels = true;
 
-    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(retainableByteBufferPool, executor, endPoint, parser, session, inputBufferSize);
+        super(retainableByteBufferPool, executor, endPoint, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
-    }
-
-    @Override
-    protected ServerParser getParser()
-    {
-        return (ServerParser)super.getParser();
     }
 
     public boolean isRecycleHttpChannels()
@@ -132,6 +126,12 @@ public class HTTP2ServerConnection extends HTTP2Connection
         {
             LOG.info("Failure while notifying listener {}", listener, x);
         }
+    }
+
+    @Override
+    public void onPreface()
+    {
+        ((HTTP2ServerSession)getSession()).onPreface();
     }
 
     public void onNewStream(Connector connector, IStream stream, HeadersFrame frame)
@@ -215,7 +215,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
                 .map(HTTP2Channel.Server::isIdle)
                 .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
+            LOG.debug("{} idle timeout on {}", result ? "Processed" : "Ignored", session, failure);
         return result;
     }
 
@@ -294,7 +294,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
     {
         if (HttpMethod.PRI.is(request.getMethod()))
         {
-            getParser().directUpgrade();
+            ((HTTP2ServerSession)getSession()).directUpgrade();
         }
         else
         {
@@ -317,7 +317,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
             responseFields.put(HttpHeader.UPGRADE, "h2c");
             responseFields.put(HttpHeader.CONNECTION, "Upgrade");
 
-            getParser().standardUpgrade();
+            ((HTTP2ServerSession)getSession()).standardUpgrade();
 
             // We fake that we received a client preface, so that we can send the
             // server preface as the first HTTP/2 frame as required by the spec.

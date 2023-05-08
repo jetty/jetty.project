@@ -245,11 +245,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     protected Map<Integer, Integer> newSettings()
     {
         Map<Integer, Integer> settings = new HashMap<>();
-        settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxDynamicTableSize());
-        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialStreamRecvWindow());
-        int maxConcurrentStreams = getMaxConcurrentStreams();
-        if (maxConcurrentStreams >= 0)
-            settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
+        int maxDynamicTableSize = getMaxDynamicTableSize();
+        if (maxDynamicTableSize != 4096)
+            settings.put(SettingsFrame.HEADER_TABLE_SIZE, maxDynamicTableSize);
+        int initialStreamRecvWindow = getInitialStreamRecvWindow();
+        if (initialStreamRecvWindow != FlowControlStrategy.DEFAULT_WINDOW_SIZE)
+            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, initialStreamRecvWindow);
+        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, getMaxConcurrentStreams());
         settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
         settings.put(SettingsFrame.ENABLE_CONNECT_PROTOCOL, isConnectProtocolEnabled() ? 1 : 0);
         return settings;
@@ -262,7 +264,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
-        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
+
+        ServerParser parser = newServerParser(connector, getRateControlFactory().newRateControl(endPoint));
+        parser.setMaxFrameLength(getMaxFrameLength());
+        parser.setMaxSettingsKeys(getMaxSettingsKeys());
+
+        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, parser, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
         // For a single stream in a connection, there will be a race between
@@ -276,25 +283,22 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
         session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
-        ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl(endPoint));
-        parser.setMaxFrameLength(getMaxFrameLength());
-        parser.setMaxSettingsKeys(getMaxSettingsKeys());
-
         RetainableByteBufferPool retainableByteBufferPool = connector.getByteBufferPool().asRetainableByteBufferPool();
-
         HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector.getExecutor(),
-            endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
+            endPoint, httpConfiguration, session, getInputBufferSize(), listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);
+        parser.init(connection);
+
         return configure(connection, connector, endPoint);
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
-    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
+    protected ServerParser newServerParser(Connector connector, RateControl rateControl)
     {
-        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
+        return new ServerParser(connector.getByteBufferPool(), getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }
 
     @ManagedObject("The container of HTTP/2 sessions")

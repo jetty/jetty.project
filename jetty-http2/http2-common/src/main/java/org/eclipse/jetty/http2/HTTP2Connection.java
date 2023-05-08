@@ -21,6 +21,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -37,7 +45,7 @@ import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener, Connection.UpgradeTo
+public class HTTP2Connection extends AbstractConnection implements Parser.Listener, WriteFlusher.Listener, Connection.UpgradeTo
 {
     protected static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
 
@@ -46,23 +54,20 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
     private final RetainableByteBufferPool retainableByteBufferPool;
-    private final Parser parser;
-    private final ISession session;
+    private final HTTP2Session session;
     private final int bufferSize;
     private final ExecutionStrategy strategy;
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
-    protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize)
     {
         super(endPoint, executor);
         this.retainableByteBufferPool = retainableByteBufferPool;
-        this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
         this.strategy = new AdaptiveExecutionStrategy(producer, executor);
         LifeCycle.start(strategy);
-        parser.init(ParserListener::new);
     }
 
     @Override
@@ -94,11 +99,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     public ISession getSession()
     {
         return session;
-    }
-
-    protected Parser getParser()
-    {
-        return parser;
     }
 
     @Override
@@ -232,6 +232,76 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     }
 
     @Override
+    public void onHeaders(HeadersFrame frame)
+    {
+        session.onHeaders(frame);
+    }
+
+    @Override
+    public void onData(DataFrame frame)
+    {
+        NetworkBuffer networkBuffer = producer.networkBuffer;
+        networkBuffer.retain();
+        Callback callback = networkBuffer;
+        session.onData(frame, callback);
+    }
+
+    @Override
+    public void onPriority(PriorityFrame frame)
+    {
+        session.onPriority(frame);
+    }
+
+    @Override
+    public void onReset(ResetFrame frame)
+    {
+        session.onReset(frame);
+    }
+
+    @Override
+    public void onSettings(SettingsFrame frame)
+    {
+        session.onSettings(frame);
+    }
+
+    @Override
+    public void onPushPromise(PushPromiseFrame frame)
+    {
+        session.onPushPromise(frame);
+    }
+
+    @Override
+    public void onPing(PingFrame frame)
+    {
+        session.onPing(frame);
+    }
+
+    @Override
+    public void onGoAway(GoAwayFrame frame)
+    {
+        session.onGoAway(frame);
+    }
+
+    @Override
+    public void onWindowUpdate(WindowUpdateFrame frame)
+    {
+        session.onWindowUpdate(frame);
+    }
+
+    @Override
+    public void onStreamFailure(int streamId, int error, String reason)
+    {
+        session.onStreamFailure(streamId, error, reason);
+    }
+
+    @Override
+    public void onConnectionFailure(int error, String reason)
+    {
+        producer.failed = true;
+        session.onConnectionFailure(error, reason);
+    }
+
+    @Override
     public void onFlushed(long bytes) throws IOException
     {
         session.onFlushed(bytes);
@@ -275,7 +345,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                     {
                         while (networkBuffer.hasRemaining())
                         {
-                            parser.parse(networkBuffer.getBuffer());
+                            session.getParser().parse(networkBuffer.getBuffer());
                             if (failed)
                                 return null;
                         }
@@ -388,30 +458,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         public InvocationType getInvocationType()
         {
             return InvocationType.EITHER;
-        }
-    }
-
-    private class ParserListener extends Parser.Listener.Wrapper
-    {
-        private ParserListener(Parser.Listener listener)
-        {
-            super(listener);
-        }
-
-        @Override
-        public void onData(DataFrame frame)
-        {
-            NetworkBuffer networkBuffer = producer.networkBuffer;
-            networkBuffer.retain();
-            Callback callback = networkBuffer;
-            session.onData(frame, callback);
-        }
-
-        @Override
-        public void onConnectionFailure(int error, String reason)
-        {
-            producer.failed = true;
-            super.onConnectionFailure(error, reason);
         }
     }
 

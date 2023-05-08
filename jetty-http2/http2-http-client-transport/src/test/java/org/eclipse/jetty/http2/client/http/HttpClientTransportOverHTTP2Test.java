@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -460,7 +459,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 OutputStream output = socket.getOutputStream();
                 InputStream input = socket.getInputStream();
 
-                ServerParser parser = new ServerParser(byteBufferPool, new ServerParser.Listener.Adapter()
+                ServerParser parser = new ServerParser(byteBufferPool, 4096, 8192, RateControl.NO_RATE_CONTROL);
+                parser.init(new ServerParser.Listener.Adapter()
                 {
                     @Override
                     public void onPreface()
@@ -512,8 +512,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             x.printStackTrace();
                         }
                     }
-                }, 4096, 8192, RateControl.NO_RATE_CONTROL);
-                parser.init(UnaryOperator.identity());
+                });
 
                 byte[] bytes = new byte[1024];
                 while (true)

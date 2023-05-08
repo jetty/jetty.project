@@ -46,10 +46,16 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
     private final ServerSessionListener listener;
 
-    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
+    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, ServerParser parser, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
     {
-        super(scheduler, endPoint, generator, listener, flowControl, 2);
+        super(scheduler, endPoint, parser, generator, listener, flowControl, 2);
         this.listener = listener;
+    }
+
+    @Override
+    public ServerParser getParser()
+    {
+        return (ServerParser)super.getParser();
     }
 
     @Override
@@ -185,5 +191,15 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 super.onFrame(frame);
                 break;
         }
+    }
+
+    public void directUpgrade()
+    {
+        getParser().directUpgrade();
+    }
+
+    public void standardUpgrade()
+    {
+        getParser().standardUpgrade();
     }
 }

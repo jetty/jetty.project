@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -147,7 +146,8 @@ public class HTTP2CServerTest extends AbstractServerTest
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
             final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(2));
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            parser.init(new Parser.Listener.Adapter()
             {
                 @Override
                 public void onHeaders(HeadersFrame frame)
@@ -162,8 +162,7 @@ public class HTTP2CServerTest extends AbstractServerTest
                     dataRef.set(frame);
                     latchRef.get().countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -241,7 +240,8 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            parser.init(new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -262,8 +262,7 @@ public class HTTP2CServerTest extends AbstractServerTest
                     dataRef.set(frame);
                     latch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
