@@ -2346,7 +2346,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public String changeSessionId()
         {
             if (_managedSession == null)
-                return null;
+                throw new IllegalStateException("No session");
+
             if (!_managedSession.isValid())
                 return _managedSession.getId();
 
