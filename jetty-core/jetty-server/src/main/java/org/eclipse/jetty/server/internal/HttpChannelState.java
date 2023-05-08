@@ -79,20 +79,6 @@ public class HttpChannelState implements HttpChannel, Components
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
     private static final Throwable DO_NOT_SEND = new Throwable("No Send");
-    private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
-    {
-        @Override
-        public int getIntValue()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getLongValue()
-        {
-            return 0L;
-        }
-    };
     private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
@@ -1245,10 +1231,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (last && httpChannel._committedContentLength < 0L)
             {
                 httpChannel._committedContentLength = _contentBytesWritten;
-                if (httpChannel._committedContentLength == 0)
-                    mutableHeaders.put(CONTENT_LENGTH_0);
-                else
-                    mutableHeaders.putLongField(HttpHeader.CONTENT_LENGTH, httpChannel._committedContentLength);
+                mutableHeaders.put(HttpHeader.CONTENT_LENGTH, httpChannel._committedContentLength);
             }
 
             httpChannel._stream.prepareResponse(mutableHeaders);

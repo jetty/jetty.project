@@ -68,7 +68,7 @@ public class HTTP2CServer extends Server
             String content = "Hello from Jetty using " + request.getConnectionMetaData().getProtocol() + "\n";
             content += "uri=" + Request.getPathInContext(request) + "\n";
             content += "date=" + new Date() + "\n";
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length());
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length());
             Content.Sink.write(response, true, content, callback);
             return true;
         }

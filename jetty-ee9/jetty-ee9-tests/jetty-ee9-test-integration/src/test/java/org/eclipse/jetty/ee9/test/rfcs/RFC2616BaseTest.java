@@ -106,7 +106,7 @@ public abstract class RFC2616BaseTest
 
             long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
             if (contentLength >= 0)
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
 
             if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
                 Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
@@ -169,7 +169,7 @@ public abstract class RFC2616BaseTest
         assertDate("3.3.1 RFC 850 / ANSI C", expected, fields.getDateField("D3"));
 
         // Test formatting
-        fields.putDateField("Date", expected.getTime().getTime());
+        fields.putDate("Date", expected.getTime().getTime());
         assertEquals("Sun, 06 Nov 1994 08:49:37 GMT", fields.get("Date"), "3.3.1 RFC 822 preferred");
     }
 

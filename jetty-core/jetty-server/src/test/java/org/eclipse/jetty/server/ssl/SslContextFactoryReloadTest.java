@@ -23,7 +23,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -259,7 +259,7 @@ public class SslContextFactoryReloadTest
 
         public void processNoContent(Request request, Response response, Callback callback)
         {
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+            response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
             callback.succeeded();
         }
     }
