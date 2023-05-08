@@ -137,18 +137,13 @@ public abstract class Parser
         }
         catch (Throwable x)
         {
-            notifyFailure(headerParser.getRequest(), x);
             buffer.position(buffer.limit());
+            listener.onFailure(headerParser.getRequest(), x);
             return true;
         }
     }
 
     protected abstract ContentParser findContentParser(FCGI.FrameType frameType);
-
-    private void notifyFailure(int request, Throwable failure)
-    {
-        listener.onFailure(request, failure);
-    }
 
     private void reset()
     {
