@@ -11,26 +11,34 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.util;
+package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.http.HttpTokens;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 
+import static org.eclipse.jetty.http.compression.Huffman.rowbits;
+import static org.eclipse.jetty.http.compression.Huffman.rowsym;
+
+/**
+ * <p>Used to decoded Huffman encoded strings.</p>
+ *
+ * <p>Characters which are illegal field-vchar values are replaced with
+ * either ' ' or '?' as described in RFC9110</p>
+ */
 public class HuffmanDecoder
 {
-    static final char EOS = HuffmanEncoder.EOS;
-    static final char[] tree = HuffmanEncoder.tree;
-    static final char[] rowsym = HuffmanEncoder.rowsym;
-    static final byte[] rowbits = HuffmanEncoder.rowbits;
-
-    private final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
+    private final CharsetStringBuilder.Iso88591StringBuilder _builder = new CharsetStringBuilder.Iso88591StringBuilder();
     private int _length = 0;
     private int _count = 0;
     private int _node = 0;
     private int _current = 0;
     private int _bits = 0;
 
+    /**
+     * @param length in bytes of the huffman data.
+     */
     public void setLength(int length)
     {
         if (_count != 0)
@@ -38,6 +46,11 @@ public class HuffmanDecoder
         _length = length;
     }
 
+    /**
+     * @param buffer the buffer containing the Huffman encoded bytes.
+     * @return the decoded String.
+     * @throws EncodingException if the huffman encoding is invalid.
+     */
     public String decode(ByteBuffer buffer) throws EncodingException
     {
         for (; _count < _length; _count++)
@@ -50,18 +63,20 @@ public class HuffmanDecoder
             _bits += 8;
             while (_bits >= 8)
             {
-                int c = (_current >>> (_bits - 8)) & 0xFF;
-                _node = tree[_node * 256 + c];
+                int i = (_current >>> (_bits - 8)) & 0xFF;
+                _node = Huffman.tree[_node * 256 + i];
                 if (rowbits[_node] != 0)
                 {
-                    if (rowsym[_node] == EOS)
+                    if (rowsym[_node] == Huffman.EOS)
                     {
                         reset();
                         throw new EncodingException("eos_in_content");
                     }
 
                     // terminal node
-                    _utf8.append((byte)(0xFF & rowsym[_node]));
+                    char c = rowsym[_node];
+                    c = HttpTokens.sanitizeFieldVchar(c);
+                    _builder.append((byte)c);
                     _bits -= rowbits[_node];
                     _node = 0;
                 }
@@ -75,26 +90,28 @@ public class HuffmanDecoder
 
         while (_bits > 0)
         {
-            int c = (_current << (8 - _bits)) & 0xFF;
+            int i = (_current << (8 - _bits)) & 0xFF;
             int lastNode = _node;
-            _node = tree[_node * 256 + c];
+            _node = Huffman.tree[_node * 256 + i];
 
             if (rowbits[_node] == 0 || rowbits[_node] > _bits)
             {
                 int requiredPadding = 0;
-                for (int i = 0; i < _bits; i++)
+                for (int j = 0; j < _bits; j++)
                 {
                     requiredPadding = (requiredPadding << 1) | 1;
                 }
 
-                if ((c >> (8 - _bits)) != requiredPadding)
+                if ((i >> (8 - _bits)) != requiredPadding)
                     throw new EncodingException("incorrect_padding");
 
                 _node = lastNode;
                 break;
             }
 
-            _utf8.append((byte)(0xFF & rowsym[_node]));
+            char c = rowsym[_node];
+            c = HttpTokens.sanitizeFieldVchar(c);
+            _builder.append((byte)c);
             _bits -= rowbits[_node];
             _node = 0;
         }
@@ -105,14 +122,14 @@ public class HuffmanDecoder
             throw new EncodingException("bad_termination");
         }
 
-        String value = _utf8.toString();
+        String value = _builder.build();
         reset();
         return value;
     }
 
     public void reset()
     {
-        _utf8.reset();
+        _builder.reset();
         _count = 0;
         _current = 0;
         _node = 0;

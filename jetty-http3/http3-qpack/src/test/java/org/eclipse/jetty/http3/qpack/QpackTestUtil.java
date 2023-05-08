@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -126,5 +127,16 @@ public class QpackTestUtil
     public static MetaData toMetaData(HttpFields fields)
     {
         return new MetaData(HttpVersion.HTTP_3, fields);
+    }
+
+    public static boolean compareMetaData(MetaData m1, MetaData m2)
+    {
+        if (!Objects.equals(m1.getHttpVersion(), m2.getHttpVersion()))
+            return false;
+        if (!Objects.equals(m1.getContentLength(), m2.getContentLength()))
+            return false;
+        if (!Objects.equals(m1.getFields(), m2.getFields()))
+            return false;
+        return m1.getTrailerSupplier() == null && m2.getTrailerSupplier() == null;
     }
 }
