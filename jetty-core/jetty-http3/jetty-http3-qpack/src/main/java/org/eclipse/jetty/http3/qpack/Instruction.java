@@ -19,7 +19,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 
 public interface Instruction
 {
-    void encode(ByteBufferPool.Accumulator accumulator);
+    void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator);
 
     /**
      * <p>A handler for instructions issued by an {@link QpackEncoder} or {@link QpackDecoder}.</p>

@@ -14,18 +14,25 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
+import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderInstructionParserTest
 {
+    private final ByteBufferPool bufferPool = new ByteBufferPool.NonPooling();
     private DecoderInstructionParser _instructionParser;
     private DecoderParserDebugHandler _handler;
 
@@ -41,6 +48,11 @@ public class DecoderInstructionParserTest
     {
         // Set Dynamic Table Capacity=220.
         ByteBuffer buffer = QpackTestUtil.hexToBuffer("3fbd 01");
+
+        // Assert that our generated value is equal to that of the spec example.
+        ByteBuffer encodedValue = getEncodedValue(new SetCapacityInstruction(220));
+        assertThat(buffer, equalTo(encodedValue));
+
         _instructionParser.parse(buffer);
         assertThat(_handler.setCapacities.poll(), is(220));
         assertTrue(_handler.isEmpty());
@@ -51,6 +63,11 @@ public class DecoderInstructionParserTest
     {
         // Duplicate (Relative Index = 2).
         ByteBuffer buffer = QpackTestUtil.hexToBuffer("02");
+
+        // Assert that our generated value is equal to that of the spec example.
+        ByteBuffer encodedValue = getEncodedValue(new DuplicateInstruction(2));
+        assertThat(buffer, equalTo(encodedValue));
+
         _instructionParser.parse(buffer);
         assertThat(_handler.duplicates.poll(), is(2));
         assertTrue(_handler.isEmpty());
@@ -61,6 +78,11 @@ public class DecoderInstructionParserTest
     {
         // Insert With Name Reference to Static Table, Index=0 (:authority=www.example.com).
         ByteBuffer buffer = QpackTestUtil.hexToBuffer("c00f 7777 772e 6578 616d 706c 652e 636f 6d");
+
+        // Assert that our generated value is equal to that of the spec example.
+        ByteBuffer encodedValue = getEncodedValue(new IndexedNameEntryInstruction(false, 0, false, "www.example.com"));
+        assertThat(buffer, equalTo(encodedValue));
+
         _instructionParser.parse(buffer);
         DecoderParserDebugHandler.ReferencedEntry entry = _handler.referencedNameEntries.poll();
         assertNotNull(entry);
@@ -93,5 +115,14 @@ public class DecoderInstructionParserTest
 
         // There are no other instructions received.
         assertTrue(_handler.isEmpty());
+    }
+
+    private ByteBuffer getEncodedValue(Instruction instruction)
+    {
+        ByteBufferPool.Accumulator lease = new ByteBufferPool.Accumulator();
+        instruction.encode(bufferPool, lease);
+        List<ByteBuffer> byteBuffers = lease.getByteBuffers();
+        assertThat(byteBuffers.size(), equalTo(1));
+        return byteBuffers.get(0);
     }
 }

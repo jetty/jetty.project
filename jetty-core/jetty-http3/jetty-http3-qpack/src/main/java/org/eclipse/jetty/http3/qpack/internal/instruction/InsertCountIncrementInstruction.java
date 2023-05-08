@@ -16,17 +16,17 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class InsertCountIncrementInstruction extends AbstractInstruction
+public class InsertCountIncrementInstruction implements Instruction
 {
     private final int _increment;
 
-    public InsertCountIncrementInstruction(ByteBufferPool bufferPool, int increment)
+    public InsertCountIncrementInstruction(int increment)
     {
-        super(bufferPool);
         _increment = increment;
     }
 
@@ -36,16 +36,15 @@ public class InsertCountIncrementInstruction extends AbstractInstruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _increment) + 1;
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        byteBuffer.put((byte)0x00);
-        NBitIntegerEncoder.encode(byteBuffer, 6, _increment);
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.append(buffer);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        buffer.put((byte)0x00);
+        NBitIntegerEncoder.encode(buffer, 6, _increment);
+        BufferUtil.flipToFlush(buffer, 0);
+        accumulator.append(retainableByteBuffer);
     }
 
     @Override

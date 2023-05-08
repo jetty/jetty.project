@@ -15,8 +15,20 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Used to encode integers as described in RFC7541.
+ */
 public class NBitIntegerEncoder
 {
+    private NBitIntegerEncoder()
+    {
+    }
+
+    /**
+     * @param n the prefix used to encode this long.
+     * @param i the integer to encode.
+     * @return the number of octets it would take to encode the long.
+     */
     public static int octetsNeeded(int n, long i)
     {
         if (n == 8)
@@ -43,6 +55,12 @@ public class NBitIntegerEncoder
         return (log + 6) / 7;
     }
 
+    /**
+     *
+     * @param buf the buffer to encode into.
+     * @param n the prefix used to encode this long.
+     * @param i the long to encode into the buffer.
+     */
     public static void encode(ByteBuffer buf, int n, long i)
     {
         if (n == 8)

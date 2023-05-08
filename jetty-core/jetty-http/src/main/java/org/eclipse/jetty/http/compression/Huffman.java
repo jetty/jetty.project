@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http.compression;
 
+/**
+ * This class contains the Huffman Codes defined in RFC7541.
+ */
 public class Huffman
 {
     private Huffman()

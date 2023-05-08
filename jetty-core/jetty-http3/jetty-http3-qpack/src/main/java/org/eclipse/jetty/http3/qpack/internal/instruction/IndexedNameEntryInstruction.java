@@ -14,23 +14,24 @@
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class IndexedNameEntryInstruction extends AbstractInstruction
+public class IndexedNameEntryInstruction implements Instruction
 {
     private final boolean _dynamic;
     private final int _index;
     private final boolean _huffman;
     private final String _value;
 
-    public IndexedNameEntryInstruction(ByteBufferPool bufferPool, boolean dynamic, int index, boolean huffman, String value)
+    public IndexedNameEntryInstruction(boolean dynamic, int index, boolean huffman, String value)
     {
-        super(bufferPool);
         _dynamic = dynamic;
         _index = index;
         _huffman = huffman;
@@ -53,33 +54,32 @@ public class IndexedNameEntryInstruction extends AbstractInstruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
 
         // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
-        byteBuffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
-        NBitIntegerEncoder.encode(byteBuffer, 6, _index);
+        buffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
+        NBitIntegerEncoder.encode(buffer, 6, _index);
 
         // We will not huffman encode the string.
         if (_huffman)
         {
-            byteBuffer.put((byte)(0x80));
-            NBitIntegerEncoder.encode(byteBuffer, 7, HuffmanEncoder.octetsNeeded(_value));
-            HuffmanEncoder.encode(byteBuffer, _value);
+            buffer.put((byte)(0x80));
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
+            HuffmanEncoder.encode(buffer, _value);
         }
         else
         {
-            byteBuffer.put((byte)(0x00));
-            NBitIntegerEncoder.encode(byteBuffer, 7, _value.length());
-            byteBuffer.put(_value.getBytes());
+            buffer.put((byte)(0x00));
+            NBitIntegerEncoder.encode(buffer, 7, _value.length());
+            buffer.put(_value.getBytes(StandardCharsets.ISO_8859_1));
         }
 
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.append(buffer);
+        BufferUtil.flipToFlush(buffer, 0);
+        accumulator.append(retainableByteBuffer);
     }
 
     @Override

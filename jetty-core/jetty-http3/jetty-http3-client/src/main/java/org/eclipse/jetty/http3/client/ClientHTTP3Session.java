@@ -30,7 +30,6 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.client.ClientProtocolSession;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -64,8 +63,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         long encoderStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
-        ByteBufferPool bufferPool = quicSession.getByteBufferPool();
-        this.encoder = new QpackEncoder(bufferPool, new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
+        this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher), configuration.getMaxBlockedStreams());
         addBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
@@ -73,7 +71,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         long decoderStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
         InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
-        this.decoder = new QpackDecoder(bufferPool, new InstructionHandler(decoderInstructionFlusher), configuration.getMaxResponseHeadersSize());
+        this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), configuration.getMaxResponseHeadersSize());
         addBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
