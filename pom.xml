@@ -64,7 +64,6 @@
     <jackson.version>2.14.2</jackson.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
     <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
     <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
@@ -84,7 +83,6 @@
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version> <!-- TODO: remove? -->
     <javax.cdi.api.version>2.0</javax.cdi.api.version> <!-- TODO: remove? -->
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version> <!-- TODO: remove? -->
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
