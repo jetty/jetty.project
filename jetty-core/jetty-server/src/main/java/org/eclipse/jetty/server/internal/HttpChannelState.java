@@ -578,6 +578,7 @@ public class HttpChannelState implements HttpChannel, Components
             Throwable failure;
             boolean completeStream;
             boolean callbackCompleted;
+            boolean lastStreamSendComplete;
 
             try (AutoLock ignored = _lock.lock())
             {
@@ -586,7 +587,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _handled = true;
                 failure = _failure;
                 callbackCompleted = _callbackCompleted;
-                boolean lastStreamSendComplete = lockedIsLastStreamSendCompleted();
+                lastStreamSendComplete = lockedIsLastStreamSendCompleted();
                 completeStream = callbackCompleted && lastStreamSendComplete;
 
                 if (LOG.isDebugEnabled())
@@ -1383,7 +1384,6 @@ public class HttpChannelState implements HttpChannel, Components
             ChannelRequest request;
             ErrorResponse errorResponse = null;
             HttpChannelState httpChannelState;
-            boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request._httpChannelState;
@@ -1396,25 +1396,22 @@ public class HttpChannelState implements HttpChannel, Components
 
                 httpChannelState._failure = failure;
 
-                boolean writeErrorResponse = !httpChannelState._stream.isCommitted();
-                completeStream = !writeErrorResponse && httpChannelState._handling == null;
-
                 // Consume any input.
                 Throwable unconsumed = stream.consumeAvailable();
                 if (ExceptionUtil.areNotAssociated(unconsumed, failure))
                     failure.addSuppressed(unconsumed);
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={}, writeErrorResponse={} {}", httpChannelState._stream.isCommitted(), httpChannelState._response.isCommitted(), writeErrorResponse, this);
+                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", httpChannelState._stream.isCommitted(), httpChannelState._response.isCommitted(), this);
 
-                if (writeErrorResponse)
-                    errorResponse = lockedPrepareErrorResponse(httpChannelState);
+                if (!stream.isCommitted())
+                    httpChannelState._errorResponse = errorResponse = lockedPrepareErrorResponse(httpChannelState);
             }
 
             if (errorResponse != null)
                 Response.writeError(request, errorResponse, new ErrorCallback(request, stream, failure), failure);
-            else if (completeStream || failure != null)
-                httpChannelState._handlerInvoker.completeStream(stream, failure);
+            else
+                _request.getHttpChannelState()._handlerInvoker.failed(failure);
         }
 
         private ErrorResponse lockedPrepareErrorResponse(HttpChannelState httpChannelState)
@@ -1429,7 +1426,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (dateField != null)
                 httpChannelState._responseHeaders.put(dateField);
             httpChannelState._committedContentLength = -1;
-            httpChannelState._errorResponse = new ErrorResponse(_request);
+            httpChannelState._errorResponse = new ErrorResponse(_request, httpChannelState._stream);
             return httpChannelState._errorResponse;
         }
 
@@ -1473,9 +1470,12 @@ public class HttpChannelState implements HttpChannel, Components
 
     private static class ErrorResponse extends ChannelResponse
     {
-        private ErrorResponse(ChannelRequest request)
+        private final HttpStream _stream;
+
+        private ErrorResponse(ChannelRequest request, HttpStream stream)
         {
             super(request);
+            _stream = stream;
             setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
         }
 
@@ -1484,6 +1484,12 @@ public class HttpChannelState implements HttpChannel, Components
         {
             // Already handling the error, so return null.
             return null;
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return _stream.isCommitted();
         }
     }
 

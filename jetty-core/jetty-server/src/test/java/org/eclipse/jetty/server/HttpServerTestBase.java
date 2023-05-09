@@ -1422,7 +1422,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 blocker.block();
             }
 
-            throw new Exception(new Exception("exception after commit"));
+            throw new Exception("exception after commit");
         }
     }
 
