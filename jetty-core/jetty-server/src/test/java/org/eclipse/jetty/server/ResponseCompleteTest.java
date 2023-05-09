@@ -143,7 +143,6 @@ public class ResponseCompleteTest
                                      * Wait till callback is complete
                                      *
                                      * We rely on the existence of consumeAvailable in ChannelCallback.failure()
-                                     * To exist after the lockedOnComplete() and the failure field being set.
                                      */
 
                                     try
