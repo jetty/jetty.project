@@ -9,7 +9,6 @@
   <artifactId>jetty-ee10-test-sessions-mongodb</artifactId>
   <name>EE10 :: Tests :: Sessions :: Mongo</name>
   <properties>
-    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
     <embedmongo.host>localhost</embedmongo.host>
   </properties>
@@ -42,7 +41,7 @@
                   <version>${jetty-test-policy.version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
-                  <includes>**/*.keystore,**/*.pem</includes>
+                  <includes>**/*.keystore,**/*.pem</includes>C
                   <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
                 </artifactItem>
               </artifactItems>

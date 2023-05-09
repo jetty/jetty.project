@@ -48,16 +48,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Testcontainers(disabledWithoutDocker = true)
 public class AttributeNameTest
 {
+
+    private static String DB_NAME = "DB" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
+
+    private static String COLLECTION_NAME = "COLLECTION" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
+
     @BeforeAll
     public static void beforeClass() throws Exception
     {
-        MongoTestHelper.createCollection();
+        MongoTestHelper.createCollection(DB_NAME, COLLECTION_NAME);
     }
 
     @AfterAll
     public static void afterClass() throws Exception
     {
-        MongoTestHelper.dropCollection();
+        MongoTestHelper.dropCollection(DB_NAME, COLLECTION_NAME);
         MongoTestHelper.shutdown();
     }
 
@@ -72,7 +77,7 @@ public class AttributeNameTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
 
-        MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory();
+        MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
         storeFactory.setGracePeriodSec(scavengePeriod);
 
         SessionTestSupport server1 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);

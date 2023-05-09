@@ -26,23 +26,27 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
+    private static String DB_NAME = "DB" + ClusteredOrphanedSessionTest.class.getSimpleName() + System.nanoTime();
+
+    private static String COLLECTION_NAME = "COLLECTION" + ClusteredOrphanedSessionTest.class.getSimpleName() + System.nanoTime();
+
     @BeforeAll
     public static void beforeClass() throws Exception
     {
-        MongoTestHelper.createCollection();
+        MongoTestHelper.createCollection(DB_NAME, COLLECTION_NAME);
     }
 
     @AfterAll
     public static void afterClass() throws Exception
     {
-        MongoTestHelper.dropCollection();
+        MongoTestHelper.dropCollection(DB_NAME, COLLECTION_NAME);
         MongoTestHelper.shutdown();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return MongoTestHelper.newSessionDataStoreFactory();
+        return MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
     }
 
     @Test
