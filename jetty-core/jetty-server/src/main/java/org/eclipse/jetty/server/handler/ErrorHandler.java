@@ -599,14 +599,7 @@ public class ErrorHandler implements Request.Handler
         public void succeeded()
         {
             checkCompletion();
-            try
-            {
-                super.succeeded();
-            }
-            finally
-            {
-                _retainable.release();
-            }
+            super.succeeded();
         }
 
         /**
@@ -619,14 +612,13 @@ public class ErrorHandler implements Request.Handler
         public void failed(Throwable x)
         {
             checkCompletion();
-            try
-            {
-                super.failed(x);
-            }
-            finally
-            {
-                _retainable.release();
-            }
+            super.failed(x);
+        }
+
+        @Override
+        public void completed()
+        {
+            _retainable.release();
         }
 
         private void checkCompletion()

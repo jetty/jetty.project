@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -146,10 +147,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             // Read the response.
-            String response = readResponse(client);
+            String rawResponse = readResponse(client);
 
-            assertThat(response, containsString("HTTP/1.1 200 OK"));
-            assertThat(response, containsString("Hello"));
+            assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getContent(), containsString("Hello"));
         }
     }
 
@@ -177,10 +179,78 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             // Read the response.
-            String response = readResponse(client);
+            String rawResponse = readResponse(client);
 
-            assertThat(response, containsString("HTTP/1.1 200 OK"));
-            assertThat(response, containsString("0123456789"));
+            assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getContent(), containsString("0123456789"));
+        }
+    }
+
+    @Test
+    public void testSimpleFailure() throws Exception
+    {
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.failed(new Exception("Test failure"));
+                return true;
+            }
+        });
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                GET / HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String rawResponse = readResponse(client);
+            assertThat(rawResponse, containsString("HTTP/1.1 500 Server Error"));
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getContent(), containsString("Exception: Test failure"));
+        }
+    }
+
+    @Test
+    public void testSimpleException() throws Exception
+    {
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                throw new Exception("Test failure");
+            }
+        });
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                GET / HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String rawResponse = readResponse(client);
+            assertThat(rawResponse, containsString("HTTP/1.1 500 Server Error"));
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getContent(), containsString("Exception: Test failure"));
         }
     }
 
@@ -1530,10 +1600,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
         String line = in.readLine();
+        System.err.println(line);
         assertThat(line, containsString(" 304 "));
         while (true)
         {
             line = in.readLine();
+            System.err.println(line);
             if (line == null)
                 throw new EOFException();
             if (line.length() == 0)
@@ -1544,6 +1616,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(line, not(containsString("Transfer-Encoding")));
         }
 
+        System.err.println("---");
         line = in.readLine();
         assertThat(line, containsString(" 304 "));
         while (true)
@@ -1568,7 +1641,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         @Override
         public boolean handle(Request request, Response response, Callback callback)
         {
-            response.setStatus(304);
+            response.setStatus(HttpStatus.NOT_MODIFIED_304);
             response.write(false, BufferUtil.toBuffer("yuck"), callback);
             return true;
         }
