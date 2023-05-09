@@ -445,8 +445,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
+              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
+              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
             </configuration>
@@ -458,8 +458,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
+              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
+              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
@@ -475,7 +475,7 @@
               <includeGroupIds>
                 org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.demos
               </includeGroupIds>
-              <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
+              <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,jakarta.security.auth.message-api,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
@@ -627,8 +627,8 @@
       <artifactId>javax.mail.glassfish</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.security.auth.message</artifactId>
+      <groupId>jakarta.security.auth.message</groupId>
+      <artifactId>jakarta.security.auth.message-api</artifactId>
     </dependency>
 
     <dependency>
