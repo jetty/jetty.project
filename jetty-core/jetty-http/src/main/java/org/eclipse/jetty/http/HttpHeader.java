@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -131,6 +132,14 @@ public enum HttpHeader
     C_PATH(":path", true),
     C_STATUS(":status", true),
     C_PROTOCOL(":protocol");
+
+    public static final EnumSet<HttpHeader> CONTENT_HEADERS = EnumSet.of(
+        CONTENT_TYPE, CONTENT_LENGTH, CONTENT_ENCODING, CONTENT_LANGUAGE, CONTENT_RANGE, CONTENT_MD5, CONTENT_LOCATION, TRANSFER_ENCODING, CACHE_CONTROL, LAST_MODIFIED, EXPIRES, VARY, ETAG
+    );
+
+    public static final EnumSet<HttpHeader> CONTENT_HEADERS_304 = EnumSet.of(
+        CONTENT_TYPE, CONTENT_LENGTH, CONTENT_ENCODING, CONTENT_LANGUAGE, CONTENT_RANGE, CONTENT_MD5, CONTENT_LOCATION, TRANSFER_ENCODING, CACHE_CONTROL, LAST_MODIFIED, EXPIRES, VARY
+        );
 
     public static final Index<HttpHeader> CACHE = new Index.Builder<HttpHeader>()
         .caseSensitive(false)

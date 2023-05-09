@@ -77,6 +77,21 @@ import org.slf4j.LoggerFactory;
  */
 public class HttpChannelState implements HttpChannel, Components
 {
+    /**
+     * The state of the written response
+     */
+    enum StreamSendState
+    {
+        /** Not yet written */
+        INITIAL,
+
+        /** Last content sent, but send not yet completed */
+        LAST_SENDING,
+
+        /** Last content written and completed */
+        LAST_COMPLETE
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
     private static final Throwable DO_NOT_SEND = new Throwable("No Send");
     private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
@@ -91,6 +106,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
     private Thread _handling;
     private boolean _handled;
+    private StreamSendState _streamSendState = StreamSendState.INITIAL;
     private boolean _callbackCompleted = false;
     private ChannelRequest _request;
     private ChannelResponse _response;
@@ -127,6 +143,7 @@ public class HttpChannelState implements HttpChannel, Components
             _response = null;
             _errorResponse = null;
             _stream = null;
+            _streamSendState = StreamSendState.INITIAL;
 
             // Recycle.
             _requestAttributes.clearAttributes();
@@ -434,16 +451,57 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    private Throwable lockedStreamSendCheck(boolean last, long length)
+    {
+        assert _request._lock.isHeldByCurrentThread();
+
+        return switch (_streamSendState)
+        {
+            case INITIAL ->
+            {
+                _streamSendState = last ? StreamSendState.LAST_SENDING : StreamSendState.INITIAL;
+                yield null;
+            }
+
+            // There are many instances of code that wants to ensure the output is closed, so
+            // it does a redundant write(true, callback).  The DO_NOT_SEND option supports this by
+            // turning such writes into a NOOP.
+            case LAST_SENDING, LAST_COMPLETE -> (!last || length > 0)
+                ? new IllegalStateException("last already written")
+                : DO_NOT_SEND;
+        };
+    }
+
+    private void lockedStreamSendCompleted()
+    {
+        assert _request._lock.isHeldByCurrentThread();
+        if (_streamSendState == StreamSendState.LAST_SENDING)
+            _streamSendState = StreamSendState.LAST_COMPLETE;
+    }
+
+    private boolean lockedIsLastStreamSendCompleted()
+    {
+        assert _request._lock.isHeldByCurrentThread();
+        return _streamSendState == StreamSendState.LAST_COMPLETE;
+    }
+
+    private boolean lockedIsLastStreamSendNeeded()
+    {
+        assert _request._lock.isHeldByCurrentThread();
+        return _streamSendState == StreamSendState.INITIAL;
+    }
+
     @Override
     public String toString()
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return String.format("%s@%x{handling=%s, handled=%b, completed=%b, request=%s}",
+            return String.format("%s@%x{handling=%s, handled=%b, send=%s, completed=%b, request=%s}",
                 this.getClass().getSimpleName(),
                 hashCode(),
                 _handling,
                 _handled,
+                _streamSendState,
                 _callbackCompleted,
                 _request);
         }
@@ -524,7 +582,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _handled = true;
                 failure = _failure;
                 callbackCompleted = _callbackCompleted;
-                completeStream = callbackCompleted && response.lockedIsLastWriteCompleted() || failure != null;
+                completeStream = callbackCompleted && lockedIsLastStreamSendCompleted() || failure != null;
             }
 
             if (LOG.isDebugEnabled())
@@ -940,43 +998,15 @@ public class HttpChannelState implements HttpChannel, Components
      */
     public static class ChannelResponse implements Response, Callback
     {
-        /**
-         * The state of the written response
-         */
-        enum WriteState
-        {
-            /** Not yet written */
-            NOT_LAST,
-
-            /** Last content written, but write not yet completed */
-            LAST_WRITTEN,
-
-            /** Last content written and completed */
-            LAST_WRITE_COMPLETED,
-        }
-
         private final ChannelRequest _request;
         private int _status;
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
-        private WriteState _writeState = WriteState.NOT_LAST;
         private Callback _writeCallback;
 
         private ChannelResponse(ChannelRequest request)
         {
             _request = request;
-        }
-
-        public boolean lockedIsLastWriteCompleted()
-        {
-            assert _request._lock.isHeldByCurrentThread();
-            return _writeState == WriteState.LAST_WRITE_COMPLETED;
-        }
-
-        public boolean lockedIsLastWriteNeeded()
-        {
-            assert _request._lock.isHeldByCurrentThread();
-            return _writeState == WriteState.NOT_LAST;
         }
 
         public boolean lockedIsWriting()
@@ -991,28 +1021,6 @@ public class HttpChannelState implements HttpChannel, Components
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
             return writeCallback == null ? null : () -> writeCallback.failed(x);
-        }
-
-        protected Throwable lockedCheckWriteState(boolean last, long length)
-        {
-            assert _request._lock.isHeldByCurrentThread();
-
-            return switch (_writeState)
-            {
-                case NOT_LAST ->
-                {
-                    _writeState = last ? WriteState.LAST_WRITTEN : WriteState.NOT_LAST;
-                    _contentBytesWritten += length;
-                    yield null;
-                }
-
-                // There are many instances of code that wants to ensure the output is closed, so
-                // it does a redundant write(true, callback).  The DO_NOT_SEND option supports this by
-                // turning such writes into a NOOP.
-                case LAST_WRITTEN, LAST_WRITE_COMPLETED -> (!last || length > 0)
-                    ? new IllegalStateException("last already written")
-                    : DO_NOT_SEND;
-            };
         }
 
         protected Throwable lockedCheckError()
@@ -1074,45 +1082,57 @@ public class HttpChannelState implements HttpChannel, Components
             long length = BufferUtil.length(content);
 
             long totalWritten;
-            HttpChannelState httpChannel;
+            HttpChannelState httpChannelState;
             HttpStream stream = null;
-            Throwable failure;
+            Throwable failure = null;
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = _request.lockedGetHttpChannelState();
+                httpChannelState = _request.lockedGetHttpChannelState();
+                long committedContentLength = httpChannelState._committedContentLength;
+                totalWritten = _contentBytesWritten + (HttpStatus.hasNoBody(getStatus()) ? 0 : length);
 
                 if (_writeCallback != null)
                     failure = new IllegalStateException("write pending");
-                else if (httpChannel._error != null)
+                else if (httpChannelState._error != null)
                     failure = lockedCheckError();
-                else
-                    failure = lockedCheckWriteState(last, length);
-
-                if (failure == null)
+                else if (committedContentLength >= 0)
                 {
-                    _writeCallback = callback;
-
-                    stream = httpChannel._stream;
-                    totalWritten = _contentBytesWritten;
-
-                    if (httpChannel._responseHeaders.commit())
-                        responseMetaData = lockedPrepareResponse(httpChannel, last);
-
                     // If the content length were not compatible with what was written, then we need to abort.
-                    long committedContentLength = httpChannel._committedContentLength;
-                    if (committedContentLength >= 0)
+                    String lengthError = (totalWritten > committedContentLength) ? "written %d > %d content-length"
+                        : (last && totalWritten < committedContentLength) ? "written %d < %d content-length" : null;
+                    if (lengthError != null)
                     {
-                        String lengthError = (totalWritten > committedContentLength) ? "written %d > %d content-length"
-                            : (last && totalWritten < committedContentLength) ? "written %d < %d content-length" : null;
-                        if (lengthError != null)
-                        {
-                            String message = lengthError.formatted(totalWritten, committedContentLength);
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("fail {} {}", callback, message);
-                            failure = new IOException(message);
-                        }
+                        String message = lengthError.formatted(totalWritten, committedContentLength);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("fail {} {}", callback, message);
+                        failure = new IOException(message);
                     }
+                }
+
+                // If no failure by this point, we can try to send
+                if (failure == null)
+                    failure = httpChannelState.lockedStreamSendCheck(last, length);
+
+                // Have we failed in some way?
+                if (failure == DO_NOT_SEND)
+                {
+                    httpChannelState._serializedInvoker.run(callback::succeeded);
+
+                }
+                else if (failure != null)
+                {
+                    Throwable throwable = failure;
+                    httpChannelState._serializedInvoker.run(() -> callback.failed(throwable));
+                }
+                else
+                {
+                    // We have not failed, so we will do a stream send
+                    _contentBytesWritten = totalWritten;
+                    _writeCallback = callback;
+                    stream = httpChannelState._stream;
+                    if (httpChannelState._responseHeaders.commit())
+                        responseMetaData = lockedPrepareResponse(httpChannelState, last);
                 }
             }
 
@@ -1121,15 +1141,6 @@ public class HttpChannelState implements HttpChannel, Components
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
                 stream.send(_request._metaData, responseMetaData, last, content, this);
-            }
-            else if (failure == DO_NOT_SEND)
-            {
-                httpChannel._serializedInvoker.run(callback::succeeded);
-            }
-            else
-            {
-                Throwable t = failure;
-                httpChannel._serializedInvoker.run(() -> callback.failed(t));
             }
         }
 
@@ -1143,8 +1154,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel = _request.lockedGetHttpChannelState();
                 callback = _writeCallback;
                 _writeCallback = null;
-                if (_writeState == WriteState.LAST_WRITTEN)
-                    _writeState = WriteState.LAST_WRITE_COMPLETED;
+                httpChannel.lockedStreamSendCompleted();
             }
             if (callback != null)
                 httpChannel._serializedInvoker.run(invoke.apply(callback));
@@ -1154,7 +1164,7 @@ public class HttpChannelState implements HttpChannel, Components
          * Called when the call to
          * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
          * made by {@link ChannelResponse#write(boolean, ByteBuffer, Callback)} succeeds.
-         * The implementation maintains the {@link #_writeState} variable before taking
+         * The implementation maintains the {@link #_streamSendState} variable before taking
          * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
          */
         @Override
@@ -1170,7 +1180,7 @@ public class HttpChannelState implements HttpChannel, Components
          * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
          * made by {@link ChannelResponse#write(boolean, ByteBuffer, Callback)} fails.
          * <p>
-         * The implementation maintains the {@link #_writeState} variable before taking
+         * The implementation maintains the {@link #_streamSendState} variable before taking
          * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
          * @param x The reason for the failure.
          */
@@ -1296,7 +1306,7 @@ public class HttpChannelState implements HttpChannel, Components
                     return;
                 httpChannelState = _request._httpChannelState;
                 ChannelResponse response = httpChannelState._response;
-                completeStream = httpChannelState._handling == null && response.lockedIsLastWriteCompleted();
+                completeStream = httpChannelState._handling == null && httpChannelState.lockedIsLastStreamSendCompleted();
 
                 // We are being tough on handler implementations and expect them
                 // to not have pending operations when calling succeeded or failed.
@@ -1307,7 +1317,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Here, httpChannelState._error might have been set by some
                 // asynchronous event such as an idle timeout, and that's ok.
 
-                needLastWrite = response.lockedIsLastWriteNeeded();
+                needLastWrite = httpChannelState.lockedIsLastStreamSendNeeded();
                 stream = httpChannelState._stream;
 
                 if (httpChannelState._responseHeaders.commit())
@@ -1442,7 +1452,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             super(request);
             setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-            getHeaders().clear(); // TODO need to retain server set headers!
+            getHeaders().remove(HttpHeader.CONTENT_HEADERS);
         }
 
         @Override
@@ -1488,7 +1498,7 @@ public class HttpChannelState implements HttpChannel, Components
                 failure = _failure;
 
                 // Did the ErrorHandler do the last write?
-                needLastWrite = httpChannelState._errorResponse.lockedIsLastWriteNeeded();
+                needLastWrite = httpChannelState.lockedIsLastStreamSendNeeded();
                 if (needLastWrite && httpChannelState._responseHeaders.commit())
                     responseMetaData = httpChannelState._errorResponse.lockedPrepareResponse(httpChannelState, true);
             }
