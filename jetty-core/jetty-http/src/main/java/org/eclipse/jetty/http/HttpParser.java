@@ -556,6 +556,7 @@ public class HttpParser
                 case OTEXT:
                 case SPACE:
                 case HTAB:
+                    System.err.println(BufferUtil.toDetailString(buffer));
                     throw new IllegalCharacterException(_state, t, buffer);
 
                 default:

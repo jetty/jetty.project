@@ -586,7 +586,8 @@ public class HttpChannelState implements HttpChannel, Components
                 _handled = true;
                 failure = _failure;
                 callbackCompleted = _callbackCompleted;
-                completeStream = callbackCompleted && lockedIsLastStreamSendCompleted();
+                boolean lastStreamSendComplete = lockedIsLastStreamSendCompleted();
+                completeStream = callbackCompleted && lastStreamSendComplete;
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, failure, callbackCompleted, HttpChannelState.this);
@@ -595,7 +596,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("stream={}, failure={}, callbackCompleted={}, completeStream={}", stream, failure, callbackCompleted, completeStream);
 
-            if (completeStream || failure != null)
+            if (completeStream)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("completeStream({}, {})", stream, Objects.toString(failure));
@@ -637,13 +638,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _streamSendState = StreamSendState.LAST_COMPLETE;
                 completeStream = _handling == null;
                 stream = _stream;
-                if (_failure == null)
-                    _failure = failure;
-                else if (ExceptionUtil.areNotAssociated(_failure, failure))
-                {
-                    _failure.addSuppressed(failure);
-                    failure = _failure;
-                }
+                failure = _failure = ExceptionUtil.combine(_failure, failure);
             }
             if (completeStream)
                 completeStream(stream, failure);
@@ -659,7 +654,7 @@ public class HttpChannelState implements HttpChannel, Components
                     if (LOG.isDebugEnabled())
                         LOG.debug("logging {}", HttpChannelState.this);
 
-                    requestLog.log(_request.getLoggedRequest(), _response);
+                    requestLog.log(_request.getLoggedRequest(), _errorResponse == null ? _response : _errorResponse);
                 }
 
                 // Clean up any multipart tmp files and release any associated resources.
@@ -1346,7 +1341,7 @@ public class HttpChannelState implements HttpChannel, Components
                 long committedContentLength = httpChannelState._committedContentLength;
 
                 if (committedContentLength >= 0 && committedContentLength != totalWritten)
-                    failure = httpChannelState._failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
+                    failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
 
                 // is the request fully consumed?
                 Throwable unconsumed = stream.consumeAvailable();
@@ -1354,15 +1349,13 @@ public class HttpChannelState implements HttpChannel, Components
                     LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState);
 
                 if (unconsumed != null && httpChannelState.getConnectionMetaData().isPersistent())
-                {
-                    if (failure == null)
-                        failure = httpChannelState._failure = unconsumed;
-                    else if (ExceptionUtil.areNotAssociated(failure, unconsumed))
-                        failure.addSuppressed(unconsumed);
-                }
+                    failure = ExceptionUtil.combine(failure, unconsumed);
 
                 if (failure != null)
+                {
+                    httpChannelState._failure = failure;
                     errorResponse = lockedPrepareErrorResponse(httpChannelState);
+                }
             }
 
             if (LOG.isDebugEnabled())
@@ -1418,20 +1411,10 @@ public class HttpChannelState implements HttpChannel, Components
                     errorResponse = lockedPrepareErrorResponse(httpChannelState);
             }
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("failed {}", httpChannelState, failure);
-
             if (errorResponse != null)
                 Response.writeError(request, errorResponse, new ErrorCallback(request, stream, failure), failure);
-            else if (completeStream)
+            else if (completeStream || failure != null)
                 httpChannelState._handlerInvoker.completeStream(stream, failure);
-            else
-                stream.failed(failure);
-                if (LOG.isDebugEnabled())
-            {
-                failure.addSuppressed(new Throwable("No action on failed"));
-                LOG.debug("No action on failed {}", this, failure);
-            }
         }
 
         private ErrorResponse lockedPrepareErrorResponse(HttpChannelState httpChannelState)
