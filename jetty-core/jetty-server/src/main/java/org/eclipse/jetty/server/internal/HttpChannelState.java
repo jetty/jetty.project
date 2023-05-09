@@ -110,7 +110,6 @@ public class HttpChannelState implements HttpChannel, Components
     private boolean _callbackCompleted = false;
     private ChannelRequest _request;
     private ChannelResponse _response;
-    private ErrorResponse _errorResponse;
     private HttpStream _stream;
     private long _committedContentLength = -1;
     private Runnable _onContentAvailable;
@@ -141,7 +140,6 @@ public class HttpChannelState implements HttpChannel, Components
             // Break the links with the upper and lower layers.
             _request = null;
             _response = null;
-            _errorResponse = null;
             _stream = null;
             _streamSendState = StreamSendState.SENDING;
 
@@ -371,7 +369,6 @@ public class HttpChannelState implements HttpChannel, Components
 
             // If a write call is in progress, take the writeCallback to fail below
             Runnable invokeWriteFailure = _response.lockedFailWrite(x);
-            Runnable invokeErrorWriteFailure = _errorResponse == null ? null : _errorResponse.lockedFailWrite(x);
 
             // Create runnable to invoke any onError listeners
             ChannelRequest request = _request;
@@ -406,7 +403,7 @@ public class HttpChannelState implements HttpChannel, Components
             };
 
             // Serialize all the error actions.
-            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeErrorWriteFailure, invokeListeners);
+            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeListeners);
         }
 
         // Consume content as soon as possible to open any flow control window.
@@ -655,7 +652,7 @@ public class HttpChannelState implements HttpChannel, Components
                     if (LOG.isDebugEnabled())
                         LOG.debug("logging {}", HttpChannelState.this);
 
-                    requestLog.log(_request.getLoggedRequest(), _errorResponse == null ? _response : _errorResponse);
+                    requestLog.log(_request.getLoggedRequest(), _response);
                 }
 
                 // Clean up any multipart tmp files and release any associated resources.
@@ -1008,29 +1005,42 @@ public class HttpChannelState implements HttpChannel, Components
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
         private Callback _writeCallback;
+        protected boolean _errorMode;
 
         private ChannelResponse(ChannelRequest request)
         {
             _request = request;
         }
 
-        public boolean lockedIsWriting()
+        private void lockedPrepareErrorResponse()
+        {
+            // reset the response state, so we can generate an error response,
+            // remembering any server or date headers (probably a nicer way of doing this).
+            HttpField serverField = _request._httpChannelState._responseHeaders.getField(HttpHeader.SERVER);
+            HttpField dateField = _request._httpChannelState._responseHeaders.getField(HttpHeader.DATE);
+            _request._httpChannelState._responseHeaders.reset();
+            _request._httpChannelState._committedContentLength = -1;
+            reset();
+            if (serverField != null)
+                _request._httpChannelState._responseHeaders.put(serverField);
+            if (dateField != null)
+                _request._httpChannelState._responseHeaders.put(dateField);
+            setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            _errorMode = true;
+        }
+
+        private boolean lockedIsWriting()
         {
             assert _request._lock.isHeldByCurrentThread();
             return _writeCallback != null;
         }
 
-        public Runnable lockedFailWrite(Throwable x)
+        private Runnable lockedFailWrite(Throwable x)
         {
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
             return writeCallback == null ? null : () -> writeCallback.failed(x);
-        }
-
-        protected Throwable lockedCheckError()
-        {
-            return _request._httpChannelState._error.getCause();
         }
 
         public long getContentBytesWritten()
@@ -1100,8 +1110,8 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (_writeCallback != null)
                     failure = new IllegalStateException("write pending");
-                else if (httpChannelState._error != null)
-                    failure = lockedCheckError();
+                else if (!_errorMode && httpChannelState._error != null)
+                    failure = httpChannelState._error.getCause();
                 else if (contentLength >= 0)
                 {
                     // If the content length were not compatible with what was written, then we need to abort.
@@ -1310,14 +1320,14 @@ public class HttpChannelState implements HttpChannel, Components
             HttpChannelState httpChannelState;
             Throwable failure = null;
             ChannelRequest request;
+            ChannelResponse response;
             MetaData.Response responseMetaData = null;
-            ErrorResponse errorResponse = null;
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
                 request = _request;
                 httpChannelState = _request._httpChannelState;
-                ChannelResponse response = httpChannelState._response;
+                response = httpChannelState._response;
                 stream = httpChannelState._stream;
 
                 // We are being tough on handler implementations and expect them
@@ -1355,15 +1365,15 @@ public class HttpChannelState implements HttpChannel, Components
                 if (failure != null)
                 {
                     httpChannelState._failure = failure;
-                    errorResponse = lockedPrepareErrorResponse(httpChannelState);
+                    response.lockedPrepareErrorResponse();
                 }
             }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("succeeded: failure={} needLastStreamSend={} {}", failure, needLastStreamSend, this);
 
-            if (errorResponse != null)
-                Response.writeError(request, errorResponse, new ErrorCallback(request, stream, failure), failure);
+            if (failure != null)
+                Response.writeError(request, response, new ErrorCallback(request, stream, failure), failure);
             else if (needLastStreamSend)
                 stream.send(_request._metaData, responseMetaData, true, null, httpChannelState._handlerInvoker);
             else if (completeStream)
@@ -1382,13 +1392,15 @@ public class HttpChannelState implements HttpChannel, Components
             // Called when the request/response cycle is completing with a failure.
             HttpStream stream;
             ChannelRequest request;
-            ErrorResponse errorResponse = null;
+            ChannelResponse response;
             HttpChannelState httpChannelState;
+            boolean writeError;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request._httpChannelState;
                 stream = httpChannelState._stream;
                 request = _request;
+                response = httpChannelState._response;
 
                 if (lockedCompleteCallback())
                     return;
@@ -1404,30 +1416,15 @@ public class HttpChannelState implements HttpChannel, Components
                 if (LOG.isDebugEnabled())
                     LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", httpChannelState._stream.isCommitted(), httpChannelState._response.isCommitted(), this);
 
-                if (!stream.isCommitted())
-                    httpChannelState._errorResponse = errorResponse = lockedPrepareErrorResponse(httpChannelState);
+                writeError = !stream.isCommitted();
+                if (writeError)
+                    response.lockedPrepareErrorResponse();
             }
 
-            if (errorResponse != null)
-                Response.writeError(request, errorResponse, new ErrorCallback(request, stream, failure), failure);
+            if (writeError)
+                Response.writeError(request, response, new ErrorCallback(request, stream, failure), failure);
             else
                 _request.getHttpChannelState()._handlerInvoker.failed(failure);
-        }
-
-        private ErrorResponse lockedPrepareErrorResponse(HttpChannelState httpChannelState)
-        {
-            // reset the response state, so we can generate an error response,
-            // remembering any server or date headers (probably a nicer way of doing this).
-            HttpField serverField = httpChannelState._responseHeaders.getField(HttpHeader.SERVER);
-            HttpField dateField = httpChannelState._responseHeaders.getField(HttpHeader.DATE);
-            httpChannelState._responseHeaders.reset();
-            if (serverField != null)
-                httpChannelState._responseHeaders.put(serverField);
-            if (dateField != null)
-                httpChannelState._responseHeaders.put(dateField);
-            httpChannelState._committedContentLength = -1;
-            httpChannelState._errorResponse = new ErrorResponse(_request, httpChannelState._stream);
-            return httpChannelState._errorResponse;
         }
 
         private boolean lockedCompleteCallback()
@@ -1468,31 +1465,6 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    private static class ErrorResponse extends ChannelResponse
-    {
-        private final HttpStream _stream;
-
-        private ErrorResponse(ChannelRequest request, HttpStream stream)
-        {
-            super(request);
-            _stream = stream;
-            setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-        }
-
-        @Override
-        protected Throwable lockedCheckError()
-        {
-            // Already handling the error, so return null.
-            return null;
-        }
-
-        @Override
-        public boolean isCommitted()
-        {
-            return _stream.isCommitted();
-        }
-    }
-
     /**
      * Used as the {@link Response} and {@link Callback} when writing the error response
      * from {@link HttpChannelState.ChannelCallback#failed(Throwable)}.
@@ -1530,7 +1502,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Did the ErrorHandler do the last write?
                 needLastWrite = httpChannelState.lockedLastStreamSend();
                 if (needLastWrite && httpChannelState._responseHeaders.commit())
-                    responseMetaData = httpChannelState._errorResponse.lockedPrepareResponse(httpChannelState, true);
+                    responseMetaData = httpChannelState._response.lockedPrepareResponse(httpChannelState, true);
             }
 
             if (needLastWrite)
