@@ -16,6 +16,9 @@ package org.eclipse.jetty.http2.hpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.compression.EncodingException;
+import org.eclipse.jetty.http.compression.HuffmanDecoder;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -32,6 +35,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class HpackContextTest
 {
+    public static String decode(ByteBuffer buffer, int length) throws EncodingException
+    {
+        HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
+        huffmanDecoder.setLength(length);
+        String decoded = huffmanDecoder.decode(buffer);
+        if (decoded == null)
+            throw new EncodingException("invalid string encoding");
+
+        huffmanDecoder.reset();
+        return decoded;
+    }
+
+    public static int decodeInt(ByteBuffer buffer, int prefix) throws EncodingException
+    {
+        // This is a fix for HPACK as it already takes the first byte of the encoded integer.
+        if (prefix != 8)
+            buffer.position(buffer.position() - 1);
+
+        NBitIntegerDecoder decoder = new NBitIntegerDecoder();
+        decoder.setPrefix(prefix);
+        int decodedInt = decoder.decodeInt(buffer);
+        if (decodedInt < 0)
+            throw new EncodingException("invalid integer encoding");
+        decoder.reset();
+        return decodedInt;
+    }
 
     @Test
     public void testStaticName()
@@ -423,10 +452,10 @@ public class HpackContextTest
             int huff = 0xff & buffer.get();
             assertTrue((0x80 & huff) == 0x80);
 
-            int len = NBitInteger.decode(buffer, 7);
+            int len = decodeInt(buffer, 7);
 
             assertEquals(len, buffer.remaining());
-            String value = Huffman.decode(buffer);
+            String value = decode(buffer, buffer.remaining());
 
             assertEquals(entry.getHttpField().getValue(), value);
         }

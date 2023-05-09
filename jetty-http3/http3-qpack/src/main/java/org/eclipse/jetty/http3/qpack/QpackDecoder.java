@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncodedFieldSection;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class QpackDecoder implements Dumpable
     private final QpackContext _context;
     private final DecoderInstructionParser _parser;
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
-    private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
+    private final NBitIntegerDecoder _integerDecoder = new NBitIntegerDecoder();
     private final InstructionHandler _instructionHandler = new InstructionHandler();
     private final Map<Long, AtomicInteger> _blockedStreams = new HashMap<>();
     private int _maxHeaderSize;
@@ -136,6 +136,7 @@ public class QpackDecoder implements Dumpable
             LOG.debug("Decoding: streamId={}, buffer={}", streamId, BufferUtil.toDetailString(buffer));
 
         // If the buffer is big, don't even think about decoding it
+        // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
         int maxHeaderSize = getMaxHeaderSize();
         if (buffer.remaining() > maxHeaderSize)
             throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
