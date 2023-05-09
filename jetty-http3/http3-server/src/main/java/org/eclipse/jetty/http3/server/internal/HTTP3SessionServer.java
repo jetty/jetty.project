@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.util.Map;
+
+import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
@@ -27,9 +30,9 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionServer.class);
 
-    public HTTP3SessionServer(ServerHTTP3Session session, Session.Server.Listener listener)
+    public HTTP3SessionServer(HTTP3Configuration configuration, ServerHTTP3Session session, Server.Listener listener)
     {
-        super(session, listener);
+        super(configuration, session, listener);
     }
 
     @Override
@@ -58,7 +61,7 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame)
+    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         if (frame.getMetaData().isRequest())
         {
@@ -71,7 +74,7 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         }
         else
         {
-            super.onHeaders(streamId, frame);
+            super.onHeaders(streamId, frame, wasBlocked);
         }
     }
 
@@ -88,30 +91,20 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
+    protected void configure(Map<Long, Long> settings, boolean local)
+    {
+        if (local)
+            configureLocal(getProtocolSession().getQpackDecoder(), settings);
+        else
+            configureRemote(getProtocolSession().getQpackEncoder(), settings);
+    }
+
+    @Override
     protected GoAwayFrame newGoAwayFrame(boolean graceful)
     {
         if (graceful)
             return GoAwayFrame.SERVER_GRACEFUL;
         return super.newGoAwayFrame(graceful);
-    }
-
-    @Override
-    protected void onSettingMaxTableCapacity(long value)
-    {
-        getProtocolSession().getQpackEncoder().setMaxTableCapacity((int)value);
-        getProtocolSession().getQpackEncoder().setCapacity((int)Math.min(value, getMaxTableSize()));
-    }
-
-    @Override
-    protected void onSettingMaxFieldSectionSize(long value)
-    {
-        // TODO: this is the header size limit that the local encoder should respect.
-    }
-
-    @Override
-    protected void onSettingMaxBlockedStreams(long value)
-    {
-        getProtocolSession().getQpackEncoder().setMaxBlockedStreams((int)value);
     }
 
     private void notifyAccept()

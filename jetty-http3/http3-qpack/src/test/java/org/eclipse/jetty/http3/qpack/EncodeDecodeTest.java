@@ -96,7 +96,7 @@ public class EncodeDecodeTest
         // B.2. Dynamic Table.
 
         // Set capacity to 220.
-        _encoder.setCapacity(220);
+        _encoder.setTableCapacity(220);
         Instruction instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(SetCapacityInstruction.class));
         assertThat(((SetCapacityInstruction)instruction).getCapacity(), is(220));

@@ -45,13 +45,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
-    private boolean applicationMode;
-    private boolean parserDataMode;
+    private boolean applicationInvoked;
     private boolean dataDemand;
     private boolean dataStalled;
     private DataFrame dataFrame;
     private boolean dataLast;
-    private boolean noData;
+    private boolean hasNetworkData;
     private boolean remotelyClosed;
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
@@ -78,9 +77,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
-    public void setApplicationMode(boolean mode)
+    /**
+     * Marks the invocation of application code.
+     * From now on, the responsibility to demand
+     * for more frames is on the application code.
+     */
+    public void applicationInvoked()
     {
-        this.applicationMode = mode;
+        this.applicationInvoked = true;
     }
 
     @Override
@@ -108,8 +112,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing parserDataMode={} on {}", parserDataMode, this);
-        if (parserDataMode)
+            LOG.debug("processing dataMode={} on {}", parser.isDataMode(), this);
+        if (parser.isDataMode())
             processDataFrames();
         else
             processNonDataFrames();
@@ -118,7 +122,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private void processDataFrames()
     {
         processDataDemand();
-        if (!parserDataMode)
+        if (!parser.isDataMode())
         {
             if (hasBuffer() && buffer.hasRemaining())
                 processNonDataFrames();
@@ -133,50 +137,54 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             tryAcquireBuffer();
 
-            while (true)
+            MessageParser.Result result = parseAndFill(true);
+            if (result == MessageParser.Result.NO_FRAME)
             {
-                if (parseAndFill(true) == MessageParser.Result.NO_FRAME)
-                {
-                    tryReleaseBuffer(false);
-                    return;
-                }
+                tryReleaseBuffer(false);
+                return;
+            }
 
-                // TODO: we should also exit if the connection was closed due to errors.
-                //  There is not yet a isClosed() primitive though.
-                if (remotelyClosed)
-                {
-                    // We have detected the end of the stream,
-                    // do not loop around to fill & parse again.
-                    // However, the last frame may have
-                    // caused a write that we need to flush.
-                    getEndPoint().getQuicSession().flush();
-                    tryReleaseBuffer(false);
-                    return;
-                }
+            if (result == MessageParser.Result.BLOCKED_FRAME)
+            {
+                // Return immediately because another thread may
+                // resume the processing as the stream is unblocked.
+                tryReleaseBuffer(false);
+                return;
+            }
 
-                if (parserDataMode)
+            // TODO: we should also exit if the connection was closed due to errors.
+            //  This can be done by overriding relevant methods in MessageListener.
+
+            if (remotelyClosed)
+            {
+                // We have detected the end of the stream, do not try to fill & parse again.
+                // However, the last frame may have caused a write that needs to be flushed.
+                getEndPoint().getQuicSession().flush();
+                tryReleaseBuffer(false);
+                return;
+            }
+
+            if (!parser.isDataMode())
+                throw new IllegalStateException();
+
+            if (buffer.hasRemaining())
+            {
+                processDataFrames();
+            }
+            else
+            {
+                if (applicationInvoked)
                 {
-                    if (buffer.hasRemaining())
-                    {
-                        processDataFrames();
-                    }
-                    else
-                    {
-                        if (applicationMode)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("skipping fill interest on {}", this);
-                        }
-                        else
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("setting fill interest on {}", this);
-                            fillInterested();
-                        }
-                        tryReleaseBuffer(false);
-                    }
-                    return;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("skipping fill interest on {}", this);
                 }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("setting fill interest on {}", this);
+                    fillInterested();
+                }
+                tryReleaseBuffer(false);
             }
         }
         catch (Throwable x)
@@ -204,7 +212,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             {
                 case FRAME:
                 {
-                    if (parserDataMode)
+                    if (parser.isDataMode())
                     {
                         DataFrame frame = dataFrame;
                         dataFrame = null;
@@ -225,12 +233,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         return null;
                     }
                 }
-                case MODE_SWITCH:
+                case SWITCH_MODE:
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("switching to parserDataMode=false on {}", this);
                     dataLast = true;
-                    parserDataMode = false;
                     parser.setDataMode(false);
                     tryReleaseBuffer(false);
                     return null;
@@ -269,9 +276,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         boolean hasData;
         boolean process = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
-            hasData = !noData;
+            hasData = hasNetworkData;
             dataDemand = true;
             if (dataStalled && hasData)
             {
@@ -289,7 +296,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     public boolean hasDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return dataDemand;
         }
@@ -297,7 +304,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private void cancelDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             dataDemand = false;
         }
@@ -305,17 +312,17 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private boolean isStalled()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return dataStalled;
         }
     }
 
-    private void setNoData(boolean noData)
+    private void setHasNetworkData(boolean noData)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
-            this.noData = noData;
+            this.hasNetworkData = noData;
         }
     }
 
@@ -324,7 +331,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         while (true)
         {
             boolean process = true;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("processing demand={}, last={} fillInterested={} on {}", dataDemand, dataLast, isFillInterested(), this);
@@ -389,7 +396,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("parse+fill setFillInterest={} on {} with buffer {}", setFillInterest, this, buffer);
 
-            setNoData(false);
+            setHasNetworkData(true);
 
             while (true)
             {
@@ -397,7 +404,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 MessageParser.Result result = parser.parse(byteBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("parsed {} on {} with buffer {}", result, this, buffer);
-                if (result == MessageParser.Result.FRAME || result == MessageParser.Result.MODE_SWITCH)
+                if (result != MessageParser.Result.NO_FRAME)
                     return result;
 
                 if (buffer.isRetained())
@@ -430,7 +437,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         return MessageParser.Result.FRAME;
                     }
 
-                    setNoData(true);
+                    setHasNetworkData(false);
                     if (setFillInterest)
                         fillInterested();
                 }
@@ -461,7 +468,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     @Override
     public String toConnectionString()
     {
-        return String.format("%s[demand=%b,stalled=%b,parserDataMode=%b]", super.toConnectionString(), hasDemand(), isStalled(), parserDataMode);
+        return String.format("%s[demand=%b,stalled=%b,dataMode=%b]", super.toConnectionString(), hasDemand(), isStalled(), parser.isDataMode());
     }
 
     private class MessageListener extends ParserListener.Wrapper
@@ -472,13 +479,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
 
         @Override
-        public void onHeaders(long streamId, HeadersFrame frame)
+        public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
         {
             MetaData metaData = frame.getMetaData();
             if (metaData.isRequest())
             {
                 // Expect DATA frames now.
-                parserDataMode = true;
                 parser.setDataMode(true);
                 if (LOG.isDebugEnabled())
                     LOG.debug("switching to parserDataMode=true for request {} on {}", metaData, this);
@@ -494,7 +500,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 else
                 {
                     // Expect DATA frames now.
-                    parserDataMode = true;
                     parser.setDataMode(true);
                     if (LOG.isDebugEnabled())
                         LOG.debug("switching to parserDataMode=true for response {} on {}", metaData, this);
@@ -508,7 +513,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             }
             if (frame.isLast())
                 shutdownInput();
-            super.onHeaders(streamId, frame);
+            else if (wasBlocked)
+                fillInterested();
+            super.onHeaders(streamId, frame, wasBlocked);
         }
 
         @Override

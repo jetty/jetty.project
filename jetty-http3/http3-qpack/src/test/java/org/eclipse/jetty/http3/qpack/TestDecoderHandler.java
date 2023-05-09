@@ -25,7 +25,7 @@ public class TestDecoderHandler implements QpackDecoder.Handler, Instruction.Han
     private final LinkedList<Instruction> _instructionList = new LinkedList<>();
 
     @Override
-    public void onMetaData(long streamId, MetaData metadata)
+    public void onMetaData(long streamId, MetaData metadata, boolean wasBlocked)
     {
         _metadataList.add(metadata);
     }

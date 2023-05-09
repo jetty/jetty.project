@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.http3.client.internal;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -36,9 +38,9 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
 
     private final Promise<Client> promise;
 
-    public HTTP3SessionClient(ClientHTTP3Session session, Client.Listener listener, Promise<Client> promise)
+    public HTTP3SessionClient(HTTP3Configuration configuration, ClientHTTP3Session session, Client.Listener listener, Promise<Client> promise)
     {
-        super(session, listener);
+        super(configuration, session, listener);
         this.promise = promise;
     }
 
@@ -63,7 +65,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame)
+    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         if (frame.getMetaData().isResponse())
         {
@@ -76,7 +78,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         }
         else
         {
-            super.onHeaders(streamId, frame);
+            super.onHeaders(streamId, frame, wasBlocked);
         }
     }
 
@@ -148,21 +150,11 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    protected void onSettingMaxTableCapacity(long value)
+    protected void configure(Map<Long, Long> settings, boolean local)
     {
-        getProtocolSession().getQpackEncoder().setMaxTableCapacity((int)value);
-        getProtocolSession().getQpackEncoder().setCapacity((int)Math.min(value, getMaxTableSize()));
-    }
-
-    @Override
-    protected void onSettingMaxFieldSectionSize(long value)
-    {
-        // TODO: this is the header size limit that the local encoder should respect.
-    }
-
-    @Override
-    protected void onSettingMaxBlockedStreams(long value)
-    {
-        getProtocolSession().getQpackEncoder().setMaxBlockedStreams((int)value);
+        if (local)
+            configureLocal(getProtocolSession().getQpackDecoder(), settings);
+        else
+            configureRemote(getProtocolSession().getQpackEncoder(), settings);
     }
 }

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
@@ -37,6 +39,8 @@ import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -56,6 +60,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private final AutoLock lock = new AutoLock();
     private final AtomicLong lastStreamId = new AtomicLong(0);
     private final Map<Long, HTTP3Stream> streams = new ConcurrentHashMap<>();
+    private final HTTP3Configuration configuration;
     private final ProtocolSession session;
     private final Session.Listener listener;
     private final AtomicInteger streamCount = new AtomicInteger();
@@ -66,30 +71,13 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private GoAwayFrame goAwayRecv;
     private Runnable zeroStreamsAction;
     private CompletableFuture<Void> shutdown;
-    private int maxTableSize = 1024 * 1024;
 
-    public HTTP3Session(ProtocolSession session, Session.Listener listener)
+    public HTTP3Session(HTTP3Configuration configuration, ProtocolSession session, Session.Listener listener)
     {
+        this.configuration = configuration;
         this.session = session;
         this.listener = listener;
         this.streamTimeouts = new StreamTimeouts(session.getQuicSession().getScheduler());
-    }
-
-    /**
-     * @param maxTableSize the maximum dynamic table size allowed to be set by the remote decoder from a SETTINGS frame.
-     */
-    public void setMaxTableSize(int maxTableSize)
-    {
-        this.maxTableSize = maxTableSize;
-    }
-
-    /**
-     *
-     * @return the maximum dynamic table size allowed to be set by the remote decoder from a SETTINGS frame.
-     */
-    public int getMaxTableSize()
-    {
-        return maxTableSize;
     }
 
     public ProtocolSession getProtocolSession()
@@ -366,8 +354,47 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public Map<Long, Long> onPreface()
     {
         Map<Long, Long> settings = notifyPreface();
+        if (settings == null)
+            settings = new HashMap<>();
+
         if (LOG.isDebugEnabled())
-            LOG.debug("produced settings {} on {}", settings, this);
+            LOG.debug("application produced settings {} on {}", settings, this);
+
+        settings.compute(SettingsFrame.MAX_TABLE_CAPACITY, (k, v) ->
+        {
+            if (v == null)
+            {
+                v = (long)configuration.getMaxTableCapacity();
+                if (v == 0)
+                    v = null;
+            }
+            return v;
+        });
+        settings.compute(SettingsFrame.MAX_FIELD_SECTION_SIZE, (k, v) ->
+        {
+            if (v == null)
+            {
+                v = (long)configuration.getMaxResponseHeadersSize();
+                if (v <= 0)
+                    v = null;
+            }
+            return v;
+        });
+        settings.compute(SettingsFrame.MAX_BLOCKED_STREAMS, (k, v) ->
+        {
+            if (v == null)
+            {
+                v = (long)configuration.getMaxBlockedStreams();
+                if (v == 0)
+                    v = null;
+            }
+            return v;
+        });
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("configuring local {} on {}", settings, this);
+        configure(settings, true);
+
         return settings;
     }
 
@@ -390,29 +417,40 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (LOG.isDebugEnabled())
             LOG.debug("received {} on {}", frame, this);
 
-        frame.getSettings().forEach((key, value) ->
-        {
-            if (key == SettingsFrame.MAX_TABLE_CAPACITY)
-                onSettingMaxTableCapacity(value);
-            else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
-                onSettingMaxFieldSectionSize(value);
-            else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)
-                onSettingMaxBlockedStreams(value);
-        });
+        Map<Long, Long> settings = frame.getSettings();
+        if (LOG.isDebugEnabled())
+            LOG.debug("configuring remote {} on {}", settings, this);
+        configure(settings, false);
 
         notifySettings(frame);
     }
 
-    protected void onSettingMaxTableCapacity(long value)
+    protected abstract void configure(Map<Long, Long> settings, boolean local);
+
+    protected void configureLocal(QpackDecoder decoder, Map<Long, Long> settings)
     {
+        settings.forEach((key, value) ->
+        {
+            if (key == SettingsFrame.MAX_TABLE_CAPACITY)
+                decoder.setMaxTableCapacity(value.intValue());
+            else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
+                decoder.setMaxHeadersSize(value.intValue());
+            else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)
+                decoder.setMaxBlockedStreams(value.intValue());
+        });
     }
 
-    protected void onSettingMaxFieldSectionSize(long value)
+    protected void configureRemote(QpackEncoder encoder, Map<Long, Long> settings)
     {
-    }
-
-    protected void onSettingMaxBlockedStreams(long value)
-    {
+        settings.forEach((key, value) ->
+        {
+            if (key == SettingsFrame.MAX_TABLE_CAPACITY)
+                encoder.setMaxTableCapacity(value.intValue());
+            else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
+                encoder.setMaxHeadersSize(value.intValue());
+            else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)
+                encoder.setMaxBlockedStreams(value.intValue());
+        });
     }
 
     private void notifySettings(SettingsFrame frame)
@@ -453,7 +491,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame)
+    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())

@@ -95,8 +95,9 @@ public class QpackEncoder implements Dumpable
     private final Map<Long, StreamInfo> _streamInfoMap = new HashMap<>();
     private final EncoderInstructionParser _parser;
     private final InstructionHandler _instructionHandler = new InstructionHandler();
-    private int _knownInsertCount = 0;
-    private int _blockedStreams = 0;
+    private int _knownInsertCount;
+    private int _blockedStreams;
+    private int _maxHeadersSize;
     private int _maxTableCapacity;
 
     public QpackEncoder(Instruction.Handler handler)
@@ -128,6 +129,16 @@ public class QpackEncoder implements Dumpable
         _maxBlockedStreams = maxBlockedStreams;
     }
 
+    public int getMaxHeadersSize()
+    {
+        return _maxHeadersSize;
+    }
+
+    public void setMaxHeadersSize(int maxHeadersSize)
+    {
+        _maxHeadersSize = maxHeadersSize;
+    }
+
     public int getMaxTableCapacity()
     {
         return _maxTableCapacity;
@@ -136,9 +147,12 @@ public class QpackEncoder implements Dumpable
     public void setMaxTableCapacity(int maxTableCapacity)
     {
         _maxTableCapacity = maxTableCapacity;
+        int capacity = getTableCapacity();
+        if (capacity > maxTableCapacity)
+            setTableCapacity(maxTableCapacity);
     }
 
-    public int getCapacity()
+    public int getTableCapacity()
     {
         return _context.getDynamicTable().getCapacity();
     }
@@ -148,10 +162,10 @@ public class QpackEncoder implements Dumpable
      *
      * @param capacity the new capacity.
      */
-    public void setCapacity(int capacity)
+    public void setTableCapacity(int capacity)
     {
-        if (capacity > _maxTableCapacity)
-            throw new IllegalArgumentException("DynamicTable capacity exceeds SETTINGS_QPACK_MAX_TABLE_CAPACITY");
+        if (capacity > getMaxTableCapacity())
+            throw new IllegalArgumentException("DynamicTable capacity exceeds max capacity");
         _context.getDynamicTable().setCapacity(capacity);
         _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
         notifyInstructionHandler();

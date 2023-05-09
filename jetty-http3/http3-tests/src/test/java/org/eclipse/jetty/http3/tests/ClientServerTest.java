@@ -135,15 +135,15 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         HTTP3SessionServer serverSession = serverSessionRef.get();
-        assertEquals(maxTableCapacity.getValue(), serverSession.getProtocolSession().getQpackEncoder().getCapacity());
+        assertEquals(maxTableCapacity.getValue(), serverSession.getProtocolSession().getQpackEncoder().getTableCapacity());
         assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackEncoder().getMaxBlockedStreams());
         assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxBlockedStreams());
-        assertEquals(maxHeaderSize.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxHeaderSize());
+        assertEquals(maxHeaderSize.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxHeadersSize());
 
-        assertEquals(maxTableCapacity.getValue(), clientSession.getProtocolSession().getQpackEncoder().getCapacity());
+        assertEquals(maxTableCapacity.getValue(), clientSession.getProtocolSession().getQpackEncoder().getTableCapacity());
         assertEquals(maxBlockedStreams.getValue(), clientSession.getProtocolSession().getQpackEncoder().getMaxBlockedStreams());
         assertEquals(maxBlockedStreams.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxBlockedStreams());
-        assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeaderSize());
+        assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeadersSize());
     }
 
     @Test

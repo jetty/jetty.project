@@ -67,7 +67,10 @@ public class BlockedStreamsTest
 
         // Set capacity of the encoder & decoder to allow entries to be added to the table.
         int capacity = 1024;
-        _encoder.setCapacity(capacity);
+        _encoder.setMaxTableCapacity(capacity);
+        _encoder.setTableCapacity(capacity);
+        _decoder.setMaxTableCapacity(capacity);
+
         Instruction instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(SetCapacityInstruction.class));
         _decoder.parseInstructions(QpackTestUtil.toBuffer(instruction));
@@ -178,7 +181,10 @@ public class BlockedStreamsTest
 
         // Set capacity of the encoder & decoder to allow entries to be added to the table.
         int capacity = 1024;
-        _encoder.setCapacity(capacity);
+        _encoder.setMaxTableCapacity(capacity);
+        _encoder.setTableCapacity(capacity);
+        _decoder.setMaxTableCapacity(capacity);
+
         Instruction instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(SetCapacityInstruction.class));
         _decoder.parseInstructions(QpackTestUtil.toBuffer(instruction));

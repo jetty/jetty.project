@@ -143,7 +143,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
                 if (delayedUntilContent)
                     stream.demand();
                 else
-                    connection.setApplicationMode(true);
+                    connection.applicationInvoked();
             }
 
             if (LOG.isDebugEnabled())
@@ -196,7 +196,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         delayedUntilContent = false;
 
         if (wasDelayed)
-            connection.setApplicationMode(true);
+            connection.applicationInvoked();
 
         return wasDelayed || woken ? this : null;
     }
@@ -223,7 +223,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         delayedUntilContent = false;
 
         if (wasDelayed)
-            connection.setApplicationMode(true);
+            connection.applicationInvoked();
 
         return wasDelayed || handle ? this : null;
     }
@@ -234,7 +234,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         delayedUntilContent = false;
 
         if (wasDelayed)
-            connection.setApplicationMode(true);
+            connection.applicationInvoked();
 
         getHttpTransport().onIdleTimeout(failure);
 

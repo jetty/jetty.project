@@ -56,7 +56,7 @@ public class QpackDecoder implements Dumpable
     private final NBitIntegerDecoder _integerDecoder = new NBitIntegerDecoder();
     private final InstructionHandler _instructionHandler = new InstructionHandler();
     private final Map<Long, AtomicInteger> _blockedStreams = new HashMap<>();
-    private int _maxHeaderSize;
+    private int _maxHeadersSize;
     private int _maxBlockedStreams;
     private int _maxTableCapacity;
 
@@ -73,9 +73,9 @@ public class QpackDecoder implements Dumpable
             _handler = handler;
         }
 
-        public void notifyHandler()
+        public void notifyHandler(boolean wasBlocked)
         {
-            _handler.onMetaData(_streamId, _metaData);
+            _handler.onMetaData(_streamId, _metaData, wasBlocked);
         }
     }
 
@@ -90,7 +90,7 @@ public class QpackDecoder implements Dumpable
     public QpackDecoder(Instruction.Handler handler, int maxHeaderSize)
     {
         this(handler);
-        setMaxHeaderSize(maxHeaderSize);
+        setMaxHeadersSize(maxHeaderSize);
     }
 
     QpackContext getQpackContext()
@@ -98,17 +98,17 @@ public class QpackDecoder implements Dumpable
         return _context;
     }
 
-    public int getMaxHeaderSize()
+    public int getMaxHeadersSize()
     {
-        return _maxHeaderSize;
+        return _maxHeadersSize;
     }
 
     /**
-     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
+     * @param maxHeadersSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
-    public void setMaxHeaderSize(int maxHeaderSize)
+    public void setMaxHeadersSize(int maxHeadersSize)
     {
-        _maxHeaderSize = maxHeaderSize;
+        _maxHeadersSize = maxHeadersSize;
     }
 
     public int getMaxBlockedStreams()
@@ -133,7 +133,7 @@ public class QpackDecoder implements Dumpable
 
     public interface Handler
     {
-        void onMetaData(long streamId, MetaData metadata);
+        void onMetaData(long streamId, MetaData metadata, boolean wasBlocked);
     }
 
     /**
@@ -155,7 +155,7 @@ public class QpackDecoder implements Dumpable
 
         // If the buffer is big, don't even think about decoding it
         // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
-        int maxHeaderSize = getMaxHeaderSize();
+        int maxHeaderSize = getMaxHeadersSize();
         if (buffer.remaining() > maxHeaderSize)
             throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
 
@@ -195,7 +195,7 @@ public class QpackDecoder implements Dumpable
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Deferred Decoding: streamId={}, encodedFieldSection={}", streamId, encodedFieldSection);
+                    LOG.debug("Deferred decoding: streamId={}, encodedFieldSection={}", streamId, encodedFieldSection);
                 AtomicInteger blockedFields = _blockedStreams.computeIfAbsent(streamId, id -> new AtomicInteger(0));
                 blockedFields.incrementAndGet();
                 if (_blockedStreams.size() > _maxBlockedStreams)
@@ -205,7 +205,7 @@ public class QpackDecoder implements Dumpable
 
             boolean hadMetaData = !_metaDataNotifications.isEmpty();
             notifyInstructionHandler();
-            notifyMetaDataHandler();
+            notifyMetaDataHandler(false);
             return hadMetaData;
         }
         catch (QpackException.SessionException e)
@@ -237,7 +237,7 @@ public class QpackDecoder implements Dumpable
                 _parser.parse(buffer);
             }
             notifyInstructionHandler();
-            notifyMetaDataHandler();
+            notifyMetaDataHandler(true);
         }
         catch (QpackException.SessionException e)
         {
@@ -275,7 +275,7 @@ public class QpackDecoder implements Dumpable
             {
                 iterator.remove();
                 long streamId = encodedFieldSection.getStreamId();
-                MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+                MetaData metaData = encodedFieldSection.decode(_context, getMaxHeadersSize());
                 if (_blockedStreams.get(streamId).decrementAndGet() <= 0)
                     _blockedStreams.remove(streamId);
                 if (LOG.isDebugEnabled())
@@ -337,11 +337,11 @@ public class QpackDecoder implements Dumpable
         _instructions.clear();
     }
 
-    private void notifyMetaDataHandler()
+    private void notifyMetaDataHandler(boolean wasBlocked)
     {
         for (MetaDataNotification notification : _metaDataNotifications)
         {
-            notification.notifyHandler();
+            notification.notifyHandler(wasBlocked);
         }
         _metaDataNotifications.clear();
     }
@@ -359,8 +359,8 @@ public class QpackDecoder implements Dumpable
         @Override
         public void onSetDynamicTableCapacity(int capacity) throws QpackException
         {
-            if (capacity > _maxTableCapacity)
-                throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "DynamicTable capacity exceeds SETTINGS_QPACK_MAX_TABLE_CAPACITY");
+            if (capacity > getMaxTableCapacity())
+                throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "DynamicTable capacity exceeds max capacity");
             _context.getDynamicTable().setCapacity(capacity);
         }
 

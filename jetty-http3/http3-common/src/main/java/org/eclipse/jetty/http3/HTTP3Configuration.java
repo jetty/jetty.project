@@ -27,10 +27,10 @@ public class HTTP3Configuration
     private int outputBufferSize = 2048;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private int maxBlockedStreams = 8;
-    private int maxTableCapacity = 1024 * 1024;
-    private int maxRequestHeadersSize = 8192;
-    private int maxResponseHeadersSize = 8192;
+    private int maxBlockedStreams = 64;
+    private int maxTableCapacity = 64 * 1024;
+    private int maxRequestHeadersSize = 8 * 1024;
+    private int maxResponseHeadersSize = 8 * 1024;
 
     @ManagedAttribute("The stream idle timeout in milliseconds")
     public long getStreamIdleTimeout()
