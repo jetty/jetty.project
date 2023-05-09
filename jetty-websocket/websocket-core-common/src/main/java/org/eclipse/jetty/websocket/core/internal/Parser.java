@@ -55,7 +55,6 @@ public class Parser
     private int cursor;
     private byte[] mask;
     private int payloadLength;
-    private long longLengthAccumulator;
     private ByteBuffer aggregate;
 
     public Parser(ByteBufferPool bufferPool)
@@ -82,7 +81,6 @@ public class Parser
         cursor = 0;
         aggregate = null;
         payloadLength = 0;
-        longLengthAccumulator = 0;
     }
 
     /**
@@ -155,12 +153,13 @@ public class Parser
                     {
                         byte b = buffer.get();
                         --cursor;
+                        long longLengthAccumulator = payloadLength;
                         longLengthAccumulator |= (long)(b & 0xFF) << (8 * cursor);
+                        if (longLengthAccumulator > Integer.MAX_VALUE || longLengthAccumulator < 0)
+                            throw new MessageTooLargeException("Frame payload exceeded integer max value");
+                        payloadLength = Math.toIntExact(longLengthAccumulator);
                         if (cursor == 0)
                         {
-                            if (longLengthAccumulator > Integer.MAX_VALUE || longLengthAccumulator < 0)
-                                throw new MessageTooLargeException("Frame payload exceeded integer max value");
-                            payloadLength = Math.toIntExact(longLengthAccumulator);
                             if (mask != null)
                             {
                                 state = State.MASK;
