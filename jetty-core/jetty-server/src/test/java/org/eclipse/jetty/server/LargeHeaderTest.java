@@ -143,6 +143,27 @@ public class LargeHeaderTest
     }
 
     @Test
+    public void testLargeHeader() throws Throwable
+    {
+        URI serverURI = server.getURI();
+        String rawRequest = "GET / HTTP/1.1\r\n" +
+            "Host: " + serverURI.getAuthority() + "\r\n" +
+            "\r\n";
+
+        try (Socket client = new Socket(serverURI.getHost(), serverURI.getPort());
+             OutputStream output = client.getOutputStream();
+             InputStream input = client.getInputStream())
+        {
+            output.write(rawRequest.getBytes(UTF_8));
+            output.flush();
+
+            String rawResponse = readResponse(client, 1, input);
+            System.err.println(rawResponse);
+            assertThat(rawResponse, containsString(" 500 "));
+        }
+    }
+
+    @Test
     public void testLargeHeaderNewConnectionsConcurrent() throws Throwable
     {
         ExecutorService executorService = Executors.newCachedThreadPool();
@@ -249,7 +270,6 @@ public class LargeHeaderTest
             "\r\n";
 
         final int iterations = 500;
-        final int timeout = 16;
         AtomicInteger count500 = new AtomicInteger(0);
         AtomicInteger countEmpty = new AtomicInteger(0);
         AtomicInteger countOther = new AtomicInteger(0);

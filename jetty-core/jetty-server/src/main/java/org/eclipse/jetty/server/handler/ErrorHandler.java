@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpException;
@@ -582,7 +581,6 @@ public class ErrorHandler implements Request.Handler
     private static class WriteErrorCallback extends Callback.Nested
     {
         private final Retainable _retainable;
-        private final AtomicReference<Throwable> _completedBy = new AtomicReference<>(); // TODO remove
 
         public WriteErrorCallback(Callback callback, Retainable retainable)
         {
@@ -590,48 +588,10 @@ public class ErrorHandler implements Request.Handler
             _retainable = retainable;
         }
 
-        /**
-         * Called when the call to {@link Response#write(boolean, ByteBuffer, Callback)}
-         * by {@link #generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
-         * succeeds.
-         */
-        @Override
-        public void succeeded()
-        {
-            checkCompletion();
-            super.succeeded();
-        }
-
-        /**
-         * Called when the call to {@link Response#write(boolean, ByteBuffer, Callback)}
-         * by {@link #generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
-         * fails.
-         * @param x The reason for the failure.
-         */
-        @Override
-        public void failed(Throwable x)
-        {
-            checkCompletion();
-            super.failed(x);
-        }
-
         @Override
         public void completed()
         {
             _retainable.release();
-        }
-
-        private void checkCompletion()
-        {
-            // TODO remove
-            Throwable completedBy = new Throwable(this.toString());
-            Throwable alreadyBy = _completedBy.getAndSet(completedBy);
-
-            if (alreadyBy != null)
-            {
-                alreadyBy.addSuppressed(completedBy);
-                LOG.warn("Error write already completed by ", alreadyBy);
-            }
         }
     }
 }
