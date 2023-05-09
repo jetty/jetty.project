@@ -16,8 +16,8 @@ package org.eclipse.jetty.http3.qpack.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.compression.EncodingException;
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
-import org.eclipse.jetty.http.compression.NBitStringParser;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
+import org.eclipse.jetty.http.compression.NBitStringDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
 /**
@@ -26,8 +26,8 @@ import org.eclipse.jetty.http3.qpack.QpackException;
 public class DecoderInstructionParser
 {
     private final Handler _handler;
-    private final NBitStringParser _stringParser;
-    private final NBitIntegerParser _integerParser;
+    private final NBitStringDecoder _stringDecoder;
+    private final NBitIntegerDecoder _integerDecoder;
     private State _state = State.PARSING;
     private Operation _operation = Operation.NONE;
 
@@ -66,8 +66,8 @@ public class DecoderInstructionParser
     public DecoderInstructionParser(Handler handler)
     {
         _handler = handler;
-        _stringParser = new NBitStringParser();
-        _integerParser = new NBitIntegerParser();
+        _stringDecoder = new NBitStringDecoder();
+        _integerDecoder = new NBitIntegerDecoder();
     }
 
     public void parse(ByteBuffer buffer) throws QpackException, EncodingException
@@ -92,13 +92,13 @@ public class DecoderInstructionParser
                 else if ((firstByte & 0x20) != 0)
                 {
                     _state = State.SET_CAPACITY;
-                    _integerParser.setPrefix(5);
+                    _integerDecoder.setPrefix(5);
                     parseSetDynamicTableCapacity(buffer);
                 }
                 else
                 {
                     _state = State.DUPLICATE;
-                    _integerParser.setPrefix(5);
+                    _integerDecoder.setPrefix(5);
                     parseDuplicate(buffer);
                 }
                 break;
@@ -134,20 +134,20 @@ public class DecoderInstructionParser
                     byte firstByte = buffer.get(buffer.position());
                     _referenceDynamicTable = (firstByte & 0x40) == 0;
                     _operation = Operation.INDEX;
-                    _integerParser.setPrefix(6);
+                    _integerDecoder.setPrefix(6);
                     continue;
 
                 case INDEX:
-                    _index = _integerParser.decodeInt(buffer);
+                    _index = _integerDecoder.decodeInt(buffer);
                     if (_index < 0)
                         return;
 
                     _operation = Operation.VALUE;
-                    _stringParser.setPrefix(8);
+                    _stringDecoder.setPrefix(8);
                     continue;
 
                 case VALUE:
-                    String value = _stringParser.decode(buffer);
+                    String value = _stringDecoder.decode(buffer);
                     if (value == null)
                         return;
 
@@ -171,20 +171,20 @@ public class DecoderInstructionParser
             {
                 case NONE:
                     _operation = Operation.NAME;
-                    _stringParser.setPrefix(6);
+                    _stringDecoder.setPrefix(6);
                     continue;
 
                 case NAME:
-                    _name = _stringParser.decode(buffer);
+                    _name = _stringDecoder.decode(buffer);
                     if (_name == null)
                         return;
 
                     _operation = Operation.VALUE;
-                    _stringParser.setPrefix(8);
+                    _stringDecoder.setPrefix(8);
                     continue;
 
                 case VALUE:
-                    String value = _stringParser.decode(buffer);
+                    String value = _stringDecoder.decode(buffer);
                     if (value == null)
                         return;
 
@@ -201,7 +201,7 @@ public class DecoderInstructionParser
 
     private void parseDuplicate(ByteBuffer buffer) throws QpackException
     {
-        int index = _integerParser.decodeInt(buffer);
+        int index = _integerDecoder.decodeInt(buffer);
         if (index >= 0)
         {
             reset();
@@ -211,7 +211,7 @@ public class DecoderInstructionParser
 
     private void parseSetDynamicTableCapacity(ByteBuffer buffer) throws QpackException
     {
-        int capacity = _integerParser.decodeInt(buffer);
+        int capacity = _integerDecoder.decodeInt(buffer);
         if (capacity >= 0)
         {
             reset();
@@ -221,8 +221,8 @@ public class DecoderInstructionParser
 
     public void reset()
     {
-        _stringParser.reset();
-        _integerParser.reset();
+        _stringDecoder.reset();
+        _integerDecoder.reset();
         _state = State.PARSING;
         _operation = Operation.NONE;
         _referenceDynamicTable = false;

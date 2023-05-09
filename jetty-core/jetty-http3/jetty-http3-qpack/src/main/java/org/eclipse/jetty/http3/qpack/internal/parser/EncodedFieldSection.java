@@ -20,8 +20,8 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.EncodingException;
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
-import org.eclipse.jetty.http.compression.NBitStringParser;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
+import org.eclipse.jetty.http.compression.NBitStringDecoder;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
@@ -36,8 +36,8 @@ public class EncodedFieldSection
 {
     private static final Logger LOG = LoggerFactory.getLogger(EncodedFieldSection.class);
 
-    private final NBitIntegerParser _integerParser = new NBitIntegerParser();
-    private final NBitStringParser _stringParser = new NBitStringParser();
+    private final NBitIntegerDecoder _integerDecoder = new NBitIntegerDecoder();
+    private final NBitStringDecoder _stringDecoder = new NBitStringDecoder();
     private final List<EncodedField> _encodedFields = new ArrayList<>();
 
     private final long _streamId;
@@ -111,8 +111,8 @@ public class EncodedFieldSection
     {
         byte firstByte = buffer.get(buffer.position());
         boolean dynamicTable = (firstByte & 0x40) == 0;
-        _integerParser.setPrefix(6);
-        int index = _integerParser.decodeInt(buffer);
+        _integerDecoder.setPrefix(6);
+        int index = _integerDecoder.decodeInt(buffer);
         if (index < 0)
             throw new EncodingException("invalid_index");
         return new IndexedField(dynamicTable, index);
@@ -120,8 +120,8 @@ public class EncodedFieldSection
 
     private EncodedField parseIndexedFieldPostBase(ByteBuffer buffer) throws EncodingException
     {
-        _integerParser.setPrefix(4);
-        int index = _integerParser.decodeInt(buffer);
+        _integerDecoder.setPrefix(4);
+        int index = _integerDecoder.decodeInt(buffer);
         if (index < 0)
             throw new EncodingException("Invalid Index");
 
@@ -137,13 +137,13 @@ public class EncodedFieldSection
         boolean allowEncoding = (firstByte & 0x20) != 0;
         boolean dynamicTable = (firstByte & 0x10) == 0;
 
-        _integerParser.setPrefix(4);
-        int nameIndex = _integerParser.decodeInt(buffer);
+        _integerDecoder.setPrefix(4);
+        int nameIndex = _integerDecoder.decodeInt(buffer);
         if (nameIndex < 0)
             throw new EncodingException("invalid_name_index");
 
-        _stringParser.setPrefix(8);
-        String value = _stringParser.decode(buffer);
+        _stringDecoder.setPrefix(8);
+        String value = _stringDecoder.decode(buffer);
         if (value == null)
             throw new EncodingException("incomplete_value");
 
@@ -155,13 +155,13 @@ public class EncodedFieldSection
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x08) != 0;
 
-        _integerParser.setPrefix(3);
-        int nameIndex = _integerParser.decodeInt(buffer);
+        _integerDecoder.setPrefix(3);
+        int nameIndex = _integerDecoder.decodeInt(buffer);
         if (nameIndex < 0)
             throw new EncodingException("invalid_index");
 
-        _stringParser.setPrefix(8);
-        String value = _stringParser.decode(buffer);
+        _stringDecoder.setPrefix(8);
+        String value = _stringDecoder.decode(buffer);
         if (value == null)
             throw new EncodingException("invalid_value");
 
@@ -173,13 +173,13 @@ public class EncodedFieldSection
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x10) != 0;
 
-        _stringParser.setPrefix(4);
-        String name = _stringParser.decode(buffer);
+        _stringDecoder.setPrefix(4);
+        String name = _stringDecoder.decode(buffer);
         if (name == null)
             throw new EncodingException("invalid_name");
 
-        _stringParser.setPrefix(8);
-        String value = _stringParser.decode(buffer);
+        _stringDecoder.setPrefix(8);
+        String value = _stringDecoder.decode(buffer);
         if (value == null)
             throw new EncodingException("invalid_value");
 

@@ -16,17 +16,17 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class DuplicateInstruction extends AbstractInstruction
+public class DuplicateInstruction implements Instruction
 {
     private final int _index;
 
-    public DuplicateInstruction(ByteBufferPool bufferPool, int index)
+    public DuplicateInstruction(int index)
     {
-        super(bufferPool);
         _index = index;
     }
 
@@ -36,16 +36,16 @@ public class DuplicateInstruction extends AbstractInstruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(5, _index) + 1;
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        byteBuffer.put((byte)0x00);
-        NBitIntegerEncoder.encode(byteBuffer, 5, _index);
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.append(buffer);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
+        buffer.put((byte)0x00);
+        NBitIntegerEncoder.encode(buffer, 5, _index);
+        BufferUtil.flipToFlush(buffer, 0);
+        accumulator.append(retainableByteBuffer);
     }
 
     @Override
