@@ -61,6 +61,7 @@ public class LiteralNameEntryInstruction implements Instruction
             (_huffmanValue ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
 
         if (_huffmanName)
         {

@@ -41,6 +41,7 @@ public class InsertCountIncrementInstruction implements Instruction
         int size = NBitIntegerEncoder.octetsNeeded(6, _increment) + 1;
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
         buffer.put((byte)0x00);
         NBitIntegerEncoder.encode(buffer, 6, _increment);
         BufferUtil.flipToFlush(buffer, 0);

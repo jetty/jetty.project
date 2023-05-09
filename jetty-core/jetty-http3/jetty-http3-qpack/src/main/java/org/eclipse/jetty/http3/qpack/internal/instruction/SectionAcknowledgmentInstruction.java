@@ -41,6 +41,7 @@ public class SectionAcknowledgmentInstruction implements Instruction
         int size = NBitIntegerEncoder.octetsNeeded(7, _streamId) + 1;
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
         buffer.put((byte)0x80);
         NBitIntegerEncoder.encode(buffer, 7, _streamId);
         BufferUtil.flipToFlush(buffer, 0);

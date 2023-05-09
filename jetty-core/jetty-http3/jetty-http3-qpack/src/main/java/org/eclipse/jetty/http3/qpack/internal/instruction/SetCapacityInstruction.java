@@ -41,6 +41,7 @@ public class SetCapacityInstruction implements Instruction
         int size = NBitIntegerEncoder.octetsNeeded(5, _capacity) + 1;
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
         buffer.put((byte)0x20);
         NBitIntegerEncoder.encode(buffer, 5, _capacity);
         BufferUtil.flipToFlush(buffer, 0);

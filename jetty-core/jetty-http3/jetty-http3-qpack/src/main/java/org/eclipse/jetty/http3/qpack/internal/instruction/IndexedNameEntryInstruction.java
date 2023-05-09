@@ -59,6 +59,7 @@ public class IndexedNameEntryInstruction implements Instruction
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
 
         // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
         buffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
