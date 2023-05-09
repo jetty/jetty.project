@@ -16,7 +16,7 @@ module org.eclipse.jetty.security.jaspi
     requires jetty.servlet.api;
     requires org.slf4j;
 
-    requires transitive javax.security.auth.message;
+    requires transitive java.security.auth.message;
     requires transitive org.eclipse.jetty.security;
 
     exports org.eclipse.jetty.security.jaspi;

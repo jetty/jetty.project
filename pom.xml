@@ -75,7 +75,7 @@
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
     <javax.cdi.api.version>2.0</javax.cdi.api.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
+    <jakarta.security.auth.message.version>1.1.3</jakarta.security.auth.message.version>
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
@@ -1794,9 +1794,9 @@
         <version>${javax.mail.glassfish.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.security.auth.message</artifactId>
-        <version>${javax.security.auth.message.version}</version>
+        <groupId>jakarta.security.auth.message</groupId>
+        <artifactId>jakarta.security.auth.message-api</artifactId>
+        <version>${jakarta.security.auth.message.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>

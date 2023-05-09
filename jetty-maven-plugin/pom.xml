@@ -355,8 +355,8 @@
           <artifactId>javax.mail.glassfish</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.security.auth.message</artifactId>
+          <groupId>jakarta.security.auth.message</groupId>
+          <artifactId>jakarta.security.auth.message-api</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.ow2.asm</groupId>

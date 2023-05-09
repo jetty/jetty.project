@@ -15,8 +15,8 @@ package org.eclipse.jetty.http3.qpack.internal.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 
 /**
  * Parses a stream of unframed instructions for the Encoder. These instructions are sent from the remote Decoder.
@@ -28,7 +28,7 @@ public class EncoderInstructionParser
     private static final int INSERT_COUNT_INCREMENT_PREFIX = 6;
 
     private final Handler _handler;
-    private final NBitIntegerParser _integerParser;
+    private final NBitIntegerDecoder _integerDecoder;
     private State _state = State.IDLE;
 
     private enum State
@@ -51,7 +51,7 @@ public class EncoderInstructionParser
     public EncoderInstructionParser(Handler handler)
     {
         _handler = handler;
-        _integerParser = new NBitIntegerParser();
+        _integerDecoder = new NBitIntegerDecoder();
     }
 
     public void parse(ByteBuffer buffer) throws QpackException
@@ -67,19 +67,19 @@ public class EncoderInstructionParser
                 if ((firstByte & 0x80) != 0)
                 {
                     _state = State.SECTION_ACKNOWLEDGEMENT;
-                    _integerParser.setPrefix(SECTION_ACKNOWLEDGEMENT_PREFIX);
+                    _integerDecoder.setPrefix(SECTION_ACKNOWLEDGEMENT_PREFIX);
                     parseSectionAcknowledgment(buffer);
                 }
                 else if ((firstByte & 0x40) != 0)
                 {
                     _state = State.STREAM_CANCELLATION;
-                    _integerParser.setPrefix(STREAM_CANCELLATION_PREFIX);
+                    _integerDecoder.setPrefix(STREAM_CANCELLATION_PREFIX);
                     parseStreamCancellation(buffer);
                 }
                 else
                 {
                     _state = State.INSERT_COUNT_INCREMENT;
-                    _integerParser.setPrefix(INSERT_COUNT_INCREMENT_PREFIX);
+                    _integerDecoder.setPrefix(INSERT_COUNT_INCREMENT_PREFIX);
                     parseInsertCountIncrement(buffer);
                 }
                 break;
@@ -103,7 +103,7 @@ public class EncoderInstructionParser
 
     private void parseSectionAcknowledgment(ByteBuffer buffer) throws QpackException
     {
-        long streamId = _integerParser.decodeInt(buffer);
+        long streamId = _integerDecoder.decodeInt(buffer);
         if (streamId >= 0)
         {
             reset();
@@ -113,7 +113,7 @@ public class EncoderInstructionParser
 
     private void parseStreamCancellation(ByteBuffer buffer) throws QpackException
     {
-        long streamId = _integerParser.decodeLong(buffer);
+        long streamId = _integerDecoder.decodeLong(buffer);
         if (streamId >= 0)
         {
             reset();
@@ -123,7 +123,7 @@ public class EncoderInstructionParser
 
     private void parseInsertCountIncrement(ByteBuffer buffer) throws QpackException
     {
-        int increment = _integerParser.decodeInt(buffer);
+        int increment = _integerDecoder.decodeInt(buffer);
         if (increment >= 0)
         {
             reset();
@@ -134,6 +134,6 @@ public class EncoderInstructionParser
     public void reset()
     {
         _state = State.IDLE;
-        _integerParser.reset();
+        _integerDecoder.reset();
     }
 }

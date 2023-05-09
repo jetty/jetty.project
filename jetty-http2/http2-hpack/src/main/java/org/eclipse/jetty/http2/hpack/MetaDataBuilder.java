@@ -34,7 +34,7 @@ public class MetaDataBuilder
     private HostPortHttpField _authority;
     private String _path;
     private String _protocol;
-    private long _contentLength = Long.MIN_VALUE;
+    private long _contentLength = -1;
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -67,17 +67,17 @@ public class MetaDataBuilder
         return _size;
     }
 
-    public void emit(HttpField field) throws HpackException.SessionException
+    public void emit(HttpField field) throws SessionException
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
         if (name == null || name.length() == 0)
-            throw new HpackException.SessionException("Header size 0");
+            throw new SessionException("Header size 0");
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
         _size += fieldSize + 32;
         if (_size > _maxSize)
-            throw new HpackException.SessionException("Header size %d > %d", _size, _maxSize);
+            throw new SessionException("Header size %d > %d", _size, _maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
@@ -196,7 +196,7 @@ public class MetaDataBuilder
         }
     }
 
-    protected void streamException(String messageFormat, Object... args)
+    public void streamException(String messageFormat, Object... args)
     {
         HpackException.StreamException stream = new HpackException.StreamException(messageFormat, args);
         if (_streamException == null)
@@ -277,23 +277,7 @@ public class MetaDataBuilder
             _path = null;
             _protocol = null;
             _size = 0;
-            _contentLength = Long.MIN_VALUE;
+            _contentLength = -1;
         }
-    }
-
-    /**
-     * Check that the max size will not be exceeded.
-     *
-     * @param length the length
-     * @param huffman the huffman name
-     * @throws SessionException in case of size errors
-     */
-    public void checkSize(int length, boolean huffman) throws SessionException
-    {
-        // Apply a huffman fudge factor
-        if (huffman)
-            length = (length * 4) / 3;
-        if ((_size + length) > _maxSize)
-            throw new HpackException.SessionException("Header too large %d > %d", _size + length, _maxSize);
     }
 }
