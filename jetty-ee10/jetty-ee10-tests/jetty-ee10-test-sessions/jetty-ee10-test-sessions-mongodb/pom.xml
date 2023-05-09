@@ -10,7 +10,6 @@
   <name>EE10 :: Tests :: Sessions :: Mongo</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
-    <embedmongo.host>localhost</embedmongo.host>
   </properties>
   <build>
     <plugins>
@@ -22,32 +21,6 @@
             <mongo.docker.version>${mongo.docker.version}</mongo.docker.version>
           </systemPropertyVariables>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-test-policy</artifactId>
-                  <version>${jetty-test-policy.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**/*.keystore,**/*.pem</includes>C
-                  <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
