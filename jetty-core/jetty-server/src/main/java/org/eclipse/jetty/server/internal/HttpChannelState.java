@@ -994,7 +994,7 @@ public class HttpChannelState implements HttpChannel, Components
 
     /**
      * The Channel's implementation of the {@link Response} API.
-     * Also is a {@link Callback} used the {@link #write(boolean, ByteBuffer, Callback)}
+     * Also is a {@link Callback} used by the {@link #write(boolean, ByteBuffer, Callback)}
      * method when calling
      * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
      */
@@ -1163,7 +1163,7 @@ public class HttpChannelState implements HttpChannel, Components
          * Called when the call to
          * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
          * made by {@link ChannelResponse#write(boolean, ByteBuffer, Callback)} succeeds.
-         * The implementation maintains the {@link #_streamSendState} variable before taking
+         * The implementation maintains the {@link #_streamSendState} before taking
          * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
          */
         @Override
@@ -1190,7 +1190,7 @@ public class HttpChannelState implements HttpChannel, Components
          * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
          * made by {@link ChannelResponse#write(boolean, ByteBuffer, Callback)} fails.
          * <p>
-         * The implementation maintains the {@link #_streamSendState} variable before taking
+         * The implementation maintains the {@link #_streamSendState} before taking
          * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
          * @param x The reason for the failure.
          */
@@ -1228,8 +1228,6 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public boolean isCompletedSuccessfully()
         {
-            // TODO: this should return whether the last write (or the stream) is completed
-            //  not _completed because the last write may still be pending.
             try (AutoLock ignored = _request._lock.lock())
             {
                 if (_request._httpChannelState == null)
@@ -1365,7 +1363,10 @@ public class HttpChannelState implements HttpChannel, Components
                 if (failure != null)
                 {
                     httpChannelState._failure = failure;
-                    response.lockedPrepareErrorResponse();
+                    if (!stream.isCommitted())
+                        response.lockedPrepareErrorResponse();
+                    else
+                        completeStream = true;
                 }
             }
 
