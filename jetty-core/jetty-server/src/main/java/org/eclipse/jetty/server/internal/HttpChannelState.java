@@ -275,7 +275,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (getHttpConfiguration().getSendDateHeader())
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
 
-            _combinedListener.onRequestBegin(_request, _request._response);
+            _combinedListener.onRequestBegin(_request);
 
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
@@ -512,6 +512,7 @@ public class HttpChannelState implements HttpChannel, Components
                 LOG.debug("invoking handler in {}", HttpChannelState.this);
             Server server = _connectionMetaData.getConnector().getServer();
 
+            boolean handled = false;
             Throwable failure = null;
             try
             {
@@ -545,20 +546,17 @@ public class HttpChannelState implements HttpChannel, Components
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
 
-                _combinedListener.onBeforeDispatch(request, request._response);
+                _combinedListener.onBeforeHandling(request);
 
-                if (!server.handle(customized, request._response, request._callback))
+                handled = server.handle(customized, request._response, request._callback);
+                if (!handled)
                     Response.writeError(customized, request._response, request._callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {
-                _combinedListener.onDispatchFailure(request, request._response, t);
                 failure = t;
             }
-            finally
-            {
-                _combinedListener.onAfterDispatch(request, request._response);
-            }
+            _combinedListener.onAfterHandling(request, handled, failure);
 
             HttpStream stream;
             boolean completeStream = false;
@@ -658,7 +656,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
-                _combinedListener.onComplete(_request, _request._response);
+                _combinedListener.onComplete(_request, failure);
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
                     stream.succeeded();
@@ -695,9 +693,9 @@ public class HttpChannelState implements HttpChannel, Components
             _id = httpChannel.getHttpStream().getId(); // Copy ID now, as stream will ultimately be nulled
             _connectionMetaData = httpChannel.getConnectionMetaData();
             _metaData = Objects.requireNonNull(metaData);
-            _response = new ChannelResponse(this);
-            _lock = httpChannel._lock;
             _listener = httpChannel._combinedListener;
+            _response = new ChannelResponse(this, _listener);
+            _lock = httpChannel._lock;
         }
 
         public void setLoggedRequest(Request request)
@@ -878,22 +876,13 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (chunk != null)
             {
-                _listener.onRequestContent(this, _response, chunk.getByteBuffer().slice());
+                _listener.onRequestRead(this, chunk);
                 if (chunk.hasRemaining())
                     _contentBytesRead.add(chunk.getByteBuffer().remaining());
             }
 
-            if (chunk.isLast())
-                _listener.onRequestEnd(this, _response);
-
             if (chunk instanceof Trailers trailers)
-            {
                 _trailers = trailers.getTrailers();
-                _listener.onRequestTrailers(this, _response);
-            }
-
-            if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
-                _listener.onRequestEnd(this, _response);
 
             return chunk;
         }
@@ -944,7 +933,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void fail(Throwable failure)
         {
-            _listener.onRequestFailure(this, _response, failure);
+            // TODO
         }
 
         @Override
@@ -1014,10 +1003,10 @@ public class HttpChannelState implements HttpChannel, Components
         private Supplier<HttpFields> _trailers;
         private HttpChannel.Listener _listener;
 
-        private ChannelResponse(ChannelRequest request)
+        private ChannelResponse(ChannelRequest request, HttpChannel.Listener listener)
         {
             _request = request;
-            _listener = request.getHttpChannel()._combinedListener;
+            _listener = listener;
         }
 
         public long getContentBytesWritten()
@@ -1071,8 +1060,6 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
-            if (!isCommitted())
-                _listener.onResponseBegin(_request, this);
 
             long length = BufferUtil.length(content);
 
@@ -1119,28 +1106,49 @@ public class HttpChannelState implements HttpChannel, Components
                 }
             }
 
+            if (!isCommitted())
+                _listener.onResponseCommitted(_request, this._status, this.getHeaders());
+
             if (failure == null)
             {
-                boolean wasCommitted = isCommitted();
-                ByteBuffer contentSlice = content.slice();
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
-                stream.send(_request._metaData, responseMetaData, last, content, this);
-                if (!wasCommitted)
-                    _listener.onResponseCommit(_request, this);
-                _listener.onResponseContent(_request, this, contentSlice);
-                if (last)
-                    _listener.onResponseEnd(_request, this);
+                ByteBuffer contentSlice = content.slice();
+                Callback listenerCallback = new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        _listener.onResponseWrite(_request, last, contentSlice, null);
+                        callback.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        _listener.onResponseWrite(_request, last, contentSlice, x);
+                        callback.failed(x);
+                    }
+                };
+                stream.send(_request._metaData, responseMetaData, last, content, listenerCallback);
             }
             else if (failure == DO_NOT_SEND)
             {
-                httpChannel._serializedInvoker.run(callback::succeeded);
+                Throwable t = failure;
+                httpChannel._serializedInvoker.run(() ->
+                {
+                    _listener.onResponseWrite(_request, last, content.slice(), t);
+                    callback.succeeded();
+                });
             }
             else
             {
                 Throwable t = failure;
-                _listener.onResponseFailure(_request, this, t);
-                httpChannel._serializedInvoker.run(() -> callback.failed(t));
+                httpChannel._serializedInvoker.run(() ->
+                {
+                    _listener.onResponseWrite(_request, last, content.slice(), t);
+                    callback.failed(t);
+                });
             }
         }
 

@@ -13,11 +13,18 @@
 
 package org.eclipse.jetty.server;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.Content;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.lang.invoke.MethodType.methodType;
 
 /**
  * A HttpChannel.Listener that holds a collection of
@@ -27,255 +34,197 @@ import org.slf4j.LoggerFactory;
  */
 public class HttpChannelListeners implements HttpChannel.Listener
 {
-    static final Logger LOG = LoggerFactory.getLogger(HttpChannelListeners.class);
-    public static HttpChannel.Listener NOOP = new HttpChannel.Listener() {};
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelListeners.class);
 
-    private final NotifyRequest onRequestBegin;
-    private final NotifyRequest onBeforeDispatch;
-    private final NotifyFailure onDispatchFailure;
-    private final NotifyRequest onAfterDispatch;
-    private final NotifyContent onRequestContent;
-    private final NotifyRequest onRequestContentEnd;
-    private final NotifyRequest onRequestTrailers;
-    private final NotifyRequest onRequestEnd;
-    private final NotifyFailure onRequestFailure;
-    private final NotifyRequest onResponseBegin;
-    private final NotifyRequest onResponseCommit;
-    private final NotifyContent onResponseContent;
-    private final NotifyRequest onResponseEnd;
-    private final NotifyFailure onResponseFailure;
-    private final NotifyRequest onComplete;
+    private static final MethodType LISTENER_TYPE_ON_HANDLING_BEFORE = methodType(Void.TYPE, Request.class);
+    private static final MethodType LISTENER_TYPE_ON_HANDLING_AFTER = methodType(Void.TYPE, Request.class, Boolean.TYPE, Throwable.class);
 
-    public HttpChannelListeners(Collection<HttpChannel.Listener> listeners)
+    private static final MethodType LISTENER_TYPE_ON_REQUEST_BEGIN = methodType(Void.TYPE, Request.class);
+    private static final MethodType LISTENER_TYPE_ON_REQUEST_READ = methodType(Void.TYPE, Request.class, Content.Chunk.class);
+
+    private static final MethodType LISTENER_TYPE_ON_RESPONSE_COMMITTED = methodType(Void.TYPE, Request.class, Integer.TYPE, HttpFields.class);
+    private static final MethodType LISTENER_TYPE_ON_RESPONSE_WRITE = methodType(Void.TYPE, Request.class, Boolean.TYPE, ByteBuffer.class, Throwable.class);
+
+    private static final MethodType LISTENER_TYPE_ON_COMPLETE = methodType(Void.TYPE, Request.class, Throwable.class);
+
+    // Static lookup of HttpChannel.Listener method handles (used when combining / folding arguments)
+    private static final MethodHandle LISTENER_HANDLER_ON_HANDLING_BEFORE;
+    private static final MethodHandle LISTENER_HANDLER_ON_HANDLING_AFTER;
+
+    private static final MethodHandle LISTENER_HANDLER_ON_REQUEST_BEGIN;
+    private static final MethodHandle LISTENER_HANDLER_ON_REQUEST_READ;
+
+    private static final MethodHandle LISTENER_HANDLER_ON_RESPONSE_COMMITTED;
+    private static final MethodHandle LISTENER_HANDLER_ON_RESPONSE_WRITE;
+
+    private static final MethodHandle LISTENER_HANDLER_ON_COMPLETE;
+
+    static
     {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
         {
-            NotifyRequest onRequestBegin = NotifyRequest.NOOP;
-            NotifyRequest onBeforeDispatch = NotifyRequest.NOOP;
-            NotifyFailure onDispatchFailure = NotifyFailure.NOOP;
-            NotifyRequest onAfterDispatch = NotifyRequest.NOOP;
-            NotifyContent onRequestContent = NotifyContent.NOOP;
-            NotifyRequest onRequestContentEnd = NotifyRequest.NOOP;
-            NotifyRequest onRequestTrailers = NotifyRequest.NOOP;
-            NotifyRequest onRequestEnd = NotifyRequest.NOOP;
-            NotifyFailure onRequestFailure = NotifyFailure.NOOP;
-            NotifyRequest onResponseBegin = NotifyRequest.NOOP;
-            NotifyRequest onResponseCommit = NotifyRequest.NOOP;
-            NotifyContent onResponseContent = NotifyContent.NOOP;
-            NotifyRequest onResponseEnd = NotifyRequest.NOOP;
-            NotifyFailure onResponseFailure = NotifyFailure.NOOP;
-            NotifyRequest onComplete = NotifyRequest.NOOP;
+            LISTENER_HANDLER_ON_HANDLING_BEFORE = lookup.findVirtual(HttpChannel.Listener.class, "onBeforeHandling", LISTENER_TYPE_ON_HANDLING_BEFORE);
+            LISTENER_HANDLER_ON_HANDLING_AFTER = lookup.findVirtual(HttpChannel.Listener.class, "onAfterHandling", LISTENER_TYPE_ON_HANDLING_AFTER);
 
-            for (HttpChannel.Listener listener : listeners)
-            {
-                if (!listener.getClass().getMethod("onRequestBegin", Request.class, Response.class).isDefault())
-                    onRequestBegin = combine(onRequestBegin, listener::onRequestBegin);
-                if (!listener.getClass().getMethod("onBeforeDispatch", Request.class, Response.class).isDefault())
-                    onBeforeDispatch = combine(onBeforeDispatch, listener::onBeforeDispatch);
-                if (!listener.getClass().getMethod("onDispatchFailure", Request.class, Response.class, Throwable.class).isDefault())
-                    onDispatchFailure = combine(onDispatchFailure, listener::onDispatchFailure);
-                if (!listener.getClass().getMethod("onAfterDispatch", Request.class, Response.class).isDefault())
-                    onAfterDispatch = combine(onAfterDispatch, listener::onAfterDispatch);
-                if (!listener.getClass().getMethod("onRequestContent", Request.class, Response.class, ByteBuffer.class).isDefault())
-                    onRequestContent = combine(onRequestContent, listener::onRequestContent);
-                if (!listener.getClass().getMethod("onRequestContentEnd", Request.class, Response.class).isDefault())
-                    onRequestContentEnd = combine(onRequestContentEnd, listener::onRequestContentEnd);
-                if (!listener.getClass().getMethod("onRequestTrailers", Request.class, Response.class).isDefault())
-                    onRequestTrailers = combine(onRequestTrailers, listener::onRequestTrailers);
-                if (!listener.getClass().getMethod("onRequestEnd", Request.class, Response.class).isDefault())
-                    onRequestEnd = combine(onRequestEnd, listener::onRequestEnd);
-                if (!listener.getClass().getMethod("onRequestFailure", Request.class, Response.class, Throwable.class).isDefault())
-                    onRequestFailure = combine(onRequestFailure, listener::onRequestFailure);
-                if (!listener.getClass().getMethod("onResponseBegin", Request.class, Response.class).isDefault())
-                    onResponseBegin = combine(onResponseBegin, listener::onResponseBegin);
-                if (!listener.getClass().getMethod("onResponseCommit", Request.class, Response.class).isDefault())
-                    onResponseCommit = combine(onResponseCommit, listener::onResponseCommit);
-                if (!listener.getClass().getMethod("onResponseContent", Request.class, Response.class, ByteBuffer.class).isDefault())
-                    onResponseContent = combine(onResponseContent, listener::onResponseContent);
-                if (!listener.getClass().getMethod("onResponseEnd", Request.class, Response.class).isDefault())
-                    onResponseEnd = combine(onResponseEnd, listener::onResponseEnd);
-                if (!listener.getClass().getMethod("onResponseFailure", Request.class, Response.class, Throwable.class).isDefault())
-                    onResponseFailure = combine(onResponseFailure, listener::onResponseFailure);
-                if (!listener.getClass().getMethod("onComplete", Request.class, Response.class).isDefault())
-                    onComplete = combine(onComplete, listener::onComplete);
-            }
+            LISTENER_HANDLER_ON_REQUEST_BEGIN = lookup.findVirtual(HttpChannel.Listener.class, "onRequestBegin", LISTENER_TYPE_ON_REQUEST_BEGIN);
+            LISTENER_HANDLER_ON_REQUEST_READ = lookup.findVirtual(HttpChannel.Listener.class, "onRequestRead", LISTENER_TYPE_ON_REQUEST_READ);
 
-            this.onRequestBegin = onRequestBegin;
-            this.onBeforeDispatch = onBeforeDispatch;
-            this.onDispatchFailure = onDispatchFailure;
-            this.onAfterDispatch = onAfterDispatch;
-            this.onRequestContent = onRequestContent;
-            this.onRequestContentEnd = onRequestContentEnd;
-            this.onRequestTrailers = onRequestTrailers;
-            this.onRequestEnd = onRequestEnd;
-            this.onRequestFailure = onRequestFailure;
-            this.onResponseBegin = onResponseBegin;
-            this.onResponseCommit = onResponseCommit;
-            this.onResponseContent = onResponseContent;
-            this.onResponseEnd = onResponseEnd;
-            this.onResponseFailure = onResponseFailure;
-            this.onComplete = onComplete;
+            LISTENER_HANDLER_ON_RESPONSE_COMMITTED = lookup.findVirtual(HttpChannel.Listener.class, "onResponseCommitted", LISTENER_TYPE_ON_RESPONSE_COMMITTED);
+            LISTENER_HANDLER_ON_RESPONSE_WRITE = lookup.findVirtual(HttpChannel.Listener.class, "onResponseWrite", LISTENER_TYPE_ON_RESPONSE_WRITE);
+
+            LISTENER_HANDLER_ON_COMPLETE = lookup.findVirtual(HttpChannel.Listener.class, "onComplete", LISTENER_TYPE_ON_COMPLETE);
         }
-        catch (Exception e)
+        catch (NoSuchMethodException e)
+        {
+            throw new RuntimeException(e);
+        }
+        catch (IllegalAccessException e)
         {
             throw new RuntimeException(e);
         }
     }
 
-    @Override
-    public void onRequestBegin(Request request, Response response)
+    // List of HttpChannel.Listener method handles that will be called
+    private MethodHandle onHandlingBeforeHandle;
+    private MethodHandle onHandlingAfterHandle;
+    private MethodHandle onRequestBeginHandle;
+    private MethodHandle onRequestReadHandle;
+    private MethodHandle onResponseCommittedHandle;
+    private MethodHandle onResponseWriteHandle;
+    private MethodHandle onCompleteHandle;
+
+    public HttpChannelListeners()
     {
-        onRequestBegin.onRequest(request, response);
+        set(null);
     }
 
-    @Override
-    public void onBeforeDispatch(Request request, Response response)
+    public void set(Collection<HttpChannel.Listener> listeners)
     {
-        onBeforeDispatch.onRequest(request, response);
-    }
+        onHandlingBeforeHandle = MethodHandles.empty(LISTENER_TYPE_ON_HANDLING_BEFORE);
+        onHandlingAfterHandle = MethodHandles.empty(LISTENER_TYPE_ON_HANDLING_AFTER);
 
-    @Override
-    public void onDispatchFailure(Request request, Response response, Throwable failure)
-    {
-        onDispatchFailure.onFailure(request, response, failure);
-    }
+        onRequestBeginHandle = MethodHandles.empty(LISTENER_TYPE_ON_REQUEST_BEGIN);
+        onRequestReadHandle = MethodHandles.empty(LISTENER_TYPE_ON_REQUEST_READ);
 
-    @Override
-    public void onAfterDispatch(Request request, Response response)
-    {
-        onAfterDispatch.onRequest(request, response);
-    }
+        onResponseCommittedHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_COMMITTED);
+        onResponseWriteHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_WRITE);
 
-    @Override
-    public void onRequestContent(Request request, Response response, ByteBuffer content)
-    {
-        onRequestContent.onContent(request, response, content);
-    }
+        onCompleteHandle = MethodHandles.empty(LISTENER_TYPE_ON_COMPLETE);
 
-    @Override
-    public void onRequestContentEnd(Request request, Response response)
-    {
-        onRequestContentEnd.onRequest(request, response);
-    }
+        if (listeners == null)
+            return;
 
-    @Override
-    public void onRequestTrailers(Request request, Response response)
-    {
-        onRequestTrailers.onRequest(request, response);
-    }
-
-    @Override
-    public void onRequestEnd(Request request, Response response)
-    {
-        onRequestEnd.onRequest(request, response);
-    }
-
-    @Override
-    public void onRequestFailure(Request request, Response response, Throwable failure)
-    {
-        onRequestFailure.onFailure(request, response, failure);
-    }
-
-    @Override
-    public void onResponseBegin(Request request, Response response)
-    {
-        onResponseBegin.onRequest(request, response);
-    }
-
-    @Override
-    public void onResponseCommit(Request request, Response response)
-    {
-        onResponseCommit.onRequest(request, response);
-    }
-
-    @Override
-    public void onResponseContent(Request request, Response response, ByteBuffer content)
-    {
-        onResponseContent.onContent(request, response, content);
-    }
-
-    @Override
-    public void onResponseEnd(Request request, Response response)
-    {
-        onResponseEnd.onRequest(request, response);
-    }
-
-    @Override
-    public void onResponseFailure(Request request, Response response, Throwable failure)
-    {
-        onResponseFailure.onFailure(request, response, failure);
-    }
-
-    @Override
-    public void onComplete(Request request, Response response)
-    {
-        onComplete.onRequest(request, response);
-    }
-
-    private interface NotifyRequest
-    {
-        void onRequest(Request request, Response response);
-
-        NotifyRequest NOOP = (request, response) ->
+        for (HttpChannel.Listener listener : listeners)
         {
-        };
+            onHandlingBeforeHandle = MethodHandles.foldArguments(onHandlingBeforeHandle, LISTENER_HANDLER_ON_HANDLING_BEFORE.bindTo(listener));
+            onHandlingAfterHandle = MethodHandles.foldArguments(onHandlingAfterHandle, LISTENER_HANDLER_ON_HANDLING_AFTER.bindTo(listener));
+
+            onRequestBeginHandle = MethodHandles.foldArguments(onRequestBeginHandle, LISTENER_HANDLER_ON_REQUEST_BEGIN.bindTo(listener));
+            onRequestReadHandle = MethodHandles.foldArguments(onRequestReadHandle, LISTENER_HANDLER_ON_REQUEST_READ.bindTo(listener));
+
+            onResponseCommittedHandle = MethodHandles.foldArguments(onResponseCommittedHandle, LISTENER_HANDLER_ON_RESPONSE_COMMITTED.bindTo(listener));
+            onResponseWriteHandle = MethodHandles.foldArguments(onResponseWriteHandle, LISTENER_HANDLER_ON_RESPONSE_WRITE.bindTo(listener));
+
+            onCompleteHandle = MethodHandles.foldArguments(onCompleteHandle, LISTENER_HANDLER_ON_COMPLETE.bindTo(listener));
+        }
     }
 
-    private interface NotifyFailure
+    @Override
+    public void onRequestBegin(Request request)
     {
-        void onFailure(Request request, Response response, Throwable failure);
-
-        NotifyFailure NOOP = (request, response, failure) ->
+        try
         {
-        };
+            onRequestBeginHandle.invoke(request);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
     }
 
-    private interface NotifyContent
+    @Override
+    public void onBeforeHandling(Request request)
     {
-        void onContent(Request request, Response response, ByteBuffer content);
-
-        NotifyContent NOOP = (request, response, content) ->
+        try
         {
-        };
+            onHandlingBeforeHandle.invoke(request);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
     }
 
-    private static NotifyRequest combine(NotifyRequest first, NotifyRequest second)
+    @Override
+    public void onAfterHandling(Request request, boolean handled, Throwable failure)
     {
-        if (first == NotifyRequest.NOOP)
-            return second;
-        if (second == NotifyRequest.NOOP)
-            return first;
-        return (request, response) ->
+        try
         {
-            first.onRequest(request, response);
-            second.onRequest(request, response);
-        };
+            onHandlingAfterHandle.invoke(request, handled, failure);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
     }
 
-    private static NotifyFailure combine(NotifyFailure first, NotifyFailure second)
+    @Override
+    public void onRequestRead(Request request, Content.Chunk chunk)
     {
-        if (first == NotifyFailure.NOOP)
-            return second;
-        if (second == NotifyFailure.NOOP)
-            return first;
-        return (request, response, throwable) ->
+        try
         {
-            first.onFailure(request, response, throwable);
-            second.onFailure(request, response, throwable);
-        };
+            onRequestReadHandle.invoke(request, chunk);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
     }
 
-    private static NotifyContent combine(NotifyContent first, NotifyContent second)
+    @Override
+    public void onResponseCommitted(Request request, int status, HttpFields response)
     {
-        if (first == NotifyContent.NOOP)
-            return (request, response, content) -> second.onContent(request, response, content.slice());
-        if (second == NotifyContent.NOOP)
-            return (request, response, content) -> first.onContent(request, response, content.slice());
-        return (request, response, content) ->
+        try
         {
-            content = content.slice();
-            first.onContent(request, response, content);
-            second.onContent(request, response, content);
-        };
+            onResponseCommittedHandle.invoke(request, response);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
+    }
+
+    @Override
+    public void onResponseWrite(Request request, boolean last, ByteBuffer content, Throwable failure)
+    {
+        try
+        {
+            onResponseWriteHandle.invoke(request, last, content);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
+    }
+
+    @Override
+    public void onComplete(Request request, Throwable failure)
+    {
+        try
+        {
+            onCompleteHandle.invoke(request, failure);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
     }
 }

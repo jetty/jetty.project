@@ -16,8 +16,11 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
@@ -130,174 +133,94 @@ public interface HttpChannel extends Invocable
         /**
          * Invoked just after the HTTP request line and headers have been parsed.
          *
+         * <p>
+         * This the state of the request from the network, and does not include
+         * any request customizations (eg: forwarding, secure, etc)
+         * </p>
+         *
+         * <p>
+         * Implementations must not block!
+         * </p>
+         *
          * @param request the request object
-         * @param response the response object
          */
-        default void onRequestBegin(Request request, Response response)
+        default void onRequestBegin(Request request)
         {
-            // done
         }
 
         /**
-         * Invoked just before calling the application.
+         * Invoked just before calling the server handler tree.
+         *
+         * <p>
+         * This is the final state of the request before the handlers are called.
+         * This includes any request customization.
+         * </p>
          *
          * @param request the request object
-         * @param response the response object
          */
-        default void onBeforeDispatch(Request request, Response response)
+        default void onBeforeHandling(Request request)
         {
-            // done
         }
 
         /**
-         * Invoked when the application threw an exception.
+         * Invoked after application handling
          *
          * @param request the request object
-         * @param response the response object
+         * @param handled if the server handlers handled the request
          * @param failure the exception thrown by the application
+         * @see Handler#handle(Request, Response, Callback)
          */
-        default void onDispatchFailure(Request request, Response response, Throwable failure)
+        default void onAfterHandling(Request request, boolean handled, Throwable failure)
         {
-            // done
-        }
-
-        /**
-         * Invoked just after the application returns from the first invocation.
-         *
-         * @param request the request object
-         * @param response the response object
-         */
-        default void onAfterDispatch(Request request, Response response)
-        {
-            // done
         }
 
         /**
          * Invoked every time a request content chunk has been parsed, just before
          * making it available to the application.
          *
-         * @param request the request object
-         * @param response the response object
-         * @param content a {@link ByteBuffer#slice() slice} of the request content chunk
-         */
-        default void onRequestContent(Request request, Response response, ByteBuffer content)
-        {
-            // done
-        }
-
-        /**
-         * Invoked when the end of the request content is detected.
+         * <p>
+         *     TODO: make notes about Trailers / EOF / Errors
+         * </p>
          *
          * @param request the request object
-         * @param response the response object
+         * @param chunk a request content chunk TODO: make bytebuffer a slice?
          */
-        default void onRequestContentEnd(Request request, Response response)
+        default void onRequestRead(Request request, Content.Chunk chunk)
         {
-            // done
-        }
-
-        /**
-         * Invoked when the request trailers have been parsed.
-         *
-         * @param request the request object
-         * @param response the response object
-         */
-        default void onRequestTrailers(Request request, Response response)
-        {
-            // done
-        }
-
-        /**
-         * Invoked when the request has been fully parsed.
-         *
-         * @param request the request object
-         * @param response the response object
-         */
-        default void onRequestEnd(Request request, Response response)
-        {
-            // done
-        }
-
-        /**
-         * Invoked when the request processing failed.
-         *
-         * @param request the request object
-         * @param response the response object
-         * @param failure the request failure
-         */
-        default void onRequestFailure(Request request, Response response, Throwable failure)
-        {
-            // done
         }
 
         /**
          * Invoked just before the response line is written to the network.
          *
          * @param request the request object
+         * @param status the response status
          * @param response the response object
          */
-        default void onResponseBegin(Request request, Response response)
+        default void onResponseCommitted(Request request, int status, HttpFields response)
         {
-            // done
-        }
-
-        /**
-         * Invoked just after the response is committed (that is, the response
-         * line, headers and possibly some content have been written to the
-         * network).
-         *
-         * @param request the request object
-         * @param response the response object
-         */
-        default void onResponseCommit(Request request, Response response)
-        {
-            // done
         }
 
         /**
          * Invoked after a response content chunk has been written to the network.
          *
          * @param request the request object
-         * @param response the response object
+         * @param last indicating last write
          * @param content a {@link ByteBuffer#slice() slice} of the response content chunk
+         * @param failure if there was a failure to write the given content
          */
-        default void onResponseContent(Request request, Response response, ByteBuffer content)
+        default void onResponseWrite(Request request, boolean last, ByteBuffer content, Throwable failure)
         {
-            // done
         }
 
         /**
-         * Invoked when the response has been fully written.
+         * Invoked when the request <em>and</em> response processing are complete,
+         * just before the request and response will be recycled.
          *
          * @param request the request object
-         * @param response the response object
+         * @param failure if there was a failure to complete
          */
-        default void onResponseEnd(Request request, Response response)
+        default void onComplete(Request request, Throwable failure)
         {
-            // done
-        }
-
-        /**
-         * Invoked when the response processing failed.
-         *
-         * @param request the request object
-         * @param response the response object
-         * @param failure the response failure
-         */
-        default void onResponseFailure(Request request, Response response, Throwable failure)
-        {
-            // done
-        }
-
-        /**
-         * Invoked when the request <em>and</em> response processing are complete.
-         *
-         * @param request the request object
-         * @param response the response object
-         */
-        default void onComplete(Request request, Response response)
-        {
-            // done
         }
     }
 

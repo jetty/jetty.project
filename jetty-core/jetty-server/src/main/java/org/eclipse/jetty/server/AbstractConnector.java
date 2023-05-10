@@ -152,7 +152,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private Shutdown _shutdown;
-    private HttpChannel.Listener _httpChannelListeners = NOOP_LISTENER;
+    private HttpChannelListeners _httpChannelListeners = new HttpChannelListeners();
     private long _idleTimeout = 30000;
     private long _shutdownIdleTimeout = 1000L;
     private String _defaultProtocol;
@@ -197,14 +197,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             public void beanAdded(Container parent, Object bean)
             {
                 if (bean instanceof HttpChannel.Listener)
-                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+                    _httpChannelListeners.set(getBeans(HttpChannel.Listener.class));
             }
 
             @Override
             public void beanRemoved(Container parent, Object bean)
             {
                 if (bean instanceof HttpChannel.Listener)
-                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+                    _httpChannelListeners.set(getBeans(HttpChannel.Listener.class));
             }
         });
 
