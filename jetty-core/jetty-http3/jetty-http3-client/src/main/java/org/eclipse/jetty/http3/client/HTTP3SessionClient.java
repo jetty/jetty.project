@@ -106,6 +106,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
             return promise;
 
         stream.setListener(listener);
+        notifyNewStream(listener, stream);
 
         stream.writeFrame(frame)
             .whenComplete((r, x) ->
@@ -125,6 +126,21 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
             });
 
         return promise;
+    }
+
+    private void notifyNewStream(Stream.Client.Listener listener, HTTP3StreamClient stream)
+    {
+        if (listener != null)
+        {
+            try
+            {
+                listener.onNewStream(stream);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener {}", listener, x);
+            }
+        }
     }
 
     @Override

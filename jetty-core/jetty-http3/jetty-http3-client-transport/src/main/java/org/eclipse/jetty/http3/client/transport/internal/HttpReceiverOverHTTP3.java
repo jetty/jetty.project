@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.client.transport.internal;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -46,9 +47,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     @Override
     public Content.Chunk read(boolean fillInterestIfNeeded)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Reading, fillInterestIfNeeded={} in {}", fillInterestIfNeeded, this);
         Stream stream = getHttpChannel().getStream();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Reading, fillInterestIfNeeded={} from {} in {}", fillInterestIfNeeded, stream, this);
+        if (stream == null)
+            return Content.Chunk.from(new EOFException("Channel has been released"));
         Stream.Data data = stream.readData();
         if (LOG.isDebugEnabled())
             LOG.debug("Read stream data {} in {}", data, this);
@@ -82,6 +85,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     protected HttpChannelOverHTTP3 getHttpChannel()
     {
         return (HttpChannelOverHTTP3)super.getHttpChannel();
+    }
+
+    @Override
+    public void onNewStream(Stream.Client stream)
+    {
+        getHttpChannel().setStream(stream);
     }
 
     @Override

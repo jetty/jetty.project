@@ -141,6 +141,16 @@ public interface Stream
         public interface Listener
         {
             /**
+             * <p>Callback method invoked when a stream is created locally by
+             * {@link Session.Client#newRequest(HeadersFrame, Listener)}.</p>
+             *
+             * @param stream the newly created stream
+             */
+            public default void onNewStream(Stream.Client stream)
+            {
+            }
+
+            /**
              * <p>Callback method invoked when a response is received.</p>
              * <p>To read response content, applications should call
              * {@link Stream#demand()} and override
