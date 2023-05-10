@@ -1730,7 +1730,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.write(content);
             os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
+
             client.shutdownOutput();
+
+            Thread.sleep(1000); // TODO remove after test fixed.  This make this test always fail rather than just be flaky
 
             // Read the two pipelined responses
             HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
@@ -1740,6 +1743,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response = HttpTester.parseResponse(client.getInputStream());
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
+
 
             // Read the close
             assertThat(client.getInputStream().read(), is(-1));
