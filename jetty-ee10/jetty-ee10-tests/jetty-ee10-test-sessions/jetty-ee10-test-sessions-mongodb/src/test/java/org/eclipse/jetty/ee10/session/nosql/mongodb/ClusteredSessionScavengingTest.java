@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.session.nosql.mongodb;
 
 import org.eclipse.jetty.ee10.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.MongoTestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;

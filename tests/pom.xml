@@ -21,6 +21,7 @@
     <module>jetty-jmh</module>
     <module>test-distribution</module>
     <module>test-integration</module>
+    <module>jetty-session-test-tools</module>
     <!-- TODO -->
     <!-- module>test-jpms</module -->
   </modules>

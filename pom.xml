@@ -1464,6 +1464,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>jetty-session-test-tools</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.tests</groupId>
         <artifactId>test-distribution-common</artifactId>
         <version>${project.version}</version>
       </dependency>

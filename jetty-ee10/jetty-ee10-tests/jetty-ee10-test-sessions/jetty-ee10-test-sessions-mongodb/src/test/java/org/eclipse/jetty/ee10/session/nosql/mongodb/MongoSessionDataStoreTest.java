@@ -27,6 +27,7 @@ import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.MongoTestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;

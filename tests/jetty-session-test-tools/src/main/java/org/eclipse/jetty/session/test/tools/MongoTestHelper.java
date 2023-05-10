@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.nosql.mongodb;
+package org.eclipse.jetty.session.test.tools;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,9 +48,6 @@ public class MongoTestHelper
     private static final Logger LOG = LoggerFactory.getLogger(MongoTestHelper.class);
     private static final Logger MONGO_LOG = LoggerFactory.getLogger("org.eclipse.jetty.nosql.mongodb.MongoLogs");
 
-    //public static final String DB_NAME = "HttpSessions";
-    //public static final String COLLECTION_NAME = "testsessions";
-    
     private static final int MONGO_PORT = 27017;
 
     static MongoDBContainer mongo;
@@ -283,7 +280,7 @@ public class MongoTestHelper
         {
             SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle, attributes);
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                 ObjectOutputStream oos = new ObjectOutputStream(baos);)
+                 ObjectOutputStream oos = new ObjectOutputStream(baos))
             {
                 SessionData.serializeAttributes(tmp, oos);
                 sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__ATTRIBUTES, baos.toByteArray());
