@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -24,6 +25,9 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 @ManagedObject("Identity Extension")
 public class IdentityExtension extends AbstractExtension
 {
+    private static final QuotedStringTokenizer PARAM_VALUE_QUOTING = new QuotedStringTokenizer(";=", true, false, false);
+
+
     private String id;
 
     public String getParam(String key)
@@ -67,7 +71,8 @@ public class IdentityExtension extends AbstractExtension
             {
                 s.append(';');
             }
-            s.append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(config.getParameter(param, ""), ";="));
+
+            s.append(param).append('=').append(PARAM_VALUE_QUOTING.quoteIfNeeded(config.getParameter(param, "")));
             delim = true;
         }
         s.append("]");
