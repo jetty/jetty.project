@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -111,7 +112,7 @@ public class HttpStreamOverFCGI implements HttpStream
     public void onHeaders()
     {
         String pathQuery = URIUtil.addPathQuery(_path, _query);
-        HttpScheme scheme = _secure != null ? HttpScheme.HTTPS : HttpScheme.HTTP;
+        HttpScheme scheme = StringUtil.isEmpty(_secure) ? HttpScheme.HTTP : HttpScheme.HTTPS;
         MetaData.Request request = new MetaData.Request(_method, scheme.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
         Runnable task = _httpChannel.onRequest(request);
         _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
