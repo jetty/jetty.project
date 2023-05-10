@@ -128,7 +128,7 @@ public class DefaultHandler extends Handler.Abstract
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "image/x-icon");
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, _favicon.remaining());
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, _favicon.remaining());
                 response.getHeaders().add(_faviconModified);
                 response.getHeaders().put(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
@@ -219,7 +219,7 @@ public class DefaultHandler extends Handler.Abstract
             writer.append("</body>\n</html>\n");
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.remaining());
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.remaining());
             response.write(true, content, callback);
             return true;
         }

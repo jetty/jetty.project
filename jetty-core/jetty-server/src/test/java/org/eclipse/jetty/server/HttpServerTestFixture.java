@@ -175,7 +175,7 @@ public class HttpServerTestFixture
             }
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, reply.length());
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, reply.length());
             response.write(true, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1), callback);
             return true;
         }

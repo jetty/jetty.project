@@ -76,7 +76,7 @@ public class HttpClientDemandTest extends AbstractTest
             {
                 try
                 {
-                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
+                    response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
                     Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     contentLatch.await();
                     response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
@@ -133,7 +133,7 @@ public class HttpClientDemandTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
                 return true;
             }
@@ -222,7 +222,7 @@ public class HttpClientDemandTest extends AbstractTest
             {
                 try
                 {
-                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
+                    response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
                     Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     serverContentLatch.await();
                     response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
@@ -315,7 +315,7 @@ public class HttpClientDemandTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, bytes.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, bytes.length);
                 response.write(true, ByteBuffer.wrap(bytes), callback);
                 return true;
             }
@@ -439,7 +439,7 @@ public class HttpClientDemandTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
                 return true;
             }

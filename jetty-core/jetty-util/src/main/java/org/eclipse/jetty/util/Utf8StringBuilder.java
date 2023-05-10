@@ -108,6 +108,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     /**
      * Reset the appendable, clearing the buffer, resetting decoding state and clearing any errors.
      */
+    @Override
     public void reset()
     {
         _state = UTF8_ACCEPT;

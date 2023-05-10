@@ -73,13 +73,15 @@ public interface CharsetStringBuilder
      */
     String build() throws CharacterCodingException;
 
+    void reset();
+
     static CharsetStringBuilder forCharset(Charset charset)
     {
         Objects.requireNonNull(charset);
         if (charset == StandardCharsets.UTF_8)
             return new Utf8StringBuilder();
         if (charset == StandardCharsets.ISO_8859_1)
-            return new Iso8859StringBuilder();
+            return new Iso88591StringBuilder();
         if (charset == StandardCharsets.US_ASCII)
             return new UsAsciiStringBuilder();
 
@@ -110,7 +112,7 @@ public interface CharsetStringBuilder
         }
     }
 
-    class Iso8859StringBuilder implements CharsetStringBuilder
+    class Iso88591StringBuilder implements CharsetStringBuilder
     {
         private final StringBuilder _builder = new StringBuilder();
 
@@ -138,6 +140,12 @@ public interface CharsetStringBuilder
             String s = _builder.toString();
             _builder.setLength(0);
             return s;
+        }
+
+        @Override
+        public void reset()
+        {
+            _builder.setLength(0);
         }
     }
     
@@ -171,6 +179,12 @@ public interface CharsetStringBuilder
             String s = _builder.toString();
             _builder.setLength(0);
             return s;
+        }
+
+        @Override
+        public void reset()
+        {
+            _builder.setLength(0);
         }
     }
 
@@ -277,6 +291,12 @@ public interface CharsetStringBuilder
             {
                 _stringBuilder.setLength(0);
             }
+        }
+
+        @Override
+        public void reset()
+        {
+            _stringBuilder.setLength(0);
         }
     }
 }

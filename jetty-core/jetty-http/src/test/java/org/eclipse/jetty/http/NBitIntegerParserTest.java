@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ public class NBitIntegerParserTest
     @Test
     public void testParsingOverByteBoundary()
     {
-        NBitIntegerParser parser = new NBitIntegerParser();
+        NBitIntegerDecoder decoder = new NBitIntegerDecoder();
 
         String encoded = "FFBA09";
         byte[] bytes = TypeUtil.fromHexString(encoded);
@@ -37,11 +37,11 @@ public class NBitIntegerParserTest
         ByteBuffer buffer1 = BufferUtil.toBuffer(bytes, 0, 2);
         ByteBuffer buffer2 = BufferUtil.toBuffer(bytes, 2, 1);
 
-        parser.setPrefix(7);
-        int value = parser.decodeInt(buffer1);
+        decoder.setPrefix(7);
+        int value = decoder.decodeInt(buffer1);
         assertThat(value, is(-1));
 
-        value = parser.decodeInt(buffer2);
+        value = decoder.decodeInt(buffer2);
         assertThat(value, is(1337));
     }
 }

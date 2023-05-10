@@ -257,8 +257,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         private void checkState()
         {
-            if (isStarted())
+            //It is allowable to call the CookieConfig.setXX methods after the SessionHandler has started,
+            //but before the context has fully started. Ie it is allowable for ServletContextListeners
+            //to call these methods in contextInitialized().
+            ServletContextHandler handler = ServletContextHandler.getCurrentServletContextHandler();
+            if (handler != null && handler.isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+
         }
     }
 

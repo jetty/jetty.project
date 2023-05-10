@@ -42,7 +42,7 @@ public class HandlerDocs
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
             return true;
         }
@@ -54,7 +54,7 @@ public class HandlerDocs
         public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
             return true;
         }
@@ -66,7 +66,7 @@ public class HandlerDocs
         public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
             return true;
         }
@@ -78,7 +78,7 @@ public class HandlerDocs
         public boolean handle(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             Blocker.Shared blocker = new Blocker.Shared();
             try (Blocker.Callback cb = blocker.callback())
             {
@@ -101,7 +101,7 @@ public class HandlerDocs
         public boolean handle(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             try (PrintStream out = new PrintStream(Content.Sink.asOutputStream(response)))
             {
                 out.print("Hello ");
@@ -122,7 +122,7 @@ public class HandlerDocs
         public boolean handle(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             new HelloWorldPublisher().subscribe(Content.Sink.asSubscriber(response, callback));
             return true;
         }
@@ -166,7 +166,7 @@ public class HandlerDocs
                 return false;
 
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
             return true;
         }
@@ -182,7 +182,7 @@ public class HandlerDocs
 
             long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
             if (contentLength >= 0)
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
 
             Content.copy(request, response, callback);
             return true;

@@ -14,29 +14,30 @@
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class LiteralNameEntryInstruction extends AbstractInstruction
+public class LiteralNameEntryInstruction implements Instruction
 {
     private final boolean _huffmanName;
     private final boolean _huffmanValue;
     private final String _name;
     private final String _value;
 
-    public LiteralNameEntryInstruction(ByteBufferPool bufferPool, HttpField httpField, boolean huffman)
+    public LiteralNameEntryInstruction(HttpField httpField, boolean huffman)
     {
-        this(bufferPool, httpField, huffman, huffman);
+        this(httpField, huffman, huffman);
     }
 
-    public LiteralNameEntryInstruction(ByteBufferPool bufferPool, HttpField httpField, boolean huffmanName, boolean huffmanValue)
+    public LiteralNameEntryInstruction(HttpField httpField, boolean huffmanName, boolean huffmanValue)
     {
-        super(bufferPool);
         _huffmanName = huffmanName;
         _huffmanValue = huffmanValue;
         _name = httpField.getName();
@@ -54,42 +55,42 @@ public class LiteralNameEntryInstruction extends AbstractInstruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
     {
         int size = (_huffmanName ? HuffmanEncoder.octetsNeeded(_name) : _name.length()) +
             (_huffmanValue ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(size, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
 
         if (_huffmanName)
         {
-            byteBuffer.put((byte)(0x40 | 0x20));
-            NBitIntegerEncoder.encode(byteBuffer, 5, HuffmanEncoder.octetsNeeded(_name));
-            HuffmanEncoder.encode(byteBuffer, _name);
+            buffer.put((byte)(0x40 | 0x20));
+            NBitIntegerEncoder.encode(buffer, 5, HuffmanEncoder.octetsNeeded(_name));
+            HuffmanEncoder.encode(buffer, _name);
         }
         else
         {
-            byteBuffer.put((byte)(0x40));
-            NBitIntegerEncoder.encode(byteBuffer, 5, _name.length());
-            byteBuffer.put(_name.getBytes());
+            buffer.put((byte)(0x40));
+            NBitIntegerEncoder.encode(buffer, 5, _name.length());
+            buffer.put(_name.getBytes(StandardCharsets.ISO_8859_1));
         }
 
         if (_huffmanValue)
         {
-            byteBuffer.put((byte)(0x80));
-            NBitIntegerEncoder.encode(byteBuffer, 7, HuffmanEncoder.octetsNeeded(_value));
-            HuffmanEncoder.encode(byteBuffer, _value);
+            buffer.put((byte)(0x80));
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
+            HuffmanEncoder.encode(buffer, _value);
         }
         else
         {
-            byteBuffer.put((byte)(0x00));
-            NBitIntegerEncoder.encode(byteBuffer, 5, _value.length());
-            byteBuffer.put(_value.getBytes());
+            buffer.put((byte)(0x00));
+            NBitIntegerEncoder.encode(buffer, 7, _value.length());
+            buffer.put(_value.getBytes(StandardCharsets.ISO_8859_1));
         }
 
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.append(buffer);
+        BufferUtil.flipToFlush(buffer, 0);
+        accumulator.append(retainableByteBuffer);
     }
 
     @Override

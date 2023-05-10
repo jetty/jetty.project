@@ -34,6 +34,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
      * ABNF from RFC 2616, RFC 822, and RFC 6455 specified characters requiring quoting.
      */
     public static final String ABNF_REQUIRED_QUOTING = "\"'\\\n\r\t\f\b%+ ;=,";
+    private static final QuotedStringTokenizer ABNF_QUOTING = new QuotedStringTokenizer(ABNF_REQUIRED_QUOTING.replace("\"", ""), false, false, false);
 
     /**
      * Join a list into Quoted CSV string
@@ -104,7 +105,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
                 builder.append(", ");
             else
                 needsDelim = true;
-            QuotedStringTokenizer.quoteIfNeeded(builder, value, ABNF_REQUIRED_QUOTING);
+            ABNF_QUOTING.quoteIfNeeded(builder, value);
         }
     }
 
