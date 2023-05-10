@@ -83,7 +83,7 @@ public class InstructionFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("flushing {} on {}", instructions, this);
 
-        instructions.forEach(i -> i.encode(accumulator));
+        instructions.forEach(i -> i.encode(bufferPool, accumulator));
 
         if (!initialized)
         {

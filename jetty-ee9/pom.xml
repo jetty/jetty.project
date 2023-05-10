@@ -18,7 +18,6 @@
 
     <!-- TODO: Remove these javax.* entries? -->
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
 
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
@@ -420,11 +419,6 @@
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.activation</artifactId>
         <version>${javax.activation.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.security.auth.message</artifactId>
-        <version>${javax.security.auth.message.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

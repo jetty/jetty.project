@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -22,7 +23,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matcher;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,10 +33,11 @@ public class QpackTestUtil
 {
     public static ByteBuffer toBuffer(Instruction... instructions)
     {
+        ByteBufferPool.NonPooling bufferPool = new ByteBufferPool.NonPooling();
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (Instruction instruction : instructions)
         {
-            instruction.encode(accumulator);
+            instruction.encode(bufferPool, accumulator);
         }
         ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()));
         BufferUtil.clearToFill(combinedBuffer);
@@ -55,8 +57,9 @@ public class QpackTestUtil
 
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
+        ByteBufferPool bufferPool = new ByteBufferPool.NonPooling();
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
-        instructions.forEach(i -> i.encode(accumulator));
+        instructions.forEach(i -> i.encode(bufferPool, accumulator));
         assertThat(accumulator.getSize(), is(instructions.size()));
         ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()), false);
         BufferUtil.clearToFill(combinedBuffer);
@@ -68,7 +71,7 @@ public class QpackTestUtil
     public static ByteBuffer hexToBuffer(String hexString)
     {
         hexString = hexString.replaceAll("\\s+", "");
-        return ByteBuffer.wrap(StringUtil.fromHexString(hexString));
+        return ByteBuffer.wrap(TypeUtil.fromHexString(hexString));
     }
 
     public static String toHexString(Instruction instruction)
@@ -124,5 +127,16 @@ public class QpackTestUtil
     public static MetaData toMetaData(HttpFields fields)
     {
         return new MetaData(HttpVersion.HTTP_3, fields);
+    }
+
+    public static boolean compareMetaData(MetaData m1, MetaData m2)
+    {
+        if (!Objects.equals(m1.getHttpVersion(), m2.getHttpVersion()))
+            return false;
+        if (!Objects.equals(m1.getContentLength(), m2.getContentLength()))
+            return false;
+        if (!Objects.equals(m1.getHttpFields(), m2.getHttpFields()))
+            return false;
+        return m1.getTrailersSupplier() == null && m2.getTrailersSupplier() == null;
     }
 }
