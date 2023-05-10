@@ -1704,7 +1704,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         startServer(new ReadExactHandler(4096));
         byte[] content = new byte[4096];
-        Arrays.fill(content, (byte)'X');
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -1712,21 +1711,23 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Send two persistent pipelined requests and then shutdown output
             os.write(("""
-                GET / HTTP/1.1\r
+                GET /one HTTP/1.1\r
                 Host: localhost\r
                 Transfer-Encoding: chunked\r
                 \r
                 1000\r
                 """).getBytes(StandardCharsets.ISO_8859_1));
+            Arrays.fill(content, (byte)'1');
             os.write(content);
             os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.write(("""
-                GET / HTTP/1.1\r
+                GET /two HTTP/1.1\r
                 Host: localhost\r
                 Transfer-Encoding: chunked\r
                 \r
                 1000\r
                 """).getBytes(StandardCharsets.ISO_8859_1));
+            Arrays.fill(content, (byte)'2');
             os.write(content);
             os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
