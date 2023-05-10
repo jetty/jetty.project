@@ -461,9 +461,9 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // There are many instances of code that wants to ensure the output is closed, so
-            // it does a redundant write(true, callback).  The DO_NOT_SEND option supports this by
-            // turning such writes into a NOOP.
-            case LAST_SENDING, LAST_COMPLETE -> (!last || length > 0)
+            // it does a redundant write(true, callback). Other code may do a write(false, callback) to ensure
+            // they are flushed. The DO_NOT_SEND option supports these by turning such writes into a NOOP.
+            case LAST_SENDING, LAST_COMPLETE -> (length > 0)
                 ? new IllegalStateException("last already written")
                 : DO_NOT_SEND;
         };
