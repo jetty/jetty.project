@@ -13,16 +13,20 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
+import java.util.Collection;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A HttpChannel.Listener that holds a collection of
  * other HttpChannel.Listener instances that are efficiently
  * invoked without iteration.
  * @see AbstractConnector
  */
-@Deprecated // TODO update or remove
-public class HttpChannelListeners // TODO ??? implements HttpChannel.Listener
+public class HttpChannelListeners implements HttpChannel.Listener
 {
-    /* TODO
     static final Logger LOG = LoggerFactory.getLogger(HttpChannelListeners.class);
     public static HttpChannel.Listener NOOP = new HttpChannel.Listener() {};
 
@@ -64,35 +68,35 @@ public class HttpChannelListeners // TODO ??? implements HttpChannel.Listener
 
             for (HttpChannel.Listener listener : listeners)
             {
-                if (!listener.getClass().getMethod("onRequestBegin", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onRequestBegin", Request.class, Response.class).isDefault())
                     onRequestBegin = combine(onRequestBegin, listener::onRequestBegin);
-                if (!listener.getClass().getMethod("onBeforeDispatch", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onBeforeDispatch", Request.class, Response.class).isDefault())
                     onBeforeDispatch = combine(onBeforeDispatch, listener::onBeforeDispatch);
-                if (!listener.getClass().getMethod("onDispatchFailure", Request.class, Throwable.class).isDefault())
+                if (!listener.getClass().getMethod("onDispatchFailure", Request.class, Response.class, Throwable.class).isDefault())
                     onDispatchFailure = combine(onDispatchFailure, listener::onDispatchFailure);
-                if (!listener.getClass().getMethod("onAfterDispatch", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onAfterDispatch", Request.class, Response.class).isDefault())
                     onAfterDispatch = combine(onAfterDispatch, listener::onAfterDispatch);
-                if (!listener.getClass().getMethod("onRequestContent", Request.class, ByteBuffer.class).isDefault())
+                if (!listener.getClass().getMethod("onRequestContent", Request.class, Response.class, ByteBuffer.class).isDefault())
                     onRequestContent = combine(onRequestContent, listener::onRequestContent);
-                if (!listener.getClass().getMethod("onRequestContentEnd", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onRequestContentEnd", Request.class, Response.class).isDefault())
                     onRequestContentEnd = combine(onRequestContentEnd, listener::onRequestContentEnd);
-                if (!listener.getClass().getMethod("onRequestTrailers", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onRequestTrailers", Request.class, Response.class).isDefault())
                     onRequestTrailers = combine(onRequestTrailers, listener::onRequestTrailers);
-                if (!listener.getClass().getMethod("onRequestEnd", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onRequestEnd", Request.class, Response.class).isDefault())
                     onRequestEnd = combine(onRequestEnd, listener::onRequestEnd);
-                if (!listener.getClass().getMethod("onRequestFailure", Request.class, Throwable.class).isDefault())
+                if (!listener.getClass().getMethod("onRequestFailure", Request.class, Response.class, Throwable.class).isDefault())
                     onRequestFailure = combine(onRequestFailure, listener::onRequestFailure);
-                if (!listener.getClass().getMethod("onResponseBegin", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onResponseBegin", Request.class, Response.class).isDefault())
                     onResponseBegin = combine(onResponseBegin, listener::onResponseBegin);
-                if (!listener.getClass().getMethod("onResponseCommit", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onResponseCommit", Request.class, Response.class).isDefault())
                     onResponseCommit = combine(onResponseCommit, listener::onResponseCommit);
-                if (!listener.getClass().getMethod("onResponseContent", Request.class, ByteBuffer.class).isDefault())
+                if (!listener.getClass().getMethod("onResponseContent", Request.class, Response.class, ByteBuffer.class).isDefault())
                     onResponseContent = combine(onResponseContent, listener::onResponseContent);
-                if (!listener.getClass().getMethod("onResponseEnd", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onResponseEnd", Request.class, Response.class).isDefault())
                     onResponseEnd = combine(onResponseEnd, listener::onResponseEnd);
-                if (!listener.getClass().getMethod("onResponseFailure", Request.class, Throwable.class).isDefault())
+                if (!listener.getClass().getMethod("onResponseFailure", Request.class, Response.class, Throwable.class).isDefault())
                     onResponseFailure = combine(onResponseFailure, listener::onResponseFailure);
-                if (!listener.getClass().getMethod("onComplete", Request.class).isDefault())
+                if (!listener.getClass().getMethod("onComplete", Request.class, Response.class).isDefault())
                     onComplete = combine(onComplete, listener::onComplete);
             }
 
@@ -119,118 +123,118 @@ public class HttpChannelListeners // TODO ??? implements HttpChannel.Listener
     }
 
     @Override
-    public void onRequestBegin(Request request)
+    public void onRequestBegin(Request request, Response response)
     {
-        onRequestBegin.onRequest(request);
+        onRequestBegin.onRequest(request, response);
     }
 
     @Override
-    public void onBeforeDispatch(Request request)
+    public void onBeforeDispatch(Request request, Response response)
     {
-        onBeforeDispatch.onRequest(request);
+        onBeforeDispatch.onRequest(request, response);
     }
 
     @Override
-    public void onDispatchFailure(Request request, Throwable failure)
+    public void onDispatchFailure(Request request, Response response, Throwable failure)
     {
-        onDispatchFailure.onFailure(request, failure);
+        onDispatchFailure.onFailure(request, response, failure);
     }
 
     @Override
-    public void onAfterDispatch(Request request)
+    public void onAfterDispatch(Request request, Response response)
     {
-        onAfterDispatch.onRequest(request);
+        onAfterDispatch.onRequest(request, response);
     }
 
     @Override
-    public void onRequestContent(Request request, ByteBuffer content)
+    public void onRequestContent(Request request, Response response, ByteBuffer content)
     {
-        onRequestContent.onContent(request, content);
+        onRequestContent.onContent(request, response, content);
     }
 
     @Override
-    public void onRequestContentEnd(Request request)
+    public void onRequestContentEnd(Request request, Response response)
     {
-        onRequestContentEnd.onRequest(request);
+        onRequestContentEnd.onRequest(request, response);
     }
 
     @Override
-    public void onRequestTrailers(Request request)
+    public void onRequestTrailers(Request request, Response response)
     {
-        onRequestTrailers.onRequest(request);
+        onRequestTrailers.onRequest(request, response);
     }
 
     @Override
-    public void onRequestEnd(Request request)
+    public void onRequestEnd(Request request, Response response)
     {
-        onRequestEnd.onRequest(request);
+        onRequestEnd.onRequest(request, response);
     }
 
     @Override
-    public void onRequestFailure(Request request, Throwable failure)
+    public void onRequestFailure(Request request, Response response, Throwable failure)
     {
-        onRequestFailure.onFailure(request, failure);
+        onRequestFailure.onFailure(request, response, failure);
     }
 
     @Override
-    public void onResponseBegin(Request request)
+    public void onResponseBegin(Request request, Response response)
     {
-        onResponseBegin.onRequest(request);
+        onResponseBegin.onRequest(request, response);
     }
 
     @Override
-    public void onResponseCommit(Request request)
+    public void onResponseCommit(Request request, Response response)
     {
-        onResponseCommit.onRequest(request);
+        onResponseCommit.onRequest(request, response);
     }
 
     @Override
-    public void onResponseContent(Request request, ByteBuffer content)
+    public void onResponseContent(Request request, Response response, ByteBuffer content)
     {
-        onResponseContent.onContent(request, content);
+        onResponseContent.onContent(request, response, content);
     }
 
     @Override
-    public void onResponseEnd(Request request)
+    public void onResponseEnd(Request request, Response response)
     {
-        onResponseEnd.onRequest(request);
+        onResponseEnd.onRequest(request, response);
     }
 
     @Override
-    public void onResponseFailure(Request request, Throwable failure)
+    public void onResponseFailure(Request request, Response response, Throwable failure)
     {
-        onResponseFailure.onFailure(request, failure);
+        onResponseFailure.onFailure(request, response, failure);
     }
 
     @Override
-    public void onComplete(Request request)
+    public void onComplete(Request request, Response response)
     {
-        onComplete.onRequest(request);
+        onComplete.onRequest(request, response);
     }
 
     private interface NotifyRequest
     {
-        void onRequest(Request request);
+        void onRequest(Request request, Response response);
 
-        NotifyRequest NOOP = request ->
+        NotifyRequest NOOP = (request, response) ->
         {
         };
     }
 
     private interface NotifyFailure
     {
-        void onFailure(Request request, Throwable failure);
+        void onFailure(Request request, Response response, Throwable failure);
 
-        NotifyFailure NOOP = (request, failure) ->
+        NotifyFailure NOOP = (request, response, failure) ->
         {
         };
     }
 
     private interface NotifyContent
     {
-        void onContent(Request request, ByteBuffer content);
+        void onContent(Request request, Response response, ByteBuffer content);
 
-        NotifyContent NOOP = (request, content) ->
+        NotifyContent NOOP = (request, response, content) ->
         {
         };
     }
@@ -241,10 +245,10 @@ public class HttpChannelListeners // TODO ??? implements HttpChannel.Listener
             return second;
         if (second == NotifyRequest.NOOP)
             return first;
-        return request ->
+        return (request, response) ->
         {
-            first.onRequest(request);
-            second.onRequest(request);
+            first.onRequest(request, response);
+            second.onRequest(request, response);
         };
     }
 
@@ -254,26 +258,24 @@ public class HttpChannelListeners // TODO ??? implements HttpChannel.Listener
             return second;
         if (second == NotifyFailure.NOOP)
             return first;
-        return (request, throwable) ->
+        return (request, response, throwable) ->
         {
-            first.onFailure(request, throwable);
-            second.onFailure(request, throwable);
+            first.onFailure(request, response, throwable);
+            second.onFailure(request, response, throwable);
         };
     }
 
     private static NotifyContent combine(NotifyContent first, NotifyContent second)
     {
         if (first == NotifyContent.NOOP)
-            return (request, content) -> second.onContent(request, content.slice());
+            return (request, response, content) -> second.onContent(request, response, content.slice());
         if (second == NotifyContent.NOOP)
-            return (request, content) -> first.onContent(request, content.slice());
-        return (request, content) ->
+            return (request, response, content) -> first.onContent(request, response, content.slice());
+        return (request, response, content) ->
         {
             content = content.slice();
-            first.onContent(request, content);
-            second.onContent(request, content);
+            first.onContent(request, response, content);
+            second.onContent(request, response, content);
         };
     }
-
-     */
 }

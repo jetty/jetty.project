@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -137,6 +138,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
 {
+    public static final HttpChannel.Listener NOOP_LISTENER = new HttpChannel.Listener() {};
     protected static final Logger LOG = LoggerFactory.getLogger(AbstractConnector.class);
 
     private final AutoLock _lock = new AutoLock();
@@ -150,6 +152,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private Shutdown _shutdown;
+    private HttpChannel.Listener _httpChannelListeners = NOOP_LISTENER;
     private long _idleTimeout = 30000;
     private long _shutdownIdleTimeout = 1000L;
     private String _defaultProtocol;
@@ -187,6 +190,23 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         _bufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
         addBean(_bufferPool, bufferPool != null);
+
+        addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+        });
 
         for (ConnectionFactory factory : factories)
         {
@@ -265,6 +285,16 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public int getAcceptors()
     {
         return _acceptors.length;
+    }
+
+    /**
+     * Get the {@link HttpChannel.Listener} for this connector.
+     *
+     * @return the {@link HttpChannel.Listener} for this connector.
+     */
+    public HttpChannel.Listener getHttpChannelListeners()
+    {
+        return _httpChannelListeners;
     }
 
     @Override

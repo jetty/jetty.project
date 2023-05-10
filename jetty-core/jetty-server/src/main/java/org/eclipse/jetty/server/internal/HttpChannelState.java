@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -104,6 +105,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
+    private final HttpChannel.Listener _combinedListener;
     private Thread _handling;
     private boolean _handled;
     private WriteState _writeState = WriteState.NOT_LAST;
@@ -123,6 +125,11 @@ public class HttpChannelState implements HttpChannel, Components
         _connectionMetaData = connectionMetaData;
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _serializedInvoker = new HttpChannelSerializedInvoker();
+
+        Connector connector = connectionMetaData.getConnector();
+        _combinedListener = (connector instanceof AbstractConnector)
+            ? ((AbstractConnector)connector).getHttpChannelListeners()
+            : AbstractConnector.NOOP_LISTENER;
     }
 
     @Override
@@ -267,6 +274,8 @@ public class HttpChannelState implements HttpChannel, Components
                 responseHeaders.add(POWERED_BY);
             if (getHttpConfiguration().getSendDateHeader())
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
+
+            _combinedListener.onRequestBegin(_request, _request._response);
 
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
@@ -536,12 +545,19 @@ public class HttpChannelState implements HttpChannel, Components
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
 
+                _combinedListener.onBeforeDispatch(request, request._response);
+
                 if (!server.handle(customized, request._response, request._callback))
                     Response.writeError(customized, request._response, request._callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {
+                _combinedListener.onDispatchFailure(request, request._response, t);
                 failure = t;
+            }
+            finally
+            {
+                _combinedListener.onAfterDispatch(request, request._response);
             }
 
             HttpStream stream;
@@ -642,6 +658,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
+                _combinedListener.onComplete(_request, _request._response);
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
                     stream.succeeded();
@@ -667,6 +684,7 @@ public class HttpChannelState implements HttpChannel, Components
         private final ChannelResponse _response;
         private final AutoLock _lock;
         private final LongAdder _contentBytesRead = new LongAdder();
+        private final HttpChannel.Listener _listener;
         private HttpChannelState _httpChannel;
         private Request _loggedRequest;
         private HttpFields _trailers;
@@ -679,6 +697,7 @@ public class HttpChannelState implements HttpChannel, Components
             _metaData = Objects.requireNonNull(metaData);
             _response = new ChannelResponse(this);
             _lock = httpChannel._lock;
+            _listener = httpChannel._combinedListener;
         }
 
         public void setLoggedRequest(Request request)
@@ -857,11 +876,24 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("read {}", chunk);
 
-            if (chunk != null && chunk.hasRemaining())
-                _contentBytesRead.add(chunk.getByteBuffer().remaining());
+            if (chunk != null)
+            {
+                _listener.onRequestContent(this, _response, chunk.getByteBuffer().slice());
+                if (chunk.hasRemaining())
+                    _contentBytesRead.add(chunk.getByteBuffer().remaining());
+            }
+
+            if (chunk.isLast())
+                _listener.onRequestEnd(this, _response);
 
             if (chunk instanceof Trailers trailers)
+            {
                 _trailers = trailers.getTrailers();
+                _listener.onRequestTrailers(this, _response);
+            }
+
+            if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
+                _listener.onRequestEnd(this, _response);
 
             return chunk;
         }
@@ -912,7 +944,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void fail(Throwable failure)
         {
-            // TODO
+            _listener.onRequestFailure(this, _response, failure);
         }
 
         @Override
@@ -980,10 +1012,12 @@ public class HttpChannelState implements HttpChannel, Components
         private int _status;
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
+        private HttpChannel.Listener _listener;
 
         private ChannelResponse(ChannelRequest request)
         {
             _request = request;
+            _listener = request.getHttpChannel()._combinedListener;
         }
 
         public long getContentBytesWritten()
@@ -1037,6 +1071,9 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
+            if (!isCommitted())
+                _listener.onResponseBegin(_request, this);
+
             long length = BufferUtil.length(content);
 
             long totalWritten;
@@ -1084,9 +1121,16 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (failure == null)
             {
+                boolean wasCommitted = isCommitted();
+                ByteBuffer contentSlice = content.slice();
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
                 stream.send(_request._metaData, responseMetaData, last, content, this);
+                if (!wasCommitted)
+                    _listener.onResponseCommit(_request, this);
+                _listener.onResponseContent(_request, this, contentSlice);
+                if (last)
+                    _listener.onResponseEnd(_request, this);
             }
             else if (failure == DO_NOT_SEND)
             {
@@ -1095,6 +1139,7 @@ public class HttpChannelState implements HttpChannel, Components
             else
             {
                 Throwable t = failure;
+                _listener.onResponseFailure(_request, this, t);
                 httpChannel._serializedInvoker.run(() -> callback.failed(t));
             }
         }

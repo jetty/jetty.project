@@ -15,24 +15,30 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // TODO
 public class HttpChannelEventTest
 {
     private Server server;
@@ -57,37 +63,31 @@ public class HttpChannelEventTest
     @Test
     public void testRequestContentSlice() throws Exception
     {
-        int data = 'x';
+        byte data = 'x';
         CountDownLatch applicationLatch = new CountDownLatch(1);
-        /* TODO
-        start(new TestHandler()
+        start(new Handler.Abstract()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws IOException
             {
-                ServletInputStream input = request.getInputStream();
-                int content = input.read();
-                assertEquals(data, content);
+                Content.Chunk chunk = request.read();
+                assertEquals(data, chunk.getByteBuffer().get());
                 applicationLatch.countDown();
+                return true;
             }
         });
 
-         */
-
         CountDownLatch listenerLatch = new CountDownLatch(1);
-        /* TODO
         connector.addBean(new HttpChannel.Listener()
         {
             @Override
-            public void onRequestContent(Request request, ByteBuffer content)
+            public void onRequestContent(Request request, Response response, ByteBuffer content)
             {
                 // Consume the buffer to verify it's a slice.
                 content.position(content.limit());
                 listenerLatch.countDown();
             }
         });
-
-         */
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
@@ -107,31 +107,26 @@ public class HttpChannelEventTest
     public void testResponseContentSlice() throws Exception
     {
         byte[] data = new byte[]{'y'};
-        /* TODO
-        start(new TestHandler()
+        start(new Handler.Abstract()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws IOException
             {
-                response.write(true, callback, ByteBuffer.wrap(data));
+                response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
-         */
-
         CountDownLatch latch = new CountDownLatch(1);
-        /* TODO
         connector.addBean(new HttpChannel.Listener()
         {
             @Override
-            public void onResponseContent(Request request, ByteBuffer content)
+            public void onResponseContent(Request request, Response response, ByteBuffer content)
             {
                 assertTrue(content.hasRemaining());
                 latch.countDown();
             }
         });
-
-         */
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
@@ -146,26 +141,30 @@ public class HttpChannelEventTest
     @Test
     public void testRequestFailure() throws Exception
     {
-        start(new TestHandler());
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return true;
+            }
+        });
 
         CountDownLatch latch = new CountDownLatch(2);
-        /* TODO
         connector.addBean(new HttpChannel.Listener()
         {
             @Override
-            public void onRequestFailure(Request request, Throwable failure)
+            public void onRequestFailure(Request request, Response response, Throwable failure)
             {
                 latch.countDown();
             }
 
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request request, Response response)
             {
                 latch.countDown();
             }
         });
-
-         */
 
         // No Host header, request will fail.
         String request = HttpTester.newRequest().toString();
@@ -178,35 +177,31 @@ public class HttpChannelEventTest
     @Test
     public void testResponseBeginModifyHeaders() throws Exception
     {
-        start(new TestHandler()
+        start(new Handler.Abstract()
         {
-        /* TODO
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(Request request, Response response, Callback callback) throws IOException
             {
-                response.setCharacterEncoding("utf-8");
-                response.setContentType("text/plain");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
                 // Intentionally add two values for a header
-                response.addHeader("X-Header", "foo");
-                response.addHeader("X-Header", "bar");
+                response.getHeaders().put("X-Header", "foo");
+                response.getHeaders().put("X-Header", "bar");
+                return true;
             }
-         */
         });
 
-            /* TODO
         CountDownLatch latch = new CountDownLatch(1);
         connector.addBean(new HttpChannel.Listener()
         {
             @Override
-            public void onResponseBegin(Request request)
+            public void onResponseBegin(Request request, Response response)
             {
-                Response response = request.getResponse();
                 // Eliminate all "X-Header" values from Handler, and force it to be the one value "zed"
-                response.getHttpFields().computeField("X-Header", (n, f) -> new HttpField(n, "zed"));
+                response.getHeaders().computeField("X-Header", (n, f) -> new HttpField(n, "zed"));
             }
 
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request request, Response response)
             {
                 latch.countDown();
             }
@@ -224,43 +219,37 @@ public class HttpChannelEventTest
         List<HttpField> xheaders = response.getFields("X-Header");
         assertThat("X-Header count", xheaders.size(), is(1));
         assertThat("X-Header[0].value", xheaders.get(0).getValue(), is("zed"));
-             */
     }
 
     @Test
     public void testResponseFailure() throws Exception
     {
-        /* TODO
-        start(new TestHandler()
+        start(new Handler.Abstract()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws IOException
             {
                 // Closes all connections, response will fail.
                 connector.getConnectedEndPoints().forEach(EndPoint::close);
+                return true;
             }
         });
 
-         */
-
         CountDownLatch latch = new CountDownLatch(2);
-        /* TODO
         connector.addBean(new HttpChannel.Listener()
         {
             @Override
-            public void onResponseFailure(Request request, Throwable failure)
+            public void onResponseFailure(Request request, Response response, Throwable failure)
             {
                 latch.countDown();
             }
 
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request request, Response response)
             {
                 latch.countDown();
             }
         });
-
-         */
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
@@ -272,31 +261,35 @@ public class HttpChannelEventTest
     @Test
     public void testExchangeTimeRecording() throws Exception
     {
-        start(new TestHandler());
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return true;
+            }
+        });
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicLong elapsed = new AtomicLong();
-        /* TODO
         connector.addBean(new HttpChannel.Listener()
         {
             private final String attribute = getClass().getName() + ".begin";
 
             @Override
-            public void onRequestBegin(Request request)
+            public void onRequestBegin(Request request, Response response)
             {
                 request.setAttribute(attribute, NanoTime.now());
             }
 
             @Override
-            public void onComplete(Request request)
+            public void onComplete(Request request, Response response)
             {
                 long beginTime = (Long)request.getAttribute(attribute);
                 elapsed.set(NanoTime.since(beginTime));
                 latch.countDown();
             }
         });
-
-         */
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
@@ -305,65 +298,5 @@ public class HttpChannelEventTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(elapsed.get(), Matchers.greaterThan(0L));
-    }
-
-    @SuppressWarnings("deprecation")
-    @Test
-    public void testTransientListener() throws Exception
-    {
-        start(new TestHandler());
-
-        CountDownLatch latch = new CountDownLatch(1);
-        /* TODO
-        connector.addBean(new HttpChannel.TransientListeners());
-        connector.addBean(new HttpChannel.Listener()
-        {
-            @Override
-            public void onRequestBegin(Request request)
-            {
-                request.getHttpChannel().addListener(new HttpChannel.Listener()
-                {
-                    @Override
-                    public void onComplete(Request request)
-                    {
-                        latch.countDown();
-                    }
-                });
-            }
-        });
-
-         */
-
-        HttpTester.Request request = HttpTester.newRequest();
-        request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
-
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    private static class TestHandler extends Handler.Abstract
-    {
-        @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
-        {
-            try
-            {
-                handle(request, response);
-            }
-            catch (Throwable t)
-            {
-                callback.failed(t);
-            }
-            finally
-            {
-                callback.succeeded();
-            }
-            return true;
-        }
-
-        protected void handle(Request request, Response response) throws IOException
-        {
-        }
     }
 }
