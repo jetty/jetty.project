@@ -1060,9 +1060,8 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
-
+            boolean isCommitted = isCommitted();
             long length = BufferUtil.length(content);
-
             long totalWritten;
             HttpChannelState httpChannel;
             HttpStream stream = null;
@@ -1106,7 +1105,7 @@ public class HttpChannelState implements HttpChannel, Components
                 }
             }
 
-            if (!isCommitted())
+            if (!isCommitted)
                 _listener.onResponseCommitted(_request, this._status, this.getHeaders());
 
             if (failure == null)

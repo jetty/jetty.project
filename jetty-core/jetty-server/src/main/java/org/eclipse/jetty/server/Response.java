@@ -132,6 +132,7 @@ public interface Response extends Content.Sink
      * @param last whether the ByteBuffer is the last to write
      * @param byteBuffer the ByteBuffer to write
      * @param callback the callback to notify when the write operation is complete
+     * @see Content.Sink
      */
     @Override
     void write(boolean last, ByteBuffer byteBuffer, Callback callback);

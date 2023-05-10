@@ -15,9 +15,14 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -26,21 +31,30 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpChannelEventTest
@@ -61,6 +75,120 @@ public class HttpChannelEventTest
     public void dispose()
     {
         LifeCycle.stop(server);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        Foo, Bar
+        This is the Request, This is the Response
+        """)
+    @Disabled("re-enable once PR #9684 is merged")
+    public void testRequestReadResponseWrite(String requestBody, String expectedResponseBody) throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                if (StringUtil.isBlank(requestBody))
+                {
+                    Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                    return true;
+                }
+
+                ByteBuffer requestBodyBuf = readEntireBody(request);
+                String requestBodyStr = BufferUtil.toString(requestBodyBuf, UTF_8);
+                if (!requestBodyStr.equals(requestBody))
+                {
+                    Response.writeError(request, response, callback, 400);
+                    return true;
+                }
+
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+                response.write(true, UTF_8.encode(expectedResponseBody), callback);
+                return true;
+            }
+        });
+
+        AtomicInteger requestBeginCount = new AtomicInteger();
+        AtomicInteger requestReadLength = new AtomicInteger();
+        BlockingQueue<String> readTypes = new LinkedBlockingQueue<>();
+        AtomicInteger responseCommittedCount = new AtomicInteger();
+        AtomicInteger responseWriteLength = new AtomicInteger();
+        AtomicInteger responseStatus = new AtomicInteger();
+        AtomicBoolean responseLastSeen = new AtomicBoolean(false);
+        AtomicReference responseFailure = new AtomicReference();
+
+        connector.addBean(new HttpChannel.Listener()
+        {
+            @Override
+            public void onRequestBegin(Request request)
+            {
+                requestBeginCount.addAndGet(1);
+            }
+
+            @Override
+            public void onRequestRead(Request request, Content.Chunk chunk)
+            {
+                requestReadLength.addAndGet(chunk.remaining());
+                if (chunk == Content.Chunk.EOF)
+                    readTypes.add("EOF");
+                else if (chunk instanceof Content.Chunk.Error)
+                    readTypes.add("Error");
+                else
+                    readTypes.add("Chunk[last=%b,remaining=%d]".formatted(chunk.isLast(), chunk.remaining()));
+            }
+
+            @Override
+            public void onResponseCommitted(Request request, int status, HttpFields response)
+            {
+                responseCommittedCount.addAndGet(1);
+                responseStatus.set(status);
+            }
+
+            @Override
+            public void onResponseWrite(Request request, boolean last, ByteBuffer content, Throwable failure)
+            {
+                if (last)
+                    responseLastSeen.set(true);
+                responseWriteLength.addAndGet(content.remaining());
+                if (failure != null)
+                    responseFailure.set(failure);
+            }
+        });
+
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: localhost
+            Connection: close
+            Content-Length: %d
+            
+            %s
+            """.formatted(requestBody.length(), requestBody);
+
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () ->
+        {
+            String rawResponse = connector.getResponse(rawRequest, 5, TimeUnit.SECONDS);
+
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String responseBody = response.getContent();
+            assertEquals(expectedResponseBody, responseBody);
+
+            // verify request events
+            assertEquals(1, requestBeginCount.get());
+            assertEquals(requestBody.length(), requestReadLength.get());
+            assertEquals("Chunk[last=false,remaining=%d]".formatted(requestBody.length()), readTypes.poll());
+            assertEquals("EOF", readTypes.poll());
+
+            // verify response events
+            assertEquals(1, responseCommittedCount.get());
+            assertEquals(200, responseStatus.get());
+            assertTrue(responseLastSeen.get());
+            assertNull(responseFailure.get());
+            assertEquals(expectedResponseBody.length(), responseWriteLength.get());
+        });
     }
 
     @Test
@@ -167,6 +295,7 @@ public class HttpChannelEventTest
     }
 
     @Test
+    @Disabled("Listener events on HttpParser failure no longer supported in Jetty 12")
     public void testRequestFailure() throws Exception
     {
         start(new Handler.Abstract()
@@ -204,6 +333,7 @@ public class HttpChannelEventTest
     }
 
     @Test
+    @Disabled("Modifying response headers no longer supported on Jetty 12")
     public void testResponseBeginModifyHeaders() throws Exception
     {
         start(new Handler.Abstract()
@@ -255,6 +385,7 @@ public class HttpChannelEventTest
     }
 
     @Test
+    @Disabled("Endpoint Failures reported to Listeners no longer supported in Jetty 12")
     public void testResponseFailure() throws Exception
     {
         start(new Handler.Abstract()
@@ -342,5 +473,41 @@ public class HttpChannelEventTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(elapsed.get(), Matchers.greaterThan(0L));
+    }
+
+    public static ByteBuffer readEntireBody(Request request) throws Exception
+    {
+        Blocker.Shared blocker = new Blocker.Shared();
+        ByteBufferAccumulator accumulator = new ByteBufferAccumulator();
+
+        while (true)
+        {
+            Content.Chunk chunk = request.read();
+            if (chunk == null)
+            {
+                try (Blocker.Runnable block = blocker.runnable())
+                {
+                    request.demand(block);
+                    block.block();
+                    continue;
+                }
+            }
+            if (chunk instanceof Content.Chunk.Error error)
+            {
+                if (error.getCause() instanceof Exception e)
+                    throw e;
+                else
+                    throw new RuntimeException("Error during Read", error.getCause());
+            }
+
+            if (chunk.hasRemaining())
+            {
+                accumulator.copyBuffer(chunk.getByteBuffer());
+            }
+            chunk.release();
+            if (chunk.isLast())
+                break;
+        }
+        return accumulator.takeByteBuffer();
     }
 }
