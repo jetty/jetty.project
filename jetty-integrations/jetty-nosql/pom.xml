@@ -34,9 +34,5 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-session-test-tools</artifactId>
-    </dependency>
   </dependencies>
 </project>
