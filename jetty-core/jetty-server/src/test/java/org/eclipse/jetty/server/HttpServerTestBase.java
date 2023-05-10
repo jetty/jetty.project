@@ -1735,7 +1735,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             client.shutdownOutput();
 
-            // Read the two pipelined responses
+            // Read the two pipelined responses until EOF
             ByteBuffer responses = ByteBuffer.wrap(IO.readBytes(client.getInputStream()));
 
             HttpTester.Response response = HttpTester.parseResponse(responses);
@@ -1745,9 +1745,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response = HttpTester.parseResponse(responses);
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
-
-            // Read the close
-            assertThat(client.getInputStream().read(), is(-1));
         }
     }
 
