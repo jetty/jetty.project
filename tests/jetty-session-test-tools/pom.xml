@@ -52,6 +52,12 @@
       <version>${mongodb.version}</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.memcached</groupId>
+      <artifactId>jetty-memcached-sessions</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
 </project>
