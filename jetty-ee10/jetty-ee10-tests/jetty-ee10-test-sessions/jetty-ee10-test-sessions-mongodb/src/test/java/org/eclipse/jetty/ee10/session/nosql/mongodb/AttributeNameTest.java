@@ -50,9 +50,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class AttributeNameTest
 {
 
-    private static String DB_NAME = "DB" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
+    private static final String DB_NAME = "DB" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
 
-    private static String COLLECTION_NAME = "COLLECTION" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
+    private static final String COLLECTION_NAME = "COLLECTION" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception
