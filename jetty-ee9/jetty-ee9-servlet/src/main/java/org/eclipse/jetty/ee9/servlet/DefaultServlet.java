@@ -320,7 +320,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         for (String d : deprecated)
         {
             value = super.getInitParameter(d);
-            if (value != name)
+            if (value != null)
             {
                 LOG.warn("Deprecated {} used instead of {}", d, name);
                 return value;
