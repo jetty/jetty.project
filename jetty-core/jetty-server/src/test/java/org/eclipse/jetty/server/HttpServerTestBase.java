@@ -23,6 +23,7 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Queue;
@@ -1734,17 +1735,16 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             client.shutdownOutput();
 
-            Thread.sleep(1000); // TODO remove after test fixed.  This make this test always fail rather than just be flaky
-
             // Read the two pipelined responses
-            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+            ByteBuffer responses = ByteBuffer.wrap(IO.readBytes(client.getInputStream()));
+
+            HttpTester.Response response = HttpTester.parseResponse(responses);
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
 
-            response = HttpTester.parseResponse(client.getInputStream());
+            response = HttpTester.parseResponse(responses);
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
-
 
             // Read the close
             assertThat(client.getInputStream().read(), is(-1));

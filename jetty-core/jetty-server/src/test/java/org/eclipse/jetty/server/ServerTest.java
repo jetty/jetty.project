@@ -75,10 +75,16 @@ public class ServerTest
 
                                 return () ->
                                 {
-                                    onRequest.run();
-                                    Runnable after = _afterHandle.getAndSet(null);
-                                    if (after != null)
-                                        getThreadPool().execute(after);
+                                    try
+                                    {
+                                        onRequest.run();
+                                    }
+                                    finally
+                                    {
+                                        Runnable after = _afterHandle.getAndSet(null);
+                                        if (after != null)
+                                            getThreadPool().execute(after);
+                                    }
                                 };
                             }
                         };
@@ -128,13 +134,13 @@ public class ServerTest
     public static Stream<Arguments> completionScenarios()
     {
         List<Arguments> arguments = new ArrayList<>();
-        for (Boolean succeeded = true; succeeded != null; succeeded = succeeded ? false : null)
+        for (Boolean succeeded : List.of(true, false))
         {
-            for (Boolean handling = true; handling != null; handling = handling ? false : null)
+            for (Boolean handling : List.of(true, false))
             {
-                for (Boolean written = true; written != null; written = written ? false : null)
+                for (Boolean written : List.of(true, false))
                 {
-                    for (Boolean last = written; last != null; last = last ? false : null)
+                    for (Boolean last : written ? List.of(true, false) : List.of(false))
                     {
                         arguments.add(Arguments.of(succeeded, handling, written, last));
                     }
