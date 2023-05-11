@@ -202,7 +202,7 @@ public class SuspendResumeTest
     }
 
     @Test
-    public void timeoutWhileSuspended() throws Exception
+    public void testTimeoutWhileSuspended() throws Exception
     {
         URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();

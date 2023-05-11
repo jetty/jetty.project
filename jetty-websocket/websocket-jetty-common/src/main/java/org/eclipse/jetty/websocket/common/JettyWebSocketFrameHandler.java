@@ -467,6 +467,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     needDemand = true;
                     frame = delayedFrame;
                     callback = delayedCallback;
+                    delayedFrame = null;
+                    delayedCallback = null;
                     state = SuspendState.DEMANDING;
                     break;
 
