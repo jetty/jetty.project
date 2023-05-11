@@ -76,7 +76,7 @@ public class HTTP3StreamClient extends HTTP3Stream implements  Stream.Client
         try
         {
             if (listener != null)
-               listener.onNewStream(this);
+                listener.onNewStream(this);
         }
         catch (Throwable x)
         {
