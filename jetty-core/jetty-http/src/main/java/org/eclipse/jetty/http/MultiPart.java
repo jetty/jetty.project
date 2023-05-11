@@ -68,7 +68,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class MultiPart
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPart.class);
-    private static final QuotedStringTokenizer CONTENT_DISPOSITION_TOKENIZER = new QuotedStringTokenizer(";", true, false, true);
+    private static final QuotedStringTokenizer CONTENT_DISPOSITION_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().embeddedQuotes().build();
     private static final int MAX_BOUNDARY_LENGTH = 70;
 
     private MultiPart()

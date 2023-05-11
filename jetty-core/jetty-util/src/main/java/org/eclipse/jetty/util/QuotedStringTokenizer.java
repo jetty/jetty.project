@@ -32,45 +32,83 @@ import java.util.StringTokenizer;
  */
 public class QuotedStringTokenizer
 {
-    public static final QuotedStringTokenizer COMMA_SEPARATED_VALUES = new QuotedStringTokenizer(",", true, false, false);
-
+    public static final QuotedStringTokenizer COMMA_SEPARATED_VALUES = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().build();
     private static final String __delim = "\t\n\r";
-    private final boolean _returnQuotes;
-    private final boolean _returnDelimiters;
-    private final boolean _optionalWhiteSpace;
-    private final boolean _embeddedQuotes;
-    private String _delim = __delim;
 
-    public QuotedStringTokenizer(String delim,
+    public static class Builder
+    {
+        private boolean _returnQuotes;
+        private boolean _returnDelimiters;
+        private boolean _optionalWhiteSpace;
+        private boolean _embeddedQuotes;
+        private String _delim = __delim;
+
+        private Builder()
+        {}
+
+        public Builder delimiters(String delim)
+        {
+            _delim = delim;
+            return this;
+        }
+
+        public Builder returnQuotes()
+        {
+            _returnQuotes = true;
+            return this;
+        }
+
+        public Builder returnDelimiters()
+        {
+            _returnDelimiters = true;
+            return this;
+        }
+
+        public Builder optionalWhiteSpace()
+        {
+            _optionalWhiteSpace = true;
+            return this;
+        }
+
+        public Builder embeddedQuotes()
+        {
+            _embeddedQuotes = true;
+            return this;
+        }
+
+        public QuotedStringTokenizer build()
+        {
+            return new QuotedStringTokenizer(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes);
+        }
+    }
+
+    public static Builder builder()
+    {
+        return new Builder();
+    }
+
+    private final String _delim;
+    private final boolean _optionalWhiteSpace;
+    private final boolean _returnDelimiters;
+    private final boolean _returnQuotes;
+    private final boolean _embeddedQuotes;
+
+    private QuotedStringTokenizer(String delim,
                                  boolean optionalWhiteSpace,
                                  boolean returnDelimiters,
                                  boolean returnQuotes,
                                  boolean embeddedQuotes)
     {
-        if (delim != null)
-            _delim = delim;
+        _delim = delim == null ? __delim : delim;
         _optionalWhiteSpace = optionalWhiteSpace;
         _returnDelimiters = returnDelimiters;
         _returnQuotes = returnQuotes;
         _embeddedQuotes = embeddedQuotes;
 
         if (_delim.indexOf('"') >= 0)
-            throw new Error("Can't use quote as delimiters: " + _delim);
-    }
-
-    public QuotedStringTokenizer(String delim,
-                                 boolean optionalWhiteSpace,
-                                 boolean returnDelimiters,
-                                 boolean returnQuotes)
-    {
-        this(delim, optionalWhiteSpace, returnDelimiters, returnQuotes, false);
-    }
-
-    public QuotedStringTokenizer(String delim,
-                                 boolean returnDelimiters,
-                                 boolean returnQuotes)
-    {
-        this(delim, false, returnDelimiters, returnQuotes);
+            throw new IllegalArgumentException("Can't use quote as delimiters: " + _delim);
+        if (_optionalWhiteSpace && _delim.indexOf(' ') >= 0)
+            throw new IllegalArgumentException("Can't delimit with space with optional white space");
     }
 
     protected boolean isOWS(char c)
@@ -95,6 +133,7 @@ public class QuotedStringTokenizer
             private final StringBuilder _token = new StringBuilder();
             State _state = State.START;
             private boolean _hasToken;
+            private int _ows = -1;
             private int _i = 0;
 
             @Override
@@ -124,12 +163,14 @@ public class QuotedStringTokenizer
                             {
                                 if (_returnQuotes)
                                     _token.append(c);
+                                _ows = -1;
                                 _state = State.QUOTE;
                             }
                             else if (!_optionalWhiteSpace || !isOWS(c))
                             {
                                 _token.append(c);
                                 _hasToken = true;
+                                _ows = -1;
                                 _state = State.TOKEN;
                             }
                         }
@@ -141,21 +182,26 @@ public class QuotedStringTokenizer
                                 if (_returnDelimiters)
                                     _i--;
                                 _state = State.START;
+                                if (_ows >= 0)
+                                    _token.setLength(_ows);
                                 return _hasToken;
                             }
                             else if (_embeddedQuotes && c == '"')
                             {
                                 if (_returnQuotes)
                                     _token.append(c);
+                                _ows = -1;
                                 _state = State.QUOTE;
                             }
                             else if (_optionalWhiteSpace && isOWS(c))
                             {
-                                _state = State.END;
-                                return _hasToken;
+                                if (_ows < 0)
+                                    _ows = _token.length();
+                                _token.append(c);
                             }
                             else
                             {
+                                _ows = -1;
                                 _token.append(c);
                             }
                         }
@@ -172,7 +218,10 @@ public class QuotedStringTokenizer
                                 if (_returnQuotes)
                                     _token.append(c);
                                 if (_embeddedQuotes)
+                                {
+                                    _ows = -1;
                                     _state = State.TOKEN;
+                                }
                                 else
                                 {
                                     _state = State.END;
@@ -207,6 +256,9 @@ public class QuotedStringTokenizer
                         default -> throw new IllegalStateException();
                     }
                 }
+
+                if (_ows >= 0 && _hasToken)
+                    _token.setLength(_ows);
 
                 return _hasToken;
             }

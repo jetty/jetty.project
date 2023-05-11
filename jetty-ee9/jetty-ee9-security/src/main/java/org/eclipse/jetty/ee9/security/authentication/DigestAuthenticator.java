@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class DigestAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(DigestAuthenticator.class);
-    private static final QuotedStringTokenizer __tokenizer = new QuotedStringTokenizer("=, ", true, false);
+    private static final QuotedStringTokenizer __tokenizer = QuotedStringTokenizer.builder().delimiters("=, ").returnDelimiters().embeddedQuotes().build();
 
     private final SecureRandom _random = new SecureRandom();
     private long _maxNonceAgeMs = 60 * 1000;

@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
-    private static final QuotedStringTokenizer SPLIT_PARAMETERS = new QuotedStringTokenizer(";", true, false, true);
-    private static final QuotedStringTokenizer NAME_VALUE_PAIR = new QuotedStringTokenizer("=", true, false, false);
+    private static final QuotedStringTokenizer SPLIT_PARAMETERS = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().embeddedQuotes().build();
+    private static final QuotedStringTokenizer NAME_VALUE_PAIR = QuotedStringTokenizer.builder().delimiters("=").optionalWhiteSpace().build();
     private static final String __zeroQuality = "q=0";
     private final HttpHeader _header;
     private final String _name;
@@ -69,37 +69,38 @@ public class HttpField
      *
      * </PRE>
      *
-     * @param value The Field value, possibly with parameters.
+     * @param valueParams The Field value, possibly with parameters.
      * @param parameters A map to populate with the parameters, or null
      * @return The value.
      */
-    public static String getValueParameters(String value, Map<String, String> parameters)
+    public static String getValueParameters(String valueParams, Map<String, String> parameters)
     {
-        if (value == null)
+        if (valueParams == null)
             return null;
 
-        int i = value.indexOf(';');
-        if (i < 0)
-            return value;
-        if (parameters == null)
-            return value.substring(0, i).trim();
-
-        for (Iterator<String> tokens = SPLIT_PARAMETERS.tokenize(value.substring(i)); tokens.hasNext();)
+        Iterator<String> tokens = SPLIT_PARAMETERS.tokenize(valueParams);
+        if (!tokens.hasNext())
+            return null;
+        String value = tokens.next();
+        if (parameters != null)
         {
-            String token = tokens.next();
-
-            Iterator<String> nameValue = NAME_VALUE_PAIR.tokenize(token);
-            if (nameValue.hasNext())
+            while (tokens.hasNext())
             {
-                String paramName = nameValue.next();
-                String paramVal = null;
+                String token = tokens.next();
+
+                Iterator<String> nameValue = NAME_VALUE_PAIR.tokenize(token);
                 if (nameValue.hasNext())
-                    paramVal = nameValue.next();
-                parameters.put(paramName, paramVal);
+                {
+                    String paramName = nameValue.next();
+                    String paramVal = null;
+                    if (nameValue.hasNext())
+                        paramVal = nameValue.next();
+                    parameters.put(paramName, paramVal);
+                }
             }
         }
 
-        return value.substring(0, i).trim();
+        return value;
     }
 
     /**
