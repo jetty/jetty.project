@@ -9,7 +9,7 @@
   <artifactId>jetty-ee10-test-sessions-jdbc</artifactId>
   <name>EE10 :: Tests :: Sessions :: JDBC</name>
   <properties>
-    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
+<!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <bundle-symbolic-name>${project.groupId}.sessions.jdbc</bundle-symbolic-name>
   </properties>
   <build>
@@ -90,6 +90,11 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-session-test-tools</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
