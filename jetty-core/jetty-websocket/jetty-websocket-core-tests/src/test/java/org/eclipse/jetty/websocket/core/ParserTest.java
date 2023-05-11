@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -38,6 +40,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -223,6 +226,61 @@ public class ParserTest
 
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+    }
+
+    private ByteBuffer toBuffer(long l)
+    {
+        ByteBuffer buffer = BufferUtil.allocate(Long.BYTES);
+        BufferUtil.clearToFill(buffer);
+        buffer.putLong(l);
+        BufferUtil.flipToFlush(buffer, 0);
+        return buffer;
+    }
+
+    @Test
+    public void testLargeFrame()
+    {
+        ByteBuffer expected = ByteBuffer.allocate(65);
+
+        expected.put(new byte[]{(byte)0x82});
+        byte b = 0x7F; // no masking
+        expected.put(b);
+        expected.put(toBuffer(Integer.MAX_VALUE));
+        expected.flip();
+
+        Parser parser = new Parser(new NullByteBufferPool());
+        assertNull(parser.parse(expected));
+        assertThat(parser.getPayloadLength(), equalTo(Integer.MAX_VALUE));
+    }
+
+    @Test
+    public void testFrameTooLarge()
+    {
+        ByteBuffer expected = ByteBuffer.allocate(65);
+
+        expected.put(new byte[]{(byte)0x82});
+        byte b = 0x7F; // no masking
+        expected.put(b);
+        expected.put(toBuffer(Integer.MAX_VALUE + 1L));
+        expected.flip();
+
+        Parser parser = new Parser(new NullByteBufferPool());
+        assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
+    }
+
+    @Test
+    public void testLargestFrame()
+    {
+        ByteBuffer expected = ByteBuffer.allocate(65);
+
+        expected.put(new byte[]{(byte)0x82});
+        byte b = 0x7F; // no masking
+        expected.put(b);
+        expected.put(new byte[]{(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF});
+        expected.flip();
+
+        Parser parser = new Parser(new NullByteBufferPool());
+        assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
     }
 
     /**
