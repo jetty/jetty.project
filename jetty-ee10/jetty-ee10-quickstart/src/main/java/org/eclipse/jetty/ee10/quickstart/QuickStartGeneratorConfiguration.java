@@ -631,7 +631,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     v.append(",\n    ");
                 else
                     v.append("\n    ");
-                QuotedStringTokenizer.quote(v, i.toString());
+                QuotedStringTokenizer.CSV.quote(v, i.toString());
             }
         }
         out.openTag("context-param")
@@ -672,7 +672,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     v.append(",\n    ");
                 else
                     v.append("\n    ");
-                QuotedStringTokenizer.quote(v, normalizer.normalize(i));
+                QuotedStringTokenizer.CSV.quote(v, normalizer.normalize(i));
             }
         }
         out.openTag("context-param")

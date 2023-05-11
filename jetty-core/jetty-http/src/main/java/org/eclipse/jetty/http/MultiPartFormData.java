@@ -402,10 +402,10 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             String value = "form-data";
             String name = part.getName();
             if (name != null)
-                value += "; name=" + QuotedStringTokenizer.quote(name);
+                value += "; name=" + QuotedStringTokenizer.CSV.quote(name);
             String fileName = part.getFileName();
             if (fileName != null)
-                value += "; filename=" + QuotedStringTokenizer.quote(fileName);
+                value += "; filename=" + QuotedStringTokenizer.CSV.quote(fileName);
             return HttpFields.build(headers).put(HttpHeader.CONTENT_DISPOSITION, value);
         }
     }

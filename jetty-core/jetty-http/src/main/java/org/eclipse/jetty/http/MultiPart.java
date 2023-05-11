@@ -88,7 +88,7 @@ public class MultiPart
     {
         Map<String, String> parameters = new HashMap<>();
         HttpField.valueParameters(contentType, parameters);
-        return QuotedStringTokenizer.unquote(parameters.get("boundary"));
+        return CONTENT_DISPOSITION_TOKENIZER.unquote(parameters.get("boundary"));
     }
 
     /**
@@ -1649,7 +1649,7 @@ public class MultiPart
             }
             else
             {
-                return QuotedStringTokenizer.unquote(value);
+                return CONTENT_DISPOSITION_TOKENIZER.unquote(value);
             }
         }
 

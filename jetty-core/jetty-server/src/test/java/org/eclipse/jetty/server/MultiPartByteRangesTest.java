@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.ByteRange;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -96,7 +96,7 @@ public class MultiPartByteRangesTest
                     content.close();
 
                     response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
-                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/byteranges; boundary=" + QuotedStringTokenizer.quote(boundary));
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/byteranges; boundary=" + HttpField.NAME_VALUE_TOKENIZER.quote(boundary));
                     Content.copy(content, response, callback);
                 }
                 return true;

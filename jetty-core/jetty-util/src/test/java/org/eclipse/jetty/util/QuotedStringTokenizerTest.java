@@ -116,15 +116,15 @@ public class QuotedStringTokenizerTest
         StringBuffer buf = new StringBuffer();
 
         buf.setLength(0);
-        QuotedStringTokenizer.quote(buf, "abc \n efg");
+        QuotedStringTokenizer.CSV.quote(buf, "abc \n efg");
         assertEquals("\"abc \n efg\"", buf.toString());
 
         buf.setLength(0);
-        QuotedStringTokenizer.quote(buf, "abcefg");
+        QuotedStringTokenizer.CSV.quote(buf, "abcefg");
         assertEquals("\"abcefg\"", buf.toString());
 
         buf.setLength(0);
-        QuotedStringTokenizer.quote(buf, "abcefg\"");
+        QuotedStringTokenizer.CSV.quote(buf, "abcefg\"");
         assertEquals("\"abcefg\\\"\"", buf.toString());
     }
 
@@ -134,7 +134,7 @@ public class QuotedStringTokenizerTest
     @Test
     public void testQuoteIfNeeded()
     {
-        QuotedStringTokenizer tokenizer = QuotedStringTokenizer.COMMA_SEPARATED_VALUES;
+        QuotedStringTokenizer tokenizer = QuotedStringTokenizer.CSV;
         assertEquals("abc", tokenizer.quoteIfNeeded("abc"));
         assertEquals("a c", tokenizer.quoteIfNeeded("a c"));
         assertEquals("a'c", tokenizer.quoteIfNeeded("a'c"));
@@ -147,14 +147,14 @@ public class QuotedStringTokenizerTest
     @Test
     public void testUnquote()
     {
-        assertEquals("abc", QuotedStringTokenizer.unquote("abc"));
-        assertEquals("a\"c", QuotedStringTokenizer.unquote("\"a\\\"c\""));
-        assertEquals("a'c", QuotedStringTokenizer.unquote("\"a'c\""));
-        assertEquals("anrt", QuotedStringTokenizer.unquote("\"a\\n\\r\\t\""));
-        assertEquals("\u0000\u001f ", QuotedStringTokenizer.unquote("\"\u0000\u001f \""));
-        assertEquals("\u0000\u001f ", QuotedStringTokenizer.unquote("\"\u0000\u001f \""));
-        assertEquals("ab\u001ec", QuotedStringTokenizer.unquote("ab\u001ec"));
-        assertEquals("ab\u001ec", QuotedStringTokenizer.unquote("\"ab\u001ec\""));
+        assertEquals("abc", QuotedStringTokenizer.CSV.unquote("abc"));
+        assertEquals("a\"c", QuotedStringTokenizer.CSV.unquote("\"a\\\"c\""));
+        assertEquals("a'c", QuotedStringTokenizer.CSV.unquote("\"a'c\""));
+        assertEquals("anrt", QuotedStringTokenizer.CSV.unquote("\"a\\n\\r\\t\""));
+        assertEquals("\u0000\u001f ", QuotedStringTokenizer.CSV.unquote("\"\u0000\u001f \""));
+        assertEquals("\u0000\u001f ", QuotedStringTokenizer.CSV.unquote("\"\u0000\u001f \""));
+        assertEquals("ab\u001ec", QuotedStringTokenizer.CSV.unquote("ab\u001ec"));
+        assertEquals("ab\u001ec", QuotedStringTokenizer.CSV.unquote("\"ab\u001ec\""));
     }
 
     /**

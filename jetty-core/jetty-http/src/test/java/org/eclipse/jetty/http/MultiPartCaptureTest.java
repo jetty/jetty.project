@@ -155,7 +155,7 @@ public class MultiPartCaptureTest
         String boundaryAttribute = "boundary=";
         int boundaryIndex = expectations.contentType.indexOf(boundaryAttribute);
         assertThat(boundaryIndex, greaterThan(0));
-        String boundary = QuotedStringTokenizer.unquote(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
+        String boundary = QuotedStringTokenizer.CSV.unquote(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
 
         TestPartsListener listener = new TestPartsListener(expectations);
         MultiPart.Parser parser = new MultiPart.Parser(boundary, listener);

@@ -145,7 +145,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             {
                 context.removeAttribute(name);
 
-                for (Iterator<String> i = QuotedStringTokenizer.COMMA_SEPARATED_VALUES.tokenize(value); i.hasNext();)
+                for (Iterator<String> i = QuotedStringTokenizer.CSV.tokenize(value); i.hasNext();)
                 {
                     values.add(i.next());
                 }

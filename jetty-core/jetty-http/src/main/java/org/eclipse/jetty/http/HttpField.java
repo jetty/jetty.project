@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
-    private static final QuotedStringTokenizer SPLIT_PARAMETERS = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().embeddedQuotes().build();
-    private static final QuotedStringTokenizer NAME_VALUE_PAIR = QuotedStringTokenizer.builder().delimiters("=").optionalWhiteSpace().build();
+    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().embeddedQuotes().build();
+    public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").optionalWhiteSpace().build();
     private static final String __zeroQuality = "q=0";
     private final HttpHeader _header;
     private final String _name;
@@ -78,7 +78,7 @@ public class HttpField
         if (valueParams == null)
             return null;
 
-        Iterator<String> tokens = SPLIT_PARAMETERS.tokenize(valueParams);
+        Iterator<String> tokens = PARAMETER_TOKENIZER.tokenize(valueParams);
         if (!tokens.hasNext())
             return null;
         String value = tokens.next();
@@ -88,7 +88,7 @@ public class HttpField
             {
                 String token = tokens.next();
 
-                Iterator<String> nameValue = NAME_VALUE_PAIR.tokenize(token);
+                Iterator<String> nameValue = NAME_VALUE_TOKENIZER.tokenize(token);
                 if (nameValue.hasNext())
                 {
                     String paramName = nameValue.next();

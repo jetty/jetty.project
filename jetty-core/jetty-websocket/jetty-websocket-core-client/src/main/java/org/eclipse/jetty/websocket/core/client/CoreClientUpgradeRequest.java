@@ -378,7 +378,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             {
                 for (String extVal : extValues)
                 {
-                    for (Iterator<String> i = QuotedStringTokenizer.COMMA_SEPARATED_VALUES.tokenize(extVal); i.hasNext();)
+                    for (Iterator<String> i = QuotedStringTokenizer.CSV.tokenize(extVal); i.hasNext();)
                     {
                         negotiatedExtensions.add(ExtensionConfig.parse(i.next()));
                     }

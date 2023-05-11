@@ -306,8 +306,8 @@ public final class EtagUtils
             return false;
 
         // compare unquoted strong etags
-        etag = etagQuoted ? QuotedStringTokenizer.unquote(etag) : etag;
-        etagWithOptionalSuffix = etagSuffixQuoted ? QuotedStringTokenizer.unquote(etagWithOptionalSuffix) : etagWithOptionalSuffix;
+        etag = etagQuoted ? QuotedStringTokenizer.CSV.unquote(etag) : etag;
+        etagWithOptionalSuffix = etagSuffixQuoted ? QuotedStringTokenizer.CSV.unquote(etagWithOptionalSuffix) : etagWithOptionalSuffix;
         separator = etagWithOptionalSuffix.lastIndexOf(ETAG_SEPARATOR);
         if (separator > 0)
             return etag.regionMatches(0, etagWithOptionalSuffix, 0, separator);

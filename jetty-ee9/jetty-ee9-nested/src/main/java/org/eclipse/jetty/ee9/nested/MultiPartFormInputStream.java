@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -587,7 +588,7 @@ public class MultiPartFormInputStream
             {
                 int bend = _contentType.indexOf(";", bstart);
                 bend = (bend < 0 ? _contentType.length() : bend);
-                contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart, bend)).trim());
+                contentTypeBoundary = HttpField.PARAMETER_TOKENIZER.unquote(value(_contentType.substring(bstart, bend)).trim());
             }
 
             parser = new MultiPartParser(new Handler(), contentTypeBoundary);
@@ -890,7 +891,7 @@ public class MultiPartFormInputStream
     {
         int idx = nameEqualsValue.indexOf('=');
         String value = nameEqualsValue.substring(idx + 1).trim();
-        return QuotedStringTokenizer.unquote(value);
+        return HttpField.PARAMETER_TOKENIZER.unquote(value);
     }
 
     private static String filenameValue(String nameEqualsValue)
@@ -912,7 +913,7 @@ public class MultiPartFormInputStream
             return value;
         }
         else
-            return QuotedStringTokenizer.unquote(value);
+            return HttpField.PARAMETER_TOKENIZER.unquote(value);
     }
 
     /**
