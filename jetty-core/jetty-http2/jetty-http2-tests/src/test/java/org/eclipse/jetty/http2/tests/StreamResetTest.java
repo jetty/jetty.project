@@ -556,7 +556,7 @@ public class StreamResetTest extends AbstractTest
         });
 
         // Wait for WINDOW_UPDATEs to be processed by the client.
-        await().atMost(1000, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
 
         latch.set(new CountDownLatch(2 * streams.size()));
         // Notify all blocked threads to wakeup.

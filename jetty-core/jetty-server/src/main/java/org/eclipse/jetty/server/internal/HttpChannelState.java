@@ -361,49 +361,53 @@ public class HttpChannelState implements HttpChannel, Components
 
             // If not handled, then we just fail the request callback
             if (!_handled && _handling == null)
-                return () -> _request._callback.failed(x);
-
-            // if we are currently demanding, take the onContentAvailable runnable to invoke below.
-            Runnable invokeOnContentAvailable = _onContentAvailable;
-            _onContentAvailable = null;
-
-            // If a write call is in progress, take the writeCallback to fail below
-            Runnable invokeWriteFailure = _response.lockedFailWrite(x);
-
-            // Create runnable to invoke any onError listeners
-            ChannelRequest request = _request;
-            Runnable invokeListeners = () ->
             {
-                Predicate<Throwable> onError;
-                try (AutoLock ignore = _lock.lock())
-                {
-                    onError = _onError;
-                }
+                task = () -> _request._callback.failed(x);
+            }
+            else
+            {
+                // if we are currently demanding, take the onContentAvailable runnable to invoke below.
+                Runnable invokeOnContentAvailable = _onContentAvailable;
+                _onContentAvailable = null;
 
-                try
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("invokeListeners {} {}", HttpChannelState.this, onError, x);
-                    if (onError.test(x))
-                        return;
-                }
-                catch (Throwable throwable)
-                {
-                    if (ExceptionUtil.areNotAssociated(x, throwable))
-                        x.addSuppressed(throwable);
-                }
+                // If a write call is in progress, take the writeCallback to fail below
+                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
-                // If the application has not been otherwise informed of the failure
-                if (invokeOnContentAvailable == null && invokeWriteFailure == null)
+                // Create runnable to invoke any onError listeners
+                ChannelRequest request = _request;
+                Runnable invokeListeners = () ->
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("failing callback in {}", this, x);
-                    request._callback.failed(x);
-                }
-            };
+                    Predicate<Throwable> onError;
+                    try (AutoLock ignore = _lock.lock())
+                    {
+                        onError = _onError;
+                    }
 
-            // Serialize all the error actions.
-            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeListeners);
+                    try
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("invokeListeners {} {}", HttpChannelState.this, onError, x);
+                        if (onError.test(x))
+                            return;
+                    }
+                    catch (Throwable throwable)
+                    {
+                        if (ExceptionUtil.areNotAssociated(x, throwable))
+                            x.addSuppressed(throwable);
+                    }
+
+                    // If the application has not been otherwise informed of the failure
+                    if (invokeOnContentAvailable == null && invokeWriteFailure == null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("failing callback in {}", this, x);
+                        request._callback.failed(x);
+                    }
+                };
+
+                // Serialize all the error actions.
+                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeListeners);
+            }
         }
 
         // Consume content as soon as possible to open any flow control window.
