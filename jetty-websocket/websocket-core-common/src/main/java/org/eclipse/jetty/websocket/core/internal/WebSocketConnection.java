@@ -220,6 +220,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (!coreSession.isClosed())
             coreSession.onEof();
         flusher.onClose(cause);
+
+        try (AutoLock l = lock.lock())
+        {
+            if (networkBuffer != null)
+            {
+                networkBuffer.clear();
+                releaseNetworkBuffer();
+            }
+        }
         super.onClose(cause);
     }
 

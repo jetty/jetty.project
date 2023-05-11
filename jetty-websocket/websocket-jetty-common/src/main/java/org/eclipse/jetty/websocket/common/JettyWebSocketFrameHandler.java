@@ -81,8 +81,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink activeMessageSink;
     private WebSocketSession session;
     private SuspendState state = SuspendState.DEMANDING;
-    private Runnable delayedOnFrame;
-    private CoreSession coreSession;
+    private Frame delayedFrame;
+    private Callback delayedCallback;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
                                       Object endpointInstance,
@@ -151,7 +151,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
-            this.coreSession = coreSession;
             session = new WebSocketSession(container, coreSession, this);
             if (!session.isOpen())
                 throw new IllegalStateException("Session is not open");
@@ -199,7 +198,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     break;
 
                 case SUSPENDING:
-                    delayedOnFrame = () -> onFrame(frame, callback);
+                    delayedFrame = frame;
+                    delayedCallback = callback;
                     state = SuspendState.SUSPENDED;
                     return;
 
@@ -283,11 +283,18 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
+        Callback suspendedCallback;
         try (AutoLock l = lock.lock())
         {
             // We are now closed and cannot suspend or resume.
             state = SuspendState.CLOSED;
+            delayedFrame = null;
+            suspendedCallback = delayedCallback;
+            delayedCallback = null;
         }
+
+        if (suspendedCallback != null)
+            suspendedCallback.failed(new CloseException(closeStatus.getCode(), closeStatus.getCause()));
 
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
@@ -447,7 +454,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public void resume()
     {
         boolean needDemand = false;
-        Runnable delayedFrame = null;
+        Frame frame = null;
+        Callback callback = null;
         try (AutoLock l = lock.lock())
         {
             switch (state)
@@ -457,13 +465,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
                 case SUSPENDED:
                     needDemand = true;
-                    delayedFrame = delayedOnFrame;
-                    delayedOnFrame = null;
+                    frame = delayedFrame;
+                    callback = delayedCallback;
                     state = SuspendState.DEMANDING;
                     break;
 
                 case SUSPENDING:
-                    if (delayedOnFrame != null)
+                    if (delayedFrame != null)
                         throw new IllegalStateException();
                     state = SuspendState.DEMANDING;
                     break;
@@ -475,8 +483,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (needDemand)
         {
-            if (delayedFrame != null)
-                delayedFrame.run();
+            if (frame != null)
+                onFrame(frame, callback);
             else
                 session.getCoreSession().demand(1);
         }
