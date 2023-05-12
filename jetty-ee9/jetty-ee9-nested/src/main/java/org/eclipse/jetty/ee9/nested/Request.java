@@ -64,6 +64,7 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -167,14 +168,12 @@ public class Request implements HttpServletRequest
     private ServletPathMapping _servletPathMapping;
     private Object _asyncNotSupportedSource = null;
     private boolean _secure;
-    private boolean _cookiesExtracted = false;
     private boolean _handled = false;
     private boolean _contentParamsExtracted;
     private Attributes _attributes;
     private Authentication _authentication;
     private String _contentType;
     private String _characterEncoding;
-    private Cookies _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
     private BufferedReader _reader;
@@ -743,32 +742,40 @@ public class Request implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null || _cookiesExtracted)
-        {
-            if (_cookies == null || _cookies.getCookies().length == 0)
-                return null;
-
-            return _cookies.getCookies();
-        }
-
-        _cookiesExtracted = true;
-
-        for (HttpField field : metadata.getHttpFields())
-        {
-            if (field.getHeader() == HttpHeader.COOKIE)
-            {
-                if (_cookies == null)
-                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getComplianceViolationListener());
-                _cookies.addCookieField(field.getValue());
-            }
-        }
-
-        //Javadoc for Request.getCookies() stipulates null for no cookies
-        if (_cookies == null || _cookies.getCookies().length == 0)
+        if (getCoreRequest() == null)
             return null;
 
-        return _cookies.getCookies();
+        List<HttpCookie> httpCookies = org.eclipse.jetty.server.Request.getCookies(getCoreRequest());
+        if (httpCookies.isEmpty())
+            return null;
+
+        //TODO should cache the array, and undisable RequestTest.testCookies
+        //TODO Don't use streams
+        return httpCookies.stream()
+            .map(this::convertCookie)
+            .filter(Objects::nonNull)
+            .toArray(Cookie[]::new);
+    }
+
+    public Cookie convertCookie(HttpCookie cookie)
+    {
+        try
+        {
+            Cookie result = new Cookie(cookie.getName(), cookie.getValue());
+            //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+            if (CookieCompliance.RFC2965.equals(getHttpChannel().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance()))
+            {
+                result.setPath(cookie.getPath());
+                result.setDomain(cookie.getDomain());
+            }
+            return result;
+        }
+        catch (Exception ignore)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Bad Cookie", ignore);
+        }
+        return null;
     }
 
     @Override
@@ -1555,15 +1562,12 @@ public class Request implements HttpServletRequest
         _servletPathMapping = null;
         _asyncNotSupportedSource = null;
         _secure = false;
-        _cookiesExtracted = false;
         _handled = false;
         _contentParamsExtracted = false;
         _attributes = null;
         setAuthentication(Authentication.NOT_CHECKED);
         _contentType = null;
         _characterEncoding = null;
-        if (_cookies != null)
-            _cookies.reset();
         _dispatcherType = null;
         _inputState = INPUT_NONE;
         // _reader can be reused
@@ -1768,16 +1772,6 @@ public class Request implements HttpServletRequest
     public void setContentType(String contentType)
     {
         _contentType = contentType;
-    }
-
-    /**
-     * @param cookies The cookies to set.
-     */
-    public void setCookies(Cookie[] cookies)
-    {
-        if (_cookies == null)
-            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getComplianceViolationListener());
-        _cookies.setCookies(cookies);
     }
 
     public void setDispatcherType(DispatcherType type)
