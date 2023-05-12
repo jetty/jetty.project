@@ -69,28 +69,20 @@ public final class OpCode
 
     public static boolean isControlFrame(byte opcode)
     {
-        switch (opcode)
+        return switch (opcode)
         {
-            case CLOSE:
-            case PING:
-            case PONG:
-                return true;
-            default:
-                return false;
-        }
+            case CLOSE, PING, PONG -> true;
+            default -> false;
+        };
     }
 
     public static boolean isDataFrame(byte opcode)
     {
         switch (opcode)
         {
-            case TEXT:
-            case BINARY:
-            case CONTINUATION:
-                return true;
-            default:
-                return false;
-        }
+            case TEXT, BINARY, CONTINUATION -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -101,40 +93,25 @@ public final class OpCode
      */
     public static boolean isKnown(byte opcode)
     {
-        switch (opcode)
+        return switch (opcode)
         {
-            case CLOSE:
-            case PING:
-            case PONG:
-            case TEXT:
-            case BINARY:
-            case CONTINUATION:
-                return true;
-            default:
-                return false;
-        }
+            case CLOSE, PING, PONG, TEXT, BINARY, CONTINUATION -> true;
+            default -> false;
+        };
     }
 
     public static String name(byte opcode)
     {
-        switch (opcode)
+        return switch (opcode)
         {
-            case -1:
-                return "NO-OP";
-            case CONTINUATION:
-                return "CONTINUATION";
-            case TEXT:
-                return "TEXT";
-            case BINARY:
-                return "BINARY";
-            case CLOSE:
-                return "CLOSE";
-            case PING:
-                return "PING";
-            case PONG:
-                return "PONG";
-            default:
-                return "NON-SPEC[" + opcode + "]";
-        }
+            case -1 -> "NO-OP";
+            case CONTINUATION -> "CONTINUATION";
+            case TEXT -> "TEXT";
+            case BINARY -> "BINARY";
+            case CLOSE -> "CLOSE";
+            case PING -> "PING";
+            case PONG -> "PONG";
+            default ->  "NON-SPEC[" + opcode + "]";
+        };
     }
 }
