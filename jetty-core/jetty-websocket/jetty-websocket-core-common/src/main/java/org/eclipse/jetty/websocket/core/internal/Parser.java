@@ -68,6 +68,11 @@ public class Parser
         this.configuration = configuration;
     }
 
+    public int getPayloadLength()
+    {
+        return payloadLength;
+    }
+
     public void reset()
     {
         state = State.START;
@@ -75,7 +80,7 @@ public class Parser
         mask = null;
         cursor = 0;
         aggregate = null;
-        payloadLength = -1;
+        payloadLength = 0;
     }
 
     /**
@@ -148,7 +153,11 @@ public class Parser
                     {
                         byte b = buffer.get();
                         --cursor;
-                        payloadLength |= (b & 0xFF) << (8 * cursor);
+                        long longLengthAccumulator = payloadLength;
+                        longLengthAccumulator |= (long)(b & 0xFF) << (8 * cursor);
+                        if (longLengthAccumulator > Integer.MAX_VALUE || longLengthAccumulator < 0)
+                            throw new MessageTooLargeException("Frame payload exceeded integer max value");
+                        payloadLength = Math.toIntExact(longLengthAccumulator);
                         if (cursor == 0)
                         {
                             if (mask != null)
@@ -250,6 +259,9 @@ public class Parser
 
     protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
     {
+        if (payloadLength < 0)
+            throw new IllegalArgumentException("Invalid payloadLength");
+
         if (OpCode.isControlFrame(opcode))
         {
             if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
@@ -287,7 +299,7 @@ public class Parser
         {
             int shift = fragmentSize % 4;
             nextMask = new byte[4];
-            nextMask[0] = mask[(0 + shift) % 4];
+            nextMask[0] = mask[(shift) % 4];
             nextMask[1] = mask[(1 + shift) % 4];
             nextMask[2] = mask[(2 + shift) % 4];
             nextMask[3] = mask[(3 + shift) % 4];
@@ -316,6 +328,7 @@ public class Parser
         boolean isDataFrame = OpCode.isDataFrame(OpCode.getOpCode(firstByte));
 
         // Always autoFragment data frames if payloadLength is greater than maxFrameSize.
+        // We have already checked payload size in checkFrameSize, so we know we can autoFragment if larger than maxFrameSize.
         long maxFrameSize = configuration.getMaxFrameSize();
         if (maxFrameSize > 0 && isDataFrame && payloadLength > maxFrameSize)
             return autoFragment(buffer, (int)Math.min(available, maxFrameSize));
@@ -324,12 +337,12 @@ public class Parser
         {
             if (available < payloadLength)
             {
-                // not enough to complete this frame
-                // Can we auto-fragment
+                // Not enough data to complete this frame, can we auto-fragment?
                 if (configuration.isAutoFragment() && isDataFrame)
                     return autoFragment(buffer, available);
 
-                // No space in the buffer, so we have to copy the partial payload
+                // No space in the buffer, so we have to copy the partial payload.
+                // The size of this allocation is limited by the maxFrameSize.
                 aggregate = bufferPool.acquire(payloadLength, false);
                 BufferUtil.append(aggregate.getByteBuffer(), buffer);
                 return null;
@@ -337,15 +350,15 @@ public class Parser
 
             if (available == payloadLength)
             {
-                // All the available data is for this frame and completes it 
+                // All the available data is for this frame and completes it.
                 Frame.Parsed frame = newFrame(firstByte, mask, buffer.slice(), null);
                 buffer.position(buffer.limit());
                 state = State.START;
                 return frame;
             }
 
-            // The buffer contains all the data for this frame and for subsequent frames
-            // Copy the just the first part of the buffer as frame payload
+            // The buffer contains all the data for this frame and for subsequent frames.
+            // Copy just the first part of the buffer as the frame payload.
             int limit = buffer.limit();
             int end = buffer.position() + payloadLength;
             buffer.limit(end);
