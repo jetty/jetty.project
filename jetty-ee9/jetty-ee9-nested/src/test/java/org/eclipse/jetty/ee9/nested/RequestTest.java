@@ -89,7 +89,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1476,8 +1475,6 @@ public class RequestTest
         assertThat(response, containsString("Hello World"));
     }
 
-    //TODO
-    @Disabled ("Converted cookies are not cached")
     @Test
     public void testCookies() throws Exception
     {
