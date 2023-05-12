@@ -38,7 +38,6 @@ import org.eclipse.jetty.http3.qpack.internal.metadata.Http3Fields;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -90,7 +89,6 @@ public class QpackEncoder implements Dumpable
 
     private final AutoLock lock = new AutoLock();
     private final List<Instruction> _instructions = new ArrayList<>();
-    private final ByteBufferPool _bufferPool;
     private final Instruction.Handler _handler;
     private final QpackContext _context;
     private int _maxBlockedStreams;
@@ -100,18 +98,12 @@ public class QpackEncoder implements Dumpable
     private int _knownInsertCount = 0;
     private int _blockedStreams = 0;
 
-    public QpackEncoder(ByteBufferPool bufferPool, Instruction.Handler handler, int maxBlockedStreams)
+    public QpackEncoder(Instruction.Handler handler, int maxBlockedStreams)
     {
-        _bufferPool = bufferPool;
         _handler = handler;
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
         _parser = new EncoderInstructionParser(_instructionHandler);
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return _bufferPool;
     }
 
     Map<Long, StreamInfo> getStreamInfoMap()
@@ -142,7 +134,7 @@ public class QpackEncoder implements Dumpable
     public void setCapacity(int capacity)
     {
         _context.getDynamicTable().setCapacity(capacity);
-        _handler.onInstructions(List.of(new SetCapacityInstruction(_bufferPool, capacity)));
+        _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
         notifyInstructionHandler();
     }
 
@@ -302,7 +294,7 @@ public class QpackEncoder implements Dumpable
         {
             int index = _context.indexOf(entry);
             dynamicTable.add(new Entry(field));
-            _instructions.add(new DuplicateInstruction(_bufferPool, index));
+            _instructions.add(new DuplicateInstruction(index));
             notifyInstructionHandler();
             return true;
         }
@@ -314,14 +306,14 @@ public class QpackEncoder implements Dumpable
         {
             int index = _context.indexOf(nameEntry);
             dynamicTable.add(new Entry(field));
-            _instructions.add(new IndexedNameEntryInstruction(_bufferPool, !nameEntry.isStatic(), index, huffman, field.getValue()));
+            _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
             notifyInstructionHandler();
             return true;
         }
 
         // Add the entry without referencing an existing entry.
         dynamicTable.add(new Entry(field));
-        _instructions.add(new LiteralNameEntryInstruction(_bufferPool, field, huffman));
+        _instructions.add(new LiteralNameEntryInstruction(field, huffman));
         notifyInstructionHandler();
         return true;
     }
@@ -374,7 +366,7 @@ public class QpackEncoder implements Dumpable
                 int index = _context.indexOf(entry);
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _instructions.add(new DuplicateInstruction(_bufferPool, index));
+                _instructions.add(new DuplicateInstruction(index));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -392,7 +384,7 @@ public class QpackEncoder implements Dumpable
                 int index = _context.indexOf(nameEntry);
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _instructions.add(new IndexedNameEntryInstruction(_bufferPool, !nameEntry.isStatic(), index, huffman, field.getValue()));
+                _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -407,7 +399,7 @@ public class QpackEncoder implements Dumpable
             {
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _instructions.add(new LiteralNameEntryInstruction(_bufferPool, field, huffman));
+                _instructions.add(new LiteralNameEntryInstruction(field, huffman));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))

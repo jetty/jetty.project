@@ -15,28 +15,21 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-public class NBitIntegerParser
+/**
+ * Used to decode integers as described in RFC7541.
+ */
+public class NBitIntegerDecoder
 {
-    public static int decode(ByteBuffer buffer, int prefix) throws EncodingException
-    {
-        // TODO: This is a fix for HPACK as it already takes the first byte of the encoded integer.
-        if (prefix != 8)
-            buffer.position(buffer.position() - 1);
-
-        NBitIntegerParser parser = new NBitIntegerParser();
-        parser.setPrefix(prefix);
-        int decodedInt = parser.decodeInt(buffer);
-        if (decodedInt < 0)
-            throw new EncodingException("invalid integer encoding");
-        parser.reset();
-        return decodedInt;
-    }
-
     private int _prefix;
     private long _total;
     private long _multiplier;
     private boolean _started;
 
+    /**
+     * Set the prefix length in of the integer representation in bits.
+     * A prefix of 6 means the integer representation starts after the first 2 bits.
+     * @param prefix the number of bits in the integer prefix.
+     */
     public void setPrefix(int prefix)
     {
         if (_started)
@@ -44,11 +37,27 @@ public class NBitIntegerParser
         _prefix = prefix;
     }
 
+    /**
+     * Decode an integer from the buffer. If the buffer does not contain the complete integer representation
+     * a value of -1 is returned to indicate that more data is needed to complete parsing.
+     * This should be only after the prefix has been set with {@link #setPrefix(int)}.
+     * @param buffer the buffer containing the encoded integer.
+     * @return the decoded integer or -1 to indicate that more data is needed.
+     * @throws ArithmeticException if the value overflows a int.
+     */
     public int decodeInt(ByteBuffer buffer)
     {
         return Math.toIntExact(decodeLong(buffer));
     }
 
+    /**
+     * Decode a long from the buffer. If the buffer does not contain the complete integer representation
+     * a value of -1 is returned to indicate that more data is needed to complete parsing.
+     * This should be only after the prefix has been set with {@link #setPrefix(int)}.
+     * @param buffer the buffer containing the encoded integer.
+     * @return the decoded long or -1 to indicate that more data is needed.
+     * @throws ArithmeticException if the value overflows a long.
+     */
     public long decodeLong(ByteBuffer buffer)
     {
         if (!_started)
@@ -86,6 +95,9 @@ public class NBitIntegerParser
         }
     }
 
+    /**
+     * Reset the internal state of the parser.
+     */
     public void reset()
     {
         _prefix = 0;

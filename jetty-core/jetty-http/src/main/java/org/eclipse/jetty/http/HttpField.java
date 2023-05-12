@@ -26,12 +26,11 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
-    private static final String __zeroquality = "q=0";
+    private static final String __zeroQuality = "q=0";
     private final HttpHeader _header;
     private final String _name;
     private final String _value;
-    // cached hashcode for case insensitive name
-    private int hash = 0;
+    private int _hash = 0;
 
     public HttpField(HttpHeader header, String name, String value)
     {
@@ -131,9 +130,9 @@ public class HttpField
     }
 
     /**
-     * Look for a value in a possible multi valued field
+     * Look for a value in a possible multivalued field
      *
-     * @param search Values to search for (case insensitive)
+     * @param search Values to search for (case-insensitive)
      * @return True iff the value is contained in the field value entirely or
      * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
      * except if they are q=0, in which case the item itself is ignored.
@@ -144,10 +143,10 @@ public class HttpField
     }
 
     /**
-     * Look for a value in a possible multi valued field
+     * Look for a value in a possible multivalued field
      *
      * @param value The field value to search in.
-     * @param search Values to search for (case insensitive)
+     * @param search Values to search for (case-insensitive)
      * @return True iff the value is contained in the field value entirely or
      * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
      * except if they are q=0, in which case the item itself is ignored.
@@ -172,7 +171,8 @@ public class HttpField
             char c = StringUtil.asciiToLowerCase(value.charAt(i));
             switch (state)
             {
-                case 0: // initial white space
+                case 0 -> // initial white space
+                {
                     switch (c)
                     {
                         case '"': // open quote
@@ -198,24 +198,25 @@ public class HttpField
                             state = 1;
                             break;
                     }
-                    break;
-
-                case 1: // In token
+                }
+                case 1 -> // In token
+                {
                     switch (c)
                     {
-                        case ',': // next field
+                        case ',' -> // next field
+                        {
                             // Have we matched the token?
                             if (match == search.length())
                                 return true;
                             state = 0;
-                            break;
-
-                        case ';':
+                        }
+                        case ';' ->
+                        {
                             param = match >= 0 ? 0 : -1;
                             state = 5; // parameter
-                            break;
-
-                        default:
+                        }
+                        default ->
+                        {
                             if (match > 0)
                             {
                                 if (match < search.length())
@@ -223,22 +224,17 @@ public class HttpField
                                 else if (c != ' ' && c != '\t')
                                     match = -1;
                             }
-                            break;
+                        }
                     }
-                    break;
-
-                case 2: // In Quoted token
+                }
+                case 2 -> // In Quoted token
+                {
                     switch (c)
                     {
-                        case '\\': // quoted character
-                            state = 3;
-                            break;
-
-                        case '"': // end quote
-                            state = 4;
-                            break;
-
-                        default:
+                        case '\\' -> state = 3; // quoted character
+                        case '"' -> state = 4;  // end quote
+                        default ->
+                        {
                             if (match >= 0)
                             {
                                 if (match < search.length())
@@ -246,10 +242,11 @@ public class HttpField
                                 else
                                     match = -1;
                             }
+                        }
                     }
-                    break;
-
-                case 3: // In Quoted character in quoted token
+                }
+                case 3 -> // In Quoted character in quoted token
+                {
                     if (match >= 0)
                     {
                         if (match < search.length())
@@ -258,9 +255,9 @@ public class HttpField
                             match = -1;
                     }
                     state = 2;
-                    break;
-
-                case 4: // WS after end quote
+                }
+                case 4 -> // WS after end quote
+                {
                     switch (c)
                     {
                         case ' ': // white space
@@ -282,14 +279,14 @@ public class HttpField
                             // This is an illegal token, just ignore
                             match = -1;
                     }
-                    break;
-
-                case 5:  // parameter
+                }
+                case 5 -> // parameter
+                {
                     switch (c)
                     {
                         case ',': // end token
                             // Have we matched the token and not q=0?
-                            if (param != __zeroquality.length() && match == search.length())
+                            if (param != __zeroQuality.length() && match == search.length())
                                 return true;
                             param = 0;
                             state = 0;
@@ -302,20 +299,18 @@ public class HttpField
                         default:
                             if (param >= 0)
                             {
-                                if (param < __zeroquality.length())
-                                    param = c == __zeroquality.charAt(param) ? (param + 1) : -1;
+                                if (param < __zeroQuality.length())
+                                    param = c == __zeroQuality.charAt(param) ? (param + 1) : -1;
                                 else if (c != '0' && c != '.')
                                     param = -1;
                             }
                     }
-                    break;
-
-                default:
-                    throw new IllegalStateException();
+                }
+                default -> throw new IllegalStateException();
             }
         }
 
-        return param != __zeroquality.length() && match == search.length();
+        return param != __zeroQuality.length() && match == search.length();
     }
 
     @Override
@@ -323,9 +318,8 @@ public class HttpField
     {
         if (o == this)
             return true;
-        if (!(o instanceof HttpField))
+        if (!(o instanceof HttpField field))
             return false;
-        HttpField field = (HttpField)o;
         if (_header != field.getHeader())
             return false;
         if (!_name.equalsIgnoreCase(field.getName()))
@@ -406,7 +400,7 @@ public class HttpField
 
     private int nameHashCode()
     {
-        int h = this.hash;
+        int h = this._hash;
         int len = _name.length();
         if (h == 0 && len > 0)
         {
@@ -419,7 +413,7 @@ public class HttpField
                     c -= 0x20;
                 h = 31 * h + c;
             }
-            this.hash = h;
+            this._hash = h;
         }
         return h;
     }
@@ -454,6 +448,11 @@ public class HttpField
         public IntValueHttpField(HttpHeader header, int value)
         {
             this(header, header.asString(), value);
+        }
+
+        public IntValueHttpField(String header, int value)
+        {
+            this(HttpHeader.CACHE.get(header), header, value);
         }
 
         @Override
@@ -494,10 +493,15 @@ public class HttpField
             this(header, header.asString(), value);
         }
 
+        public LongValueHttpField(String header, long value)
+        {
+            this(HttpHeader.CACHE.get(header), header, value);
+        }
+
         @Override
         public int getIntValue()
         {
-            return (int)_long;
+            return Math.toIntExact(_long);
         }
 
         @Override

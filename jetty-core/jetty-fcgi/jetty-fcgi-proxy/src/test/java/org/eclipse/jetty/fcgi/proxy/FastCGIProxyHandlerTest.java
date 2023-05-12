@@ -153,7 +153,7 @@ public class FastCGIProxyHandlerTest
             {
                 assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
                 assertEquals(path, Request.getPathInContext(request));
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
                 return true;
             }

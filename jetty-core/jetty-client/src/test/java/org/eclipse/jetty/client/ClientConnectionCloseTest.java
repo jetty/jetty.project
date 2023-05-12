@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -52,7 +53,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             {
                 Content.Source.consumeAll(request);
 
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
 
                 try
@@ -206,7 +207,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                 Content.Sink.write(response, false, null);
 
                 try

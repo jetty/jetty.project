@@ -36,7 +36,7 @@
     <apache.avro.version>1.11.1</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.4</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.7</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.7</asciidoctorj.version>
     <mina.core.version>2.2.1</mina.core.version>
     <asm.version>9.5</asm.version>
@@ -64,7 +64,6 @@
     <jackson.version>2.14.2</jackson.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
     <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
     <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
@@ -84,7 +83,6 @@
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version> <!-- TODO: remove? -->
     <javax.cdi.api.version>2.0</javax.cdi.api.version> <!-- TODO: remove? -->
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version> <!-- TODO: remove? -->
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
@@ -104,12 +102,12 @@
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.20.0</log4j2.version>
-    <logback.version>1.4.6</logback.version>
+    <logback.version>1.4.7</logback.version>
     <mariadb.version>3.1.2</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.7</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.9.7</maven.resolver.version>
+    <maven.resolver.version>1.9.8</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -144,7 +142,7 @@
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.17.6</testcontainers.version>
+    <testcontainers.version>1.18.0</testcontainers.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.1.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
@@ -164,11 +162,11 @@
     <maven.assembly.plugin.version>3.5.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
-    <maven.checkstyle.plugin.version>3.2.1</maven.checkstyle.plugin.version>
+    <maven.checkstyle.plugin.version>3.2.2</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.5.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
-    <maven.enforcer.plugin.version>3.2.1</maven.enforcer.plugin.version>
+    <maven.enforcer.plugin.version>3.3.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
@@ -176,8 +174,8 @@
     <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.8.1</maven.plugin-tools.version>
-    <maven-plugin.plugin.version>3.8.1</maven-plugin.plugin.version>
+    <maven.plugin-tools.version>3.8.2</maven.plugin-tools.version>
+    <maven-plugin.plugin.version>3.8.2</maven-plugin.plugin.version>
     <maven.release.plugin.version>3.0.0</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>

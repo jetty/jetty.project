@@ -16,16 +16,18 @@ package org.eclipse.jetty.http2.hpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
-import org.eclipse.jetty.http.compression.NBitIntegerParser;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.internal.AuthorityHttpField;
 import org.eclipse.jetty.http2.hpack.internal.MetaDataBuilder;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +38,11 @@ import org.slf4j.LoggerFactory;
 public class HpackDecoder
 {
     private static final Logger LOG = LoggerFactory.getLogger(HpackDecoder.class);
-    private static final HttpField.LongValueHttpField CONTENT_LENGTH_0 =
-        new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
+    private final HuffmanDecoder _huffmanDecoder;
+    private final NBitIntegerDecoder _integerDecoder;
     private int _localMaxDynamicTableSize;
 
     /**
@@ -52,6 +54,8 @@ public class HpackDecoder
         _context = new HpackContext(localMaxDynamicTableSize);
         _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
+        _huffmanDecoder = new HuffmanDecoder();
+        _integerDecoder = new NBitIntegerDecoder();
     }
 
     public HpackContext getHpackContext()
@@ -69,7 +73,8 @@ public class HpackDecoder
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
-        // If the buffer is big, don't even think about decoding it
+        // If the buffer is big, don't even think about decoding it.
+        // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
         if (buffer.remaining() > _builder.getMaxSize())
             throw new HpackException.SessionException("431 Request Header Fields too large");
 
@@ -166,11 +171,10 @@ public class HpackDecoder
                 {
                     huffmanName = (buffer.get() & 0x80) == 0x80;
                     int length = integerDecode(buffer, 7);
-                    _builder.checkSize(length, huffmanName);
                     if (huffmanName)
                         name = huffmanDecode(buffer, length);
                     else
-                        name = toASCIIString(buffer, length);
+                        name = toISO88591String(buffer, length);
                     check:
                     for (int i = name.length(); i-- > 0; )
                     {
@@ -207,11 +211,10 @@ public class HpackDecoder
                 // decode the value
                 boolean huffmanValue = (buffer.get() & 0x80) == 0x80;
                 int length = integerDecode(buffer, 7);
-                _builder.checkSize(length, huffmanValue);
                 if (huffmanValue)
                     value = huffmanDecode(buffer, length);
                 else
-                    value = toASCIIString(buffer, length);
+                    value = toISO88591String(buffer, length);
 
                 // Make the new field
                 HttpField field;
@@ -239,7 +242,7 @@ public class HpackDecoder
 
                         case CONTENT_LENGTH:
                             if ("0".equals(value))
-                                field = CONTENT_LENGTH_0;
+                                field = HttpFields.CONTENT_LENGTH_0;
                             else
                                 field = new HttpField.LongValueHttpField(header, name, value);
                             break;
@@ -276,13 +279,24 @@ public class HpackDecoder
     {
         try
         {
-            return NBitIntegerParser.decode(buffer, prefix);
+            if (prefix != 8)
+                buffer.position(buffer.position() - 1);
+
+            _integerDecoder.setPrefix(prefix);
+            int decodedInt = _integerDecoder.decodeInt(buffer);
+            if (decodedInt < 0)
+                throw new EncodingException("invalid integer encoding");
+            return decodedInt;
         }
         catch (EncodingException e)
         {
             HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
             compressionException.initCause(e);
             throw compressionException;
+        }
+        finally
+        {
+            _integerDecoder.reset();
         }
     }
 
@@ -290,7 +304,11 @@ public class HpackDecoder
     {
         try
         {
-            return HuffmanDecoder.decode(buffer, length);
+            _huffmanDecoder.setLength(length);
+            String decoded = _huffmanDecoder.decode(buffer);
+            if (decoded == null)
+                throw new HpackException.CompressionException("invalid string encoding");
+            return decoded;
         }
         catch (EncodingException e)
         {
@@ -298,16 +316,20 @@ public class HpackDecoder
             compressionException.initCause(e);
             throw compressionException;
         }
+        finally
+        {
+            _huffmanDecoder.reset();
+        }
     }
 
-    public static String toASCIIString(ByteBuffer buffer, int length)
+    public static String toISO88591String(ByteBuffer buffer, int length)
     {
-        StringBuilder builder = new StringBuilder(length);
+        CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
         for (int i = 0; i < length; ++i)
         {
-            builder.append((char)(0x7F & buffer.get()));
+            builder.append(HttpTokens.sanitizeFieldVchar((char)buffer.get()));
         }
-        return builder.toString();
+        return builder.build();
     }
 
     @Override

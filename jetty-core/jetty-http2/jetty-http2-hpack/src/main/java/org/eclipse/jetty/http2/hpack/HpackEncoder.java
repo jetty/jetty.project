@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -254,7 +254,9 @@ public class HpackEncoder
                 if (!contentLengthEncoded)
                 {
                     long contentLength = metadata.getContentLength();
-                    if (contentLength >= 0)
+                    if (contentLength == 0)
+                        encode(buffer, HttpFields.CONTENT_LENGTH_0);
+                    else if (contentLength > 0)
                         encode(buffer, new HttpField(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength)));
                 }
             }
@@ -441,8 +443,8 @@ public class HpackEncoder
             // leave name index bits as 0
             // Encode the name always with lowercase huffman
             buffer.put((byte)0x80);
-            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLC(name));
-            HuffmanEncoder.encodeLC(buffer, name);
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLowerCase(name));
+            HuffmanEncoder.encodeLowerCase(buffer, name);
         }
         else
         {
@@ -456,20 +458,9 @@ public class HpackEncoder
         {
             // huffman literal value
             buffer.put((byte)0x80);
-
             int needed = HuffmanEncoder.octetsNeeded(value);
-            if (needed >= 0)
-            {
-                NBitIntegerEncoder.encode(buffer, 7, needed);
-                HuffmanEncoder.encode(buffer, value);
-            }
-            else
-            {
-                // Not iso_8859_1
-                byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(bytes));
-                HuffmanEncoder.encode(buffer, bytes);
-            }
+            NBitIntegerEncoder.encode(buffer, 7, needed);
+            HuffmanEncoder.encode(buffer, value);
         }
         else
         {
@@ -479,15 +470,7 @@ public class HpackEncoder
             for (int i = 0; i < value.length(); i++)
             {
                 char c = value.charAt(i);
-                if (c < ' ' || c > 127)
-                {
-                    // Not iso_8859_1, so re-encode as UTF-8
-                    buffer.reset();
-                    byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                    NBitIntegerEncoder.encode(buffer, 7, bytes.length);
-                    buffer.put(bytes, 0, bytes.length);
-                    return;
-                }
+                c = HttpTokens.sanitizeFieldVchar(c);
                 buffer.put((byte)c);
             }
         }

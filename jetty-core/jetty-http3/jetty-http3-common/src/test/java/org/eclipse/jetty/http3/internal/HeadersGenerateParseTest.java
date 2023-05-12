@@ -47,11 +47,11 @@ public class HeadersGenerateParseTest
         HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
         ByteBufferPool.NonPooling bufferPool = new ByteBufferPool.NonPooling();
-        QpackEncoder encoder = new QpackEncoder(bufferPool, instructions -> {}, 100);
+        QpackEncoder encoder = new QpackEncoder(instructions -> {}, 100);
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         new MessageGenerator(bufferPool, encoder, 8192, true).generate(accumulator, 0, input, null);
 
-        QpackDecoder decoder = new QpackDecoder(bufferPool, instructions -> {}, 8192);
+        QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);
         List<HeadersFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()
         {

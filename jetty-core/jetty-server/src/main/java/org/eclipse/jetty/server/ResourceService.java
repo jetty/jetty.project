@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -452,7 +453,7 @@ public class ResourceService
             if (!uri.getCanonicalPath().endsWith("/"))
             {
                 uri.path(uri.getCanonicalPath() + "/");
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
                 sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
@@ -536,7 +537,7 @@ public class ResourceService
      */
     protected void redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
-        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+        response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
         sendRedirect(request, response, callback, welcomeTarget);
     }
 
@@ -626,7 +627,7 @@ public class ResourceService
 
         byte[] data = listing.getBytes(StandardCharsets.UTF_8);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
-        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+        response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
@@ -661,7 +662,6 @@ public class ResourceService
         // If there are no satisfiable ranges, send a 416 response.
         if (ranges.isEmpty())
         {
-            putHeaders(response, content, NO_CONTENT_LENGTH);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, ByteRange.toNonSatisfiableHeaderValue(contentLength));
             Response.writeError(request, response, callback, HttpStatus.RANGE_NOT_SATISFIABLE_416);
             return;
@@ -736,7 +736,7 @@ public class ResourceService
         }
         else if (contentLength > NO_CONTENT_LENGTH)
         {
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
         }
 
         HttpField ct = content.getContentType();

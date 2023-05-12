@@ -66,7 +66,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
             authenticator = new SPNEGOAuthenticator();
         else if (Authenticator.NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
             authenticator = new SPNEGOAuthenticator(Authenticator.NEGOTIATE_AUTH);
-        if (Authenticator.CERT_AUTH.equalsIgnoreCase(auth))
+        if (Authenticator.CERT_AUTH2.equalsIgnoreCase(auth))
         {
             Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
             if (sslContextFactories.size() != 1)

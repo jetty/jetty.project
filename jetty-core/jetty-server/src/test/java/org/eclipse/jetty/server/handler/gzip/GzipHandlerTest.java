@@ -319,7 +319,7 @@ public class GzipHandlerTest
             
                 """;
             localEndPoint.addInput(BufferUtil.toBuffer(rawHeadRequest, UTF_8));
-            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(true, 2, TimeUnit.SECONDS));
+            HttpTester.Response response = HttpTester.parseHeadResponse(localEndPoint.getResponse(true, 2, TimeUnit.SECONDS));
 
             assertThat(response.getStatus(), is(200));
             assertNull(response.getField("Vary")); // HEAD should not have a Vary header
@@ -371,7 +371,7 @@ public class GzipHandlerTest
             """;
 
         // Parse HEAD response
-        response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
+        response = HttpTester.parseHeadResponse(_connector.getResponse(rawRequest));
 
         assertThat(response.getStatus(), is(200));
         assertNull(response.getField("Vary")); // HEAD should not have a Vary header
@@ -946,6 +946,8 @@ public class GzipHandlerTest
     @ValueSource(strings = {"POST", "WIBBLE", "GET", "HEAD"})
     public void testIncludeMethods(String method) throws Exception
     {
+        boolean head = HttpMethod.HEAD.is(method);
+
         _gzipHandler.setIncludedMethods("POST", "WIBBLE", "GET", "HEAD");
 
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 8;
@@ -969,7 +971,7 @@ public class GzipHandlerTest
         ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(rawResponse), head);
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -980,7 +982,7 @@ public class GzipHandlerTest
         assertThat("Response[Content-Length]", response.getLongField("Content-Length"),
             is(both(greaterThan(0L)).and(lessThan((long)fileSize))));
 
-        if (method.equals("HEAD"))
+        if (head)
         {
             // Don't assert Response body content on HEAD requests.
             return;
@@ -1834,7 +1836,7 @@ public class GzipHandlerTest
             boolean knownLast = Boolean.parseBoolean(parameters.getValue("knownLast"));
 
             if (cl)
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, (long)count.get() * bytes.length);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, (long)count.get() * bytes.length);
 
             Runnable writer = new Runnable()
             {
@@ -1955,7 +1957,7 @@ public class GzipHandlerTest
             }
 
             ByteBuffer slice = byteBuffer.slice();
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, slice.remaining());
+            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, slice.remaining());
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
             response.write(true, slice, callback);
             return true;

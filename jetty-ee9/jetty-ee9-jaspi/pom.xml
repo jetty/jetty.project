@@ -33,6 +33,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>jakarta.authentication</groupId>
+      <artifactId>jakarta.authentication-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
@@ -53,10 +57,6 @@
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.authentication</groupId>
-      <artifactId>jakarta.authentication-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.activation</groupId>

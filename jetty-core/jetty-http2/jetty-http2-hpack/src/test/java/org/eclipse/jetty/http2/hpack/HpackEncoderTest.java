@@ -177,7 +177,7 @@ public class HpackEncoderTest
 
         // Index zero content length
         int pos = BufferUtil.flipToFill(buffer);
-        encoder.encode(buffer, new HttpField(HttpHeader.CONTENT_LENGTH, "0"));
+        encoder.encode(buffer, HttpFields.CONTENT_LENGTH_0);
         BufferUtil.flipToFlush(buffer, pos);
         int dynamicTableSize = ctx.getDynamicTableSize();
         assertThat(dynamicTableSize, Matchers.greaterThan(0));

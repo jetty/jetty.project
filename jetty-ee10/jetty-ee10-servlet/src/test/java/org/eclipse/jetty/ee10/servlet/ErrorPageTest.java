@@ -61,6 +61,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorPageTest
@@ -103,6 +104,8 @@ public class ErrorPageTest
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
         _context.addServlet(ExceptionServlet.class, "/exception-servlet");
+        _context.addServlet(FailResetBufferAfterCommit.class, "/fail-reset-buffer/*");
+        _context.addServlet(FailSendErrorAfterCommit.class, "/fail-senderror-after-commit/*");
 
         Handler.Singleton noopHandler = new Handler.Wrapper()
         {
@@ -281,6 +284,22 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-closed/"));
 
         assertThat(response, not(containsString("This shouldn't be seen")));
+        assertThat(response, not(containsString("BadHeader")));
+    }
+
+    @Test
+    public void testFailResetBufferAfterCommit() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail-reset-buffer/foo HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("Some content"));
+    }
+
+    @Test
+    public void testCommitSendError() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail-senderror-after-commit/ HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("Response committed"));
+        assertThat(response, not(Matchers.containsString("HTTP/1.1 599 599")));
     }
 
     @Test
@@ -713,16 +732,49 @@ public class ErrorPageTest
         {
             response.sendError(599);
             // The below should result in no operation, as response should be closed.
+
             try
             {
                 response.setStatus(200); // this status code should not be seen
                 response.getWriter().append("This shouldn't be seen");
+                response.addIntHeader("BadHeader", 1234);
             }
             catch (Throwable ignore)
             {
                 LOG.trace("IGNORED", ignore);
             }
         }
+    }
+
+    public static class FailResetBufferAfterCommit extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.getWriter().println("Some content");
+            response.flushBuffer(); //cause a commit
+
+            assertThrows(IllegalStateException.class,
+                () ->
+                {
+                    response.resetBuffer();
+                },
+            "Reset after response committed");
+        }
+    }
+
+    public static class FailSendErrorAfterCommit extends HttpServlet implements Servlet
+    {
+         @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+         {
+             response.getWriter().append("Response committed");
+             response.flushBuffer();
+
+             assertThrows(IllegalStateException.class,
+                 () -> response.sendError(599),
+                 "Cannot sendError after commit");
+         }
     }
 
     public static class ErrorContentTypeCharsetWriterInitializedServlet extends HttpServlet

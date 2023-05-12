@@ -61,11 +61,6 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-security</artifactId>
-        <version>12.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-jaspi</artifactId>
         <version>12.0.0-SNAPSHOT</version>
@@ -73,11 +68,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-jndi</artifactId>
-        <version>12.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-openid</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>

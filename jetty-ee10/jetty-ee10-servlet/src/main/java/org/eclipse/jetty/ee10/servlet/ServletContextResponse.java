@@ -241,7 +241,7 @@ public class ServletContextResponse extends ContextResponse
                 throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
             _contentLength = len;
-            getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, len);
+            getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
             if (isAllContentWritten(written))
             {
                 try
@@ -260,7 +260,7 @@ public class ServletContextResponse extends ContextResponse
             if (written > 0)
                 throw new IllegalArgumentException("setContentLength(0) when already written " + written);
             _contentLength = len;
-            getHeaders().put(HttpHeader.CONTENT_LENGTH, "0");
+            getHeaders().put(HttpFields.CONTENT_LENGTH_0);
         }
         else
         {
@@ -346,6 +346,8 @@ public class ServletContextResponse extends ContextResponse
 
     public void resetContent()
     {
+        if (isCommitted())
+            throw new IllegalStateException("Committed");
         _httpOutput.resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;
