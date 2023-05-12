@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
-    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().embeddedQuotes().build();
+    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().embeddedQuotes().returnQuotes().build();
     public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").optionalWhiteSpace().build();
     private static final String __zeroQuality = "q=0";
     private final HttpHeader _header;

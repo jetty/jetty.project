@@ -674,7 +674,7 @@ public class MultiPartFormDataTest
 
         String contents = """
             --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="Taken on Aug 22 \\\\ 2012.jpg"\r
+            content-disposition: form-data; name="stuff"; filename="C:\\Pictures\\2012.jpg"\r
             Content-Type: text/plain\r
             \r
             stuffaaa\r
@@ -686,7 +686,7 @@ public class MultiPartFormDataTest
         {
             assertThat(parts.size(), is(1));
             MultiPart.Part part = parts.get(0);
-            assertThat(part.getFileName(), is("Taken on Aug 22 \\ 2012.jpg"));
+            assertThat(part.getFileName(), is("C:\\Pictures\\2012.jpg"));
         }
     }
 

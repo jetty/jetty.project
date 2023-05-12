@@ -258,7 +258,15 @@ public class ServletApiRequest implements HttpServletRequest
     public long getDateHeader(String name)
     {
         HttpFields fields = getFields();
-        return fields == null ? -1 : fields.getDateField(name);
+        if (fields == null)
+            return -1;
+        HttpField field = fields.getField(name);
+        if (field == null)
+            return -1;
+        long date = fields.getDateField(name);
+        if (date == -1)
+            throw new IllegalArgumentException("Cannot parse date");
+        return date;
     }
 
     @Override
