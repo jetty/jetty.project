@@ -147,7 +147,8 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
 
                 for (Iterator<String> i = QuotedStringTokenizer.CSV.tokenize(value); i.hasNext();)
                 {
-                    values.add(i.next());
+                    String token = i.next();
+                    values.add(token);
                 }
             }
             default -> values.add(value);

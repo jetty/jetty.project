@@ -61,7 +61,7 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
 
     protected boolean isOWS(char c)
     {
-        return c == ' ' || c == '\t';
+        return Character.isWhitespace(c);
     }
 
     @Override
