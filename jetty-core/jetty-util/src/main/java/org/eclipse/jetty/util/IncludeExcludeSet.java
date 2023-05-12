@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -59,12 +60,6 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     {
         // noinspection unchecked
         this(HashSet.class);
-    }
-
-    public IncludeExcludeSet<T, P> asImmutable()
-    {
-        // TODO
-        return this;
     }
 
     /**
@@ -133,6 +128,15 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         _includePredicate = includePredicate;
         _excludes = excludeSet;
         _excludePredicate = excludePredicate;
+    }
+
+    public IncludeExcludeSet<T, P> asImmutable()
+    {
+        return new IncludeExcludeSet<>(
+            Collections.unmodifiableSet(_includes),
+            _includePredicate,
+            Collections.unmodifiableSet(_excludes),
+            _excludePredicate);
     }
 
     public void include(T element)

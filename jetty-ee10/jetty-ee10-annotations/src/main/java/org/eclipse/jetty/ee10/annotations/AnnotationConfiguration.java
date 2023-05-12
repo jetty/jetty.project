@@ -431,11 +431,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-    }
-
-    @Override
     public void configure(WebAppContext context) throws Exception
     {
         State state = (State)context.getAttribute(STATE);
@@ -478,6 +473,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         context.removeAttribute(CLASS_INHERITANCE_MAP);
 
         State state = (State)context.removeAttribute(STATE);
+        if (state == null)
+            throw new IllegalStateException("No state");
         state._discoverableAnnotationHandlers.clear();
         state._classInheritanceHandler = null;
         state._containerInitializerAnnotationHandlers.clear();

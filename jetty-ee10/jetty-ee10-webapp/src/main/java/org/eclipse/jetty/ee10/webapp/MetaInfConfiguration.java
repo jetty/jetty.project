@@ -596,7 +596,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @return the list of tlds found
      * @throws IOException if unable to scan the directory
      */
-    // TODO: Needs to use resource.
     private Collection<URL> getTlds(Path dir) throws IOException
     {
         if (dir == null || !Files.isDirectory(dir))
