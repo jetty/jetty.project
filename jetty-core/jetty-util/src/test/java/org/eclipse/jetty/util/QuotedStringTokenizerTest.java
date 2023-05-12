@@ -38,6 +38,7 @@ public class QuotedStringTokenizerTest
         QuotedStringTokenizer commaListDelimiters = QuotedStringTokenizer.builder().delimiters(",").returnDelimiters().build();
         QuotedStringTokenizer commaListOwsDelimiters = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().returnDelimiters().build();
         QuotedStringTokenizer commaListOwsEmbeddedQuotes = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().returnQuotes().embeddedQuotes().build();
+        QuotedStringTokenizer commaListEscapeOQ = QuotedStringTokenizer.builder().delimiters(",").escapeOnlyQuote().build();
 
         return Stream.of(
             Arguments.of(commaList, "", new String[] {}),
@@ -45,14 +46,16 @@ public class QuotedStringTokenizerTest
             Arguments.of(commaList, " a ,  b  ,   c   ", new String[] {" a ", "  b  ", "   c   "}),
             Arguments.of(commaList, "a a,b  b, c c ", new String[] {"a a", "b  b", " c c "}),
             Arguments.of(commaList, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
-            Arguments.of(commaList, "\"a,a\", b\",\"b ,c", new String[] {"a,a", " b\"", "b ,c"}),
+            Arguments.of(commaList, "\"a,a\", b\",\"b ,c", new String[] {"a,a", " b\"", null}),
+            Arguments.of(commaList, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\b", "c,c"}),
 
             Arguments.of(commaListOws, "", new String[] {}),
             Arguments.of(commaListOws, "a,b,c", new String[] {"a", "b", "c"}),
             Arguments.of(commaListOws, " a ,  b  ,   c   ", new String[] {"a", "b", "c"}),
             Arguments.of(commaListOws, "a a,b  b, c c ", new String[] {"a a", "b  b", "c c"}),
             Arguments.of(commaListOws, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
-            Arguments.of(commaListOws, "\"a,a\", b\",\"b ,c", new String[] {"a,a", "b\"", "b ,c"}),
+            Arguments.of(commaListOws, "\"a,a\", b\",\"b ,c", new String[] {"a,a", "b\"", null}),
+            Arguments.of(commaListOws, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\b", "c,c"}),
 
             Arguments.of(commaListOwsEmbedded, "", new String[] {}),
             Arguments.of(commaListOwsEmbedded, "a,b,c", new String[] {"a", "b", "c"}),
@@ -60,20 +63,23 @@ public class QuotedStringTokenizerTest
             Arguments.of(commaListOwsEmbedded, "a a,b  b, c c ", new String[] {"a a", "b  b", "c c"}),
             Arguments.of(commaListOwsEmbedded, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
             Arguments.of(commaListOwsEmbedded, "\"a,a\", b\",\"b ,c", new String[] {"a,a", "b,b", "c"}),
+            Arguments.of(commaListOwsEmbedded, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\b", "c,c"}),
 
             Arguments.of(commaListDelimiters, "", new String[] {}),
             Arguments.of(commaListDelimiters, "a,b,c", new String[] {"a", ",", "b", ",", "c"}),
             Arguments.of(commaListDelimiters, " a ,  b  ,   c   ", new String[] {" a ", ",", "  b  ", ",", "   c   "}),
             Arguments.of(commaListDelimiters, "a a,b  b, c c ", new String[] {"a a", ",", "b  b", ",", " c c "}),
             Arguments.of(commaListDelimiters, "\"a,a\",\"b,b\",c", new String[] {"a,a", ",", "b,b", ",", "c"}),
-            Arguments.of(commaListDelimiters, "\"a,a\", b\",\"b ,c", new String[] {"a,a", ",", " b\"", ",", "b ,c"}),
+            Arguments.of(commaListDelimiters, "\"a,a\", b\",\"b ,c", new String[] {"a,a", ",", " b\"", ",", null}),
+            Arguments.of(commaListDelimiters, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", ",", "b\\b", ",", "c,c"}),
 
             Arguments.of(commaListOwsDelimiters, "", new String[] {}),
             Arguments.of(commaListOwsDelimiters, "a,b,c", new String[] {"a", ",", "b", ",", "c"}),
             Arguments.of(commaListOwsDelimiters, " a ,  b  ,   c   ", new String[] {"a", ",", "b", ",", "c"}),
             Arguments.of(commaListOwsDelimiters, "a a,b  b, c c ", new String[] {"a a", ",", "b  b", ",", "c c"}),
             Arguments.of(commaListOwsDelimiters, "\"a,a\",\"b,b\",c", new String[] {"a,a", ",", "b,b", ",", "c"}),
-            Arguments.of(commaListOwsDelimiters, "\"a,a\", b\",\"b ,c", new String[] {"a,a", ",", "b\"", ",", "b ,c"}),
+            Arguments.of(commaListOwsDelimiters, "\"a,a\", b\",\"b ,c", new String[] {"a,a", ",", "b\"", ",", null}),
+            Arguments.of(commaListOwsDelimiters, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", ",", "b\\b", ",", "c,c"}),
 
             Arguments.of(commaListOwsEmbeddedQuotes, "", new String[] {}),
             Arguments.of(commaListOwsEmbeddedQuotes, "a,b,c", new String[] {"a", "b", "c"}),
@@ -81,6 +87,15 @@ public class QuotedStringTokenizerTest
             Arguments.of(commaListOwsEmbeddedQuotes, "a a,b  b, c c ", new String[] {"a a", "b  b", "c c"}),
             Arguments.of(commaListOwsEmbeddedQuotes, "\"a,a\",\"b,b\",c", new String[] {"\"a,a\"", "\"b,b\"", "c"}),
             Arguments.of(commaListOwsEmbeddedQuotes, "\"a,a\", b\",\"b ,c", new String[] {"\"a,a\"", "b\",\"b", "c"}),
+            Arguments.of(commaListOwsEmbeddedQuotes, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"\"a\\\"a\"", "\"b\\\\b\"", "\"c\\,c\""}),
+
+            Arguments.of(commaListEscapeOQ, "", new String[] {}),
+            Arguments.of(commaListEscapeOQ, "a,b,c", new String[] {"a", "b", "c"}),
+            Arguments.of(commaListEscapeOQ, " a ,  b  ,   c   ", new String[] {" a ", "  b  ", "   c   "}),
+            Arguments.of(commaListEscapeOQ, "a a,b  b, c c ", new String[] {"a a", "b  b", " c c "}),
+            Arguments.of(commaListEscapeOQ, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
+            Arguments.of(commaListEscapeOQ, "\"a,a\", b\",\"b ,c", new String[] {"a,a", " b\"", null}),
+            Arguments.of(commaListEscapeOQ, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\\\b", "c\\,c"}),
 
             Arguments.of(commaList, null, null)
         );
@@ -101,7 +116,7 @@ public class QuotedStringTokenizerTest
         {
             String token = expected[i++];
             if (token == null)
-                assertThrows(IllegalStateException.class, iterator::hasNext);
+                assertThrows(IllegalArgumentException.class, iterator::hasNext);
             else
             {
                 assertTrue(iterator.hasNext());
@@ -166,13 +181,13 @@ public class QuotedStringTokenizerTest
     @Test
     public void testNextTokenOnContentDisposition()
     {
-        String contentDisposition = "form-data; name=\"fileup\"; filename=\"Taken on Aug 22 \\ 2012.jpg\"";
+        String contentDisposition = "form-data; name=\"fileup\"; filename=\"C:\\Pictures\\20120504.jpg\"";
 
-        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().returnQuotes().embeddedQuotes().build();
+        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().returnQuotes().embeddedQuotes().escapeOnlyQuote().build();
         Iterator<String> iter = tok.tokenize(contentDisposition);
 
         assertEquals("form-data", iter.next());
         assertEquals("name=\"fileup\"", iter.next());
-        assertEquals("filename=\"Taken on Aug 22 \\ 2012.jpg\"", iter.next());
+        assertEquals("filename=\"C:\\Pictures\\20120504.jpg\"", iter.next());
     }
 }

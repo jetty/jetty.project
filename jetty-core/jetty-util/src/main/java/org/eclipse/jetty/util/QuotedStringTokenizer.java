@@ -74,6 +74,7 @@ public interface QuotedStringTokenizer
         private boolean _optionalWhiteSpace;
         private boolean _embeddedQuotes;
         private boolean _singleQuotes;
+        private boolean _escapeOnlyQuote;
         private boolean _legacy;
 
         private Builder()
@@ -116,6 +117,12 @@ public interface QuotedStringTokenizer
             return this;
         }
 
+        public Builder escapeOnlyQuote()
+        {
+            _escapeOnlyQuote = true;
+            return this;
+        }
+
         public Builder legacy()
         {
             _legacy = true;
@@ -129,13 +136,15 @@ public interface QuotedStringTokenizer
             {
                 if (_optionalWhiteSpace)
                     throw new IllegalArgumentException("OWS not supported by legacy");
+                if (_escapeOnlyQuote)
+                    throw new IllegalArgumentException("EscapeOnlyQuote not supported by legacy");
                 if (!_embeddedQuotes)
                     throw new IllegalArgumentException("EmbeddedQuotes must be used with legacy");
                 return new QuotedStringTokenizerLegacy(_delim, _returnDelimiters, _returnQuotes, _singleQuotes);
             }
             if (_singleQuotes)
                 throw new IllegalArgumentException("Single quotes not supported by RFC9110");
-            return new QuotedStringTokenizerRfc9110(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes);
+            return new QuotedStringTokenizerRfc9110(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes, _escapeOnlyQuote);
         }
     }
 

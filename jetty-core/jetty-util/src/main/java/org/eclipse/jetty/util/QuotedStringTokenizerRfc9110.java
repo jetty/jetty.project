@@ -37,18 +37,21 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
     private final boolean _returnDelimiters;
     private final boolean _returnQuotes;
     private final boolean _embeddedQuotes;
+    private final boolean _escapeOnlyQuote;
 
     QuotedStringTokenizerRfc9110(String delim,
                                  boolean optionalWhiteSpace,
                                  boolean returnDelimiters,
                                  boolean returnQuotes,
-                                 boolean embeddedQuotes)
+                                 boolean embeddedQuotes,
+                                 boolean escapeOnlyQuote)
     {
         _delim = Objects.requireNonNull(delim);
         _optionalWhiteSpace = optionalWhiteSpace;
         _returnDelimiters = returnDelimiters;
         _returnQuotes = returnQuotes;
         _embeddedQuotes = embeddedQuotes;
+        _escapeOnlyQuote = escapeOnlyQuote;
 
         if (_delim.indexOf('"') >= 0)
             throw new IllegalArgumentException("Can't use quote as delimiters: " + _delim);
@@ -176,9 +179,14 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
                             }
                             else if (c == '\\')
                             {
-                                if (_returnQuotes)
+                                if (_escapeOnlyQuote && (_i >= string.length() || string.charAt(_i) != '"'))
                                     _token.append(c);
-                                escape = true;
+                                else
+                                {
+                                    if (_returnQuotes)
+                                        _token.append(c);
+                                    escape = true;
+                                }
                             }
                             else
                             {
@@ -202,6 +210,9 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
                         default -> throw new IllegalStateException();
                     }
                 }
+
+                if (_state == State.QUOTE)
+                    throw new IllegalArgumentException("unterminated quote");
 
                 if (_ows >= 0 && _hasToken)
                     _token.setLength(_ows);
@@ -346,4 +357,24 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
         return b.toString();
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder out = new StringBuilder();
+        out.append(getClass().getSimpleName()).append('@').append(Long.toHexString(hashCode()))
+            .append("{'").append(_delim).append('\'');
+
+        if (_optionalWhiteSpace)
+            out.append(",optionalWhiteSpace");
+        if (_returnDelimiters)
+            out.append(",returnDelimiters");
+        if (_returnQuotes)
+            out.append(",returnQuotes");
+        if (_embeddedQuotes)
+            out.append(",embeddedQuotes");
+        if (_escapeOnlyQuote)
+            out.append(",escapeOnlyQuote");
+        out.append('}');
+        return out.toString();
+    }
 }
