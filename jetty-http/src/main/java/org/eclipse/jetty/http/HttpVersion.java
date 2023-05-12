@@ -49,29 +49,21 @@ public enum HttpVersion
             ((bytes[position] == 'H' && bytes[position + 1] == 'T' && bytes[position + 2] == 'T' && bytes[position + 3] == 'P') ||
                 (bytes[position] == 'h' && bytes[position + 1] == 't' && bytes[position + 2] == 't' && bytes[position + 3] == 'p')))
         {
-            switch (bytes[position + 5])
+            return switch (bytes[position + 5])
             {
-                case '1':
-                    switch (bytes[position + 7])
+                case '1' -> return switch (bytes[position + 7])
                     {
-                        case '0':
-                            return HTTP_1_0;
-                        case '1':
-                            return HTTP_1_1;
-                        default:
-                            return null;
-                    }
-                case '2':
-                    switch (bytes[position + 7])
+                        case '0' -> HTTP_1_0;
+                        case '1' -> HTTP_1_1;
+                        default -> null;
+                    };
+                case '2' -> return switch (bytes[position + 7])
                     {
-                        case '0':
-                            return HTTP_2;
-                        default:
-                            return null;
-                    }
-                default:
-                    return null;
-            }
+                        case '0' -> HTTP_2;
+                        default -> null;
+                    };
+                default -> null;
+            };
         }
 
         return null;

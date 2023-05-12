@@ -149,38 +149,33 @@ public class AnnotationIntrospector
         if (origin == null)
             return true; //assume introspectable
 
-        switch (origin)
+        return switch (origin)
         {
-            case EMBEDDED:
-            case JAVAX_API:
-            {
-                return true; //objects created from the jetty or servlet api are always introspectable
-            }
-            case ANNOTATION:
-            {
-                return true; //we will have discovered annotations only if metadata-complete==false
-            }
-            default:
+            case EMBEDDED, JAVAX_API -> true; //objects created from the jetty or servlet api are always introspectable
+
+            case ANNOTATION -> true; //we will have discovered annotations only if metadata-complete==false
+
+            default ->
             {
                 //must be from a descriptor. Only introspect if the descriptor with which it was associated
                 //is not metadata-complete
                 if (_context.getMetaData().isMetaDataComplete())
-                    return false;
+                    yield false;
 
                 String descriptorLocation = holder.getSource().getResource();
                 if (descriptorLocation == null)
-                    return true; //no descriptor, can't be metadata-complete
+                    yield true; //no descriptor, can't be metadata-complete
                 try
                 {
-                    return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation)));
+                    yield !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation)));
                 }
                 catch (IOException e)
                 {
                     LOG.warn("Unable to get Resource for descriptor {}", descriptorLocation, e);
-                    return false; //something wrong with the descriptor
+                    yield false; //something wrong with the descriptor
                 }
             }
-        }
+        };
     }
 
     /**
