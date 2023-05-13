@@ -430,10 +430,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
         state._sciExcludePattern = (tmp == null ? null : Pattern.compile(tmp));
     }
 
+    private State getState(WebAppContext context)
+    {
+        if (context.getAttribute(STATE) instanceof State state)
+            return state;
+        throw new IllegalStateException("No state");
+    }
+    
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        State state = (State)context.getAttribute(STATE);
+        State state = getState(context);
+
         //handle introspectable annotations (postconstruct,predestroy, multipart etc etc)
         context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
@@ -454,7 +462,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(state));
 
         if (!state._discoverableAnnotationHandlers.isEmpty() || state._classInheritanceHandler != null || !state._containerInitializerAnnotationHandlers.isEmpty())
-            scanForAnnotations(context);
+            scanForAnnotations(context, state);
         
         Map<String, Set<String>> map = (Map<String, Set<String>>)context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
         for (DiscoveredServletContainerInitializerHolder holder: state._sciHolders)
@@ -472,8 +480,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             classMap.clear();
         context.removeAttribute(CLASS_INHERITANCE_MAP);
 
-        State state = (State)context.removeAttribute(STATE);
-        if (state == null)
+        if (!(context.removeAttribute(STATE) instanceof State state))
             throw new IllegalStateException("No state");
         state._discoverableAnnotationHandlers.clear();
         state._classInheritanceHandler = null;
@@ -496,7 +503,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @throws Exception if unable to scan
      */
-    protected void scanForAnnotations(WebAppContext context)
+    protected void scanForAnnotations(WebAppContext context, State state)
         throws Exception
     {
         int javaPlatform = 0;
@@ -504,7 +511,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (target != null)
             javaPlatform = Integer.parseInt(target.toString());
         AnnotationParser parser = createAnnotationParser(javaPlatform);
-        State state = (State)context.getAttribute(STATE);
         state._parserTasks = new ArrayList<>();
 
         if (LOG.isDebugEnabled())
@@ -634,7 +640,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (scis == null || scis.isEmpty())
             return; // nothing to do
 
-        State state = (State)context.getAttribute(STATE);
+        State state = getState(context);
 
         for (ServletContainerInitializer sci : scis)
         {
@@ -1026,7 +1032,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      */
     public void parseContainerPath(final WebAppContext context, final AnnotationParser parser)
     {
-        State state = (State)context.getAttribute(STATE);
+        State state = getState(context);
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
         final Set<AnnotationParser.Handler> handlers = new HashSet<>();
         handlers.addAll(state._discoverableAnnotationHandlers);
