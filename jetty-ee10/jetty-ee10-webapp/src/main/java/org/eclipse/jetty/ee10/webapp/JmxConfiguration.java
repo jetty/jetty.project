@@ -31,8 +31,9 @@ public class JmxConfiguration extends AbstractConfiguration
 
     public JmxConfiguration()
     {
-        addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.util.annotation", "org.eclipse.jetty.jmx.");
+        super(new Builder()
+            .addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class)
+            .protectAndExpose("org.eclipse.jetty.util.annotation", "org.eclipse.jetty.jmx."));
     }
 
     @Override

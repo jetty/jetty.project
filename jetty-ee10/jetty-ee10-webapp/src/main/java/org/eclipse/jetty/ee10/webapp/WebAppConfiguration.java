@@ -23,13 +23,14 @@ public class WebAppConfiguration extends AbstractConfiguration
 {
     public WebAppConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
-        addDependents(JettyWebXmlConfiguration.class);
-        protectAndExpose(
-            "org.eclipse.jetty.ee10.servlet.StatisticsServlet",
-            "org.eclipse.jetty.ee10.servlet.DefaultServlet",
-            "org.eclipse.jetty.ee10.servlet.NoJspServlet"
-        );
-        expose("org.eclipse.jetty.ee10.servlet.listener.");
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class)
+            .addDependents(JettyWebXmlConfiguration.class)
+            .protectAndExpose(
+                "org.eclipse.jetty.ee10.servlet.StatisticsServlet",
+                "org.eclipse.jetty.ee10.servlet.DefaultServlet",
+                "org.eclipse.jetty.ee10.servlet.NoJspServlet"
+            )
+            .expose("org.eclipse.jetty.ee10.servlet.listener."));
     }
 }

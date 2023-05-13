@@ -223,7 +223,7 @@ public class WebAppContextTest
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = newServer();
-        server.setAttribute(Configuration.ATTR, classNames);
+        server.setAttribute(Configurations.SERVER_DEFAULT_ATTR, classNames);
         wac.setServer(server);
         assertThat(wac.getConfigurations(), Matchers.contains(configs));
     }
@@ -429,7 +429,7 @@ public class WebAppContextTest
 
         String rawResponse = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat("Response OK", response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
     @Test

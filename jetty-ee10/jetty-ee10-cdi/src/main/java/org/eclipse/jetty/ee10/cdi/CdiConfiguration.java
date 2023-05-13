@@ -27,8 +27,9 @@ public class CdiConfiguration extends AbstractConfiguration
 {
     public CdiConfiguration()
     {
-        protectAndExpose("org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer");
-        addDependents(AnnotationConfiguration.class, PlusConfiguration.class);
+        super(new Builder()
+            .protectAndExpose("org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer")
+            .addDependents(AnnotationConfiguration.class, PlusConfiguration.class));
     }
 }
 

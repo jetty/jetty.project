@@ -38,24 +38,18 @@ import org.slf4j.LoggerFactory;
 public class PlusConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(PlusConfiguration.class);
-
-    private Integer _key;
+    private static final String LOCK_JNDI_KEY = "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration.jndiKey";
 
     public PlusConfiguration()
     {
-        addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
-        addDependents(JettyWebXmlConfiguration.class);
+        super(new Builder()
+            .addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class)
+            .addDependents(JettyWebXmlConfiguration.class));
     }
 
     @Override
     public void preConfigure(WebAppContext context)
         throws Exception
-    {
-        context.getObjectFactory().addDecorator(new PlusDecorator(context));
-    }
-
-    @Override
-    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
         context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
@@ -81,7 +75,6 @@ public class PlusConfiguration extends AbstractConfiguration
         throws Exception
     {
         unlockCompEnv(context);
-        _key = null;
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
     }
@@ -106,10 +99,11 @@ public class PlusConfiguration extends AbstractConfiguration
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         try
         {
-            _key = (int)(this.hashCode() ^ NanoTime.now());
+            Integer key = (int)(this.hashCode() ^ NanoTime.now());
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
+            wac.setAttribute(LOCK_JNDI_KEY, key);
+            compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, key);
         }
         finally
         {
@@ -120,7 +114,8 @@ public class PlusConfiguration extends AbstractConfiguration
     protected void unlockCompEnv(WebAppContext wac)
         throws Exception
     {
-        if (_key != null)
+        Object o = wac.removeAttribute(LOCK_JNDI_KEY);
+        if (o instanceof Integer key)
         {
             ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(wac.getClassLoader());
@@ -129,7 +124,7 @@ public class PlusConfiguration extends AbstractConfiguration
             {
                 Context context = new InitialContext();
                 Context compCtx = (Context)context.lookup("java:comp");
-                compCtx.addToEnvironment("org.eclipse.jetty.jndi.unlock", _key);
+                compCtx.addToEnvironment("org.eclipse.jetty.jndi.unlock", key);
             }
             finally
             {
