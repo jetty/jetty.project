@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * MavenWebInfConfiguration
- *
+ * <p>
  * WebInfConfiguration to take account of overlaid wars expressed as project dependencies and
  * potential configured via the maven-war-plugin.
  */
@@ -34,10 +34,11 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
 
     public MavenWebInfConfiguration()
     {
-        hide("org.apache.maven.",
-            "org.codehaus.plexus.",
-            "jakarta.enterprise.",
-            "javax.decorator.");
+        super(new Builder()
+            .hide("org.apache.maven.",
+                "org.codehaus.plexus.",
+                "jakarta.enterprise.",
+                "javax.decorator."));
     }
 
     @Override

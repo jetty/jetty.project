@@ -88,15 +88,6 @@ public class AttributeNormalizerTest
         war = asTargetPath(title, "app%2Fnasty/base/webapps/FOO");
         data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, resourceFactory.newResource(war))));
 
-        // ------
-        title = "ResourceCollection Setup";
-        jettyHome = asTargetPath(title, "jetty-collection");
-        jettyBase = asTargetPath(title, "jetty-collection/demo.base");
-        Path warA = asTargetPath(title, "jetty-collection/demo.base/webapps/WarA");
-        Path warB = asTargetPath(title, "jetty-collection/demo.base/webapps/WarB");
-        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase,
-            ResourceFactory.combine(resourceFactory.newResource(warA), resourceFactory.newResource(warB)))));
-
         return data.stream();
     }
 

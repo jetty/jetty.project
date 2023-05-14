@@ -16,129 +16,146 @@ package org.eclipse.jetty.ee10.webapp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class AbstractConfiguration implements Configuration
 {
     private final boolean _enabledByDefault;
-    private final List<String> _after = new ArrayList<>();
-    private final List<String> _beforeThis = new ArrayList<>();
-    private final ClassMatcher _system = new ClassMatcher();
-    private final ClassMatcher _server = new ClassMatcher();
+    private final List<String> _after;
+    private final List<String> _before;
+    private final ClassMatcher _system;
+    private final ClassMatcher _server;
 
-    protected AbstractConfiguration()
+    public static class Builder
     {
-        this(true);
-    }
+        private boolean _enabledByDefault = true;
+        private final List<String> _after = new ArrayList<>();
+        private final List<String> _before = new ArrayList<>();
+        private final ClassMatcher _system = new ClassMatcher();
+        private final ClassMatcher _server = new ClassMatcher();
 
-    protected AbstractConfiguration(boolean enabledByDefault)
-    {
-        _enabledByDefault = enabledByDefault;
-    }
-
-    /**
-     * Add configuration classes that come before this configuration
-     *
-     * @param classes Classname or package name
-     */
-    protected void addDependencies(String... classes)
-    {
-        for (String c : classes)
+        public Builder enabledByDefault(boolean enabledByDefault)
         {
-            _beforeThis.add(c);
+            _enabledByDefault = enabledByDefault;
+            return this;
+        }
+
+        /**
+         * Add configuration classes that come before this configuration
+         *
+         * @param classes Classname or package name
+         */
+        public Builder addDependencies(String... classes)
+        {
+            Collections.addAll(_before, classes);
+            return this;
+        }
+
+        /**
+         * Add configuration classes that come before this configuration
+         *
+         * @param classes Classes
+         */
+        @SafeVarargs
+        public final Builder addDependencies(Class<? extends Configuration>... classes)
+        {
+            addDependencies(Arrays.stream(classes).map(Class::getName).toList().toArray(new String[classes.length]));
+            return this;
+        }
+
+        /**
+         * Add configuration classes that come after this configuration
+         *
+         * @param classes Classname or package name
+         */
+        public Builder addDependents(String... classes)
+        {
+            _after.addAll(Arrays.asList(classes));
+            return this;
+        }
+
+        /**
+         * Add configuration classes that come after this configuration
+         *
+         * @param classes Class
+         */
+        public Builder addDependents(Class<?>... classes)
+        {
+            addDependents(Arrays.stream(classes).map(Class::getName).toList().toArray(new String[classes.length]));
+            return this;
+        }
+
+        /**
+         * Protect classes from modification by the web application by adding them
+         * to the {@link WebAppConfiguration#getSystemClasses()}
+         *
+         * @param classes classname or package pattern
+         */
+        public Builder protect(String... classes)
+        {
+            _system.add(classes);
+            return this;
+        }
+
+        /**
+         * Hide classes from the web application by adding them
+         * to the {@link WebAppConfiguration#getServerClasses()}
+         *
+         * @param classes classname or package pattern
+         */
+        public Builder hide(String... classes)
+        {
+            _server.add(classes);
+            return this;
+        }
+
+        /**
+         * Expose classes to the web application by adding them
+         * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+         *
+         * @param classes classname or package pattern
+         */
+        public Builder expose(String... classes)
+        {
+            for (String c : classes)
+            {
+                if (c.startsWith("-"))
+                    throw new IllegalArgumentException();
+                _server.add("-" + c);
+            }
+            return this;
+        }
+
+        /**
+         * Protect classes from modification by the web application by adding them
+         * to the {@link WebAppConfiguration#getSystemClasses()} and
+         * expose them to the web application by adding them
+         * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+         *
+         * @param classes classname or package pattern
+         */
+        public Builder protectAndExpose(String... classes)
+        {
+            for (String c : classes)
+            {
+                if (c.startsWith("-"))
+                    throw new IllegalArgumentException();
+
+                _system.add(c);
+                _server.add("-" + c);
+            }
+            return this;
         }
     }
 
-    /**
-     * Add configuration classes that come before this configuration
-     *
-     * @param classes Classes
-     */
-    protected void addDependencies(Class<? extends Configuration>... classes)
+    protected AbstractConfiguration(Builder builder)
     {
-        addDependencies(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
-    }
-
-    /**
-     * Add configuration classes that come after this configuration
-     *
-     * @param classes Classname or package name
-     */
-    protected void addDependents(String... classes)
-    {
-        for (String c : classes)
-        {
-            _after.add(c);
-        }
-    }
-
-    /**
-     * Add configuration classes that come after this configuration
-     *
-     * @param classes Class
-     */
-    protected void addDependents(Class<?>... classes)
-    {
-        addDependents(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
-    }
-
-    /**
-     * Protect classes from modification by the web application by adding them
-     * to the {@link WebAppConfiguration#getSystemClasses()}
-     *
-     * @param classes classname or package pattern
-     */
-    protected void protect(String... classes)
-    {
-        _system.add(classes);
-    }
-
-    /**
-     * Hide classes from the web application by adding them
-     * to the {@link WebAppConfiguration#getServerClasses()}
-     *
-     * @param classes classname or package pattern
-     */
-    protected void hide(String... classes)
-    {
-        _server.add(classes);
-    }
-
-    /**
-     * Expose classes to the web application by adding them
-     * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
-     *
-     * @param classes classname or package pattern
-     */
-    protected void expose(String... classes)
-    {
-        for (String c : classes)
-        {
-            if (c.startsWith("-"))
-                throw new IllegalArgumentException();
-            _server.add("-" + c);
-        }
-    }
-
-    /**
-     * Protect classes from modification by the web application by adding them
-     * to the {@link WebAppConfiguration#getSystemClasses()} and
-     * expose them to the web application by adding them
-     * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
-     *
-     * @param classes classname or package pattern
-     */
-    protected void protectAndExpose(String... classes)
-    {
-        for (String c : classes)
-        {
-            if (c.startsWith("-"))
-                throw new IllegalArgumentException();
-
-            _system.add(c);
-            _server.add("-" + c);
-        }
+        _enabledByDefault = builder._enabledByDefault;
+        _after = List.copyOf(builder._after);
+        _before = List.copyOf(builder._before);
+        _system = new ClassMatcher(builder._system).asImmutable();
+        _server = new ClassMatcher(builder._server).asImmutable();
     }
 
     @Override
@@ -150,7 +167,7 @@ public class AbstractConfiguration implements Configuration
     @Override
     public Collection<String> getDependencies()
     {
-        return _beforeThis;
+        return _before;
     }
 
     @Override
@@ -200,9 +217,5 @@ public class AbstractConfiguration implements Configuration
     public boolean abort(WebAppContext context)
     {
         return false;
-    }
-
-    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
-    {
     }
 }

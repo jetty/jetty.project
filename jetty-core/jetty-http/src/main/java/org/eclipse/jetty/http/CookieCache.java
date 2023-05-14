@@ -144,4 +144,13 @@ public class CookieCache implements CookieParser.Handler
         return _cookieList == null ? Collections.emptyList() : _cookieList;
     }
 
+    /**
+     * Replace the cookie list with
+     * @param cookies The replacement cookie list, which must be equal to the existing list
+     */
+    public void replaceCookieList(List<HttpCookie> cookies)
+    {
+        assert _cookieList.equals(cookies);
+        _cookieList = cookies;
+    }
 }

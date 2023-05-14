@@ -71,7 +71,6 @@ public class DeploymentErrorTest
     private StacklessLogging stacklessLogging;
     private Server server;
     private DeploymentManager deploymentManager;
-    private ContextHandlerCollection contexts;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer) throws Exception
     {
@@ -85,7 +84,7 @@ public class DeploymentErrorTest
         ResourceFactory resourceFactory = ResourceFactory.of(server);
 
         // Empty contexts collections
-        contexts = new ContextHandlerCollection();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
 
         //Environment
         Environment ee10 = Environment.ensure("ee10");
@@ -163,10 +162,7 @@ public class DeploymentErrorTest
     @Test
     public void testInitialBadAppUnavailableTrue()
     {
-        assertThrows(NoClassDefFoundError.class, () ->
-        {
-            startServer(docroots -> copyBadApp("badapp.xml", docroots));
-        });
+        assertThrows(NoClassDefFoundError.class, () -> startServer(docroots -> copyBadApp("badapp.xml", docroots)));
 
         // The above should have prevented the server from starting.
         assertThat("server.isRunning", server.isRunning(), is(false));
@@ -182,8 +178,7 @@ public class DeploymentErrorTest
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots));
 
-        List<App> apps = new ArrayList<>();
-        apps.addAll(deploymentManager.getApps());
+        List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         String contextPath = "/badapp-uaf";
         App app = findApp(contextPath, apps);
@@ -229,8 +224,7 @@ public class DeploymentErrorTest
         // Wait for deployment manager to do its thing
         assertThat("AppLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
 
-        List<App> apps = new ArrayList<>();
-        apps.addAll(deploymentManager.getApps());
+        List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
         ContextHandler context = app.getContextHandler();
@@ -275,8 +269,7 @@ public class DeploymentErrorTest
         // Wait for deployment manager to do its thing
         startTracking.startedLatch.await(3, TimeUnit.SECONDS);
 
-        List<App> apps = new ArrayList<>();
-        apps.addAll(deploymentManager.getApps());
+        List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
         ContextHandler context = app.getContextHandler();
@@ -333,7 +326,7 @@ public class DeploymentErrorTest
 
         public TrackedConfiguration()
         {
-            addDependents(WebInfConfiguration.class);
+            super(new Builder().addDependents(WebInfConfiguration.class));
         }
 
         private void incrementCount(WebAppContext context, Map<String, Integer> contextCounts)
@@ -348,7 +341,7 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void preConfigure(WebAppContext context) throws Exception
+        public void preConfigure(WebAppContext context)
         {
             incrementCount(context, preConfigureCounts);
         }
@@ -360,7 +353,7 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void postConfigure(WebAppContext context) throws Exception
+        public void postConfigure(WebAppContext context)
         {
             incrementCount(context, postConfigureCounts);
         }
