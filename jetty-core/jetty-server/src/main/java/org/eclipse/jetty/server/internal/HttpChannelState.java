@@ -80,9 +80,9 @@ public class HttpChannelState implements HttpChannel, Components
     /**
      * The state of the written response
      */
-    enum StreamSendState
+    private enum StreamSendState
     {
-        /** Last send not yet sent */
+        /** Last content not yet sent */
         SENDING,
 
         /** Last content sent, but send not yet completed */
@@ -454,7 +454,7 @@ public class HttpChannelState implements HttpChannel, Components
 
     private Throwable lockedStreamSend(boolean last, long length)
     {
-        assert _request._lock.isHeldByCurrentThread();
+        assert _lock.isHeldByCurrentThread();
 
         return switch (_streamSendState)
         {
@@ -475,20 +475,20 @@ public class HttpChannelState implements HttpChannel, Components
 
     private void lockedStreamSendCompleted(boolean success)
     {
-        assert _request._lock.isHeldByCurrentThread();
+        assert _lock.isHeldByCurrentThread();
         if (_streamSendState == StreamSendState.LAST_SENDING)
             _streamSendState = success ? StreamSendState.LAST_COMPLETE : StreamSendState.SENDING;
     }
 
     private boolean lockedIsLastStreamSendCompleted()
     {
-        assert _request._lock.isHeldByCurrentThread();
+        assert _lock.isHeldByCurrentThread();
         return _streamSendState == StreamSendState.LAST_COMPLETE;
     }
 
     private boolean lockedLastStreamSend()
     {
-        assert _request._lock.isHeldByCurrentThread();
+        assert _lock.isHeldByCurrentThread();
         if (_streamSendState != StreamSendState.SENDING)
             return false;
 
@@ -1020,15 +1020,16 @@ public class HttpChannelState implements HttpChannel, Components
         {
             // reset the response state, so we can generate an error response,
             // remembering any server or date headers (probably a nicer way of doing this).
-            HttpField serverField = _request._httpChannelState._responseHeaders.getField(HttpHeader.SERVER);
-            HttpField dateField = _request._httpChannelState._responseHeaders.getField(HttpHeader.DATE);
-            _request._httpChannelState._responseHeaders.reset();
-            _request._httpChannelState._committedContentLength = -1;
+            HttpChannelState httpChannelState = _request.lockedGetHttpChannelState();
+            HttpField serverField = httpChannelState._responseHeaders.getField(HttpHeader.SERVER);
+            HttpField dateField = httpChannelState._responseHeaders.getField(HttpHeader.DATE);
+            httpChannelState._responseHeaders.reset();
+            httpChannelState._committedContentLength = -1;
             reset();
             if (serverField != null)
-                _request._httpChannelState._responseHeaders.put(serverField);
+                httpChannelState._responseHeaders.put(serverField);
             if (dateField != null)
-                _request._httpChannelState._responseHeaders.put(dateField);
+                httpChannelState._responseHeaders.put(dateField);
             setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
             _errorMode = true;
         }
@@ -1296,7 +1297,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public String toString()
         {
-            return "%s@%x{%s %s@%x}".formatted(this.getClass().getSimpleName(), hashCode(), getRequest().getMethod(), getRequest().getHttpURI(), getRequest().hashCode());
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getStatus(), getRequest());
         }
     }
 

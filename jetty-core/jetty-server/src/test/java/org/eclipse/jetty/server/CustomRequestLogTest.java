@@ -699,6 +699,7 @@ public class CustomRequestLogTest
                 """.getBytes(StandardCharsets.ISO_8859_1));
             output.flush();
 
+            // Not using HttpTester here because we want to check that last chunk is not received.
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1));
 
             String line = in.readLine();
@@ -711,6 +712,7 @@ public class CustomRequestLogTest
             line = in.readLine();
             assertThat("data", line, is("data"));
             line = in.readLine();
+            // This is the crucial part of the test. abort is indicated by no last chunk.
             assertThat(line, nullValue());
         }
         String log = _logs.poll(5, TimeUnit.SECONDS);
