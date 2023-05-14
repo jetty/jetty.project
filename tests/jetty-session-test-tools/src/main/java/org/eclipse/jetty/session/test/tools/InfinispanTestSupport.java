@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.infinispan;
+package org.eclipse.jetty.session.test.tools;
 
 import java.lang.annotation.ElementType;
 import java.nio.file.Path;
@@ -33,7 +33,6 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * InfinispanTestSupport
@@ -214,11 +213,11 @@ public class InfinispanTestSupport
         //same number of attributes
         assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(saved.getKeys()));
+        assertEquals(data.getKeys(), saved.getKeys());
         //same values
         for (String name : data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+            assertEquals(data.getAttribute(name), saved.getAttribute(name));
         }
 
         return true;

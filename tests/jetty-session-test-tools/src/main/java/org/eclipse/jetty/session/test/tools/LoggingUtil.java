@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.infinispan;
+package org.eclipse.jetty.session.test.tools;
 
 public final class LoggingUtil
 {

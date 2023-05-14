@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.session.infinispan;
 import org.eclipse.jetty.ee10.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.InfinispanTestSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;

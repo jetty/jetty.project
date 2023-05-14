@@ -14,9 +14,10 @@
 package org.eclipse.jetty.ee10.session.infinispan.remote;
 
 import org.eclipse.jetty.ee10.session.AbstractClusteredInvalidationSessionTest;
-import org.eclipse.jetty.ee10.session.infinispan.LoggingUtil;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.LoggingUtil;
+import org.eclipse.jetty.session.test.tools.RemoteInfinispanTestSupport;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;

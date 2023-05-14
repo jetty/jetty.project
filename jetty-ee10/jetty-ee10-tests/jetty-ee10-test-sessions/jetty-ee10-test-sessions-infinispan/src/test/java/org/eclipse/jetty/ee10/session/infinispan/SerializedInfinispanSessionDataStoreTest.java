@@ -28,6 +28,7 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.QueryManager;
+import org.eclipse.jetty.session.test.tools.InfinispanTestSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.infinispan.query.Search;

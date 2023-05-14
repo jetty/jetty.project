@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.infinispan.remote;
+package org.eclipse.jetty.session.test.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -22,6 +22,7 @@ import java.util.Properties;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
+import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
@@ -40,7 +41,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * RemoteInfinispanTestSupport
@@ -58,7 +58,7 @@ public class RemoteInfinispanTestSupport
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
 
-    private final GenericContainer infinispan = new GenericContainer(IMAGE_NAME)
+    private final GenericContainer<?> infinispan = new GenericContainer<>(IMAGE_NAME)
             .withEnv("USER", "theuser")
             .withEnv("PASS", "foobar")
             .withEnv("MGMT_USER", "admin")
@@ -89,10 +89,10 @@ public class RemoteInfinispanTestSupport
                 long start = System.currentTimeMillis();
 
                 infinispan.start();
-                System.setProperty("hotrod.host", infinispan.getContainerIpAddress());
+                System.setProperty("hotrod.host", infinispan.getHost());
 
                 LOG.info("Infinispan container started for {}:{} - {}ms",
-                        infinispan.getContainerIpAddress(),
+                        infinispan.getHost(),
                         infinispan.getMappedPort(11222),
                         System.currentTimeMillis() - start);
             }
@@ -113,7 +113,7 @@ public class RemoteInfinispanTestSupport
 
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
                     .addServer()
-                    .host(infinispan.getContainerIpAddress())
+                    .host(infinispan.getHost())
                     .port(infinispan.getMappedPort(11222))
                     // we just want to limit connectivity to list of host:port we knows at start
                     // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
@@ -134,7 +134,7 @@ public class RemoteInfinispanTestSupport
 
             //upload the session.proto file to the remote cache
             ByteArrayOutputStream baos;
-            try (InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
+            try (InputStream is = SessionDataMarshaller.class.getClassLoader().getResourceAsStream("session.proto"))
             {
                 if (is == null)
                     throw new IllegalStateException("inputstream is null");
@@ -203,11 +203,11 @@ public class RemoteInfinispanTestSupport
     public boolean checkSessionPersisted(SessionData data)
         throws Exception
     {
-        Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        InfinispanSessionData obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
 
-        InfinispanSessionData saved = (InfinispanSessionData)obj;
+        InfinispanSessionData saved = obj;
         if (saved.getSerializedAttributes() != null)
             saved.deserializeAttributes();
 
@@ -226,11 +226,11 @@ public class RemoteInfinispanTestSupport
         //same number of attributes
         assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(saved.getKeys()));
+        assertEquals(data.getKeys(), saved.getKeys());
         //same values
         for (String name : data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+            assertEquals(data.getAttribute(name), saved.getAttribute(name));
         }
 
         return true;

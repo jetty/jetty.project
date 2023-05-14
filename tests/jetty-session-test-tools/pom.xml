@@ -58,6 +58,49 @@
       <optional>true</optional>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-search-engine</artifactId>
+      <version>5.10.7.Final</version>
+      <optional>true</optional>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-infinispan-common</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-core</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.common</groupId>
+          <artifactId>wildfly-common</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-client-hotrod</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
 </project>

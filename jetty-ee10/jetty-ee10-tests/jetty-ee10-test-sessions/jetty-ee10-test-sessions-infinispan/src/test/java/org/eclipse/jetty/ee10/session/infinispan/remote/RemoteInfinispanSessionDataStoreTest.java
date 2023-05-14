@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.session.infinispan.remote;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.session.infinispan.LoggingUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
@@ -28,6 +27,8 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.RemoteQueryManager;
+import org.eclipse.jetty.session.test.tools.LoggingUtil;
+import org.eclipse.jetty.session.test.tools.RemoteInfinispanTestSupport;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
@@ -151,6 +152,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
      * try and provoke an exception in the InfinispanSessionDataStore.load() method.
      */
     @Override
+    @Test
     public void testLoadSessionFails() throws Exception
     {
         DefaultSessionIdManager idMgr = new DefaultSessionIdManager(new Server());
