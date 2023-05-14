@@ -959,12 +959,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         protected void onCompleteSuccess()
         {
-            // TODO is this too late to get the request? And is that the right attribute and the right thing to do?
-            boolean upgrading = _httpChannel.getRequest() != null && _httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
-            // If successfully upgraded it is responsibility of the next protocol to close the connection.
-            if (_shutdownOut && !upgrading)
-                getEndPoint().shutdownOutput();
         }
 
         @Override
