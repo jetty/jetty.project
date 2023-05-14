@@ -22,7 +22,6 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
-import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +59,6 @@ public class HTTP3StreamClient extends HTTP3Stream implements  Stream.Client
             valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
         if (valid)
         {
-            HTTP3StreamConnection connection = (HTTP3StreamConnection)getEndPoint().getConnection();
-            connection.applicationInvoked();
             notIdle();
             notifyResponse(frame);
             updateClose(frame.isLast(), false);

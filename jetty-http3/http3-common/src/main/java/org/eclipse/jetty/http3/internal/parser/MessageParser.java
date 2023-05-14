@@ -154,7 +154,7 @@ public class MessageParser
                             {
                                 BodyParser.Result result = bodyParser.parse(buffer);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} {} body from {}", FrameType.from(frameType), result, BufferUtil.toDetailString(buffer));
+                                    LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), BufferUtil.toDetailString(buffer));
 
                                 // Not enough bytes, there is no frame.
                                 if (result == BodyParser.Result.NO_FRAME)

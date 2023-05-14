@@ -156,7 +156,7 @@ public class QpackDecoder implements Dumpable
         // If the buffer is big, don't even think about decoding it
         // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
         int maxHeaderSize = getMaxHeadersSize();
-        if (buffer.remaining() > maxHeaderSize)
+        if (maxHeaderSize > 0 && buffer.remaining() > maxHeaderSize)
             throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
 
         _integerDecoder.setPrefix(8);
@@ -339,11 +339,14 @@ public class QpackDecoder implements Dumpable
 
     private void notifyMetaDataHandler(boolean wasBlocked)
     {
-        for (MetaDataNotification notification : _metaDataNotifications)
+        // Copy the list to avoid re-entrance, where the call to
+        // notifyHandler() may end up calling again this method.
+        List<MetaDataNotification> notifications = new ArrayList<>(_metaDataNotifications);
+        _metaDataNotifications.clear();
+        for (MetaDataNotification notification : notifications)
         {
             notification.notifyHandler(wasBlocked);
         }
-        _metaDataNotifications.clear();
     }
 
     InstructionHandler getInstructionHandler()

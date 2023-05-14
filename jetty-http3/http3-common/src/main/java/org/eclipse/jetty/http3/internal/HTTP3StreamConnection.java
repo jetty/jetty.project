@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
@@ -41,11 +42,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private static final ByteBuffer EMPTY_DATA_FRAME = ByteBuffer.allocate(2);
 
     private final AutoLock lock = new AutoLock();
+    private final AtomicReference<Runnable> event = new AtomicReference<>();
     private final RetainableByteBufferPool buffers;
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
-    private boolean applicationInvoked;
     private boolean dataDemand;
     private boolean dataStalled;
     private DataFrame dataFrame;
@@ -75,16 +76,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
         this.useInputDirectByteBuffers = useInputDirectByteBuffers;
-    }
-
-    /**
-     * Marks the invocation of application code.
-     * From now on, the responsibility to demand
-     * for more frames is on the application code.
-     */
-    public void applicationInvoked()
-    {
-        this.applicationInvoked = true;
     }
 
     @Override
@@ -152,6 +143,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 return;
             }
 
+            Runnable action = event.getAndSet(null);
+            if (action == null)
+                throw new IllegalStateException();
+            action.run();
+
             // TODO: we should also exit if the connection was closed due to errors.
             //  This can be done by overriding relevant methods in MessageListener.
 
@@ -167,24 +163,16 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (!parser.isDataMode())
                 throw new IllegalStateException();
 
-            if (buffer.hasRemaining())
+            if (hasBuffer() && buffer.hasRemaining())
             {
                 processDataFrames();
             }
             else
             {
-                if (applicationInvoked)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("skipping fill interest on {}", this);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("setting fill interest on {}", this);
-                    fillInterested();
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("setting fill interest on {}", this);
                 tryReleaseBuffer(false);
+                fillInterested();
             }
         }
         catch (Throwable x)
@@ -212,6 +200,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             {
                 case FRAME:
                 {
+                    Runnable action = event.getAndSet(null);
+                    if (action == null)
+                        throw new IllegalStateException();
+                    action.run();
+
                     if (parser.isDataMode())
                     {
                         DataFrame frame = dataFrame;
@@ -236,7 +229,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 case SWITCH_MODE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("switching to parserDataMode=false on {}", this);
+                        LOG.debug("switching to dataMode=false on {}", this);
                     dataLast = true;
                     parser.setDataMode(false);
                     tryReleaseBuffer(false);
@@ -465,6 +458,70 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
+    private void processHeaders(HeadersFrame frame, boolean wasBlocked, Runnable delegate)
+    {
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest())
+        {
+            // Expect DATA frames now.
+            parser.setDataMode(true);
+            if (LOG.isDebugEnabled())
+                LOG.debug("switching to dataMode=true for request {} on {}", metaData, this);
+        }
+        else if (metaData.isResponse())
+        {
+            MetaData.Response response = (MetaData.Response)metaData;
+            if (HttpStatus.isInformational(response.getStatus()))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("staying in dataMode=false for response {} on {}", metaData, this);
+            }
+            else
+            {
+                // Expect DATA frames now.
+                parser.setDataMode(true);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("switching to dataMode=true for response {} on {}", metaData, this);
+            }
+        }
+        else
+        {
+            // Trailer.
+            if (!frame.isLast())
+                frame = new HeadersFrame(metaData, true);
+        }
+
+        if (frame.isLast())
+            shutdownInput();
+
+        delegate.run();
+
+        if (wasBlocked)
+            onFillable();
+    }
+
+    private void processData(DataFrame frame, Runnable delegate)
+    {
+        if (dataFrame != null)
+            throw new IllegalStateException();
+        dataFrame = frame;
+        if (frame.isLast())
+        {
+            dataLast = true;
+            shutdownInput();
+        }
+        delegate.run();
+    }
+
+    private void shutdownInput()
+    {
+        remotelyClosed = true;
+        // We want to shutdown the input to avoid "spurious" wakeups where
+        // zero bytes could be spuriously read from the EndPoint after the
+        // stream is remotely closed by receiving a frame with last=true.
+        getEndPoint().shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
+    }
+
     @Override
     public String toConnectionString()
     {
@@ -481,64 +538,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         @Override
         public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
         {
-            MetaData metaData = frame.getMetaData();
-            if (metaData.isRequest())
-            {
-                // Expect DATA frames now.
-                parser.setDataMode(true);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("switching to parserDataMode=true for request {} on {}", metaData, this);
-            }
-            else if (metaData.isResponse())
-            {
-                MetaData.Response response = (MetaData.Response)metaData;
-                if (HttpStatus.isInformational(response.getStatus()))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("staying in parserDataMode=false for response {} on {}", metaData, this);
-                }
-                else
-                {
-                    // Expect DATA frames now.
-                    parser.setDataMode(true);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("switching to parserDataMode=true for response {} on {}", metaData, this);
-                }
-            }
-            else
-            {
-                // Trailer.
-                if (!frame.isLast())
-                    frame = new HeadersFrame(metaData, true);
-            }
-            if (frame.isLast())
-                shutdownInput();
-            else if (wasBlocked)
-                fillInterested();
-            super.onHeaders(streamId, frame, wasBlocked);
+            if (LOG.isDebugEnabled())
+                LOG.debug("received {}#{} wasBlocked={}", frame, streamId, wasBlocked);
+            Runnable delegate = () -> super.onHeaders(streamId, frame, wasBlocked);
+            Runnable action = () -> processHeaders(frame, wasBlocked, delegate);
+            if (wasBlocked)
+                action.run();
+            else if (!event.compareAndSet(null, action))
+                throw new IllegalStateException();
         }
 
         @Override
         public void onData(long streamId, DataFrame frame)
         {
-            if (dataFrame != null)
+            if (LOG.isDebugEnabled())
+                LOG.debug("received {}#{}", frame, streamId);
+            Runnable delegate = () -> super.onData(streamId, frame);
+            if (!event.compareAndSet(null, () -> processData(frame, delegate)))
                 throw new IllegalStateException();
-            dataFrame = frame;
-            if (frame.isLast())
-            {
-                dataLast = true;
-                shutdownInput();
-            }
-            super.onData(streamId, frame);
-        }
-
-        private void shutdownInput()
-        {
-            remotelyClosed = true;
-            // We want to shutdown the input to avoid "spurious" wakeups where
-            // zero bytes could be spuriously read from the EndPoint after the
-            // stream is remotely closed by receiving a frame with last=true.
-            getEndPoint().shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
         }
     }
 }

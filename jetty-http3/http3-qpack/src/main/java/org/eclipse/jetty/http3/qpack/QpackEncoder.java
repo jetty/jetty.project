@@ -164,11 +164,14 @@ public class QpackEncoder implements Dumpable
      */
     public void setTableCapacity(int capacity)
     {
-        if (capacity > getMaxTableCapacity())
-            throw new IllegalArgumentException("DynamicTable capacity exceeds max capacity");
-        _context.getDynamicTable().setCapacity(capacity);
-        _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
-        notifyInstructionHandler();
+        try (AutoLock ignored = lock.lock())
+        {
+            if (capacity > getMaxTableCapacity())
+                throw new IllegalArgumentException("DynamicTable capacity exceeds max capacity");
+            _context.getDynamicTable().setCapacity(capacity);
+            _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
+            notifyInstructionHandler();
+        }
     }
 
     /**
@@ -184,7 +187,7 @@ public class QpackEncoder implements Dumpable
      */
     public void encode(ByteBuffer buffer, long streamId, MetaData metadata) throws QpackException
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
@@ -192,6 +195,9 @@ public class QpackEncoder implements Dumpable
             // Verify that we can encode without errors.
             if (metadata.getFields() != null)
             {
+                // TODO: enforce that the length of the header is less than maxHeadersSize.
+                //  See RFC 9114, section 4.2.2.
+
                 for (HttpField field : metadata.getFields())
                 {
                     String name = field.getName();
@@ -285,7 +291,7 @@ public class QpackEncoder implements Dumpable
      */
     public void parseInstructions(ByteBuffer buffer) throws QpackException
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             while (BufferUtil.hasContent(buffer))
             {

@@ -17,7 +17,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
- * <p>A record that captures HTTP/3 configuration parameters.</p>
+ * <p>The HTTP/3 configuration parameters.</p>
  */
 @ManagedObject
 public class HTTP3Configuration
@@ -29,6 +29,7 @@ public class HTTP3Configuration
     private boolean useOutputDirectByteBuffers = true;
     private int maxBlockedStreams = 64;
     private int maxTableCapacity = 64 * 1024;
+    private int initialTableCapacity = 64 * 1024;
     private int maxRequestHeadersSize = 8 * 1024;
     private int maxResponseHeadersSize = 8 * 1024;
 
@@ -38,6 +39,13 @@ public class HTTP3Configuration
         return streamIdleTimeout;
     }
 
+    /**
+     * <p>Sets the stream idle timeout in milliseconds.</p>
+     * <p>Negative values and zero mean that the stream never times out.</p>
+     * <p>Default value is {@code 30} seconds.</p>
+     *
+     * @param streamIdleTimeout the stream idle timeout in milliseconds
+     */
     public void setStreamIdleTimeout(long streamIdleTimeout)
     {
         this.streamIdleTimeout = streamIdleTimeout;
@@ -49,6 +57,12 @@ public class HTTP3Configuration
         return inputBufferSize;
     }
 
+    /**
+     * <p>Sets the size of the buffer used for QUIC network reads.</p>
+     * <p>Default value is {@code 2048} bytes.</p>
+     *
+     * @param inputBufferSize the buffer size in bytes
+     */
     public void setInputBufferSize(int inputBufferSize)
     {
         this.inputBufferSize = inputBufferSize;
@@ -60,42 +74,89 @@ public class HTTP3Configuration
         return outputBufferSize;
     }
 
+    /**
+     * <p>Sets the size of the buffer used for QUIC network writes.</p>
+     * <p>Default value is {@code 2048} bytes.</p>
+     *
+     * @param outputBufferSize the buffer size in bytes
+     */
     public void setOutputBufferSize(int outputBufferSize)
     {
         this.outputBufferSize = outputBufferSize;
     }
 
-    @ManagedAttribute("Whether to use direct buffers for input")
+    @ManagedAttribute("Whether to use direct buffers for network reads")
     public boolean isUseInputDirectByteBuffers()
     {
         return useInputDirectByteBuffers;
     }
 
+    /**
+     * <p>Sets whether to use direct buffers for QUIC network reads.</p>
+     * <p>Default value is {@code true}.</p>
+     *
+     * @param useInputDirectByteBuffers whether to use direct buffers for network reads
+     */
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
         this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
-    @ManagedAttribute("Whether to use direct buffers for output")
+    @ManagedAttribute("Whether to use direct buffers for network writes")
     public boolean isUseOutputDirectByteBuffers()
     {
         return useOutputDirectByteBuffers;
     }
 
+    /**
+     * <p>Sets whether to use direct buffers for QUIC network writes.</p>
+     * <p>Default value is {@code true}.</p>
+     *
+     * @param useOutputDirectByteBuffers whether to use direct buffers for network writes
+     */
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
-    @ManagedAttribute("The defautl max size of QPACK dynamic table for the remote encoder to be sent in SETTINGS frame")
-    public int getMaxTableCapacity()
+    @ManagedAttribute("The local QPACK max decoder dynamic table capacity")
+    public int getMaxDecoderTableCapacity()
     {
         return maxTableCapacity;
     }
 
-    public void setMaxTableCapacity(int maxTableCapacity)
+    /**
+     * <p>Sets the local QPACK decoder max dynamic table capacity.</p>
+     * <p>The default value is {@code 65536} bytes.</p>
+     * <p>This value is configured on the local QPACK decoder, and then
+     * communicated to the remote QPACK encoder via the SETTINGS frame.</p>
+     *
+     * @param maxTableCapacity the QPACK decoder dynamic table max capacity
+     * @see #setInitialEncoderTableCapacity(int)
+     */
+    public void setMaxDecoderTableCapacity(int maxTableCapacity)
     {
         this.maxTableCapacity = maxTableCapacity;
+    }
+
+    @ManagedAttribute("The local QPACK initial encoder dynamic table capacity")
+    public int getInitialEncoderTableCapacity()
+    {
+        return initialTableCapacity;
+    }
+
+    /**
+     * <p>Sets the local QPACK encoder initial dynamic table capacity.</p>
+     * <p>The default value is {@code 65536} bytes.</p>
+     * <p>This value is configured in the local QPACK encoder, and may be
+     * overwritten by a smaller value received via the SETTINGS frame.</p>
+     *
+     * @param initialTableCapacity the QPACK encoder dynamic table initial capacity
+     * @see #setMaxDecoderTableCapacity(int)
+     */
+    public void setInitialEncoderTableCapacity(int initialTableCapacity)
+    {
+        this.initialTableCapacity = initialTableCapacity;
     }
 
     @ManagedAttribute("The max number of QPACK blocked streams")
@@ -104,6 +165,14 @@ public class HTTP3Configuration
         return maxBlockedStreams;
     }
 
+    /**
+     * <p>Sets the local QPACK decoder max number of blocked streams.</p>
+     * <p>The default value is {@code 64}.</p>
+     * <p>This value is configured in the local QPACK decoder, and then
+     * communicated to the remote QPACK encoder via the SETTINGS frame.</p>
+     *
+     * @param maxBlockedStreams the QPACK decoder max blocked streams
+     */
     public void setMaxBlockedStreams(int maxBlockedStreams)
     {
         this.maxBlockedStreams = maxBlockedStreams;
@@ -115,6 +184,17 @@ public class HTTP3Configuration
         return maxRequestHeadersSize;
     }
 
+    /**
+     * <p>Sets max request headers size.</p>
+     * <p>The default value is {@code 8192} bytes.</p>
+     * <p>This value is configured in the server-side QPACK decoder, and
+     * then communicated to the client-side QPACK encoder via the SETTINGS
+     * frame.</p>
+     * <p>The client-side QPACK encoder uses this value to cap, if necessary,
+     * the value sent by the server-side QPACK decoder.</p>
+     *
+     * @param maxRequestHeadersSize the max request headers size in bytes
+     */
     public void setMaxRequestHeadersSize(int maxRequestHeadersSize)
     {
         this.maxRequestHeadersSize = maxRequestHeadersSize;
@@ -126,6 +206,17 @@ public class HTTP3Configuration
         return maxResponseHeadersSize;
     }
 
+    /**
+     * <p>Sets max response headers size.</p>
+     * <p>The default value is {@code 8192} bytes.</p>
+     * <p>This value is configured in the client-side QPACK decoder, and
+     * then communicated to the server-side QPACK encoder via the SETTINGS
+     * frame.</p>
+     * <p>The server-side QPACK encoder uses this value to cap, if necessary,
+     * the value sent by the client-side QPACK decoder.</p>
+     *
+     * @param maxResponseHeadersSize the max response headers size
+     */
     public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
     {
         this.maxResponseHeadersSize = maxResponseHeadersSize;

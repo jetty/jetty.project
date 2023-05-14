@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import java.util.Map;
-
-import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -30,9 +28,9 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionServer.class);
 
-    public HTTP3SessionServer(HTTP3Configuration configuration, ServerHTTP3Session session, Server.Listener listener)
+    public HTTP3SessionServer(ServerHTTP3Session session, Server.Listener listener)
     {
-        super(configuration, session, listener);
+        super(session, listener);
     }
 
     @Override
@@ -79,6 +77,15 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
+    public void onSettings(SettingsFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received {} on {}", frame, this);
+        getProtocolSession().onSettings(frame);
+        super.onSettings(frame);
+    }
+
+    @Override
     public void writeControlFrame(Frame frame, Callback callback)
     {
         getProtocolSession().writeControlFrame(frame, callback);
@@ -88,15 +95,6 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     public void writeMessageFrame(long streamId, Frame frame, Callback callback)
     {
         getProtocolSession().writeMessageFrame(streamId, frame, callback);
-    }
-
-    @Override
-    protected void configure(Map<Long, Long> settings, boolean local)
-    {
-        if (local)
-            configureLocal(getProtocolSession().getQpackDecoder(), settings);
-        else
-            configureRemote(getProtocolSession().getQpackEncoder(), settings);
     }
 
     @Override

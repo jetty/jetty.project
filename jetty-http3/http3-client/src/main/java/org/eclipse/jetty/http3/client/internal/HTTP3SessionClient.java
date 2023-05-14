@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.http3.client.internal;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.quic.common.ProtocolSession;
@@ -38,9 +37,9 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
 
     private final Promise<Client> promise;
 
-    public HTTP3SessionClient(HTTP3Configuration configuration, ClientHTTP3Session session, Client.Listener listener, Promise<Client> promise)
+    public HTTP3SessionClient(ClientHTTP3Session session, Client.Listener listener, Promise<Client> promise)
     {
-        super(configuration, session, listener);
+        super(session, listener);
         this.promise = promise;
     }
 
@@ -80,6 +79,15 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         {
             super.onHeaders(streamId, frame, wasBlocked);
         }
+    }
+
+    @Override
+    public void onSettings(SettingsFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received {} on {}", frame, this);
+        getProtocolSession().onSettings(frame);
+        super.onSettings(frame);
     }
 
     @Override
@@ -147,14 +155,5 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         if (graceful)
             return GoAwayFrame.CLIENT_GRACEFUL;
         return super.newGoAwayFrame(graceful);
-    }
-
-    @Override
-    protected void configure(Map<Long, Long> settings, boolean local)
-    {
-        if (local)
-            configureLocal(getProtocolSession().getQpackDecoder(), settings);
-        else
-            configureRemote(getProtocolSession().getQpackEncoder(), settings);
     }
 }

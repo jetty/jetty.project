@@ -46,16 +46,14 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
     private final AutoLock lock = new AutoLock();
     private final HTTP3Stream stream;
-    private final ServerHTTP3StreamConnection connection;
     private HttpInput.Content content;
     private boolean expect100Continue;
     private boolean delayedUntilContent;
 
-    public HttpChannelOverHTTP3(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP3 transport, HTTP3Stream stream, ServerHTTP3StreamConnection connection)
+    public HttpChannelOverHTTP3(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP3 transport, HTTP3Stream stream)
     {
         super(connector, configuration, endPoint, transport);
         this.stream = stream;
-        this.connection = connection;
     }
 
     @Override
@@ -142,8 +140,6 @@ public class HttpChannelOverHTTP3 extends HttpChannel
                 // demand for content, so when it arrives we can dispatch.
                 if (delayedUntilContent)
                     stream.demand();
-                else
-                    connection.applicationInvoked();
             }
 
             if (LOG.isDebugEnabled())
@@ -195,9 +191,6 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
 
-        if (wasDelayed)
-            connection.applicationInvoked();
-
         return wasDelayed || woken ? this : null;
     }
 
@@ -222,9 +215,6 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
 
-        if (wasDelayed)
-            connection.applicationInvoked();
-
         return wasDelayed || handle ? this : null;
     }
 
@@ -232,9 +222,6 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     {
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
-
-        if (wasDelayed)
-            connection.applicationInvoked();
 
         getHttpTransport().onIdleTimeout(failure);
 
