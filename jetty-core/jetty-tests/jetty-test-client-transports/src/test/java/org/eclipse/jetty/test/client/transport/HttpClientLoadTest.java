@@ -62,7 +62,6 @@ public class HttpClientLoadTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("flaky")
     public void testIterative(Transport transport) throws Exception
     {
         server = newServer();

@@ -139,7 +139,6 @@ public class HttpSenderOverHTTP3 extends HttpSender
 
     private Stream onNewStream(Stream stream, HttpRequest request)
     {
-        getHttpChannel().setStream(stream);
         long idleTimeout = request.getIdleTimeout();
         if (idleTimeout > 0)
             ((HTTP3Stream)stream).setIdleTimeout(idleTimeout);
