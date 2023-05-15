@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -57,6 +58,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private String _path;
     private String _query;
     private String _version;
+    private String _secure;
     private Content.Chunk _chunk;
     private boolean _committed;
     private boolean _shutdown;
@@ -101,6 +103,8 @@ public class HttpStreamOverFCGI implements HttpStream
             _query = value;
         else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(name))
             _version = value;
+        else if (FCGI.Headers.HTTPS.equalsIgnoreCase(name))
+            _secure = value;
         else
             processField(field);
     }
@@ -108,8 +112,8 @@ public class HttpStreamOverFCGI implements HttpStream
     public void onHeaders()
     {
         String pathQuery = URIUtil.addPathQuery(_path, _query);
-        // TODO https?
-        MetaData.Request request = new MetaData.Request(_method, HttpScheme.HTTP.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
+        HttpScheme scheme = StringUtil.isEmpty(_secure) ? HttpScheme.HTTP : HttpScheme.HTTPS;
+        MetaData.Request request = new MetaData.Request(_method, scheme.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
         Runnable task = _httpChannel.onRequest(request);
         _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
         // TODO: here we just execute the task.
@@ -260,7 +264,6 @@ public class HttpStreamOverFCGI implements HttpStream
 
         boolean shutdown = _shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
-        ByteBufferPool bufferPool = _generator.getByteBufferPool();
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
         if (head)

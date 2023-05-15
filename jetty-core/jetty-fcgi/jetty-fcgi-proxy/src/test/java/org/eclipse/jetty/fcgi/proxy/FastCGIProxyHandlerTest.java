@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Connector;
@@ -256,5 +257,28 @@ public class FastCGIProxyHandlerTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(content, response.getContent());
+    }
+
+    @Test
+    public void testFCGISecure() throws Exception
+    {
+        start(true, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                assertTrue(request.isSecure());
+                assertTrue(HttpScheme.HTTPS.is(request.getHttpURI().getScheme()));
+                callback.succeeded();
+                return true;
+            }
+        });
+        fcgiHandler.setFastCGISecure(true);
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .path(proxyContext.getContextPath() + "/index.php")
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }

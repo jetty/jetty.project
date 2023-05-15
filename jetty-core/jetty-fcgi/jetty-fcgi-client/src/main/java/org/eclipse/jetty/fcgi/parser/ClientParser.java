@@ -25,6 +25,7 @@ public class ClientParser extends Parser
 
     public ClientParser(Listener listener)
     {
+        super(listener);
         ResponseContentParser stdOutParser = new ResponseContentParser(headerParser, listener);
         contentParsers.put(FCGI.FrameType.STDOUT, stdOutParser);
         StreamContentParser stdErrParser = new StreamContentParser(headerParser, FCGI.StreamType.STD_ERR, listener);
@@ -35,7 +36,10 @@ public class ClientParser extends Parser
     @Override
     protected ContentParser findContentParser(FCGI.FrameType frameType)
     {
-        return contentParsers.get(frameType);
+        ContentParser contentParser = contentParsers.get(frameType);
+        if (contentParser == null)
+            throw new IllegalArgumentException("unsupported frame type " + frameType);
+        return contentParser;
     }
 
     public interface Listener extends Parser.Listener
@@ -47,7 +51,6 @@ public class ClientParser extends Parser
 
     private record EndRequestListener(Listener listener, StreamContentParser... streamParsers) implements Listener
     {
-
         @Override
         public void onBegin(int request, int code, String reason)
         {
