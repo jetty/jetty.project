@@ -46,7 +46,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
         HttpTransportOverHTTP3 transport = new HttpTransportOverHTTP3(stream);
-        HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream, this);
+        HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream);
         stream.setAttachment(channel);
         return channel.onRequest(frame);
     }

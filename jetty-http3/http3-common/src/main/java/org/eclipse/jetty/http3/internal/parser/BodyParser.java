@@ -125,6 +125,6 @@ public abstract class BodyParser
 
     public enum Result
     {
-        NO_FRAME, FRAGMENT_FRAME, WHOLE_FRAME
+        NO_FRAME, BLOCKED_FRAME, FRAGMENT_FRAME, WHOLE_FRAME
     }
 }

@@ -47,16 +47,18 @@ public class HeadersGenerateParseTest
             .put("Cookie", "c=d");
         HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
-        QpackEncoder encoder = new QpackEncoder(instructions -> {}, 100);
+        QpackEncoder encoder = new QpackEncoder(instructions -> {});
+        encoder.setMaxHeadersSize(4 * 1024);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        new MessageGenerator(encoder, 8192, true).generate(lease, 0, input, null);
+        new MessageGenerator(encoder, true).generate(lease, 0, input, null);
 
-        QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);
+        QpackDecoder decoder = new QpackDecoder(instructions -> {});
+        decoder.setMaxHeadersSize(4 * 1024);
         List<HeadersFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()
         {
             @Override
-            public void onHeaders(long streamId, HeadersFrame frame)
+            public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
             {
                 frames.add(frame);
             }
