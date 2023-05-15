@@ -228,8 +228,6 @@ public class RequestTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 ByteArrayOutputStream buff = new ByteArrayOutputStream();
-
-                request.getHeaders().getFields(HttpHeader.COOKIE).forEach(System.err::println);
                 List<HttpCookie> coreCookies = org.eclipse.jetty.server.Request.getCookies(request);
 
                 if (coreCookies != null)
