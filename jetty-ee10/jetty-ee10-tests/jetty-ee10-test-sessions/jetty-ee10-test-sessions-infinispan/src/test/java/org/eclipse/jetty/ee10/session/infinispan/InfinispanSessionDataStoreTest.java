@@ -60,14 +60,14 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @BeforeEach
     public void configure() throws Exception
     {
-        _testSupport = new InfinispanTestSupport();
+        _testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         _testSupport.setup(workDir.getEmptyPathDir());
     }
 
     @AfterEach
     public void teardown() throws Exception
     {
-        _testSupport.teardown();
+        _testSupport.clearCache();
     }
 
     @Override
@@ -87,7 +87,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            _testSupport.createSession(data);
+            _testSupport.createSession((InfinispanSessionData)data);
         }
         finally
         {

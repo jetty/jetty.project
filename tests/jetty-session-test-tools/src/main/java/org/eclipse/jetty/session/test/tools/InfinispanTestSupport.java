@@ -15,6 +15,7 @@ package org.eclipse.jetty.session.test.tools;
 
 import java.lang.annotation.ElementType;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.eclipse.jetty.session.SessionData;
@@ -39,14 +40,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class InfinispanTestSupport
 {
-    public static final String DEFAULT_CACHE_NAME = "session_test_cache";
-    public Cache _cache;
+    public Cache<String, InfinispanSessionData> _cache;
 
     public ConfigurationBuilder _builder;
-    private Path _tmpdir;
     private boolean _useFileStore;
     private boolean _serializeSessionData;
-    private String _name;
+    private final String _name;
     public static EmbeddedCacheManager _manager;
 
     static
@@ -64,15 +63,9 @@ public class InfinispanTestSupport
         }
     }
 
-    public InfinispanTestSupport()
-    {
-        this(null);
-    }
-
     public InfinispanTestSupport(String cacheName)
     {
-        if (cacheName == null)
-            cacheName = DEFAULT_CACHE_NAME + System.nanoTime();
+        Objects.requireNonNull(cacheName, "cacheName cannot be null");
 
         _name = cacheName;
         _builder = new ConfigurationBuilder();
@@ -88,7 +81,7 @@ public class InfinispanTestSupport
         _serializeSessionData = serializeSessionData;
     }
     
-    public Cache getCache()
+    public Cache<String, InfinispanSessionData> getCache()
     {
         return _cache;
     }
@@ -96,7 +89,7 @@ public class InfinispanTestSupport
     public void setup(Path root) throws Exception
     {
         Path indexesDir = root.resolve("indexes");
-        this._tmpdir = root.resolve("tmp");
+        Path tmpdir = root.resolve("tmp");
         FS.ensureDirExists(indexesDir);
 
         SearchMapping mapping = new SearchMapping();
@@ -122,7 +115,7 @@ public class InfinispanTestSupport
                 .persistence()
                 .addSingleFileStore()
                 .segmented(false)
-                .location(_tmpdir.toFile().getAbsolutePath());
+                .location(tmpdir.toFile().getAbsolutePath());
             if (_serializeSessionData)
             {
                 b = b.memory().storage(StorageType.HEAP)
@@ -149,14 +142,13 @@ public class InfinispanTestSupport
         _cache = _manager.getCache(_name);
     }
 
-    public void teardown() throws Exception
+    public void clearCache() throws Exception
     {
         _cache.clear();
         _manager.administration().removeCache(_name);
     }
 
-    @SuppressWarnings("unchecked")
-    public void createSession(SessionData data)
+    public void createSession(InfinispanSessionData data)
         throws Exception
     {
         ((InfinispanSessionData)data).serializeAttributes();
@@ -183,41 +175,38 @@ public class InfinispanTestSupport
             _cache.evict(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         }
 
-        Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        SessionData obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
-
-        SessionData saved = (SessionData)obj;
         
-        if (saved instanceof InfinispanSessionData)
+        if (obj instanceof InfinispanSessionData isd)
         {
-            InfinispanSessionData isd = (InfinispanSessionData)saved;
             if (isd.getSerializedAttributes() != null)
                 isd.deserializeAttributes();
         }
 
         //turn an Entity into a Session
-        assertEquals(data.getId(), saved.getId());
-        assertEquals(data.getContextPath(), saved.getContextPath());
-        assertEquals(data.getVhost(), saved.getVhost());
-        assertEquals(data.getAccessed(), saved.getAccessed());
-        assertEquals(data.getLastAccessed(), saved.getLastAccessed());
-        assertEquals(data.getCreated(), saved.getCreated());
-        assertEquals(data.getCookieSet(), saved.getCookieSet());
-        assertEquals(data.getLastNode(), saved.getLastNode());
+        assertEquals(data.getId(), obj.getId());
+        assertEquals(data.getContextPath(), obj.getContextPath());
+        assertEquals(data.getVhost(), obj.getVhost());
+        assertEquals(data.getAccessed(), obj.getAccessed());
+        assertEquals(data.getLastAccessed(), obj.getLastAccessed());
+        assertEquals(data.getCreated(), obj.getCreated());
+        assertEquals(data.getCookieSet(), obj.getCookieSet());
+        assertEquals(data.getLastNode(), obj.getLastNode());
         //don't test lastSaved, because that is set only on the SessionData after it returns from SessionDataStore.save()
-        assertEquals(data.getExpiry(), saved.getExpiry());
-        assertEquals(data.getMaxInactiveMs(), saved.getMaxInactiveMs());
+        assertEquals(data.getExpiry(), obj.getExpiry());
+        assertEquals(data.getMaxInactiveMs(), obj.getMaxInactiveMs());
 
         
         //same number of attributes
-        assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
+        assertEquals(data.getAllAttributes().size(), obj.getAllAttributes().size());
         //same keys
-        assertEquals(data.getKeys(), saved.getKeys());
+        assertEquals(data.getKeys(), obj.getKeys());
         //same values
         for (String name : data.getKeys())
         {
-            assertEquals(data.getAttribute(name), saved.getAttribute(name));
+            assertEquals(data.getAttribute(name), obj.getAttribute(name));
         }
 
         return true;

@@ -31,12 +31,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
     public WorkDir workDir;
-    public static InfinispanTestSupport testSupport;
+    public InfinispanTestSupport testSupport;
 
     @BeforeEach
     public void setup() throws Exception
     {
-        testSupport = new InfinispanTestSupport();
+        testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         testSupport.setUseFileStore(true);
         testSupport.setSerializeSessionData(true);
         testSupport.setup(workDir.getEmptyPathDir());
@@ -46,7 +46,7 @@ public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredS
     public void teardown() throws Exception
     {
         if (testSupport != null)
-            testSupport.teardown();
+            testSupport.clearCache();
     }
 
     @Override

@@ -35,14 +35,14 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     @BeforeEach
     public void setup() throws Exception
     {
-        testSupport = new InfinispanTestSupport();
+        testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         testSupport.setup(workDir.getEmptyPathDir());
     }
 
     @AfterEach
     public void teardown() throws Exception
     {
-        testSupport.teardown();
+        testSupport.clearCache();
     }
 
     @Override

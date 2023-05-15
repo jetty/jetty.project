@@ -36,7 +36,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     @BeforeEach
     public void setup() throws Exception
     {
-        testSupport = new InfinispanTestSupport();
+        testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         testSupport.setUseFileStore(true);
         testSupport.setup(workDir.getEmptyPathDir());
     }
@@ -45,7 +45,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     public void teardown() throws Exception
     {
         if (testSupport != null)
-            testSupport.teardown();
+            testSupport.clearCache();
     }
 
     @Override

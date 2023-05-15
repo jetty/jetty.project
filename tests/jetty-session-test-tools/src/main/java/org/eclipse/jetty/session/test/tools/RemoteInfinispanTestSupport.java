@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.eclipse.jetty.session.SessionData;
@@ -48,38 +49,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RemoteInfinispanTestSupport
 {
     private static final Logger LOG = LoggerFactory.getLogger(RemoteInfinispanTestSupport.class);
-    public static final String DEFAULT_CACHE_NAME = "session_test_cache";
     public RemoteCache<String, InfinispanSessionData> _cache;
     private final String _name;
     public RemoteCacheManager _manager;
     private static final Logger INFINISPAN_LOG =
             LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
-    private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
-            ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
-
-    private final GenericContainer<?> infinispan = new GenericContainer<>(IMAGE_NAME)
-            .withEnv("USER", "theuser")
-            .withEnv("PASS", "foobar")
-            .withEnv("MGMT_USER", "admin")
-            .withEnv("MGMT_PASS", "admin")
-            .withEnv("CONFIG_PATH", "/user-config/config.yaml")
-            .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
-            .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-            .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
-            .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
     private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+    private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
+            ":" + INFINISPAN_VERSION;
 
-    public RemoteInfinispanTestSupport()
+    private static final GenericContainer<?> infinispan = new GenericContainer<>(IMAGE_NAME);
+
+    static
     {
-        this(null);
+        infinispan.withEnv("USER", "theuser")
+                .withEnv("PASS", "foobar")
+                .withEnv("MGMT_USER", "admin")
+                .withEnv("MGMT_PASS", "admin")
+                .withEnv("CONFIG_PATH", "/user-config/config.yaml")
+                .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
+                .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+                .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
+                .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY)
+                .start();
     }
 
     public RemoteInfinispanTestSupport(String cacheName)
     {
-        if (cacheName == null)
-            cacheName = DEFAULT_CACHE_NAME + System.nanoTime();
-
+        Objects.requireNonNull(cacheName, "cacheName cannot be null");
         _name = cacheName;
 
         if (!infinispan.isRunning())
@@ -172,14 +170,9 @@ public class RemoteInfinispanTestSupport
         _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
-    public void teardown() throws Exception
+    public void clearCache() throws Exception
     {
         _cache.clear();
-    }
-
-    public void shutdown() throws Exception
-    {
-        infinispan.stop();
     }
 
     public void createSession(InfinispanSessionData data)

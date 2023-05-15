@@ -39,7 +39,7 @@ public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataSto
     @BeforeEach
     public void configure() throws Exception
     {
-        _testSupport = new InfinispanTestSupport();
+        _testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         _testSupport.setUseFileStore(true);
         _testSupport.setup(workDir.getEmptyPathDir());
     }
